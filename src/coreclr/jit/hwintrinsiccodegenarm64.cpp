@@ -787,19 +787,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                             op1Reg);
                 break;
 
-            case NI_AdvSimd_StoreSelectedScalar:
-            {
-                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
-
-                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                {
-                    const int elementIndex = helper.ImmValue();
-
-                    GetEmitter()->emitIns_R_R_I(ins, emitSize, op2Reg, op1Reg, elementIndex, opt);
-                }
-            }
-            break;
-
             case NI_AdvSimd_Arm64_StorePair:
             case NI_AdvSimd_Arm64_StorePairNonTemporal:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, op2Reg, op3Reg, op1Reg);
@@ -810,18 +797,48 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), op2Reg, op3Reg, op1Reg);
                 break;
 
-            case NI_AdvSimd_StoreSelectedScalar64x2:
-            case NI_AdvSimd_StoreSelectedScalar64x3:
-            case NI_AdvSimd_StoreSelectedScalar64x4:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar128x3:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar128x4:
+            case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar:
             {
-                assert(intrin.op2->OperIsFieldList());
+                unsigned regCount = 0;
+                if (intrin.op2->OperIsFieldList())
+                {
+                    GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op2Reg                       = firstField->GetRegNum();
 
-                GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
-                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
-                op2Reg                       = firstField->GetRegNum();
+                    INDEBUG(regNumber argReg = op2Reg);
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
+                        GenTree* argNode = use.GetNode();
+                        assert(argReg == argNode->GetRegNum());
+                        argReg = REG_NEXT(argReg);
+#endif
+                    }
+                }
+                else
+                {
+                    regCount = 1;
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_st2;
+                        break;
+                    case 3:
+                        ins = INS_st3;
+                        break;
+                    case 4:
+                        ins = INS_st4;
+                        break;
+                    default:
+                        assert(regCount == 1);
+                        assert(ins == INS_st1);
+                        break;
+                }
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 

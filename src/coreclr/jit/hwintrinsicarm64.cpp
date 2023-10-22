@@ -260,14 +260,9 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_StoreSelectedScalar:
-            case NI_AdvSimd_StoreSelectedScalar64x2:
-            case NI_AdvSimd_StoreSelectedScalar64x3:
-            case NI_AdvSimd_StoreSelectedScalar64x4:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar128x3:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar128x4:
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 
@@ -1752,12 +1747,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_AdvSimd_StoreVector64x2:
         case NI_AdvSimd_Arm64_StoreVector128x2:
-        case NI_AdvSimd_StoreSelectedScalar64x2:
-        case NI_AdvSimd_StoreSelectedScalar64x3:
-        case NI_AdvSimd_StoreSelectedScalar64x4:
-        case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
-        case NI_AdvSimd_Arm64_StoreSelectedScalar128x3:
-        case NI_AdvSimd_Arm64_StoreSelectedScalar128x4:
+        case NI_AdvSimd_StoreSelectedScalar:
+        case NI_AdvSimd_Arm64_StoreSelectedScalar:
         {
             assert(retType == TYP_VOID);
 
@@ -1781,10 +1772,46 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                 = impPopStack().val;
             unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
-            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op1                 = getArgForHWIntrinsic(argType, argClass);
 
-            assert(op2->TypeGet() == TYP_STRUCT);
+            if (fieldCount > 1 &&
+                ((intrinsic == NI_AdvSimd_StoreSelectedScalar) || (intrinsic == NI_AdvSimd_Arm64_StoreSelectedScalar)))
+            {
+                // StoreSelectedScalar that stores 2/3/4 vectors
+                CORINFO_CLASS_HANDLE structType;
+                unsigned int         sizeBytes   = 0;
+                CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(argClass, 0);
+                CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &structType);
+                simdBaseJitType                  = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF) // the argument is not a vector
+                {
+                    CORINFO_CLASS_HANDLE tmpClass;
+                    simdBaseJitType = strip(info.compCompHnd->getArgType(sig, arg2, &tmpClass));
+
+                    if (simdBaseJitType == CORINFO_TYPE_PTR)
+                    {
+                        simdBaseJitType = info.compCompHnd->getChildType(argClass, &tmpClass);
+                    }
+                }
+            }
+
+            if (op2->TypeGet() == TYP_STRUCT)
+            {
+                info.compNeedsConsecutiveRegisters = true;
+
+                if (!op2->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp =
+                        lvaGrabTemp(true DEBUGARG(isSingleStructStore ? "StoreSelectedScalarN" : "StoreVectorN"));
+
+                    impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
+                    op2 = gtNewLclvNode(tmp, argType);
+                }
+                op2 = gtConvertTableOpToFieldList(op2, fieldCount);
+            }
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
             if (op1->OperIs(GT_CAST))
             {
                 // Although the API specifies a pointer, if what we have is a BYREF, that's what
@@ -1794,18 +1821,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     op1 = op1->gtGetOp1();
                 }
             }
-
-            if (!op2->OperIs(GT_LCL_VAR))
-            {
-                unsigned tmp =
-                    lvaGrabTemp(true DEBUGARG(isSingleStructStore ? "StoreSelectedScalarN" : "StoreVectorN"));
-
-                impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
-                op2 = gtNewLclvNode(tmp, argType);
-            }
-            op2 = gtConvertTableOpToFieldList(op2, fieldCount);
-
-            info.compNeedsConsecutiveRegisters = true;
 
             if (isSingleStructStore)
             {

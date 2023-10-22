@@ -3683,7 +3683,6 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static unsafe void StoreSelectedScalar(double* address, (Vector128<double> value1, Vector128<double> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
-
             /// <summary>
             /// void vst3_lane_s8 (int8_t * ptr, int8x16x3_t val, const int lane)
             ///   A64: ST3 { Vt.16B, Vt+1.16B, Vt+2.16B }[index], [Xn]
