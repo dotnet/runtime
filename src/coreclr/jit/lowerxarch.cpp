@@ -1791,8 +1791,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             GenTree* xorVec  = comp->gtNewSimdBinOpNode(GT_XOR, simdType, op1, op2, simdBaseJitType, simdSize);
             node->Op(1)      = xorVec;
             node->Op(2)      = zeroVec;
-            BlockRange().InsertBefore(node, xorVec);
-            BlockRange().InsertBefore(node, zeroVec);
+            BlockRange().InsertBefore(node, xorVec, zeroVec);
 
             // We'll re-visit the comparison node again
             return xorVec;
