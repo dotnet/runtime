@@ -279,7 +279,7 @@ namespace System.Collections.ObjectModel
                 _dictionary.Keys.CopyTo(array, arrayIndex);
             }
 
-            public int Count => _dictionary.Keys.Count;
+            public int Count => _dictionary.Count;
 
             bool ICollection<TKey>.IsReadOnly => true;
 
@@ -299,7 +299,7 @@ namespace System.Collections.ObjectModel
 
             bool ICollection.IsSynchronized => false;
 
-            object ICollection.SyncRoot => (_dictionary.Keys is ICollection coll) ? coll.SyncRoot : this;
+            object ICollection.SyncRoot => _dictionary.Keys is ICollection coll ? coll.SyncRoot : this;
         }
 
         [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
@@ -331,7 +331,7 @@ namespace System.Collections.ObjectModel
                 _dictionary.Values.CopyTo(array, arrayIndex);
             }
 
-            public int Count => _dictionary.Values.Count;
+            public int Count => _dictionary.Count;
 
             bool ICollection<TValue>.IsReadOnly => true;
 
@@ -350,7 +350,7 @@ namespace System.Collections.ObjectModel
 
             bool ICollection.IsSynchronized => false;
 
-            object ICollection.SyncRoot => (_dictionary.Values is ICollection coll) ? coll.SyncRoot : this;
+            object ICollection.SyncRoot => _dictionary.Values is ICollection coll ? coll.SyncRoot : this;
         }
     }
 }
