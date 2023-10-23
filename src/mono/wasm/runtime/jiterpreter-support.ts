@@ -1547,7 +1547,7 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
     return scratchBuffer;
 }
 
-export function getWasmFunctionTable(module?: any) {
+export function getWasmFunctionTable() {
     if (!wasmTable)
         wasmTable = runtimeHelpers.getWasmIndirectFunctionTable();
     if (!wasmTable)
@@ -2021,7 +2021,7 @@ export function jiterpreter_allocate_tables(module: any) {
         interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
         totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
-        wasmTable = getWasmFunctionTable(module);
+        wasmTable = getWasmFunctionTable();
     let base = wasmTable.length;
     const beforeGrow = performance.now();
     wasmTable.grow(totalSize);
