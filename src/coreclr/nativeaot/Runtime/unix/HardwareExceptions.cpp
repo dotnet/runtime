@@ -1,12 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "PalRedhawk.h"
-
 #include "CommonTypes.h"
-#include "PalRedhawkCommon.h"
-// #include "RhConfig.h"
-// #include "rhassert.h"
+#include "PalRedhawk.h"
 #include "CommonMacros.h"
 #include "config.h"
 #include "daccess.h"
@@ -15,6 +11,9 @@
 #include "HardwareExceptions.h"
 #include "UnixSignals.h"
 #include "PalCreateDump.h"
+#include "thread.h"
+#include "threadstore.h"
+#include <sys/mman.h>
 
 #if defined(HOST_APPLE)
 #include <mach/mach.h>
@@ -549,7 +548,6 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
 // Handler for the SIGSEGV signal
 void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
 {
-    const char StackOverflowMessage[] = "Stack overflow.\n";
     // First check if we have a stack overflow
     size_t sp = ((UNIX_CONTEXT *)context)->GetSp();
     size_t failureAddress = (size_t)siginfo->si_addr;
@@ -558,27 +556,8 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
     // we have a stack overflow.
     if ((failureAddress - (sp - getpagesize())) < 2 * getpagesize())
     {
-        (void)!write(STDOUT_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-        // RhFailFast();
-        // if (GetCurrentPalThread())
-        // {
-        //     size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
-        //     if (handlerStackTop == 0)
-        //     {
-        //         // We have only one stack for handling stack overflow preallocated. We let only the first thread that hits stack overflow to
-        //         // run the exception handling code on that stack (which ends up just dumping the stack trace and aborting the process).
-        //         // Other threads are held spinning and sleeping here until the process exits.
-        //         while (true)
-        //         {
-        //             sleep(1);
-        //         }
-        //     }
-
-        //     if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
-        //     {
-        //         PROCAbort(SIGSEGV, siginfo);
-        //     }
-        // }
+        PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
+        RhFailFast();
     }
     bool isHandled = HardwareExceptionHandler(code, siginfo, context, siginfo->si_addr);
     if (isHandled)
@@ -634,20 +613,10 @@ bool InitializeHardwareExceptionHandling()
     {
         return false;
     }
-
-    stack_t oldstack;
-    stack_t newstack;
-    newstack.ss_size = 1024 * 1024 * 2 > SIGSTKSZ ? 1024 * 1024 * 2 : SIGSTKSZ;
-    newstack.ss_sp = malloc(newstack.ss_size);
-    if (newstack.ss_sp == NULL)
-    {
-        return false;
-    }
-    newstack.ss_flags = 0;
-    if (0 != sigaltstack(&newstack, &oldstack))
-    {
-        return false;
-    }
+#ifdef TARGET_UNIX
+    Thread* curThread = ThreadStore::RawGetCurrentThread();
+    curThread->EnsureSignalAlternateStack();
+#endif // TARGET_UNIX
 
 #if defined(HOST_APPLE)
 #ifndef HOST_TVOS // task_set_exception_ports is not supported on tvOS
