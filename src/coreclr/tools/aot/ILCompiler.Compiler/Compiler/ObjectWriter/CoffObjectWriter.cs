@@ -128,14 +128,17 @@ namespace ILCompiler.ObjectWriter
                 });
                 _symbols.Add(auxRecord);
 
-                _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
-                _symbols.Add(new CoffSymbol
+                if (symbolName is not null)
                 {
-                    Name = symbolName,
-                    Value = 0,
-                    SectionIndex = sectionIndex,
-                    StorageClass = isPrimary ? CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL : CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
-                });
+                    _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
+                    _symbols.Add(new CoffSymbol
+                    {
+                        Name = symbolName,
+                        Value = 0,
+                        SectionIndex = sectionIndex,
+                        StorageClass = isPrimary ? CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL : CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
+                    });
+                }
             }
 
             _sections.Add(new SectionDefinition(sectionHeader, sectionStream, new List<CoffRelocation>(), comdatName, symbolName));
