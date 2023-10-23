@@ -54,6 +54,8 @@ namespace System.Reflection.Runtime.TypeInfos
         public virtual bool IsConstructedGenericType => false;
         public virtual bool IsByRefLike => false;
 
+        public bool IsGenericType => IsGenericTypeDefinition || IsConstructedGenericType;
+
         public abstract string Name { get; }
 
         public abstract Assembly Assembly { get; }
@@ -337,14 +339,6 @@ namespace System.Reflection.Runtime.TypeInfos
             return Assignability.IsAssignableFrom(this.ToType(), typeInfo);
         }
 
-        public bool IsEnum
-        {
-            get
-            {
-                return 0 != (Classification & TypeClassification.IsEnum);
-            }
-        }
-
         public MemberTypes MemberType
         {
             get
@@ -541,6 +535,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public bool IsValueType => (Classification & TypeClassification.IsValueType) != 0;
 
+        public bool IsEnum => 0 != (Classification & TypeClassification.IsEnum);
+
+        public bool IsActualValueType => IsValueType && !IsGenericParameter;
+
+        public bool IsActualEnum => IsEnum && !IsGenericParameter;
+
         //
         // Returns the anchoring typedef that declares the members that this type wants returned by the Declared*** properties.
         // The Declared*** properties will project the anchoring typedef's members by overriding their DeclaringType property with "this"
@@ -596,17 +596,15 @@ namespace System.Reflection.Runtime.TypeInfos
 
         internal abstract RuntimeTypeHandle InternalTypeHandleIfAvailable { get; }
 
-        private Type _type;
+        private RuntimeType _type;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Type ToType() => _type ?? CreateType();
+        public RuntimeType ToType() => _type ?? CreateType();
 
-        private Type CreateType()
+        private RuntimeType CreateType()
         {
             RuntimeTypeHandle runtimeTypeHandle = InternalTypeHandleIfAvailable;
-            // TODO!!!
-            Debug.Assert(!runtimeTypeHandle.IsNull);
-            Type type = Type.GetTypeFromHandle(runtimeTypeHandle)!;
+            RuntimeType type = runtimeTypeHandle.IsNull ? new RuntimeType(this) : (RuntimeType)Type.GetTypeFromHandle(runtimeTypeHandle)!;
             Interlocked.CompareExchange(ref _type, type, null);
             return _type;
         }
