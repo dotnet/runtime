@@ -75,8 +75,8 @@
        all the inputs available, some suppressions might only apply to one or the other and hence unnecessary
        suppressions can't be determined. -->
   <PropertyGroup Condition="'$(IsPackable)' == 'true' and '$(IsRuntimeAndReferenceAssembly)' != 'true'">
-    <ApiCompatPreserveUnnecessarySuppressions>true</ApiCompatPreserveUnnecessarySuppressions>
-    <ApiCompatPermitUnnecessarySuppressions>true</ApiCompatPermitUnnecessarySuppressions>
+    <ApiCompatPreserveUnnecessarySuppressions Condition="'$(ApiCompatPreserveUnnecessarySuppressions)' == ''">true</ApiCompatPreserveUnnecessarySuppressions>
+    <ApiCompatPermitUnnecessarySuppressions Condition="'$(ApiCompatPermitUnnecessarySuppressions)' == ''">true</ApiCompatPermitUnnecessarySuppressions>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsCrossTargetingBuild)' != 'true'">
