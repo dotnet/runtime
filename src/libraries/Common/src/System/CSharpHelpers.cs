@@ -60,6 +60,7 @@ namespace System
             "object",
             "params",
             "public",
+            "record",
             "return",
             "sealed",
             "sizeof",
