@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
@@ -283,23 +283,6 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
-  </ItemGroup>
-
-  <!--
-    These tests are currently not R2R-Compatible, so we disable them whenever
-    we are using the TestReadyToRun flag.
-  -->
-  <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
-    <Compile Remove="System\Runtime\JitInfoTests.cs" />
-    <Compile Remove="System\Type\TypeTests.Get.cs" />
-  </ItemGroup>
-
-  <!--
-    This test surprisingly only fails on Linux and Windows when TestReadyToRun
-    is present. OSX runs just fine.
-  -->
-  <ItemGroup Condition="'$(TestReadyToRun)' == 'true' and ('$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'windows')">
-    <Compile Remove="System\EnumTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
