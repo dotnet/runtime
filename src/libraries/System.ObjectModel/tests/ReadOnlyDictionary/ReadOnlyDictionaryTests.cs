@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Xunit;
-using Tests.Collections;
-using System.Reflection;
 using System.Linq;
+using System.Reflection;
+using Tests.Collections;
+using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
 {
@@ -271,6 +272,30 @@ namespace System.Collections.ObjectModel.Tests
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, null));
             ArgumentNullException argumentNullException = Assert.IsType<ArgumentNullException>(ex.InnerException);
             Assert.Equal("collection", argumentNullException.ParamName);
+        }
+
+
+        [Fact]
+        public static void WrappingConcurrentDictionary_KeepsKeyAndValueCollectionsUpToDate()
+        {
+            var concurrentDict = new ConcurrentDictionary<int, string>();
+            var readOnlyDict = new ReadOnlyDictionary<int, string>(concurrentDict);
+
+            Assert.Equal(0, readOnlyDict.Count);
+            Assert.Equal<int>([], readOnlyDict.Keys);
+            Assert.Equal<string>([], readOnlyDict.Values);
+
+            concurrentDict[0] = "value";
+
+            Assert.Equal(1, readOnlyDict.Count);
+            Assert.Equal<int>([0], readOnlyDict.Keys);
+            Assert.Equal<string>(["value"], readOnlyDict.Values);
+
+            concurrentDict.TryRemove(0, out _);
+
+            Assert.Equal(0, readOnlyDict.Count);
+            Assert.Equal<int>([], readOnlyDict.Keys);
+            Assert.Equal<string>([], readOnlyDict.Values);
         }
     }
 

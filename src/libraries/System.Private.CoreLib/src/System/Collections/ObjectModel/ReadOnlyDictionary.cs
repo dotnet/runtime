@@ -35,9 +35,9 @@ namespace System.Collections.ObjectModel
 
         protected IDictionary<TKey, TValue> Dictionary => m_dictionary;
 
-        public KeyCollection Keys => _keys ??= new KeyCollection(m_dictionary.Keys);
+        public KeyCollection Keys => _keys ??= new KeyCollection(m_dictionary);
 
-        public ValueCollection Values => _values ??= new ValueCollection(m_dictionary.Values);
+        public ValueCollection Values => _values ??= new ValueCollection(m_dictionary);
 
         public bool ContainsKey(TKey key) => m_dictionary.ContainsKey(key);
 
@@ -251,13 +251,12 @@ namespace System.Collections.ObjectModel
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
-            private readonly ICollection<TKey> _collection;
+            private readonly IDictionary<TKey, TValue> _dictionary;
 
-            internal KeyCollection(ICollection<TKey> collection)
+            internal KeyCollection(IDictionary<TKey, TValue> dictionary)
             {
-                ArgumentNullException.ThrowIfNull(collection);
-
-                _collection = collection;
+                Debug.Assert(dictionary != null);
+                _dictionary = dictionary;
             }
 
             void ICollection<TKey>.Add(TKey item)
@@ -272,15 +271,15 @@ namespace System.Collections.ObjectModel
 
             public bool Contains(TKey item)
             {
-                return _collection.Contains(item);
+                return _dictionary.ContainsKey(item);
             }
 
             public void CopyTo(TKey[] array, int arrayIndex)
             {
-                _collection.CopyTo(array, arrayIndex);
+                _dictionary.Keys.CopyTo(array, arrayIndex);
             }
 
-            public int Count => _collection.Count;
+            public int Count => _dictionary.Keys.Count;
 
             bool ICollection<TKey>.IsReadOnly => true;
 
@@ -289,31 +288,30 @@ namespace System.Collections.ObjectModel
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public IEnumerator<TKey> GetEnumerator() => _collection.GetEnumerator();
+            public IEnumerator<TKey> GetEnumerator() => _dictionary.Keys.GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_collection).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_dictionary.Keys).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int index)
             {
-                CollectionHelpers.CopyTo(_collection, array, index);
+                CollectionHelpers.CopyTo(_dictionary.Keys, array, index);
             }
 
             bool ICollection.IsSynchronized => false;
 
-            object ICollection.SyncRoot => (_collection is ICollection coll) ? coll.SyncRoot : this;
+            object ICollection.SyncRoot => (_dictionary.Keys is ICollection coll) ? coll.SyncRoot : this;
         }
 
         [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
-            private readonly ICollection<TValue> _collection;
+            private readonly IDictionary<TKey, TValue> _dictionary;
 
-            internal ValueCollection(ICollection<TValue> collection)
+            internal ValueCollection(IDictionary<TKey, TValue> dictionary)
             {
-                ArgumentNullException.ThrowIfNull(collection);
-
-                _collection = collection;
+                Debug.Assert(dictionary != null);
+                _dictionary = dictionary;
             }
 
             void ICollection<TValue>.Add(TValue item)
@@ -326,14 +324,14 @@ namespace System.Collections.ObjectModel
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            bool ICollection<TValue>.Contains(TValue item) => _collection.Contains(item);
+            bool ICollection<TValue>.Contains(TValue item) => _dictionary.Values.Contains(item);
 
             public void CopyTo(TValue[] array, int arrayIndex)
             {
-                _collection.CopyTo(array, arrayIndex);
+                _dictionary.Values.CopyTo(array, arrayIndex);
             }
 
-            public int Count => _collection.Count;
+            public int Count => _dictionary.Values.Count;
 
             bool ICollection<TValue>.IsReadOnly => true;
 
@@ -341,18 +339,18 @@ namespace System.Collections.ObjectModel
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
-            public IEnumerator<TValue> GetEnumerator() => _collection.GetEnumerator();
+            public IEnumerator<TValue> GetEnumerator() => _dictionary.Values.GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_collection).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_dictionary.Values).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int index)
             {
-                CollectionHelpers.CopyTo(_collection, array, index);
+                CollectionHelpers.CopyTo(_dictionary.Values, array, index);
             }
 
             bool ICollection.IsSynchronized => false;
 
-            object ICollection.SyncRoot => (_collection is ICollection coll) ? coll.SyncRoot : this;
+            object ICollection.SyncRoot => (_dictionary.Values is ICollection coll) ? coll.SyncRoot : this;
         }
     }
 }
