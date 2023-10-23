@@ -57,6 +57,8 @@ export RunningIlasmRoundTrip=
 
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
 # IlasmRoundTrip Script
+# Disable Ilasm round-tripping for Linker tests.
+# Todo: Ilasm round-trip on linked binaries.
 
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
@@ -104,6 +106,8 @@ set RunningIlasmRoundTrip=
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
 REM IlasmRoundTrip Script
+REM Disable Ilasm round-tripping for Linker tests.
+REM Todo: Ilasm round-trip on linked binaries.
 
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
