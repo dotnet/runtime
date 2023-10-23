@@ -30,8 +30,6 @@ PhaseStatus Compiler::gsPhase()
         unsigned const prevBBCount = fgBBcount;
         gsGSChecksInitCookie();
 
-        fgAddCodeRef(fgLastBB, SCK_FAIL_FAST);
-
         if (compGSReorderStackLayout)
         {
             gsCopyShadowParams();
