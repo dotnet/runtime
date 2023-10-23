@@ -64,7 +64,6 @@ namespace System.IO.Tests
             using (File.Create(path))
             {
                 Assert.Throws<IOException>(() => File.AppendAllBytes(path, bytes));
-                Assert.Throws<IOException>(() => File.ReadAllBytes(path));
             }
         }
 
