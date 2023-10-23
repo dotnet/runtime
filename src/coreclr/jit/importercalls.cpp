@@ -7412,6 +7412,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
     }
 
+    // We might have created a new recursive tail call candidate.
+    //
+    if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
+    {
+        setMethodHasRecursiveTailcall();
+        compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+    }
+
 #ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {

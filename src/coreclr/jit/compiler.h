@@ -4703,6 +4703,8 @@ public:
     bool fgGlobalMorph; // indicates if we are during the global morphing phase
                         // since fgMorphTree can be called from several places
 
+    bool fgGlobalMorphDone;
+
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
 
@@ -5663,7 +5665,7 @@ public:
     void fgDebugCheckLoopTable();
     void fgDebugCheckSsa();
 
-    void fgDebugCheckFlags(GenTree* tree);
+    void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
