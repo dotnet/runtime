@@ -508,7 +508,7 @@ retry_top:
 		blocked = GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (lock->initializing_tid));
 		while ((pending_lock = (TypeInitializationLock*) g_hash_table_lookup (blocked_thread_hash, blocked))) {
 			if (mono_native_thread_id_equals (pending_lock->initializing_tid, tid)) {
-				if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE) && strstr (m_class_get_image(klass)->name, "HelloWorld") != NULL) {
+				if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE)) {
 					char* type_name = mono_type_full_name (m_class_get_byval_arg (klass));
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Detected deadlock for class .cctor for %s from '%s'", type_name, m_class_get_image (klass)->name);
 					g_free (type_name);
@@ -518,8 +518,6 @@ retry_top:
 					mono_type_initialization_unlock ();
 					goto return_true;
 				} else {
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "special case");
-
 					/* the thread doing the initialization is blocked on this thread,
 					   but on a lock that has already been freed. It just hasn't got
 					   time to awake */
