@@ -65,11 +65,11 @@
         <GroupNumber>1</GroupNumber>
       </_GroupStartsWith> -->
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics\HardwareIntrinsics_General_r.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics">
         <GroupNumber>2</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics\HardwareIntrinsics_X86_Avx_r.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical">
         <GroupNumber>3</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
@@ -100,19 +100,19 @@
         <GroupNumber>6</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\jit64\jit64_1.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\jit64">
         <GroupNumber>7</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\opt\JIT.opt.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\opt">
         <GroupNumber>8</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\SIMD\AbsGeneric_r.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\SIMD">
         <GroupNumber>9</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)Loader\classloader\Casting\Functionpointer.csproj">
+      <_GroupStartsWith Include="$(TestRoot)Loader\classloader\Casting">
         <GroupNumber>10</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
