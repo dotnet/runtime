@@ -358,9 +358,7 @@ if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
 
-
-
-cleaned_branch_name="main"
+cleaned_branch_name="release/8.0"
 if [[ $branch == *"refs/heads/release"* ]]; then
     cleaned_branch_name=${branch/refs\/heads\//}
 fi
