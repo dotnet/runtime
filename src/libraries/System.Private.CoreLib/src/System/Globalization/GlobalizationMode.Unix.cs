@@ -18,18 +18,22 @@ namespace System.Globalization
                 // and PredefinedCulturesOnly is unspecified.
                 if (!GlobalizationMode.Invariant)
                 {
-                    // if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
-                    // {
-                    //     LoadAppLocalIcu(icuSuffixAndVersion);
-                    // }
-                    // else
-                    // {
-                    //     int loaded = LoadICU();
-                    //     if (loaded == 0)
-                    //     {
-                    //         Environment.FailFast(GetIcuLoadFailureMessage());
-                    //     }
-                    // }
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
+                        return;
+#endif
+                    if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
+                    {
+                        LoadAppLocalIcu(icuSuffixAndVersion);
+                    }
+                    else
+                    {
+                        int loaded = LoadICU();
+                        if (loaded == 0)
+                        {
+                            Environment.FailFast(GetIcuLoadFailureMessage());
+                        }
+                    }
                 }
             }
 
