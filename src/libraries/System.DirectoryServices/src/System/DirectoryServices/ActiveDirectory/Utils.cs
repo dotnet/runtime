@@ -2214,7 +2214,7 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 if (null == computerName)
-                    err = Interop.Netapi32.DsRoleGetPrimaryDomainInformation(IntPtr.Zero, Interop.Netapi32.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
+                    err = Interop.Netapi32.DsRoleGetPrimaryDomainInformation(null, Interop.Netapi32.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
                 else
                     err = Interop.Netapi32.DsRoleGetPrimaryDomainInformation(computerName, Interop.Netapi32.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
 
