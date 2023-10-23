@@ -96,6 +96,11 @@ namespace ILLink.RoslynAnalyzer
 							context.ReportDiagnostic (diagnostic);
 					}
 				});
+
+				// Remaining actions are only for DynamicallyAccessedMembers analysis.
+				if (!dataFlowAnalyzerContext.EnableTrimAnalyzer)
+					return;
+
 				// Examine generic instantiations in base types and interface list
 				context.RegisterSymbolAction (context => {
 					var type = (INamedTypeSymbol) context.Symbol;

@@ -62,6 +62,70 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 		}
 
 		[Fact]
+		public Task NoDynamicallyAccessedMembersWarningsIfOnlySingleFileAnalyzerIsEnabled ()
+		{
+			var TargetParameterWithAnnotations = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			class C
+			{
+				public static void Main()
+				{
+					MethodCallPattern(typeof(int));
+					AssignmentPattern(typeof(int));
+					ReflectionAccessPattern();
+					FieldAccessPattern();
+					GenericRequirement<int>();
+				}
+
+				private static void NeedsPublicMethodsOnParameter(
+					[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type parameter)
+				{
+				}
+
+				private static void MethodCallPattern(Type type)
+				{
+					NeedsPublicMethodsOnParameter(type);
+				}
+
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+				private static Type NeedsPublicMethosOnField;
+
+				private static void AssignmentPattern(Type type)
+				{
+					NeedsPublicMethosOnField = type;
+				}
+
+				private static void ReflectionAccessPattern()
+				{
+					Action<Type> action = NeedsPublicMethodsOnParameter;
+				}
+
+				private static void FieldAccessPattern()
+				{
+					var i = BeforeFieldInit.StaticField;
+				}
+
+				[RequiresUnreferencedCode("BeforeFieldInit")]
+				class BeforeFieldInit {
+					public static int StaticField = 0;
+				}
+
+				private static void GenericRequirement<T>()
+				{
+					new NeedsPublicMethodsOnTypeParameter<T>();
+				}
+
+				class NeedsPublicMethodsOnTypeParameter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
+				{
+				}
+			}
+			""";
+			return VerifyRequiresAssemblyFilesAnalyzer (TargetParameterWithAnnotations);
+		}
+
+		[Fact]
 		public Task SimpleDiagnosticOnEvent ()
 		{
 			var TestRequiresAssemblyFieldsOnEvent = $$"""

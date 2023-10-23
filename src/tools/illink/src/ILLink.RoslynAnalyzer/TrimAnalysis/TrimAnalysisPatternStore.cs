@@ -81,7 +81,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			foreach (var assignmentPattern in AssignmentPatterns.Values) {
-				foreach (var diagnostic in assignmentPattern.CollectDiagnostics ())
+				foreach (var diagnostic in assignmentPattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 

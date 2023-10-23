@@ -45,10 +45,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				OwningSymbol);
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
-			if (!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
+			if (context.EnableTrimAnalyzer && !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
 				foreach (var sourceValue in Source) {
 					foreach (var targetValue in Target) {
 						// The target should always be an annotated value, but the visitor design currently prevents
