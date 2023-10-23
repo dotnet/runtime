@@ -160,7 +160,7 @@ namespace ILCompiler.ObjectWriter
                 // DW_AT_comp_dir
                 dwarfInfoWriter.WriteStringReference("/_");
                 // DW_AT_low_pc
-                dwarfInfoWriter.WriteCodeReference(_sections[0].SectionSymbolName);
+                dwarfInfoWriter.WriteAddressSize(0);
                 // DW_AT_ranges
                 dwarfInfoWriter.WriteStartRangeList();
                 foreach (var sectionInfo in _sections)
