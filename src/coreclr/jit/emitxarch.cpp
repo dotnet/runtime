@@ -15847,7 +15847,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         bool crossJump = emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
         int32_t encodedDisplacement;
-        if ((crossJump || !relAddr) && emitComp->opts.compReloc)
+        if (emitComp->opts.compReloc && (!relAddr || crossJump))
         {
             // Cross jumps may not be encodable in a 32-bit displacement as the
             // hot/cold code buffers may be allocated arbitrarily far away from
