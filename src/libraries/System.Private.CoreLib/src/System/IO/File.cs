@@ -714,7 +714,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Asynchronously appends the specified byte array to the end of the file at the given path. 
+        /// Asynchronously appends the specified byte array to the end of the file at the given path.
         /// If the file doesn't exist, this method creates a new file. If the operation is canceled, the task will be returned in a canceled state.
         /// </summary>
         /// <param name="path">The path of the file to which the bytes should be appended.</param>
