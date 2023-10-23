@@ -53,7 +53,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     [Output]
     public ITaskItem[]? UpdatedAssemblies { get; set; }
 
-    private ConcurrentBag<ITaskItem> _updatedAssemblies = new();
+    private ConcurrentDictionary<string, ITaskItem> _processedAssemblies = new();
 
     public override bool Execute()
     {
@@ -101,7 +101,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (TrimIndividualMethods)
         {
-            UpdatedAssemblies = _updatedAssemblies.ToArray();
+            UpdatedAssemblies = ConvertAssembliesDictToOrderedList(_processedAssemblies, Assemblies).ToArray();
         }
 
         if (!result.IsCompleted && !Log.HasLoggedErrors)
@@ -181,7 +181,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             else
             {
                 Log.LogMessage(MessageImportance.Low, $"Skip trimming {assemblyFilePath} because {trimmedAssemblyFilePath} is newer than {assemblyFilePath} .");
-                _updatedAssemblies.Add(GetTrimmedAssemblyItem(assemblyItem, trimmedAssemblyFilePath, assemblyFilePathArg));
+                _processedAssemblies.GetOrAdd(assemblyItem.ItemSpec, GetTrimmedAssemblyItem(assemblyItem, trimmedAssemblyFilePath, assemblyFilePathArg));
                 return true;
             }
         }
@@ -210,10 +210,9 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             CreateTrimmedAssembly(peReader, trimmedAssemblyFilePath, fs, methodBodyUses);
         }
 
-        if (isTrimmed)
-            _updatedAssemblies.Add(GetTrimmedAssemblyItem(assemblyItem, trimmedAssemblyFilePath, assemblyFilePathArg));
-        else
-            _updatedAssemblies.Add(assemblyItem);
+        var outAssemblyItem = isTrimmed ? GetTrimmedAssemblyItem(assemblyItem, trimmedAssemblyFilePath, assemblyFilePathArg) : assemblyItem;
+        _processedAssemblies.GetOrAdd(assemblyItem.ItemSpec, outAssemblyItem);
+
         return true;
     }
 
@@ -230,6 +229,17 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
     private static bool IsInputNewerThanOutput(string inFile, string outFile)
         => File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile);
+
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    {
+        List<ITaskItem> outItems = new(originalAssemblies.Count);
+        foreach (ITaskItem item in originalAssemblies)
+        {
+            if (dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
+                outItems.Add(dictItem);
+        }
+        return outItems;
+    }
 
     private static string ComputeGuid(MetadataReader mr)
     {
