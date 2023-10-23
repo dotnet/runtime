@@ -151,8 +151,6 @@ namespace ILCompiler.ObjectWriter
                 _symbolNameToIndex[machSymbol.Name] = sectionIndex;
                 sectionIndex++;
             }
-
-            EmitCompactUnwindTable();
         }
 
         protected override void EmitObjectFile(string objectFilePath)
@@ -240,11 +238,11 @@ namespace ILCompiler.ObjectWriter
 
         protected internal override void EmitRelocation(
             int sectionIndex,
-            int offset,
+            long offset,
             Span<byte> data,
             RelocType relocType,
             string symbolName,
-            int addend)
+            long addend)
         {
             if (relocType is RelocType.IMAGE_REL_BASED_DIR64 or RelocType.IMAGE_REL_BASED_HIGHLOW)
             {
@@ -262,7 +260,7 @@ namespace ILCompiler.ObjectWriter
                                 BinaryPrimitives.WriteInt64LittleEndian(data, addend);
                                 break;
                             case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                                BinaryPrimitives.WriteInt32LittleEndian(data, addend);
+                                BinaryPrimitives.WriteUInt32LittleEndian(data, (uint)addend);
                                 break;
                             default:
                                 throw new NotSupportedException("Unsupported relocation in debug section");
@@ -270,31 +268,13 @@ namespace ILCompiler.ObjectWriter
                         return;
                     }
                     // DWARF section to code/data section relocation
-                    else if (IsSectionSymbolName(symbolName))
+                    else
                     {
+                        Debug.Assert(IsSectionSymbolName(symbolName));
                         Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
                         int targetSectionIndex = (int)_symbolNameToIndex[symbolName];
                         BinaryPrimitives.WriteUInt64LittleEndian(data, _segment.Sections[targetSectionIndex].VirtualAddress + (ulong)addend);
                         base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
-                    }
-                    // DWARF section to code/data symbol
-                    else
-                    {
-                        Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
-                        IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
-                        if (definedSymbols.TryGetValue(symbolName, out SymbolDefinition symbolDefinition))
-                        {
-                            symbolName = $"lsection{symbolDefinition.SectionIndex}";
-                            BinaryPrimitives.WriteUInt64LittleEndian(
-                                data,
-                                _segment.Sections[symbolDefinition.SectionIndex].VirtualAddress + (ulong)symbolDefinition.Value);
-                            base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"DEBUG references undefined symbol: {symbolName}");
-                            return;
-                        }
                     }
 
                     return;
@@ -330,7 +310,7 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteInt32LittleEndian(
                         data,
                         BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        addend - offset);
+                        (int)(addend - offset));
                 }
                 else if (sectionIndex == EhFrameSectionIndex)
                 {
@@ -339,7 +319,7 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteInt32LittleEndian(
                         data,
                         BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        addend - offset);
+                        (int)(addend - offset));
                 }
                 else
                 {
@@ -349,7 +329,7 @@ namespace ILCompiler.ObjectWriter
                         BinaryPrimitives.WriteInt32LittleEndian(
                             data,
                             BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            addend);
+                            (int)addend);
                     }
                 }
                 addend = 0;
@@ -362,7 +342,7 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteInt32LittleEndian(
                         data,
                         BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        addend);
+                        (int)addend);
                     addend = 0;
                 }
             }
@@ -370,7 +350,9 @@ namespace ILCompiler.ObjectWriter
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
 
-        protected override void EmitSymbolTable()
+        protected override void EmitSymbolTable(
+            IDictionary<string, SymbolDefinition> definedSymbols,
+            SortedSet<string> undefinedSymbols)
         {
             // We already emitted symbols for all non-debug sections in EmitSectionsAndLayout,
             // these symbols are local and we need to account for them.
@@ -379,7 +361,6 @@ namespace ILCompiler.ObjectWriter
             _dySymbolTable.LocalSymbolsCount = symbolIndex;
 
             // Sort and insert all defined symbols
-            IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
             var sortedDefinedSymbols = new List<MachSymbol>(definedSymbols.Count);
             foreach ((string name, SymbolDefinition definition) in definedSymbols)
             {
@@ -405,7 +386,7 @@ namespace ILCompiler.ObjectWriter
             _dySymbolTable.ExternalSymbolsCount = (uint)definedSymbols.Count;
 
             uint savedSymbolIndex = symbolIndex;
-            foreach (string externSymbol in GetUndefinedSymbols())
+            foreach (string externSymbol in undefinedSymbols)
             {
                 var machSymbol = new MachSymbol
                 {
@@ -422,6 +403,8 @@ namespace ILCompiler.ObjectWriter
 
             _dySymbolTable.UndefinedSymbolsIndex = _dySymbolTable.LocalSymbolsCount + _dySymbolTable.ExternalSymbolsCount;
             _dySymbolTable.UndefinedSymbolsCount = symbolIndex - savedSymbolIndex;
+
+            EmitCompactUnwindTable(definedSymbols);
         }
 
         protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
@@ -451,7 +434,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = isExternal ? symbolIndex : symbolIndex + 1,
                             Length = 8,
                             RelocationType = MachRelocationType.X86_64Unsigned,
@@ -464,7 +447,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = (uint)sectionIndex,
                             Length = 4,
                             RelocationType = MachRelocationType.X86_64Subtractor,
@@ -474,7 +457,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
                             RelocationType = MachRelocationType.X86_64Unsigned,
@@ -487,7 +470,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
                             RelocationType = MachRelocationType.X86_64Branch,
@@ -516,7 +499,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
                             RelocationType = MachRelocationType.Arm64Branch26,
@@ -531,7 +514,7 @@ namespace ILCompiler.ObjectWriter
                         sectionRelocations.Add(
                             new MachRelocation
                             {
-                                Address = symbolicRelocation.Offset,
+                                Address = (int)symbolicRelocation.Offset,
                                 SymbolOrSectionIndex = (uint)symbolicRelocation.Addend,
                                 Length = 4,
                                 RelocationType = MachRelocationType.Arm64Addend,
@@ -550,7 +533,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
                             RelocationType = type,
@@ -564,7 +547,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = isExternal ? symbolIndex : symbolIndex + 1,
                             Length = 8,
                             RelocationType = MachRelocationType.Arm64Unsigned,
@@ -578,7 +561,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = (uint)sectionIndex,
                             Length = 4,
                             RelocationType = MachRelocationType.Arm64Subtractor,
@@ -588,7 +571,7 @@ namespace ILCompiler.ObjectWriter
                     sectionRelocations.Add(
                         new MachRelocation
                         {
-                            Address = symbolicRelocation.Offset,
+                            Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
                             RelocationType = MachRelocationType.Arm64Unsigned,
@@ -603,10 +586,9 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void EmitCompactUnwindTable()
+        private void EmitCompactUnwindTable(IDictionary<string, SymbolDefinition> definedSymbols)
         {
             using Stream compactUnwindStream = _compactUnwindSection.GetWriteStream();
-            IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
 
             IList<MachSymbol> symbols = _symbolTable.Symbols;
             Span<byte> tempBuffer = stackalloc byte[8];

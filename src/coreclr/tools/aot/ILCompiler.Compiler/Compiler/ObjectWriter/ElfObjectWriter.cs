@@ -17,9 +17,8 @@ namespace ILCompiler.ObjectWriter
     public sealed class ElfObjectWriter : UnixObjectWriter
     {
         private readonly ElfObjectFile _objectFile;
-        private int _sectionIndex;
         private readonly Dictionary<int, Stream> _bssStreams = new();
-        private readonly Dictionary<int, ElfSection> _sectionIndexToElfSection = new();
+        private readonly List<ElfSection> _sections = new();
         private readonly Dictionary<ElfSection, int> _elfSectionToSectionIndex = new();
         private readonly Dictionary<string, ElfGroupSection> _comdatNameToElfSection = new(StringComparer.Ordinal);
         private readonly Dictionary<ElfSection, ElfRelocationTable> _sectionToRelocationTable = new();
@@ -52,6 +51,7 @@ namespace ILCompiler.ObjectWriter
             string sectionName =
                 section.Name == "rdata" ? ".rodata" :
                 (section.Name.StartsWith('_') || section.Name.StartsWith('.') ? section.Name : "." + section.Name);
+            int sectionIndex = _sections.Count;
 
             if (comdatName is not null &&
                 !_comdatNameToElfSection.TryGetValue(comdatName, out groupSection))
@@ -74,7 +74,7 @@ namespace ILCompiler.ObjectWriter
                     Flags = ElfSectionFlags.Alloc | ElfSectionFlags.Write,
                 };
 
-                _bssStreams[_sectionIndex] = sectionStream;
+                _bssStreams[sectionIndex] = sectionStream;
             }
             else if (section == ObjectNodeSection.TLSSection)
             {
@@ -108,8 +108,8 @@ namespace ILCompiler.ObjectWriter
                 _debugSections.Add(elfSection);
             }
 
-            _elfSectionToSectionIndex[elfSection] = _sectionIndex;
-            _sectionIndexToElfSection[_sectionIndex++] = elfSection;
+            _elfSectionToSectionIndex[elfSection] = sectionIndex;
+            _sections.Add(elfSection);
             groupSection?.AddSection(elfSection);
 
             base.CreateSection(section, comdatName, symbolName ?? elfSection.Name.Value, sectionStream);
@@ -117,17 +117,17 @@ namespace ILCompiler.ObjectWriter
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
-            ElfSection elfSection = _sectionIndexToElfSection[sectionIndex];
+            ElfSection elfSection = _sections[sectionIndex];
             elfSection.Alignment = Math.Max(elfSection.Alignment, (uint)alignment);
         }
 
         protected internal override void EmitRelocation(
             int sectionIndex,
-            int offset,
+            long offset,
             Span<byte> data,
             RelocType relocType,
             string symbolName,
-            int addend)
+            long addend)
         {
             // We read the addend from the data and clear it. This is necessary
             // to produce correct addends in the `.rela` sections which override
@@ -145,7 +145,7 @@ namespace ILCompiler.ObjectWriter
             else if (relocType == RelocType.IMAGE_REL_BASED_DIR64)
             {
                 ulong a = BinaryPrimitives.ReadUInt64LittleEndian(data);
-                addend += checked((int)a);
+                addend += checked((long)a);
                 BinaryPrimitives.WriteUInt64LittleEndian(data, 0);
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 ||
@@ -169,15 +169,16 @@ namespace ILCompiler.ObjectWriter
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
 
-        protected override void EmitSymbolTable()
+        protected override void EmitSymbolTable(
+            IDictionary<string, SymbolDefinition> definedSymbols,
+            SortedSet<string> undefinedSymbols)
         {
             uint symbolIndex = (uint)_symbolTable.Entries.Count;
 
-            IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
             List<ElfSymbol> sortedSymbols = new(definedSymbols.Count);
             foreach ((string name, SymbolDefinition definition) in definedSymbols)
             {
-                ElfSection elfSection = _sectionIndexToElfSection[definition.SectionIndex];
+                ElfSection elfSection = _sections[definition.SectionIndex];
                 sortedSymbols.Add(new ElfSymbol
                 {
                     Name = name,
@@ -192,7 +193,7 @@ namespace ILCompiler.ObjectWriter
                 });
             }
 
-            foreach (string externSymbol in GetUndefinedSymbols())
+            foreach (string externSymbol in undefinedSymbols)
             {
                 if (!_symbolNameToIndex.ContainsKey(externSymbol))
                 {
@@ -237,7 +238,7 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitRelocationsARM64(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            ElfSection elfSection = _sectionIndexToElfSection[sectionIndex];
+            ElfSection elfSection = _sections[sectionIndex];
             if (_sectionToRelocationTable.TryGetValue(elfSection, out ElfRelocationTable relocationTable))
             {
                 foreach (SymbolicRelocation symbolicRelocation in relocationList)
@@ -261,14 +262,12 @@ namespace ILCompiler.ObjectWriter
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
-                    int addend = symbolicRelocation.Addend;
-
                     relocationTable.Entries.Add(new ElfRelocation
                     {
                         SymbolIndex = symbolIndex,
                         Type = type,
                         Offset = (ulong)symbolicRelocation.Offset,
-                        Addend = addend
+                        Addend = symbolicRelocation.Addend
                     });
                 }
             }
@@ -280,7 +279,7 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitRelocationsX64(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            ElfSection elfSection = _sectionIndexToElfSection[sectionIndex];
+            ElfSection elfSection = _sections[sectionIndex];
             if (_sectionToRelocationTable.TryGetValue(elfSection, out ElfRelocationTable relocationTable))
             {
                 foreach (SymbolicRelocation symbolicRelocation in relocationList)
@@ -298,7 +297,7 @@ namespace ILCompiler.ObjectWriter
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
-                    int addend = symbolicRelocation.Addend;
+                    long addend = symbolicRelocation.Addend;
                     if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_REL32)
                     {
                         addend -= 4;
@@ -319,9 +318,9 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitDebugSections()
+        protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
         {
-            base.EmitDebugSections();
+            base.EmitDebugSections(definedSymbols);
 
             foreach (ElfSection debugSection in _debugSections)
             {
@@ -374,7 +373,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            foreach (ElfSection elfSection in _sectionIndexToElfSection.Values)
+            foreach (ElfSection elfSection in _sections)
             {
                 // If the section was not already added as part of COMDAT group,
                 // add it now.
@@ -389,7 +388,7 @@ namespace ILCompiler.ObjectWriter
             _objectFile.AddSection(new ElfSectionHeaderStringTable());
             foreach ((int bssSectionIndex, Stream bssStream) in _bssStreams)
             {
-                _sectionIndexToElfSection[bssSectionIndex].Size = (ulong)bssStream.Length;
+                _sections[bssSectionIndex].Size = (ulong)bssStream.Length;
             }
 
             _objectFile.AddSection(new ElfBinarySection(Stream.Null)

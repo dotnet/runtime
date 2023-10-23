@@ -16,9 +16,9 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class DwarfBuilder : ITypesDebugInfoWriter
     {
-        private sealed record SectionInfo(string SectionSymbolName, ulong Size);
-        private sealed record MemberFunctionTypeInfo(MemberFunctionTypeDescriptor MemberDescriptor, uint[] ArgumentTypes, bool IsStatic);
-
+        private record struct SectionInfo(string SectionSymbolName, ulong Size);
+        private record struct MemberFunctionTypeInfo(MemberFunctionTypeDescriptor MemberDescriptor, uint[] ArgumentTypes, bool IsStatic);
+        public delegate (string SectionSymbolName, long Address) ResolveStaticVariable(string name);
 
         private readonly NameMangler _nameMangler;
         private readonly TargetArchitecture _architecture;
@@ -27,7 +27,6 @@ namespace ILCompiler.ObjectWriter
         private readonly int _frameRegister;
         private readonly byte _minimumInstructionLength;
         private readonly RelocType _codeRelocType;
-        private readonly bool _isOSXLike;
 
         private readonly Dictionary<int, DwarfLineSequenceWriter> _lineSequences = new();
         private readonly Dictionary<string, int> _fileNameMap = new(); // fileName -> _fileNames index (1-based)
@@ -53,7 +52,6 @@ namespace ILCompiler.ObjectWriter
             _nameMangler = nameMangler;
             _architecture = target.Architecture;
             _useDwarf5 = useDwarf5;
-            _isOSXLike = target.IsOSXLike;
             _minimumInstructionLength = (byte)target.MinimumCodeAlignment;
 
             switch (target.Architecture)
@@ -92,7 +90,6 @@ namespace ILCompiler.ObjectWriter
         public int FrameRegister => _frameRegister;
 
         public uint ResolveOffset(uint typeIndex) => typeIndex == 0 ? 0u : _dwarfTypeOffsets[typeIndex - 1];
-        public string ExternCName(string name) => _isOSXLike ? "_" + name : name;
 
         public void Write(
             SectionWriter infoSectionWriter,
@@ -101,9 +98,16 @@ namespace ILCompiler.ObjectWriter
             SectionWriter locSectionWriter,
             SectionWriter rangeSectionWriter,
             SectionWriter lineSectionWriter,
-            SectionWriter arangeSectionWriter)
+            SectionWriter arangeSectionWriter,
+            ResolveStaticVariable resolveStaticVariable)
         {
-            WriteInfoTable(infoSectionWriter, stringSectionWriter, abbrevSectionWriter, locSectionWriter, rangeSectionWriter);
+            WriteInfoTable(
+                infoSectionWriter,
+                stringSectionWriter,
+                abbrevSectionWriter,
+                locSectionWriter,
+                rangeSectionWriter,
+                resolveStaticVariable);
             WriteLineInfoTable(lineSectionWriter);
             WriteAddressRangeTable(arangeSectionWriter);
         }
@@ -113,7 +117,8 @@ namespace ILCompiler.ObjectWriter
             SectionWriter stringSectionWriter,
             SectionWriter abbrevSectionWriter,
             SectionWriter locSectionWriter,
-            SectionWriter rangeSectionWriter)
+            SectionWriter rangeSectionWriter,
+            ResolveStaticVariable resolveStaticVariable)
         {
             // Length
             byte[] sizeBuffer = new byte[sizeof(uint)];
@@ -144,7 +149,7 @@ namespace ILCompiler.ObjectWriter
                 this,
                 _codeRelocType))
             {
-                dwarfInfoWriter.WriteStartDIE(/*_isOSXLike ? DwarfAbbrev.CompileUnitNoRanges :*/ DwarfAbbrev.CompileUnit);
+                dwarfInfoWriter.WriteStartDIE(DwarfAbbrev.CompileUnit);
 
                 // DW_AT_producer
                 dwarfInfoWriter.WriteStringReference("NetRuntime");
@@ -183,7 +188,11 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (DwarfStaticVariableInfo staticField in _staticFields)
                 {
-                    staticField.Dump(dwarfInfoWriter);
+                    (string sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
+                    if (sectionSymbolName is not null)
+                    {
+                        staticField.Dump(dwarfInfoWriter, sectionSymbolName, address);
+                    }
                 }
 
                 dwarfInfoWriter.WriteEndDIE();
@@ -405,6 +414,8 @@ namespace ILCompiler.ObjectWriter
 
         public void EmitSubprogramInfo(
             string methodName,
+            string sectionSymbolName,
+            long methodAddress,
             int methodPCLength,
             uint methodTypeIndex,
             IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
@@ -419,14 +430,19 @@ namespace ILCompiler.ObjectWriter
             memberFunction.LinkageName = methodName;
 
             _dwarfSubprograms.Add(new DwarfSubprogramInfo(
-                methodName,
+                sectionSymbolName,
+                methodAddress,
                 methodPCLength,
                 memberFunction,
                 debugVars.ToArray(),
                 debugEHClauseInfos));
         }
 
-        public void EmitLineInfo(int sectionIndex, string sectionSymbolName, ulong methodAddress, IEnumerable<NativeSequencePoint> sequencePoints)
+        public void EmitLineInfo(
+            int sectionIndex,
+            string sectionSymbolName,
+            long methodAddress,
+            IEnumerable<NativeSequencePoint> sequencePoints)
         {
             DwarfLineSequenceWriter lineSequence;
 

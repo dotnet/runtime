@@ -37,15 +37,15 @@ namespace ILCompiler.ObjectWriter
         }
 
         public readonly void EmitRelocation(
-            int relativeOffset,
+            long relativeOffset,
             Span<byte> data,
             RelocType relocType,
             string symbolName,
-            int addend)
+            long addend)
         {
             _objectWriter.EmitRelocation(
                 SectionIndex,
-                (int)Stream.Position + relativeOffset,
+                Stream.Position + relativeOffset,
                 data,
                 relocType,
                 symbolName,
@@ -54,14 +54,14 @@ namespace ILCompiler.ObjectWriter
 
         public readonly void EmitSymbolDefinition(
             string symbolName,
-            int relativeOffset = 0,
+            long relativeOffset = 0,
             int size = 0,
             bool global = false)
         {
             _objectWriter.EmitSymbolDefinition(
                 SectionIndex,
                 symbolName,
-                (int)Stream.Position + relativeOffset,
+                Stream.Position + relativeOffset,
                 size,
                 global);
         }
@@ -69,13 +69,13 @@ namespace ILCompiler.ObjectWriter
         public readonly void EmitSymbolReference(
             RelocType relocType,
             string symbolName,
-            int addend = 0)
+            long addend = 0)
         {
             Span<byte> buffer = stackalloc byte[relocType == RelocType.IMAGE_REL_BASED_DIR64 ? sizeof(ulong) : sizeof(uint)];
             buffer.Clear();
             _objectWriter.EmitRelocation(
                 SectionIndex,
-                (int)Stream.Position,
+                Stream.Position,
                 buffer,
                 relocType,
                 symbolName,
