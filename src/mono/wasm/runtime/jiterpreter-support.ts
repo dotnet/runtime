@@ -1549,8 +1549,6 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
 
 export function getWasmFunctionTable(module?: any) {
     const theModule = (<any>Module || module);
-    mono_assert(theModule, "Module not available yet");
-    mono_assert(theModule["asm"], "Module['asm'] not available yet");
     if (!wasmTable)
         wasmTable = runtimeHelpers.getWasmIndirectFunctionTable();
     if (!wasmTable)
