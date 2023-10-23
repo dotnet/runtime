@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class SafeEvpPKeyHandle
     {
-        private static long _openSslVersion;
+        private static readonly long _openSslVersion = !Interop.OpenSslNoInit.OpenSslIsAvailable ? 0 : Interop.OpenSsl.OpenSslVersionNumber();
 
         /// <summary>
         /// The runtime version number for the loaded version of OpenSSL.
@@ -26,17 +26,11 @@ namespace System.Security.Cryptography
         {
             get
             {
-                long version = Volatile.Read(ref _openSslVersion);
+                long version = _openSslVersion;
 
                 if (version == 0)
                 {
-                    if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
-                    {
-                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
-                    }
-
-                    version = Interop.OpenSsl.OpenSslVersionNumber();
-                    Volatile.Write(ref _openSslVersion, version);
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
                 }
 
                 return version;
