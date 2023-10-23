@@ -122,19 +122,11 @@ namespace System
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleOutputEncoding(value);
 
-                    // Before changing the code page we need to flush the data
-                    // if Out hasn't been redirected. Also, have the next call to
-                    // s_out reinitialize the console code page.
-                    if (s_out != null && !s_isOutTextWriterRedirected)
-                    {
-                        s_out.Flush();
+                    // Have the next call to Out/Error reinitialize the value if Out/Error hasn't been redirected
+                    if (!s_isOutTextWriterRedirected)
                         s_out = null;
-                    }
-                    if (s_error != null && !s_isErrorTextWriterRedirected)
-                    {
-                        s_error.Flush();
+                    if (!s_isErrorTextWriterRedirected)
                         s_error = null;
-                    }
 
                     s_outputEncoding = (Encoding)value.Clone();
                 }
