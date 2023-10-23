@@ -345,8 +345,6 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
-#endif // defined(DEBUG)
-#ifdef DEBUG
     , m_ILInstsSet(nullptr)
 #endif
 {
