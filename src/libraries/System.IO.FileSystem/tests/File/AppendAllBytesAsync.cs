@@ -97,7 +97,5 @@ namespace System.IO.Tests
                 File.SetAttributes(path, FileAttributes.Normal);
             }
         }
-
     }
-
 }

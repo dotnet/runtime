@@ -50,6 +50,7 @@ namespace System.IO.Tests
         public void EmptyContentCreatesFile()
         {
             string path = GetTestFilePath();
+            Assert.False(File.Exists(path));
             File.AppendAllBytes(path, new byte[0]);
             Assert.True(File.Exists(path));
             Assert.Empty(File.ReadAllBytes(path));
@@ -97,6 +98,5 @@ namespace System.IO.Tests
                 File.SetAttributes(path, FileAttributes.Normal);
             }
         }
-
     }
 }
