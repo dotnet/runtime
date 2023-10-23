@@ -170,7 +170,8 @@ namespace System.Security.Cryptography.Cng.Tests
             value[6] = 2;
             value[7] = 3;
 
-            _ = new CngProperty(name, value, CngPropertyOptions.CustomProperty);
+            CngProperty property = new CngProperty(name, value, CngPropertyOptions.CustomProperty);
+            AssertExtensions.SequenceEqual(value, property.GetValue());
         }
 
         [Fact]
