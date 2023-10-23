@@ -125,8 +125,8 @@ public:
     //=========================================================================
 
 
-        void ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
-        void ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
+        void ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
+        void ConvertToInternalSignature(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
 
 
     //=========================================================================
@@ -681,7 +681,7 @@ class MetaSig
         // Returns the calling convention & flags (see IMAGE_CEE_CS_CALLCONV_*
         // defines in cor.h)
         //----------------------------------------------------------
-        BYTE GetCallingConventionInfo()
+        USHORT GetCallingConventionInfo()
         {
             LIMITED_METHOD_DAC_CONTRACT;
 
@@ -726,6 +726,17 @@ class MetaSig
             SUPPORTS_DAC;
             return GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_VARARG;
         }
+
+        //----------------------------------------------------------
+        // Is it an async call?
+        //----------------------------------------------------------
+        BOOL IsAsyncCall()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_CallConv & CORINFO_CALLCONV_ASYNCCALL;
+        }
+
+        BOOL HasAsyncContinuation();
 
         //----------------------------------------------------------
         // Is vararg?
@@ -1085,6 +1096,12 @@ public:
             m_CallConv |= CORINFO_CALLCONV_PARAMTYPE;
         }
 
+        void SetIsAsyncCall()
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_CallConv |= CORINFO_CALLCONV_ASYNCCALL;
+        }
+
         void SetTreatAsVarArg()
         {
             LIMITED_METHOD_CONTRACT;
@@ -1122,7 +1139,7 @@ public:
 
         CorElementType  m_corNormalizedRetType;
         BYTE            m_flags;
-        BYTE            m_CallConv;
+        USHORT          m_CallConv;
 };  // class MetaSig
 
 BOOL IsTypeRefOrDef(LPCSTR szClassName, Module *pModule, mdToken token);

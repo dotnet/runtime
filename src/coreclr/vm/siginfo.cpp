@@ -137,7 +137,7 @@ unsigned GetSizeForCorElementType(CorElementType etyp)
 
 #ifndef DACCESS_COMPILE
 
-void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -324,7 +324,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
     }
 }
 
-void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalSignature(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -663,6 +663,8 @@ MetaSig::MetaSig(MethodDesc *pMD, Instantiation classInst, Instantiation methodI
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsync2Method())
+        SetIsAsyncCall();
 }
 
 MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
@@ -684,6 +686,8 @@ MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsync2Method())
+        SetIsAsyncCall();
 }
 
 #ifdef _DEBUG
@@ -5106,6 +5110,13 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 #endif // UNIX_AMD64_ABI
 
     ReportPointersFromValueType(fn, sc, pMT, pSrc->GetDestinationAddress());
+}
+
+BOOL MetaSig::HasAsyncContinuation()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return IsAsyncCall() && g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines();
 }
 
 //------------------------------------------------------------------

@@ -12840,6 +12840,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     CORINFO_METHOD_INFO methodInfo;
     getMethodInfoHelper(cxt, &methodInfo);
 
+    if (ILHeader == nullptr)
+        ILHeader = cxt.Header;
+
     // If it's generic then we can only enter through an instantiated MethodDesc
     _ASSERTE(!ftn->IsGenericMethodDefinition());
 

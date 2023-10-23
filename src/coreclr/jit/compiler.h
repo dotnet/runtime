@@ -10232,6 +10232,11 @@ public:
         return compIsAsync2() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0);
     }
 
+    bool compIsAsync2ViaUnwinding() const
+    {
+        return compIsAsync2() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() == 0);
+    }
+
     //------------------------------------------------------------------------
     // compMethodReturnsMultiRegRetType: Does this method return a multi-reg value?
     //

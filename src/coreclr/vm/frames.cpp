@@ -1342,6 +1342,9 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
             msig.SetHasParamTypeArg();
 
+        if (pFunction->IsAsync2Method())
+            msig.SetIsAsyncCall();
+
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
     else
@@ -2247,9 +2250,17 @@ void ComputeCallRefMap(MethodDesc* pMD,
     // See code:getMethodSigInternal
     //
     assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
-    if (pMD->RequiresInstArg() && !isDispatchCell)
+    if (!isDispatchCell)
     {
-        msig.SetHasParamTypeArg();
+        if (pMD->RequiresInstArg())
+        {
+            msig.SetHasParamTypeArg();
+        }
+
+        if (pMD->IsAsync2Method())
+        {
+            msig.SetIsAsyncCall();
+        }
     }
 
     ArgIterator argit(&msig);

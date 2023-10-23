@@ -780,6 +780,8 @@ bool Async2Transformation::IsLive(unsigned lclNum)
                 return true;
             }
         }
+
+        return false;
     }
 
     if (dsc->lvIsStructField && (m_comp->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))

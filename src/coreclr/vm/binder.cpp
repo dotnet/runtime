@@ -437,6 +437,12 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
         argCount = 0;
     }
 
+    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        unsigned genericArgCount = *pSig++;
+        pSigBuilder->AppendData(genericArgCount);
+    }
+
     // <= because we want to include the return value or the field
     for (unsigned i = 0; i <= argCount; i++) {
         if (ConvertType(pSig, pSigBuilder))

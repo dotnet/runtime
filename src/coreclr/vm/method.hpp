@@ -192,6 +192,13 @@ enum class AsyncVariantLookup
     AsyncOtherVariant
 };
 
+enum class AsyncTaskMethod
+{
+    TaskReturningMethod,
+    Async2Method,
+    Async2MethodThatCannotBeImplementedByTask,
+    NormalMethod
+};
 
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
@@ -1734,7 +1741,14 @@ public:
         if (!HasAsyncMethodData())
             return false;
         auto asyncType = GetAddrOfAsyncMethodData()->type;
-        return asyncType == AsyncMethodType::Async || asyncType == AsyncMethodType::AsyncToTask;
+
+        return asyncType == AsyncMethodType::Async ||
+               (asyncType == AsyncMethodType::AsyncToTask && !g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines());
+    }
+
+    inline bool RequiresAsyncContinuationArg()
+    {
+        return IsAsync2Method() && g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines();
     }
 
     inline bool HasAsyncMethodData()
@@ -1889,7 +1903,11 @@ private:
 
     bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
+    void EmitUnwindingBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
+    void EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
+    void EmitAsync2MethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
 public:
+    static void CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder* stubSigBuilder);
     bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 #endif // DACCESS_COMPILE
 
@@ -3666,13 +3684,6 @@ ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(Method
 void InitReadyToRunStandaloneMethodMetadata();
 #endif // FEATURE_READYTORUN
 
-enum class AsyncTaskMethod
-{
-    TaskReturningMethod,
-    Async2Method,
-    Async2MethodThatCannotBeImplementedByTask,
-    NormalMethod
-};
 AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails);
 
 #include "method.inl"

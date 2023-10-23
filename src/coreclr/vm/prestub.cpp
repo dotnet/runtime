@@ -1457,29 +1457,10 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         return false;
     }
 
-    // Create a MetaSig for the given method's sig. (Easier than
-    // picking the sig apart ourselves.)
-    PCCOR_SIGNATURE pCallSig;
-    DWORD cbCallSigSize;
-
-    GetSig(&pCallSig, &cbCallSigSize);
-
-    if (pCallSig == NULL)
-    {
-        _ASSERTE(FALSE);
-        return false;
-    }
-
-    _ASSERTE(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_RuntimeAsyncViaJitGeneratedStateMachines) == 0);
-
     ULONG offsetOfAsyncDetailsUnused;
     AsyncTaskMethod asyncType = ClassifyAsyncMethod(GetSigPointer(), GetModule(), &offsetOfAsyncDetailsUnused);
     MethodDesc *pAsyncOtherVariant = this->GetAsyncOtherVariant();
-    MetaSig msig(pCallSig, cbCallSigSize, this->GetModule(), NULL, MetaSig::sigMember);
-    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
-        // Initialize the resolver target details.
-    ilResolver->SetStubMethodDesc(this);
-    ilResolver->SetStubTargetMethodDesc(pAsyncOtherVariant);
+    MetaSig msig(this);
 
     // [TODO] Handle generics
     SigTypeContext emptyContext;
@@ -1490,129 +1471,27 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         pAsyncOtherVariant,
         (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
 
-    ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
-
-
     if (asyncType == AsyncTaskMethod::TaskReturningMethod)
     {
-        TypeHandle thTaskRet = msig.GetRetTypeHandleThrowing();
-        TypeHandle thLogicalRetType = thTaskRet.GetMethodTable()->GetInstantiation()[0];
-        MethodTable* pMTRuntimeTaskStateOpen = CoreLibBinder::GetClass(CLASS__RUNTIME_TASK_STATE_1);
-        MethodTable* pMTRuntimeTaskState = ClassLoader::LoadGenericInstantiationThrowing(pMTRuntimeTaskStateOpen->GetModule(), pMTRuntimeTaskStateOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
-
-        LocalDesc rtsLocalDesc(pMTRuntimeTaskState);
-        DWORD rtsLocal = pCode->NewLocal(rtsLocalDesc);
-
-        LocalDesc resultLocalDesc(thLogicalRetType);
-        DWORD resultLocal = pCode->NewLocal(resultLocalDesc);
-
-        LocalDesc exceptionLocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION));
-        DWORD exceptionLocal = pCode->NewLocal(exceptionLocalDesc);
-
-        LocalDesc returnLocalDesc(thTaskRet);
-        DWORD returnLocal = pCode->NewLocal(returnLocalDesc);
-
-        auto pNoExceptionLabel = pCode->NewCodeLabel();
-        auto pReturnResultLabel = pCode->NewCodeLabel();
-
-        pCode->EmitLDLOCA(rtsLocal);
-        pCode->EmitINITOBJ(pCode->GetToken(pMTRuntimeTaskState));
-        pCode->EmitLDLOCA(resultLocal);
-        pCode->EmitINITOBJ(pCode->GetToken(thLogicalRetType));
-        pCode->EmitLDLOCA(exceptionLocal);
-        pCode->EmitINITOBJ(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
-        pCode->EmitLDLOCA(returnLocal);
-        pCode->EmitINITOBJ(pCode->GetToken(thTaskRet));
-        pCode->EmitLDLOCA(rtsLocal);
-        pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__PUSH))), 1, 0);
+        if (!g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines())
         {
-            pCode->BeginTryBlock();
-            pCode->EmitNOP("Separate try blocks");
-            {
-                pCode->BeginTryBlock();
-
-                DWORD localArg = 0;
-                if (msig.HasThis())
-                {
-                    // Struct async thunks not yet implemented
-                    _ASSERTE(!this->GetMethodTable()->IsValueType());
-                    pCode->EmitLDARG(localArg++);
-                }
-                for (UINT iArg = 0; iArg < msig.NumFixedArgs(); iArg++)
-                {
-                    pCode->EmitLDARG(localArg++);
-                }
-                pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, 1);
-                pCode->EmitSTLOC(resultLocal);
-                pCode->EmitLEAVE(pNoExceptionLabel);
-                pCode->EndTryBlock();
-            }
-            // Catch
-            {
-                pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
-                pCode->EmitSTLOC(exceptionLocal);
-                pCode->EmitLDLOCA(rtsLocal);
-                pCode->EmitLDLOC(exceptionLocal);
-                pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__FROM_EXCEPTION))), 2, 1);
-                pCode->EmitSTLOC(returnLocal);
-                pCode->EmitLEAVE(pReturnResultLabel);
-                pCode->EndCatchBlock();
-            }
-            pCode->EmitLabel(pNoExceptionLabel);
-            pCode->EmitLDLOCA(rtsLocal);
-            pCode->EmitLDLOC(resultLocal);
-            pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__FROM_RESULT))), 2, 1);
-            pCode->EmitSTLOC(returnLocal);
-            pCode->EmitLEAVE(pReturnResultLabel);
-            pCode->EndTryBlock();
+            EmitUnwindingBasedRuntimeAsyncThunk(pAsyncOtherVariant, msig, &sl);
         }
-        // Finally
+        else
         {
-            pCode->BeginFinallyBlock();
-            pCode->EmitLDLOCA(rtsLocal);
-            pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__POP))), 1, 0);
-            pCode->EmitENDFINALLY();
-            pCode->EndFinallyBlock();
+            EmitJitStateMachineBasedRuntimeAsyncThunk(pAsyncOtherVariant, msig, &sl);
         }
-        pCode->EmitLabel(pReturnResultLabel);
-        pCode->EmitLDLOC(returnLocal);
-        pCode->EmitRET();
     }
     else
     {
         _ASSERTE(asyncType == AsyncTaskMethod::Async2Method);
-// Implement IL that is effectively the following
-/*
-{
-    // Call target method and await
-    return RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync<AwaiterType, resultType>(Thunk(arg).GetAwaiter());
-}
-*/
-        TypeHandle thLogicalRetType = msig.GetRetTypeHandleThrowing();
-        MethodTable* pMTTaskOpen = CoreLibBinder::GetClass(CLASS__TASK_1);
-        MethodTable* pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
-        MethodTable* pMTTaskAwaiterOpen = CoreLibBinder::GetClass(CLASS__TASK_AWAITER_1);
-        TypeHandle thTaskAwaiter = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskAwaiterOpen->GetModule(), pMTTaskAwaiterOpen->GetCl(), Instantiation(&thLogicalRetType, 1));
-        DWORD localArg = 0;
-        if (msig.HasThis())
-        {
-            pCode->EmitLDARG(localArg++);
-        }
-        for (UINT iArg = 0; iArg < msig.NumFixedArgs(); iArg++)
-        {
-            pCode->EmitLDARG(localArg++);
-        }
-        pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, 1);
-        pCode->EmitCALLVIRT(pCode->GetToken(pMTTask->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__TASK_1__GET_AWAITER))), 1, 1);
-        MethodDesc *pMagicAwaitFunc = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_2);
-        TypeHandle thInstantiations[] {thLogicalRetType, thTaskAwaiter};
-
-        pMagicAwaitFunc = FindOrCreateAssociatedMethodDesc(pMagicAwaitFunc, pMagicAwaitFunc->GetMethodTable(), FALSE, Instantiation(thInstantiations, 2), FALSE);
-
-        pCode->EmitCALL(pCode->GetToken(pMagicAwaitFunc), 1, 1);
-
-        pCode->EmitRET();
+        EmitAsync2MethodThunk(pAsyncOtherVariant, msig, &sl);
     }
+
+    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    // Initialize the resolver target details.
+    ilResolver->SetStubMethodDesc(this);
+    ilResolver->SetStubTargetMethodDesc(pAsyncOtherVariant);
 
     // Generate all IL associated data for JIT
     {
@@ -1624,6 +1503,13 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         BYTE* pbBuffer = (BYTE*)pILHeader->Code;
         BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
         _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+
+        size_t numEH = sl.GetNumEHClauses();
+        if (numEH > 0)
+        {
+            sl.WriteEHClauses(ilResolver->AllocEHSect(numEH));
+        }
+
         sl.GenerateCode(pbBuffer, cbCode);
         sl.GetLocalSig(pbLocalSig, cbSig);
 
@@ -1637,6 +1523,228 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
 
     ilResolver.SuppressRelease();
     return true;
+}
+
+void MethodDesc::EmitUnwindingBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL)
+{
+    ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
+
+    TypeHandle thTaskRet = msig.GetRetTypeHandleThrowing();
+    TypeHandle thLogicalRetType = thTaskRet.GetMethodTable()->GetInstantiation()[0];
+    MethodTable* pMTRuntimeTaskStateOpen = CoreLibBinder::GetClass(CLASS__RUNTIME_TASK_STATE_1);
+    MethodTable* pMTRuntimeTaskState = ClassLoader::LoadGenericInstantiationThrowing(pMTRuntimeTaskStateOpen->GetModule(), pMTRuntimeTaskStateOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
+
+    LocalDesc rtsLocalDesc(pMTRuntimeTaskState);
+    DWORD rtsLocal = pCode->NewLocal(rtsLocalDesc);
+
+    LocalDesc resultLocalDesc(thLogicalRetType);
+    DWORD resultLocal = pCode->NewLocal(resultLocalDesc);
+
+    LocalDesc exceptionLocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION));
+    DWORD exceptionLocal = pCode->NewLocal(exceptionLocalDesc);
+
+    LocalDesc returnLocalDesc(thTaskRet);
+    DWORD returnLocal = pCode->NewLocal(returnLocalDesc);
+
+    auto pNoExceptionLabel = pCode->NewCodeLabel();
+    auto pReturnResultLabel = pCode->NewCodeLabel();
+
+    pCode->EmitLDLOCA(rtsLocal);
+    pCode->EmitINITOBJ(pCode->GetToken(pMTRuntimeTaskState));
+    pCode->EmitLDLOCA(resultLocal);
+    pCode->EmitINITOBJ(pCode->GetToken(thLogicalRetType));
+    pCode->EmitLDLOCA(exceptionLocal);
+    pCode->EmitINITOBJ(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
+    pCode->EmitLDLOCA(returnLocal);
+    pCode->EmitINITOBJ(pCode->GetToken(thTaskRet));
+    pCode->EmitLDLOCA(rtsLocal);
+    pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__PUSH))), 1, 0);
+    {
+        pCode->BeginTryBlock();
+        pCode->EmitNOP("Separate try blocks");
+        {
+            pCode->BeginTryBlock();
+
+            DWORD localArg = 0;
+            if (msig.HasThis())
+            {
+                // Struct async thunks not yet implemented
+                _ASSERTE(!this->GetMethodTable()->IsValueType());
+                pCode->EmitLDARG(localArg++);
+            }
+            for (UINT iArg = 0; iArg < msig.NumFixedArgs(); iArg++)
+            {
+                pCode->EmitLDARG(localArg++);
+            }
+            pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, 1);
+            pCode->EmitSTLOC(resultLocal);
+            pCode->EmitLEAVE(pNoExceptionLabel);
+            pCode->EndTryBlock();
+        }
+        // Catch
+        {
+            pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
+            pCode->EmitSTLOC(exceptionLocal);
+            pCode->EmitLDLOCA(rtsLocal);
+            pCode->EmitLDLOC(exceptionLocal);
+            pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__FROM_EXCEPTION))), 2, 1);
+            pCode->EmitSTLOC(returnLocal);
+            pCode->EmitLEAVE(pReturnResultLabel);
+            pCode->EndCatchBlock();
+        }
+        pCode->EmitLabel(pNoExceptionLabel);
+        pCode->EmitLDLOCA(rtsLocal);
+        pCode->EmitLDLOC(resultLocal);
+        pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__FROM_RESULT))), 2, 1);
+        pCode->EmitSTLOC(returnLocal);
+        pCode->EmitLEAVE(pReturnResultLabel);
+        pCode->EndTryBlock();
+    }
+    // Finally
+    {
+        pCode->BeginFinallyBlock();
+        pCode->EmitLDLOCA(rtsLocal);
+        pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__POP))), 1, 0);
+        pCode->EmitENDFINALLY();
+        pCode->EndFinallyBlock();
+    }
+    pCode->EmitLabel(pReturnResultLabel);
+    pCode->EmitLDLOC(returnLocal);
+    pCode->EmitRET();
+}
+
+void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL)
+{
+    ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
+
+    MetaSig asyncMsig(pAsyncOtherVariant);
+    SigBuilder targetSig;
+    CreateDerivedTargetSigWithExtraParams(asyncMsig, &targetSig);
+
+    DWORD cbTargetSig;
+    PCCOR_SIGNATURE pTargetSig = (PCCOR_SIGNATURE)targetSig.GetSignature(&cbTargetSig);
+
+    unsigned boxedContinuationLcl = pCode->NewLocal(ELEMENT_TYPE_OBJECT);
+
+    TypeHandle thTaskRet = thunkMsig.GetRetTypeHandleThrowing();
+    LocalDesc returnLocalDesc(thTaskRet);
+    DWORD returnLocal = pCode->NewLocal(returnLocalDesc);
+
+    TypeHandle thLogicalRetType;
+    DWORD logicalResultLocal = UINT_MAX;
+    if (thTaskRet.GetNumGenericArgs() > 0)
+    {
+        thLogicalRetType = thTaskRet.GetMethodTable()->GetInstantiation()[0];
+        logicalResultLocal = pCode->NewLocal(LocalDesc(thLogicalRetType));
+    }
+
+    LocalDesc exceptionLocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION));
+    DWORD exceptionLocal = pCode->NewLocal(exceptionLocalDesc);
+
+    ILCodeLabel* pNoExceptionLabel = pCode->NewCodeLabel();
+    ILCodeLabel* pReturnResultLabel = pCode->NewCodeLabel();
+    ILCodeLabel* pSuspendedLabel = pCode->NewCodeLabel();
+
+    {
+        pCode->BeginTryBlock();
+
+        DWORD localArg = 0;
+        if (asyncMsig.HasThis())
+        {
+            pCode->EmitLDARG(localArg++);
+        }
+        if ((asyncMsig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+        {
+            _ASSERTE(!"Cannot handle generic context");
+        }
+        _ASSERTE((asyncMsig.GetCallingConventionInfo() & CORINFO_CALLCONV_ASYNCCALL) != 0);
+
+        pCode->EmitLDNULL(); // Async continuation; not resuming
+
+        for (UINT iArg = 0; iArg < asyncMsig.NumFixedArgs(); iArg++)
+        {
+            pCode->EmitLDARG(localArg++);
+        }
+
+        // TODO: This and instantiating stubs can directly load the target from the precode slot
+        pCode->EmitLDC(pAsyncOtherVariant->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+        pCode->EmitCALLI(pCode->GetSigToken(pTargetSig, cbTargetSig), localArg + 2, logicalResultLocal != UINT_MAX ? 1 : 0);
+        if (logicalResultLocal != UINT_MAX)
+            pCode->EmitSTLOC(logicalResultLocal);
+        pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC2_CALL_CONTINUATION, 0, 1);
+        pCode->EmitSTLOC(boxedContinuationLcl);
+        pCode->EmitLEAVE(pNoExceptionLabel);
+        pCode->EndTryBlock();
+    }
+    // Catch
+    {
+        pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
+        MethodDesc* md = CoreLibBinder::GetMethod(METHOD__TASK__FROM_EXCEPTION_T);
+        md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+        pCode->EmitCALL(pCode->GetToken(md), 1, 1);
+        pCode->EmitSTLOC(returnLocal);
+        pCode->EmitLEAVE(pReturnResultLabel);
+        pCode->EndCatchBlock();
+    }
+
+    pCode->EmitLabel(pNoExceptionLabel);
+    pCode->EmitLDLOC(boxedContinuationLcl);
+    pCode->EmitBRTRUE(pSuspendedLabel);
+    if (logicalResultLocal != UINT_MAX)
+    {
+        pCode->EmitLDLOC(logicalResultLocal);
+        MethodDesc* md = CoreLibBinder::GetMethod(METHOD__TASK__FROM_RESULT_T);
+        md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+        pCode->EmitCALL(pCode->GetToken(md), 1, 1);
+    }
+    else
+    {
+        pCode->EmitCALL(METHOD__TASK__GET_COMPLETED_TASK, 0, 1);
+    }
+
+    pCode->EmitSTLOC(returnLocal);
+    pCode->EmitLabel(pReturnResultLabel);
+    pCode->EmitLDLOC(returnLocal);
+    pCode->EmitRET();
+
+    pCode->EmitLabel(pSuspendedLabel);
+    pCode->EmitLDNULL();
+    pCode->EmitRET();
+}
+
+void MethodDesc::EmitAsync2MethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL)
+{
+    // Implement IL that is effectively the following
+    /*
+    {
+        // Call target method and await
+        return RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync<AwaiterType, resultType>(Thunk(arg).GetAwaiter());
+    }
+    */
+    ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
+    TypeHandle thLogicalRetType = msig.GetRetTypeHandleThrowing();
+    MethodTable* pMTTaskOpen = CoreLibBinder::GetClass(CLASS__TASK_1);
+    MethodTable* pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
+    MethodTable* pMTTaskAwaiterOpen = CoreLibBinder::GetClass(CLASS__TASK_AWAITER_1);
+    TypeHandle thTaskAwaiter = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskAwaiterOpen->GetModule(), pMTTaskAwaiterOpen->GetCl(), Instantiation(&thLogicalRetType, 1));
+    DWORD localArg = 0;
+    if (msig.HasThis())
+    {
+        pCode->EmitLDARG(localArg++);
+    }
+    for (UINT iArg = 0; iArg < msig.NumFixedArgs(); iArg++)
+    {
+        pCode->EmitLDARG(localArg++);
+    }
+    pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, 1);
+    pCode->EmitCALLVIRT(pCode->GetToken(pMTTask->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__TASK_1__GET_AWAITER))), 1, 1);
+    MethodDesc* pMagicAwaitFunc = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_2);
+    TypeHandle thInstantiations[]{ thLogicalRetType, thTaskAwaiter };
+
+    pMagicAwaitFunc = FindOrCreateAssociatedMethodDesc(pMagicAwaitFunc, pMagicAwaitFunc->GetMethodTable(), FALSE, Instantiation(thInstantiations, 2), FALSE);
+
+    pCode->EmitCALL(pCode->GetToken(pMagicAwaitFunc), 1, 1);
+    pCode->EmitRET();
 }
 
 bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
@@ -2095,36 +2203,47 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 #endif //FEATURE_CODE_VERSIONING
 
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-
-// CreateInstantiatingILStubTargetSig:
-// This method is used to create the signature of the target of the ILStub
-// for instantiating and unboxing stubs, when/where we need to introduce a generic context.
-// And since the generic context is a hidden parameter, we're creating a signature that
-// looks like non-generic but has one additional parameter right after the thisptr
-void CreateInstantiatingILStubTargetSig(MethodDesc *pBaseMD,
-                                        SigTypeContext &typeContext,
-                                        SigBuilder *stubSigBuilder)
+// CreateDerivedTargetSigWithExtraParams:
+// This method is used to create the signature of the target of the ILStub for
+// instantiating, unboxing, and async thunk stubs, when/where we need to
+// introduce a generic context/async continuation.
+// And since the generic context/async continuations are hidden parameters,
+// we're creating a signature that looks like non-generic but with additional
+// parameters right after the thisptr
+void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder *stubSigBuilder)
 {
     STANDARD_VM_CONTRACT;
 
-    MetaSig msig(pBaseMD);
     BYTE callingConvention = IMAGE_CEE_CS_CALLCONV_DEFAULT;
     if (msig.HasThis())
         callingConvention |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     // CallingConvention
     stubSigBuilder->AppendByte(callingConvention);
 
+    unsigned numArgs = msig.NumFixedArgs();
+    bool hasInstParam = (msig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE) != 0;
+    if (hasInstParam)
+        numArgs++;
+    if (msig.HasAsyncContinuation())
+        numArgs++;
     // ParamCount
-    stubSigBuilder->AppendData(msig.NumFixedArgs() + 1); // +1 is for context param
+    stubSigBuilder->AppendData(numArgs); // +1 is for context param
 
     // Return type
     SigPointer pReturn = msig.GetReturnProps();
-    pReturn.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder);
+    pReturn.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
 
 #ifndef TARGET_X86
-    // The hidden context parameter
-    stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+    if (hasInstParam)
+    {
+        // The hidden context parameter
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+    }
+
+    if (msig.HasAsyncContinuation())
+    {
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
+    }
 #endif // !TARGET_X86
 
     // Copy rest of the arguments
@@ -2132,14 +2251,24 @@ void CreateInstantiatingILStubTargetSig(MethodDesc *pBaseMD,
     SigPointer pArgs = msig.GetArgProps();
     for (unsigned i = 0; i < msig.NumFixedArgs(); i++)
     {
-        pArgs.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder);
+        pArgs.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
     }
 
 #ifdef TARGET_X86
-    // The hidden context parameter
-    stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+    if (hasInstParam)
+    {
+        // The hidden context parameter
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+    }
+
+    if (hasAsyncCont)
+    {
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
+    }
 #endif // TARGET_X86
 }
+
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 
 Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetMD)
 {
@@ -2168,7 +2297,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
 
     // 1. Build the new signature
     SigBuilder stubSigBuilder;
-    CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
+    MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
 
     // 2. Emit the method body
     mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
@@ -2275,7 +2404,7 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     // 1. Build the new signature
     SigBuilder stubSigBuilder;
-    CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
+    MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
 
     // 2. Emit the method body
     if (msig.HasThis())
@@ -2295,6 +2424,12 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     // 2.3 Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
+
+    // 2.3.2 Push the async continuation
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+    }
 
 #if !defined(TARGET_X86)
     // 2.4 Push the rest of the arguments for not x86

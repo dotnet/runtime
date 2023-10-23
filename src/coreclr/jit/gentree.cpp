@@ -1482,6 +1482,7 @@ CallArgs::CallArgs()
 #endif
     , m_hasThisPointer(false)
     , m_hasRetBuffer(false)
+    , m_hasAsyncContinuation(false)
     , m_isVarArgs(false)
     , m_abiInformationDetermined(false)
     , m_hasRegArgs(false)
