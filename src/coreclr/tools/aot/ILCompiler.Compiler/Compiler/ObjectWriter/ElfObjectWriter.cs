@@ -112,7 +112,7 @@ namespace ILCompiler.ObjectWriter
             _sections.Add(elfSection);
             groupSection?.AddSection(elfSection);
 
-            // Emit section symbol into symbpol table (for COMDAT the defining symbol is section symbol)
+            // Emit section symbol into symbol table (for COMDAT the defining symbol is section symbol)
             if (comdatName is null)
             {
                 _symbolNameToIndex[elfSection.Name] = (uint)_symbolTable.Entries.Count;
