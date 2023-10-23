@@ -3,33 +3,27 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
     public sealed partial class Lock
     {
-        private const short SpinCountNotInitialized = short.MinValue;
-
         // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
         // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
         // All static data in Lock must be lazy-initialized.
         private static int s_staticsInitializationStage;
-        private static bool s_isSingleProcessor;
+        private static int s_processorCount;
         private static short s_maxSpinCount;
         private static short s_minSpinCount;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Lock"/> class.
-        /// </summary>
-        public Lock() => _spinCount = SpinCountNotInitialized;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryEnterOneShot(int currentManagedThreadId)
         {
             Debug.Assert(currentManagedThreadId != 0);
 
-            if (State.TryLock(this))
+            if (this.TryLock())
             {
                 Debug.Assert(_owningThreadId == 0);
                 Debug.Assert(_recursionCount == 0);
@@ -55,7 +49,7 @@ namespace System.Threading
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryEnterSlow(int timeoutMs, int currentManagedThreadId) =>
-            TryEnterSlow(timeoutMs, new ThreadId((uint)currentManagedThreadId)).IsInitialized;
+            TryEnterSlow(timeoutMs, new ThreadId((uint)currentManagedThreadId));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool GetIsHeldByCurrentThread(int currentManagedThreadId)
@@ -63,7 +57,7 @@ namespace System.Threading
             Debug.Assert(currentManagedThreadId != 0);
 
             bool isHeld = _owningThreadId == (uint)currentManagedThreadId;
-            Debug.Assert(!isHeld || new State(this).IsLocked);
+            Debug.Assert(!isHeld || this.IsLocked);
             return isHeld;
         }
 
@@ -72,14 +66,9 @@ namespace System.Threading
             Debug.Assert(IsHeldByCurrentThread);
 
             uint recursionCount = _recursionCount;
-            _owningThreadId = 0;
             _recursionCount = 0;
 
-            State state = State.Unlock(this);
-            if (state.HasAnyWaiters)
-            {
-                SignalWaiterIfNecessary(state);
-            }
+            ReleaseCore();
 
             return recursionCount;
         }
@@ -92,108 +81,83 @@ namespace System.Threading
             _recursionCount = previousRecursionCount;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private TryLockResult LazyInitializeOrEnter()
-        {
-            StaticsInitializationStage stage = (StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage);
-            switch (stage)
-            {
-                case StaticsInitializationStage.Complete:
-                    if (_spinCount == SpinCountNotInitialized)
-                    {
-                        _spinCount = s_maxSpinCount;
-                    }
-                    return TryLockResult.Spin;
-
-                case StaticsInitializationStage.Started:
-                    // Spin-wait until initialization is complete or the lock is acquired to prevent class construction cycles
-                    // later during a full wait
-                    bool sleep = true;
-                    while (true)
-                    {
-                        if (sleep)
-                        {
-                            Thread.UninterruptibleSleep0();
-                        }
-                        else
-                        {
-                            Thread.SpinWait(1);
-                        }
-
-                        stage = (StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage);
-                        if (stage == StaticsInitializationStage.Complete)
-                        {
-                            goto case StaticsInitializationStage.Complete;
-                        }
-                        else if (stage == StaticsInitializationStage.NotStarted)
-                        {
-                            goto default;
-                        }
-
-                        if (State.TryLock(this))
-                        {
-                            return TryLockResult.Locked;
-                        }
-
-                        sleep = !sleep;
-                    }
-
-                default:
-                    Debug.Assert(stage == StaticsInitializationStage.NotStarted);
-                    if (TryInitializeStatics())
-                    {
-                        goto case StaticsInitializationStage.Complete;
-                    }
-                    goto case StaticsInitializationStage.Started;
-            }
-        }
+        // Returns false until the static variable is lazy-initialized
+        internal static bool IsSingleProcessor => s_processorCount == 1;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool TryInitializeStatics()
+        internal static void LazyInit()
         {
-            // Since Lock is used to synchronize class construction, and some of the statics initialization may involve class
-            // construction, update the stage first to avoid infinite recursion
-            switch (
-                (StaticsInitializationStage)
-                Interlocked.CompareExchange(
-                    ref s_staticsInitializationStage,
-                    (int)StaticsInitializationStage.Started,
-                    (int)StaticsInitializationStage.NotStarted))
+            while (Volatile.Read(ref s_staticsInitializationStage) < (int)StaticsInitializationStage.Usable)
             {
-                case StaticsInitializationStage.Started:
-                    return false;
-                case StaticsInitializationStage.Complete:
-                    return true;
+                if (s_staticsInitializationStage == (int)StaticsInitializationStage.NotStarted &&
+                    Interlocked.CompareExchange(
+                        ref s_staticsInitializationStage,
+                        (int)StaticsInitializationStage.Started,
+                        (int)StaticsInitializationStage.NotStarted) == (int)StaticsInitializationStage.NotStarted)
+                {
+                    ScheduleStaticsInit();
+                }
             }
-
-            try
-            {
-                s_isSingleProcessor = Environment.IsSingleProcessor;
-                s_maxSpinCount = DetermineMaxSpinCount();
-                s_minSpinCount = DetermineMinSpinCount();
-
-                // Also initialize some types that are used later to prevent potential class construction cycles
-                NativeRuntimeEventSource.Log.IsEnabled();
-            }
-            catch
-            {
-                s_staticsInitializationStage = (int)StaticsInitializationStage.NotStarted;
-                throw;
-            }
-
-            Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Complete);
-            return true;
         }
 
-        // Returns false until the static variable is lazy-initialized
-        internal static bool IsSingleProcessor => s_isSingleProcessor;
+        internal static void ScheduleStaticsInit()
+        {
+            // initialize essentials
+            // this is safe to do as these do not need to take locks
+            s_maxSpinCount = DefaultMaxSpinCount;
+            s_minSpinCount = DefaultMinSpinCount;
+
+            // we can now use the slow path of the lock.
+            Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Usable);
+
+            // other static initialization is optional (but may take locks)
+            // schedule initialization on finalizer thread to avoid reentrancies.
+            StaticsInitializer.Schedule();
+
+            // trigger an ephemeral GC, in case the app is not allocating anything.
+            // this will be once per lifetime of the runtime, so it is ok.
+            GC.Collect(0);
+        }
+
+        private class StaticsInitializer
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void Schedule()
+            {
+                new StaticsInitializer();
+            }
+
+            ~StaticsInitializer()
+            {
+                s_processorCount = RuntimeImports.RhGetProcessCpuCount();
+                if (s_processorCount > 1)
+                {
+                    s_minSpinCount = (short)(DetermineMinSpinCount());
+                    s_maxSpinCount = (short)(DetermineMaxSpinCount());
+                }
+                else
+                {
+                    s_minSpinCount = 0;
+                    s_maxSpinCount = 0;
+                }
+
+                NativeRuntimeEventSource.Log.IsEnabled();
+                Stopwatch.GetTimestamp();
+                Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Complete);
+            }
+        }
+
+        internal static bool StaticsInitComplete()
+        {
+            return Volatile.Read(ref s_staticsInitializationStage) == (int)StaticsInitializationStage.Complete;
+        }
 
         // Used to transfer the state when inflating thin locks
         internal void InitializeLocked(int managedThreadId, uint recursionCount)
         {
             Debug.Assert(recursionCount == 0 || managedThreadId != 0);
 
-            _state = managedThreadId == 0 ? State.InitialStateValue : State.LockedStateValue;
+            _state = managedThreadId == 0 ? Unlocked : Locked;
             _owningThreadId = (uint)managedThreadId;
             _recursionCount = recursionCount;
         }
@@ -219,6 +183,7 @@ namespace System.Threading
         {
             NotStarted,
             Started,
+            Usable,
             Complete
         }
     }
