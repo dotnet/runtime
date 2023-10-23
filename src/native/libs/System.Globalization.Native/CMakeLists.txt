@@ -71,6 +71,9 @@ set(NATIVEGLOBALIZATION_SOURCES
 #    include_directories(${CMAKE_ICU_DIR}/include)
 #endif()
 
+if ((CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND NOT DEFINED CMAKE_ICU_DIR)
+    link_libraries(icucore)
+endif()
 
 if (CMAKE_USE_PTHREADS)
     add_compile_options(-pthread)

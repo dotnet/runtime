@@ -92,6 +92,8 @@ if(HAVE_SYS_ICU)
   endif()
   if(ICU_LIBDIR)
     set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+  else()
+    set(ICU_LDFLAGS "-licucore")
   endif()
 
   add_library(icu_shim_objects OBJECT "${icu_shim_sources}")
