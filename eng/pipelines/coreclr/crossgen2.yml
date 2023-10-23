@@ -59,13 +59,26 @@ extends:
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build-for-test-ready-to-run.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
           buildConfig: Release
           platforms:
             - linux_x64
             - osx_x64
             - windows_x64
+          jobParameters:
+            buildArgs: -s clr+libs+libs.tests
+                       -c $(_BuildConfig)
+                       /p:TestReadyToRun=true
+                       /p:RunSmokeTestsOnly=true
+                       /p:UseLocalAppHostPack=true
+            nameSuffix: TestReadyToRun_Libraries
+            timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: TestReadyToRun_$(_BuildConfig)
 
       # Run pri0 tests with hot/cold splitting enabled (only supported on x64 at the moment)
       # TODO: test on arm64 once supported
