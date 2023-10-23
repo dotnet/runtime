@@ -1717,8 +1717,13 @@ void MethodDesc::EmitAsync2MethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& 
     // Implement IL that is effectively the following
     /*
     {
-        // Call target method and await
-        return RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync<AwaiterType, resultType>(Thunk(arg).GetAwaiter());
+        var awaiter = Thunk(arg).GetAwaiter();
+        if (!awaiter.IsCompleted)
+        {
+            // Magic function which will suspend the current run of async methods
+            RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync<AwaiterType>(awaiter);
+        }
+        return awaiter.GetResult();
     }
     */
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
@@ -1728,6 +1733,12 @@ void MethodDesc::EmitAsync2MethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& 
     MethodTable* pMTTaskAwaiterOpen = CoreLibBinder::GetClass(CLASS__TASK_AWAITER_1);
     TypeHandle thTaskAwaiter = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskAwaiterOpen->GetModule(), pMTTaskAwaiterOpen->GetCl(), Instantiation(&thLogicalRetType, 1));
     DWORD localArg = 0;
+
+    ILCodeLabel* pGetResultLabel = pCode->NewCodeLabel();
+
+    LocalDesc awaiterLocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION));
+    DWORD awaiterLocal = pCode->NewLocal(awaiterLocalDesc);
+
     if (msig.HasThis())
     {
         pCode->EmitLDARG(localArg++);
@@ -1738,12 +1749,22 @@ void MethodDesc::EmitAsync2MethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& 
     }
     pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, 1);
     pCode->EmitCALLVIRT(pCode->GetToken(pMTTask->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__TASK_1__GET_AWAITER))), 1, 1);
-    MethodDesc* pMagicAwaitFunc = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_2);
-    TypeHandle thInstantiations[]{ thLogicalRetType, thTaskAwaiter };
+    pCode->EmitSTLOC(awaiterLocal);
+    pCode->EmitLDLOCA(awaiterLocal);
+    pCode->EmitCALL(pCode->GetToken(thTaskAwaiter.GetMethodTable()->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__TASK_AWAITER_1__GET_ISCOMPLETED))), 1, 1);
+    pCode->EmitBRTRUE(pGetResultLabel);
+    pCode->EmitLDLOC(awaiterLocal);
+    MethodDesc* pMagicAwaitFunc = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_1);
+    TypeHandle thInstantiations[]{ thTaskAwaiter };
 
-    pMagicAwaitFunc = FindOrCreateAssociatedMethodDesc(pMagicAwaitFunc, pMagicAwaitFunc->GetMethodTable(), FALSE, Instantiation(thInstantiations, 2), FALSE);
+    pMagicAwaitFunc = FindOrCreateAssociatedMethodDesc(pMagicAwaitFunc, pMagicAwaitFunc->GetMethodTable(), FALSE, Instantiation(thInstantiations, 1), FALSE);
 
-    pCode->EmitCALL(pCode->GetToken(pMagicAwaitFunc), 1, 1);
+    pCode->EmitCALL(pCode->GetToken(pMagicAwaitFunc), 1, 0);
+    pCode->EmitLabel(pGetResultLabel);
+
+    pCode->EmitLDLOCA(awaiterLocal);
+    pCode->EmitCALL(pCode->GetToken(thTaskAwaiter.GetMethodTable()->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__TASK_AWAITER_1__GET_RESULT))), 1, 1);
+
     pCode->EmitRET();
 }
 
