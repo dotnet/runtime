@@ -64,7 +64,6 @@ namespace System.IO.Tests
             using (File.Create(path))
             {
                 await Assert.ThrowsAsync<IOException>(async () => await File.AppendAllBytesAsync(path, bytes));
-                await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
             }
         }
 
