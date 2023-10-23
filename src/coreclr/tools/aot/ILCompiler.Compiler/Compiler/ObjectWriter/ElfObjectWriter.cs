@@ -112,6 +112,13 @@ namespace ILCompiler.ObjectWriter
             _sections.Add(elfSection);
             groupSection?.AddSection(elfSection);
 
+            // Emit section symbol into symbpol table (for COMDAT the defining symbol is section symbol)
+            if (comdatName is null)
+            {
+                _symbolNameToIndex[elfSection.Name] = (uint)_symbolTable.Entries.Count;
+                _symbolTable.Entries.Add(new ElfSymbol() { Type = ElfSymbolType.Section, Section = elfSection });
+            }
+
             base.CreateSection(section, comdatName, symbolName ?? elfSection.Name.Value, sectionStream);
         }
 
@@ -325,17 +332,6 @@ namespace ILCompiler.ObjectWriter
             foreach (ElfSection debugSection in _debugSections)
             {
                 AddElfSectionWithRelocationsIfNecessary(debugSection);
-            }
-
-            uint symbolIndex = (uint)_symbolTable.Entries.Count;
-            foreach (ElfSection elfSection in _objectFile.Sections)
-            {
-                if (elfSection is ElfBinarySection)
-                {
-                    _symbolTable.Entries.Add(new ElfSymbol() { Type = ElfSymbolType.Section, Section = elfSection });
-                    _symbolNameToIndex[elfSection.Name] = symbolIndex;
-                    symbolIndex++;
-                }
             }
         }
 
