@@ -21,6 +21,12 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void NonExistentPath()
+        {
+            Assert.Throws<DirectoryNotFoundException>(() => File.AppendAllBytes(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), new byte[0]));
+        }
+
+        [Fact]
         public void InvalidParameters()
         {
             Assert.Throws<ArgumentException>(() => File.AppendAllBytes(string.Empty, new byte[0]));

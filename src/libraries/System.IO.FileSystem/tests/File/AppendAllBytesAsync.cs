@@ -23,6 +23,12 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void NonExistentPathAsync()
+        {
+            Assert.ThrowsAsync<DirectoryNotFoundException>(() => File.AppendAllBytesAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), new byte[0]));
+        }
+
+        [Fact]
         public async Task InvalidParametersAsync()
         {
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await File.AppendAllBytesAsync(string.Empty, new byte[0]));
