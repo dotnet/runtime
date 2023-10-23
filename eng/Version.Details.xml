@@ -318,17 +318,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b9159ab91a5dbd124dd15d78ed073c52eba8c31b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23516.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23519.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>02098f6cf81169134770ee47acc2aca0910635bb</Sha>
+      <Sha>de2e6a5e7ac1f33558ba06af1173122d93f0962e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="8.0.0-prerelease.23516.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="8.0.0-prerelease.23519.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>02098f6cf81169134770ee47acc2aca0910635bb</Sha>
+      <Sha>de2e6a5e7ac1f33558ba06af1173122d93f0962e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="8.0.0-prerelease.23516.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="8.0.0-prerelease.23519.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>02098f6cf81169134770ee47acc2aca0910635bb</Sha>
+      <Sha>de2e6a5e7ac1f33558ba06af1173122d93f0962e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.23518.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -371,17 +371,17 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>15a20bbe5c84ea6a800df0803b4ee00f289646a2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23505.1">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23520.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>8b1675a20d889de99684bfced2e0cbc1296c7853</Sha>
+      <Sha>80ac9265df5c8d70cbb25b57057b0f2772ed7d2a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.23505.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.23520.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>8b1675a20d889de99684bfced2e0cbc1296c7853</Sha>
+      <Sha>80ac9265df5c8d70cbb25b57057b0f2772ed7d2a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23519.18">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23520.7">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>61867967918ee4bd6519e1ae4bbc7dfefbc38ce4</Sha>
+      <Sha>575a7f7feb024eac15f2c8848a5bdae5ae0cd0ab</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23515.2">
@@ -398,9 +398,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23519.21">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23522.3">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>1ae8485fe0b7cc3d5ca47a1e597f7d9f4bce5b88</Sha>
+      <Sha>f00d6a642e7a151a9dcb5ed91f40caa235ba44b9</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

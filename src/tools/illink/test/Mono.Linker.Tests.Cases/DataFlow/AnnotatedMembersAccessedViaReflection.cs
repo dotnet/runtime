@@ -28,6 +28,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AnnotatedGenerics.Test ();
 			AnnotationOnGenerics.Test ();
 			AnnotationOnInteropMethod.Test ();
+			DelegateCreation.Test ();
 		}
 
 		class AnnotatedField
@@ -871,6 +872,39 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				GetValueWithAnnotatedField ();
 				AcceptValueWithAnnotatedField (default (ValueWithAnnotatedField));
+			}
+		}
+
+		class DelegateCreation
+		{
+			delegate void UnannotatedDelegate (Type type);
+
+			static Action<Type> field;
+
+			static Action<Type> Property { get; set; }
+
+			[ExpectedWarning ("IL2111", "LocalMethod")]
+			[ExpectedWarning ("IL2111")]
+			public static void Test ()
+			{
+				// Check that the analyzer is able to analyze delegate creation
+				// with various targets, without hitting an assert.
+				UnannotatedDelegate d;
+				d = new UnannotatedDelegate (field);
+				d(typeof(int));
+				d = new UnannotatedDelegate (Property);
+				d(typeof(int));
+
+				d = new UnannotatedDelegate (
+					([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) =>
+					{ });
+				d(typeof(int));
+				d = new UnannotatedDelegate (LocalMethod);
+				d(typeof(int));
+
+				void LocalMethod (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+				{ }
 			}
 		}
 

@@ -98,7 +98,7 @@ if(CLR_CMAKE_TARGET_LINUX_MUSL)
 endif(CLR_CMAKE_TARGET_LINUX_MUSL)
 
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
-add_link_options($<$<AND:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<CONFIG:DEBUG>>:LINKER:--no-gc-sections>)
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
 set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S

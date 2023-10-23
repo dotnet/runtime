@@ -6270,7 +6270,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // if we're not going to return and the helper doesn't have enough info
         // to safely poll, so we poll before the tail call, if the block isn't
         // already safe. Since tail call via helper is a slow mechanism it
-        // doesn't matter whether we emit GC poll. his is done to be in parity
+        // doesn't matter whether we emit GC poll. This is done to be in parity
         // with Jit64. Also this avoids GC info size increase if all most all
         // methods are expected to be tail calls (e.g. F#).
         //
@@ -6287,15 +6287,18 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // fgSetBlockOrder() is going to mark the method as fully interruptible
         // if the block containing this tail call is reachable without executing
         // any call.
-        BasicBlock* curBlock = compCurBB;
-        if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
-            (fgCreateGCPoll(GCPOLL_INLINE, compCurBB) == curBlock))
+        if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT))
         {
-            // We didn't insert a poll block, so we need to morph the call now
-            // (Normally it will get morphed when we get to the split poll block)
-            GenTree* temp = fgMorphCall(call);
-            noway_assert(temp == call);
+            // No gc poll needed
         }
+        else
+        {
+            JITDUMP("Marking " FMT_BB " as needs gc poll\n", compCurBB->bbNum);
+            compCurBB->bbFlags |= BBF_NEEDS_GCPOLL;
+            optMethodFlags |= OMF_NEEDS_GCPOLLS;
+        }
+
+        fgMorphCall(call);
 
         // Fast tail call: in case of fast tail calls, we need a jmp epilog and
         // hence mark it as BBJ_RETURN with BBF_JMP flag set.
@@ -7450,11 +7453,16 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     }
     else
     {
-        // Ensure we have a scratch block and then target the next
-        // block.  Loop detection needs to see a pred out of the loop,
+        // We should have ensured the first BB was scratch
+        // in morph init...
+        //
+        assert(doesMethodHaveRecursiveTailcall());
+        assert(fgFirstBBisScratch());
+
+        // Loop detection needs to see a pred out of the loop,
         // so mark the scratch block BBF_DONT_REMOVE to prevent empty
         // block removal on it.
-        fgEnsureFirstBBisScratch();
+        //
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
         block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next() DEBUG_ARG(this));
     }
@@ -13854,6 +13862,14 @@ void Compiler::fgMorphBlocks()
         lvSetMinOptsDoNotEnreg();
     }
 
+    // Ensure the first BB is scratch if we might need it as a pred for
+    // the recursive tail call to loop optimization.
+    //
+    if (doesMethodHaveRecursiveTailcall())
+    {
+        fgEnsureFirstBBisScratch();
+    }
+
     /*-------------------------------------------------------------------------
      * Process all basic blocks in the function
      */
@@ -14434,6 +14450,7 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
     BasicBlock* asgBlock    = fgNewBBafter(BBJ_NONE, block, true);
 
+    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
     remainderBlock->bbFlags |= propagateFlags;
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
@@ -14624,6 +14641,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         elseBlock->bbFlags |= BBF_IMPORTED;
     }
 
+    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
     remainderBlock->bbFlags |= (propagateFlagsToRemainder | propagateFlagsToAll);
 
     condBlock->inheritWeight(block);

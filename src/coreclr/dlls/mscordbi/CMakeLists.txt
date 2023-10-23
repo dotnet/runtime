@@ -48,7 +48,7 @@ else(CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
         # This option is necessary to ensure that the overloaded new/delete operators defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:LINKER:-Bsymbolic>)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
     endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
     set_exports_linker_option(${EXPORTS_FILE})
@@ -108,7 +108,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
     if(COMMAND check_linker_flag)
         check_linker_flag(CXX -Wl,--undefined-version LINKER_SUPPORTS_UNDEFINED_VERSION)
         if (LINKER_SUPPORTS_UNDEFINED_VERSION)
-            target_link_options(mscordbi PRIVATE "LINKER:--undefined-version")
+            add_linker_flag(-Wl,--undefined-version)
         endif(LINKER_SUPPORTS_UNDEFINED_VERSION)
     endif(COMMAND check_linker_flag)
 
