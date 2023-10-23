@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.Text;
+using System.Numerics;
 
 namespace LibObjectFile.Dwarf
 {
@@ -31,35 +32,21 @@ namespace LibObjectFile.Dwarf
 
         public static uint SizeOfULEB128(ulong value)
         {
-            if (value == 0) return 1;
+            // bits_to_encode = (data != 0) ? 64 - CLZ(x) : 1 = 64 - CLZ(data | 1)
+            // bytes = ceil(bits_to_encode / 7.0);            = (6 + bits_to_encode) / 7
+            uint x = 6 + 64 - (uint)BitOperations.LeadingZeroCount(value | 1UL);
 
-            uint sizeOf = 0;
-            while (value != 0)
-            {
-                value >>= 7;
-                sizeOf++;
-            }
-
-            return sizeOf;
+            // Division by 7 is done by (x * 37) >> 8 where 37 = ceil(256 / 7).
+            // This works for 0 <= x < 256 / (7 * 37 - 256), i.e. 0 <= x <= 85.
+            return (x * 37) >> 8;
         }
 
         public static uint SizeOfILEB128(long value)
         {
-            if (value == 0) return 1;
-            uint sizeOf = 0;
-            while (true)
-            {
-                sizeOf++;
-                var b = (byte) value;
-                value >>= 7;
-                bool isSignBitSet = (b & 0x40) != 0;
-                if ((value == 0 && !isSignBitSet) || (value == -1 && isSignBitSet))
-                {
-                    break;
-                }
-            }
-
-            return sizeOf;
+            // The same as SizeOfULEB128 calculation but we have to account for the sign bit.
+            value ^= value >> 63;
+            uint x = 1 + 6 + 64 - (uint)BitOperations.LeadingZeroCount((ulong)value | 1UL);
+            return (x * 37) >> 8;
         }
 
         public static DwarfAttributeEncoding GetAttributeEncoding(DwarfAttributeKindEx kind)

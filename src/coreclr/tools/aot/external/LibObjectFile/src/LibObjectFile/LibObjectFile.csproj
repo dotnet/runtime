@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1</TargetFrameworks>
-    <LangVersion>8.0</LangVersion>
+    <TargetFrameworks>net7.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -27,14 +26,14 @@
 
   <ItemGroup>
     <None Include="../../img/libobjectfile.png" Pack="true" PackagePath="/logo.png" />
-    <None Include="../../readme.md" Pack="true" PackagePath="/"/>
+    <None Include="../../readme.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
   <ItemGroup>
-    <!--<PackageReference Include="MinVer" Version="2.5.0" Condition="'$(DisableVersioning)' != 'true'">
+    <PackageReference Include="MinVer" Version="4.3.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>-->
+    </PackageReference>
     <!--Add support for sourcelink-->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.*" PrivateAssets="All" />
   </ItemGroup>

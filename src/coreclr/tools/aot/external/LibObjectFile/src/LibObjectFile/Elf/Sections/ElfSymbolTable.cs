@@ -149,7 +149,8 @@ namespace LibObjectFile.Elf
                 writer.Encode(out sym.st_size, (uint)entry.Size);
                 sym.st_info = (byte)(((byte) entry.Bind << 4) | (byte) entry.Type);
                 sym.st_other = (byte) ((byte) entry.Visibility & 3);
-                writer.Encode(out sym.st_shndx, (ElfNative.Elf32_Half) entry.Section.GetIndex());
+                var sectionIndex = entry.Section.GetIndex();
+                writer.Encode(out sym.st_shndx, sectionIndex < ElfNative.SHN_LORESERVE || entry.Section.IsSpecial ? (ElfNative.Elf32_Half)sectionIndex : (ElfNative.Elf32_Half)ElfNative.SHN_XINDEX);
 
                 writer.Write(sym);
             }
@@ -169,7 +170,8 @@ namespace LibObjectFile.Elf
                 writer.Encode(out sym.st_size, entry.Size);
                 sym.st_info = (byte)(((byte)entry.Bind << 4) | (byte)entry.Type);
                 sym.st_other = (byte)((byte)entry.Visibility & 3);
-                writer.Encode(out sym.st_shndx, (ElfNative.Elf64_Half)entry.Section.GetIndex());
+                var sectionIndex = entry.Section.GetIndex();
+                writer.Encode(out sym.st_shndx, sectionIndex < ElfNative.SHN_LORESERVE || entry.Section.IsSpecial ? (ElfNative.Elf64_Half)sectionIndex : (ElfNative.Elf64_Half)ElfNative.SHN_XINDEX);
 
                 writer.Write(sym);
             }
@@ -183,6 +185,7 @@ namespace LibObjectFile.Elf
             for (int i = 0; i < Entries.Count; i++)
             {
                 var entry = Entries[i];
+
                 if (stringTable != null)
                 {
                     if (stringTable.TryResolve(entry.Name, out var newEntry))
@@ -195,7 +198,10 @@ namespace LibObjectFile.Elf
                     }
                 }
 
-                entry.Section = reader.ResolveLink(entry.Section, $"Invalid link section index {entry.Section.SpecialIndex} for  symbol table entry [{i}] from symbol table section [{this}]");
+                if (entry.Section.SpecialIndex < ElfNative.SHN_LORESERVE)
+                {
+                    entry.Section = reader.ResolveLink(entry.Section, $"Invalid link section index {entry.Section.SpecialIndex} for  symbol table entry [{i}] from symbol table section [{this}]");
+                }
 
                 Entries[i] = entry;
             }
@@ -212,6 +218,7 @@ namespace LibObjectFile.Elf
             }
 
             bool isAllowingLocal = true;
+            bool needsSectionHeaderIndices = false;
 
             for (int i = 0; i < Entries.Count; i++)
             {
@@ -222,9 +229,14 @@ namespace LibObjectFile.Elf
                     diagnostics.Error(DiagnosticId.ELF_ERR_InvalidFirstSymbolEntryNonNull, $"Invalid entry #{i} in the {nameof(ElfSymbolTable)} section [{Index}]. The first entry must be null/undefined");
                 }
 
-                if (entry.Section.Section != null && entry.Section.Section.Parent != Parent)
+                if (entry.Section.Section != null)
                 {
-                    diagnostics.Error(DiagnosticId.ELF_ERR_InvalidSymbolEntrySectionParent, $"Invalid section for the symbol entry #{i} in the {nameof(ElfSymbolTable)} section [{Index}]. The section of the entry `{entry}` must the same than this symbol table section");
+                    if (entry.Section.Section.Parent != Parent)
+                    {
+                        diagnostics.Error(DiagnosticId.ELF_ERR_InvalidSymbolEntrySectionParent, $"Invalid section for the symbol entry #{i} in the {nameof(ElfSymbolTable)} section [{Index}]. The section of the entry `{entry}` must the same than this symbol table section");
+                    }
+
+                    needsSectionHeaderIndices |= entry.Section.GetIndex() >= ElfNative.SHN_LORESERVE;
                 }
 
                 stringTable.ReserveString(entry.Name);
@@ -242,6 +254,24 @@ namespace LibObjectFile.Elf
                 else
                 {
                     isAllowingLocal = false;
+                }
+            }
+
+            if (needsSectionHeaderIndices)
+            {
+                bool foundSectionHeaderIndices = false;
+                foreach (ElfSection otherSection in Parent.Sections)
+                {
+                    if (otherSection is ElfSymbolTableSectionHeaderIndices && otherSection.Link.Section == this)
+                    {
+                        foundSectionHeaderIndices = true;
+                        break;
+                    }
+                }
+
+                if (!foundSectionHeaderIndices)
+                {
+                    diagnostics.Error(DiagnosticId.ELF_ERR_MissingSectionHeaderIndices, $"Symbol table [{Name.Value}] references section indexes higher than SHN_LORESERVE and accompanying {nameof(ElfSymbolTableSectionHeaderIndices)} section is missing");
                 }
             }
         }

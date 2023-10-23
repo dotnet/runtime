@@ -421,5 +421,62 @@ namespace LibObjectFile.Tests.Elf
 
             Assert.AreEqual(alignedSection.UpperAlignment, codeSection.Offset, "Invalid alignment");
         }
+
+        [Test]
+        public void TestManySections()
+        {
+            var elf = new ElfObjectFile(ElfArch.X86_64);
+            var stringTable = new ElfStringTable();
+            var symbolTable = new ElfSymbolTable { Link = stringTable };
+
+            for (int i = 0; i < ushort.MaxValue; i++)
+            {
+                var section = new ElfBinarySection { Name = $".section{i}" };
+                elf.AddSection(section);
+                symbolTable.Entries.Add(new ElfSymbol { Type = ElfSymbolType.Section, Section = section });
+            }
+
+            elf.AddSection(stringTable);
+            elf.AddSection(symbolTable);
+            elf.AddSection(new ElfSectionHeaderStringTable());
+
+            var diagnostics = elf.Verify();
+            Assert.True(diagnostics.HasErrors);
+            Assert.AreEqual(DiagnosticId.ELF_ERR_MissingSectionHeaderIndices, diagnostics.Messages[0].Id);
+
+            elf.AddSection(new ElfSymbolTableSectionHeaderIndices { Link = symbolTable });
+            diagnostics = elf.Verify();
+            Assert.False(diagnostics.HasErrors);
+
+            uint visibleSectionCount = elf.VisibleSectionCount;
+
+            using (var outStream = File.OpenWrite("manysections"))
+            {
+                elf.Write(outStream);
+                outStream.Flush();
+            }
+
+            using (var inStream = File.OpenRead("manysections"))
+            {
+                elf = ElfObjectFile.Read(inStream);
+            }
+
+            Assert.AreEqual(visibleSectionCount, elf.VisibleSectionCount);
+            Assert.True(elf.Sections[0] is ElfNullSection);
+            Assert.True(elf.Sections[1] is ElfProgramHeaderTable);
+
+            for (int i = 0; i < ushort.MaxValue; i++)
+            {
+                Assert.True(elf.Sections[i + 2] is ElfBinarySection);
+                Assert.AreEqual($".section{i}", elf.Sections[i + 2].Name.Value);
+            }
+
+            Assert.True(elf.Sections[ushort.MaxValue + 3] is ElfSymbolTable);
+            symbolTable = (ElfSymbolTable)elf.Sections[ushort.MaxValue + 3];
+            for (int i = 0; i < ushort.MaxValue; i++)
+            {
+                Assert.AreEqual($".section{i}", symbolTable.Entries[i + 1].Section.Section.Name.Value);
+            }
+        }
     }
 }

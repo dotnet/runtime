@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-      <TargetFramework>net6.0</TargetFramework>
+      <TargetFramework>net7.0</TargetFramework>
       <OutputType>Exe</OutputType>
       <IsPackable>false</IsPackable>
     </PropertyGroup>
@@ -11,7 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="CppAst.CodeGen" Version="0.7.0" />
+      <PackageReference Include="CppAst.CodeGen" Version="0.11.3" />
       <Content Include="dwarf.h">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>

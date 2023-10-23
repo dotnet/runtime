@@ -60,7 +60,7 @@ namespace LibObjectFile
                         break;
                     }
 
-                    if (textLength > buffer.Length)
+                    if (textLength >= buffer.Length)
                     {
                         var newBuffer = ArrayPool<byte>.Shared.Rent((int)textLength * 2);
                         Array.Copy(buffer, 0, newBuffer, 0, buffer.Length);
