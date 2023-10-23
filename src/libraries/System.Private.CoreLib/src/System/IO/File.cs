@@ -694,7 +694,7 @@ namespace System.IO
         /// If the file doesn't exist, this method creates a new file.
         /// </summary>
         /// <param name="path">The path of the file to which the bytes should be appended.</param>
-        /// <param name="bytes">The byte array to append to the file.</param>
+        /// <param name="bytes">The bytes to append to the file.</param>
         /// <exception cref="T:System.ArgumentException">
         /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters
         /// (which can be queried using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method), 
