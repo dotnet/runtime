@@ -4,13 +4,15 @@
 using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Xunit;
 
-class Async2FibonacceWithYields
+public class Async2FibonacceWithYields
 {
     const uint Threshold = 1_000;
     static bool done;
 
-    public static void Main()
+    [Fact]
+    public static void Test()
     {
         AsyncEntry().Wait();
     }

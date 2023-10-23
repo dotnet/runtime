@@ -588,18 +588,15 @@ void InitializeTasklets()
 {
     g_taskletCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
 
+    g_pTaskletSentinel = (Tasklet*)malloc(sizeof(Tasklet));
+    memset(g_pTaskletSentinel, 0, sizeof(Tasklet));
+    g_pTaskletSentinel->pTaskletNextInLiveList = g_pTaskletSentinel;
+    g_pTaskletSentinel->pTaskletPrevInLiveList = g_pTaskletSentinel;
 }
 
 void RegisterTasklet(Tasklet* pTasklet)
 {
     CrstHolder crstHolder(&g_taskletCrst);
-    if (g_pTaskletSentinel == NULL)
-    {
-        g_pTaskletSentinel = (Tasklet*)malloc(sizeof(Tasklet));
-        memset(g_pTaskletSentinel, 0, sizeof(Tasklet));
-        g_pTaskletSentinel->pTaskletNextInLiveList = g_pTaskletSentinel;
-        g_pTaskletSentinel->pTaskletPrevInLiveList = g_pTaskletSentinel;
-    }
 
     pTasklet->pTaskletNextInLiveList = g_pTaskletSentinel->pTaskletNextInLiveList;
     pTasklet->pTaskletPrevInLiveList = g_pTaskletSentinel;

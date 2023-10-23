@@ -1,5 +1,8 @@
 # .NET Runtime
 
+In order to build in this repo, you must have set up a Roslyn repo parallel to this repo with the name dotnet-roslyn, and it must have a remote called AzDo which has the updated compiler in it. Then you must run buildroslynnugets.cmd to create a local copy of the compiler for use in the repo. The equivalent work has not yet been done for running on Unix-like platforms.
+
+
 [![Build Status](https://dev.azure.com/dnceng-public/public/_apis/build/status/dotnet/runtime/runtime?branchName=main)](https://dev.azure.com/dnceng-public/public/_build/latest?definitionId=129&branchName=main)
 [![Help Wanted](https://img.shields.io/github/issues/dotnet/runtime/help%20wanted?style=flat-square&color=%232EA043&label=help%20wanted)](https://github.com/dotnet/runtime/labels/help%20wanted)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/runtime)
