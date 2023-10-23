@@ -695,13 +695,12 @@ namespace System.IO
         /// </summary>
         /// <param name="path">The file to append to.</param>
         /// <param name="bytes">The bytes to append to the file.</param>
-        /// <exception cref="T:System.ArgumentException">
-        /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters
-        /// (which can be queried using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method), 
-        /// or when <paramref name="bytes" /> is null or empty.
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <paramref name="path"/> is a zero-length string, contains only white space,
+        /// or contains invalid characters as defined by <see cref="System.IO.Path.GetInvalidPathChars"/>.
         /// </exception>
-        /// <exception cref="T:System.ArgumentNullException">
-        /// Thrown when <paramref name="path" /> is <see langword="null" />.
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when <paramref name="path"/> is null, or when <paramref name="bytes"/> is null.
         /// </exception>
         public static void AppendAllBytes(string path, byte[] bytes)
         {
