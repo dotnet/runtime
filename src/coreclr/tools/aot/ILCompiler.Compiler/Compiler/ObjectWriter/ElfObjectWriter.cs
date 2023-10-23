@@ -392,6 +392,11 @@ namespace ILCompiler.ObjectWriter
                 Name = ".note.GNU-stack",
                 Type = ElfSectionType.ProgBits,
             });
+
+            if (_objectFile.Sections.Count >= ElfNative.SHN_LORESERVE)
+            {
+                _objectFile.AddSection(new ElfSymbolTableSectionHeaderIndices { Link = _symbolTable });
+            }
         }
 
         protected override void EmitObjectFile(string objectFilePath)
