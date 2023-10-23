@@ -726,8 +726,8 @@ namespace System.IO
         /// Either <paramref name="path"/> or <paramref name="bytes"/> is null.
         /// </exception>
         /// <exception cref="T:System.OperationCanceledException">
-	    /// The cancellation token was canceled. This exception is stored into the returned task.
-	    /// </exception>
+        /// The cancellation token was canceled. This exception is stored into the returned task.
+        /// </exception>
         public static Task AppendAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
