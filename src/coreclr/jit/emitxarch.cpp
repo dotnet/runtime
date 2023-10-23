@@ -15858,8 +15858,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         }
         else
         {
-            // For non-cross jumps (usual case) or when splitting at JIT time
-            // we expect the displacement to be encodable in 32 bits.
+            // For all other cases the displacement should be encodable in 32
+            // bits.
             assert((distVal >= INT32_MIN) && (distVal <= INT32_MAX));
             encodedDisplacement = static_cast<int32_t>(distVal);
         }
