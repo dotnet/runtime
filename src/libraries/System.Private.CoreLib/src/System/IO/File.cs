@@ -722,7 +722,7 @@ namespace System.IO
         /// <param name="cancellationToken">A token to monitor for cancellation requests. The default value is <see cref="T:System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous append operation.</returns>
         /// <exception cref="T:System.ArgumentException">
-        /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters 
+        /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters
         /// (which can be queried using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method), 
         /// or when <paramref name="bytes" /> is null or empty.
         /// </exception>
