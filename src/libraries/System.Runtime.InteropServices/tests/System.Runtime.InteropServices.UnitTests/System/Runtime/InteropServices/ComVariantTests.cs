@@ -132,7 +132,7 @@ namespace System.Runtime.InteropServices.Tests
             ComVariant trueVariant = ComVariant.Create(true);
             Assert.Equal(VarEnum.VT_BOOL, trueVariant.VarType);
             Assert.True(trueVariant.As<bool>());
-            Assert.Equal(0, trueVariant.GetRawDataRef<short>());
+            Assert.Equal(-1, trueVariant.GetRawDataRef<short>());
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace System.Runtime.InteropServices.Tests
             ComVariant falseVariant = ComVariant.Create(false);
             Assert.Equal(VarEnum.VT_BOOL, falseVariant.VarType);
             Assert.False(falseVariant.As<bool>());
-            Assert.Equal(-1, falseVariant.GetRawDataRef<short>());
+            Assert.Equal(0, falseVariant.GetRawDataRef<short>());
         }
 
         [Fact]

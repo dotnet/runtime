@@ -19,6 +19,9 @@ namespace System.Runtime.InteropServices.Marshalling
     [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedRef, typeof(RefPropagate))]
     public static partial class ComVariantMarshaller
     {
+        // VARIANT_BOOL constants.
+        private const short VARIANT_TRUE = -1;
+        private const short VARIANT_FALSE = 0;
         public static ComVariant ConvertToUnmanaged(object? managed)
         {
             if (managed is null)
@@ -174,7 +177,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 case VarEnum.VT_BYREF | VarEnum.VT_DECIMAL:
                     return *(decimal*)unmanaged.GetRawDataRef<nint>();
                 case VarEnum.VT_BYREF | VarEnum.VT_BOOL:
-                    return *(short*)unmanaged.GetRawDataRef<nint>() != -1;
+                    return *(short*)unmanaged.GetRawDataRef<nint>() != VARIANT_FALSE;
                 case VarEnum.VT_BYREF | VarEnum.VT_BSTR:
                     return Marshal.PtrToStringBSTR(*(IntPtr*)unmanaged.GetRawDataRef<nint>());
                 case VarEnum.VT_BYREF | VarEnum.VT_DATE:
@@ -278,7 +281,7 @@ namespace System.Runtime.InteropServices.Marshalling
                         *(decimal*)_unmanaged.GetRawDataRef<nint>() = d;
                         break;
                     case (VarEnum.VT_BOOL, bool b):
-                        *(short*)_unmanaged.GetRawDataRef<nint>() = b ? (short)0 : (short)-1;
+                        *(short*)_unmanaged.GetRawDataRef<nint>() = b ? VARIANT_TRUE : VARIANT_FALSE;
                         break;
                     case (VarEnum.VT_BSTR, string str):
                         {

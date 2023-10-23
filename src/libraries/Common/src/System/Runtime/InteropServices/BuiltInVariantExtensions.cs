@@ -58,9 +58,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_BOOL:
-                    // VARIANT_TRUE  = -1
-                    // VARIANT_FALSE = 0
-                    variant.GetByRefDataRef<short>() = (bool)value ? (short)-1 : (short)0;
+                    variant.GetByRefDataRef<short>() = (bool)value ? ComVariant.VARIANT_TRUE : ComVariant.VARIANT_FALSE;
                     break;
 
                 case VarEnum.VT_I4:
@@ -146,7 +144,7 @@ namespace System.Runtime.InteropServices
                 VarEnum.VT_UI8 => variant.As<ulong>(),
                 VarEnum.VT_INT => variant.As<int>(),
                 VarEnum.VT_UINT => variant.As<uint>(),
-                VarEnum.VT_BOOL => variant.As<short>() != -1,
+                VarEnum.VT_BOOL => variant.As<short>() != ComVariant.VARIANT_FALSE,
                 VarEnum.VT_ERROR => variant.As<int>(),
                 VarEnum.VT_R4 => variant.As<float>(),
                 VarEnum.VT_R8 => variant.As<double>(),

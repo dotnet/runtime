@@ -14,6 +14,9 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         // See definition in wtypes.h in the Windows SDK.
         private const VarEnum VT_VERSIONED_STREAM = (VarEnum)73;
+        // VARIANT_BOOL constants.
+        internal const short VARIANT_TRUE = -1;
+        internal const short VARIANT_FALSE = 0;
 #if DEBUG
         static unsafe ComVariant()
         {
@@ -305,7 +308,7 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 // bool values in OLE VARIANTs are VARIANT_BOOL values.
                 variant.VarType = VarEnum.VT_BOOL;
-                variant._typeUnion._unionTypes._bool = ((bool)(object)value) ? (short)0 : (short)-1;
+                variant._typeUnion._unionTypes._bool = ((bool)(object)value) ? VARIANT_TRUE : VARIANT_FALSE;
             }
             else if (typeof(T) == typeof(decimal))
             {
@@ -489,7 +492,7 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 // bool values in OLE VARIANTs are VARIANT_BOOL values.
                 ThrowIfNotVarType(VarEnum.VT_BOOL);
-                return (T)(object)(_typeUnion._unionTypes._bool != -1);
+                return (T)(object)(_typeUnion._unionTypes._bool != VARIANT_FALSE);
             }
             else if (typeof(T) == typeof(decimal))
             {
