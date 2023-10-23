@@ -2006,7 +2006,7 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
 // we need to ensure we only ever initialize tables once on each js worker.
 let jiterpreter_tables_allocated = false;
 
-export function jiterpreter_allocate_tables(module: any) {
+export function jiterpreter_allocate_tables() {
     if (jiterpreter_tables_allocated)
         return;
     jiterpreter_tables_allocated = true;

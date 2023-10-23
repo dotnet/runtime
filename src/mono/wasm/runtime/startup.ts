@@ -272,7 +272,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
 
         bindings_init();
-        jiterpreter_allocate_tables(Module);
+        jiterpreter_allocate_tables();
         runtimeHelpers.runtimeReady = true;
 
         if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER) {

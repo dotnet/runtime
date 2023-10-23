@@ -92,7 +92,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void 
     mono_log_debug("attaching pthread to mono runtime 0x" + pthread_id.toString(16));
     preRunWorker();
     set_thread_info(pthread_id, true, false, false);
-    jiterpreter_allocate_tables(Module);
+    jiterpreter_allocate_tables();
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
 }
 
