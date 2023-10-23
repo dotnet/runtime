@@ -84,12 +84,6 @@ namespace System.Security.Cryptography
                 // Don't add the reverse here.  Friendly Name => OID is a case insensitive search,
                 // so the casing provided as input here may not be the 'correct' one.  Just let
                 // ToFriendlyName capture the response and cache it itself.
-
-                // Also, mappedOid could be null here if the lookup failed.  Allowing storing null
-                // means we're able to cache that a lookup failed so we don't repeat it.  It's
-                // theoretically possible, however, the failure could have been intermittent, e.g.
-                // if the call was forced to follow an AD fallback path and the relevant servers
-                // were offline.
             }
 
             return mappedOid;
