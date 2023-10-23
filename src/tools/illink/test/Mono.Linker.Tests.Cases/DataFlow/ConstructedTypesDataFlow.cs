@@ -44,6 +44,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				type.RequiresPublicMethods ();
 			}
 
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static Type annotatedfield;
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static ref Type AnnotatedProperty => ref annotatedfield;
+
+			// https://github.com/dotnet/linker/issues/3158
+			[ExpectedWarning ("IL2062", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2078", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void DeconstructVariablePropertyReference ((Type type, object instance) input)
+			{
+				object instance;
+				(AnnotatedProperty, instance) = input;
+				AnnotatedProperty.RequiresPublicMethods ();
+			}
+
 			record TypeAndInstance (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				[property: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -114,6 +130,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				DeconstructVariableNoAnnotation ((typeof (string), null));
 				DeconstructVariableFlowCapture ();
+				DeconstructVariablePropertyReference ((typeof (string), null));
 				DeconstructRecordWithAnnotation (new (typeof (string), null));
 				DeconstructClassWithAnnotation (new (typeof (string), null));
 				DeconstructRecordManualWithAnnotation (new (typeof (string), null));

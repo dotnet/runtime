@@ -4,38 +4,34 @@
 using System.Collections.Generic;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisReflectionAccessPattern
+	public readonly record struct TrimAnalysisFieldAccessPattern
 	{
-		public IMethodSymbol ReferencedMethod { init; get; }
-		public IOperation Operation { init; get; }
+		public IFieldSymbol Field { init; get; }
+		public IFieldReferenceOperation Operation { init; get; }
 		public ISymbol OwningSymbol { init; get; }
 
-		public TrimAnalysisReflectionAccessPattern (
-			IMethodSymbol referencedMethod,
-			IOperation operation,
+		public TrimAnalysisFieldAccessPattern (
+			IFieldSymbol field,
+			IFieldReferenceOperation operation,
 			ISymbol owningSymbol)
 		{
-			ReferencedMethod = referencedMethod;
+			Field = field;
 			Operation = operation;
 			OwningSymbol = owningSymbol;
 		}
 
 		// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
-		// and there's only one way to access the referenced method.
+		// and there's only one way to "access" a field.
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			if (context.EnableTrimAnalyzer && !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
-				foreach (var diagnostic in ReflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, ReferencedMethod))
-					diagnosticContext.AddDiagnostic (diagnostic);
-			}
-
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, ReferencedMethod, OwningSymbol, context, out Diagnostic? diag))
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, Field, OwningSymbol, context, out Diagnostic? diag))
 					diagnosticContext.AddDiagnostic (diag);
 			}
 
