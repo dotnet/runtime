@@ -91,18 +91,21 @@ public abstract class WasmAppBuilderBaseTask : Task
 
     protected virtual void UpdateRuntimeConfigJson()
     {
+        if (string.IsNullOrEmpty(RuntimeConfigJsonPath))
+            return;
+
+        if (!File.Exists(RuntimeConfigJsonPath))
+        {
+            Log.LogMessage(MessageImportance.Low, $"Could not find {nameof(RuntimeConfigJsonPath)}={RuntimeConfigJsonPath}. Ignoring.");
+            return;
+        }
+
         string[] matchingAssemblies = Assemblies.Where(asm => Path.GetFileName(asm) == MainAssemblyName).ToArray();
         if (matchingAssemblies.Length == 0)
             throw new LogAsErrorException($"Could not find main assembly named {MainAssemblyName} in the list of assemblies");
 
         if (matchingAssemblies.Length > 1)
             throw new LogAsErrorException($"Found more than one assembly matching the main assembly name {MainAssemblyName}: {string.Join(",", matchingAssemblies)}");
-
-        if (!File.Exists(RuntimeConfigJsonPath))
-        {
-            Log.LogMessage(MessageImportance.Low, $"Could not find {RuntimeConfigJsonPath}. Ignoring.");
-            return;
-        }
 
         var rootNode = JsonNode.Parse(File.ReadAllText(RuntimeConfigJsonPath),
                                             new JsonNodeOptions { PropertyNameCaseInsensitive = true });
