@@ -693,7 +693,7 @@ namespace System.IO
         /// Appends the specified byte array to the end of the file at the given path.
         /// If the file doesn't exist, this method creates a new file.
         /// </summary>
-        /// <param name="path">The path of the file to which the bytes should be appended.</param>
+        /// <param name="path">The file to append to.</param>
         /// <param name="bytes">The bytes to append to the file.</param>
         /// <exception cref="T:System.ArgumentException">
         /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters
