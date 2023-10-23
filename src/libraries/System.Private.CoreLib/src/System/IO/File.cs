@@ -696,7 +696,7 @@ namespace System.IO
         /// <param name="path">The path of the file to which the bytes should be appended.</param>
         /// <param name="bytes">The byte array to append to the file.</param>
         /// <exception cref="T:System.ArgumentException">
-        /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters 
+        /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters
         /// (which can be queried using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method), 
         /// or when <paramref name="bytes" /> is null or empty.
         /// </exception>
