@@ -55,6 +55,10 @@
               (MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_CUSTOM_UNSPECIFIED), SORT_DEFAULT))
 #endif // !SUBLANG_CUSTOM_DEFAULT
 
+#ifndef IMAGE_FILE_MACHINE_RISCV64
+#define IMAGE_FILE_MACHINE_RISCV64        0x5064  // RISCV64
+#endif // !IMAGE_FILE_MACHINE_RISCV64
+
 #ifndef __out_xcount_opt
 #define __out_xcount_opt(var) __out
 #endif
