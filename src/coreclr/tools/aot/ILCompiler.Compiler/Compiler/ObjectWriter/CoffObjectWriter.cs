@@ -99,6 +99,43 @@ namespace ILCompiler.ObjectWriter
             if (comdatName is not null)
             {
                 sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerComdat;
+
+                // We find the defining section of the COMDAT symbol. That one is marked
+                // as "ANY" selection type. All the other ones are marked as associated.
+                bool isPrimary = Equals(comdatName, symbolName);
+                uint sectionIndex = (uint)_sections.Count + 1u;
+                uint definingSectionIndex = isPrimary ? sectionIndex : ((CoffSymbol)_symbols[(int)_symbolNameToIndex[comdatName]]).SectionIndex;
+
+                var auxRecord = new CoffSectionSymbol
+                {
+                    // SizeOfRawData, NumberOfRelocations, NumberOfLineNumbers
+                    // CheckSum will be filled later in EmitObjectFile
+
+                    Number = definingSectionIndex,
+                    Selection = isPrimary ?
+                        CoffComdatSelect.IMAGE_COMDAT_SELECT_ANY :
+                        CoffComdatSelect.IMAGE_COMDAT_SELECT_ASSOCIATIVE,
+                };
+
+                _sectionNumberToComdatAuxRecord[_sections.Count] = auxRecord;
+                _symbols.Add(new CoffSymbol
+                {
+                    Name = sectionHeader.Name,
+                    Value = 0,
+                    SectionIndex = sectionIndex,
+                    StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
+                    NumberOfAuxiliaryRecords = 1,
+                });
+                _symbols.Add(auxRecord);
+
+                _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
+                _symbols.Add(new CoffSymbol
+                {
+                    Name = symbolName,
+                    Value = 0,
+                    SectionIndex = sectionIndex,
+                    StorageClass = isPrimary ? CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL : CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
+                });
             }
 
             _sections.Add(new SectionDefinition(sectionHeader, sectionStream, new List<CoffRelocation>(), comdatName, symbolName));
@@ -120,11 +157,11 @@ namespace ILCompiler.ObjectWriter
 
         protected internal override void EmitRelocation(
             int sectionIndex,
-            int offset,
+            long offset,
             Span<byte> data,
             RelocType relocType,
             string symbolName,
-            int addend)
+            long addend)
         {
             switch (relocType)
             {
@@ -163,7 +200,7 @@ namespace ILCompiler.ObjectWriter
                         BinaryPrimitives.WriteInt32LittleEndian(
                             data,
                             BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            addend);
+                            (int)addend);
                         addend = 0;
                     }
                     break;
@@ -176,7 +213,7 @@ namespace ILCompiler.ObjectWriter
                         BinaryPrimitives.WriteInt32LittleEndian(
                             data,
                             BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            addend);
+                            (int)addend);
                         addend = 0;
                     }
                     break;
@@ -193,68 +230,10 @@ namespace ILCompiler.ObjectWriter
             _referencedMethods.Add(symbolName);
         }
 
-        protected override void EmitSymbolTable()
+        protected override void EmitSymbolTable(
+            IDictionary<string, SymbolDefinition> definedSymbols,
+            SortedSet<string> undefinedSymbols)
         {
-            var definedSymbols = GetDefinedSymbols();
-
-            int sectionIndex = 0;
-            foreach (SectionDefinition section in _sections)
-            {
-                if (section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.LinkerComdat))
-                {
-                    // We find the defining section of the COMDAT symbol. That one is marked
-                    // as "ANY" selection type. All the other ones are marked as associated.
-                    SymbolDefinition definingSymbol = definedSymbols[section.ComdatName];
-                    int definingSectionIndex = definingSymbol.SectionIndex;
-
-                    var auxRecord = new CoffSectionSymbol
-                    {
-                        // SizeOfRawData, NumberOfRelocations, NumberOfLineNumbers
-                        // CheckSum will be filled later in EmitObjectFile
-
-                        Number = (uint)(1 + definingSectionIndex),
-                        Selection = definingSectionIndex == sectionIndex ?
-                            CoffComdatSelect.IMAGE_COMDAT_SELECT_ANY :
-                            CoffComdatSelect.IMAGE_COMDAT_SELECT_ASSOCIATIVE,
-                    };
-
-                    _sectionNumberToComdatAuxRecord[sectionIndex] = auxRecord;
-                    _symbols.Add(new CoffSymbol
-                    {
-                        Name = section.Header.Name,
-                        Value = 0,
-                        SectionIndex = (uint)(1 + sectionIndex),
-                        StorageClass = 3, // IMAGE_SYM_CLASS_STATIC
-                        NumberOfAuxiliaryRecords = 1
-                    });
-                    _symbols.Add(auxRecord);
-
-                    if (definingSectionIndex == sectionIndex)
-                    {
-                        _symbolNameToIndex.Add(section.ComdatName, (uint)_symbols.Count);
-                        _symbols.Add(new CoffSymbol
-                        {
-                            Name = section.ComdatName,
-                            Value = (uint)definingSymbol.Value,
-                            SectionIndex = (uint)(1 + definingSymbol.SectionIndex),
-                            StorageClass = 2 // IMAGE_SYM_CLASS_EXTERNAL
-                        });
-                    }
-                    else if (section.SymbolName is not null)
-                    {
-                        _symbolNameToIndex.Add(section.SymbolName, (uint)_symbols.Count);
-                        _symbols.Add(new CoffSymbol
-                        {
-                            Name = section.SymbolName,
-                            Value = 0,
-                            SectionIndex = (uint)(1 + sectionIndex),
-                            StorageClass = 3 // IMAGE_SYM_CLASS_STATIC
-                        });
-                    }
-                }
-                sectionIndex++;
-            }
-
             foreach (var (symbolName, symbolDefinition) in definedSymbols)
             {
                 if (!_symbolNameToIndex.ContainsKey(symbolName))
@@ -265,18 +244,18 @@ namespace ILCompiler.ObjectWriter
                         Name = symbolName,
                         Value = (uint)symbolDefinition.Value,
                         SectionIndex = (uint)(1 + symbolDefinition.SectionIndex),
-                        StorageClass = 2 // IMAGE_SYM_CLASS_EXTERNAL
+                        StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL,
                     });
                 }
             }
 
-            foreach (var symbolName in GetUndefinedSymbols())
+            foreach (var symbolName in undefinedSymbols)
             {
                 _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
                 _symbols.Add(new CoffSymbol
                 {
                     Name = symbolName,
-                    StorageClass = 2 // IMAGE_SYM_CLASS_EXTERNAL
+                    StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL,
                 });
             }
 
@@ -296,7 +275,7 @@ namespace ILCompiler.ObjectWriter
                 _symbols.Add(new CoffSymbol
                 {
                     Name = "@feat.00",
-                    StorageClass = 3, // IMAGE_SYM_CLASS_STATIC
+                    StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
                     Value = 0x800, // cfGuardCF flags this object as control flow guard aware
                 });
@@ -641,7 +620,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitDebugSections()
+        protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
         {
             _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
             _debugFileTableBuilder.Write(_debugSymbolSectionWriter.Stream);
@@ -869,13 +848,20 @@ namespace ILCompiler.ObjectWriter
             public abstract void Write(Stream stream, CoffStringTable stringTable, bool isBigObj);
         }
 
+        private enum CoffSymbolClass : byte
+        {
+            IMAGE_SYM_CLASS_EXTERNAL = 2,
+            IMAGE_SYM_CLASS_STATIC = 3,
+            IMAGE_SYM_CLASS_LABEL = 6,
+        }
+
         private sealed class CoffSymbol : CoffSymbolRecord
         {
             public string Name { get; set; }
             public uint Value { get; set; }
             public uint SectionIndex { get; set; }
             public ushort Type { get; set; }
-            public byte StorageClass { get; set; }
+            public CoffSymbolClass StorageClass { get; set; }
             public byte NumberOfAuxiliaryRecords { get; set; }
 
             private const int NameSize = 8;
@@ -929,7 +915,7 @@ namespace ILCompiler.ObjectWriter
                     sliceIndex = NameSize + 6;
                 }
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(sliceIndex), Type);
-                buffer[sliceIndex + 2] = StorageClass;
+                buffer[sliceIndex + 2] = (byte)StorageClass;
                 buffer[sliceIndex + 3] = NumberOfAuxiliaryRecords;
 
                 stream.Write(buffer);

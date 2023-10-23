@@ -360,7 +360,8 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class DwarfSubprogramInfo : DwarfInfo
     {
-        private readonly string _methodName;
+        private readonly string _sectionSymbolName;
+        private readonly long _methodAddress;
         private readonly int _methodSize;
         private readonly DwarfMemberFunction _memberFunction;
         private readonly IEnumerable<(DebugVarInfoMetadata, uint)> _debugVars;
@@ -369,13 +370,15 @@ namespace ILCompiler.ObjectWriter
         private readonly bool _hasChildren;
 
         public DwarfSubprogramInfo(
-            string methodName,
+            string sectionSymbolName,
+            long methodAddress,
             int methodSize,
             DwarfMemberFunction memberFunction,
             IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
             IEnumerable<DebugEHClauseInfo> debugEHClauseInfos)
         {
-            _methodName = methodName;
+            _sectionSymbolName = sectionSymbolName;
+            _methodAddress = methodAddress;
             _methodSize = methodSize;
             _memberFunction = memberFunction;
             _isStatic = memberFunction.IsStatic;
@@ -394,7 +397,7 @@ namespace ILCompiler.ObjectWriter
             writer.WriteInfoAbsReference(_memberFunction.InfoOffset);
 
             // DW_AT_low_pc
-            writer.WriteCodeReference(_methodName);
+            writer.WriteCodeReference(_sectionSymbolName, _methodAddress);
 
             // DW_AT_high_pc
             writer.WriteAddressSize((ulong)_methodSize);
@@ -423,14 +426,14 @@ namespace ILCompiler.ObjectWriter
             {
                 writer.WriteStartDIE(DwarfAbbrev.TryBlock);
                 // DW_AT_low_pc
-                writer.WriteCodeReference(_methodName, clause.TryOffset);
+                writer.WriteCodeReference(_sectionSymbolName, _methodAddress + clause.TryOffset);
                 // DW_AT_high_pc
                 writer.WriteAddressSize(clause.TryLength);
                 writer.WriteEndDIE();
 
                 writer.WriteStartDIE(DwarfAbbrev.CatchBlock);
                 // DW_AT_low_pc
-                writer.WriteCodeReference(_methodName, clause.HandlerOffset);
+                writer.WriteCodeReference(_sectionSymbolName, _methodAddress + clause.HandlerOffset);
                 // DW_AT_high_pc
                 writer.WriteAddressSize(clause.HandlerLength);
                 writer.WriteEndDIE();
@@ -476,7 +479,11 @@ namespace ILCompiler.ObjectWriter
                 {
                     var expressionBuilder = writer.GetExpressionBuilder();
                     DumpVarLocation(expressionBuilder, range.VarLoc);
-                    writer.WriteLocationListExpression(_methodName, range.StartOffset, range.EndOffset, expressionBuilder);
+                    writer.WriteLocationListExpression(
+                        _sectionSymbolName,
+                        _methodAddress + range.StartOffset,
+                        _methodAddress + range.EndOffset,
+                        expressionBuilder);
                 }
                 writer.WriteEndLocationList();
             }
@@ -537,18 +544,19 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    internal sealed class DwarfStaticVariableInfo : DwarfInfo
+    internal sealed class DwarfStaticVariableInfo
     {
         private readonly StaticDataFieldDescriptor _descriptor;
 
         public long InfoOffset { get; set; }
+        public string Name => _descriptor.StaticDataName;
 
         public DwarfStaticVariableInfo(StaticDataFieldDescriptor descriptor)
         {
             _descriptor = descriptor;
         }
 
-        public override void Dump(DwarfInfoWriter writer)
+        public void Dump(DwarfInfoWriter writer, string sectionSymbolName, long address)
         {
             writer.WriteStartDIE(DwarfAbbrev.VariableStatic);
 
@@ -562,7 +570,7 @@ namespace ILCompiler.ObjectWriter
                 length += 1 + DwarfHelper.SizeOfULEB128(_descriptor.StaticOffset); // DW_OP_plus_uconst <const>
             writer.WriteULEB128(length);
             writer.Write([DW_OP_addr]);
-            writer.WriteCodeReference(writer.ExternCName(_descriptor.StaticDataName));
+            writer.WriteCodeReference(sectionSymbolName, address);
             if (_descriptor.IsStaticDataInObject != 0)
                 writer.Write([DW_OP_deref, DW_OP_deref]);
             if (_descriptor.StaticOffset != 0)

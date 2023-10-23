@@ -16,11 +16,11 @@ namespace ILCompiler.ObjectWriter
     public abstract class ObjectWriter : IDisposable
     {
         protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
-        protected sealed record SymbolicRelocation(int Offset, RelocType Type, string SymbolName, int Addend = 0);
+        protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
 
         protected readonly NodeFactory _nodeFactory;
         protected readonly ObjectWritingOptions _options;
-        protected readonly bool _isSingleFileCompilation;
+        private readonly bool _isSingleFileCompilation;
 
         private readonly Dictionary<ISymbolNode, string> _mangledNameMap = new();
 
@@ -157,11 +157,11 @@ namespace ILCompiler.ObjectWriter
         /// </remarks>
         protected internal virtual void EmitRelocation(
             int sectionIndex,
-            int offset,
+            long offset,
             Span<byte> data,
             RelocType relocType,
             string symbolName,
-            int addend)
+            long addend)
         {
             _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
         }
@@ -194,7 +194,7 @@ namespace ILCompiler.ObjectWriter
         protected internal void EmitSymbolDefinition(
             int sectionIndex,
             string symbolName,
-            int offset = 0,
+            long offset = 0,
             int size = 0,
             bool global = false)
         {
@@ -206,7 +206,9 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Emit symbolic definitions into object file symbols.
         /// </summary>
-        protected abstract void EmitSymbolTable();
+        protected abstract void EmitSymbolTable(
+            IDictionary<string, SymbolDefinition> definedSymbols,
+            SortedSet<string> undefinedSymbols);
 
         protected virtual string ExternCName(string name) => name;
 
@@ -259,9 +261,7 @@ namespace ILCompiler.ObjectWriter
 
         protected abstract void CreateEhSections();
 
-        protected IDictionary<string, SymbolDefinition> GetDefinedSymbols() => _definedSymbols;
-
-        protected ISet<string> GetUndefinedSymbols()
+        private SortedSet<string> GetUndefinedSymbols()
         {
             SortedSet<string> undefinedSymbolSet = new SortedSet<string>(StringComparer.Ordinal);
             foreach (var relocationList in _sectionIndexToRelocations)
@@ -284,7 +284,7 @@ namespace ILCompiler.ObjectWriter
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints);
 
-        protected abstract void EmitDebugSections();
+        protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
 
         protected void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
@@ -418,10 +418,10 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                EmitDebugSections();
+                EmitDebugSections(_definedSymbols);
             }
 
-            EmitSymbolTable();
+            EmitSymbolTable(_definedSymbols, GetUndefinedSymbols());
 
             int relocSectionIndex = 0;
             foreach (List<SymbolicRelocation> relocationList in _sectionIndexToRelocations)

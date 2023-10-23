@@ -33,7 +33,7 @@ namespace ILCompiler.ObjectWriter
             _minimumInstructionLength = minimumInstructionLength;
         }
 
-        public void EmitLineInfo(int fileNameIndex, ulong methodAddress, NativeSequencePoint sequencePoint)
+        public void EmitLineInfo(int fileNameIndex, long methodAddress, NativeSequencePoint sequencePoint)
         {
             if (_column != sequencePoint.ColNumber)
             {
@@ -64,7 +64,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            ulong deltaAddress = (ulong)sequencePoint.NativeOffset + methodAddress - _address;
+            ulong deltaAddress = (ulong)sequencePoint.NativeOffset + (ulong)methodAddress - _address;
             if (deltaAddress > _maxDeltaAddressPerSpecialCode && deltaAddress <= (2U * _maxDeltaAddressPerSpecialCode))
             {
                 deltaAddress -= _maxDeltaAddressPerSpecialCode;
@@ -97,7 +97,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             _line = sequencePoint.LineNumber;
-            _address = (ulong)sequencePoint.NativeOffset + methodAddress;
+            _address = (ulong)sequencePoint.NativeOffset + (ulong)methodAddress;
         }
 
         public void Write(SectionWriter lineSection, byte targetPointerSize, RelocType codeRelocType)

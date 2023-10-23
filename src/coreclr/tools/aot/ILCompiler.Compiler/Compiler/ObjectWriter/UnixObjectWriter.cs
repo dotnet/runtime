@@ -30,6 +30,13 @@ namespace ILCompiler.ObjectWriter
 
         private static ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly, null);
         private static ObjectNodeSection EhFrameSection = new ObjectNodeSection(".eh_frame", SectionType.ReadOnly, null);
+        private readonly ObjectNodeSection DebugInfoSection = new ObjectNodeSection(".debug_info", SectionType.Debug);
+        private readonly ObjectNodeSection DebugStringSection = new ObjectNodeSection(".debug_str", SectionType.Debug);
+        private readonly ObjectNodeSection DebugAbbrevSection = new ObjectNodeSection(".debug_abbrev", SectionType.Debug);
+        private readonly ObjectNodeSection DebugLocSection = new ObjectNodeSection(".debug_loc", SectionType.Debug);
+        private readonly ObjectNodeSection DebugRangesSection = new ObjectNodeSection(".debug_ranges", SectionType.Debug);
+        private readonly ObjectNodeSection DebugLineSection = new ObjectNodeSection(".debug_line", SectionType.Debug);
+        private readonly ObjectNodeSection DebugARangesSection = new ObjectNodeSection(".debug_aranges", SectionType.Debug);
 
         protected UnixObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -165,32 +172,29 @@ namespace ILCompiler.ObjectWriter
                 clauses = nodeWithCodeInfo.DebugEHClauseInfos;
             }
 
-            _dwarfBuilder.EmitSubprogramInfo(
-                methodName,
-                methodSymbol.Size,
-                methodTypeIndex,
-                debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
-                clauses ?? []);
-
-            if (hasSequencePoints && _sections[methodSymbol.SectionIndex] is SectionDefinition section)
+            if (_sections[methodSymbol.SectionIndex] is SectionDefinition section)
             {
-                _dwarfBuilder.EmitLineInfo(
-                    methodSymbol.SectionIndex,
+                _dwarfBuilder.EmitSubprogramInfo(
+                    methodName,
                     section.SymbolName,
-                    (ulong)methodSymbol.Value,
-                    debugNode.GetNativeSequencePoints());
+                    methodSymbol.Value,
+                    methodSymbol.Size,
+                    methodTypeIndex,
+                    debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
+                    clauses ?? []);
+
+                if (hasSequencePoints)
+                {
+                    _dwarfBuilder.EmitLineInfo(
+                        methodSymbol.SectionIndex,
+                        section.SymbolName,
+                        methodSymbol.Value,
+                        debugNode.GetNativeSequencePoints());
+                }
             }
         }
 
-        private readonly ObjectNodeSection DebugInfoSection = new ObjectNodeSection(".debug_info", SectionType.Debug);
-        private readonly ObjectNodeSection DebugStringSection = new ObjectNodeSection(".debug_str", SectionType.Debug);
-        private readonly ObjectNodeSection DebugAbbrevSection = new ObjectNodeSection(".debug_abbrev", SectionType.Debug);
-        private readonly ObjectNodeSection DebugLocSection = new ObjectNodeSection(".debug_loc", SectionType.Debug);
-        private readonly ObjectNodeSection DebugRangesSection = new ObjectNodeSection(".debug_ranges", SectionType.Debug);
-        private readonly ObjectNodeSection DebugLineSection = new ObjectNodeSection(".debug_line", SectionType.Debug);
-        private readonly ObjectNodeSection DebugARangesSection = new ObjectNodeSection(".debug_aranges", SectionType.Debug);
-
-        protected override void EmitDebugSections()
+        protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
         {
             foreach (SectionDefinition section in _sections)
             {
@@ -215,7 +219,16 @@ namespace ILCompiler.ObjectWriter
                 locSectionWriter,
                 rangeSectionWriter,
                 lineSectionWriter,
-                arangeSectionWriter);
+                arangeSectionWriter,
+                symbolName =>
+                {
+                    if (definedSymbols.TryGetValue(ExternCName(symbolName), out SymbolDefinition symbolDef) &&
+                        _sections[symbolDef.SectionIndex] is SectionDefinition section)
+                    {
+                        return (section.SymbolName, symbolDef.Value);
+                    }
+                    return (null, 0);
+                });
         }
 
         protected override void CreateEhSections()

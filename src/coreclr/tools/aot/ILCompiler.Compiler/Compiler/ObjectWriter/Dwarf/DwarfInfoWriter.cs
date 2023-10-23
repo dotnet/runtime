@@ -49,8 +49,6 @@ namespace ILCompiler.ObjectWriter
         public byte TargetPointerSize => _builder.TargetPointerSize;
         public long Position => _infoSectionWriter.Stream.Position;
 
-        public string ExternCName(string name) => _builder.ExternCName(name);
-
         public void WriteStartDIE(DwarfAbbrev abbrev)
         {
             if (_dieStack.Count > 0 && !_dieStack.Peek().HasChildren)
@@ -101,13 +99,13 @@ namespace ILCompiler.ObjectWriter
             _stringTableWriter.WriteUtf8String(value);
 
             Debug.Assert(stringsOffset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_str", (int)stringsOffset);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_str", stringsOffset);
         }
 
         public void WriteInfoAbsReference(long offset)
         {
             Debug.Assert(offset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", (int)offset);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", offset);
         }
 
         public void WriteInfoReference(uint typeIndex)
@@ -123,19 +121,20 @@ namespace ILCompiler.ObjectWriter
             }
             else
             {
-                _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", (int)offset);
+                _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", offset);
             }
         }
 
-        public void WriteCodeReference(string methodName, uint offset = 0)
+        public void WriteCodeReference(string sectionSymbolName, long offset = 0)
         {
-            _infoSectionWriter.EmitSymbolReference(_codeRelocType, methodName, (int)offset);
+            Debug.Assert(offset >= 0);
+            _infoSectionWriter.EmitSymbolReference(_codeRelocType, sectionSymbolName, offset);
         }
 
         public void WriteLineReference(long offset)
         {
             Debug.Assert(offset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_line", (int)offset);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_line", offset);
         }
 
         public DwarfExpressionBuilder GetExpressionBuilder()
@@ -158,11 +157,11 @@ namespace ILCompiler.ObjectWriter
             _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_loc", (int)offset);
         }
 
-        public void WriteLocationListExpression(string methodName, uint startOffset, uint endOffset, DwarfExpressionBuilder expressionBuilder)
+        public void WriteLocationListExpression(string methodName, long startOffset, long endOffset, DwarfExpressionBuilder expressionBuilder)
         {
             _ = expressionBuilder;
-            _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, (int)startOffset);
-            _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, (int)endOffset);
+            _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, startOffset);
+            _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, endOffset);
             _locSectionWriter.Stream.WriteUInt16((ushort)_expressionBufferWriter.WrittenCount);
             _locSectionWriter.Stream.Write(_expressionBufferWriter.WrittenSpan);
         }
@@ -176,13 +175,13 @@ namespace ILCompiler.ObjectWriter
         {
             long offset = _rangeSectionWriter.Stream.Position;
             Debug.Assert(offset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_ranges", (int)offset);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_ranges", offset);
         }
 
-        public void WriteRangeListEntry(string symbolName, uint startOffset, uint endOffset)
+        public void WriteRangeListEntry(string symbolName, long startOffset, long endOffset)
         {
-            _rangeSectionWriter.EmitSymbolReference(_codeRelocType, symbolName, (int)startOffset);
-            _rangeSectionWriter.EmitSymbolReference(_codeRelocType, symbolName, (int)endOffset);
+            _rangeSectionWriter.EmitSymbolReference(_codeRelocType, symbolName, startOffset);
+            _rangeSectionWriter.EmitSymbolReference(_codeRelocType, symbolName, endOffset);
         }
 
         public void WriteEndRangeList()
@@ -192,7 +191,7 @@ namespace ILCompiler.ObjectWriter
 
         public void Dispose()
         {
-            //Debug.Assert(_dieStack.Count == 0);
+            // Debug.Assert(_dieStack.Count == 0);
 
             // Flush late bound forward references
             int streamOffset = (int)_infoSectionWriter.Stream.Position;
