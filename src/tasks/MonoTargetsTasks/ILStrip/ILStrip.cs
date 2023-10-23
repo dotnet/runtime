@@ -142,7 +142,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
     private bool TrimMethods(ITaskItem assemblyItem, string trimmedAssemblyFolder)
     {
-        ITaskItem newAssmeblyItem = assemblyItem;
+        ITaskItem newAssemblyItem = assemblyItem;
 
         string assemblyFilePathArg = assemblyItem.ItemSpec;
         string methodTokenFile = assemblyItem.GetMetadata("MethodTokenFile");
@@ -183,8 +183,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             else
             {
                 Log.LogMessage(MessageImportance.Low, $"Skip trimming {assemblyFilePath} because {trimmedAssemblyFilePath} is newer than {assemblyFilePath} .");
-                UpdateAssemblyItemWithTrimmedOne(ref newAssmeblyItem, trimmedAssemblyFilePath, assemblyFilePathArg);
-                _updatedAssemblies.Add(newAssmeblyItem);
+                UpdateAssemblyItemWithTrimmedOne(ref newAssemblyItem, trimmedAssemblyFilePath, assemblyFilePathArg);
+                _updatedAssemblies.Add(newAssemblyItem);
                 return true;
             }
         }
@@ -215,10 +215,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (isTrimmed)
         {
-            UpdateAssemblyItemWithTrimmedOne(ref newAssmeblyItem, trimmedAssemblyFilePath, assemblyFilePathArg);
+            UpdateAssemblyItemWithTrimmedOne(ref newAssemblyItem, trimmedAssemblyFilePath, assemblyFilePathArg);
         }
 
-        _updatedAssemblies.Add(newAssmeblyItem);
+        _updatedAssemblies.Add(newAssemblyItem);
         return true;
     }
 
@@ -353,10 +353,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         ArrayPool<byte>.Shared.Return(zeroBuffer);
     }
 
-    private static void UpdateAssemblyItemWithTrimmedOne(ref ITaskItem newAssmeblyItem, string trimmedAssemblyFilePath, string originAssemblyFilePath)
+    private static void UpdateAssemblyItemWithTrimmedOne(ref ITaskItem newAssemblyItem, string trimmedAssemblyFilePath, string originAssemblyFilePath)
     {
-        newAssmeblyItem.ItemSpec = trimmedAssemblyFilePath;
-        newAssmeblyItem.SetMetadata("UntrimmedAssemblyFilePath", originAssemblyFilePath);
-        newAssmeblyItem.SetMetadata("ILStripped", "true");
+        newAssemblyItem.ItemSpec = trimmedAssemblyFilePath;
+        newAssemblyItem.SetMetadata("UntrimmedAssemblyFilePath", originAssemblyFilePath);
+        newAssemblyItem.SetMetadata("ILStripped", "true");
     }
 }
