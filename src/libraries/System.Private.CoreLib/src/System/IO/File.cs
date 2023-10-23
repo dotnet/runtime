@@ -690,7 +690,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Appends the specified byte array to the end of the file at the given path. 
+        /// Appends the specified byte array to the end of the file at the given path.
         /// If the file doesn't exist, this method creates a new file.
         /// </summary>
         /// <param name="path">The path of the file to which the bytes should be appended.</param>
