@@ -26,12 +26,14 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-hwcap.h>
+#include <mono/utils/mono-bitutils.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal-shared.h>
 #include "llvm-intrinsics-types.h"
 
 #include "interp/interp.h"
+
 
 // The following defines are here to support the inclusion of simd-arm64.h
 #define EXPAND(x) x
@@ -620,12 +622,60 @@ emit_subx_sp_imm (guint8 *code, int imm)
 	return code;
 }
 
+static gboolean
+encode_arm64_logical_imm (guint64 imm, gboolean islong, int* pn, int* pimms, int* pimmr)
+{
+	if (imm == 0)
+		return FALSE;
+
+	// We recongnize the pattern 0*1+0* for 32- and 64-bit immediates.
+	// TODO: expand to full specification
+	int lsb_zero, band_one, msb_zero;
+	if (islong) {
+		lsb_zero = mono_tzcnt64 (imm);
+		msb_zero = mono_lzcnt64 (imm);
+		band_one = 64 - lsb_zero - msb_zero;
+
+		if (band_one == 0 || band_one == 64) 
+			return FALSE;
+	} else {
+		lsb_zero = mono_tzcnt32 ((guint32)imm);
+		msb_zero = mono_lzcnt32 ((guint32)imm);
+		band_one = 32 - lsb_zero - msb_zero;
+
+		if (band_one == 0 || band_one == 32) 
+			return FALSE;
+	}
+
+	guint64 expected_imm = ((1 << band_one) - 1) << lsb_zero;
+	if(imm != expected_imm)
+		return FALSE;
+
+	int imms = band_one - 1;
+	int immr = lsb_zero == 0 ? 0 : (msb_zero + band_one);
+	int n = islong ? 1 : 0;
+
+	g_assert (imms >= 0 && imms < 128);
+	g_assert (immr >= 0 && immr < 128);
+
+	if (pn) *pn = n;
+	if (pimms) *pimms = imms;
+	if (pimmr) *pimmr = immr;
+
+	return TRUE;
+}
+
+
 static WARN_UNUSED_RESULT guint8*
 emit_andw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_andw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_andw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_andw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -633,9 +683,13 @@ emit_andw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_andx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_andx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_andx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_andx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -643,9 +697,13 @@ emit_andx_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_orrw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_orrw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_orrw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_orrw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -653,9 +711,13 @@ emit_orrw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_orrx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_orrx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_orrx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_orrx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -663,9 +725,13 @@ emit_orrx_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_eorw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_eorw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_eorw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_eorw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -673,9 +739,13 @@ emit_eorw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_eorx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_eorx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_eorx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_eorx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }

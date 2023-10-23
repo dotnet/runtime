@@ -3221,7 +3221,10 @@ public:
     bool fgSafeBasicBlockCreation;
 #endif
 
-    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
+    BasicBlock* bbNewBasicBlock();
+    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    BasicBlock* bbNewBasicBlock(BBswtDesc* jumpSwt);
+    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind, unsigned jumpOffs);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4582,7 +4585,6 @@ public:
         }
     }
 
-    BasicBlock* fgNewBasicBlock(BBjumpKinds jumpKind);
     bool fgEnsureFirstBBisScratch();
     bool fgFirstBBisScratch();
     bool fgBBisScratch(BasicBlock* block);
@@ -4590,31 +4592,34 @@ public:
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
 
-    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
+    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
+    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects = false);
+    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
 
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
                                 BasicBlock* nearBlk,
+                                BasicBlock* jumpDest    = nullptr,
                                 bool        putInFilter = false,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 BasicBlock* srcBlk,
+                                BasicBlock* jumpDest    = nullptr,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind);
+    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
 
     BasicBlock* fgNewBBinRegionWorker(BBjumpKinds jumpKind,
                                       BasicBlock* afterBlk,
                                       unsigned    xcptnIndex,
-                                      bool        putInTryRegion);
+                                      bool        putInTryRegion,
+                                      BasicBlock* jumpDest = nullptr);
 
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
@@ -4697,6 +4702,8 @@ public:
 
     bool fgGlobalMorph; // indicates if we are during the global morphing phase
                         // since fgMorphTree can be called from several places
+
+    bool fgGlobalMorphDone;
 
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
@@ -4889,10 +4896,6 @@ public:
     void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
-
-    // Do "simple lowering."  This functionality is (conceptually) part of "general"
-    // lowering that is distributed between fgMorph and the lowering phase of LSRA.
-    PhaseStatus fgSimpleLowering();
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
@@ -5662,7 +5665,7 @@ public:
     void fgDebugCheckLoopTable();
     void fgDebugCheckSsa();
 
-    void fgDebugCheckFlags(GenTree* tree);
+    void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
@@ -6119,12 +6122,11 @@ private:
     static unsigned acdHelper(SpecialCodeKind codeKind);
 
     AddCodeDsc* fgAddCodeList;
-    bool        fgAddCodeModf;
+    bool        fgRngChkThrowAdded;
     AddCodeDsc* fgExcptnTargetCache[SCK_COUNT];
 
-    BasicBlock* fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind);
-
-    BasicBlock* fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, SpecialCodeKind kind);
+    void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
+    PhaseStatus fgCreateThrowHelperBlocks();
 
 public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);
@@ -6137,8 +6139,6 @@ public:
     }
 
 private:
-    bool fgIsCodeAdded();
-
     bool fgIsThrowHlpBlk(BasicBlock* block);
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -7120,6 +7120,7 @@ public:
 #define OMF_HAS_STATIC_INIT                    0x00008000 // Method has static initializations we might want to partially inline
 #define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
+#define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
 
     // clang-format on
 
@@ -7188,6 +7189,16 @@ public:
     void setMethodHasSpecialIntrinsics()
     {
         optMethodFlags |= OMF_HAS_SPECIAL_INTRINSICS;
+    }
+
+    bool doesMethodHaveRecursiveTailcall()
+    {
+        return (optMethodFlags & OMF_HAS_RECURSIVE_TAILCALL) != 0;
+    }
+
+    void setMethodHasRecursiveTailcall()
+    {
+        optMethodFlags |= OMF_HAS_RECURSIVE_TAILCALL;
     }
 
     void pickGDV(GenTreeCall*           call,
@@ -9363,7 +9374,6 @@ public:
     bool compFloatingPointUsed;        // Does the method use TYP_FLOAT or TYP_DOUBLE
     bool compTailCallUsed;             // Does the method do a tailcall
     bool compTailPrefixSeen;           // Does the method IL have tail. prefix
-    bool compMayConvertTailCallToLoop; // Does the method have a recursive tail call that we may convert to a loop?
     bool compLocallocSeen;             // Does the method IL have localloc opcode
     bool compLocallocUsed;             // Does the method use localloc.
     bool compLocallocOptimized;        // Does the method have an optimized localloc

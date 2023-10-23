@@ -105,12 +105,12 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
     // execution order == [*] ==
     if (!module.onAbort) {
         module.onAbort = (error) => {
-            loaderHelpers.mono_exit(1, loaderHelpers.exitReason || error);
+            loaderHelpers.mono_exit(1, error);
         };
     }
     if (!module.onExit) {
         module.onExit = (code) => {
-            loaderHelpers.mono_exit(code, loaderHelpers.exitReason);
+            loaderHelpers.mono_exit(code, null);
         };
     }
 }
@@ -236,7 +236,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
         runtimeHelpers.abort = (reason: any) => {
-            loaderHelpers.exitReason = reason;
             if (!loaderHelpers.is_exited()) {
                 cwraps.mono_wasm_abort();
             }

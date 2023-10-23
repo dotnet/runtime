@@ -3069,7 +3069,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 
 inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 {
-    if (!fgIsCodeAdded())
+    if (!fgRngChkThrowAdded)
     {
         return false;
     }
@@ -3156,16 +3156,6 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 }
 
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-/*****************************************************************************
- *
- *  Return true if we've added any new basic blocks.
- */
-
-inline bool Compiler::fgIsCodeAdded()
-{
-    return fgAddCodeModf;
-}
 
 /*****************************************************************************
   Is the offset too big?

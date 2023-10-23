@@ -1255,7 +1255,7 @@ DONE:
                     dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
             fgMarkBackwardJump(loopHead, compCurBB);
 
-            compMayConvertTailCallToLoop = true;
+            setMethodHasRecursiveTailcall();
             compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
         }
 
@@ -7410,6 +7410,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (pExactContextHandle != nullptr)
     {
         *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
+    }
+
+    // We might have created a new recursive tail call candidate.
+    //
+    if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
+    {
+        setMethodHasRecursiveTailcall();
+        compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
     }
 
 #ifdef FEATURE_READYTORUN

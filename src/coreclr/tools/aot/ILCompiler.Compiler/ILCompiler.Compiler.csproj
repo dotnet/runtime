@@ -412,6 +412,7 @@
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FunctionPointerMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsHashtableEntryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
@@ -460,7 +461,7 @@
     <Compile Include="Compiler\InlinedThreadStatics.cs" />
     <Compile Include="Compiler\MstatObjectDumper.cs" />
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SerializedFrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
     <Compile Include="Compiler\MetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodMetadataNode.cs" />

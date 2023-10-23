@@ -1901,17 +1901,16 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         codeGen = nullptr;
     }
 
-    compJmpOpUsed                = false;
-    compLongUsed                 = false;
-    compTailCallUsed             = false;
-    compTailPrefixSeen           = false;
-    compMayConvertTailCallToLoop = false;
-    compLocallocSeen             = false;
-    compLocallocUsed             = false;
-    compLocallocOptimized        = false;
-    compQmarkRationalized        = false;
-    compQmarkUsed                = false;
-    compFloatingPointUsed        = false;
+    compJmpOpUsed         = false;
+    compLongUsed          = false;
+    compTailCallUsed      = false;
+    compTailPrefixSeen    = false;
+    compLocallocSeen      = false;
+    compLocallocUsed      = false;
+    compLocallocOptimized = false;
+    compQmarkRationalized = false;
+    compQmarkUsed         = false;
+    compFloatingPointUsed = false;
 
     compSuppressedZeroInit = false;
 
@@ -5038,6 +5037,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
+    // Create any throw helper blocks that might be needed
+    //
+    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
+
     if (opts.OptimizationEnabled())
     {
         // Optimize boolean conditions
@@ -5083,13 +5086,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     rat.Run();
 
     fgNodeThreading = NodeThreading::LIR;
-
-    // Here we do "simple lowering".  When the RyuJIT backend works for all
-    // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
-    // pass of "final lowering."  We must do this before (final) liveness analysis, because this creates
-    // range check throw blocks, in which the liveness must be correct.
-    //
-    DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
 
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
