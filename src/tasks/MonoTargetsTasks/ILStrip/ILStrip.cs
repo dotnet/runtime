@@ -176,12 +176,13 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         {
             if (IsInputNewerThanOutput(assemblyFilePath, trimmedAssemblyFilePath))
             {
-                Log.LogMessage(MessageImportance.Low, $"Re-trimming for {assemblyFilePath} because {trimmedAssemblyFilePath} is older than {assemblyFilePath}.");
+                Log.LogMessage(MessageImportance.Low, $"Re-trimming {assemblyFilePath} because {trimmedAssemblyFilePath} is older than {assemblyFilePath} .");
+                Log.LogMessage(MessageImportance.Low, $"Deleting {trimmedAssemblyFilePath} .");
                 File.Delete(trimmedAssemblyFilePath);
             }
             else
             {
-                Log.LogMessage(MessageImportance.Low, $"Skip trimming for {assemblyFilePath} because {trimmedAssemblyFilePath} is newer than {assemblyFilePath}.");
+                Log.LogMessage(MessageImportance.Low, $"Skip trimming {assemblyFilePath} because {trimmedAssemblyFilePath} is newer than {assemblyFilePath} .");
                 UpdateAssemblyItemWithTrimmedOne(ref newAssmeblyItem, trimmedAssemblyFilePath, assemblyFilePathArg);
                 _updatedAssemblies.Add(newAssmeblyItem);
                 return true;
@@ -189,7 +190,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         }
         else
         {
-            Log.LogMessage(MessageImportance.Low, $"Trimming for {assemblyFilePath}.");
+            Log.LogMessage(MessageImportance.Low, $"Trimming {assemblyFilePath} .");
         }
 
         bool isTrimmed = false;
@@ -222,16 +223,9 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     }
 
     private static string ComputeTrimmedAssemblyFolderName(string IntermediateOutputPath)
-    {
-        if (string.IsNullOrEmpty(IntermediateOutputPath))
-        {
-            return "trimmed";
-        }
-        else
-        {
-            return Path.Combine(IntermediateOutputPath,  "trimmed");
-        }
-    }
+        => string.IsNullOrEmpty(IntermediateOutputPath)
+                ? "trimmed"
+                : Path.Combine(IntermediateOutputPath,  "trimmed");
 
     private static string ComputeTrimmedAssemblyPath(string trimmedAssemblyFolder, string assemblyFilePath)
     {
@@ -240,19 +234,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     }
 
     private static bool IsInputNewerThanOutput(string inFile, string outFile)
-    {
-        DateTime lastWriteTimeSrc = File.GetLastWriteTimeUtc(inFile);
-        DateTime lastWriteTimeDst = File.GetLastWriteTimeUtc(outFile);
-
-        if (lastWriteTimeSrc > lastWriteTimeDst)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
+        => File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile);
 
     private static string ComputeGuid(MetadataReader mr)
     {
