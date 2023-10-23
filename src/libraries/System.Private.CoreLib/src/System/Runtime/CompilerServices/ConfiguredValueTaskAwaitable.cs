@@ -27,7 +27,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredValueTaskAwaitable"/>.</summary>
         [StructLayout(LayoutKind.Auto)]
-        public readonly struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion2, IStateMachineBoxAwareAwaiter
+        public readonly struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
         {
             /// <summary>The value being awaited.</summary>
             private readonly ValueTask _value;
@@ -132,7 +132,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
         [StructLayout(LayoutKind.Auto)]
-        public readonly struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion2<TResult>, IStateMachineBoxAwareAwaiter
+        public readonly struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
         {
             /// <summary>The value being awaited.</summary>
             private readonly ValueTask<TResult> _value;

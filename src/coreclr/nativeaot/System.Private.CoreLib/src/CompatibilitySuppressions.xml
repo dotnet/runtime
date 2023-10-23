@@ -969,19 +969,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.AwaitAwaiterFromRuntimeAsync``2(``1)</Target>
-    <Left>ref/net9.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net9.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync``1(``0)</Target>
-    <Left>ref/net9.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net9.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync``2(``1)</Target>
     <Left>ref/net9.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net9.0/System.Private.CoreLib.dll</Right>
   </Suppression>

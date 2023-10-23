@@ -131,34 +131,11 @@ The StackTrace of a exception thrown within an async2 method shall include any a
 The runtime shall provide the following apis
 
 ```
-        public interface ICriticalNotifyCompletion2 : ICriticalNotifyCompletion
-        {
-            bool IsCompleted { get; }
-            void GetResult();
-        }
-        public interface ICriticalNotifyCompletion2<TResult> : ICriticalNotifyCompletion
-        {
-            bool IsCompleted { get; }
-            TResult GetResult();
-        }
-        public interface INotifyCompletion2 : INotifyCompletion
-        {
-            bool IsCompleted { get; }
-            void GetResult();
-        }
-        public interface INotifyCompletion2<TResult> : INotifyCompletion
-        {
-            bool IsCompleted { get; }
-            TResult GetResult();
-        }
-
-        public static async2 void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion2
-        public static async2 TResult AwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion2<TResult>
-        public static async2 void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2
-        public static async2 TResult UnsafeAwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2<TResult>
-
+        public static async2 void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+        public static async2 void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
 ```
-As well as define that `Task`/`ValueTask` and other awaiters provide awaiters provided implement the `INotifyCompletion2`/`ICriticalNotification2` interfaces. The AwaitAwaiterFromRuntimeAsync provides a means for code generators to await on anything that is awaitable today with a simple set of IL.
+
+Any IL in an async2 method which needs to await will follow the existing C# model of calling `IsCompleted` and `GetResult()` and in the middle instead of using the existing patterns for suspension shall call one of the above helper methods.
 
 ### Utilizing async2 based code from non-async2 based code
 

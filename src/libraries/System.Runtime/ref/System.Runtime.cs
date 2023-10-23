@@ -12699,7 +12699,7 @@ namespace System.Runtime.CompilerServices
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Runtime.CompilerServices.ConfiguredTaskAwaitable.ConfiguredTaskAwaiter GetAwaiter() { throw null; }
-        public readonly partial struct ConfiguredTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion2, System.Runtime.CompilerServices.INotifyCompletion
+        public readonly partial struct ConfiguredTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             private readonly object _dummy;
             private readonly int _dummyPrimitive;
@@ -12714,7 +12714,7 @@ namespace System.Runtime.CompilerServices
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<TResult>.ConfiguredTaskAwaiter GetAwaiter() { throw null; }
-        public readonly partial struct ConfiguredTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion2<TResult>, System.Runtime.CompilerServices.INotifyCompletion
+        public readonly partial struct ConfiguredTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             private readonly object _dummy;
             private readonly int _dummyPrimitive;
@@ -12729,7 +12729,7 @@ namespace System.Runtime.CompilerServices
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter GetAwaiter() { throw null; }
-        public readonly partial struct ConfiguredValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion2, System.Runtime.CompilerServices.INotifyCompletion
+        public readonly partial struct ConfiguredValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             private readonly object _dummy;
             private readonly int _dummyPrimitive;
@@ -12744,7 +12744,7 @@ namespace System.Runtime.CompilerServices
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<TResult>.ConfiguredValueTaskAwaiter GetAwaiter() { throw null; }
-        public readonly partial struct ConfiguredValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion2<TResult>, System.Runtime.CompilerServices.INotifyCompletion
+        public readonly partial struct ConfiguredValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             private readonly object _dummy;
             private readonly int _dummyPrimitive;
@@ -12859,16 +12859,6 @@ namespace System.Runtime.CompilerServices
     {
         void UnsafeOnCompleted(System.Action continuation);
     }
-    public partial interface ICriticalNotifyCompletion2 : ICriticalNotifyCompletion
-    {
-        bool IsCompleted { get; }
-        void GetResult();
-    }
-    public partial interface ICriticalNotifyCompletion2<TResult> : ICriticalNotifyCompletion
-    {
-        bool IsCompleted { get; }
-        TResult GetResult();
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=true)]
     public sealed partial class IndexerNameAttribute : System.Attribute
     {
@@ -12877,16 +12867,6 @@ namespace System.Runtime.CompilerServices
     public partial interface INotifyCompletion
     {
         void OnCompleted(System.Action continuation);
-    }
-    public partial interface INotifyCompletion2 : INotifyCompletion
-    {
-        bool IsCompleted { get; }
-        void GetResult();
-    }
-    public partial interface INotifyCompletion2<TResult> : INotifyCompletion
-    {
-        bool IsCompleted { get; }
-        TResult GetResult();
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
     public sealed partial class InternalsVisibleToAttribute : System.Attribute
@@ -13129,10 +13109,8 @@ namespace System.Runtime.CompilerServices
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);
-        public static TResult UnsafeAwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2<TResult> { throw null; }
-        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2 { }
-        public static TResult AwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion2<TResult> { throw null; }
-        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion2 { }
+        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { }
+        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { }
     }
     public sealed partial class RuntimeWrappedException : System.Exception
     {
@@ -13195,7 +13173,7 @@ namespace System.Runtime.CompilerServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    public readonly partial struct TaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion2, System.Runtime.CompilerServices.INotifyCompletion
+    public readonly partial struct TaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -13204,7 +13182,7 @@ namespace System.Runtime.CompilerServices
         public void OnCompleted(System.Action continuation) { }
         public void UnsafeOnCompleted(System.Action continuation) { }
     }
-    public readonly partial struct TaskAwaiter<TResult> : System.Runtime.CompilerServices.ICriticalNotifyCompletion2<TResult>, System.Runtime.CompilerServices.INotifyCompletion
+    public readonly partial struct TaskAwaiter<TResult> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -13321,7 +13299,7 @@ namespace System.Runtime.CompilerServices
     {
         public UnsafeValueTypeAttribute() { }
     }
-    public readonly partial struct ValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion2, System.Runtime.CompilerServices.INotifyCompletion
+    public readonly partial struct ValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -13330,7 +13308,7 @@ namespace System.Runtime.CompilerServices
         public void OnCompleted(System.Action continuation) { }
         public void UnsafeOnCompleted(System.Action continuation) { }
     }
-    public readonly partial struct ValueTaskAwaiter<TResult> : System.Runtime.CompilerServices.ICriticalNotifyCompletion2<TResult>, System.Runtime.CompilerServices.INotifyCompletion
+    public readonly partial struct ValueTaskAwaiter<TResult> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -13342,7 +13320,7 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct YieldAwaitable
     {
         public System.Runtime.CompilerServices.YieldAwaitable.YieldAwaiter GetAwaiter() { throw null; }
-        public readonly partial struct YieldAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion2, System.Runtime.CompilerServices.INotifyCompletion
+        public readonly partial struct YieldAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get { throw null; } }
             public void GetResult() { }

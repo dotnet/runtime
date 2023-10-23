@@ -310,7 +310,7 @@ namespace System.IO.Strategies
         }
 
         /// <summary>Used by AsyncWindowsFileStreamStrategy.CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
-        private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion2
+        private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
         {
             /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>
             private static readonly Action s_sentinel = () => { };

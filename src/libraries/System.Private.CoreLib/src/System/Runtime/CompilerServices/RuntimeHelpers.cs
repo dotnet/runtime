@@ -119,117 +119,46 @@ namespace System.Runtime.CompilerServices
 #pragma warning restore IDE0060
 
 #if !NATIVEAOT
-
-        // TODO, this method should be marked so that it is only callable from a runtime async method
-        public static TResult UnsafeAwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2<TResult>
+        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
-            if (!awaiter.IsCompleted)
+            StackCrawlMark stackMark = StackCrawlMark.LookForMe;
+
+            // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
+            // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
+            // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+            // it will resume with a return value of null.
+            Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
+            if (resumption != null)
             {
-                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
-
-                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
-                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
-                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
-                // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
-                if (resumption != null)
-                {
-                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
-                    // and return from GetOrCreateResumptionDelegate with a null return value.
-                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
-                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                    maintainedData._awaiter = awaiter;
-                    // This function must be called from the same function that has the stackmark in it.
-                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
-                }
+                // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
+                // and return from GetOrCreateResumptionDelegate with a null return value.
+                ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+                RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+                maintainedData._awaiter = awaiter;
+                // This function must be called from the same function that has the stackmark in it.
+                unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
             }
-
-            // Get the result from the awaiter, or throw the exception stored in the Task
-            return awaiter.GetResult();
         }
 
-        // TODO, this method should be marked so that it is only callable from a runtime async method
-        public static TResult AwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion2<TResult>
+        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
-            if (!awaiter.IsCompleted)
+            StackCrawlMark stackMark = StackCrawlMark.LookForMe;
+
+            // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
+            // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
+            // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+            // it will resume with a return value of null.
+            Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
+            if (resumption != null)
             {
-                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
-
-                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
-                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
-                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
-                // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
-                if (resumption != null)
-                {
-                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
-                    // and return from GetOrCreateResumptionDelegate with a null return value.
-                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
-                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                    maintainedData._awaiter = awaiter;
-                    // This function must be called from the same function that has the stackmark in it.
-                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
-                }
+                // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
+                // and return from GetOrCreateResumptionDelegate with a null return value.
+                ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+                RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+                maintainedData._awaiter = awaiter;
+                // This function must be called from the same function that has the stackmark in it.
+                unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
             }
-
-            // Get the result from the awaiter, or throw the exception stored in the Task
-            return awaiter.GetResult();
-        }
-
-        // TODO, this method should be marked so that it is only callable from a runtime async method
-        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2
-        {
-            if (!awaiter.IsCompleted)
-            {
-                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
-
-                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
-                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
-                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
-                // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
-                if (resumption != null)
-                {
-                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
-                    // and return from GetOrCreateResumptionDelegate with a null return value.
-                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
-                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                    maintainedData._awaiter = awaiter;
-                    // This function must be called from the same function that has the stackmark in it.
-                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
-                }
-            }
-
-            // Get the result from the awaiter, or throw the exception stored in the Task
-            awaiter.GetResult();
-        }
-
-        // TODO, this method should be marked so that it is only callable from a runtime async method
-        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion2
-        {
-            if (!awaiter.IsCompleted)
-            {
-                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
-
-                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
-                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
-                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
-                // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
-                if (resumption != null)
-                {
-                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
-                    // and return from GetOrCreateResumptionDelegate with a null return value.
-                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
-                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                    maintainedData._awaiter = awaiter;
-                    // This function must be called from the same function that has the stackmark in it.
-                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
-                }
-            }
-
-            // Get the result from the awaiter, or throw the exception stored in the Task
-            awaiter.GetResult();
         }
 
         [ThreadStatic]
