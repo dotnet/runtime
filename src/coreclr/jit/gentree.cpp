@@ -836,7 +836,7 @@ bool GenTree::gtHasReg(Compiler* comp) const
     {
         assert(comp != nullptr);
         const GenTreeLclVar* lclNode  = AsLclVar();
-        const unsigned       regCount = GetMultiRegCount(comp);
+        const unsigned       regCount = lclNode->GetFieldCount(comp);
         // A Multi-reg local vars is said to have regs,
         // if it has valid regs in any of the positions.
         for (unsigned i = 0; i < regCount; i++)
@@ -2534,7 +2534,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 #endif
 
         if ((c1->gtCallType == CT_USER_FUNC) &&
-            ((c1->gtCallMoreFlags & GTF_CALL_VIRT_KIND_MASK) != (c2->gtCallMoreFlags & GTF_CALL_VIRT_KIND_MASK)))
+            ((c1->gtFlags & GTF_CALL_VIRT_KIND_MASK) != (c2->gtFlags & GTF_CALL_VIRT_KIND_MASK)))
         {
             return false;
         }
@@ -25741,6 +25741,18 @@ bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
     }
 }
 
+//------------------------------------------------------------------------
+// OperIsBitwiseHWIntrinsic: Is this HWIntrinsic a bitwise logic intrinsic node.
+//
+// Return Value:
+//    Whether "this" is a bitwise logic intrinsic node.
+//
+bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
+{
+    genTreeOps Oper = HWOperGet();
+    return Oper == GT_AND || Oper == GT_OR || Oper == GT_XOR || Oper == GT_AND_NOT;
+}
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.
@@ -25963,7 +25975,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 //------------------------------------------------------------------------------
 // HWOperGet : Returns Oper based on the HWIntrinsicId
 //
-genTreeOps GenTreeHWIntrinsic::HWOperGet()
+genTreeOps GenTreeHWIntrinsic::HWOperGet() const
 {
     switch (GetHWIntrinsicId())
     {
@@ -25972,6 +25984,8 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_SSE2_And:
         case NI_AVX_And:
         case NI_AVX2_And:
+        case NI_AVX512F_And:
+        case NI_AVX512DQ_And:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_And:
 #endif
@@ -25991,6 +26005,8 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_SSE2_Xor:
         case NI_AVX_Xor:
         case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Xor:
 #endif
@@ -25998,6 +26014,31 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
             return GT_XOR;
         }
 
+#if defined(TARGET_XARCH)
+        case NI_SSE_Or:
+        case NI_SSE2_Or:
+        case NI_AVX_Or:
+        case NI_AVX2_Or:
+        case NI_AVX512F_Or:
+        case NI_AVX512DQ_Or:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_Or:
+#endif
+        {
+            return GT_OR;
+        }
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+        {
+            return GT_AND_NOT;
+        }
+#endif
         // TODO: Handle other cases
 
         default:
@@ -26783,6 +26824,80 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree
     }
 
     return 0;
+}
+
+//------------------------------------------------------------------------
+// GetTernaryControlByte: calculate the value of the control byte for ternary node
+// with given logic nodes on the input.
+//
+// Return value: the value of the ternary control byte.
+uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) const
+{
+    // we assume we have a structure like:
+    /*
+               /- A
+               +- B
+        t1 = binary logical op1
+
+               /- C
+               +- t1
+        t2 = binary logical op2
+    */
+
+    // To calculate the control byte value:
+    // The way the constants work is we have three keys:
+    // * A: 0xF0
+    // * B: 0xCC
+    // * C: 0xAA
+    //
+    // To compute the correct control byte, you simply perform the corresponding operation on these keys. So, if you
+    // wanted to do (A & B) ^ C, you would compute (0xF0 & 0xCC) ^ 0xAA or 0x6A.
+    assert(second->Op(1) == this || second->Op(2) == this);
+    const uint8_t A = 0xF0;
+    const uint8_t B = 0xCC;
+    const uint8_t C = 0xAA;
+
+    genTreeOps firstOper  = HWOperGet();
+    genTreeOps secondOper = second->HWOperGet();
+
+    uint8_t AB  = 0;
+    uint8_t ABC = 0;
+
+    if (firstOper == GT_AND)
+    {
+        AB = A & B;
+    }
+    else if (firstOper == GT_OR)
+    {
+        AB = A | B;
+    }
+    else if (firstOper == GT_XOR)
+    {
+        AB = A ^ B;
+    }
+    else
+    {
+        unreached();
+    }
+
+    if (secondOper == GT_AND)
+    {
+        ABC = AB & C;
+    }
+    else if (secondOper == GT_OR)
+    {
+        ABC = AB | C;
+    }
+    else if (secondOper == GT_XOR)
+    {
+        ABC = AB ^ C;
+    }
+    else
+    {
+        unreached();
+    }
+
+    return ABC;
 }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 

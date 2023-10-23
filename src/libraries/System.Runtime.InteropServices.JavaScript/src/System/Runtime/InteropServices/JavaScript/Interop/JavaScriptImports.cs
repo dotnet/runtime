@@ -7,11 +7,11 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JavaScriptImports
     {
-        public static void MarshalPromise(Span<JSMarshalerArgument> arguments)
+        public static void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
         {
             fixed (JSMarshalerArgument* ptr = arguments)
             {
-                Interop.Runtime.MarshalPromise(ptr);
+                Interop.Runtime.ResolveOrRejectPromise(ptr);
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {

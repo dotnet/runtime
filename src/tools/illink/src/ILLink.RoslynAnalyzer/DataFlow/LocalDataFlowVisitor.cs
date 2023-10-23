@@ -76,13 +76,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			// If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
 			// (ConditionalSuccessor == null iff ConditionKind == None).
-			// If we get here, we should be analyzing a method body, not an attribute instance since attributes can't have throws or return statements
-			// Field/property initializers also can't have throws or return statements.
-			Debug.Assert (OwningSymbol is IMethodSymbol);
+			// If we get here, we should be analyzing code in a method or field/property initializer,
+			// not an attribute instance, since attributes can't have throws or return statements
+			Debug.Assert (OwningSymbol is IMethodSymbol or IFieldSymbol or IPropertySymbol,
+				$"{OwningSymbol.GetType ()}: {branchValueOperation.Syntax.GetLocation ().GetLineSpan ()}");
 
 			// The BranchValue for a thrown value is not involved in dataflow tracking.
 			if (block.Block.FallThroughSuccessor?.Semantics == ControlFlowBranchSemantics.Throw)
 				return;
+
+			// Field/property initializers can't have return statements.
+			Debug.Assert (OwningSymbol is IMethodSymbol,
+				$"{OwningSymbol.GetType ()}: {branchValueOperation.Syntax.GetLocation ().GetLineSpan ()}");
 
 			// Return statements with return values are represented in the control flow graph as
 			// a branch value operation that computes the return value.
@@ -125,9 +130,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			if (local.IsConst)
 				return false;
-
-			var declaringSymbol = (IMethodSymbol) local.ContainingSymbol;
-			return !ReferenceEquals (declaringSymbol, OwningSymbol);
+			Debug.Assert (local.ContainingSymbol is IMethodSymbol or IFieldSymbol, // backing field for property initializers
+				$"{local.ContainingSymbol.GetType ()}: {localReference.Syntax.GetLocation ().GetLineSpan ()}");
+			return !ReferenceEquals (local.ContainingSymbol, OwningSymbol);
 		}
 
 		TValue GetLocal (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
@@ -159,7 +164,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			state.Set (local, newValue);
 		}
 
-		TValue ProcessSingleTargetAssignment (IOperation targetOperation, ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state, bool merge)
+		TValue ProcessSingleTargetAssignment (IOperation targetOperation, IAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state, bool merge)
 		{
 			switch (targetOperation) {
 			case IFieldReferenceOperation:
@@ -187,9 +192,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						// This can happen in a constructor - there it is possible to assign to a property
 						// without a setter. This turns into an assignment to the compiler-generated backing field.
 						// To match the linker, this should warn about the compiler-generated backing field.
-						// For now, just don't warn. https://github.com/dotnet/linker/issues/2731
+						// For now, just don't warn. https://github.com/dotnet/runtime/issues/93277
 						break;
 					}
+					// Even if the property has a set method, if the assignment takes place in a property initializer,
+					// the write becomes a direct write to the underlying field. This should be treated the same as
+					// the case where there is no set method.
+					if (OwningSymbol is IPropertySymbol && (ControlFlowGraph.OriginalOperation is not IAttributeOperation))
+						break;
 
 					// Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
 					ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue> ();
@@ -294,6 +304,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitSimpleAssignment (ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
+			return ProcessAssignment (operation, state);
+		}
+
+		public override TValue VisitCompoundAssignment (ICompoundAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			return ProcessAssignment (operation, state);
+		}
+
+		// Note: this is called both for normal assignments and ICompoundAssignmentOperation.
+		// The resulting value of a compound assignment isn't important for our dataflow analysis
+		// (we don't model addition of integers, for example), so we just treat these the same
+		// as normal assignments.
+		TValue ProcessAssignment (IAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
 			var targetOperation = operation.Target;
 			if (targetOperation is not IFlowCaptureReferenceOperation flowCaptureReference)
 				return ProcessSingleTargetAssignment (targetOperation, operation, state, merge: false);
@@ -305,7 +329,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// for simplicity. This could be generalized if we encounter a dataflow behavior where this makes a difference.
 
 			Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
-			Debug.Assert (!flowCaptureReference.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
+			Debug.Assert (flowCaptureReference.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write));
 			var capturedReferences = state.Current.CapturedReferences.Get (flowCaptureReference.Id);
 			if (!capturedReferences.HasMultipleValues) {
 				// Single captured reference. Treat this as an overwriting assignment.
@@ -360,8 +384,31 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// Debug.Assert (IsLValueFlowCapture (operation.Id));
 				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write),
 					$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
+					$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
 				return TopValue;
 			}
+
+			if (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write)) {
+				// If we get here, it means we're visiting a flow capture reference that may be
+				// assigned to. Similar to the IsInitialization case, this can happen for an out param
+				// where the variable is declared before being passed as an out param, for example:
+
+				// string s;
+				// Method (out s, b ? 0 : 1);
+
+				// The second argument is necessary to create multiple branches so that the compiler
+				// turns both arguments into flow capture references, instead of just passing a local
+				// reference for s.
+
+				// This can also happen for a deconstruction assignments, where the write is not to a byref.
+				// Once the analyzer implements support for deconstruction assignments (https://github.com/dotnet/linker/issues/3158),
+				// we can try enabling this assert to ensure that this case is only hit for byrefs.
+				// Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
+				//     $"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+				return TopValue;
+			}
+
 			return GetFlowCaptureValue (operation, state);
 		}
 
@@ -428,14 +475,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				return HandleDelegateCreation (lambda.Symbol, instance, operation);
 			}
 
-			Debug.Assert (operation.Target is IMethodReferenceOperation);
-			if (operation.Target is not IMethodReferenceOperation methodReference)
+			Debug.Assert (operation.Target is IMemberReferenceOperation,
+				$"{operation.Target.GetType ()}: {operation.Syntax.GetLocation ().GetLineSpan ()}");
+			if (operation.Target is not IMemberReferenceOperation memberReference)
 				return TopValue;
 
-			TValue instanceValue = Visit (methodReference.Instance, state);
-			IMethodSymbol? method = methodReference.Method;
-			Debug.Assert (method != null);
-			if (method == null)
+			TValue instanceValue = Visit (memberReference.Instance, state);
+
+			if (memberReference.Member is not IMethodSymbol method)
 				return TopValue;
 
 			// Track references to local functions

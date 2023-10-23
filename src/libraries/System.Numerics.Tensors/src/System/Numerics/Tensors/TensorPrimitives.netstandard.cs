@@ -93,63 +93,292 @@ namespace System.Numerics.Tensors
         /// Specifies the aggregation binary operation that should be applied to multiple values to aggregate them into a single value.
         /// The aggregation is applied after the transform is applied to each element.
         /// </typeparam>
-        private static float Aggregate<TTransformOperator, TAggregationOperator>(
+        private static unsafe float Aggregate<TTransformOperator, TAggregationOperator>(
             ReadOnlySpan<float> x, TTransformOperator transformOp = default, TAggregationOperator aggregationOp = default)
             where TTransformOperator : struct, IUnaryOperator
             where TAggregationOperator : struct, IAggregationOperator
         {
-            if (x.Length == 0)
+            // Since every branch has a cost and since that cost is
+            // essentially lost for larger inputs, we do branches
+            // in a way that allows us to have the minimum possible
+            // for small sizes
+
+            ref float xRef = ref MemoryMarshal.GetReference(x);
+
+            nuint remainder = (uint)(x.Length);
+
+            if (Vector.IsHardwareAccelerated && transformOp.CanVectorize)
             {
-                return 0;
-            }
+                float result;
 
-            float result;
-
-            if (Vector.IsHardwareAccelerated && transformOp.CanVectorize && x.Length >= Vector<float>.Count)
-            {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-
-                // Load the first vector as the initial set of results
-                Vector<float> resultVector = transformOp.Invoke(AsVector(ref xRef, 0));
-                int oneVectorFromEnd = x.Length - Vector<float>.Count;
-                int i = Vector<float>.Count;
-
-                // Aggregate additional vectors into the result as long as there's at
-                // least one full vector left to process.
-                while (i <= oneVectorFromEnd)
+                if (remainder >= (uint)(Vector<float>.Count))
                 {
-                    resultVector = aggregationOp.Invoke(resultVector, transformOp.Invoke(AsVector(ref xRef, i)));
-                    i += Vector<float>.Count;
+                    result = Vectorized(ref xRef, remainder);
                 }
-
-                // Process the last vector in the span, masking off elements already processed.
-                if (i != x.Length)
+                else
                 {
-                    resultVector = aggregationOp.Invoke(resultVector,
-                        Vector.ConditionalSelect(
-                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
-                            new Vector<float>(aggregationOp.IdentityValue),
-                            transformOp.Invoke(AsVector(ref xRef, x.Length - Vector<float>.Count))));
-                }
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
 
-                // Aggregate the lanes in the vector back into the scalar result
-                result = resultVector[0];
-                for (int f = 1; f < Vector<float>.Count; f++)
-                {
-                    result = aggregationOp.Invoke(result, resultVector[f]);
+                    result = VectorizedSmall(ref xRef, remainder);
                 }
 
                 return result;
             }
 
-            // Aggregate the remaining items in the input span.
-            result = transformOp.Invoke(x[0]);
-            for (int i = 1; i < x.Length; i++)
+            // This is the software fallback when no acceleration is available
+            // It requires no branches to hit
+
+            return SoftwareFallback(ref xRef, remainder);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static float SoftwareFallback(ref float xRef, nuint length, TTransformOperator transformOp = default, TAggregationOperator aggregationOp = default)
             {
-                result = aggregationOp.Invoke(result, transformOp.Invoke(x[i]));
+                float result = aggregationOp.IdentityValue;
+
+                for (nuint i = 0; i < length; i++)
+                {
+                    result = aggregationOp.Invoke(result, transformOp.Invoke(Unsafe.Add(ref xRef, (nint)(i))));
+                }
+
+                return result;
             }
 
-            return result;
+            static float Vectorized(ref float xRef, nuint remainder, TTransformOperator transformOp = default, TAggregationOperator aggregationOp = default)
+            {
+                Vector<float> vresult = new Vector<float>(aggregationOp.IdentityValue);
+
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector<float> beg = transformOp.Invoke(AsVector(ref xRef));
+                Vector<float> end = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count)));
+
+                nuint misalignment = 0;
+
+                if (remainder > (uint)(Vector<float>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (float* px = &xRef)
+                    {
+                        float* xPtr = px;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)(xPtr) % sizeof(float)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(xPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
+
+                            xPtr += misalignment;
+
+                            Debug.Assert(((nuint)(xPtr) % (uint)(sizeof(Vector<float>))) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector<float> vector1;
+                        Vector<float> vector2;
+                        Vector<float> vector3;
+                        Vector<float> vector4;
+
+                        // We only need to load, so there isn't a lot of benefit to doing non-temporal operations
+
+                        while (remainder >= (uint)(Vector<float>.Count * 8))
+                        {
+                            // We load, process, and store the first four vectors
+
+                            vector1 = transformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 0)));
+                            vector2 = transformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 1)));
+                            vector3 = transformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 2)));
+                            vector4 = transformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 3)));
+
+                            vresult = aggregationOp.Invoke(vresult, vector1);
+                            vresult = aggregationOp.Invoke(vresult, vector2);
+                            vresult = aggregationOp.Invoke(vresult, vector3);
+                            vresult = aggregationOp.Invoke(vresult, vector4);
+
+                            // We load, process, and store the next four vectors
+
+                            vector1 = transformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 4)));
+                            vector2 = transformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 5)));
+                            vector3 = transformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 6)));
+                            vector4 = transformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 7)));
+
+                            vresult = aggregationOp.Invoke(vresult, vector1);
+                            vresult = aggregationOp.Invoke(vresult, vector2);
+                            vresult = aggregationOp.Invoke(vresult, vector3);
+                            vresult = aggregationOp.Invoke(vresult, vector4);
+
+                            // We adjust the source and destination references, then update
+                            // the count of remaining elements to process.
+
+                            xPtr += (uint)(Vector<float>.Count * 8);
+
+                            remainder -= (uint)(Vector<float>.Count * 8);
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                    }
+                }
+
+                // Store the first block. Handling this separately simplifies the latter code as we know
+                // they come after and so we can relegate it to full blocks or the trailing elements
+
+                beg = Vector.ConditionalSelect(CreateAlignmentMaskSingleVector((int)(misalignment)), beg, new Vector<float>(aggregationOp.IdentityValue));
+                vresult = aggregationOp.Invoke(vresult, beg);
+
+                // Process the remaining [0, Count * 7] elements via a jump table
+                //
+                // We end up handling any trailing elements in case 0 and in the
+                // worst case end up just doing the identity operation here if there
+                // were no trailing elements.
+
+                nuint blocks = remainder / (nuint)(Vector<float>.Count);
+                nuint trailing = remainder - (blocks * (nuint)(Vector<float>.Count));
+                blocks -= (misalignment == 0) ? 1u : 0u;
+                remainder -= trailing;
+
+                switch (blocks)
+                {
+                    case 7:
+                    {
+                        Vector<float> vector = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 7)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 6;
+                    }
+
+                    case 6:
+                    {
+                        Vector<float> vector = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 6)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 5;
+                    }
+
+                    case 5:
+                    {
+                        Vector<float> vector = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 5)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 4;
+                    }
+
+                    case 4:
+                    {
+                        Vector<float> vector = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 4)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 3;
+                    }
+
+                    case 3:
+                    {
+                        Vector<float> vector = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 3)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 2;
+                    }
+
+                    case 2:
+                    {
+                        Vector<float> vector = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 2)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        Vector<float> vector = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 1)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end = Vector.ConditionalSelect(CreateRemainderMaskSingleVector((int)(trailing)), end, new Vector<float>(aggregationOp.IdentityValue));
+                        vresult = aggregationOp.Invoke(vresult, end);
+                        break;
+                    }
+                }
+
+                float result = aggregationOp.IdentityValue;
+
+                for (int i = 0; i < Vector<float>.Count; i++)
+                {
+                    result = aggregationOp.Invoke(result, vresult[i]);
+                }
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static float VectorizedSmall(ref float xRef, nuint remainder, TTransformOperator transformOp = default, TAggregationOperator aggregationOp = default)
+            {
+                float result = aggregationOp.IdentityValue;
+
+                switch (remainder)
+                {
+                    case 7:
+                    {
+                        result = aggregationOp.Invoke(result, transformOp.Invoke(Unsafe.Add(ref xRef, 6)));
+                        goto case 6;
+                    }
+
+                    case 6:
+                    {
+                        result = aggregationOp.Invoke(result, transformOp.Invoke(Unsafe.Add(ref xRef, 5)));
+                        goto case 5;
+                    }
+
+                    case 5:
+                    {
+                        result = aggregationOp.Invoke(result, transformOp.Invoke(Unsafe.Add(ref xRef, 4)));
+                        goto case 4;
+                    }
+
+                    case 4:
+                    {
+                        result = aggregationOp.Invoke(result, transformOp.Invoke(Unsafe.Add(ref xRef, 3)));
+                        goto case 3;
+                    }
+
+                    case 3:
+                    {
+                        result = aggregationOp.Invoke(result, transformOp.Invoke(Unsafe.Add(ref xRef, 2)));
+                        goto case 2;
+                    }
+
+                    case 2:
+                    {
+                        result = aggregationOp.Invoke(result, transformOp.Invoke(Unsafe.Add(ref xRef, 1)));
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        result = aggregationOp.Invoke(result, transformOp.Invoke(xRef));
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Performs an aggregation over all pair-wise elements in <paramref name="x"/> and <paramref name="y"/> to produce a single-precision floating-point value.</summary>
@@ -158,7 +387,7 @@ namespace System.Numerics.Tensors
         /// Specifies the aggregation binary operation that should be applied to multiple values to aggregate them into a single value.
         /// The aggregation is applied to the results of the binary operations on the pair-wise values.
         /// </typeparam>
-        private static float Aggregate<TBinaryOperator, TAggregationOperator>(
+        private static unsafe float Aggregate<TBinaryOperator, TAggregationOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, TBinaryOperator binaryOp = default, TAggregationOperator aggregationOp = default)
             where TBinaryOperator : struct, IBinaryOperator
             where TAggregationOperator : struct, IAggregationOperator
@@ -168,61 +397,317 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            if (x.Length == 0)
-            {
-                return 0;
-            }
+            // Since every branch has a cost and since that cost is
+            // essentially lost for larger inputs, we do branches
+            // in a way that allows us to have the minimum possible
+            // for small sizes
 
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
 
-            float result;
+            nuint remainder = (uint)(x.Length);
 
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
+            if (Vector.IsHardwareAccelerated)
             {
-                // Load the first vector as the initial set of results
-                Vector<float> resultVector = binaryOp.Invoke(AsVector(ref xRef, 0), AsVector(ref yRef, 0));
-                int oneVectorFromEnd = x.Length - Vector<float>.Count;
-                int i = Vector<float>.Count;
+                float result;
 
-                // Aggregate additional vectors into the result as long as there's at
-                // least one full vector left to process.
-                while (i <= oneVectorFromEnd)
+                if (remainder >= (uint)(Vector<float>.Count))
                 {
-                    resultVector = aggregationOp.Invoke(resultVector, binaryOp.Invoke(AsVector(ref xRef, i), AsVector(ref yRef, i)));
-                    i += Vector<float>.Count;
+                    result = Vectorized(ref xRef, ref yRef, remainder);
                 }
-
-                // Process the last vector in the spans, masking off elements already processed.
-                if (i != x.Length)
+                else
                 {
-                    resultVector = aggregationOp.Invoke(resultVector,
-                        Vector.ConditionalSelect(
-                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
-                            new Vector<float>(aggregationOp.IdentityValue),
-                            binaryOp.Invoke(
-                                AsVector(ref xRef, x.Length - Vector<float>.Count),
-                                AsVector(ref yRef, x.Length - Vector<float>.Count))));
-                }
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
 
-                // Aggregate the lanes in the vector back into the scalar result
-                result = resultVector[0];
-                for (int f = 1; f < Vector<float>.Count; f++)
-                {
-                    result = aggregationOp.Invoke(result, resultVector[f]);
+                    result = VectorizedSmall(ref xRef, ref yRef, remainder);
                 }
 
                 return result;
             }
 
-            // Aggregate the remaining items in the input span.
-            result = binaryOp.Invoke(x[0], y[0]);
-            for (int i = 1; i < x.Length; i++)
+            // This is the software fallback when no acceleration is available
+            // It requires no branches to hit
+
+            return SoftwareFallback(ref xRef, ref yRef, remainder);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static float SoftwareFallback(ref float xRef, ref float yRef, nuint length, TBinaryOperator binaryOp = default, TAggregationOperator aggregationOp = default)
             {
-                result = aggregationOp.Invoke(result, binaryOp.Invoke(x[i], y[i]));
+                float result = aggregationOp.IdentityValue;
+
+                for (nuint i = 0; i < length; i++)
+                {
+                    result = aggregationOp.Invoke(result, binaryOp.Invoke(Unsafe.Add(ref xRef, (nint)(i)),
+                                                                          Unsafe.Add(ref yRef, (nint)(i))));
+                }
+
+                return result;
             }
 
-            return result;
+            static float Vectorized(ref float xRef, ref float yRef, nuint remainder, TBinaryOperator binaryOp = default, TAggregationOperator aggregationOp = default)
+            {
+                Vector<float> vresult = new Vector<float>(aggregationOp.IdentityValue);
+
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector<float> beg = binaryOp.Invoke(AsVector(ref xRef),
+                                                    AsVector(ref yRef));
+                Vector<float> end = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count)),
+                                                    AsVector(ref yRef, remainder - (uint)(Vector<float>.Count)));
+
+                nuint misalignment = 0;
+
+                if (remainder > (uint)(Vector<float>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (float* px = &xRef)
+                    fixed (float* py = &yRef)
+                    {
+                        float* xPtr = px;
+                        float* yPtr = py;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)(xPtr) % sizeof(float)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(xPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
+
+                            xPtr += misalignment;
+                            yPtr += misalignment;
+
+                            Debug.Assert(((nuint)(xPtr) % (uint)(sizeof(Vector<float>))) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector<float> vector1;
+                        Vector<float> vector2;
+                        Vector<float> vector3;
+                        Vector<float> vector4;
+
+                        // We only need to load, so there isn't a lot of benefit to doing non-temporal operations
+
+                        while (remainder >= (uint)(Vector<float>.Count * 8))
+                        {
+                            // We load, process, and store the first four vectors
+
+                            vector1 = binaryOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 0)),
+                                                      *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 0)));
+                            vector2 = binaryOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 1)),
+                                                      *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 1)));
+                            vector3 = binaryOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 2)),
+                                                      *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 2)));
+                            vector4 = binaryOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 3)),
+                                                      *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 3)));
+
+                            vresult = aggregationOp.Invoke(vresult, vector1);
+                            vresult = aggregationOp.Invoke(vresult, vector2);
+                            vresult = aggregationOp.Invoke(vresult, vector3);
+                            vresult = aggregationOp.Invoke(vresult, vector4);
+
+                            // We load, process, and store the next four vectors
+
+                            vector1 = binaryOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 4)),
+                                                      *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 4)));
+                            vector2 = binaryOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 5)),
+                                                      *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 5)));
+                            vector3 = binaryOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 6)),
+                                                      *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 6)));
+                            vector4 = binaryOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 7)),
+                                                      *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 7)));
+
+                            vresult = aggregationOp.Invoke(vresult, vector1);
+                            vresult = aggregationOp.Invoke(vresult, vector2);
+                            vresult = aggregationOp.Invoke(vresult, vector3);
+                            vresult = aggregationOp.Invoke(vresult, vector4);
+
+                            // We adjust the source and destination references, then update
+                            // the count of remaining elements to process.
+
+                            xPtr += (uint)(Vector<float>.Count * 8);
+                            yPtr += (uint)(Vector<float>.Count * 8);
+
+                            remainder -= (uint)(Vector<float>.Count * 8);
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        yRef = ref *yPtr;
+                    }
+                }
+
+                // Store the first block. Handling this separately simplifies the latter code as we know
+                // they come after and so we can relegate it to full blocks or the trailing elements
+
+                beg = Vector.ConditionalSelect(CreateAlignmentMaskSingleVector((int)(misalignment)), beg, new Vector<float>(aggregationOp.IdentityValue));
+                vresult = aggregationOp.Invoke(vresult, beg);
+
+                // Process the remaining [0, Count * 7] elements via a jump table
+                //
+                // We end up handling any trailing elements in case 0 and in the
+                // worst case end up just doing the identity operation here if there
+                // were no trailing elements.
+
+                nuint blocks = remainder / (nuint)(Vector<float>.Count);
+                nuint trailing = remainder - (blocks * (nuint)(Vector<float>.Count));
+                blocks -= (misalignment == 0) ? 1u : 0u;
+                remainder -= trailing;
+
+                switch (blocks)
+                {
+                    case 7:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 7)),
+                                                               AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 7)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 6;
+                    }
+
+                    case 6:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 6)),
+                                                               AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 6)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 5;
+                    }
+
+                    case 5:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 5)),
+                                                               AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 5)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 4;
+                    }
+
+                    case 4:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 4)),
+                                                               AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 4)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 3;
+                    }
+
+                    case 3:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 3)),
+                                                               AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 3)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 2;
+                    }
+
+                    case 2:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 2)),
+                                                               AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 2)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 1)),
+                                                               AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 1)));
+                        vresult = aggregationOp.Invoke(vresult, vector);
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end = Vector.ConditionalSelect(CreateRemainderMaskSingleVector((int)(trailing)), end, new Vector<float>(aggregationOp.IdentityValue));
+                        vresult = aggregationOp.Invoke(vresult, end);
+                        break;
+                    }
+                }
+
+                float result = aggregationOp.IdentityValue;
+
+                for (int i = 0; i < Vector<float>.Count; i++)
+                {
+                    result = aggregationOp.Invoke(result, vresult[i]);
+                }
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static float VectorizedSmall(ref float xRef, ref float yRef, nuint remainder, TBinaryOperator binaryOp = default, TAggregationOperator aggregationOp = default)
+            {
+                float result = aggregationOp.IdentityValue;
+
+                switch (remainder)
+                {
+                    case 7:
+                    {
+                        result = aggregationOp.Invoke(result, binaryOp.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                              Unsafe.Add(ref yRef, 6)));
+                        goto case 6;
+                    }
+
+                    case 6:
+                    {
+                        result = aggregationOp.Invoke(result, binaryOp.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                              Unsafe.Add(ref yRef, 5)));
+                        goto case 5;
+                    }
+
+                    case 5:
+                    {
+                        result = aggregationOp.Invoke(result, binaryOp.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                              Unsafe.Add(ref yRef, 4)));
+                        goto case 4;
+                    }
+
+                    case 4:
+                    {
+                        result = aggregationOp.Invoke(result, binaryOp.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                              Unsafe.Add(ref yRef, 3)));
+                        goto case 3;
+                    }
+
+                    case 3:
+                    {
+                        result = aggregationOp.Invoke(result, binaryOp.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                              Unsafe.Add(ref yRef, 2)));
+                        goto case 2;
+                    }
+
+                    case 2:
+                    {
+                        result = aggregationOp.Invoke(result, binaryOp.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                              Unsafe.Add(ref yRef, 1)));
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        result = aggregationOp.Invoke(result, binaryOp.Invoke(xRef, yRef));
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+
+                return result;
+            }
         }
 
         /// <remarks>
@@ -309,6 +794,95 @@ namespace System.Numerics.Tensors
             }
 
             return result;
+        }
+
+        private static readonly int[] s_0through7 = [0, 1, 2, 3, 4, 5, 6, 7];
+
+        private static int IndexOfMinMaxCore<TIndexOfMinMaxOperator>(ReadOnlySpan<float> x, TIndexOfMinMaxOperator op = default)
+            where TIndexOfMinMaxOperator : struct, IIndexOfOperator
+        {
+            // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
+            // It propagates NaN inputs back to the caller and
+            // otherwise returns the index of the greater of the inputs.
+            // It treats +0 as greater than -0 as per the specification.
+
+            int result;
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && Vector<int>.Count <= 8 && x.Length >= Vector<float>.Count)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+
+                Vector<int> resultIndex = new Vector<int>(s_0through7);
+                Vector<int> curIndex = resultIndex;
+                Vector<int> increment = new Vector<int>(Vector<int>.Count);
+
+                // Load the first vector as the initial set of results, and bail immediately
+                // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
+                Vector<float> resultVector = AsVector(ref xRef, 0), current;
+                if (Vector.EqualsAll(resultVector, resultVector))
+                {
+                    int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                    i = Vector<float>.Count;
+
+                    // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
+                    while (i <= oneVectorFromEnd)
+                    {
+                        // Load the next vector, and early exit on NaN.
+                        current = AsVector(ref xRef, i);
+                        curIndex = Vector.Add(curIndex, increment);
+
+                        if (!Vector.EqualsAll(current, current))
+                        {
+                            goto Scalar;
+                        }
+
+                        op.Invoke(ref resultVector, current, ref resultIndex, curIndex);
+                        i += Vector<float>.Count;
+                    }
+
+                    // If any elements remain, handle them in one final vector.
+                    if (i != x.Length)
+                    {
+                        curIndex = Vector.Add(curIndex, new Vector<int>(x.Length - i));
+
+                        current = AsVector(ref xRef, x.Length - Vector<float>.Count);
+                        if (!Vector.EqualsAll(current, current))
+                        {
+                            goto Scalar;
+                        }
+
+                        op.Invoke(ref resultVector, current, ref resultIndex, curIndex);
+                    }
+
+                    result = op.Invoke(resultVector, resultIndex);
+
+                    return result;
+                }
+            }
+
+        // Scalar path used when either vectorization is not supported, the input is too small to vectorize,
+        // or a NaN is encountered.
+        Scalar:
+            float curResult = x[i];
+            int curIn = i;
+            if (float.IsNaN(curResult))
+            {
+                return curIn;
+            }
+
+            for (; i < x.Length; i++)
+            {
+                float current = x[i];
+                if (float.IsNaN(current))
+                {
+                    return i;
+                }
+
+                curIn = op.Invoke(ref curResult, current, curIn, i);
+            }
+
+            return curIn;
         }
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
@@ -2256,7 +2830,6 @@ namespace System.Numerics.Tensors
 
                     case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -2280,6 +2853,20 @@ namespace System.Numerics.Tensors
             ref Unsafe.As<float, Vector<float>>(
                 ref Unsafe.Add(ref start, (nint)(offset)));
 
+        /// <summary>Loads a <see cref="Vector{Single}"/> that begins at the specified <paramref name="offset"/> from <paramref name="start"/>.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref Vector<int> AsVector(ref int start, int offset) =>
+            ref Unsafe.As<int, Vector<int>>(
+                ref Unsafe.Add(ref start, offset));
+
+        /// <summary>Gets whether the specified <see cref="float"/> is positive.</summary>
+        private static bool IsPositive(float f) => !IsNegative(f);
+
+        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector<float> IsPositive(Vector<float> vector) =>
+            ((Vector<float>)Vector.GreaterThan(((Vector<int>)vector), Vector<int>.Zero));
+
         /// <summary>Gets whether the specified <see cref="float"/> is negative.</summary>
         private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
 
@@ -2289,6 +2876,19 @@ namespace System.Numerics.Tensors
 
         /// <summary>Gets the base 2 logarithm of <paramref name="x"/>.</summary>
         private static float Log2(float x) => MathF.Log(x, 2);
+
+        /// <summary>
+        /// Gets a vector mask that will be all-ones-set for the first <paramref name="count"/> elements
+        /// and zero for all other elements.
+        /// </summary>
+        private static Vector<float> CreateAlignmentMaskSingleVector(int count)
+        {
+            Debug.Assert(Vector<float>.Count is 4 or 8 or 16);
+
+            return AsVector(
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x16)),
+                (count * 16));
+        }
 
         /// <summary>
         /// Gets a vector mask that will be all-ones-set for the last <paramref name="count"/> elements
@@ -2347,6 +2947,283 @@ namespace System.Numerics.Tensors
         {
             public float Invoke(float x, float y) => x / y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x / y;
+        }
+
+        private interface IIndexOfOperator
+        {
+            int Invoke(ref float result, float current, int resultIndex, int curIndex);
+            int Invoke(Vector<float> result, Vector<int> resultIndex);
+            void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex);
+        }
+
+        /// <summary>Returns the index of MathF.Max(x, y)</summary>
+        private readonly struct IndexOfMaxOperator : IIndexOfOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(Vector<float> result, Vector<int> resultIndex)
+            {
+                float curMax = result[0];
+                int curIn = resultIndex[0];
+                for (int i = 1; i < Vector<float>.Count; i++)
+                {
+                    if (result[i] == curMax && IsNegative(curMax) && !IsNegative(result[i]))
+                    {
+                        curMax = result[i];
+                        curIn = resultIndex[i];
+                    }
+                    else if (result[i] > curMax)
+                    {
+                        curMax = result[i];
+                        curIn = resultIndex[i];
+                    }
+                }
+
+                return curIn;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
+            {
+                Vector<int> lessThanMask = Vector.GreaterThan(result, current);
+
+                Vector<int> equalMask = Vector.Equals(result, current);
+
+                if (equalMask != Vector<int>.Zero)
+                {
+                    Vector<float> negativeMask = IsNegative(current);
+                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
+
+                    lessThanMask |= ((Vector<int>)~negativeMask & equalMask) | ((Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                }
+
+                result = Vector.ConditionalSelect(lessThanMask, result, current);
+
+                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                if (result == current)
+                {
+                    if (IsNegative(result) && !IsNegative(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (current > result)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
+        }
+
+        private readonly struct IndexOfMaxMagnitudeOperator : IIndexOfOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                float curMaxAbs = MathF.Abs(result);
+                float currentAbs = MathF.Abs(current);
+
+                if (curMaxAbs == currentAbs)
+                {
+                    if (IsNegative(result) && !IsNegative(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (currentAbs > curMaxAbs)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(Vector<float> result, Vector<int> maxIndex)
+            {
+                float curMax = result[0];
+                int curIn = maxIndex[0];
+                for (int i = 1; i < Vector<float>.Count; i++)
+                {
+                    if (MathF.Abs(result[i]) == MathF.Abs(curMax) && IsNegative(curMax) && !IsNegative(result[i]))
+                    {
+                        curMax = result[i];
+                        curIn = maxIndex[i];
+                    }
+                    else if (MathF.Abs(result[i]) > MathF.Abs(curMax))
+                    {
+                        curMax = result[i];
+                        curIn = maxIndex[i];
+                    }
+                }
+
+                return curIn;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
+            {
+                Vector<float> maxMag = Vector.Abs(result), currentMag = Vector.Abs(current);
+
+                Vector<int> lessThanMask = Vector.GreaterThan(maxMag, currentMag);
+
+                Vector<int> equalMask = Vector.Equals(result, current);
+
+                if (equalMask != Vector<int>.Zero)
+                {
+                    Vector<float> negativeMask = IsNegative(current);
+                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
+
+                    lessThanMask |= ((Vector<int>)~negativeMask & equalMask) | ((Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                }
+
+                result = Vector.ConditionalSelect(lessThanMask, result, current);
+
+                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
+            }
+        }
+
+        private readonly struct IndexOfMinOperator : IIndexOfOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                if (result == current)
+                {
+                    if (IsPositive(result) && !IsPositive(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (current < result)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(Vector<float> result, Vector<int> resultIndex)
+            {
+                float curMin = result[0];
+                int curIn = resultIndex[0];
+                for (int i = 1; i < Vector<float>.Count; i++)
+                {
+                    if (result[i] == curMin && IsPositive(curMin) && !IsPositive(result[i]))
+                    {
+                        curMin = result[i];
+                        curIn = resultIndex[i];
+                    }
+                    else if (result[i] < curMin)
+                    {
+                        curMin = result[i];
+                        curIn = resultIndex[i];
+                    }
+                }
+
+                return curIn;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
+            {
+                Vector<int> lessThanMask = Vector.LessThan(result, current);
+
+                Vector<int> equalMask = Vector.Equals(result, current);
+
+                if (equalMask != Vector<int>.Zero)
+                {
+                    Vector<float> negativeMask = IsNegative(current);
+                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
+
+                    lessThanMask |= ((Vector<int>)negativeMask & equalMask) | (~(Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                }
+
+                result = Vector.ConditionalSelect(lessThanMask, result, current);
+
+                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
+            }
+        }
+
+        private readonly struct IndexOfMinMagnitudeOperator : IIndexOfOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                float curMinAbs = MathF.Abs(result);
+                float currentAbs = MathF.Abs(current);
+                if (curMinAbs == currentAbs)
+                {
+                    if (IsPositive(result) && !IsPositive(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (currentAbs < curMinAbs)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(Vector<float> result, Vector<int> resultIndex)
+            {
+                float curMin = result[0];
+                int curIn = resultIndex[0];
+                for (int i = 1; i < Vector<float>.Count; i++)
+                {
+                    if (MathF.Abs(result[i]) == MathF.Abs(curMin) && IsPositive(curMin) && !IsPositive(result[i]))
+                    {
+                        curMin = result[i];
+                        curIn = resultIndex[i];
+                    }
+                    else if (MathF.Abs(result[i]) < MathF.Abs(curMin))
+                    {
+                        curMin = result[i];
+                        curIn = resultIndex[i];
+                    }
+                }
+
+                return curIn;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
+            {
+                Vector<float> minMag = Vector.Abs(result), currentMag = Vector.Abs(current);
+
+                Vector<int> lessThanMask = Vector.LessThan(minMag, currentMag);
+
+                Vector<int> equalMask = Vector.Equals(result, current);
+
+                if (equalMask != Vector<int>.Zero)
+                {
+                    Vector<float> negativeMask = IsNegative(current);
+                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
+
+                    lessThanMask |= ((Vector<int>)negativeMask & equalMask) | (~(Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                }
+
+                result = Vector.ConditionalSelect(lessThanMask, result, current);
+
+                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
+            }
         }
 
         /// <summary>MathF.Max(x, y) (but without guaranteed NaN propagation)</summary>
