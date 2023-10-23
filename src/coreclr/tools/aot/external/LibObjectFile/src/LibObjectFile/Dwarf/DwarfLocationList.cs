@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Text;
 using System.Collections.Generic;
 
 namespace LibObjectFile.Dwarf
@@ -79,6 +80,28 @@ namespace LibObjectFile.Dwarf
             // End of list
             writer.WriteUInt(0);
             writer.WriteUInt(0);
+        }
+
+        public override string ToString()
+        {
+            var builder = new StringBuilder();
+
+            for (int i = 0; i < _locationListEntries.Count; i++)
+            {
+                if (i == 3)
+                {
+                    builder.Append(", ...");
+                    return builder.ToString();
+                }
+                else if (i != 0)
+                {
+                    builder.Append(", ");
+                }
+
+                builder.Append(_locationListEntries[i].ToString());
+            }
+
+            return builder.ToString();
         }
     }
 }

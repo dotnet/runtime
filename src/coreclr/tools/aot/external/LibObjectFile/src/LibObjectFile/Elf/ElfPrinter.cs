@@ -68,7 +68,14 @@ namespace LibObjectFile.Elf
             writer.WriteLine($"  Size of program headers:           {elf.Layout.SizeOfProgramHeaderEntry} (bytes)");
             writer.WriteLine($"  Number of program headers:         {elf.Segments.Count}");
             writer.WriteLine($"  Size of section headers:           {elf.Layout.SizeOfSectionHeaderEntry} (bytes)");
-            writer.WriteLine($"  Number of section headers:         {elf.VisibleSectionCount}");
+            if (elf.VisibleSectionCount >= ElfNative.SHN_LORESERVE || elf.VisibleSectionCount == 0)
+            {
+                writer.WriteLine($"  Number of section headers:         0 ({elf.VisibleSectionCount})");
+            }
+            else
+            {
+                writer.WriteLine($"  Number of section headers:         {elf.VisibleSectionCount}");
+            }
             writer.WriteLine($"  Section header string table index: {elf.SectionHeaderStringTable?.SectionIndex ?? 0}");
         }
 
@@ -97,20 +104,13 @@ namespace LibObjectFile.Elf
   W (write), A (alloc), X (execute), M (merge), S (strings), I (info),
   L (link order), O (extra OS processing required), G (group), T (TLS),
   C (compressed), x (unknown), o (OS specific), E (exclude),
-  l (large), p (processor specific)");
+  D (mbind), l (large), p (processor specific)");
         }
 
         public static void PrintSectionGroups(ElfObjectFile elf, TextWriter writer)
         {
             if (elf == null) throw new ArgumentNullException(nameof(elf));
             if (writer == null) throw new ArgumentNullException(nameof(writer));
-
-            if (elf.Sections.Count == 0)
-            {
-                writer.WriteLine();
-                writer.WriteLine("There are no sections to group in this file.");
-                return;
-            }
 
             writer.WriteLine();
             writer.WriteLine("There are no section groups in this file.");
@@ -252,8 +252,15 @@ namespace LibObjectFile.Elf
             if (elf == null) throw new ArgumentNullException(nameof(elf));
             if (writer == null) throw new ArgumentNullException(nameof(writer));
 
-            writer.WriteLine();
-            writer.WriteLine($"The decoding of unwind sections for machine type {GetElfArch(elf.Arch)} is not currently supported.");
+            if (elf.Arch == ElfArchEx.I386 || elf.Arch == ElfArchEx.X86_64)
+            {
+                writer.WriteLine("No processor specific unwind information to decode");
+            }
+            else
+            {
+                writer.WriteLine();
+                writer.WriteLine($"The decoding of unwind sections for machine type {GetElfArch(elf.Arch)} is not currently supported.");
+            }
         }
 
 

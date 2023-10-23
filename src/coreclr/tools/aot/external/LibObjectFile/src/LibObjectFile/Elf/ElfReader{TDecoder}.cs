@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using static System.Collections.Specialized.BitVector32;
 
 namespace LibObjectFile.Elf
 {
@@ -17,8 +18,8 @@ namespace LibObjectFile.Elf
         private TDecoder _decoder;
         private ulong _startOfFile;
         private ushort _programHeaderCount;
-        private ushort _sectionHeaderCount;
-        private ushort _sectionStringTableIndex;
+        private uint _sectionHeaderCount;
+        private uint _sectionStringTableIndex;
         private bool _isFirstSectionValidNull;
         private bool _hasValidSectionStringTable;
 
@@ -193,7 +194,7 @@ namespace LibObjectFile.Elf
         
         private void ReadSections()
         {
-            if (_sectionHeaderCount == 0) return;
+            if (Layout.OffsetOfSectionHeaderTable == 0) return;
 
             // Write section header table
             ReadSectionHeaderTable();
@@ -210,9 +211,25 @@ namespace LibObjectFile.Elf
                 return;
             }
 
-            for (int i = 0; i < _sectionHeaderCount; i++)
+            uint i = 0;
+
+            if (_sectionHeaderCount == 0)
             {
-                var offset = Layout.OffsetOfSectionHeaderTable + (ulong)i * Layout.SizeOfSectionHeaderEntry;
+                // We are dealing with an object file that has more than SHN_LORESERVE
+                // (0xff00) sections. It has to begin with a NULL section header where
+                // its Size contains the real number of sections, and Link optionally
+                // points to string table section if it's section index is too high.
+                if (ReadExtendedNullSectionTableEntry())
+                {
+                    i = 1;
+                    ObjectFile.AddSection(new ElfNullSection());
+                    _isFirstSectionValidNull = true;
+                }
+            }
+
+            for (; i < _sectionHeaderCount; i++)
+            {
+                var offset = Layout.OffsetOfSectionHeaderTable + i * Layout.SizeOfSectionHeaderEntry;
 
                 if (offset >= (ulong)Stream.Length)
                 {
@@ -228,12 +245,12 @@ namespace LibObjectFile.Elf
             }
         }
 
-        private ElfSection ReadSectionTableEntry(int sectionIndex)
+        private ElfSection ReadSectionTableEntry(uint sectionIndex)
         {
             return ObjectFile.FileClass == ElfFileClass.Is32 ? ReadSectionTableEntry32(sectionIndex) : ReadSectionTableEntry64(sectionIndex);
         }
 
-        private ElfSection ReadSectionTableEntry32(int sectionIndex)
+        private ElfSection ReadSectionTableEntry32(uint sectionIndex)
         {
             var streamOffset = Stream.Position;
             if (!TryReadData(Layout.SizeOfSectionHeaderEntry, out ElfNative.Elf32_Shdr rawSection))
@@ -267,7 +284,7 @@ namespace LibObjectFile.Elf
             return section;
         }
 
-        private ElfSection ReadSectionTableEntry64(int sectionIndex)
+        private ElfSection ReadSectionTableEntry64(uint sectionIndex)
         {
             var streamOffset = Stream.Position;
             if (!TryReadData(Layout.SizeOfSectionHeaderEntry, out ElfNative.Elf64_Shdr rawSection))
@@ -300,13 +317,75 @@ namespace LibObjectFile.Elf
 
             return section;
         }
+
+        private bool ReadExtendedNullSectionTableEntry()
+        {
+            uint sh_type;
+            ulong sh_size;
+            uint sh_link;
+            bool isNull;
+
+            Stream.Position = (long)Layout.OffsetOfSectionHeaderTable;
+
+            if (ObjectFile.FileClass == ElfFileClass.Is32)
+            {
+                
+                if (!TryReadData(Layout.SizeOfSectionHeaderEntry, out ElfNative.Elf32_Shdr rawSection32))
+                {
+                    Diagnostics.Error(DiagnosticId.ELF_ERR_IncompleteSectionHeader32Size, $"Unable to read entirely NULL section header. Not enough data (size: {Layout.SizeOfSectionHeaderEntry}) read at offset {Layout.OffsetOfSectionHeaderTable} from the stream");
+                    return false;
+                }
+
+                sh_type = _decoder.Decode(rawSection32.sh_type);
+                sh_size = _decoder.Decode(rawSection32.sh_size);
+                sh_link = _decoder.Decode(rawSection32.sh_link);
+                rawSection32.sh_size = 0;
+                rawSection32.sh_link = 0;
+                isNull = rawSection32.IsNull;
+            }
+            else
+            {
+                if (!TryReadData(Layout.SizeOfSectionHeaderEntry, out ElfNative.Elf64_Shdr rawSection64))
+                {
+                    Diagnostics.Error(DiagnosticId.ELF_ERR_IncompleteSectionHeader64Size, $"Unable to read entirely NULL section header. Not enough data (size: {Layout.SizeOfSectionHeaderEntry}) read at offset {Layout.OffsetOfSectionHeaderTable} from the stream");
+                    return false;
+                }
+
+                sh_type = _decoder.Decode(rawSection64.sh_type);
+                sh_size = _decoder.Decode(rawSection64.sh_size);
+                sh_link = _decoder.Decode(rawSection64.sh_link);
+                rawSection64.sh_size = 0;
+                rawSection64.sh_link = 0;
+                isNull = rawSection64.IsNull;
+            }
+
+            if (!isNull)
+            {
+                Diagnostics.Error(DiagnosticId.ELF_ERR_InvalidFirstSectionExpectingUndefined, $"Invalid Section [0] {(ElfSectionType)sh_type}. Expecting {ElfNative.SHN_UNDEF}");
+                return false;
+            }
+
+            if (sh_size >= uint.MaxValue)
+            {
+                Diagnostics.Error(DiagnosticId.ELF_ERR_InvalidSectionHeaderCount, $"Extended section count [{sh_size}] exceeds {uint.MaxValue}");
+                return false;
+            }
+
+            _sectionHeaderCount = (uint)sh_size;
+            if (_sectionStringTableIndex == ElfNative.SHN_XINDEX)
+            {
+                _sectionStringTableIndex = sh_link;
+            }
+
+            return true;
+        }
         
         public override ElfSectionLink ResolveLink(ElfSectionLink link, string errorMessageFormat)
         {
             if (errorMessageFormat == null) throw new ArgumentNullException(nameof(errorMessageFormat));
 
             // Connect section Link instance
-            if (!link.IsSpecial)
+            if (!link.IsEmpty)
             {
                 if (link.SpecialIndex == _sectionStringTableIndex)
                 {
@@ -317,13 +396,21 @@ namespace LibObjectFile.Elf
                     var sectionIndex = link.SpecialIndex;
 
                     bool sectionFound = false;
-                    foreach (var section in ObjectFile.Sections)
+                    if (sectionIndex < ObjectFile.Sections.Count && ObjectFile.Sections[(int)sectionIndex].SectionIndex == sectionIndex)
                     {
-                        if (section.SectionIndex == sectionIndex)
+                        link = new ElfSectionLink(ObjectFile.Sections[(int)sectionIndex]);
+                        sectionFound = true;
+                    }
+                    else
+                    {
+                        foreach (var section in ObjectFile.Sections)
                         {
-                            link = new ElfSectionLink(section);
-                            sectionFound = true;
-                            break;
+                            if (section.SectionIndex == sectionIndex)
+                            {
+                                link = new ElfSectionLink(section);
+                                sectionFound = true;
+                                break;
+                            }
                         }
                     }
 
@@ -425,7 +512,7 @@ namespace LibObjectFile.Elf
             // Make sure to pre-sort all sections by offset
             var orderedSections = new List<ElfSection>(ObjectFile.Sections.Count);
             orderedSections.AddRange(ObjectFile.Sections);
-            orderedSections.Sort(CompareSectionOffsetsDelegate);
+            orderedSections.Sort(CompareSectionOffsetsAndSizesDelegate);
             // Store the stream index to recover the same order when saving back.
             for(int i = 0; i < orderedSections.Count; i++)
             {
@@ -461,10 +548,10 @@ namespace LibObjectFile.Elf
                 lastOffset = section.Offset + section.Size - 1;
 
                 // Verify overlapping sections and generate and error
-                for (int j = i + 1; j < orderedSections.Count; j++)
+                if (i + 1 < orderedSections.Count)
                 {
-                    var otherSection = orderedSections[j];
-                    if (section.Contains(otherSection) || otherSection.Contains(section))
+                    var otherSection = orderedSections[i + 1];
+                    if (otherSection.Offset < section.Offset + section.Size)
                     {
                         Diagnostics.Warning(DiagnosticId.ELF_ERR_InvalidOverlappingSections, $"The section {section} [{section.Offset} : {section.Offset + section.Size - 1}] is overlapping with the section {otherSection} [{otherSection.Offset} : {otherSection.Offset + otherSection.Size - 1}]");
                     }
@@ -609,7 +696,7 @@ namespace LibObjectFile.Elf
             }
         }
         
-        private ElfSection CreateElfSection(int sectionIndex, ElfSectionType sectionType, bool isNullSection)
+        private ElfSection CreateElfSection(uint sectionIndex, ElfSectionType sectionType, bool isNullSection)
         {
             ElfSection section = null;
 
@@ -643,6 +730,9 @@ namespace LibObjectFile.Elf
                     break;
                 case ElfSectionType.Note:
                     section = new ElfNoteTable();
+                    break;
+                case ElfSectionType.SymbolTableSectionHeaderIndices:
+                    section = new ElfSymbolTableSectionHeaderIndices();
                     break;
             }
 
@@ -754,11 +844,16 @@ namespace LibObjectFile.Elf
             return _decoder.Decode(src);
         }
 
-        private static readonly Comparison<ElfSection> CompareSectionOffsetsDelegate = new Comparison<ElfSection>(CompareSectionOffsets);
+        private static readonly Comparison<ElfSection> CompareSectionOffsetsAndSizesDelegate = new Comparison<ElfSection>(CompareSectionOffsetsAndSizes);
 
-        private static int CompareSectionOffsets(ElfSection left, ElfSection right)
+        private static int CompareSectionOffsetsAndSizes(ElfSection left, ElfSection right)
         {
-            return left.Offset.CompareTo(right.Offset);
+            int result = left.Offset.CompareTo(right.Offset);
+            if (result == 0)
+            {
+                result = left.Size.CompareTo(right.Size);
+            }
+            return result;
         }
     }
 }

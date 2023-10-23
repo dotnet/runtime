@@ -76,5 +76,10 @@ namespace LibObjectFile.Dwarf
                 Expression.WriteInternal(writer, inLocationSection: true);
             }
         }
+
+        public override string ToString()
+        {
+            return $"Location: {Start:x} - {End:x} {Expression}";
+        }
     }
 }

@@ -710,7 +710,7 @@ namespace LibObjectFile.Dwarf
             {
                 sizeOf += DwarfHelper.SizeOfULEB128(opcodeLength);
             }
-            
+
             // Write directory names
             _directoryNameToIndex.Clear();
             _directoryNames.Clear();

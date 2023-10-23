@@ -80,7 +80,7 @@ namespace LibObjectFile.Tests.Dwarf
         {
             var cppName = "helloworld";
             var cppExe = $"{cppName}_debug";
-            LinuxUtil.RunLinuxExe("gcc", $"{cppName}.cpp -g -o {cppExe}");
+            LinuxUtil.RunLinuxExe("gcc", $"{cppName}.cpp -gdwarf-4 -o {cppExe}");
 
             ElfObjectFile elf;
             using (var inStream = File.OpenRead(cppExe))
@@ -139,7 +139,7 @@ namespace LibObjectFile.Tests.Dwarf
         {
             var cppName = "lib";
             var libShared = $"{cppName}_debug.so";
-            LinuxUtil.RunLinuxExe("gcc", $"{cppName}_a.cpp {cppName}_b.cpp  -g -shared -o {libShared}");
+            LinuxUtil.RunLinuxExe("gcc", $"{cppName}_a.cpp {cppName}_b.cpp -gdwarf-4 -shared -o {libShared}");
 
             ElfObjectFile elf;
             using (var inStream = File.OpenRead(libShared))
@@ -198,7 +198,7 @@ namespace LibObjectFile.Tests.Dwarf
         {
             var cppName = "small";
             var cppObj = $"{cppName}_debug.o";
-            LinuxUtil.RunLinuxExe("gcc", $"{cppName}.cpp -g -c -o {cppObj}");
+            LinuxUtil.RunLinuxExe("gcc", $"{cppName}.cpp -gdwarf-4 -c -o {cppObj}");
             ElfObjectFile elf;
             using (var inStream = File.OpenRead(cppObj))
             {
@@ -256,7 +256,7 @@ namespace LibObjectFile.Tests.Dwarf
         {
             var cppName = "multiple_functions";
             var cppObj = $"{cppName}_debug.o";
-            LinuxUtil.RunLinuxExe("gcc", $"{cppName}.cpp -g -c -o {cppObj}");
+            LinuxUtil.RunLinuxExe("gcc", $"{cppName}.cpp -gdwarf-4 -c -o {cppObj}");
 
             ElfObjectFile elf;
             using (var inStream = File.OpenRead(cppObj))
@@ -314,7 +314,7 @@ namespace LibObjectFile.Tests.Dwarf
         {
             var cppName = "small";
             var cppObj = $"{cppName}_debug.o";
-            LinuxUtil.RunLinuxExe("gcc", $"{cppName}.cpp -g -c -o {cppObj}");
+            LinuxUtil.RunLinuxExe("gcc", $"{cppName}.cpp -gdwarf-4 -c -o {cppObj}");
 
             ElfObjectFile elf;
             using (var inStream = File.OpenRead(cppObj))

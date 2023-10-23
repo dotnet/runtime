@@ -17,7 +17,7 @@ namespace LibObjectFile.Tests
             return RunLinuxExe("readelf", $"{file} {arguments}");
         }
 
-        public static string RunLinuxExe(string exe, string arguments, string distribution = "Ubuntu-18.04")
+        public static string RunLinuxExe(string exe, string arguments, string distribution = "Ubuntu")
         {
             if (exe == null) throw new ArgumentNullException(nameof(exe));
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));

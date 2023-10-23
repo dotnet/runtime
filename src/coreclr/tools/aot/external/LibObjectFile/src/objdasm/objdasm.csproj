@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <RootNamespace>LibObjectFile.Disasm</RootNamespace>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Iced" Version="1.17.0" />
+    <PackageReference Include="Iced" Version="1.20.0" />
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
   </ItemGroup>
 

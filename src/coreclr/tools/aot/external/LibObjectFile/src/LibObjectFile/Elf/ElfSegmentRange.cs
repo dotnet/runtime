@@ -99,17 +99,7 @@ namespace LibObjectFile.Elf
                     return 0;
                 }
 
-                var parent = BeginSection.Parent;
-                ulong size = 0;
-                for (uint i = BeginSection.Index; i < EndSection.Index; i++)
-                {
-                    var section = parent.Sections[(int)i];
-                    if (section.HasContent)
-                    {
-                        size += section.Size;
-                    }
-                }
-
+                ulong size = EndSection.Offset - BeginSection.Offset;
                 size -= BeginOffset;
                 size += EndOffset < 0 ? (ulong)((long)EndSection.Size + EndOffset + 1) : (ulong)(EndOffset + 1);
                 return size;

@@ -179,6 +179,12 @@ namespace LibObjectFile.Elf
                 diagnostics.Error(DiagnosticId.ELF_ERR_InvalidHeaderFileClassNone, $"Cannot compute the layout with an {nameof(ElfObjectFile)} having a {nameof(FileClass)} == {ElfFileClass.None}");
             }
 
+            if (VisibleSectionCount >= ElfNative.SHN_LORESERVE &&
+                Sections[0] is not ElfNullSection)
+            {
+                diagnostics.Error(DiagnosticId.ELF_ERR_MissingNullSection, $"Section count is higher than SHN_LORESERVE ({ElfNative.SHN_LORESERVE}) but the first section is not a NULL section");                
+            }
+
             foreach (var segment in Segments)
             {
                 segment.Verify(diagnostics);
@@ -230,8 +236,6 @@ namespace LibObjectFile.Elf
                     var section = sections[i];
                     if (i == 0 && section.Type == ElfSectionType.Null)
                     {
-                        section.Size = VisibleSectionCount >= ElfNative.SHN_LORESERVE ? VisibleSectionCount : 0;
-                        section.Link = (SectionHeaderStringTable?.SectionIndex ?? 0) >= ElfNative.SHN_LORESERVE ? SectionHeaderStringTable : null;
                         continue;
                     }
 
@@ -255,12 +259,23 @@ namespace LibObjectFile.Elf
                         shstrTable.Reset();
 
                         // Prepare all section names (to calculate the name indices and the size of the SectionNames)
-                        for (var j = 0; j < sections.Count; j++)
+                        // Do it in two passes to generate optimal string table
+                        for (var pass = 0; pass < 2; pass++)
                         {
-                            var otherSection = sections[j];
-                            if ((j == 0 && otherSection.Type == ElfSectionType.Null)) continue;
-                            if (otherSection.IsShadow) continue;
-                            otherSection.Name = otherSection.Name.WithIndex(shstrTable.GetOrCreateIndex(otherSection.Name));
+                            for (var j = 0; j < sections.Count; j++)
+                            {
+                                var otherSection = sections[j];
+                                if ((j == 0 && otherSection.Type == ElfSectionType.Null)) continue;
+                                if (otherSection.IsShadow) continue;
+                                if (pass == 0)
+                                {
+                                    shstrTable.ReserveString(otherSection.Name);
+                                }
+                                else
+                                {
+                                    otherSection.Name = otherSection.Name.WithIndex(shstrTable.GetOrCreateIndex(otherSection.Name));
+                                }
+                            }
                         }
                     }
 
@@ -278,9 +293,9 @@ namespace LibObjectFile.Elf
                 }
 
                 // The Section Header Table will be put just after all the sections
-                Layout.OffsetOfSectionHeaderTable = offset;
+                Layout.OffsetOfSectionHeaderTable = AlignHelper.AlignToUpper(offset, FileClass == ElfFileClass.Is32 ? 4u : 8u);
 
-                Layout.TotalSize = offset + (ulong)VisibleSectionCount * Layout.SizeOfSectionHeaderEntry;
+                Layout.TotalSize = Layout.OffsetOfSectionHeaderTable + (ulong)VisibleSectionCount * Layout.SizeOfSectionHeaderEntry;
             }
 
             // Update program headers with offsets from auto layout

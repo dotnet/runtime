@@ -230,9 +230,15 @@ namespace LibObjectFile.Elf
         private void WriteSectionHeaderTable()
         {
             var offset = (ulong)Stream.Position - _startOfFile;
-            if (offset != Layout.OffsetOfSectionHeaderTable)
+            var diff = Layout.OffsetOfSectionHeaderTable - offset;
+            if (diff < 0 || diff > 8)
             {
                 throw new InvalidOperationException("Internal error. Unexpected offset for SectionHeaderTable");
+            }
+            else if (diff != 0)
+            {
+                // Alignment
+                Stream.Write(stackalloc byte[(int)diff]);
             }
             
             // Then write all regular sections
@@ -265,8 +271,17 @@ namespace LibObjectFile.Elf
             _encoder.Encode(out shdr.sh_flags, (uint)section.Flags);
             _encoder.Encode(out shdr.sh_addr, (uint)section.VirtualAddress);
             _encoder.Encode(out shdr.sh_offset, (uint)section.Offset);
-            _encoder.Encode(out shdr.sh_size, (uint)section.Size);
-            _encoder.Encode(out shdr.sh_link, section.Link.GetIndex());
+            if (section.Index == 0 && ObjectFile.VisibleSectionCount >= ElfNative.SHN_LORESERVE)
+            {
+                _encoder.Encode(out shdr.sh_size, ObjectFile.VisibleSectionCount);
+                uint shstrSectionIndex = ObjectFile.SectionHeaderStringTable?.SectionIndex ?? 0u;
+                _encoder.Encode(out shdr.sh_link, shstrSectionIndex >= ElfNative.SHN_LORESERVE ? shstrSectionIndex : 0);
+            }
+            else
+            {
+                _encoder.Encode(out shdr.sh_size, (uint)section.Size);
+                _encoder.Encode(out shdr.sh_link, section.Link.GetIndex());
+            }
             _encoder.Encode(out shdr.sh_info, section.Info.GetIndex());
             _encoder.Encode(out shdr.sh_addralign, (uint)section.Alignment);
             _encoder.Encode(out shdr.sh_entsize, (uint)section.TableEntrySize);
@@ -281,8 +296,17 @@ namespace LibObjectFile.Elf
             _encoder.Encode(out shdr.sh_flags, (uint)section.Flags);
             _encoder.Encode(out shdr.sh_addr, section.VirtualAddress);
             _encoder.Encode(out shdr.sh_offset, section.Offset);
-            _encoder.Encode(out shdr.sh_size, section.Size);
-            _encoder.Encode(out shdr.sh_link, section.Link.GetIndex());
+            if (section.Index == 0 && ObjectFile.VisibleSectionCount >= ElfNative.SHN_LORESERVE)
+            {
+                _encoder.Encode(out shdr.sh_size, ObjectFile.VisibleSectionCount);
+                uint shstrSectionIndex = ObjectFile.SectionHeaderStringTable?.SectionIndex ?? 0u;
+                _encoder.Encode(out shdr.sh_link, shstrSectionIndex >= ElfNative.SHN_LORESERVE ? shstrSectionIndex : 0);
+            }
+            else
+            {
+                _encoder.Encode(out shdr.sh_size, section.Size);
+                _encoder.Encode(out shdr.sh_link, section.Link.GetIndex());
+            }
             _encoder.Encode(out shdr.sh_info, section.Info.GetIndex());
             _encoder.Encode(out shdr.sh_addralign, section.Alignment);
             _encoder.Encode(out shdr.sh_entsize, section.TableEntrySize);

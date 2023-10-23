@@ -88,12 +88,22 @@ namespace LibObjectFile.Dwarf
 
                 if (thisSection != attrSection)
                 {
-                    diagnostics.Error(DiagnosticId.DWARF_ERR_InvalidParentForDIE, $"Invalid parent for the DIE {attrDIE} referenced by the attribute {this}. It must be within the same parent {attrSection.GetType()}.");
+                    diagnostics.Error(DiagnosticId.DWARF_ERR_InvalidParentForDIE, $"Invalid parent for the DIE {attrDIE} referenced by the attribute {this}. It must be within the same parent {thisSection.GetType()}.");
                 }
             }
             else if (ValueAsObject is DwarfExpression expr)
             {
                 expr.Verify(diagnostics);
+            }
+            else if (ValueAsObject is DwarfLocationList locationList)
+            {
+                var thisSection = this.GetParentFile();
+                var locationListSection = locationList.GetParentFile();
+
+                if (thisSection != locationListSection)
+                {
+                    diagnostics.Error(DiagnosticId.DWARF_ERR_InvalidParentForLocationList, $"Invalid parent for the LocationList {locationList} referenced by the attribute {this}. It must be within the same parent {thisSection.GetType()}.");
+                }
             }
         }
         
