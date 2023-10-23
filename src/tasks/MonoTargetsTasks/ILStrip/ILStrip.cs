@@ -40,7 +40,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     /// <summary>
     /// The location to store the trimmed assemblies, when provided.
     /// </summary>
-    public string IntermediateOutputPath { get; set; } = string.Empty;
+    public string? IntermediateOutputPath { get; set; }
 
     /// <summary>
     /// Contains the updated list of assemblies comparing to the input variable Assemblies.
@@ -65,15 +65,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         string trimmedAssemblyFolder = string.Empty;
         if (TrimIndividualMethods)
         {
-            if (!string.IsNullOrEmpty(IntermediateOutputPath))
-            {
-                if (!Directory.Exists(IntermediateOutputPath))
-                {
-                    Directory.CreateDirectory(IntermediateOutputPath);
-                }
-            }
-
-            trimmedAssemblyFolder = ComputeTrimmedAssemblyFolderName(IntermediateOutputPath);
+            trimmedAssemblyFolder = string.IsNullOrEmpty(IntermediateOutputPath) ? "trimmed" : Path.Combine(IntermediateOutputPath, "trimmed");
             if (!Directory.Exists(trimmedAssemblyFolder))
             {
                 Directory.CreateDirectory(trimmedAssemblyFolder);
@@ -215,11 +207,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         return true;
     }
-
-    private static string ComputeTrimmedAssemblyFolderName(string IntermediateOutputPath)
-        => string.IsNullOrEmpty(IntermediateOutputPath)
-                ? "trimmed"
-                : Path.Combine(IntermediateOutputPath,  "trimmed");
 
     private static string ComputeTrimmedAssemblyPath(string trimmedAssemblyFolder, string assemblyFilePath)
     {
