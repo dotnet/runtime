@@ -1548,7 +1548,6 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
 }
 
 export function getWasmFunctionTable(module?: any) {
-    const theModule = (<any>Module || module);
     if (!wasmTable)
         wasmTable = runtimeHelpers.getWasmIndirectFunctionTable();
     if (!wasmTable)
