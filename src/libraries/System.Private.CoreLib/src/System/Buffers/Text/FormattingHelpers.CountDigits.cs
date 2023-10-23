@@ -57,21 +57,21 @@ namespace System.Buffers.Text
         public static int CountDigits(ulong value)
         {
             // Map the log2(value) to a power of 10.
-            ReadOnlySpan<byte> log2ToPow10 = new byte[]
-            {
+            ReadOnlySpan<byte> log2ToPow10 =
+            [
                 1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,
                 6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9,  10, 10, 10,
                 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 15, 15,
                 15, 16, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 19, 20
-            };
+            ];
             Debug.Assert(log2ToPow10.Length == 64);
 
             // TODO: Replace with log2ToPow10[BitOperations.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
             uint index = Unsafe.Add(ref MemoryMarshal.GetReference(log2ToPow10), BitOperations.Log2(value));
 
             // Read the associated power of 10.
-            ReadOnlySpan<ulong> powersOf10 = new ulong[]
-            {
+            ReadOnlySpan<ulong> powersOf10 =
+            [
                 0, // unused entry to avoid needing to subtract
                 0,
                 10,
@@ -93,7 +93,7 @@ namespace System.Buffers.Text
                 100000000000000000,
                 1000000000000000000,
                 10000000000000000000,
-            };
+            ];
             Debug.Assert((index + 1) <= powersOf10.Length);
             ulong powerOf10 = Unsafe.Add(ref MemoryMarshal.GetReference(powersOf10), index);
 
@@ -107,8 +107,8 @@ namespace System.Buffers.Text
         public static int CountDigits(uint value)
         {
             // Algorithm based on https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster.
-            ReadOnlySpan<long> table = new long[]
-            {
+            ReadOnlySpan<long> table =
+            [
                 4294967296,
                 8589934582,
                 8589934582,
@@ -141,7 +141,7 @@ namespace System.Buffers.Text
                 41949672960,
                 42949672960,
                 42949672960,
-            };
+            ];
             Debug.Assert(table.Length == 32, "Every result of uint.Log2(value) needs a long entry in the table.");
 
             // TODO: Replace with table[uint.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed

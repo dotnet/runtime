@@ -27,7 +27,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			process.WaitForExit ();
 
 			if (process.ExitCode != 0) {
-				Assert.True (false, $"Failed to compile IL assembly : {options.OutputPath}\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
+				Assert.Fail($"Failed to compile IL assembly : {options.OutputPath}\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
 			}
 
 			return options.OutputPath;

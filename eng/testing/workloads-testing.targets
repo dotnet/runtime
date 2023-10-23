@@ -13,6 +13,7 @@
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
       _ProvisionDotNetForWorkloadTesting;
+      _InstallSharedFrameworksForWorkloadTesting;
       _GetDotNetVersion;
       _SetPackageVersionForWorkloadsTesting;
       GetNuGetsToBuildForWorkloadTesting;
@@ -23,6 +24,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--<AdditionalSharedFrameworkToInstallArguments Include="-Version 8.0.0-rc.2.23457.7" />-->
+    <!-- Required for running apps built with 9.0 sdk, but the sdk does
+         not yet support *running* with 9.0 sdk -->
+    <AdditionalSharedFrameworkToInstallArguments Condition="!$([MSBuild]::IsOSPlatform('windows'))" Include="-Version latest -c 8.0 -q daily" />
+    <AdditionalSharedFrameworkToInstallArguments Condition=" $([MSBuild]::IsOSPlatform('windows'))" Include="-Version latest -Channel 8.0 -Quality daily" />
+
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
     <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
     <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitecture)" />
@@ -78,6 +85,18 @@
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
+
+  </Target>
+
+  <!-- TODO: stamps -->
+  <Target Name="_InstallSharedFrameworksForWorkloadTesting">
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and !$([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command="$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)" />
+
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and $([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)"' />
   </Target>
 
   <Target Name="_GetDotNetVersion">
@@ -190,7 +209,6 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
-                     SkipUpdateAppRefPack="true"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />

@@ -6145,7 +6145,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				/* The comparison result is not needed */
 				continue;
 
-			rel = mono_opcode_to_cond (ins->next->opcode);
+			rel = mono_opcode_to_cond_unchecked (ins->next->opcode);
+			if (rel == (CompRelation)-1)
+				/* The following branch etc. was optimized away */
+				continue;
 
 			if (ins->opcode == OP_ICOMPARE_IMM) {
 				lhs = convert (ctx, lhs, LLVMInt32Type ());
@@ -8273,9 +8276,13 @@ MONO_RESTORE_WARNING
 					result = fcmp_and_select (builder, ins, l, r);
 				}
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
 				LLVMValueRef min_max_args [] = { l, r };
+#ifdef TARGET_WASM
+				IntrinsicId iid = ins->inst_c0 == OP_FMAX ? INTRINS_WASM_FMAX : INTRINS_WASM_FMIN;
+#else
 				IntrinsicId iid = ins->inst_c0 == OP_FMAX ? INTRINS_AARCH64_ADV_SIMD_FMAX : INTRINS_AARCH64_ADV_SIMD_FMIN;
+#endif
 				llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, min_max_args, "");
 #else
@@ -12138,7 +12145,7 @@ MONO_RESTORE_WARNING
 	if (!ctx_ok (ctx))
 		return;
 
-	if (!has_terminator && bb->next_bb && (bb == cfg->bb_entry || bb->in_count > 0)) {
+	if (!has_terminator && bb->next_bb && bb != cfg->bb_exit && (bb == cfg->bb_entry || bb->in_count > 0)) {
 		LLVMBuildBr (builder, get_bb (ctx, bb->next_bb));
 	}
 
@@ -12961,8 +12968,13 @@ emit_method_inner (EmitContext *ctx)
 		bb = (MonoBasicBlock*)g_ptr_array_index (bblock_list, bb_index);
 
 		// Prune unreachable mono BBs.
-		if (!(bb == cfg->bb_entry || bb->in_count > 0))
+		if (!(bb == cfg->bb_entry || bb->in_count > 0)) {
+			LLVMBasicBlockRef target_bb = ctx->bblocks [bb->block_num].call_handler_target_bb;
+			if (target_bb)
+				/* Unused */
+				LLVMDeleteBasicBlock (target_bb);
 			continue;
+		}
 
 		process_bb (ctx, bb);
 		if (!ctx_ok (ctx))

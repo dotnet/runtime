@@ -385,7 +385,7 @@ namespace System.Globalization.Tests
             }
 
             string GetPNSEText(string funcName) => $"{funcName} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.";
-            void AssertNotReached() => Assert.True(false);
+            void AssertNotReached() => Assert.Fail();
         }
 
         [DllImport("kernel32", CharSet = CharSet.Unicode)]

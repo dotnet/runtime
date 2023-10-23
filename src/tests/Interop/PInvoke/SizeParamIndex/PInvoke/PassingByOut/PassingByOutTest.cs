@@ -229,7 +229,8 @@ public class ClientMarshalArrayAsSizeParamIndexByOutTest
         Console.WriteLine(strDescription + " Ends!");
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try{
             SizeParamTypeIsByte();

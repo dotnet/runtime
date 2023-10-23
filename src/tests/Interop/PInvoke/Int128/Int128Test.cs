@@ -6,13 +6,13 @@ using System.Runtime.InteropServices;
 using Xunit;
 
 
-struct StructJustInt128
+public struct StructJustInt128
 {
     public StructJustInt128(Int128 val) { value = val; }
     public Int128 value;
 }
 
-struct StructWithInt128
+public struct StructWithInt128
 {
     public StructWithInt128(Int128 val) { value = val; messUpPadding = 0x10; }
     public byte messUpPadding;

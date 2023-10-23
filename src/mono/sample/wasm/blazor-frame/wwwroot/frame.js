@@ -34,5 +34,4 @@ catch (err) {
     if (!mute) {
         console.error(`WASM ERROR ${err}`);
     }
-    exit(1, err);
 }
