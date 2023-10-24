@@ -206,6 +206,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55742", TestRuntimes.Mono)]
         public unsafe void GeneratedComInterfaceType_Marshals_To_UNKNOWN()
         {
             var obj = new ComExposedType();
@@ -221,6 +222,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55742", TestRuntimes.Mono)]
         public void UnknownWrapper_Of_GeneratedComInterfaceType_Marshals_To_UNKNOWN()
         {
             var obj = new ComExposedType();
