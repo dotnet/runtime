@@ -75,9 +75,12 @@ public class NativeTests : BlazorWasmTestBase
             <Error Text=""Stopping after AOT"" Condition=""'$(WasmBuildingForNestedPublish)' == 'true'"" />
         </Target>
         ";
+
+        // Use WasmDedup=false because aot-instances.dll for the no-trimming case ends
+        // up oom'ing.
         AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
                                     extraItems: null,
-                                    extraProperties: null,
+                                    extraProperties: "<WasmDedup>false</WasmDedup>",
                                     atTheEnd: target);
 
         string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");

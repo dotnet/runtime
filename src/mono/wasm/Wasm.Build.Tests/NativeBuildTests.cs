@@ -50,7 +50,9 @@ namespace Wasm.Build.Tests
 
             string projectName = $"mono_aot_cross_{buildArgs.Config}_{buildArgs.AOT}";
 
-            buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:PublishTrimmed=false -v:n" };
+            // Use WasmDedup=false because aot-instances.dll for the no-trimming case ends
+            // up oom'ing.
+            buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:PublishTrimmed=false -p:WasmDedup=false" };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>", insertAtEnd: target);
 
             (_, string output) = BuildProject(
