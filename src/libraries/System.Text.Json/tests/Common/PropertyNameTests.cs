@@ -496,7 +496,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task ClassWithIgnoredCaseSensitiveConflict_WorksAsExpected()
+        public async Task ClassWithIgnoredCaseSensitiveConflict_RespectsIgnoredMember()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/93903
 
