@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices
                 VarEnum.VT_UI8 => variant.As<ulong>(),
                 VarEnum.VT_INT => variant.As<int>(),
                 VarEnum.VT_UINT => variant.As<uint>(),
-                VarEnum.VT_BOOL => variant.As<short>() != VARIANT_FALSE,
+                VarEnum.VT_BOOL => variant.As<bool>(),
                 VarEnum.VT_ERROR => variant.As<int>(),
                 VarEnum.VT_R4 => variant.As<float>(),
                 VarEnum.VT_R8 => variant.As<double>(),
