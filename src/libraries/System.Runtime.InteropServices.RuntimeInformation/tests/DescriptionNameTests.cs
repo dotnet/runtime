@@ -186,7 +186,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             var frameworkDescription = RuntimeInformation.FrameworkDescription;
             var version = frameworkDescription.Substring(".NET".Length).Trim(); // remove ".NET" prefix
 
-            if (String.IsNullOrEmpty(version))
+            if (string.IsNullOrEmpty(version))
                 return;
 
             Assert.DoesNotContain("+", version); // no git hash
