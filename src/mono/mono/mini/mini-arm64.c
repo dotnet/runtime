@@ -2295,6 +2295,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		switch (t->type) {
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_I8:
@@ -2391,6 +2392,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		*(gpointer*)ret = (gpointer)res;
 		break;
 	case MONO_TYPE_I1:
