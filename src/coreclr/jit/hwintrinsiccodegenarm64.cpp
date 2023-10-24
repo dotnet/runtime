@@ -507,15 +507,56 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 ins = varTypeIsUnsigned(intrin.baseType) ? INS_umsubl : INS_smsubl;
                 break;
 
+            case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                unsigned regCount = 0;
+                if (intrin.op2->OperIsFieldList())
+                {
+                    GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op2Reg                       = firstField->GetRegNum();
+
+                    INDEBUG(regNumber argReg = op2Reg);
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
+                        GenTree* argNode = use.GetNode();
+                        assert(argReg == argNode->GetRegNum());
+                        argReg = REG_NEXT(argReg);
+#endif
+                    }
+                }
+                else
+                {
+                    regCount = 1;
+                }
+
+                switch (regCount)
+                {
+                    case 1:
+                        ins = INS_st1;
+                        break;
+                    case 2:
+                        ins = INS_st2;
+                        break;
+                    case 3:
+                        ins = INS_st3;
+                        break;
+                    case 4:
+                        ins = INS_st4;
+                        break;
+                    default:
+                        unreached();
+                }
+                break;
+
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
                 break;
         }
 
-        if (!(intrin.id == NI_AdvSimd_StoreSelectedScalar || intrin.id == NI_AdvSimd_Arm64_StoreSelectedScalar))
-        {
-            assert(ins != INS_invalid);
-        }
+        assert(ins != INS_invalid);
 
         switch (intrin.id)
         {
@@ -803,47 +844,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
             {
-                unsigned regCount = 0;
-                if (intrin.op2->OperIsFieldList())
-                {
-                    GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
-                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
-                    op2Reg                       = firstField->GetRegNum();
-
-                    INDEBUG(regNumber argReg = op2Reg);
-                    for (GenTreeFieldList::Use& use : fieldList->Uses())
-                    {
-                        regCount++;
-#ifdef DEBUG
-                        GenTree* argNode = use.GetNode();
-                        assert(argReg == argNode->GetRegNum());
-                        argReg = REG_NEXT(argReg);
-#endif
-                    }
-                }
-                else
-                {
-                    regCount = 1;
-                }
-
-                switch (regCount)
-                {
-                    case 1:
-                        ins = INS_st1;
-                        break;
-                    case 2:
-                        ins = INS_st2;
-                        break;
-                    case 3:
-                        ins = INS_st3;
-                        break;
-                    case 4:
-                        ins = INS_st4;
-                        break;
-                    default:
-                        unreached();
-                }
-
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
