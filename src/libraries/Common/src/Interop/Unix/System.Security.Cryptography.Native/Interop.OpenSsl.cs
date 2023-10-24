@@ -492,10 +492,9 @@ internal static partial class Interop
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
-        internal static SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
+        internal static SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, ref ProtocolToken token)
         {
-            sendBuf = null;
-            sendCount = 0;
+            token.Size = 0;
             Exception? handshakeException = null;
 
             if (input.Length > 0)
@@ -525,14 +524,13 @@ internal static partial class Interop
                 }
             }
 
-            sendCount = Crypto.BioCtrlPending(context.OutputBio!);
+            int sendCount = Crypto.BioCtrlPending(context.OutputBio!);
             if (sendCount > 0)
             {
-                sendBuf = ArrayPool<byte>.Shared.Rent(sendCount);
-
+                token.EnsureAvailableSpace(sendCount);
                 try
                 {
-                    sendCount = BioRead(context.OutputBio!, sendBuf, sendCount);
+                    sendCount = BioRead(context.OutputBio!, token.AvailableSpan, sendCount);
                 }
                 catch (Exception) when (handshakeException != null)
                 {
@@ -544,11 +542,12 @@ internal static partial class Interop
                     {
                         // Make sure we clear out the error that is stored in the queue
                         Crypto.ErrClearError();
-                        sendBuf = null;
                         sendCount = 0;
                     }
                 }
             }
+
+            token.Size = sendCount;
 
             if (handshakeException != null)
             {
@@ -564,15 +563,13 @@ internal static partial class Interop
             return stateOk ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded;
         }
 
-        internal static int Encrypt(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? output, out Ssl.SslErrorCode errorCode)
+        internal static Ssl.SslErrorCode Encrypt(SafeSslHandle context, ReadOnlySpan<byte> input, ref ProtocolToken outToken)
         {
-            int retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out errorCode);
+            int retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out Ssl.SslErrorCode errorCode);
 
             if (retVal != input.Length)
             {
-                retVal = 0;
-                output = null;
-
+                outToken.Size = 0;
                 switch (errorCode)
                 {
                     // indicate end-of-file
@@ -587,18 +584,22 @@ internal static partial class Interop
             else
             {
                 int capacityNeeded = Crypto.BioCtrlPending(context.OutputBio!);
-                output = ArrayPool<byte>.Shared.Rent(capacityNeeded);
-
-                retVal = BioRead(context.OutputBio!, output, capacityNeeded);
+                outToken.EnsureAvailableSpace(capacityNeeded);
+                retVal = BioRead(context.OutputBio!, outToken.AvailableSpan, capacityNeeded);
 
                 if (retVal <= 0)
                 {
                     // Make sure we clear out the error that is stored in the queue
                     Crypto.ErrClearError();
+                    outToken.Size = 0;
+                }
+                else
+                {
+                    outToken.Size = retVal;
                 }
             }
 
-            return retVal;
+            return errorCode;
         }
 
         internal static int Decrypt(SafeSslHandle context, Span<byte> buffer, out Ssl.SslErrorCode errorCode)
@@ -808,13 +809,12 @@ internal static partial class Interop
         }
 #endif
 
-        private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)
+        private static int BioRead(SafeBioHandle bio, Span<byte> buffer, int count)
         {
-            Debug.Assert(buffer != null);
             Debug.Assert(count >= 0);
             Debug.Assert(buffer.Length >= count);
 
-            int bytes = Crypto.BioRead(bio, buffer, count);
+            int bytes = Crypto.BioRead(bio, buffer);
             if (bytes != count)
             {
                 throw CreateSslException(SR.net_ssl_read_bio_failed_error);

@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
@@ -344,7 +342,7 @@ namespace System.Net.Security
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
             InputSecurityBuffers inSecBuffers,
-            ref SecurityBuffer outSecBuffer,
+            ref ProtocolToken outToken,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
             ArgumentNullException.ThrowIfNull(inCredentials);
@@ -427,16 +425,16 @@ namespace System.Net.Security
                         }
                     }
 
-                    fixed (byte* pinnedOutBytes = outSecBuffer.token)
+                    fixed (byte* pinnedOutBytes = outToken.Payload)
                     {
                         // Fix Descriptor pointer that points to unmanaged SecurityBuffers.
                         Interop.SspiCli.SecBuffer outUnmanagedBuffer = default;
                         outSecurityBufferDescriptor.pBuffers = &outUnmanagedBuffer;
-                        outUnmanagedBuffer.cbBuffer = outSecBuffer.size;
-                        outUnmanagedBuffer.BufferType = outSecBuffer.type;
-                        outUnmanagedBuffer.pvBuffer = outSecBuffer.token == null || outSecBuffer.token.Length == 0 ?
+                        outUnmanagedBuffer.cbBuffer = outToken.Size;
+                        outUnmanagedBuffer.BufferType = SecurityBufferType.SECBUFFER_TOKEN;
+                        outUnmanagedBuffer.pvBuffer = outToken.Payload == null || outToken.Size == 0 ?
                             IntPtr.Zero :
-                            (IntPtr)(pinnedOutBytes + outSecBuffer.offset);
+                            (IntPtr)(pinnedOutBytes);
 
                         if (refContext == null || refContext.IsInvalid)
                         {
@@ -470,17 +468,15 @@ namespace System.Net.Security
                             }
 
                             // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
-                            outSecBuffer.size = outUnmanagedBuffer.cbBuffer;
-                            outSecBuffer.type = outUnmanagedBuffer.BufferType;
-
                             if (isSspiAllocated)
                             {
-                                if (outSecBuffer.size > 0)
+                                if (outUnmanagedBuffer.cbBuffer > 0)
                                 {
-                                    outSecBuffer.token = ArrayPool<byte>.Shared.Rent(outSecBuffer.size);
-                                    new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).CopyTo(outSecBuffer.token);
+                                    outToken.EnsureAvailableSpace(outUnmanagedBuffer.cbBuffer);
+                                    new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).CopyTo(outToken.AvailableSpan);
                                 }
                             }
+                            outToken.Size = outUnmanagedBuffer.cbBuffer;
 
                             if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                             {
@@ -519,26 +515,13 @@ namespace System.Net.Security
                                 if (isSspiAllocated)
                                 {
                                     outoutBuffer = outUnmanagedBuffer.pvBuffer;
-                                }
 
-                                if (outUnmanagedBuffer.cbBuffer > 0)
-                                {
-                                    int needed = outSecBuffer.size + outUnmanagedBuffer.cbBuffer;
-                                    if (outSecBuffer.token == null || outSecBuffer.token!.Length < needed)
+                                    if (outUnmanagedBuffer.cbBuffer > 0)
                                     {
-                                        byte[] buffer = ArrayPool<byte>.Shared.Rent(outSecBuffer.size);
-                                        if (outSecBuffer.size != 0)
-                                        {
-                                            // We have some data from previous round
-                                            Buffer.BlockCopy(outSecBuffer.token!, 0, buffer, 0, outSecBuffer.size);
-                                            ArrayPool<byte>.Shared.Return(outSecBuffer.token!);
-                                        }
-                                        outSecBuffer.token = buffer;
+                                        outToken.EnsureAvailableSpace(outUnmanagedBuffer.cbBuffer);
+                                        new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).CopyTo(outToken.AvailableSpan);
+                                        outToken.Size += outUnmanagedBuffer.cbBuffer;
                                     }
-
-                                    new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).CopyTo(
-                                            new Span<byte>(outSecBuffer.token, outSecBuffer.size, outSecBuffer.token.Length - outSecBuffer.size));
-                                    outSecBuffer.size = needed;
                                 }
 
                                 if (inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA)
@@ -662,7 +645,7 @@ namespace System.Net.Security
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
             InputSecurityBuffers inSecBuffers,
-            ref SecurityBuffer outSecBuffer,
+            ref ProtocolToken outToken,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
             ArgumentNullException.ThrowIfNull(inCredentials);
@@ -746,17 +729,17 @@ namespace System.Net.Security
                         }
                     }
 
-                    fixed (byte* pinnedOutBytes = outSecBuffer.token)
+                    fixed (byte* pinnedOutBytes = outToken.Payload)
                     {
                         // Fix Descriptor pointer that points to unmanaged SecurityBuffers.
                         outSecurityBufferDescriptor.pBuffers = outUnmanagedBufferPtr;
 
                         // Copy the SecurityBuffer content into unmanaged place holder.
-                        outUnmanagedBuffer[0].cbBuffer = outSecBuffer.size;
-                        outUnmanagedBuffer[0].BufferType = outSecBuffer.type;
-                        outUnmanagedBuffer[0].pvBuffer = outSecBuffer.token == null || outSecBuffer.token.Length == 0 ?
+                        outUnmanagedBuffer[0].cbBuffer = outToken.Size;
+                        outUnmanagedBuffer[0].BufferType = SecurityBufferType.SECBUFFER_TOKEN;
+                        outUnmanagedBuffer[0].pvBuffer = outToken.Payload == null || outToken.Payload.Length == 0 ?
                             IntPtr.Zero :
-                            (IntPtr)(pinnedOutBytes + outSecBuffer.offset);
+                            (IntPtr)(pinnedOutBytes);
 
                         outUnmanagedBuffer[1].cbBuffer = 0;
                         outUnmanagedBuffer[1].BufferType = SecurityBufferType.SECBUFFER_ALERT;
@@ -784,17 +767,17 @@ namespace System.Net.Security
                         // No data written out but there is Alert
                         int index = outUnmanagedBuffer[0].cbBuffer == 0 && outUnmanagedBuffer[1].cbBuffer > 0 ? 1 : 0;
 
-                        outSecBuffer.size = outUnmanagedBuffer[index].cbBuffer;
-                        outSecBuffer.type = outUnmanagedBuffer[index].BufferType;
-
+                        //outSecBuffer.type = outUnmanagedBuffer[index].BufferType;
+                        int length = outUnmanagedBuffer[index].cbBuffer;
                         if (isSspiAllocated)
                         {
-                            if (outSecBuffer.size > 0)
+                            if (length > 0)
                             {
-                                outSecBuffer.token = ArrayPool<byte>.Shared.Rent(outSecBuffer.size);
-                                new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[0].cbBuffer).CopyTo(outSecBuffer.token);
+                                outToken.EnsureAvailableSpace(length);
+                                new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, length).CopyTo(outToken.AvailableSpan);
                             }
                         }
+                        outToken.Size = length;
 
                         if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                         {
@@ -831,23 +814,9 @@ namespace System.Net.Security
                             index = outUnmanagedBuffer[0].cbBuffer == 0 && outUnmanagedBuffer[1].cbBuffer > 0 ? 1 : 0;
                             if (outUnmanagedBuffer[index].cbBuffer > 0)
                             {
-
-                                int needed = outSecBuffer.size + outUnmanagedBuffer[index].cbBuffer;
-                                if (outSecBuffer.token == null || outSecBuffer.token!.Length < needed)
-                                {
-                                    byte[] buffer = ArrayPool<byte>.Shared.Rent(outSecBuffer.size);
-                                    if (outSecBuffer.size != 0)
-                                    {
-                                        // We have some data from previous round
-                                        Buffer.BlockCopy(outSecBuffer.token!, 0, buffer, 0, outSecBuffer.size);
-                                        ArrayPool<byte>.Shared.Return(outSecBuffer.token!);
-                                    }
-                                    outSecBuffer.token = buffer;
-                                }
-
-                                new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[index].cbBuffer).CopyTo(
-                                        new Span<byte>(outSecBuffer.token, outSecBuffer.size, outSecBuffer.token.Length - outSecBuffer.size));
-                                outSecBuffer.size = needed;
+                                outToken.EnsureAvailableSpace(outUnmanagedBuffer[index].cbBuffer);
+                                new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[index].cbBuffer).CopyTo(outToken.AvailableSpan);
+                                outToken.Size += outUnmanagedBuffer[index].cbBuffer;
                             }
 
                             if (inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA)

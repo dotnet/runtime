@@ -795,6 +795,7 @@ namespace System.Net.Security
             byte[]? thumbPrint = null;
 
             ProtocolToken token = default;
+            token.RentBuffer = true;
 
             // We need to try get credentials at the beginning.
             // _credentialsHandle may be always null on some platforms but
@@ -953,12 +954,11 @@ namespace System.Net.Security
                 size   -
                 output - Encrypted bytes
         --*/
-        //internal SecurityStatusPal Encrypt(ReadOnlyMemory<byte> buffer, ref byte[] output, out int resultSize)
-        internal void Encrypt(ReadOnlyMemory<byte> buffer, out ProtocolToken token)
+        internal ProtocolToken Encrypt(ReadOnlyMemory<byte> buffer)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
 
-            token = SslStreamPal.EncryptMessage(
+            ProtocolToken token = SslStreamPal.EncryptMessage(
                 _securityContext!,
                 buffer,
                 _headerSize,
@@ -968,6 +968,8 @@ namespace System.Net.Security
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"ERROR {token.Status}");
             }
+
+            return token;
         }
 
         internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
@@ -1281,6 +1283,7 @@ namespace System.Net.Security
         internal SecurityStatusPal Status;
         internal byte[]? Payload;
         internal int Size;
+        internal bool RentBuffer;
 
         internal bool Failed
         {
@@ -1320,18 +1323,44 @@ namespace System.Net.Security
 
             if (Size > 0)
             {
-                Payload = ArrayPool<byte>.Shared.Rent(Size);
+                Payload = RentBuffer ? ArrayPool<byte>.Shared.Rent(Size) : new byte[Size];
                 payload.CopyTo(new Span<byte>(Payload, 0, Size));
             }
         }
 
+        internal void EnsureAvailableSpace(int size)
+        {
+            if (Available >= size)
+            {
+                return;
+            }
+
+            var oldPayload = Payload;
+
+            Payload = RentBuffer? ArrayPool<byte>.Shared.Rent(Size + size) : new byte[Size + size];
+            if (oldPayload != null)
+            {
+                oldPayload.AsSpan<byte>().CopyTo(Payload);
+                if (RentBuffer)
+                {
+                    ArrayPool<byte>.Shared.Return(oldPayload);
+                }
+            }
+        }
+
+        internal int Available => Payload == null ? 0 : Payload.Length - Size;
+        internal Span<byte> AvailableSpan => Payload == null ? Span<byte>.Empty : new Span<byte>(Payload, Size, Available);
+
         internal ReadOnlyMemory<byte> AsMemory() => new ReadOnlyMemory<byte>(Payload, 0, Size);
 
-        internal void Clear()
+        internal void ReleasePayload()
         {
             if (Payload != null)
             {
-                ArrayPool<byte>.Shared.Return(Payload);
+                if (RentBuffer)
+                {
+                    ArrayPool<byte>.Shared.Return(Payload);
+                }
                 Payload = null;
                 Size = 0;
             }

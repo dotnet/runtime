@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -117,7 +116,7 @@ namespace System.Net.Security
                 SetAlpn(ref inputBuffers, sslAuthenticationOptions.ApplicationProtocols, localBuffer);
             }
 
-            var resultBuffer = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_TOKEN);
+            ProtocolToken token = default;
 
             int errorCode = SSPIWrapper.AcceptSecurityContext(
                 GlobalSSPI.SSPISecureChannel,
@@ -126,13 +125,9 @@ namespace System.Net.Security
                 ServerRequiredFlags | (sslAuthenticationOptions.RemoteCertRequired ? Interop.SspiCli.ContextFlags.MutualAuth : Interop.SspiCli.ContextFlags.Zero),
                 Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
                 inputBuffers,
-                ref resultBuffer,
+                ref token,
                 ref unusedAttributes);
 
-            //outputBuffer = resultBuffer.token;
-            ProtocolToken token;
-            token.Payload = resultBuffer.token;
-            token.Size = resultBuffer.size;
             token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
             return token;
         }
@@ -165,23 +160,18 @@ namespace System.Net.Security
                 SetAlpn(ref inputBuffers, sslAuthenticationOptions.ApplicationProtocols, localBuffer);
             }
 
-            var resultBuffer = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_TOKEN);
-
+            ProtocolToken token = default;
             int errorCode = SSPIWrapper.InitializeSecurityContext(
-                            GlobalSSPI.SSPISecureChannel,
-                            ref credentialsHandle,
-                            ref context,
-                            targetName,
-                            RequiredFlags | Interop.SspiCli.ContextFlags.InitManualCredValidation,
-                            Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
-                            inputBuffers,
-                            ref resultBuffer,
-                            ref unusedAttributes);
+                                GlobalSSPI.SSPISecureChannel,
+                                ref credentialsHandle,
+                                ref context,
+                                targetName,
+                                RequiredFlags | Interop.SspiCli.ContextFlags.InitManualCredValidation,
+                                Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
+                                inputBuffers,
+                                ref token,
+                                ref unusedAttributes);
 
-
-            ProtocolToken token;
-            token.Payload = resultBuffer.token;
-            token.Size = resultBuffer.size;
             token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
 
 
@@ -448,13 +438,14 @@ namespace System.Net.Security
 
         public static unsafe ProtocolToken EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize)
         {
-            ProtocolToken token;
+            ProtocolToken token = default;
+            token.RentBuffer = true;
 
             // Ensure that there is sufficient space for the message output.
             int bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
-            token.Payload = ArrayPool<byte>.Shared.Rent(bufferSizeNeeded);
+            token.EnsureAvailableSpace(bufferSizeNeeded);
             // Copy the input into the output buffer to prepare for SCHANNEL's expectations
-            input.Span.CopyTo(new Span<byte>(token.Payload, headerSize, input.Length));
+            input.Span.CopyTo(token.AvailableSpan.Slice(headerSize, input.Length));
 
             const int NumSecBuffers = 4; // header + data + trailer + empty
             Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
@@ -496,7 +487,7 @@ namespace System.Net.Security
                 }
 
                 Debug.Assert(headerSecBuffer->cbBuffer >= 0 && dataSecBuffer->cbBuffer >= 0 && trailerSecBuffer->cbBuffer >= 0);
-                Debug.Assert(checked(headerSecBuffer->cbBuffer + dataSecBuffer->cbBuffer + trailerSecBuffer->cbBuffer) <= token.Payload.Length);
+                Debug.Assert(checked(headerSecBuffer->cbBuffer + dataSecBuffer->cbBuffer + trailerSecBuffer->cbBuffer) <= token.Payload!.Length);
 
                 token.Size = checked(headerSecBuffer->cbBuffer + dataSecBuffer->cbBuffer + trailerSecBuffer->cbBuffer);
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);

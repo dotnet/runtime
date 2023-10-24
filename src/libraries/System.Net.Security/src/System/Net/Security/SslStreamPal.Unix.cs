@@ -60,17 +60,15 @@ namespace System.Net.Security
 
         public static ProtocolToken EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int _ /*headerSize*/, int _1 /*trailerSize*/)
         {
-            ProtocolToken token;
+            ProtocolToken token = default;
+            token.RentBuffer = true;
             try
             {
-                token.Size = Interop.OpenSsl.Encrypt((SafeSslHandle)securityContext, input.Span, out byte[]? output, out Interop.Ssl.SslErrorCode errorCode);
-                token.Payload = output;
+                Interop.Ssl.SslErrorCode errorCode = Interop.OpenSsl.Encrypt((SafeSslHandle)securityContext, input.Span, ref token);
                 token.Status = MapNativeErrorCode(errorCode);
             }
             catch (Exception ex)
             {
-                token.Size = 0;
-                token.Payload = null;
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
 
@@ -148,7 +146,8 @@ namespace System.Net.Security
             {
                 token.Size = 0;
                 token.Payload = null;
-                return token;
+                token.RentBuffer = false;
+                return default;
             }
             return HandshakeInternal(ref context!, null, sslAuthenticationOptions);
         }
@@ -176,10 +175,8 @@ namespace System.Net.Security
          private static ProtocolToken HandshakeInternal(ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            byte[]? output = null;
-            int outputSize = 0;
-
             ProtocolToken token = default;
+            token.RentBuffer = true;
             try
             {
                 if ((null == context) || context.IsInvalid)
@@ -187,7 +184,7 @@ namespace System.Net.Security
                     context = Interop.OpenSsl.AllocateSslHandle(sslAuthenticationOptions);
                 }
 
-                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, out output, out outputSize);
+                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, ref token);
 
                 if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
@@ -199,13 +196,10 @@ namespace System.Net.Security
 
                 // sometimes during renegotiation processing message does not yield new output.
                 // That seems to be flaw in OpenSSL state machine and we have workaround to peek it and try it again.
-                if (outputSize == 0 && Interop.Ssl.IsSslRenegotiatePending((SafeSslHandle)context))
+                if (token.Size == 0 && Interop.Ssl.IsSslRenegotiatePending((SafeSslHandle)context))
                 {
-                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, out output, out outputSize);
+                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
                 }
-
-                token.Size = outputSize;
-                token.Payload = output;
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
                 // If it was, then that indicates ALPN failed, send failure.
@@ -220,18 +214,10 @@ namespace System.Net.Security
                     return token;
                 }
 
-                token.Size = outputSize;
-                token.Payload = output;
                 token.Status = new SecurityStatusPal(errorCode);
             }
             catch (Exception exc)
             {
-                // Even if handshake failed we may have Alert to sent.
-                if (outputSize > 0)
-                {
-                    token.Payload = output;
-                }
-
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
 
