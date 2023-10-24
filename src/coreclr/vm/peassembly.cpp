@@ -324,14 +324,14 @@ void PEAssembly::ConvertMDInternalToReadWrite(bool swapForRWMDImport)
     //  or to an RW MDInternalXX.
     IMDInternalImport *pNew = NULL;                                 // New (RW) value of internal import.
     IMDInternalImport *pOld = m_pMDImport;                          // Old (current RO) value of internal import.
-    IMDInternalImport *pConvertedImport = m_pConvertedMDImport;     // Pointer to a RW interna metadata that might not be actively in use.
+    IMDInternalImport *pConvertedImport = m_pConvertedMDImport;     // Pointer to a RW internal metadata that might not be actively in use.
 
 
     if (pConvertedImport != NULL)
     {
         if (swapForRWMDImport && pOld != pConvertedImport)
         {
-            // We had converted the metadata before, now we are just requested
+            // We had converted the metadata before, now we are requesting
             // to replace the RO view we had with the converted one.
             if (InterlockedCompareExchangeT(&m_pMDImport, pConvertedImport, pOld) == pOld)
             {
