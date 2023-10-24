@@ -36,6 +36,13 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
 
+        /* This will trigger importing WasmOverridePacks.targets for the tests,
+         * which will override the runtime pack with with the locally built one.
+         * But note that this only partially helps with "switching workloads" because
+         * the tasks/targets, aot compiler, etc would still be from the old version
+         */
+        public bool UseWBTOverridePackTargets = false;
+
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
@@ -243,6 +250,8 @@ namespace Wasm.Build.Tests
                         envVars[kvp.Key] = kvp.Value;
                 }
                 envVars["NUGET_PACKAGES"] = _nugetPackagesDir;
+                if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
+                    envVars["WBTOverrideRuntimePack"] = "true";
                 result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: envVars);
 
                 // check that we are using the correct runtime pack!

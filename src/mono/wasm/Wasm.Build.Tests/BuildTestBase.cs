@@ -38,6 +38,13 @@ namespace Wasm.Build.Tests
         protected string _nugetPackagesDir = string.Empty;
         private ProjectProviderBase _providerOfBaseType;
 
+        /* This will trigger importing WasmOverridePacks.targets for the tests,
+         * which will override the runtime pack with with the locally built one.
+         * But note that this only partially helps with "switching workloads" because
+         * the tasks/targets, aot compiler, etc would still be from the old version
+         */
+        public bool UseWBTOverridePackTargets = false;
+
         private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
@@ -156,11 +163,14 @@ namespace Wasm.Build.Tests
             if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
-            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
+            var cmd = new DotNetCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
                                     .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables)
-                                    .ExecuteWithCapturedOutput(commandLineArgs.ToArray());
+                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
+            if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
+                cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
+
+            CommandResult res = cmd.ExecuteWithCapturedOutput(commandLineArgs.ToArray());
             if (buildProjectOptions.ExpectSuccess)
                 res.EnsureSuccessful();
             else if (res.ExitCode == 0)
@@ -339,7 +349,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
-            if (BuildEnvironment.UseWBTOverridePackTargets)
+            if (UseWBTOverridePackTargets)
                 File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
             string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
