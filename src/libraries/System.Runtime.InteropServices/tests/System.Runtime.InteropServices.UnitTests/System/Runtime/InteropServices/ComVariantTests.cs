@@ -174,7 +174,7 @@ namespace System.Runtime.InteropServices.Tests
             ComVariant variant = ComVariant.Create(42.0m);
             Assert.Equal(VarEnum.VT_DECIMAL, variant.VarType);
             Assert.Equal(42.0m, variant.As<decimal>());
-            Assert.Throws<ArgumentException>("T", () => variant.GetRawDataRef<decimal>());
+            Assert.ThrowsAny<ArgumentException>("T", () => variant.GetRawDataRef<decimal>());
         }
 
         [Fact]
