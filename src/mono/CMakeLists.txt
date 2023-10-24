@@ -26,7 +26,6 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
 
   # these warnings come from llvm headers
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>) # W2, W3, W4: 'argument' : conversion from 'type1' to 'type2', possible loss of data, 'conversion' conversion from 'type1' to 'type2', possible loss of data
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4459>) # W4 declaration of 'identifier' hides global declaration
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4127>) # W4 conditional expression is constant
 endif(MSVC)
