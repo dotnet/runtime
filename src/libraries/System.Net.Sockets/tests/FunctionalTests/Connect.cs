@@ -163,7 +163,7 @@ namespace System.Net.Sockets.Tests
                 // Wait a little so the operation is started.
                 await Task.Delay(Math.Min(msDelay, 1000));
                 msDelay *= 2;
-                Task disposeTask = Task.Run(() => client.Close());
+                Task disposeTask = Task.Run(() => client.Dispose());
 
                 await Task.WhenAny(disposeTask, connectTask).WaitAsync(TimeSpan.FromSeconds(30));
                 await disposeTask;
