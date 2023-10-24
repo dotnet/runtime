@@ -60,6 +60,21 @@ namespace ILCompiler.ObjectWriter
         {
             switch (_targetArchitecture)
             {
+                case TargetArchitecture.X86:
+                    return regNum switch
+                    {
+                        0u => CV_REG_EAX,
+                        1u => CV_REG_ECX,
+                        2u => CV_REG_EDX,
+                        3u => CV_REG_EBX,
+                        4u => CV_REG_ESP,
+                        5u => CV_REG_EBP,
+                        6u => CV_REG_ESI,
+                        7u => CV_REG_EDI,
+                        // TODO: Floating point
+                        _ => CV_REG_NONE,
+                    };
+
                 case TargetArchitecture.X64:
                     return regNum switch
                     {
