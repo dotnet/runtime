@@ -39,7 +39,6 @@ namespace ILCompiler.ObjectWriter
     internal sealed class CodeViewTypesBuilder : ITypesDebugInfoWriter
     {
         private NameMangler _nameMangler;
-        private TargetArchitecture _architecture;
         private Stream _outputStream;
         private int _targetPointerSize;
 
@@ -54,7 +53,6 @@ namespace ILCompiler.ObjectWriter
         public CodeViewTypesBuilder(NameMangler nameMangler, TargetArchitecture targetArchitecture, Stream outputStream)
         {
             _nameMangler = nameMangler;
-            _architecture = targetArchitecture;
             _outputStream = outputStream;
             _targetPointerSize = targetArchitecture switch
             {

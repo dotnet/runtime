@@ -58,6 +58,7 @@ namespace ILCompiler.ObjectWriter
         {
             _machine = factory.Target.Architecture switch
             {
+                TargetArchitecture.X86 => Machine.I386,
                 TargetArchitecture.X64 => Machine.Amd64,
                 TargetArchitecture.ARM64 => Machine.Arm64,
                 _ => throw new NotSupportedException("Unsupported architecture")
@@ -211,6 +212,7 @@ namespace ILCompiler.ObjectWriter
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
                     if (addend != 0)
                     {
                         BinaryPrimitives.WriteInt32LittleEndian(
@@ -303,58 +305,81 @@ namespace ILCompiler.ObjectWriter
                     coffRelocations.Add(new CoffRelocation { VirtualAddress = (uint)(relocationList.Count + 1) });
                 }
 
-                if (_machine == Machine.Amd64)
+                switch (_machine)
                 {
-                    foreach (var relocation in relocationList)
-                    {
-                        coffRelocations.Add(new CoffRelocation
+                    case Machine.I386:
+                        foreach (var relocation in relocationList)
                         {
-                            VirtualAddress = (uint)relocation.Offset,
-                            SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
-                            Type = relocation.Type switch
+                            coffRelocations.Add(new CoffRelocation
                             {
-                                RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_AMD64_ADDR32NB,
-                                RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_AMD64_ADDR32NB,
-                                RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_AMD64_ADDR32,
-                                RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_AMD64_ADDR64,
-                                RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
-                                RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
-                                RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_AMD64_SECREL,
-                                RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_AMD64_SECTION,
-                                _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                            },
-                        });
-                    }
-                }
-                else if (_machine == Machine.Arm64)
-                {
-                    foreach (var relocation in relocationList)
-                    {
-                        coffRelocations.Add(new CoffRelocation
+                                VirtualAddress = (uint)relocation.Offset,
+                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
+                                Type = relocation.Type switch
+                                {
+                                    RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_I386_DIR32NB,
+                                    RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_I386_DIR32NB,
+                                    RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_I386_DIR32,
+                                    RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_I386_REL32,
+                                    RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_I386_REL32,
+                                    RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_I386_SECREL,
+                                    RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_I386_SECTION,
+                                    _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
+                                },
+                            });
+                        }
+                        break;
+
+                    case Machine.Amd64:
+                        foreach (var relocation in relocationList)
                         {
-                            VirtualAddress = (uint)relocation.Offset,
-                            SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
-                            Type = relocation.Type switch
+                            coffRelocations.Add(new CoffRelocation
                             {
-                                RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_ARM64_ADDR32NB,
-                                RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_ARM64_ADDR32NB,
-                                RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_ARM64_ADDR32,
-                                RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_ARM64_ADDR64,
-                                RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_ARM64_REL32,
-                                RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_ARM64_REL32,
-                                RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => CoffRelocationType.IMAGE_REL_ARM64_BRANCH26,
-                                RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => CoffRelocationType.IMAGE_REL_ARM64_PAGEBASE_REL21,
-                                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => CoffRelocationType.IMAGE_REL_ARM64_PAGEOFFSET_12A,
-                                RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_ARM64_SECREL,
-                                RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_ARM64_SECTION,
-                                _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                            },
-                        });
-                    }
-                }
-                else
-                {
-                    throw new NotSupportedException("Unsupported architecture");
+                                VirtualAddress = (uint)relocation.Offset,
+                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
+                                Type = relocation.Type switch
+                                {
+                                    RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_AMD64_ADDR32NB,
+                                    RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_AMD64_ADDR32NB,
+                                    RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_AMD64_ADDR32,
+                                    RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_AMD64_ADDR64,
+                                    RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
+                                    RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
+                                    RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_AMD64_SECREL,
+                                    RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_AMD64_SECTION,
+                                    _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
+                                },
+                            });
+                        }
+                        break;
+
+                    case Machine.Arm64:
+                        foreach (var relocation in relocationList)
+                        {
+                            coffRelocations.Add(new CoffRelocation
+                            {
+                                VirtualAddress = (uint)relocation.Offset,
+                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
+                                Type = relocation.Type switch
+                                {
+                                    RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_ARM64_ADDR32NB,
+                                    RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_ARM64_ADDR32NB,
+                                    RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_ARM64_ADDR32,
+                                    RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_ARM64_ADDR64,
+                                    RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_ARM64_REL32,
+                                    RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_ARM64_REL32,
+                                    RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => CoffRelocationType.IMAGE_REL_ARM64_BRANCH26,
+                                    RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => CoffRelocationType.IMAGE_REL_ARM64_PAGEBASE_REL21,
+                                    RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => CoffRelocationType.IMAGE_REL_ARM64_PAGEOFFSET_12A,
+                                    RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_ARM64_SECREL,
+                                    RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_ARM64_SECTION,
+                                    _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
+                                },
+                            });
+                        }
+                        break;
+
+                    default:
+                        throw new NotSupportedException("Unsupported architecture");
                 }
             }
         }
@@ -785,6 +810,13 @@ namespace ILCompiler.ObjectWriter
 
         private enum CoffRelocationType
         {
+            IMAGE_REL_I386_ABSOLUTE = 0,
+            IMAGE_REL_I386_DIR32 = 6,
+            IMAGE_REL_I386_DIR32NB = 7,
+            IMAGE_REL_I386_SECTION = 10,
+            IMAGE_REL_I386_SECREL = 11,
+            IMAGE_REL_I386_REL32 = 20,
+
             IMAGE_REL_AMD64_ABSOLUTE = 0,
             IMAGE_REL_AMD64_ADDR64 = 1,
             IMAGE_REL_AMD64_ADDR32 = 2,
