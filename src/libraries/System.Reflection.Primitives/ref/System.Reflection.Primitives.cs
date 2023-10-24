@@ -33,7 +33,7 @@ namespace System.Reflection.Emit
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Emit.OpCode obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public int StackDifference() { throw null; }
+        public int EvaluationStackDelta { get { throw null; } }
         public static bool operator ==(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { throw null; }
         public static bool operator !=(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { throw null; }
         public override string? ToString() { throw null; }

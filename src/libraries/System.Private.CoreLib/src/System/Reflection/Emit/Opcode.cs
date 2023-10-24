@@ -45,7 +45,7 @@ namespace System.Reflection.Emit
         internal bool EndsUncondJmpBlk() =>
             (m_flags & EndsUncondJmpBlkFlag) != 0;
 
-        public int StackDifference() =>
+        public int EvaluationStackDelta =>
             m_flags >> StackChangeShift;
 
         public OperandType OperandType => (OperandType)(m_flags & OperandTypeMask);

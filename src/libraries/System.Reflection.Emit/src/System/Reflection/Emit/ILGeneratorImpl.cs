@@ -43,7 +43,7 @@ namespace System.Reflection.Emit
 
         private void UpdateStackSize(OpCode opCode)
         {
-            _currentStack += opCode.StackDifference();
+            _currentStack += opCode.EvaluationStackDelta;
             _maxStackSize = Math.Max(_maxStackSize, _currentStack);
         }
 
