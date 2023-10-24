@@ -455,8 +455,15 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float Max(ReadOnlySpan<float> x) =>
-            MinMaxCore<MaxOperator>(x);
+        public static float Max(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            return MinMaxCore<MaxOperator>(x);
+        }
 
         /// <summary>Computes the element-wise maximum of the single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -497,8 +504,15 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float MaxMagnitude(ReadOnlySpan<float> x) =>
-            MinMaxCore<MaxMagnitudeOperator>(x);
+        public static float MaxMagnitude(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            return MinMaxCore<MaxMagnitudeOperator>(x);
+        }
 
         /// <summary>Computes the element-wise single-precision floating-point number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -532,8 +546,15 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float Min(ReadOnlySpan<float> x) =>
-            MinMaxCore<MinOperator>(x);
+        public static float Min(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            return MinMaxCore<MinOperator>(x);
+        }
 
         /// <summary>Computes the element-wise minimum of the single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -574,8 +595,15 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float MinMagnitude(ReadOnlySpan<float> x) =>
-            MinMaxCore<MinMagnitudeOperator>(x);
+        public static float MinMagnitude(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            return MinMaxCore<MinMagnitudeOperator>(x);
+        }
 
         /// <summary>Computes the element-wise single-precision floating-point number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>

@@ -717,11 +717,6 @@ namespace System.Numerics.Tensors
         private static float MinMaxCore<TMinMaxOperator>(ReadOnlySpan<float> x, TMinMaxOperator op = default)
             where TMinMaxOperator : struct, IBinaryOperator
         {
-            if (x.IsEmpty)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
             // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
             // It propagates NaN inputs back to the caller and
             // otherwise returns the greater of the inputs.
