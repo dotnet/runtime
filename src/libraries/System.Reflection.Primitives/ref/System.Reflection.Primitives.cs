@@ -22,6 +22,7 @@ namespace System.Reflection.Emit
     public readonly partial struct OpCode : System.IEquatable<System.Reflection.Emit.OpCode>
     {
         private readonly int _dummyPrimitive;
+        public int EvaluationStackDelta { get { throw null; } }
         public System.Reflection.Emit.FlowControl FlowControl { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Reflection.Emit.OpCodeType OpCodeType { get { throw null; } }
@@ -33,7 +34,6 @@ namespace System.Reflection.Emit
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Emit.OpCode obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public int EvaluationStackDelta { get { throw null; } }
         public static bool operator ==(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { throw null; }
         public static bool operator !=(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { throw null; }
         public override string? ToString() { throw null; }

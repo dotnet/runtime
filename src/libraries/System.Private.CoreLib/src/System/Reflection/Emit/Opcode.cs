@@ -45,6 +45,12 @@ namespace System.Reflection.Emit
         internal bool EndsUncondJmpBlk() =>
             (m_flags & EndsUncondJmpBlkFlag) != 0;
 
+        /// <summary>
+        /// The value of how the IL instruction changes the evaluation stack.
+        /// </summary>
+        /// <remarks>
+        /// The difference between how many elements are popped from the stack and how many are pushed onto the stack as a result of the IL instruction.
+        /// </remarks>
         public int EvaluationStackDelta =>
             m_flags >> StackChangeShift;
 
