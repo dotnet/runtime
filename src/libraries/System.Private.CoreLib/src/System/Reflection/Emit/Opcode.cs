@@ -50,6 +50,8 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <remarks>
         /// The difference between how many elements are popped from the stack and how many are pushed onto the stack as a result of the IL instruction.
+        /// For some IL instructions like <see cref="OpCodes.Call"/> this value is not fixed and depends on the called reference signature, for example if it is
+        /// calling a method, depends on the method signature (push count depends on the returning a value, pop count depends how many parameters passed).
         /// </remarks>
         public int EvaluationStackDelta =>
             m_flags >> StackChangeShift;
