@@ -11,6 +11,9 @@ namespace System.Runtime.InteropServices
     [SupportedOSPlatform("windows")]
     internal static class BuiltInInteropVariantExtensions
     {
+        // VARIANT_BOOL constants.
+        internal const short VARIANT_TRUE = -1;
+        internal const short VARIANT_FALSE = 0;
         private static unsafe ref T GetByRefDataRef<T>(this ref ComVariant variant)
             where T : unmanaged
         {
@@ -58,7 +61,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_BOOL:
-                    variant.GetByRefDataRef<short>() = (bool)value ? ComVariant.VARIANT_TRUE : ComVariant.VARIANT_FALSE;
+                    variant.GetByRefDataRef<short>() = (bool)value ? VARIANT_TRUE : VARIANT_FALSE;
                     break;
 
                 case VarEnum.VT_I4:
@@ -144,7 +147,7 @@ namespace System.Runtime.InteropServices
                 VarEnum.VT_UI8 => variant.As<ulong>(),
                 VarEnum.VT_INT => variant.As<int>(),
                 VarEnum.VT_UINT => variant.As<uint>(),
-                VarEnum.VT_BOOL => variant.As<short>() != ComVariant.VARIANT_FALSE,
+                VarEnum.VT_BOOL => variant.As<short>() != VARIANT_FALSE,
                 VarEnum.VT_ERROR => variant.As<int>(),
                 VarEnum.VT_R4 => variant.As<float>(),
                 VarEnum.VT_R8 => variant.As<double>(),
