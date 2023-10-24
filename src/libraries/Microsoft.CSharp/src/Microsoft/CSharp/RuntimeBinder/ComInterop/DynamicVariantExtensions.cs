@@ -236,7 +236,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // constructs a ByRef variant to pass contents of another variant ByRef.
-        public static unsafe void SetAsByrefVariantIndirect(this ComVariant variant, ref ComVariant value)
+        public static unsafe void SetAsByrefVariantIndirect(ref this ComVariant variant, ref ComVariant value)
         {
             Debug.Assert(variant.VarType == VarEnum.VT_EMPTY); // The setter can only be called once as VariantClear might be needed otherwise
             Debug.Assert((value.VarType & VarEnum.VT_BYREF) == 0, "double indirection");
