@@ -153,8 +153,6 @@ namespace System.Reflection.Runtime.TypeInfos
     internal abstract partial class RuntimeTypeInfo
     {
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:UnrecognizedReflectionPattern",
-            Justification = "Analysis does not track annotations for RuntimeTypeInfo")]
         public Type? GetInterface(string name, bool ignoreCase)
         {
             ArgumentNullException.ThrowIfNull(name, "fullname" /* Yep, CoreCLR names this different than the ref assembly */);

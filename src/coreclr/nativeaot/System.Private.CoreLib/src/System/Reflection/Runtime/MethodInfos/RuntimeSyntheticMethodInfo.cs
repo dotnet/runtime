@@ -171,7 +171,6 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        // !!! TODO: Shortcircuit ToType / ToTypeArray
         protected sealed override MethodBaseInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType.ToType(), _runtimeParameterTypes.ToTypeArray(), _options, _action);
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
