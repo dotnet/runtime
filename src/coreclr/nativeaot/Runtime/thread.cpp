@@ -27,8 +27,11 @@
 #include "stressLog.h"
 #include "RhConfig.h"
 #include "RhVolatile.h"
+
+#ifdef TARGET_UNIX
 #include <signal.h>
 #include <sys/mman.h>
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -345,13 +348,13 @@ bool Thread::EnsureSignalAlternateStack()
 
         // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the
         // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
-        int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(CONTEXT), 16) + getpagesize();
+        int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(CONTEXT), 16) + PalOsPageSize();
 #ifdef HAS_ADDRESS_SANITIZER
         // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
         // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
         altStackSize += SIGSTKSZ * 4;
 #endif
-        altStackSize = ALIGN_UP(altStackSize, getpagesize());
+        altStackSize = ALIGN_UP(altStackSize, PalOsPageSize());
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
 #ifdef MAP_STACK
         flags |= MAP_STACK;
@@ -360,7 +363,7 @@ bool Thread::EnsureSignalAlternateStack()
         if (altStack != MAP_FAILED)
         {
             // create a guard page for the alternate stack
-            st = mprotect(altStack, getpagesize(), PROT_NONE);
+            st = mprotect(altStack, PalOsPageSize(), PROT_NONE);
             if (st == 0)
             {
                 stack_t ss;

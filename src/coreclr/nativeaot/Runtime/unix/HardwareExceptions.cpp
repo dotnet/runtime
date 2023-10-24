@@ -613,10 +613,6 @@ bool InitializeHardwareExceptionHandling()
     {
         return false;
     }
-#ifdef TARGET_UNIX
-    Thread* curThread = ThreadStore::RawGetCurrentThread();
-    curThread->EnsureSignalAlternateStack();
-#endif // TARGET_UNIX
 
 #if defined(HOST_APPLE)
 #ifndef HOST_TVOS // task_set_exception_ports is not supported on tvOS
