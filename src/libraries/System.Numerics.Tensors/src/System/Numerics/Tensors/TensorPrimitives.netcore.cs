@@ -2513,8 +2513,8 @@ namespace System.Numerics.Tensors
                 Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0);
                 Vector512<float> current;
 
-                Vector512<float> nanMask = Vector512.Equals(result, result);
-                if (nanMask != Vector512<float>.AllBitsSet)
+                Vector512<float> nanMask = ~Vector512.Equals(result, result);
+                if (nanMask != Vector512<float>.Zero)
                 {
                     return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
@@ -2528,8 +2528,8 @@ namespace System.Numerics.Tensors
                     // Load the next vector, and early exit on NaN.
                     current = Vector512.LoadUnsafe(ref xRef, (uint)i);
 
-                    nanMask = Vector512.Equals(current, current);
-                    if (nanMask != Vector512<float>.AllBitsSet)
+                    nanMask = ~Vector512.Equals(current, current);
+                    if (nanMask != Vector512<float>.Zero)
                     {
                         return current.GetElement(i + IndexOfFirstMatch(nanMask));
                     }
@@ -2543,8 +2543,8 @@ namespace System.Numerics.Tensors
                 {
                     current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
 
-                    nanMask = Vector512.Equals(current, current);
-                    if (nanMask != Vector512<float>.AllBitsSet)
+                    nanMask = ~Vector512.Equals(current, current);
+                    if (nanMask != Vector512<float>.Zero)
                     {
                         return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
@@ -2570,8 +2570,8 @@ namespace System.Numerics.Tensors
                 Vector256<float> result = Vector256.LoadUnsafe(ref xRef, 0);
                 Vector256<float> current;
 
-                Vector256<float> nanMask = Vector256.Equals(result, result);
-                if (nanMask != Vector256<float>.AllBitsSet)
+                Vector256<float> nanMask = ~Vector256.Equals(result, result);
+                if (nanMask != Vector256<float>.Zero)
                 {
                     return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
@@ -2585,8 +2585,8 @@ namespace System.Numerics.Tensors
                     // Load the next vector, and early exit on NaN.
                     current = Vector256.LoadUnsafe(ref xRef, (uint)i);
 
-                    nanMask = Vector256.Equals(current, current);
-                    if (nanMask != Vector256<float>.AllBitsSet)
+                    nanMask = ~Vector256.Equals(current, current);
+                    if (nanMask != Vector256<float>.Zero)
                     {
                         return current.GetElement(i + IndexOfFirstMatch(nanMask));
                     }
@@ -2600,8 +2600,8 @@ namespace System.Numerics.Tensors
                 {
                     current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
 
-                    nanMask = Vector256.Equals(current, current);
-                    if (nanMask != Vector256<float>.AllBitsSet)
+                    nanMask = ~Vector256.Equals(current, current);
+                    if (nanMask != Vector256<float>.Zero)
                     {
                         return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
@@ -2626,8 +2626,8 @@ namespace System.Numerics.Tensors
                 Vector128<float> result = Vector128.LoadUnsafe(ref xRef, 0);
                 Vector128<float> current;
 
-                Vector128<float> nanMask = Vector128.Equals(result, result);
-                if (nanMask != Vector128<float>.AllBitsSet)
+                Vector128<float> nanMask = ~Vector128.Equals(result, result);
+                if (nanMask != Vector128<float>.Zero)
                 {
                     return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
@@ -2641,8 +2641,8 @@ namespace System.Numerics.Tensors
                     // Load the next vector, and early exit on NaN.
                     current = Vector128.LoadUnsafe(ref xRef, (uint)i);
 
-                    nanMask = Vector128.Equals(current, current);
-                    if (nanMask != Vector128<float>.AllBitsSet)
+                    nanMask = ~Vector128.Equals(current, current);
+                    if (nanMask != Vector128<float>.Zero)
                     {
                         return current.GetElement(i + IndexOfFirstMatch(nanMask));
                     }
@@ -2656,8 +2656,8 @@ namespace System.Numerics.Tensors
                 {
                     current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
 
-                    nanMask = Vector128.Equals(current, current);
-                    if (nanMask != Vector128<float>.AllBitsSet)
+                    nanMask = ~Vector128.Equals(current, current);
+                    if (nanMask != Vector128<float>.Zero)
                     {
                         return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
