@@ -1364,7 +1364,7 @@ void Compiler::compShutdown()
 
     emitter::emitDone();
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // Finish reading and/or writing inline xml
     if (JitConfig.JitInlineDumpXmlFile() != nullptr)
     {
@@ -1379,7 +1379,7 @@ void Compiler::compShutdown()
             InlineStrategy::FinalizeXml();
         }
     }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #if defined(DEBUG) || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
     if (genMethodCnt == 0)
@@ -1818,9 +1818,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     info.compMethodHashPrivate = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #ifdef DEBUG
     // Opt-in to jit stress based on method hash ranges.
@@ -6290,7 +6290,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         return param.result;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 //------------------------------------------------------------------------
 // compMethodHash: get hash code for currently jitted method
 //
@@ -6346,7 +6346,7 @@ unsigned Compiler::compMethodHash(CORINFO_METHOD_HANDLE methodHnd)
     return methodHash;
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 void Compiler::compCompileFinish()
 {
@@ -6410,7 +6410,7 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     m_inlineStrategy->DumpData();
 
@@ -9118,7 +9118,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 
 void Compiler::RecordStateAtEndOfInlining()
 {
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     m_compCyclesAtEndOfInlining    = 0;
     m_compTickCountAtEndOfInlining = 0;
@@ -9129,7 +9129,7 @@ void Compiler::RecordStateAtEndOfInlining()
     }
     m_compTickCountAtEndOfInlining = GetTickCount();
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }
 
 //------------------------------------------------------------------------
@@ -9138,7 +9138,7 @@ void Compiler::RecordStateAtEndOfInlining()
 
 void Compiler::RecordStateAtEndOfCompilation()
 {
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Common portion
     m_compCycles = 0;
@@ -9152,7 +9152,7 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }
 
 #if FUNC_INFO_LOGGING
@@ -10027,6 +10027,26 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->IsExpRuntimeLookup())
                     {
                         chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
+                    {
+                        chars += printf("[CALL_MD_STRESS_TAILCALL]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_DEVIRTUALIZED)
+                    {
+                        chars += printf("[CALL_MD_DEVIRTUALIZED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_GUARDED)
+                    {
+                        chars += printf("[CALL_MD_GUARDED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_UNBOXED)
+                    {
+                        chars += printf("[CALL_MD_UNBOXED]");
                     }
                 }
                 break;

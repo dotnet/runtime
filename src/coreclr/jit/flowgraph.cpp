@@ -814,7 +814,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
              (helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
-        result->SetExpTLSFieldAccess();
     }
     else
     {

@@ -991,13 +991,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (!bIntrinsicImported)
             {
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-
                 // Keep track of the raw IL offset of the call
-                call->AsCall()->gtRawILOffset = rawILOffset;
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+                INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
@@ -1050,7 +1045,6 @@ DONE:
     {
         const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
         const bool isImplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_IMPLICIT) != 0;
-        const bool isStressTailCall   = (tailCallFlags & PREFIX_TAILCALL_STRESS) != 0;
 
         // Exactly one of these should be true.
         assert(isExplicitTailCall != isImplicitTailCall);
@@ -1113,11 +1107,13 @@ DONE:
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
                     JITDUMP("\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
 
-                    if (isStressTailCall)
+#ifdef DEBUG
+                    if ((prefixFlags & PREFIX_TAILCALL_STRESS) != 0)
                     {
-                        call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_STRESS_TAILCALL;
-                        JITDUMP("\nGTF_CALL_M_STRESS_TAILCALL set for call [%06u]\n", dspTreeID(call));
+                        call->AsCall()->gtCallDebugFlags |= GTF_CALL_MD_STRESS_TAILCALL;
+                        JITDUMP("\nGTF_CALL_MD_STRESS_TAILCALL set for call [%06u]\n", dspTreeID(call));
                     }
+#endif
                 }
                 else
                 {
@@ -1205,12 +1201,8 @@ DONE:
             }
         }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
         // Keep track of the raw IL offset of the call
-        call->AsCall()->gtRawILOffset = rawILOffset;
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+        INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
@@ -7084,7 +7076,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
-    call->gtCallMoreFlags |= GTF_CALL_M_DEVIRTUALIZED;
+    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
@@ -7245,7 +7237,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                 // TODO-CallArgs-REVIEW: Might discard commas otherwise?
                                 assert(thisObj == thisArg->GetEarlyNode());
                                 thisArg->SetEarlyNode(localCopyThis);
-                                call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                                INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
 
                                 call->gtArgs.InsertInstParam(this, methodTableArg);
 
@@ -7284,7 +7276,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             // TODO-CallArgs-REVIEW: Might discard commas otherwise?
                             thisArg->SetEarlyNode(localCopyThis);
                             call->gtCallMethHnd = unboxedEntryMethod;
-                            call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                             derivedMethod         = unboxedEntryMethod;
                             pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
 
@@ -7354,7 +7346,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             assert(thisObj == thisArg->GetEarlyNode());
                             thisArg->SetEarlyNode(boxPayload);
                             call->gtCallMethHnd = unboxedEntryMethod;
-                            call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
 
                             // Method attributes will differ because unboxed entry point is shared
                             //
@@ -7378,7 +7370,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
                         thisArg->SetEarlyNode(boxPayload);
                         call->gtCallMethHnd = unboxedEntryMethod;
-                        call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                        INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                         derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
                     }
@@ -7432,7 +7424,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Update the call.
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
-        call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN

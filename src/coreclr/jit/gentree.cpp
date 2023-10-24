@@ -8073,10 +8073,11 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallType    = callType;
     node->gtCallMethHnd = callHnd;
     INDEBUG(node->callSig = nullptr;)
-    node->tailCallInfo      = nullptr;
-    node->gtRetClsHnd       = nullptr;
-    node->gtControlExpr     = nullptr;
-    node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    node->tailCallInfo    = nullptr;
+    node->gtRetClsHnd     = nullptr;
+    node->gtControlExpr   = nullptr;
+    node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
+    INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
@@ -8094,7 +8095,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtEntryPoint.accessType = IAT_VALUE;
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // These get updated after call node is built.
     node->gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
     node->gtRawILOffset       = BAD_IL_OFFSET;
@@ -9703,6 +9704,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     GenTreeCall* copy = new (this, GT_CALL) GenTreeCall(tree->TypeGet());
 
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
+    INDEBUG(copy->gtCallDebugFlags = tree->gtCallDebugFlags);
 
     copy->gtArgs.InternalCopyFrom(this, &tree->gtArgs,
                                   [=](GenTree* node) { return gtCloneExpr(node, addFlags, deepVarNum, deepVarVal); });
@@ -9746,7 +9748,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     copy->setEntryPoint(tree->gtEntryPoint);
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     copy->gtInlineObservation = tree->gtInlineObservation;
     copy->gtRawILOffset       = tree->gtRawILOffset;
     copy->gtInlineContext     = tree->gtInlineContext;
