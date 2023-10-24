@@ -360,12 +360,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
             {
-                return new FrozenStringNode(data, Target);
+                return new FrozenStringNode(data, TypeSystemContext);
             });
 
-            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, FrozenObjectNode>(key =>
+            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode>(key =>
             {
-                return new FrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
+                return new SerializedFrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -1220,9 +1220,9 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
-        private NodeCache<SerializedFrozenObjectKey, FrozenObjectNode> _frozenObjectNodes;
+        private NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode> _frozenObjectNodes;
 
-        public FrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
+        public SerializedFrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
             return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
         }

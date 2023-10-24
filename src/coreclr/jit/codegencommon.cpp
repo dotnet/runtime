@@ -856,7 +856,8 @@ BasicBlock* CodeGen::genCreateTempLabel()
     compiler->fgSafeBasicBlockCreation = true;
 #endif
 
-    BasicBlock* block = compiler->bbNewBasicBlock(BBJ_NONE);
+    // Label doesn't need a jump kind
+    BasicBlock* block = compiler->bbNewBasicBlock();
 
 #ifdef DEBUG
     compiler->fgSafeBasicBlockCreation = false;

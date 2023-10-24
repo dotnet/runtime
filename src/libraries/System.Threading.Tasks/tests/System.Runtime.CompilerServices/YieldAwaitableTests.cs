@@ -43,7 +43,7 @@ namespace System.Threading.Tasks.Tests
                 try { ya.GetResult(); }
                 catch
                 {
-                    Assert.True(false, string.Format("RunAsyncYieldAwaiterTests     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
+                    Assert.Fail(string.Format("RunAsyncYieldAwaiterTests     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
                 }
                 var mres = new ManualResetEventSlim();
                 Assert.False(ya.IsCompleted, "RunAsyncYieldAwaiterTests     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
@@ -67,7 +67,7 @@ namespace System.Threading.Tasks.Tests
                         try { ya.GetResult(); }
                         catch
                         {
-                            Assert.True(false, string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
+                            Assert.Fail(string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
                         }
                         var mres = new ManualResetEventSlim();
                         Assert.False(ya.IsCompleted, "     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
@@ -79,7 +79,7 @@ namespace System.Threading.Tasks.Tests
                         mres.Wait();
                         ya.GetResult();
                     }
-                    catch { Assert.True(false, string.Format("     > FAILURE. Unexpected exception from Yield")); }
+                    catch { Assert.Fail(string.Format("     > FAILURE. Unexpected exception from Yield")); }
                 }, CancellationToken.None, TaskCreationOptions.None, new QUWITaskScheduler()).Wait();
             }
 
@@ -94,7 +94,7 @@ namespace System.Threading.Tasks.Tests
                         try { ya.GetResult(); }
                         catch
                         {
-                            Assert.True(false, string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
+                            Assert.Fail(string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
                         }
                         var mres = new ManualResetEventSlim();
                         Assert.False(ya.IsCompleted, "     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
@@ -106,7 +106,7 @@ namespace System.Threading.Tasks.Tests
                         mres.Wait();
                         ya.GetResult();
                     }
-                    catch { Assert.True(false, string.Format("     > FAILURE. Unexpected exception from Yield")); }
+                    catch { Assert.Fail(string.Format("     > FAILURE. Unexpected exception from Yield")); }
                     SynchronizationContext.SetSynchronizationContext(null);
                 }, CancellationToken.None, TaskCreationOptions.None, new QUWITaskScheduler()).Wait();
             }
@@ -119,7 +119,7 @@ namespace System.Threading.Tasks.Tests
                 try { ya.GetResult(); }
                 catch
                 {
-                    Assert.True(false, string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
+                    Assert.Fail(string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
                 }
                 var mres = new ManualResetEventSlim();
                 Assert.False(ya.IsCompleted, "     > FAILURE. YieldAwaiter.IsCompleted should always be false.");

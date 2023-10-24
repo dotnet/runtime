@@ -31,6 +31,8 @@ elseif(HOST_SOLARIS)
   set(OS_LIBS socket pthread m ${CMAKE_DL_LIBS})
 elseif(HOST_FREEBSD)
   set(OS_LIBS pthread m)
+elseif(HOST_HAIKU)
+  set(OS_LIBS network)
 endif()
 
 #
@@ -280,7 +282,7 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
-elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD)
+elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD OR HOST_HAIKU)
 set(os_sources "${posix_sources}")
 elseif(HOST_WIN32)
 set(os_sources "${windows_sources}")
