@@ -1094,7 +1094,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    error = Interop.Netapi32.DsEnumerateDomainTrustsW(serverName, (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND, out domains, out count);
+                    error = Interop.Netapi32.DsEnumerateDomainTrustsW(serverName, DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND, out domains, out count);
                 }
                 finally
                 {
