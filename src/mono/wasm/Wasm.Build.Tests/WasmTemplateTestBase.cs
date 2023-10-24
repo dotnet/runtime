@@ -21,7 +21,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         _provider.BundleDirName = "AppBundle";
     }
 
-    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = true)
+    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false)
     {
         InitPaths(id);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);

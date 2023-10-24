@@ -25,8 +25,9 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net8.0";
+        public const string DefaultTargetFramework = "net9.0";
         public const string DefaultTargetFrameworkForBlazor = "net8.0";
+        public const string TargetFrameworkForTasks = "net8.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;
@@ -60,9 +61,8 @@ namespace Wasm.Build.Tests
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
-        public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
-                                                                          // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
+        public static string GetNuGetConfigPathFor(string targetFramework)
+            => Path.Combine(BuildEnvironment.TestDataPath, targetFramework == "net9.0" ? "nuget9.config" : "nuget8.config");
 
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
             => (TProvider)_providerOfBaseType;

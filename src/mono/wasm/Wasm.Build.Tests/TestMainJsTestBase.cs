@@ -47,9 +47,9 @@ public abstract class TestMainJsTestBase : BuildTestBase
             File.Copy(
                 Path.Combine(
                     AppContext.BaseDirectory,
-                    string.IsNullOrEmpty(options.TargetFramework) || options.TargetFramework == "net8.0"
-                        ? "test-main.js"
-                        : "data/test-main-7.0.js"
+                    options.TargetFramework == "net7.0"
+                        ? "data/test-main-7.0.js"
+                        : "test-main.js"
                 ),
                 Path.Combine(_projectDir, "test-main.js")
             );
