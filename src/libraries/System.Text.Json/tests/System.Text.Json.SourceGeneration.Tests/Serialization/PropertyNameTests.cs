@@ -28,7 +28,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ObjectPropertyNamesDifferentByCaseOnly_TestClass))]
         [JsonSerializable(typeof(OverridePropertyNameDesignTime_TestClass))]
         [JsonSerializable(typeof(SimpleTestClass))]
-        [JsonSerializable(typeof(ClassWithIgnoredCaseSensitiveConflict))]
+        [JsonSerializable(typeof(ClassWithIgnoredCaseInsensitiveConflict))]
         internal sealed partial class PropertyNameTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -54,7 +54,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ObjectPropertyNamesDifferentByCaseOnly_TestClass))]
         [JsonSerializable(typeof(OverridePropertyNameDesignTime_TestClass))]
         [JsonSerializable(typeof(SimpleTestClass))]
-        [JsonSerializable(typeof(ClassWithIgnoredCaseSensitiveConflict))]
+        [JsonSerializable(typeof(ClassWithIgnoredCaseInsensitiveConflict))]
         internal sealed partial class PropertyNameTestsContext_Default : JsonSerializerContext
         {
         }
