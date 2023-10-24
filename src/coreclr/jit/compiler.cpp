@@ -1984,6 +1984,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compUsesThrowHelper = false;
 
     m_preferredInitCctor = CORINFO_HELP_UNDEF;
+
+    m_pLinearScan = nullptr;
 }
 
 /*****************************************************************************

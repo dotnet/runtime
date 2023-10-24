@@ -1231,7 +1231,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         insertedKills = true;
     }
 
-    if (tree->IsCall() && tree->AsCall()->IsAsync2())
+    if (tree->IsCall() && tree->AsCall()->IsAsync2() && compiler->compIsAsync2StateMachine())
     {
         // Async2 calls return an async continuation argument in a separate
         // register. Since we do not have a flexible representation for

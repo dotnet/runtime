@@ -4930,7 +4930,7 @@ public:
 
     bool backendRequiresLocalVarLifetimes()
     {
-        return !opts.MinOpts() || m_pLinearScan->willEnregisterLocalVars();
+        return !opts.MinOpts() || (m_pLinearScan != NULL && m_pLinearScan->willEnregisterLocalVars());
     }
 
     void fgLocalVarLiveness();

@@ -6,6 +6,12 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
+namespace System.Runtime
+{
+    internal sealed class BypassReadyToRunAttribute : Attribute {}
+}
+
+
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
@@ -120,6 +126,7 @@ namespace System.Runtime.CompilerServices
 
 #if !NATIVEAOT
         [Intrinsic]
+        [BypassReadyToRun]
         public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
             if (RuntimeAsyncViaJitGeneratedStateMachines)
@@ -158,6 +165,7 @@ namespace System.Runtime.CompilerServices
         // Marked intrinsic since for JIT state machines this needs to be
         // recognizes as an async2 call.
         [Intrinsic]
+        [BypassReadyToRun]
         public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
             if (RuntimeAsyncViaJitGeneratedStateMachines)
