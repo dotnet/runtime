@@ -342,19 +342,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public IntPtr rItems;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class DS_DOMAIN_TRUSTS
-    {
-        public IntPtr NetbiosDomainName;
-        public IntPtr DnsDomainName;
-        public int Flags;
-        public int ParentIndex;
-        public int TrustType;
-        public int TrustAttributes;
-        public IntPtr DomainSid;
-        public Guid DomainGuid;
-    }
-
     internal sealed class TrustObject
     {
         public string? NetbiosDomainName;

@@ -20,7 +20,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private ArrayList _binaryDataTime = new ArrayList();
         internal bool retrieved;
 
-        internal ForestTrustRelationshipInformation(DirectoryContext context, string source, DS_DOMAIN_TRUSTS unmanagedTrust, TrustType type)
+        internal ForestTrustRelationshipInformation(DirectoryContext context, string source, Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust, TrustType type)
         {
             string? tmpDNSName = null;
             string? tmpNetBIOSName = null;

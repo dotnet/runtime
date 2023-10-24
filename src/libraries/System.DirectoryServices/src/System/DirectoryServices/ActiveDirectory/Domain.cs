@@ -1289,8 +1289,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     for (int i = 0; i < count; i++)
                     {
                         // get the unmanaged trust object
-                        addr = IntPtr.Add(domains, +i * Marshal.SizeOf(typeof(DS_DOMAIN_TRUSTS)));
-                        DS_DOMAIN_TRUSTS unmanagedTrust = new DS_DOMAIN_TRUSTS();
+                        addr = IntPtr.Add(domains, +i * Marshal.SizeOf(typeof(Interop.Netapi32.DS_DOMAIN_TRUSTS)));
+                        Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = new Interop.Netapi32.DS_DOMAIN_TRUSTS();
                         Marshal.PtrToStructure(addr, unmanagedTrust);
 
                         unmanagedTrustList.Add(unmanagedTrust);
@@ -1298,7 +1298,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     for (int i = 0; i < unmanagedTrustList.Count; i++)
                     {
-                        DS_DOMAIN_TRUSTS unmanagedTrust = (DS_DOMAIN_TRUSTS)unmanagedTrustList[i]!;
+                        Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = (Interop.Netapi32.DS_DOMAIN_TRUSTS)unmanagedTrustList[i]!;
 
                         // make sure this is the trust object that we want
                         if ((unmanagedTrust.Flags & (int)(Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND)) == 0)
@@ -1347,7 +1347,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             if ((obj.Flags & (int)Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) == 0)
                             {
                                 // get the parent domain name
-                                DS_DOMAIN_TRUSTS parentTrust = (DS_DOMAIN_TRUSTS)unmanagedTrustList[obj.ParentIndex]!;
+                                Interop.Netapi32.DS_DOMAIN_TRUSTS parentTrust = (Interop.Netapi32.DS_DOMAIN_TRUSTS)unmanagedTrustList[obj.ParentIndex]!;
                                 if (parentTrust.DnsDomainName != (IntPtr)0)
                                     localDomainParent = Marshal.PtrToStringUni(parentTrust.DnsDomainName);
                             }
