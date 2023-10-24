@@ -329,7 +329,6 @@ void PEAssembly::ConvertMDInternalToReadWrite(bool swapForRWMDImport)
 
     if (pConvertedImport != NULL)
     {
-        // TODO: Is this a good check if metadata is read write.
         if (swapForRWMDImport && pOld != pConvertedImport)
         {
             // We had converted the metadata before, now we are just requested
@@ -396,8 +395,6 @@ void PEAssembly::ConvertMDInternalToReadWrite(bool swapForRWMDImport)
         pNew = m_pConvertedMDImport;
     }
 
-    // TODO: this can still be torn? Struct with pointers and swapping might be the only good option.
-    //       need to see what pointers the struct should have.
     if (swapForRWMDImport)
     {
         if (InterlockedCompareExchangeT(&m_pMDImport, pNew, pOld) == pOld)
