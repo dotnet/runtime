@@ -356,16 +356,11 @@ namespace System
         // provided delegate.
         internal static Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
         {
-            if (t is not RuntimeType delegateRuntimeType)
-            {
-                throw new InvalidOperationException();
-            }
+            RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            EETypePtr delegateEEType = delegateRuntimeType.ToEETypePtr();
-            if (!delegateEEType.IsDefType || delegateEEType.IsGenericTypeDefinition)
-            {
-                throw new InvalidOperationException();
-            }
+            EETypePtr delegateEEType = typeHandle.ToEETypePtr();
+            Debug.Assert(!delegateEEType.IsNull);
+            Debug.Assert(delegateEEType.IsCanonical);
 
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 

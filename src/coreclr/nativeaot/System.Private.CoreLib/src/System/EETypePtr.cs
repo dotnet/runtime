@@ -199,13 +199,25 @@ namespace System
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is an class, a struct, an enum, or an interface,
+        /// that is not generic type definition
+        /// </summary>
+        internal bool IsCanonical
+        {
+            get
+            {
+                return _value->IsCanonical;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
         /// </summary>
         internal bool IsDefType
         {
             get
             {
-                return !_value->IsParameterizedType && !_value->IsFunctionPointer;
+                return _value->IsDefType;
             }
         }
 

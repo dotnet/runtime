@@ -472,7 +472,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             if (foundSignatureType)
-                return ReflectionAugments.MakeGenericSignatureType(this.ToType(), typeArguments);
+                return new SignatureConstructedGenericType(this.ToType(), typeArguments);
 
             for (int i = 0; i < typeArguments.Length; i++)
             {

@@ -38,20 +38,16 @@ namespace Internal.Reflection.Augments
             s_reflectionCoreCallbacks = reflectionCoreCallbacks;
         }
 
-        public static TypeCode GetRuntimeTypeCode(Type type)
+        internal static TypeCode GetRuntimeTypeCode(RuntimeType type)
         {
             Debug.Assert(type != null);
 
-            EETypePtr eeType;
-            if (type is RuntimeType runtimeType)
-            {
-                eeType = runtimeType.ToEETypePtr();
-            }
-            else
+            EETypePtr eeType = type.ToEETypePtrMayBeNull();
+            if (eeType.IsNull)
             {
                 // Type exists in metadata only. Aside from the enums, there is no chance a type with a TypeCode would not have an MethodTable,
                 // so if it's not an enum, return the default.
-                if (!type.IsEnum || type.IsGenericParameter)
+                if (!type.IsActualEnum)
                     return TypeCode.Object;
                 Type underlyingType = Enum.GetUnderlyingType(type);
                 eeType = underlyingType.TypeHandle.ToEETypePtr();
@@ -91,11 +87,6 @@ namespace Internal.Reflection.Augments
                 return TypeCode.DBNull;
 
             return TypeCode.Object;
-        }
-
-        public static Type MakeGenericSignatureType(Type genericTypeDefinition, Type[] genericTypeArguments)
-        {
-            return new SignatureConstructedGenericType(genericTypeDefinition, genericTypeArguments);
         }
 
         public static TypeLoadException CreateTypeLoadException(string message, string typeName)

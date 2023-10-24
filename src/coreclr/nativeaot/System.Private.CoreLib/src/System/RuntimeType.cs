@@ -33,7 +33,7 @@ namespace System
             _runtimeTypeInfo = runtimeTypeInfo;
         }
 
-        internal EETypePtr ToEETypePtr() => new EETypePtr(_pUnderlyingEEType);
+        internal EETypePtr ToEETypePtrMayBeNull() => new EETypePtr(_pUnderlyingEEType);
 
         internal RuntimeTypeInfo GetRuntimeTypeInfo() => _runtimeTypeInfo ?? CreateRuntimeTypeInfo();
 
@@ -48,15 +48,16 @@ namespace System
             if (IsReflectionDisabled)
                 throw new NotSupportedException(SR.Reflection_Disabled);
 
-            EETypePtr eeType = ToEETypePtr();
+            MethodTable* pEEType = _pUnderlyingEEType;
+            Debug.Assert(pEEType != null);
 
-            RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(eeType);
+            RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(pEEType);
 
             RuntimeTypeInfo runtimeTypeInfo;
 
-            if (eeType.IsDefType)
+            if (pEEType->IsDefType)
             {
-                if (eeType.IsGeneric)
+                if (pEEType->IsGeneric)
                 {
                     runtimeTypeInfo = ExecutionDomain.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
                 }
@@ -65,22 +66,22 @@ namespace System
                     runtimeTypeInfo = ReflectionCoreExecution.ExecutionDomain.GetNamedTypeForHandle(runtimeTypeHandle);
                 }
             }
-            else if (eeType.IsArray)
+            else if (pEEType->IsArray)
             {
-                if (!eeType.IsSzArray)
-                    runtimeTypeInfo = ExecutionDomain.GetMdArrayTypeForHandle(runtimeTypeHandle, eeType.ArrayRank);
+                if (!pEEType->IsSzArray)
+                    runtimeTypeInfo = ExecutionDomain.GetMdArrayTypeForHandle(runtimeTypeHandle, pEEType->ArrayRank);
                 else
                     runtimeTypeInfo = ExecutionDomain.GetArrayTypeForHandle(runtimeTypeHandle);
             }
-            else if (eeType.IsPointer)
+            else if (pEEType->IsPointer)
             {
                 runtimeTypeInfo = ExecutionDomain.GetPointerTypeForHandle(runtimeTypeHandle);
             }
-            else if (eeType.IsFunctionPointer)
+            else if (pEEType->IsFunctionPointer)
             {
                 runtimeTypeInfo = ExecutionDomain.GetFunctionPointerTypeForHandle(runtimeTypeHandle);
             }
-            else if (eeType.IsByRef)
+            else if (pEEType->IsByRef)
             {
                 runtimeTypeInfo = ExecutionDomain.GetByRefTypeForHandle(runtimeTypeHandle);
             }
@@ -159,7 +160,7 @@ namespace System
 
                 if (value is Enum)
                 {
-                    if (value.GetEETypePtr() != this.ToEETypePtr())
+                    if (value.GetEETypePtr() != this.ToEETypePtrMayBeNull())
                         throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), this));
                 }
                 else
