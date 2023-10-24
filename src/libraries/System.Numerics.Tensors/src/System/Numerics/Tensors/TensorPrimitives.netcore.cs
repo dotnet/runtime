@@ -625,6 +625,16 @@ namespace System.Numerics.Tensors
         /// <remarks>Assumes arguments have already been validated to be non-empty and equal length.</remarks>
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
             // Compute the same as:
             // TensorPrimitives.Dot(x, y) / (Math.Sqrt(TensorPrimitives.SumOfSquares(x)) * Math.Sqrt(TensorPrimitives.SumOfSquares(y)))
             // but only looping over each span once.
@@ -2498,6 +2508,11 @@ namespace System.Numerics.Tensors
         private static float MinMaxCore<TMinMaxOperator>(ReadOnlySpan<float> x)
             where TMinMaxOperator : struct, IAggregationOperator
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
             // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
             // It propagates NaN inputs back to the caller and
             // otherwise returns the greater of the inputs.
@@ -2696,6 +2711,11 @@ namespace System.Numerics.Tensors
 
         private static int IndexOfMinMaxCore<TIndexOfMinMax>(ReadOnlySpan<float> x) where TIndexOfMinMax : struct, IIndexOfOperator
         {
+            if (x.IsEmpty)
+            {
+                return -1;
+            }
+
             // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
             // It propagates NaN inputs back to the caller and
             // otherwise returns the index of the greater of the inputs.
