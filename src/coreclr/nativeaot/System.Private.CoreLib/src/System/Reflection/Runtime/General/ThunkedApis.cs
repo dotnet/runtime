@@ -152,8 +152,6 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        public Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
-
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:UnrecognizedReflectionPattern",
             Justification = "Analysis does not track annotations for RuntimeTypeInfo")]
@@ -166,7 +164,7 @@ namespace System.Reflection.Runtime.TypeInfos
             SplitTypeName(name, out simpleName, out ns);
 
             Type? match = null;
-            foreach (Type ifc in ImplementedInterfaces)
+            foreach (Type ifc in GetInterfaces())
             {
                 string ifcSimpleName = ifc.Name;
                 bool simpleNameMatches = ignoreCase

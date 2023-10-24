@@ -246,55 +246,36 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract bool HasSameMetadataDefinitionAs(MemberInfo other);
 
-        public IEnumerable<Type> ImplementedInterfaces
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Interface lists on base types will be preserved same as for the current type")]
+        public Type[] GetInterfaces()
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "Interface lists on base types will be preserved same as for the current type")]
-            get
+            // If this has a RuntimeTypeHandle, let the underlying runtime engine have the first crack. If it refuses, fall back to metadata.
+            RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
+            if (!typeHandle.IsNull() && !IsGenericTypeDefinition)
+                return ToType().GetInterfaces();
+
+            ArrayBuilder<Type> result = default;
+
+            TypeContext typeContext = this.TypeContext;
+            Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk;
+            if (baseType != null)
+                result.Append(baseType.GetInterfaces());
+            foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
             {
-                LowLevelListWithIList<Type> result = new LowLevelListWithIList<Type>();
-
-                bool done = false;
-
-                // If this has a RuntimeTypeHandle, let the underlying runtime engine have the first crack. If it refuses, fall back to metadata.
-                RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
-                if (!typeHandle.IsNull())
+                Type ifc = directlyImplementedInterface.Resolve(typeContext).ToType();
+                if (result.Contains(ifc))
+                    continue;
+                result.Add(ifc);
+                foreach (Type indirectIfc in ifc.GetInterfaces())
                 {
-                    IEnumerable<RuntimeTypeHandle> implementedInterfaces = ReflectionCoreExecution.ExecutionEnvironment.TryGetImplementedInterfaces(typeHandle);
-                    if (implementedInterfaces != null)
-                    {
-                        done = true;
-
-                        foreach (RuntimeTypeHandle th in implementedInterfaces)
-                        {
-                            result.Add(Type.GetTypeFromHandle(th));
-                        }
-                    }
+                    if (result.Contains(indirectIfc))
+                        continue;
+                    result.Add(indirectIfc);
                 }
-
-                if (!done)
-                {
-                    TypeContext typeContext = this.TypeContext;
-                    Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk;
-                    if (baseType != null)
-                        result.AddRange(baseType.GetInterfaces());
-                    foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
-                    {
-                        Type ifc = directlyImplementedInterface.Resolve(typeContext).ToType();
-                        if (result.Contains(ifc))
-                            continue;
-                        result.Add(ifc);
-                        foreach (Type indirectIfc in ifc.GetInterfaces())
-                        {
-                            if (result.Contains(indirectIfc))
-                                continue;
-                            result.Add(indirectIfc);
-                        }
-                    }
-                }
-
-                return result.AsNothingButIEnumerable();
             }
+
+            return result.ToArray();
         }
 
         public bool IsAssignableFrom(Type c)

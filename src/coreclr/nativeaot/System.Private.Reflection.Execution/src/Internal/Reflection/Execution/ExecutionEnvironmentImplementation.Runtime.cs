@@ -49,11 +49,6 @@ namespace Internal.Reflection.Execution
             return RuntimeAugments.TryGetBaseType(typeHandle, out baseTypeHandle);
         }
 
-        public sealed override IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.TryGetImplementedInterfaces(typeHandle);
-        }
-
         public sealed override void VerifyInterfaceIsImplemented(RuntimeTypeHandle typeHandle, RuntimeTypeHandle ifaceHandle)
         {
             if (RuntimeAugments.IsInterface(typeHandle))
