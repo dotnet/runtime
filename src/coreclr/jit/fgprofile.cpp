@@ -501,7 +501,7 @@ void BlockCountInstrumentor::RelocateProbes()
                 //
                 if (pred->KindIs(BBJ_NONE))
                 {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block);
+                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block DEBUG_ARG(m_comp));
                 }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
@@ -782,7 +782,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
             GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
 
             // Interlocked increment
-            result = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+            result = comp->gtNewAtomicNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
         }
 
         if (scalable)
@@ -1553,7 +1553,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         //
                         if (block->KindIs(BBJ_NONE))
                         {
-                            block->SetJumpKindAndTarget(BBJ_ALWAYS, target);
+                            block->SetJumpKindAndTarget(BBJ_ALWAYS, target DEBUG_ARG(m_comp));
                         }
 
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
@@ -1695,7 +1695,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 //
                 if (pred->KindIs(BBJ_NONE))
                 {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block);
+                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block DEBUG_ARG(m_comp));
                 }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
@@ -3800,7 +3800,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(!block->HasJumpTo(nullptr));
+        assert(block->HasJump());
         FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);

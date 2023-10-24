@@ -51,11 +51,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
 
-            Console.WriteLine($"### CGROUPS VERSION: {Interop.cgroups.s_cgroupVersion}");
-            string cgroupsLocation = Interop.cgroups.s_cgroupMemoryLimitPath;
-            if (cgroupsLocation != null)
+            if (OperatingSystem.IsLinux())
             {
-                Console.WriteLine($"### CGROUPS MEMORY: {cgroupsLocation}");
+                Console.WriteLine($"### CGROUPS VERSION: {Interop.cgroups.s_cgroupVersion}");
+                string cgroupsLocation = Interop.cgroups.s_cgroupMemoryPath;
+                if (cgroupsLocation != null)
+                {
+                    Console.WriteLine($"### CGROUPS MEMORY: {cgroupsLocation}");
+                }
             }
 
             Console.WriteLine($"### ENVIRONMENT VARIABLES");
