@@ -554,7 +554,7 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
 
     // If the failure address is at most one page above or below the stack pointer,
     // we have a stack overflow.
-    if ((failureAddress - (sp - PalOsPageSize())) < 2 * PalOsPageSize())
+    if ((failureAddress - (sp - PalOsPageSize())) < (size_t)PalOsPageSize() * 2)
     {
         PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
         RhFailFast();
