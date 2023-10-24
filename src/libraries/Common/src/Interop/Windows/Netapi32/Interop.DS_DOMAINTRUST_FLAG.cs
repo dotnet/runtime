@@ -8,7 +8,7 @@ internal static partial class Interop
     internal static partial class Netapi32
     {
         [Flags]
-        internal enum DS_DOMAINTRUST_FLAG
+        internal enum DS_DOMAINTRUST_FLAG : uint
         {
             DS_DOMAIN_IN_FOREST = 0x0001,
             DS_DOMAIN_DIRECT_OUTBOUND = 0x0002,
