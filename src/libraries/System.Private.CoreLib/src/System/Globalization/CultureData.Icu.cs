@@ -120,11 +120,30 @@ namespace System.Globalization
                 realNameBuffer = string.Concat(realNameBuffer.AsSpan(0, index), ICU_COLLATION_KEYWORD, alternateSortName);
             }
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                _sWindowsName = GetLocaleNameNative(realNameBuffer);
+                if (_sWindowsName == null || _sWindowsName.Length == 0)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Get the locale name from ICU
+                if (!GetLocaleName(realNameBuffer, out _sWindowsName))
+                {
+                    return false;
+                }
+            }
+#else
             // Get the locale name from ICU
             if (!GetLocaleName(realNameBuffer, out _sWindowsName))
             {
                 return false; // fail
             }
+#endif
 
             Debug.Assert(_sWindowsName != null);
 
@@ -287,6 +306,12 @@ namespace System.Globalization
         internal static bool IcuIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                return Interop.Globalization.IsPredefinedLocaleNative(name);
+            }
+#endif
             return Interop.Globalization.IsPredefinedLocale(name);
         }
 
