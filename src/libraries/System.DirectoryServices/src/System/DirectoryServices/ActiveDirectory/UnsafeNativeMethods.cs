@@ -346,7 +346,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public string? NetbiosDomainName;
         public string? DnsDomainName;
-        public int Flags;
+        public Interop.Netapi32.DS_DOMAINTRUST_FLAG Flags;
         public int ParentIndex;
         public TrustType TrustType;
         public int TrustAttributes;

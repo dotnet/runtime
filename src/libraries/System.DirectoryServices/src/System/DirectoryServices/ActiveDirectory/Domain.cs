@@ -1301,7 +1301,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = (Interop.Netapi32.DS_DOMAIN_TRUSTS)unmanagedTrustList[i]!;
 
                         // make sure this is the trust object that we want
-                        if ((unmanagedTrust.Flags & (int)(Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND)) == 0)
+                        if ((unmanagedTrust.Flags & (Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND)) == 0)
                         {
                             // Not interested in indirectly trusted domains.
                             continue;
@@ -1334,17 +1334,17 @@ namespace System.DirectoryServices.ActiveDirectory
                                 sameTarget = true;
 
                             // we only want to need local domain and specified target domain trusts
-                            if (!sameTarget && (obj.Flags & (int)Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) == 0)
+                            if (!sameTarget && (obj.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) == 0)
                                 continue;
                         }
 
                         // local domain case
-                        if ((obj.Flags & (int)Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
+                        if ((obj.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
                         {
                             localDomainIndex = j;
 
                             // verify whether this is already the root
-                            if ((obj.Flags & (int)Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) == 0)
+                            if ((obj.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) == 0)
                             {
                                 // get the parent domain name
                                 Interop.Netapi32.DS_DOMAIN_TRUSTS parentTrust = (Interop.Netapi32.DS_DOMAIN_TRUSTS)unmanagedTrustList[obj.ParentIndex]!;
@@ -1383,7 +1383,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             continue;
                         }
 
-                        if ((tmpObject.Flags & (int)Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST) != 0)
+                        if ((tmpObject.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST) != 0)
                         {
                             // child domain
                             if (tmpObject.ParentIndex == ((TrustObject)tmpTrustList[localDomainIndex]!).OriginalIndex)
@@ -1391,8 +1391,8 @@ namespace System.DirectoryServices.ActiveDirectory
                                 tmpObject.TrustType = TrustType.ParentChild;
                             }
                             // tree root
-                            else if ((tmpObject.Flags & (int)Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0 &&
-                              (((TrustObject)tmpTrustList[localDomainIndex]!).Flags & (int)Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0)
+                            else if ((tmpObject.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0 &&
+                              (((TrustObject)tmpTrustList[localDomainIndex]!).Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0)
                             {
                                 string? tmpForestName = null;
                                 string rootDomainNC = directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.RootDomainNamingContext);

@@ -1146,7 +1146,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (unmanagedTrust.TrustType == TrustHelper.TRUST_TYPE_UPLEVEL && ((unmanagedTrust.TrustAttributes & (int)Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0))
                         {
                             // we don't want to include self
-                            if ((unmanagedTrust.Flags & (int)Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
+                            if ((unmanagedTrust.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
                                 continue;
 
                             TrustRelationshipInformation trust = new ForestTrustRelationshipInformation(_context, Name, unmanagedTrust, TrustType.Forest);

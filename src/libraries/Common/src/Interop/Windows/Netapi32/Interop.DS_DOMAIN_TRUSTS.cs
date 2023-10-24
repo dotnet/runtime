@@ -13,7 +13,7 @@ internal static partial class Interop
         {
             public IntPtr NetbiosDomainName;
             public IntPtr DnsDomainName;
-            public int Flags;
+            public DS_DOMAINTRUST_FLAG Flags;
             public int ParentIndex;
             public int TrustType;
             public int TrustAttributes;
