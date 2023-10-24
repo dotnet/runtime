@@ -1839,9 +1839,6 @@ namespace System.Text.Tests
             var builder = new StringBuilder(0, 5);
             builder.Append("Hello");
 
-            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, ReadOnlySpan<char>.Empty)); // Old value is null
-            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, new char[] { 'a' }.AsSpan(), 0, 0)); // Old value is null
-
             AssertExtensions.Throws<ArgumentException>("oldValue", () => builder.Replace(new char[0].AsSpan(), new char[] { 'a' }.AsSpan())); // Old value is empty
             AssertExtensions.Throws<ArgumentException>("oldValue", () => builder.Replace(new char[0].AsSpan(), new char[] { 'a' }.AsSpan(), 0, 0)); // Old value is empty
 

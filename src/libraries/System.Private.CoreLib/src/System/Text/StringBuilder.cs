@@ -1962,7 +1962,9 @@ namespace System.Text
         /// </remarks>
         public StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count)
         {
-            ReadOnlySpan<char> newValueSpan = (newValue == null) ? null : newValue.AsSpan();
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
+            
+            ReadOnlySpan<char> newValueSpan = (newValue == null) ? ReadOnlySpan<char>.Empty : newValue.AsSpan();
             return Replace(oldValue.AsSpan(), newValueSpan, startIndex, count);
         }
 
@@ -1988,19 +1990,9 @@ namespace System.Text
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
-
-            if (oldValue == null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
             if (oldValue.Length == 0)
             {
                 throw new ArgumentException(SR.Arg_EmptySpan, nameof(oldValue));
-            }
-
-            if (newValue == null)
-            {
-                newValue = ReadOnlySpan<char>.Empty;
             }
 
             var replacements = new ValueListBuilder<int>(stackalloc int[128]); // A list of replacement positions in a chunk to apply
