@@ -13,18 +13,33 @@ namespace TestStackOverflow
         static string s_corerunPath;
         static string s_currentPath;
 
-        static bool TestStackOverflow(string testName, string testArgs, out List<string> stderrLines)
+        static Process GetNativeAotProcess(string testName, string testArgs)
+        {
+            Process testProcess = new Process();
+            string executableExtension = TestLibrary.Utilities.IsWindows ? ".exe" : "";
+            testProcess.StartInfo.FileName = Path.Combine(s_currentPath, "..", testName, "native", $"{testName}{executableExtension}");
+            testProcess.StartInfo.Arguments = testArgs;
+            return testProcess;
+        }
+
+        static bool TestStackOverflow(string testName, string testArgs, out List<string> stderrLines, out bool checkStackFrame)
         {
             Console.WriteLine($"Running {testName} test({testArgs})");
             List<string> lines = new List<string>();
 
-            Process testProcess = new Process();
-
-            testProcess.StartInfo.FileName = s_corerunPath;
-            testProcess.StartInfo.Arguments = $"{Path.Combine(s_currentPath, "..", testName, $"{testName}.dll")} {testArgs}";
+            Process testProcess;
+            if (TestLibrary.Utilities.IsNativeAot)
+            {
+                testProcess = GetNativeAotProcess(testName, testArgs);
+            }
+            else {
+                testProcess  = new Process();
+                testProcess.StartInfo.FileName = s_corerunPath;
+                testProcess.StartInfo.Arguments = $"{Path.Combine(s_currentPath, "..", testName, $"{testName}.dll")} {testArgs}";
+            }
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
-            testProcess.ErrorDataReceived += (sender, line) => 
+            testProcess.ErrorDataReceived += (sender, line) =>
             {
                 Console.WriteLine($"\"{line.Data}\"");
                 if (!string.IsNullOrEmpty(line.Data))
@@ -39,6 +54,8 @@ namespace TestStackOverflow
             testProcess.CancelErrorRead();
 
             stderrLines = lines;
+            // NativeAOT doesn't provide a stack trace on stack overflow
+            checkStackFrame = !TestLibrary.Utilities.IsNativeAot;
 
             int[] expectedExitCodes;
             if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
@@ -62,9 +79,23 @@ namespace TestStackOverflow
                 return false;
             }
 
-            if (lines[0] != "Stack overflow.")
+            string expectedMessage;
+            if (TestLibrary.Utilities.IsNativeAot)
             {
-                Console.WriteLine("Missing \"Stack overflow.\" at the first line");
+                expectedMessage = "Process is terminating due to StackOverflowException.";
+            }
+            else
+            {
+                expectedMessage = "Stack overflow.";
+            }
+
+            if (lines.Count > 0 && lines[0] == expectedMessage)
+            {
+                return true;
+            }
+            else
+            {
+                Console.WriteLine($"Missing \"{expectedMessage}\" at the first line");
                 return false;
             }
 
@@ -74,8 +105,12 @@ namespace TestStackOverflow
         static bool TestStackOverflowSmallFrameMainThread()
         {
             List<string> lines;
-            if (TestStackOverflow("stackoverflow", "smallframe main", out lines))
+            if (TestStackOverflow("stackoverflow", "smallframe main", out lines, out bool checkStackFrame))
             {
+                if (!checkStackFrame)
+                {
+                    return true;
+                }
                 if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow.Program.Main(System.String[])"))
                 {
                     Console.WriteLine("Missing \"Main\" method frame at the last line");
@@ -115,8 +150,12 @@ namespace TestStackOverflow
         static bool TestStackOverflowLargeFrameMainThread()
         {
             List<string> lines;
-            if (TestStackOverflow("stackoverflow", "largeframe main", out lines))
+            if (TestStackOverflow("stackoverflow", "largeframe main", out lines, out bool checkStackFrame))
             {
+                if (!checkStackFrame)
+                {
+                    return true;
+                }
                 if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow.Program.Main(System.String[])"))
                 {
                     Console.WriteLine("Missing \"Main\" method frame at the last line");
@@ -156,8 +195,13 @@ namespace TestStackOverflow
         static bool TestStackOverflowSmallFrameSecondaryThread()
         {
             List<string> lines;
-            if (TestStackOverflow("stackoverflow", "smallframe secondary", out lines))
+            if (TestStackOverflow("stackoverflow", "smallframe secondary", out lines, out bool checkStackFrame))
             {
+                if (!checkStackFrame)
+                {
+                    return true;
+                }
+
                 if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
                 {
                     Console.WriteLine("Missing \"TestStackOverflow.Program.Test\" method frame");
@@ -191,8 +235,13 @@ namespace TestStackOverflow
         static bool TestStackOverflowLargeFrameSecondaryThread()
         {
             List<string> lines;
-            if (TestStackOverflow("stackoverflow", "largeframe secondary", out lines))
+            if (TestStackOverflow("stackoverflow", "largeframe secondary", out lines, out bool checkStackFrame))
             {
+                if (!checkStackFrame)
+                {
+                    return true;
+                }
+
                 if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
                 {
                     Console.WriteLine("Missing \"TestStackOverflow.Program.Test\" method frame");
@@ -226,8 +275,13 @@ namespace TestStackOverflow
         static bool TestStackOverflow3()
         {
             List<string> lines;
-            if (TestStackOverflow("stackoverflow3", "", out lines))
+            if (TestStackOverflow("stackoverflow3", "", out lines, out bool checkStackFrame))
             {
+                if (!checkStackFrame)
+                {
+                    return true;
+                }
+
                 if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow3.Program.Main()"))
                 {
                     Console.WriteLine("Missing \"Main\" method frame at the last line");
@@ -249,7 +303,7 @@ namespace TestStackOverflow
         static int Main()
         {
             s_currentPath = Directory.GetCurrentDirectory();
-            s_corerunPath = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
+            // s_corerunPath = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
 
             if (!TestStackOverflowSmallFrameMainThread())
             {

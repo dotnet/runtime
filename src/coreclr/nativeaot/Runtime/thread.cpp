@@ -28,10 +28,10 @@
 #include "RhConfig.h"
 #include "RhVolatile.h"
 
-#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 #include <signal.h>
 #include <sys/mman.h>
-#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 
 #ifndef DACCESS_COMPILE
 
@@ -287,9 +287,9 @@ void Thread::Construct()
     if (StressLog::StressLogOn(~0u, 0))
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
 #endif // STRESS_LOG
-#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
     EnsureSignalAlternateStack();
-#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
@@ -306,7 +306,7 @@ void Thread::Construct()
     ASSERT(m_interruptedContext == NULL);
 }
 
-#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 void Thread::FreeSignalAlternateStack()
 {
     void *altstack = m_alternateStack;
@@ -348,7 +348,7 @@ bool Thread::EnsureSignalAlternateStack()
 
         // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the
         // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
-        int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(CONTEXT), 16) + PalOsPageSize();
+        int altStackSize = SIGSTKSZ;
 #ifdef HAS_ADDRESS_SANITIZER
         // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
         // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
@@ -387,7 +387,7 @@ bool Thread::EnsureSignalAlternateStack()
 
     return (st == 0);
 }
-#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 
 bool Thread::IsInitialized()
 {
@@ -453,9 +453,9 @@ void Thread::Destroy()
     }
 #endif //FEATURE_SUSPEND_REDIRECTION
 
-#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
     FreeSignalAlternateStack();
-#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 }

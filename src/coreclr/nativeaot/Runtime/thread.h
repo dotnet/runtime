@@ -112,9 +112,9 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
     void *                   m_alternateStack;                      // ptr to alternate signal stack
-#endif // UNIX
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 };
 
 struct ReversePInvokeFrame
@@ -316,10 +316,10 @@ public:
     bool                IsActivationPending();
     void                SetActivationPending(bool isPending);
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
     bool EnsureSignalAlternateStack();
     void FreeSignalAlternateStack();
-#endif // TARGET_UNIX
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

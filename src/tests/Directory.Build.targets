@@ -603,7 +603,7 @@
           DependsOnTargets="Build;LinkNativeIfBuildAndRun" />
 
   <Target Name="LinkNativeIfBuildAndRun"
-          Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
+          Condition="'$(_WillCLRTestProjectBuild)' == 'true' and ('$(CLRTestKind)' == 'BuildAndRun' or '$(CLRTestKind)' == 'BuildOnly')"
           DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
 
   <Target Name="LocateNativeCompiler"
