@@ -112,5 +112,11 @@ namespace System.Net.Security
         }
         internal byte[] Payload;
         internal int Size;
+
+        internal void EnsureAvailableSpace(int size)
+        {
+        }
+
+        internal Span<byte> AvailableSpan => Span<byte>.Empty;
     }
 }
