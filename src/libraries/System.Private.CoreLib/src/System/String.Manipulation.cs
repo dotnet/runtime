@@ -1913,6 +1913,12 @@ namespace System
 
         private static void MakeSeparatorListVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
+            // Redundant test so we won't prejit remainder of this method
+            // on platforms where it is not supported
+            if (!Vector128.IsHardwareAccelerated)
+            {
+                throw new PlatformNotSupportedException();
+            }
             Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count);
             nuint lengthToExamine = (uint)sourceSpan.Length;
             nuint offset = 0;
