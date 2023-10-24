@@ -18,6 +18,7 @@ static unsafe class UnsafeAccessorsTests
     {
         public const string StaticFieldName = nameof(_F);
         public const string FieldName = nameof(_f);
+        public const string FieldSecondName = nameof(_i);
         public const string StaticMethodName = nameof(_M);
         public const string MethodName = nameof(_m);
         public const string StaticMethodVoidName = nameof(_MVV);
@@ -30,6 +31,7 @@ static unsafe class UnsafeAccessorsTests
 
         private static string _F = PrivateStatic;
         private string _f;
+        private int _i;
 
         public string Value => _f;
 
@@ -213,6 +215,18 @@ static unsafe class UnsafeAccessorsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataClass.FieldName)]
         extern static ref string GetPrivateField(UserDataClass d);
+    }
+
+    [Fact]
+    public static void Verify_AccessFieldOffsetClass()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessFieldOffsetClass)}");
+
+        // Offset = method table pointer + first string pointer
+        Assert.Equal(IntPtr.Size + IntPtr.Size, GetPrivateFieldOffset());
+
+        [UnsafeAccessor(UnsafeAccessorKind.FieldOffset, Name=UserDataClass.FieldSecondName)]
+        extern static nint GetPrivateFieldOffset(UserDataClass? d = null);
     }
 
     [Fact]

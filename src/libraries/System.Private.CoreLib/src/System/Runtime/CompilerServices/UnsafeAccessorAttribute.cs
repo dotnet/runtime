@@ -31,7 +31,12 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Provide access to a static field.
         /// </summary>
-        StaticField
+        StaticField,
+
+        /// <summary>
+        /// Provide access to the offset of an instance field.
+        /// </summary>
+        FieldOffset
     };
 
     /// <summary>

@@ -1062,7 +1062,8 @@ namespace
         Method, // call instance method (`callvirt` in IL)
         StaticMethod, // call static method (`call` in IL)
         Field, // address of instance field (`ldflda` in IL)
-        StaticField // address of static field (`ldsflda` in IL)
+        StaticField, // address of static field (`ldsflda` in IL)
+        FieldOffset, // offset of field relative to the start of the object
     };
 
     bool TryParseUnsafeAccessorAttribute(
@@ -1316,7 +1317,8 @@ namespace
         STANDARD_VM_CONTRACT;
         _ASSERTE(fieldName != NULL);
         _ASSERTE(cxt.Kind == UnsafeAccessorKind::Field
-                || cxt.Kind == UnsafeAccessorKind::StaticField);
+                || cxt.Kind == UnsafeAccessorKind::StaticField
+                || cxt.Kind == UnsafeAccessorKind::FieldOffset);
 
         TypeHandle targetType = cxt.TargetType;
         _ASSERTE(!targetType.IsTypeDesc());
@@ -1325,15 +1327,30 @@ namespace
             targetType.AsMethodTable(),
             (cxt.IsTargetStatic ? ApproxFieldDescIterator::STATIC_FIELDS : ApproxFieldDescIterator::INSTANCE_FIELDS));
         PTR_FieldDesc pField;
-        while ((pField = fdIterator.Next()) != NULL)
+
+        if (cxt.Kind ==  UnsafeAccessorKind::FieldOffset)
         {
-            // Validate the name and target type match.
-            if (strcmp(fieldName, pField->GetName()) == 0
-                && fieldType == pField->LookupFieldTypeHandle())
-            {
-                cxt.TargetField = pField;
-                return true;
-            }
+          while ((pField = fdIterator.Next()) != NULL)
+          {
+              // Validate the name and target type match.
+              if (strcmp(fieldName, pField->GetName()) == 0)
+              {
+                  cxt.TargetField = pField;
+                  return true;
+              }
+          }
+        }
+        else
+        {
+          while ((pField = fdIterator.Next()) != NULL)
+          {
+              // Validate the name and target type match.
+              if (strcmp(fieldName, pField->GetName()) == 0 && fieldType == pField->LookupFieldTypeHandle())
+              {
+                  cxt.TargetField = pField;
+                  return true;
+              }
+          }
         }
         return false;
     }
@@ -1368,8 +1385,13 @@ namespace
         // during dispatch.
         UINT beginIndex = cxt.IsTargetStatic ? 1 : 0;
         UINT stubArgCount = cxt.DeclarationSig.NumFixedArgs();
-        for (UINT i = beginIndex; i < stubArgCount; ++i)
-            pCode->EmitLDARG(i);
+
+        // Don't load the first argument for a field offset, we are not using it.
+        if (cxt.Kind != UnsafeAccessorKind::FieldOffset)
+        {
+          for (UINT i = beginIndex; i < stubArgCount; ++i)
+              pCode->EmitLDARG(i);
+        }
 
         // Provide access to the target member
         UINT targetArgCount = stubArgCount - beginIndex;
@@ -1395,6 +1417,10 @@ namespace
         case UnsafeAccessorKind::StaticField:
             _ASSERTE(cxt.TargetField != NULL);
             pCode->EmitLDSFLDA(pCode->GetToken(cxt.TargetField));
+            break;
+        case UnsafeAccessorKind::FieldOffset:
+            _ASSERTE(cxt.TargetField != NULL);
+            pCode->EmitLDC(cxt.TargetField->GetOffset());
             break;
         default:
             _ASSERTE(!"Unknown UnsafeAccessorKind");
@@ -1519,16 +1545,17 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
     case UnsafeAccessorKind::Field:
     case UnsafeAccessorKind::StaticField:
+    case UnsafeAccessorKind::FieldOffset:
         // Field access requires a single argument for target type and a return type.
         if (argCount != 1 || firstArgType.IsNull() || context.DeclarationSig.IsReturnTypeVoid())
         {
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
-        // The return type must be byref.
+        // The return type must be byref for field access.
         // If the non-static field access is for a
         // value type, the instance must be byref.
-        if (!retType.IsByRef()
+        if ((!retType.IsByRef() && kind != UnsafeAccessorKind::FieldOffset)
             || (kind == UnsafeAccessorKind::Field
                 && firstArgType.IsValueType()
                 && !firstArgType.IsByRef()))

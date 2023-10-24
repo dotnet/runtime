@@ -13304,7 +13304,8 @@ namespace System.Runtime.CompilerServices
         Method,
         StaticMethod,
         Field,
-        StaticField
+        StaticField,
+        FieldOffset
     };
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class UnsafeValueTypeAttribute : System.Attribute
