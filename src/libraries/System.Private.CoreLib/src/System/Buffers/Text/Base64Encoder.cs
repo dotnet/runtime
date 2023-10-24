@@ -249,7 +249,6 @@ namespace System.Buffers.Text
             byte* dest = destBytes;
 
             // The JIT won't hoist these "constants", so help it
-            // JIT will remove the Non VBMI path constants when VBMI is available and vice-versa.
             Vector512<sbyte> shuffleVecVbmi = Vector512.Create(
                 0x01020001, 0x04050304, 0x07080607, 0x0a0b090a,
                 0x0d0e0c0d, 0x10110f10, 0x13141213, 0x16171516,
@@ -266,7 +265,6 @@ namespace System.Buffers.Text
 
             // This algorithm requires AVX512VBMI support.
             // Vbmi was first introduced in CannonLake and is avaialable from IceLake on.
-            // This makes it okay to use Vbmi instructions since Vector512.IsHardwareAccelerated returns True only from IceLake on.
 
             // str = [...|PONM|LKJI|HGFE|DCBA]
             Vector512<sbyte> str = Vector512.Load(src).AsSByte();
@@ -295,7 +293,7 @@ namespace System.Buffers.Text
                 str = Avx512Vbmi.PermuteVar64x8(vbmiLookup, str);
 
                 AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
-                Vector512.Store(str.AsByte(), dest);
+                str.Store((sbyte*)dest);
 
                 src += 48;
                 dest += 64;

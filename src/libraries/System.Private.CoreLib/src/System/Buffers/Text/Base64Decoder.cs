@@ -642,7 +642,6 @@ namespace System.Buffers.Text
             byte* dest = destBytes;
 
             // The JIT won't hoist these "constants", so help it
-            // JIT will remove the Non VBMI path constants when VBMI is available and vice-versa.
             Vector512<sbyte> vbmiLookup0 = Vector512.Create(
                 0x80808080, 0x80808080, 0x80808080, 0x80808080,
                 0x80808080, 0x80808080, 0x80808080, 0x80808080,
@@ -664,7 +663,6 @@ namespace System.Buffers.Text
 
             // This algorithm requires AVX512VBMI support.
             // Vbmi was first introduced in CannonLake and is avaialable from IceLake on.
-            // This makes it okay to use Vbmi instructions since Vector512.IsHardwareAccelerated returns True only from IceLake on.
             do
             {
                 AssertRead<Vector512<sbyte>>(src, srcStart, sourceLength);
@@ -674,9 +672,7 @@ namespace System.Buffers.Text
                 // This step also checks for invalid inputs and exits.
                 // After this, we have indices which are verified to have upper 2 bits set to 0 in each byte.
                 // origIndex      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
-                Vector512<sbyte> origIndex;
-
-                origIndex = Avx512Vbmi.PermuteVar64x8x2(vbmiLookup0, str, vbmiLookup1);
+                Vector512<sbyte> origIndex = Avx512Vbmi.PermuteVar64x8x2(vbmiLookup0, str, vbmiLookup1);
                 Vector512<sbyte> errorVec = (origIndex.AsInt32() | str.AsInt32()).AsSByte();
                 if (errorVec.ExtractMostSignificantBits() != 0)
                 {
@@ -693,7 +689,7 @@ namespace System.Buffers.Text
                 str = Avx512Vbmi.PermuteVar64x8(multiAdd2.AsByte(), vbmiPackedLanesControl).AsSByte();
 
                 AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
-                Vector512.Store(str.AsByte(), dest);
+                str.Store((sbyte*)dest);
                 src += 64;
                 dest += 48;
             }
