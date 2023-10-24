@@ -5582,6 +5582,7 @@ struct GenTreeCall final : public GenTree
     var_types        gtReturnType : 5; // exact return type
 
     uint8_t gtInlineInfoCount; // number of inline candidates for the given call
+    bool gtIsAsyncCall;
 
     CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
     union {

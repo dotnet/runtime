@@ -2796,6 +2796,7 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
             // This must have been the last CMOD before the element type, and the element type MUST be one which can be expressed structurally as a generic parameter
             switch (elemType)
             {
+                case ELEMENT_TYPE_VOID:
                 case ELEMENT_TYPE_CLASS:
                 case ELEMENT_TYPE_VALUETYPE:
                 case ELEMENT_TYPE_STRING:

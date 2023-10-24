@@ -625,6 +625,7 @@ DEFINE_METASIG(SM(Str_RetPtrByte, s, P(b)))
 DEFINE_METASIG(SM(PtrByte_RetVoid, P(b), v))
 
 DEFINE_METASIG(GM(T_RetVoid, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, M(0), v))
+DEFINE_METASIG_T(GM(Obj_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, j, GI(C(TASK_1), 1, M(0))))
 
 // Undefine macros in case we include the file again in the compilation unit
 

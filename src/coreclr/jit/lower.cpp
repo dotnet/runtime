@@ -524,6 +524,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerRet(node->AsUnOp());
             break;
 
+        case GT_RETURN_SUSPEND:
+            LowerReturnSuspend(node);
+            break;
+
         case GT_RETURNTRAP:
             ContainCheckReturnTrap(node->AsOp());
             break;
@@ -4675,6 +4679,15 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
         }
+    }
+}
+
+void Lowering::LowerReturnSuspend(GenTree* node)
+{
+    assert(node->OperIs(GT_RETURN_SUSPEND));
+    while (BlockRange().LastNode() != node)
+    {
+        BlockRange().Remove(BlockRange().LastNode(), true);
     }
 }
 

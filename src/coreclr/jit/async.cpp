@@ -88,9 +88,9 @@ PhaseStatus Async2Transformation::Run()
 
                 life.UpdateLife(tree);
 
-                if (tree->IsCall() && tree->AsCall()->IsAsync2())
+                if (tree->IsCall() && tree->AsCall()->IsAsync2() && !tree->AsCall()->IsTailCall())
                 {
-                    Transform(block, tree->AsCall(), defs, &block);
+                    Transform(block, tree->AsCall(), defs, life, &block);
                     defs.clear();
                     any = true;
                     break;
@@ -112,6 +112,7 @@ PhaseStatus Async2Transformation::Run()
 void Async2Transformation::Transform(BasicBlock*               block,
                                      GenTreeCall*              call,
                                      jitstd::vector<GenTree*>& defs,
+                                     TreeLifeUpdater<false>&   life,
                                      BasicBlock**              pRemainder)
 {
 #ifdef DEBUG
@@ -270,15 +271,22 @@ void Async2Transformation::Transform(BasicBlock*               block,
 
             use.ReplaceWithLclVar(m_comp);
         }
+        else
+        {
+            // We will split after the store, but we still have to update liveness for it.
+            life.UpdateLife(call->gtNext);
+        }
 
         assert(call->gtNext->OperIsLocalStore() && (call->gtNext->Data() == call));
         storeResultNode = call->gtNext->AsLclVarCommon();
         insertAfter     = call->gtNext;
     }
 
-    GenTree* continuationPhysReg = m_comp->gtNewPhysRegNode(REG_ASYNC_CONTINUATION_RET, TYP_REF);
-    GenTree* storeContinuation   = m_comp->gtNewStoreLclVarNode(m_returnedContinuationVar, continuationPhysReg);
-    LIR::AsRange(block).InsertAfter(insertAfter, continuationPhysReg, storeContinuation);
+    GenTree* continuationArg = new (m_comp, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
+    continuationArg->SetHasOrderingSideEffect();
+
+    GenTree* storeContinuation   = m_comp->gtNewStoreLclVarNode(m_returnedContinuationVar, continuationArg);
+    LIR::AsRange(block).InsertAfter(insertAfter, continuationArg, storeContinuation);
 
     GenTree* null                 = m_comp->gtNewNull();
     GenTree* returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
@@ -501,7 +509,7 @@ void Async2Transformation::Transform(BasicBlock*               block,
     {
         unsigned byteArrLclNum = GetDataArrayVar();
 
-        GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        GenTree* newContinuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned dataOffset =
             TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
         GenTree* dataOffsetNode      = m_comp->gtNewIconNode((ssize_t)dataOffset, TYP_I_IMPL);
@@ -557,7 +565,7 @@ void Async2Transformation::Transform(BasicBlock*               block,
     {
         unsigned objectArrLclNum = GetGCDataArrayVar();
 
-        newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        newContinuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned gcDataOffset =
             TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
         GenTree* gcDataOffsetNode      = m_comp->gtNewIconNode((ssize_t)gcDataOffset, TYP_I_IMPL);
@@ -744,6 +752,15 @@ bool Async2Transformation::IsLive(unsigned lclNum)
     LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
     if (dsc->lvRefCnt(RCS_NORMAL) == 0)
     {
+        return false;
+    }
+
+    if ((dsc->TypeGet() == TYP_BYREF) || ((dsc->TypeGet() == TYP_STRUCT) && dsc->GetLayout()->HasGCByRef()))
+    {
+        // Even if these are address exposed we expect them to be dead at
+        // suspension points. TODO: It would be good to somehow verify these
+        // aren't obviously live, if the JIT creates live ranges that span a
+        // suspension point then this makes it quite hard to diagnose that.
         return false;
     }
 
@@ -938,13 +955,16 @@ void Async2Transformation::CreateResumptionSwitch()
     }
     else if (m_resumptionBBs.size() == 2)
     {
-        BasicBlock* condBB = m_comp->fgNewBBbefore(BBJ_COND, m_resumptionBBs[0], true);
+        BasicBlock* condBB = m_comp->fgNewBBbefore(BBJ_COND, m_resumptionBBs[0], true, m_resumptionBBs[1]);
         condBB->bbSetRunRarely();
         newEntryBB->SetJumpKindAndTarget(BBJ_COND, condBB DEBUGARG(m_comp));
 
         JITDUMP("New cond BB: " FMT_BB "\n", condBB->bbNum);
 
         m_comp->fgAddRefPred(condBB, newEntryBB);
+        m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
+        m_comp->fgAddRefPred(m_resumptionBBs[1], condBB);
+
         continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned stateOffset =
             TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
@@ -957,10 +977,6 @@ void Async2Transformation::CreateResumptionSwitch()
 
         LIR::AsRange(condBB).InsertAtEnd(continuationArg, stateOffsetNode, stateAddr, stateInd, zero, stateNeZero,
                                          jtrue);
-        condBB->SetJumpDest(m_resumptionBBs[1]);
-
-        m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
-        m_comp->fgAddRefPred(m_resumptionBBs[1], condBB);
     }
     else
     {

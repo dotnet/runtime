@@ -237,7 +237,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (call != nullptr)
             {
 #ifdef FEATURE_READYTORUN
-                if (call->OperGet() == GT_INTRINSIC)
+                if (call->OperIs(GT_INTRINSIC))
                 {
                     if (opts.IsReadyToRun())
                     {
@@ -518,6 +518,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
         }
+
+        // Temporary hack since these functions have to be recognizes as async2
+        // calls in JIT generated state machines only.
+        if (compIsAsync2StateMachine() &&
+            ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync) ||
+             (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync)))
+        {
+            assert((call != nullptr) && call->OperIs(GT_CALL));
+            call->AsCall()->gtIsAsyncCall = true;
+        }
     }
     assert(sig);
     assert(clsHnd || (opcode == CEE_CALLI)); // We're never verifying for CALLI, so this is not set.
@@ -716,6 +726,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
+    if (sig->isAsyncCall())
+    {
+        call->AsCall()->gtIsAsyncCall = true;
+    }
+
     // Now create the argument list.
 
     //-------------------------------------------------------------------------
@@ -887,7 +902,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
             }
 
-            if (compIsAsync2StateMachine() && sig->isAsyncCall())
+            if (call->AsCall()->gtIsAsyncCall && compIsAsync2StateMachine())
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
@@ -907,7 +922,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
             }
 
-            if (compIsAsync2StateMachine() && sig->isAsyncCall())
+            if (call->AsCall()->gtIsAsyncCall && compIsAsync2StateMachine())
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
@@ -2565,7 +2580,21 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     {
         GenTree* node = new (this, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
         node->SetHasOrderingSideEffect();
+        node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
         return node;
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SuspendAsync2)
+    {
+        GenTree* node = gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, impPopStack().val);
+        node->SetHasOrderingSideEffect();
+        node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
+        return node;
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines)
+    {
+        return gtNewIconNode(JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0 ? 1 : 0);
     }
 
     bool betterToExpand = false;
@@ -8988,6 +9017,22 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "IsKnownConstant") == 0)
                         {
                             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                        }
+                        else if (strcmp(methodName, "AwaitAwaiterFromRuntimeAsync") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync;
+                        }
+                        else if (strcmp(methodName, "UnsafeAwaitAwaiterFromRuntimeAsync") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync;
+                        }
+                        else if (strcmp(methodName, "SuspendAsync2") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SuspendAsync2;
+                        }
+                        else if (strcmp(methodName, "get_RuntimeAsyncViaJitGeneratedStateMachines") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines;
                         }
                     }
                     else if (strcmp(className, "Unsafe") == 0)

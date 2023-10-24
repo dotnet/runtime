@@ -35,7 +35,7 @@ class Async2Transformation
                       jitstd::vector<GenTree*>&      defs,
                       jitstd::vector<LiveLocalInfo>& liveLocals);
     bool IsLive(unsigned lclNum);
-    void Transform(BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, BasicBlock** remainder);
+    void Transform(BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, TreeLifeUpdater<false>& life, BasicBlock** remainder);
 
     GenTreeIndir* LoadFromOffset(GenTree* base, unsigned offset, var_types type);
     GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value);

@@ -119,46 +119,88 @@ namespace System.Runtime.CompilerServices
 #pragma warning restore IDE0060
 
 #if !NATIVEAOT
+        [Intrinsic]
         public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMe;
-
-            // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
-            // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
-            // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
-            // it will resume with a return value of null.
-            Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
-            if (resumption != null)
+            if (RuntimeAsyncViaJitGeneratedStateMachines)
             {
-                // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
-                // and return from GetOrCreateResumptionDelegate with a null return value.
-                ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
-                RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                maintainedData._awaiter = awaiter;
-                // This function must be called from the same function that has the stackmark in it.
-                unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
+                ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+                object? sentinelContinuation = state.SentinelContinuation;
+                if (sentinelContinuation == null)
+                    state.SentinelContinuation = sentinelContinuation = default(Continuation);
+
+                state.Notifier = awaiter;
+                SuspendAsync2(sentinelContinuation);
+                return;
+            }
+            else
+            {
+                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
+
+                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
+                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
+                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+                // it will resume with a return value of null.
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
+                if (resumption != null)
+                {
+                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
+                    // and return from GetOrCreateResumptionDelegate with a null return value.
+                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+                    maintainedData._awaiter = awaiter;
+                    // This function must be called from the same function that has the stackmark in it.
+                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
+                }
             }
         }
 
+        // Marked intrinsic since for JIT state machines this needs to be
+        // recognizes as an async2 call.
+        [Intrinsic]
         public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMe;
-
-            // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
-            // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
-            // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
-            // it will resume with a return value of null.
-            Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
-            if (resumption != null)
+            if (RuntimeAsyncViaJitGeneratedStateMachines)
             {
-                // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
-                // and return from GetOrCreateResumptionDelegate with a null return value.
-                ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
-                RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                maintainedData._awaiter = awaiter;
-                // This function must be called from the same function that has the stackmark in it.
-                unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
+                ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+                object? sentinelContinuation = state.SentinelContinuation;
+                if (sentinelContinuation == null)
+                    state.SentinelContinuation = sentinelContinuation = default(Continuation);
+
+                state.Notifier = awaiter;
+                SuspendAsync2(sentinelContinuation);
+                return;
             }
+            else
+            {
+                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
+
+                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
+                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
+                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+                // it will resume with a return value of null.
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
+                if (resumption != null)
+                {
+                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
+                    // and return from GetOrCreateResumptionDelegate with a null return value.
+                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+                    maintainedData._awaiter = awaiter;
+                    // This function must be called from the same function that has the stackmark in it.
+                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
+                }
+            }
+        }
+
+        // Could probably be a static readonly bool computing the environment
+        // variable, but recognizing it as an intrinsic avoids having to deal
+        // with having a static constructor that could interfere with perf
+        // measurements.
+        private static bool RuntimeAsyncViaJitGeneratedStateMachines
+        {
+            [Intrinsic]
+            get => false;
         }
 
         [ThreadStatic]
@@ -197,7 +239,7 @@ namespace System.Runtime.CompilerServices
             public SynchronizationContext? _syncCtx;
 
 
-            public Tasklet *_nextTasklet;
+            public Tasklet* _nextTasklet;
             public Tasklet* _oldTaskletNext;
 
             public RuntimeAsyncReturnValue _retValue;
@@ -261,10 +303,10 @@ namespace System.Runtime.CompilerServices
                                 // This won't stack overflow unless MaxStackNeeded is actually too high, as the extra allocation is controlled by collectiveStackAllocsPerformed
                                 // TODO This is doing terrible things with the ABI, so we may need to be more careful here
                                 int stackToAlloc = maxStackNeeded - collectiveStackAllocsPerformed;
-                                byte *pStackAlloc = stackalloc byte[stackToAlloc];
+                                byte* pStackAlloc = stackalloc byte[stackToAlloc];
                                 collectiveStackAllocsPerformed += stackToAlloc;
 #pragma warning restore CA2014
-// The optimizer does nothing with variable sized StackAlloc KeepStackAllocAlive(pStackAlloc);
+                                // The optimizer does nothing with variable sized StackAlloc KeepStackAllocAlive(pStackAlloc);
                             }
 
                             try
@@ -473,13 +515,13 @@ namespace System.Runtime.CompilerServices
         // 3. Return values are to be returned by reference in all cases where the return value is not a simple object return or return of a simple value in the return value register (this makes the resumption function reasonable to write. Notably, floating point, and ref return will be returned by reference as well as generalized struct return, and return which would normally involve multiple return value registers)
         // 4. There are to be no refs to the outermost caller function exceptn for the valuetype return address (methods which begin on an instance valuetype will have the thunk box the valuetype and the runtime async method on the boxed instance)
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeSuspension_CaptureTasklets")]
-        private static unsafe partial Tasklet *CaptureCurrentStackIntoTasklets(StackCrawlMarkHandle stackMarkTop, ref byte returnValueHandle, [MarshalAs(UnmanagedType.U1)] bool useReturnValueHandle, void* taskAsyncData, out Tasklet* lastTasklet, out int framesCaptured);
+        private static unsafe partial Tasklet* CaptureCurrentStackIntoTasklets(StackCrawlMarkHandle stackMarkTop, ref byte returnValueHandle, [MarshalAs(UnmanagedType.U1)] bool useReturnValueHandle, void* taskAsyncData, out Tasklet* lastTasklet, out int framesCaptured);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeSuspension_DeleteTasklet")]
-        private static unsafe partial void DeleteTasklet(Tasklet *tasklet);
+        private static unsafe partial void DeleteTasklet(Tasklet* tasklet);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void UnwindToFunctionWithAsyncFrame(Tasklet *topTasklet, nint framesToUnwind);
+        internal static extern unsafe void UnwindToFunctionWithAsyncFrame(Tasklet* topTasklet, nint framesToUnwind);
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private static unsafe Action? GetOrCreateResumptionDelegate(ref StackCrawlMark stackMark)

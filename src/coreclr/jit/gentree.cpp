@@ -2364,7 +2364,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 
 bool GenTreeCall::IsAsync2() const
 {
-    return gtArgs.HasAsyncContinuation();
+    return gtIsAsyncCall;
 }
 
 //-------------------------------------------------------------------------
@@ -6492,6 +6492,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_NOP:
         case GT_RETURN:
         case GT_RETFILT:
+        case GT_RETURN_SUSPEND:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -6809,9 +6810,9 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
     switch (gtOper)
     {
         case GT_CALL:
-            return true;
-
         case GT_KEEPALIVE:
+        case GT_ASYNC_CONTINUATION:
+        case GT_RETURN_SUSPEND:
             return true;
 
         case GT_INTRINSIC:
@@ -7108,6 +7109,8 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_KEEPALIVE:
+        case GT_ASYNC_CONTINUATION:
+        case GT_RETURN_SUSPEND:
             return true;
 
         case GT_CALL:
@@ -7167,6 +7170,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_MEMORYBARRIER:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_RETURN_SUSPEND:
             return true;
         default:
             return false;
@@ -8092,6 +8096,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtRetClsHnd       = nullptr;
     node->gtControlExpr     = nullptr;
     node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    node->gtIsAsyncCall = false;
     node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
@@ -9751,6 +9756,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
         copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
 
+    copy->gtIsAsyncCall = tree->gtIsAsyncCall;
     copy->gtCallType   = tree->gtCallType;
     copy->gtReturnType = tree->gtReturnType;
 

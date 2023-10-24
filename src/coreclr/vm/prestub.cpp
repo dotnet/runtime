@@ -1708,7 +1708,11 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
     pCode->EmitRET();
 
     pCode->EmitLabel(pSuspendedLabel);
-    pCode->EmitLDNULL();
+
+    MethodDesc* md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
+    md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+    pCode->EmitLDLOC(boxedContinuationLcl);
+    pCode->EmitCALL(pCode->GetToken(md), 1, 1);
     pCode->EmitRET();
 }
 

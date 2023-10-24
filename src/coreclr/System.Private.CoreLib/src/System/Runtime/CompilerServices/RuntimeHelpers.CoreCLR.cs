@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -387,7 +388,84 @@ namespace System.Runtime.CompilerServices
             Unsafe.Unbox<Continuation>(prevContinuation).Next = newContinuation;
             return newContinuation;
         }
+
+        private struct RuntimeAsyncAwaitState
+        {
+            public object? SentinelContinuation;
+            public INotifyCompletion? Notifier;
+        }
+
+        [ThreadStatic]
+        private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
+
+        [Intrinsic]
+        private static void SuspendAsync2(object continuation) => throw new UnreachableException();
+
+        private static Task<T> FinalizeTaskReturningThunk<T>(object boxedContinuation)
+        {
+            TaskCompletionSource<T> tcs = new();
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            ref Continuation continuation = ref Unsafe.Unbox<Continuation>(boxedContinuation);
+            object[] gcData = new object[2];
+            gcData[1] = tcs;
+            continuation.Next = new Continuation
+            {
+                Resume = &ResumeTaskCompletionSource<T>,
+                GCData = gcData,
+            };
+
+            object headContinuation = Unsafe.Unbox<Continuation>(state.SentinelContinuation!).Next!;
+            state.Notifier!.OnCompleted(() => DispatchContinuations(headContinuation));
+            return tcs.Task;
+        }
+
+        private static object? ResumeTaskCompletionSource<T>(object boxedContinuation, Exception? exception)
+        {
+            ref Continuation continuation = ref Unsafe.Unbox<Continuation>(boxedContinuation);
+            var tcs = (TaskCompletionSource<T>)continuation.GCData![1];
+            if (exception == null)
+            {
+                tcs.SetResult((T)continuation.GCData![0]);
+            }
+            else
+            {
+                tcs.SetException(exception);
+            }
+
+            return null;
+        }
+
+        private static unsafe void DispatchContinuations(object? boxedContinuation)
+        {
+            Exception? exToPropagate = null;
+            do
+            {
+                ref Continuation continuation = ref Unsafe.Unbox<Continuation>(boxedContinuation!);
+                object? newContinuation = null;
+                try
+                {
+                    newContinuation = continuation.Resume(boxedContinuation!, exToPropagate);
+                }
+                catch (Exception ex)
+                {
+                    exToPropagate = ex;
+                }
+
+                if (newContinuation != null)
+                {
+                    Unsafe.Unbox<Continuation>(newContinuation).Next = continuation.Next;
+
+                    ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+                    object headContinuation = Unsafe.Unbox<Continuation>(state.SentinelContinuation!).Next!;
+                    state.Notifier!.OnCompleted(() => DispatchContinuations(headContinuation));
+                    return;
+                }
+
+                boxedContinuation = continuation.Next;
+            } while (boxedContinuation != null);
+        }
     }
+
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
     [NonVersionable] // This only applies to field layout
@@ -670,10 +748,10 @@ namespace System.Runtime.CompilerServices
 
     internal unsafe struct Continuation
     {
-        public object Next;
-        public delegate*<ref Continuation, Exception, object> Resume;
+        public object? Next;
+        public delegate*<object, Exception?, object?> Resume;
         public uint State;
-        public byte[] Data;
-        public object GCData;
+        public byte[]? Data;
+        public object[]? GCData;
     }
 }

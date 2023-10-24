@@ -5168,6 +5168,8 @@ void LinearScan::allocateRegisters()
                 }
                 clearRegBusyUntilKill(regRecord->regNum);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, regRecord->regNum));
+                if (currentRefPosition.busyUntilNextKill)
+                    setRegBusyUntilKill(regRecord->regNum, regRecord->registerType);
                 continue;
             }
         }
