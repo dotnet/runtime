@@ -167,6 +167,22 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				lambda ();
 			}
 
+			[ExpectedWarning ("IL2026", "--TestLambdaWithRUCLdftn--")]
+			[ExpectedWarning ("IL3002", "--TestLambdaWithRUCLdftn--", ProducedBy = Tool.NativeAot | Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", "--TestLambdaWithRUCLdftn--", ProducedBy = Tool.NativeAot | Tool.Analyzer)]
+			static void TestLambdaWithRUCLdftn ()
+			{
+				var lambda =
+				[RequiresUnreferencedCode ("--TestLambdaWithRUCLdftn--")]
+				[RequiresAssemblyFiles ("--TestLambdaWithRUCLdftn--")]
+				[RequiresDynamicCode ("--TestLambdaWithRUCLdftn--")]
+				() => {
+					var _ = new Action (TypeWithMethodWithRequires.MethodWithRequires);
+					var _2 = new Action<Type> (TypeWithMethodWithRequires.MethodWithAnnotations);
+				};
+				lambda ();
+			}
+
 			[RequiresUnreferencedCode ("--TestLambdaInMethodWithRUC--")]
 			[RequiresAssemblyFiles ("--TestLambdaInMethodWithRUC--")]
 			[RequiresDynamicCode ("--TestLambdaInMethodWithRUC--")]
@@ -186,6 +202,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				TestLambda ();
 				TestLambdaWithRUC ();
+				TestLambdaWithRUCLdftn ();
 				TestLambdaInMethodWithRUC ();
 			}
 		}

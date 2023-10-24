@@ -271,6 +271,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var _ = new Action<Type> (AnnotatedMethodParameters.MethodWithSingleAnnotatedParameter);
 			}
 
+			[RequiresUnreferencedCode ("test")]
+			static void LdftnSuppressedByRequiresUnreferencedCode ()
+			{
+				var _ = new Action<Type> (AnnotatedMethodParameters.MethodWithSingleAnnotatedParameter);
+			}
+
 			[ExpectedWarning ("IL2111")]
 			static void 
 			LdftnOnLambda ()
@@ -322,6 +328,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
+			[ExpectedWarning ("IL2026", "LdftnSuppressedByRequiresUnreferencedCode", "test")]
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
@@ -335,6 +342,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
+			[ExpectedWarning ("IL2026", "LdftnSuppressedByRequiresUnreferencedCode", "test")]
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
@@ -364,6 +372,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMembers ();
 				DynamicallyAccessedMembersSuppressedByRUC ();
 				Ldftn ();
+				LdftnSuppressedByRequiresUnreferencedCode ();
 				LdftnOnLambda ();
 				LdftnOnLocalMethod ();
 				LdftnOnLambdaTriggersLamdaAnalysis ();
@@ -883,28 +892,65 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static Action<Type> Property { get; set; }
 
-			[ExpectedWarning ("IL2111", "LocalMethod")]
-			[ExpectedWarning ("IL2111")]
-			public static void Test ()
-			{
-				// Check that the analyzer is able to analyze delegate creation
-				// with various targets, without hitting an assert.
-				UnannotatedDelegate d;
-				d = new UnannotatedDelegate (field);
-				d(typeof(int));
-				d = new UnannotatedDelegate (Property);
-				d(typeof(int));
+			static Action<Type> MethodReturnValue () => null;
 
-				d = new UnannotatedDelegate (
+			static event Action<Type> Event;
+
+			static void TestField ()
+			{
+				var d = new UnannotatedDelegate (field);
+				d(typeof(int));
+			}
+
+			static void TestProperty ()
+			{
+				var d = new UnannotatedDelegate (Property);
+				d(typeof(int));
+			}
+
+			[ExpectedWarning ("IL2111")]
+			static void TestLambda ()
+			{
+				var d = new UnannotatedDelegate (
 					([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) =>
 					{ });
 				d(typeof(int));
-				d = new UnannotatedDelegate (LocalMethod);
+			}
+
+			[ExpectedWarning ("IL2111", "LocalMethod")]
+			static void TestLocalMethod ()
+			{
+				var d = new UnannotatedDelegate (LocalMethod);
 				d(typeof(int));
 
 				void LocalMethod (
 					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
 				{ }
+			}
+
+			static void TestMethodReturnValue ()
+			{
+				var d = new UnannotatedDelegate (MethodReturnValue ());
+				d(typeof(int));
+			}
+
+
+			static void TestEvent ()
+			{
+				var d = new UnannotatedDelegate (Event);
+				d(typeof(int));
+			}
+
+			public static void Test ()
+			{
+				// Check that the analyzer is able to analyze delegate creation
+				// with various targets, without hitting an assert.
+				TestField ();
+				TestProperty ();
+				TestLambda ();
+				TestLocalMethod ();
+				TestMethodReturnValue ();
+				TestEvent ();
 			}
 		}
 

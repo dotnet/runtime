@@ -77,8 +77,10 @@ void Compiler::fgInit()
     genReturnLocal = BAD_VAR_NUM;
 
     /* We haven't reached the global morphing phase */
-    fgGlobalMorph = false;
-    fgModified    = false;
+    fgGlobalMorph     = false;
+    fgGlobalMorphDone = false;
+
+    fgModified = false;
 
 #ifdef DEBUG
     fgSafeBasicBlockCreation = true;
