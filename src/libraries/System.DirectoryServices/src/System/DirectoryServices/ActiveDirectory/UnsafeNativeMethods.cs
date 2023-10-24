@@ -67,17 +67,6 @@ namespace System.DirectoryServices.ActiveDirectory
         DS_NAME_ERROR_TRUST_REFERRAL = 7
     }
 
-    [Flags]
-    internal enum DS_DOMAINTRUST_FLAG
-    {
-        DS_DOMAIN_IN_FOREST = 0x0001,
-        DS_DOMAIN_DIRECT_OUTBOUND = 0x0002,
-        DS_DOMAIN_TREE_ROOT = 0x0004,
-        DS_DOMAIN_PRIMARY = 0x0008,
-        DS_DOMAIN_NATIVE_MODE = 0x0010,
-        DS_DOMAIN_DIRECT_INBOUND = 0x0020
-    }
-
     internal enum LSA_FOREST_TRUST_RECORD_TYPE
     {
         ForestTrustTopLevelName,

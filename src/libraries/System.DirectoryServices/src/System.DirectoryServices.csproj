@@ -265,6 +265,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantInit.cs"
              Link="Common\Interop\Windows\OleAut32\Interop.VariantInit.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DS_DOMAINTRUST_FLAG.cs"
+             Link="Common\Interop\Windows\Netapi32\Interop.DS_DOMAINTRUST_FLAG.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DsEnumerateDomainTrustsW.cs"
              Link="Common\Interop\Windows\Netapi32\Interop.DsEnumerateDomainTrustsW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DsGetDcClose.cs"
