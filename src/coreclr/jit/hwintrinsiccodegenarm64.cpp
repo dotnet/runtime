@@ -509,6 +509,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
+            {
                 unsigned regCount = 0;
                 if (intrin.op2->OperIsFieldList())
                 {
@@ -550,6 +551,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         unreached();
                 }
                 break;
+            }
 
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
