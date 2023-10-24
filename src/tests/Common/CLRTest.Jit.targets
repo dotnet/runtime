@@ -72,20 +72,6 @@ then
 fi
 ]]>
       </IlasmRoundTripBashScript>
-      <BashIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
-if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
-then
-  echo $LAUNCHER $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
-  $LAUNCHER $(InputAssemblyName) "${CLRTestExecutionArguments[@]}"
-  ERRORLEVEL=$?
-  if [ $ERRORLEVEL -ne $CLRTestExpectedExitCode ]
-  then
-    echo END EXECUTION OF IL{D}ASM BINARY - FAILED $ERRORLEVEL vs $CLRTestExpectedExitCode
-    exit 1
-  fi
-fi
-]]>
-      </BashIlrtTestLaunchCmds>
     </PropertyGroup>
   </Target>
 
@@ -120,19 +106,6 @@ IF NOT DEFINED DoLink (
 )
 ]]>
       </IlasmRoundTripBatchScript>
-      <BatchIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
-IF NOT DEFINED DoLink (
-  if defined RunningIlasmRoundTrip (
-    ECHO %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
-    %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
-    IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
-      ECHO END EXECUTION OF IL{D}ASM BINARY - FAILED !ERRORLEVEL! vs %CLRTestExpectedExitCode%
-      Exit /b 1
-    )
-  )
-)
-]]>
-      </BatchIlrtTestLaunchCmds>
     </PropertyGroup>
   </Target>
 
