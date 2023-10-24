@@ -124,6 +124,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/93737", TestPlatforms.Linux)]
         [OuterLoop("Connects to external server")]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on BSD like OSes.")]
         [Theory]
@@ -162,7 +163,7 @@ namespace System.Net.Sockets.Tests
                 // Wait a little so the operation is started.
                 await Task.Delay(Math.Min(msDelay, 1000));
                 msDelay *= 2;
-                Task disposeTask = Task.Run(() => client.Dispose());
+                Task disposeTask = Task.Run(() => client.Close());
 
                 await Task.WhenAny(disposeTask, connectTask).WaitAsync(TimeSpan.FromSeconds(30));
                 await disposeTask;
