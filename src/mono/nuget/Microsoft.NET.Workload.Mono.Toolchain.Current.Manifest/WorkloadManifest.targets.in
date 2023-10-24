@@ -7,8 +7,9 @@
     <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
 
     <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsCurrent>
-    <!-- force net8 to use the current targets until the SDK can target net9 -->
-    <ForceNet8Current Condition="'$(ForceNet8Current)' == ''">true</ForceNet8Current>
+    <!-- force net8 to use the current targets for blazor, which still targets net8 -->
+    <ForceNet8Current Condition="'$(ForceNet8Current)' == '' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</ForceNet8Current>
+    <ForceNet8Current Condition="'$(ForceNet8Current)' == ''">false</ForceNet8Current>
     <TargetsCurrent Condition="'$(ForceNet8Current)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsCurrent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsCurrent)' != 'true'">
