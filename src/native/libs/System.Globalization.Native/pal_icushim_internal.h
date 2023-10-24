@@ -18,11 +18,7 @@
 #if !defined(LOCAL_BUILD)
 #define U_DISABLE_RENAMING 1
 #endif
-#ifdef __OBJC__
-// This code will only be included when compiling Objective-C code
-#import <Foundation/Foundation.h>
-#include <unicode/uidna.h>
-
+#include <unicode/utypes.h>
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
@@ -43,10 +39,9 @@
 // #include <unicode/ures.h>
 // #include <unicode/usearch.h>
 // #include <unicode/utf16.h>
-#include <unicode/utypes.h>
+//#include <unicode/utypes.h>
 // #include <unicode/urename.h>
 // #include <unicode/ustring.h>
-#endif // __OBJC__
 
 #endif
 
