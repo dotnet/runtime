@@ -28,10 +28,10 @@
 #include "RhConfig.h"
 #include "RhVolatile.h"
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
 #include <signal.h>
 #include <sys/mman.h>
-#endif
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
 
 #ifndef DACCESS_COMPILE
 
@@ -287,9 +287,9 @@ void Thread::Construct()
     if (StressLog::StressLogOn(~0u, 0))
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
 #endif // STRESS_LOG
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
     EnsureSignalAlternateStack();
-#endif // TARGET_UNIX
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
 
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
@@ -306,7 +306,7 @@ void Thread::Construct()
     ASSERT(m_interruptedContext == NULL);
 }
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
 void Thread::FreeSignalAlternateStack()
 {
     void *altstack = m_alternateStack;
@@ -387,7 +387,7 @@ bool Thread::EnsureSignalAlternateStack()
 
     return (st == 0);
 }
-#endif // TARGET_UNIX
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
 
 bool Thread::IsInitialized()
 {
@@ -453,9 +453,9 @@ void Thread::Destroy()
     }
 #endif //FEATURE_SUSPEND_REDIRECTION
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
     FreeSignalAlternateStack();
-#endif
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 }
