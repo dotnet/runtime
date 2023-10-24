@@ -77,6 +77,5 @@
     <Compile Include="..\NumberFormatInfo\NumberFormatInfoTests.cs" />
     <Compile Include="..\NumberFormatInfo\NumberFormatInfoValidateParseStyle.cs" />
     <Compile Include="..\System\Globalization\TextInfoTests.cs" />
-    <!-- <Compile Include="..\System\Globalization\RegionInfoTests.cs" /> -->
   </ItemGroup>
 </Project>
