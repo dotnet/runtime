@@ -90,7 +90,6 @@ namespace System.Net.Security
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
-            //ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             return HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);

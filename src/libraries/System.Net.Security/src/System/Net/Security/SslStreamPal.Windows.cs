@@ -174,7 +174,6 @@ namespace System.Net.Security
 
             token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
 
-
             if (!sslAuthenticationOptions.AllowTlsResume && newContext && context != null)
             {
                 var securityBuffer = new SecurityBuffer(s_sessionTokenBuffer, SecurityBufferType.SECBUFFER_TOKEN);
@@ -187,13 +186,11 @@ namespace System.Net.Security
 
                 if (result.ErrorCode != SecurityStatusPalErrorCode.OK)
                 {
-
                     token.Status = result;
                 }
             }
 
             return token;
-
         }
 
         public static ProtocolToken Renegotiate(

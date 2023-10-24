@@ -478,6 +478,11 @@ namespace System.Net.Security
                             }
                             outToken.Size = outUnmanagedBuffer.cbBuffer;
 
+                            // In some cases schannel may not process all the given data.
+                            // and it will return them back as SECBUFFER_EXTRA, expecting caller to
+                            // feed them in again. Since we don't have good way how to flow the input back,
+                            // we will try it again as separate call and we will return combined output from first and second try.
+                            // That makes processing of outBuffer somewhat complicated.
                             if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                             {
                                 // OS function did not use all provided data and turned EMPTY to EXTRA

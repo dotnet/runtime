@@ -203,8 +203,9 @@ namespace System.Net.Security
                 {
                     await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                     await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
-                    token.ReleasePayload();
                 }
+
+                token.ReleasePayload();
 
                 if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
                 {
@@ -217,7 +218,6 @@ namespace System.Net.Security
                     throw SslStreamPal.GetException(token.Status);
                 }
 
-
                 do
                 {
                     int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
@@ -227,8 +227,8 @@ namespace System.Net.Security
                     {
                         await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
-                        token.ReleasePayload();
                     }
+                    token.ReleasePayload();
                 }
                 while (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
@@ -242,6 +242,7 @@ namespace System.Net.Security
                 }
 
                 token.ReleasePayload();
+
                 _nestedRead = StreamNotInUse;
                 _nestedWrite = StreamNotInUse;
                 _isRenego = false;
@@ -279,9 +280,9 @@ namespace System.Net.Security
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                         if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Log.SentFrame(this, token.Payload);
-
-                        token.ReleasePayload();
                     }
+
+                    token.ReleasePayload();
 
                     if (token.Failed)
                     {
@@ -596,9 +597,7 @@ namespace System.Net.Security
             ProtocolToken token;
             while (true)
             {
-                //status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
                 token = EncryptData(buffer);
-
                 // TryAgain should be rare, when renegotiation happens exactly when we want to write.
                 if (token.Status.ErrorCode != SecurityStatusPalErrorCode.TryAgain)
                 {

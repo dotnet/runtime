@@ -1355,6 +1355,7 @@ namespace System.Net.Security
 
         internal void ReleasePayload()
         {
+            Debug.Assert(Payload != null || Size == 0);
             if (Payload != null)
             {
                 if (RentBuffer)
