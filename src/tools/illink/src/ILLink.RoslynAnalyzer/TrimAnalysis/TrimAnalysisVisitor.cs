@@ -142,7 +142,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (TryGetConstantValue (fieldRef, out var constValue))
 				return constValue;
 
-			return GetFieldTargetValue (fieldRef.Field);
+			return GetFieldTargetValue (fieldRef.Field, fieldRef);
 		}
 
 		public override MultiValue VisitTypeOf (ITypeOfOperation typeOfOperation, StateValue state)
@@ -185,8 +185,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// - method calls
 		// - value returned from a method
 
-		public override MultiValue GetFieldTargetValue (IFieldSymbol field)
+		public override MultiValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation)
 		{
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisFieldAccessPattern (field, fieldReferenceOperation, OwningSymbol)
+			);
+
 			return field.Type.IsTypeInterestingForDataflow () ? new FieldValue (field) : TopValue;
 		}
 
@@ -204,7 +208,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// annotated with DAMT.
 			TrimAnalysisPatterns.Add (
 				// This will copy the values if necessary
-				new TrimAnalysisAssignmentPattern (source, target, operation),
+				new TrimAnalysisAssignmentPattern (source, target, operation, OwningSymbol),
 				isReturnValue: false
 			);
 		}
@@ -307,17 +311,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				var returnParameter = new MethodReturnValue (method);
 
 				TrimAnalysisPatterns.Add (
-					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation),
+					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation, OwningSymbol),
 					isReturnValue: true
 				);
 			}
 		}
 
-		public override MultiValue HandleDelegateCreation (IMethodSymbol method, MultiValue instance, IOperation operation)
+		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation)
 		{
 			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
 				method,
-				instance,
 				operation,
 				OwningSymbol
 			));

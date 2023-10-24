@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
@@ -26,6 +27,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			: base (context, operationBlock)
 		{
 			TrimAnalysisPatterns = new TrimAnalysisPatternStore (Lattice.Lattice.ValueLattice);
+		}
+
+		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext dataFlowAnalyzerContext)
+		{
+			return TrimAnalysisPatterns.CollectDiagnostics (dataFlowAnalyzerContext);
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (

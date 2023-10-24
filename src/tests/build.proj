@@ -542,7 +542,7 @@
   <Target Name="RestorePackage">
     <PropertyGroup>
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
-      <DotnetRestoreCommand>"$(DotNetTool)" restore -r $(PackageRID) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
+      <DotnetRestoreCommand>"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>

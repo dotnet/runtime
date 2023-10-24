@@ -864,7 +864,7 @@ private:
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
 
-            call->SetIsGuarded();
+            INDEBUG(call->SetIsGuarded());
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
@@ -889,7 +889,7 @@ private:
                 call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
                 call->gtCallMethHnd = methodHnd = inlineInfo->guardedMethodHandle;
                 call->gtCallType                = CT_USER_FUNC;
-                call->gtCallMoreFlags |= GTF_CALL_M_DEVIRTUALIZED;
+                INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
                 call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
                 // TODO-GDV: To support R2R we need to get the entry point
                 // here. We should unify with the tail of impDevirtualizeCall.
@@ -915,6 +915,21 @@ private:
             // So above code should succeed in devirtualizing.
             //
             assert(!call->IsVirtual() && !call->IsDelegateInvoke());
+
+            // If this call is in tail position, see if we've created a recursive tail call
+            // candidate...
+            //
+            if (call->CanTailCall() && compiler->gtIsRecursiveCall(methodHnd))
+            {
+                compiler->setMethodHasRecursiveTailcall();
+                block->bbFlags |= BBF_RECURSIVE_TAILCALL;
+                JITDUMP("[%06u] is a recursive call in tail position\n", compiler->dspTreeID(call));
+            }
+            else
+            {
+                JITDUMP("[%06u] is%s in tail position and is%s recursive\n", compiler->dspTreeID(call),
+                        call->CanTailCall() ? "" : " not", compiler->gtIsRecursiveCall(methodHnd) ? "" : " not");
+            }
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
@@ -1042,7 +1057,7 @@ private:
 
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
 
-            call->SetIsGuarded();
+            INDEBUG(call->SetIsGuarded());
 
             JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
 

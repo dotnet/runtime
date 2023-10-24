@@ -8685,67 +8685,65 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We rule out inlinees with explicit tail calls in fgMakeBasicBlocks.
                     assert((prefixFlags & PREFIX_TAILCALL_EXPLICIT) == 0);
                 }
-                else
+#ifdef DEBUG
+                else if (compTailCallStress())
                 {
-                    if (compTailCallStress())
+                    // Have we created a new BB after the "call" instruction in fgMakeBasicBlocks()?
+                    // Tail call stress only recognizes call+ret patterns and forces them to be
+                    // explicit tail prefixed calls.  Also fgMakeBasicBlocks() under tail call stress
+                    // doesn't import 'ret' opcode following the call into the basic block containing
+                    // the call instead imports it to a new basic block.  Note that fgMakeBasicBlocks()
+                    // is already checking that there is an opcode following call and hence it is
+                    // safe here to read next opcode without bounds check.
+                    newBBcreatedForTailcallStress =
+                        impOpcodeIsCallOpcode(opcode) && // Current opcode is a CALL, (not a CEE_NEWOBJ). So, don't
+                                                         // make it jump to RET.
+                        (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET; // Next opcode is a CEE_RET
+
+                    bool hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT);
+                    if (newBBcreatedForTailcallStress && !hasTailPrefix)
                     {
-                        // Have we created a new BB after the "call" instruction in fgMakeBasicBlocks()?
-                        // Tail call stress only recognizes call+ret patterns and forces them to be
-                        // explicit tail prefixed calls.  Also fgMakeBasicBlocks() under tail call stress
-                        // doesn't import 'ret' opcode following the call into the basic block containing
-                        // the call instead imports it to a new basic block.  Note that fgMakeBasicBlocks()
-                        // is already checking that there is an opcode following call and hence it is
-                        // safe here to read next opcode without bounds check.
-                        newBBcreatedForTailcallStress =
-                            impOpcodeIsCallOpcode(opcode) && // Current opcode is a CALL, (not a CEE_NEWOBJ). So, don't
-                                                             // make it jump to RET.
-                            (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET; // Next opcode is a CEE_RET
+                        // Do a more detailed evaluation of legality
+                        const bool passedConstraintCheck =
+                            verCheckTailCallConstraint(opcode, &resolvedToken,
+                                                       constraintCall ? &constrainedResolvedToken : nullptr);
 
-                        bool hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT);
-                        if (newBBcreatedForTailcallStress && !hasTailPrefix)
+                        // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
+                        // patchpoints.
+                        //
+                        const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                                        (JitConfig.TC_OnStackReplacement() > 0) &&
+                                                        compCanHavePatchpoints();
+                        if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
                         {
-                            // Do a more detailed evaluation of legality
-                            const bool passedConstraintCheck =
-                                verCheckTailCallConstraint(opcode, &resolvedToken,
-                                                           constraintCall ? &constrainedResolvedToken : nullptr);
-
-                            // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
-                            // patchpoints.
-                            //
-                            const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                                            (JitConfig.TC_OnStackReplacement() > 0) &&
-                                                            compCanHavePatchpoints();
-                            if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
+                            // Now check with the runtime
+                            CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
+                            bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
+                                             (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
+                            CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
+                            if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
+                                                              hasTailPrefix)) // Is it legal to do tailcall?
                             {
-                                // Now check with the runtime
-                                CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
-                                bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
-                                                 (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
-                                CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
-                                if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
-                                                                  hasTailPrefix)) // Is it legal to do tailcall?
-                                {
-                                    // Stress the tailcall.
-                                    JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
-                                    prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
-                                    prefixFlags |= PREFIX_TAILCALL_STRESS;
-                                }
-                                else
-                                {
-                                    // Runtime disallows this tail call
-                                    JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
-                                    passedStressModeValidation = false;
-                                }
+                                // Stress the tailcall.
+                                JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
+                                prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
                             }
                             else
                             {
-                                // Constraints disallow this tail call
-                                JITDUMP(" (Tailcall stress: constraint check failed)");
+                                // Runtime disallows this tail call
+                                JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
                                 passedStressModeValidation = false;
                             }
                         }
+                        else
+                        {
+                            // Constraints disallow this tail call
+                            JITDUMP(" (Tailcall stress: constraint check failed)");
+                            passedStressModeValidation = false;
+                        }
                     }
                 }
+#endif
 
                 // This is split up to avoid goto flow warnings.
                 bool isRecursive;
