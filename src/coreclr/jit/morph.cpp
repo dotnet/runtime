@@ -317,11 +317,20 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // One optimized (combined) cast here
-                    tree = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
+                    tree = gtNewCastNode(TYP_FLOAT, innerOper, false, TYP_FLOAT);
                     return fgMorphTree(tree);
                 }
             }
         }
+    }
+    if ( srcType == TYP_DOUBLE && dstType == TYP_ULONG && compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    {
+        GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
+        tbl->gtSimdVal.i32[0] = 0x08000000;
+        GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, tbl, gtNewIconNode(0),
+                                                    NI_AVX512F_FixupScalar, CORINFO_TYPE_DOUBLE, 16);
+        tree = gtNewCastNode(TYP_ULONG, retNode, false, TYP_ULONG);
+        return fgMorphTree(tree);
     }
 #endif // TARGET_AMD64
 
@@ -336,7 +345,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #elif defined(TARGET_AMD64)
             // Amd64: src = float, dst = uint64 or overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
-            && (tree->gtOverflow() || (dstType == TYP_ULONG))
+            && (tree->gtOverflow() || ((dstType == TYP_ULONG) && !compOpportunisticallyDependsOn(InstructionSet_AVX512F)))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
@@ -389,6 +398,10 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #endif // !TARGET_AMD64
 
                     case TYP_ULONG:
+#ifdef TARGET_AMD64
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                            return nullptr;
+#endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
                     default:
                         unreached();

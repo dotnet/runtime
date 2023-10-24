@@ -843,7 +843,7 @@ void Lowering::LowerCast(GenTree* tree)
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
-        noway_assert(castToType != TYP_ULONG);
+        assert(castToType != TYP_ULONG || comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
     }
     else if (srcType == TYP_UINT)
     {

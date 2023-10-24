@@ -2385,6 +2385,8 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
                     return ins_Move_Extend(TYP_FLOAT, false);
                 case TYP_DOUBLE:
                     return INS_cvtss2sd;
+                case TYP_ULONG:
+                    return INS_vcvttss2usi64;
                 default:
                     unreached();
             }
@@ -2401,6 +2403,8 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
                     return INS_cvtsd2ss;
                 case TYP_DOUBLE:
                     return ins_Move_Extend(TYP_DOUBLE, false);
+                case TYP_ULONG:
+                    return INS_vcvttsd2usi64;
                 default:
                     unreached();
             }
