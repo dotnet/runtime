@@ -1747,52 +1747,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_AdvSimd_StoreVector64x2:
         case NI_AdvSimd_Arm64_StoreVector128x2:
-        case NI_AdvSimd_StoreSelectedScalar:
-        case NI_AdvSimd_Arm64_StoreSelectedScalar:
         {
             assert(retType == TYP_VOID);
+            assert(sig->numArgs == 2);
 
-            CORINFO_ARG_LIST_HANDLE arg1                = sig->args;
-            CORINFO_ARG_LIST_HANDLE arg2                = info.compCompHnd->getArgNext(arg1);
-            var_types               argType             = TYP_UNKNOWN;
-            CORINFO_CLASS_HANDLE    argClass            = NO_CLASS_HANDLE;
-            const bool              isSingleStructStore = sig->numArgs == 3;
-
-            if (isSingleStructStore)
-            {
-                CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
-                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-                op3     = impPopStack().val;
-            }
-            else
-            {
-                assert(sig->numArgs == 2);
-            }
-
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
             argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                 = impPopStack().val;
             unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
-
-            if (fieldCount > 1 &&
-                ((intrinsic == NI_AdvSimd_StoreSelectedScalar) || (intrinsic == NI_AdvSimd_Arm64_StoreSelectedScalar)))
-            {
-                // StoreSelectedScalar that stores 2/3/4 vectors
-                CORINFO_CLASS_HANDLE structType;
-                unsigned int         sizeBytes   = 0;
-                CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(argClass, 0);
-                CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &structType);
-                simdBaseJitType                  = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
-                if (simdBaseJitType == CORINFO_TYPE_UNDEF) // the argument is not a vector
-                {
-                    CORINFO_CLASS_HANDLE tmpClass;
-                    simdBaseJitType = strip(info.compCompHnd->getArgType(sig, arg2, &tmpClass));
-
-                    if (simdBaseJitType == CORINFO_TYPE_PTR)
-                    {
-                        simdBaseJitType = info.compCompHnd->getChildType(argClass, &tmpClass);
-                    }
-                }
-            }
 
             if (op2->TypeGet() == TYP_STRUCT)
             {
@@ -1800,8 +1765,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (!op2->OperIs(GT_LCL_VAR))
                 {
-                    unsigned tmp =
-                        lvaGrabTemp(true DEBUGARG(isSingleStructStore ? "StoreSelectedScalarN" : "StoreVectorN"));
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreVectorN"));
 
                     impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
                     op2 = gtNewLclvNode(tmp, argType);
@@ -1822,14 +1786,57 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            if (isSingleStructStore)
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AdvSimd_StoreSelectedScalar:
+        case NI_AdvSimd_Arm64_StoreSelectedScalar:
+        {
+            assert(retType == TYP_VOID);
+            assert(sig->numArgs == 3);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3                 = impPopStack().val;
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2                 = impPopStack().val;
+            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
+
+            if (op2->TypeGet() == TYP_STRUCT)
             {
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                info.compNeedsConsecutiveRegisters = true;
+
+                if (!op2->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreSelectedScalarN"));
+
+                    impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
+                    op2 = gtNewLclvNode(tmp, argType);
+                }
+                op2 = gtConvertTableOpToFieldList(op2, fieldCount);
             }
-            else
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
+            if (op1->OperIs(GT_CAST))
             {
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op1 = op1->gtGetOp1();
+                }
             }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 

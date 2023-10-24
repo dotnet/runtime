@@ -512,7 +512,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
         }
 
-        assert(ins != INS_invalid);
+        if (!(intrin.id == NI_AdvSimd_StoreSelectedScalar || intrin.id == NI_AdvSimd_Arm64_StoreSelectedScalar))
+        {
+            assert(ins != INS_invalid);
+        }
 
         switch (intrin.id)
         {
@@ -825,6 +828,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 switch (regCount)
                 {
+                    case 1:
+                        ins = INS_st1;
+                        break;
                     case 2:
                         ins = INS_st2;
                         break;
@@ -835,9 +841,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         ins = INS_st4;
                         break;
                     default:
-                        assert(regCount == 1);
-                        assert(ins == INS_st1);
-                        break;
+                        unreached();
                 }
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);

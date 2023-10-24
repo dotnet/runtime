@@ -1182,12 +1182,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         immOp = impStackTop(1).val;
         assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp));
     }
-    else if (intrinsic == NI_AdvSimd_StoreSelectedScalar || intrinsic == NI_AdvSimd_Arm64_StoreSelectedScalar)
-    {
-        assert(sig->numArgs == 3);
-        immOp = impStackTop().val;
-        assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp));
-    }
     else if (intrinsic == NI_AdvSimd_Arm64_InsertSelectedScalar)
     {
         // InsertSelectedScalar intrinsic has two immediate operands.
