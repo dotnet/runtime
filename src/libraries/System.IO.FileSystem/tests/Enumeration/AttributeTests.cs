@@ -32,7 +32,7 @@ namespace System.IO.Tests.Enumeration
 
             protected override bool ContinueOnError(int error)
             {
-                Assert.False(true, $"Should not have errored {error}");
+                Assert.Fail($"Should not have errored {error}");
                 return false;
             }
 

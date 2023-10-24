@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -44,9 +45,10 @@ unsafe partial class GenericsNative
     }
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

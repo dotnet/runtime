@@ -545,7 +545,9 @@ namespace System.Threading.Tasks.Tests
                 if (typeof(T).GetTypeInfo().IsValueType)
                     Assert.Equal(expected.Result, actual.Result);
                 else
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                     Assert.Same((object)expected.Result, (object)actual.Result);
+#pragma warning restore xUnit2005
             }
         }
 
@@ -573,7 +575,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 task.GetAwaiter().GetResult();
-                Assert.False(true, "Canceled task should have thrown from GetResult");
+                Assert.Fail("Canceled task should have thrown from GetResult");
                 return default(CancellationToken);
             }
             catch (OperationCanceledException oce)

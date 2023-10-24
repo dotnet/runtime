@@ -9,17 +9,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public abstract record MemberSpec
     {
-        public MemberSpec(ISymbol member)
+        public MemberSpec(ISymbol member, TypeRef typeRef)
         {
             Debug.Assert(member is IPropertySymbol or IParameterSymbol);
             Name = member.Name;
             DefaultValueExpr = "default";
+            TypeRef = typeRef;
         }
 
         public string Name { get; }
         public string DefaultValueExpr { get; protected set; }
 
-        public required TypeRef TypeRef { get; init; }
+        public TypeRef TypeRef { get; }
         public required string ConfigurationKeyName { get; init; }
 
         public abstract bool CanGet { get; }

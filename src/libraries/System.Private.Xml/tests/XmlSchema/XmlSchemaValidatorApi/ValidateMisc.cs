@@ -180,7 +180,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 Schema2 = ss.Reprocess(Schema);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (ArgumentException e)
             {
@@ -244,7 +244,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ss.Reprocess(Schema);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (ArgumentException e)
             {
@@ -326,7 +326,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ss.Reprocess(Schema);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (ArgumentException e)
             {
@@ -390,7 +390,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ss.Reprocess(schema);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (ArgumentException e)
             {
@@ -467,7 +467,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ss.Reprocess(Schema);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaException e)
             {
@@ -478,7 +478,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ss.Compile();
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaException e)
             {
@@ -489,7 +489,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ValidateWithSchemaInfo(ss);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaValidationException e)
             {
@@ -521,7 +521,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ss.Reprocess(Schema1);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaException e)
             {
@@ -532,7 +532,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ss.Compile();
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaException e)
             {
@@ -543,7 +543,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 ValidateWithSchemaInfo(ss);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaValidationException e)
             {
@@ -570,7 +570,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 Schema1 = ss.Add(Schema);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaException e)
             {
@@ -637,7 +637,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 _output.WriteLine(e.Message);
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //TFS_469828
@@ -669,7 +669,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 try
                 {
                     while (xmlReader.Read()) ;
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 catch (XmlSchemaValidationException e)
                 {

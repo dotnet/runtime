@@ -51,10 +51,7 @@ namespace System.Net.Http
                         MetricsHandler metricsHandler = new MetricsHandler(handler, _nativeMeterFactory, out _);
 
                         // Ensure a single handler is used for all requests.
-                        if (Interlocked.CompareExchange(ref _nativeMetricsHandler, metricsHandler, null) != null)
-                        {
-                            handler.Dispose();
-                        }
+                        Interlocked.CompareExchange(ref _nativeMetricsHandler, metricsHandler, null);
                     }
 
                     return _nativeMetricsHandler;
@@ -87,7 +84,7 @@ namespace System.Net.Http
 
                 if (IsNativeHandlerEnabled)
                 {
-                    _nativeHandler!.Dispose();
+                    Handler.Dispose();
                 }
                 else
                 {

@@ -1,3 +1,6 @@
+# Required for StaticICULinking
+cmake_minimum_required(VERSION 3.10..3.20)
+
 project(System.Globalization.Native C)
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
@@ -129,7 +132,7 @@ if (GEN_SHARED_LIB)
 
     target_link_libraries(System.Globalization.Native
         PRIVATE
-        dl
+        ${CMAKE_DL_LIBS}
         ${FOUNDATION}
     )
 
@@ -148,7 +151,7 @@ endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"
