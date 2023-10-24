@@ -97,12 +97,16 @@ namespace Wasm.Build.Tests
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
 
-            IsWorkloadWithMultiThreadingForDefaultFramework = IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
-            if (IsWorkload && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
+            if (IsWorkload && EnvironmentVariables.IsRunningOnCI)
             {
-                throw new Exception(
-                            "Expected the multithreading runtime pack to be available when running on CI." +
-                            $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
+                string workerJsPath = Path.Combine(GetRuntimeNativeDir(BuildTestBase.DefaultTargetFramework, RuntimeVariant.MultiThreaded), "dotnet.native.worker.js");
+                if (!File.Exists(workerJsPath))
+                {
+                    throw new Exception(
+                                $"Expected the multithreading runtime pack (tfm={BuildTestBase.DefaultTargetFramework} to be available when running on CI." +
+                                $" {nameof(IsRunningOnCI)} is true but could not find {workerJsPath} .");
+                }
+                IsWorkloadWithMultiThreadingForDefaultFramework = true;
             }
 
             UseWebcil = EnvironmentVariables.UseWebcil;
@@ -160,8 +164,6 @@ namespace Wasm.Build.Tests
                     GetRuntimePackVersion(tfm));
         public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
-        public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)
-            => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.worker.js"));
 
         protected static string s_directoryBuildPropsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.targets"));
