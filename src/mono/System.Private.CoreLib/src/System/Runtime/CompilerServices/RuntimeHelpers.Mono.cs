@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.CompilerServices
 {
