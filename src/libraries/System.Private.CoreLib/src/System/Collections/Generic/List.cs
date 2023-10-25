@@ -450,19 +450,7 @@ namespace System.Collections.Generic
         /// <param name="capacity">The minimum capacity to ensure.</param>
         internal void Grow(int capacity)
         {
-            Debug.Assert(_items.Length < capacity);
-
-            int newCapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
-
-            // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-            // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
-
-            // If the computed capacity is still less than specified, set to the original argument.
-            // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
-            if (newCapacity < capacity) newCapacity = capacity;
-
-            Capacity = newCapacity;
+            Capacity = GetNewCapacity(capacity);
         }
 
         /// <summary>
@@ -477,19 +465,16 @@ namespace System.Collections.Generic
         {
             Debug.Assert(insertionCount > 0);
 
-            int capacity = checked(_size + insertionCount);
-
-            // Follow the same logic from Grow(capacity)
-
-            int newCapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
-            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
-            if (newCapacity < capacity) newCapacity = capacity;
+            int requiredCapacity = checked(_size + insertionCount);
+            int newCapacity = GetNewCapacity(requiredCapacity);
 
             // Inline and adapt logic from set_Capacity
 
             T[] newItems = new T[newCapacity];
             if (indexToInsert != 0)
+            {
                 Array.Copy(_items, newItems, length: indexToInsert);
+            }
 
             if (_size != indexToInsert)
             {
@@ -497,6 +482,24 @@ namespace System.Collections.Generic
             }
 
             _items = newItems;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int GetNewCapacity(int capacity)
+        {
+            Debug.Assert(_items.Length < capacity);
+
+            int newCapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
+
+            // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
+
+            // If the computed capacity is still less than specified, set to the original argument.
+            // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
+            if (newCapacity < capacity) newCapacity = capacity;
+
+            return newCapacity;
         }
 
         public bool Exists(Predicate<T> match)
