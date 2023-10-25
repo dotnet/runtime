@@ -3625,6 +3625,66 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) => StorePairScalarNonTemporal(address, value1, value2);
 
             /// <summary>
+            /// void vst1q_lane_u8 (uint8_t * ptr, uint8x16_t val, const int lane)
+            ///   A64: ST1 { Vt.B }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(byte* address, Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_f64 (float64_t * ptr, float64x2_t val, const int lane)
+            ///   A64: ST1 { Vt.D }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(double* address, Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_s16 (int16_t * ptr, int16x8_t val, const int lane)
+            ///   A64: ST1 { Vt.H }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(short* address, Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_s32 (int32_t * ptr, int32x4_t val, const int lane)
+            ///   A64: ST1 { Vt.S }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(int* address, Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_s64 (int64_t * ptr, int64x2_t val, const int lane)
+            ///   A64: ST1 { Vt.D }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(long* address, Vector128<long> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_s8 (int8_t * ptr, int8x16_t val, const int lane)
+            ///   A64: ST1 { Vt.B }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(sbyte* address, Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_f32 (float32_t * ptr, float32x4_t val, const int lane)
+            ///   A64: ST1 { Vt.S }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(float* address, Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_u16 (uint16_t * ptr, uint16x8_t val, const int lane)
+            ///   A64: ST1 { Vt.H }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(ushort* address, Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_u32 (uint32_t * ptr, uint32x4_t val, const int lane)
+            ///   A64: ST1 { Vt.S }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(uint* address, Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
+            /// void vst1q_lane_u64 (uint64_t * ptr, uint64x2_t val, const int lane)
+            ///   A64: ST1 { Vt.D }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
+
+            /// <summary>
             /// void vst2_lane_s8 (int8_t * ptr, int8x16x2_t val, const int lane)
             ///   A64: ST2 { Vt.16B, Vt+1.16B }[index], [Xn]
             /// </summary>
@@ -15349,76 +15409,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ST1 { Vt.S }[index], [Xn]
         /// </summary>
         public static unsafe void StoreSelectedScalar(uint* address, Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_u8 (uint8_t * ptr, uint8x16_t val, const int lane)
-        ///   A32: VST1.8 { Dd[index] }, [Rn]
-        ///   A64: ST1 { Vt.B }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(byte* address, Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_f64 (float64_t * ptr, float64x2_t val, const int lane)
-        ///   A32: VSTR.64 Dd, [Rn]
-        ///   A64: ST1 { Vt.D }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(double* address, Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_s16 (int16_t * ptr, int16x8_t val, const int lane)
-        ///   A32: VST1.16 { Dd[index] }, [Rn]
-        ///   A64: ST1 { Vt.H }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(short* address, Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_s32 (int32_t * ptr, int32x4_t val, const int lane)
-        ///   A32: VST1.32 { Dd[index] }, [Rn]
-        ///   A64: ST1 { Vt.S }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(int* address, Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_s64 (int64_t * ptr, int64x2_t val, const int lane)
-        ///   A32: VSTR.64 Dd, [Rn]
-        ///   A64: ST1 { Vt.D }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(long* address, Vector128<long> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_s8 (int8_t * ptr, int8x16_t val, const int lane)
-        ///   A32: VST1.8 { Dd[index] }, [Rn]
-        ///   A64: ST1 { Vt.B }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(sbyte* address, Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_f32 (float32_t * ptr, float32x4_t val, const int lane)
-        ///   A32: VST1.32 { Dd[index] }, [Rn]
-        ///   A64: ST1 { Vt.S }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(float* address, Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_u16 (uint16_t * ptr, uint16x8_t val, const int lane)
-        ///   A32: VST1.16 { Dd[index] }, [Rn]
-        ///   A64: ST1 { Vt.H }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(ushort* address, Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_u32 (uint32_t * ptr, uint32x4_t val, const int lane)
-        ///   A32: VST1.32 { Dd[index] }, [Rn]
-        ///   A64: ST1 { Vt.S }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(uint* address, Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, value, index);
-
-        /// <summary>
-        /// void vst1q_lane_u64 (uint64_t * ptr, uint64x2_t val, const int lane)
-        ///   A32: VSTR.64 Dd, [Rn]
-        ///   A64: ST1 { Vt.D }[index], [Xn]
-        /// </summary>
-        public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
 
         /// <summary>
         ///   A64: ST2 { Vt.8B, Vt+1.8B }[index], [Xn]
