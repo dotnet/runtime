@@ -1143,11 +1143,12 @@ namespace System.Xml.Schema
         Error:
             return exception;
 
-            // TODO: Replace with https://github.com/dotnet/runtime/issues/76478 once available
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
-                Justification = "Array type is always present as it is passed in as a parameter.")]
             static Array ToArray(ArrayList values, Type arrayType)
-                => values.ToArray(arrayType.GetElementType()!);
+            {
+                Array result = Array.CreateInstanceFromArrayType(arrayType, values.Count);
+                values.CopyTo(result);
+                return result;
+            }
         }
     }
 

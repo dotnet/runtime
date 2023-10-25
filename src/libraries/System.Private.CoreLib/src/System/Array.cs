@@ -207,6 +207,20 @@ namespace System
             return CreateInstance(elementType, intLengths);
         }
 
+        /// <summary>
+        /// Creates a one-dimensional <see cref="Array"/> of the specified array type and length, with zero-based indexing.
+        /// </summary>
+        /// <param name="arrayType">The type of the array (not of the array element type).</param>
+        /// <param name="length">The size of the <see cref="Array"/> to create.</param>
+        /// <returns>A new one-dimensional <see cref="Array"/> of the specified <see cref="Type"/> with the specified length, using zero-based indexing.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="arrayType"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="arrayType"/> is not an array type.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="arrayType"/> is not one-dimensional array.</para>
+        /// </exception>
+        /// <remarks>When possible, this method should be preferred over <see cref="CreateInstance(Type, int)"/>, as it allows
+        /// to avoid a call to <see cref="Type.GetElementType"/> method (improved performance and AOT-friendliness).</remarks>
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int length)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -220,6 +234,25 @@ namespace System
             return InternalCreateFromArrayType(arrayType, 1, &length, null);
         }
 
+        /// <summary>
+        /// Creates a multidimensional <see cref="Array"/> of the specified <see cref="Type"/> and dimension lengths, with zero-based indexing.
+        /// </summary>
+        /// <param name="arrayType">The type of the array (not of the array element type).</param>
+        /// <param name="lengths">The dimension lengths, specified in an array of 32-bit integers.</param>
+        /// <returns>A new multidimensional <see cref="Array"/> of the specified Type with the specified length for each dimension, using zero-based indexing.</returns>
+        /// <exception cref="ArgumentNullException"><para><paramref name="arrayType"/> is null.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="lengths"/> is null.</para>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">Any value in <paramref name="lengths"/> is less than zero.</exception>
+        /// <exception cref="ArgumentException"><para>The lengths array is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="arrayType"/> is not an array type.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="arrayType"/> rank does not match <paramref name="lengths"/> length.</para>
+        /// </exception>
+        /// <remarks>When possible, this method should be preferred over <see cref="CreateInstance(Type, int[])"/>, as it allows
+        /// to avoid a call to <see cref="Type.GetElementType"/> method (improved performance and AOT-friendliness).</remarks>
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, params int[] lengths)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -244,6 +277,31 @@ namespace System
                 return InternalCreateFromArrayType(arrayType, lengths.Length, pLengths, null);
         }
 
+        /// <summary>
+        /// Creates a multidimensional <see cref="Array"/> of the specified <see cref="Type"/> and dimension lengths, with the specified lower bounds.
+        /// </summary>
+        /// <param name="arrayType">The type of the array (not of the array element type).</param>
+        /// <param name="lengths">The dimension lengths, specified in an array of 32-bit integers.</param>
+        /// <param name="lowerBounds">A one-dimensional array that contains the lower bound (starting index) of each dimension of the <see cref="Array"/> to create.</param>
+        /// <returns>A new multidimensional <see cref="Array"/> of the specified <see cref="Type"/> with the specified length and lower bound for each dimension.</returns>
+        /// <exception cref="ArgumentNullException"><para><paramref name="arrayType"/> is null.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="lengths"/> is null.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="lowerBounds"/> is null.</para>
+        /// </exception>
+        /// <exception cref="ArgumentException"><para>The <paramref name="lengths"/> and <paramref name="lowerBounds"/> arrays do not contain the same number of elements.</para>
+        /// <para>-or-</para>
+        /// <para>The lengths array is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="arrayType"/> is not an array type.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="arrayType"/> rank does not match <paramref name="lengths"/> length.</para>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">Any value in <paramref name="lengths"/> is less than zero.</exception>
+        /// <exception cref="PlatformNotSupportedException">AOT: any value in <paramref name="lowerBounds"/> is different than zero.</exception>
+        /// <remarks>When possible, this method should be preferred over <see cref="CreateInstance(Type, int[], int[])"/>, as it allows
+        /// to avoid a call to <see cref="Type.GetElementType"/> method (improved performance and AOT-friendliness).</remarks>
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int[] lengths, int[] lowerBounds)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
