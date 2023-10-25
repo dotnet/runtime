@@ -1963,9 +1963,7 @@ namespace System.Text
         public StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count)
         {
             ArgumentException.ThrowIfNullOrEmpty(oldValue);
-            
-            ReadOnlySpan<char> newValueSpan = (newValue == null) ? ReadOnlySpan<char>.Empty : newValue.AsSpan();
-            return Replace(oldValue.AsSpan(), newValueSpan, startIndex, count);
+            return Replace(oldValue.AsSpan(), newValue.AsSpan(), startIndex, count);
         }
 
         /// <summary>
