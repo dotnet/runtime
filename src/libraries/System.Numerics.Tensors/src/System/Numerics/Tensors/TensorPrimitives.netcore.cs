@@ -2546,7 +2546,7 @@ namespace System.Numerics.Tensors
                     nanMask = ~Vector512.Equals(current, current);
                     if (nanMask != Vector512<float>.Zero)
                     {
-                        return current.GetElement(i + IndexOfFirstMatch(nanMask));
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2564,11 +2564,7 @@ namespace System.Numerics.Tensors
                         return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = ElementWiseSelect(
-                        CreateRemainderMaskSingleVector512(x.Length - i),
-                        result,
-                        TMinMaxOperator.Invoke(result, current)
-                    );
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -2603,7 +2599,7 @@ namespace System.Numerics.Tensors
                     nanMask = ~Vector256.Equals(current, current);
                     if (nanMask != Vector256<float>.Zero)
                     {
-                        return current.GetElement(i + IndexOfFirstMatch(nanMask));
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2621,11 +2617,7 @@ namespace System.Numerics.Tensors
                         return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = ElementWiseSelect(
-                        CreateRemainderMaskSingleVector256(x.Length - i),
-                        result,
-                        TMinMaxOperator.Invoke(result, current)
-                    );
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -2659,7 +2651,7 @@ namespace System.Numerics.Tensors
                     nanMask = ~Vector128.Equals(current, current);
                     if (nanMask != Vector128<float>.Zero)
                     {
-                        return current.GetElement(i + IndexOfFirstMatch(nanMask));
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2677,11 +2669,7 @@ namespace System.Numerics.Tensors
                         return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = ElementWiseSelect(
-                        CreateRemainderMaskSingleVector128(x.Length - i),
-                        result,
-                        TMinMaxOperator.Invoke(result, current)
-                    );
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
