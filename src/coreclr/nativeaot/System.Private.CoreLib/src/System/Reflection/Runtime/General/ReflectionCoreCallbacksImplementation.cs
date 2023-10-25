@@ -217,7 +217,7 @@ namespace System.Reflection.Runtime.General
             if (!(method is RuntimeMethodInfo runtimeMethodInfo))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
 
-            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.ToRuntimeTypeInfo();
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.GetRuntimeTypeInfo();
 
             if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
@@ -243,7 +243,7 @@ namespace System.Reflection.Runtime.General
             if (!(type is RuntimeType runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.ToRuntimeTypeInfo();
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.GetRuntimeTypeInfo();
             if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate);
 
@@ -273,12 +273,12 @@ namespace System.Reflection.Runtime.General
             if (!(target is RuntimeType runtimeContainingType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
-            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.ToRuntimeTypeInfo();
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.GetRuntimeTypeInfo();
 
             if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate);
 
-            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateTypeInfo, runtimeContainingType.ToRuntimeTypeInfo(), method, isStatic: true, ignoreCase: ignoreCase);
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateTypeInfo, runtimeContainingType.GetRuntimeTypeInfo(), method, isStatic: true, ignoreCase: ignoreCase);
             if (runtimeMethodInfo == null)
             {
                 if (throwOnBindFailure)

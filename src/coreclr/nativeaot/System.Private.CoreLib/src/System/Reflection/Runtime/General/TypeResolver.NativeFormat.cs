@@ -221,13 +221,13 @@ namespace System.Reflection.Runtime.General
                 exception = RuntimeAssemblyInfo.TryGetRuntimeAssembly(assemblyName, out runtimeAssembly);
                 if (exception != null)
                     return null;
-                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false).ToRuntimeTypeInfo();
+                Type runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false);
                 if (runtimeType == null)
                 {
                     exception = Helpers.CreateTypeLoadException(fullName, assemblyName.FullName);
                     return null;
                 }
-                return runtimeType;
+                return runtimeType.ToRuntimeTypeInfo();
             }
 
             throw new BadImageFormatException(); // Expected TypeReference parent to be typeRef, typeDef or namespaceRef.
