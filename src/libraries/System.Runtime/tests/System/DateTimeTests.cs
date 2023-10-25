@@ -2002,7 +2002,7 @@ namespace System.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
         public static void Parse_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {
@@ -2462,7 +2462,7 @@ namespace System.Tests
             yield return new object[] { new DateTime(2023, 04, 17, 10, 46, 12, DateTimeKind.Utc), "HH\u202dmm", null, "10\u202d46" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
         public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {

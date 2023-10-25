@@ -374,6 +374,7 @@ namespace System
         public static bool IsNotHybridGlobalizationOnOSX => !IsHybridGlobalizationOnOSX;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
         public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
+        public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser && IsNotHybridGlobalizationOnOSX;
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !(IsIcuGlobalization || IsHybridGlobalizationOnOSX);
 
         public static bool IsSubstAvailable
