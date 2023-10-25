@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   crossBuild: false
   framework: 'net9.0'
-  isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
@@ -23,18 +22,13 @@ parameters:
   testScope: ''
   pool: ''
   runTests: false
-  pgoType: ''
   SuperPmiCollect: false
 
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
-      ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
-        displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if in(parameters.framework, 'allConfigurations', 'net48') }}:
-        displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
-        name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       container: ${{ parameters.container }}
@@ -49,6 +43,7 @@ jobs:
       variables:
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
 
         - _buildScriptFileName: build
 
@@ -79,13 +74,6 @@ jobs:
           - _finalFrameworkArg: -framework ${{ parameters.framework }}
           - _extraHelixArguments: /p:BuildTargetFramework=${{ parameters.framework }}
 
-        - ${{ if eq(parameters.framework, 'allConfigurations') }}:
-          - _finalFrameworkArg: -allConfigurations
-          - _testModeArg: /p:TestAssemblies=false /p:TestPackages=true
-
-        - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
-          - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
-
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
@@ -98,7 +86,7 @@ jobs:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           - ${{ if eq(parameters.runTests, true) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.pgoType }}_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - ${{ if eq(parameters.testDisplayName, '') }}:
             - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
@@ -136,5 +124,23 @@ jobs:
             artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
             artifactName: '$(_runtimeArtifactName)'
             displayName: '$(runtimeFlavorName) build drop'
+
+      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - task: Bash@3
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+              arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - task: PowerShell@2
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+              arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
       - ${{ parameters.steps }}

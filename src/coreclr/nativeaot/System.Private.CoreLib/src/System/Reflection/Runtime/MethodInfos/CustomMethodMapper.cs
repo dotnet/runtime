@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (!map.TryGetValue(methodBase.MetadataDefinitionMethod, out CustomMethodInvokerAction? action))
                 return null;
 
-            ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
             Type[] parameterTypes = new Type[parameterInfos.Length];
             for (int i = 0; i < parameterInfos.Length; i++)
             {

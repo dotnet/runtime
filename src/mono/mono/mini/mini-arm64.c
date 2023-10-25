@@ -26,12 +26,14 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-hwcap.h>
+#include <mono/utils/mono-bitutils.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal-shared.h>
 #include "llvm-intrinsics-types.h"
 
 #include "interp/interp.h"
+
 
 // The following defines are here to support the inclusion of simd-arm64.h
 #define EXPAND(x) x
@@ -93,6 +95,13 @@ MONO_DISABLE_WARNING(4334)
 #define FP_TEMP_REG ARMREG_D16
 #define FP_TEMP_REG2 ARMREG_D17
 #define NEON_TMP_REG FP_TEMP_REG
+
+#define STPX_MIN_OFFSET (-512)
+#define STPX_MAX_OFFSET (504)
+#define STPW_MIN_OFFSET (-256)
+#define STPW_MAX_OFFSET (252)
+
+#define IS_VALID_STPX_OFFSET(o) ((o) >= STPX_MIN_OFFSET && (o) <= (STPX_MAX_OFFSET))
 
 #define THUNK_SIZE (4 * 4)
 
@@ -613,12 +622,60 @@ emit_subx_sp_imm (guint8 *code, int imm)
 	return code;
 }
 
+static gboolean
+encode_arm64_logical_imm (guint64 imm, gboolean islong, int* pn, int* pimms, int* pimmr)
+{
+	if (imm == 0)
+		return FALSE;
+
+	// We recongnize the pattern 0*1+0* for 32- and 64-bit immediates.
+	// TODO: expand to full specification
+	int lsb_zero, band_one, msb_zero;
+	if (islong) {
+		lsb_zero = mono_tzcnt64 (imm);
+		msb_zero = mono_lzcnt64 (imm);
+		band_one = 64 - lsb_zero - msb_zero;
+
+		if (band_one == 0 || band_one == 64) 
+			return FALSE;
+	} else {
+		lsb_zero = mono_tzcnt32 ((guint32)imm);
+		msb_zero = mono_lzcnt32 ((guint32)imm);
+		band_one = 32 - lsb_zero - msb_zero;
+
+		if (band_one == 0 || band_one == 32) 
+			return FALSE;
+	}
+
+	guint64 expected_imm = ((1 << band_one) - 1) << lsb_zero;
+	if(imm != expected_imm)
+		return FALSE;
+
+	int imms = band_one - 1;
+	int immr = lsb_zero == 0 ? 0 : (msb_zero + band_one);
+	int n = islong ? 1 : 0;
+
+	g_assert (imms >= 0 && imms < 128);
+	g_assert (immr >= 0 && immr < 128);
+
+	if (pn) *pn = n;
+	if (pimms) *pimms = imms;
+	if (pimmr) *pimmr = immr;
+
+	return TRUE;
+}
+
+
 static WARN_UNUSED_RESULT guint8*
 emit_andw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_andw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_andw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_andw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -626,9 +683,13 @@ emit_andw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_andx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_andx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_andx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_andx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -636,9 +697,13 @@ emit_andx_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_orrw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_orrw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_orrw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_orrw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -646,9 +711,13 @@ emit_orrw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_orrx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_orrx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_orrx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_orrx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -656,9 +725,13 @@ emit_orrx_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_eorw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_eorw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_eorw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_eorw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -666,9 +739,13 @@ emit_eorw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_eorx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_eorx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_eorx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_eorx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -2218,6 +2295,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		switch (t->type) {
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_I8:
@@ -2314,6 +2392,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		*(gpointer*)ret = (gpointer)res;
 		break;
 	case MONO_TYPE_I1:
@@ -3546,8 +3625,16 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 		/* Load the destination address */
 		g_assert (loc && loc->opcode == OP_REGOFFSET);
 		code = emit_ldrx (code, ARMREG_LR, loc->inst_basereg, GTMREG_TO_INT (loc->inst_offset));
-		for (i = 0; i < cinfo->ret.nregs; ++i)
-			arm_strx (code, cinfo->ret.reg + i, ARMREG_LR, i * 8);
+		for (i = 0; i < cinfo->ret.nregs; ++i) {
+			int offs = i * 8;
+			// emit a pair of str as one stp
+			if (i+1 < cinfo->ret.nregs && IS_VALID_STPX_OFFSET (offs)) {
+				arm_stpx (code, cinfo->ret.reg + i, cinfo->ret.reg + i + 1, ARMREG_LR, offs);
+				i++;
+			} else {
+				arm_strx (code, cinfo->ret.reg + i, ARMREG_LR, offs);
+			}
+		}
 		break;
 	}
 	case ArgHFA: {
@@ -3917,14 +4004,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_XZERO:
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			arm_neon_movi_b (code, get_vector_size_macro (ins), dreg, 0);
 			break;
 		case OP_XONES:
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
-			arm_neon_not_16b (code, dreg, dreg);
+			arm_neon_movi_b (code, get_vector_size_macro (ins), dreg, 0xff);
 			break;
 		case OP_XEXTRACT: 
-			code = emit_xextract (code, VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
+			code = emit_xextract (code, (ins->inst_c1 == 8) ? VREG_LOW : VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
 			break;
 		case OP_STOREX_MEMBASE:
 			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
@@ -3966,7 +4052,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_EXPAND_R4:
 		case OP_EXPAND_R8: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
+			if (ins->opcode == OP_EXPAND_R8)
+				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
+			else
+				arm_neon_fdup_e (code, get_vector_size_macro (ins), t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_EXTRACT_I1:
@@ -3989,6 +4078,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				// Technically, this broadcasts element #inst_c0 to all dest XREG elements; whereas it should
 				// set the FREG to the said element. Since FREG and XREG pool is the same on arm64 and the rest
 				// of the F/XREG is ignored in FREG mode, this operation remains valid.
+				// FIXME: pass VREG_LOW for 64-bit vectors
 				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, GTMREG_TO_UINT32 (ins->inst_c0));
 			}
 			break;
@@ -4043,18 +4133,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
+			int idx_to = GTMREG_TO_UINT32 (ins->inst_c0) & 0xff;
+			int idx_from = GTMREG_TO_UINT32 (ins->inst_c0) >> 8;
 			if (dreg != sreg1) {
 				if (dreg != sreg2) {
 					arm_neon_mov (code, dreg, sreg1);
-					arm_neon_ins_e(code, t, dreg, sreg2, GTMREG_TO_UINT32 (ins->inst_c0), 0);
+					arm_neon_ins_e(code, t, dreg, sreg2, idx_to, idx_from);
 				} else {
 					arm_neon_mov (code, NEON_TMP_REG, sreg1);
-					arm_neon_ins_e(code, t, NEON_TMP_REG, sreg2, GTMREG_TO_UINT32 (ins->inst_c0), 0);
+					arm_neon_ins_e(code, t, NEON_TMP_REG, sreg2, idx_to, idx_from);
 					arm_neon_mov (code, dreg, NEON_TMP_REG);
 				}
 			} else {
 				g_assert (dreg != sreg2);
-				arm_neon_ins_e(code, t, dreg, sreg2, GTMREG_TO_UINT32 (ins->inst_c0), 0);
+				arm_neon_ins_e(code, t, dreg, sreg2, idx_to, idx_from);
 			}
 			break;
 		}
@@ -4083,17 +4175,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_ARM64_XADDV: {
 			switch (ins->inst_c0) {
-			case INTRINS_AARCH64_ADV_SIMD_FADDV:
+			case INTRINS_AARCH64_ADV_SIMD_FADDV: {
+				const int width = get_vector_size_macro (ins);
 				if (ins->inst_c1 == MONO_TYPE_R8) {
 					arm_neon_faddp (code, VREG_FULL, TYPE_F64, dreg, sreg1, sreg1);
 				} else if (ins->inst_c1 == MONO_TYPE_R4) {
-					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, sreg1, sreg1);
-					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, dreg, dreg);
+					arm_neon_faddp (code, width, TYPE_F32, dreg, sreg1, sreg1);
+					if (width == VREG_FULL)
+						arm_neon_faddp (code, width, TYPE_F32, dreg, dreg, dreg);
 				} else {
 					g_assert_not_reached ();
 				} 
 				break;
-
+			}
 			case INTRINS_AARCH64_ADV_SIMD_UADDV:
 			case INTRINS_AARCH64_ADV_SIMD_SADDV: 
 				if (get_type_size_macro (ins->inst_c1) == TYPE_I64) 
@@ -4109,7 +4203,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CREATE_SCALAR_INT: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			arm_neon_movi_b (code, VREG_FULL, dreg, 0);
 			arm_neon_ins_g(code, t, dreg, sreg1, 0);
 			break;
 		}
@@ -4124,7 +4218,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 			// Use a temp register for zero op, as sreg1 and dreg share the same register here
-			arm_neon_eor_16b (code, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 			arm_neon_ins_e(code, t, NEON_TMP_REG, sreg1, 0, 0);
 			arm_neon_mov (code, dreg, NEON_TMP_REG);
 			break;
@@ -4159,17 +4253,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XLOWER: {
 			if (dreg == sreg1) {
 				// clean the upper half
-				arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+				arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 				arm_neon_ins_e (code, SIZE_8, dreg, NEON_TMP_REG, 1, 0); 
 			} else {
-				arm_neon_eor (code, VREG_FULL, dreg, dreg, dreg);
+				arm_neon_movi_b (code, VREG_FULL, dreg, 0);
 				arm_neon_mov_8b (code, dreg, sreg1);
 			}
 			break;
 		}
 		case OP_XUPPER:
 			// shift in 64 zeros from the left
-			arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 			arm_neon_ext_16b (code, dreg, sreg1, NEON_TMP_REG, 8);
 			break;
 	
@@ -5677,7 +5771,13 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 			}
 			case ArgVtypeInIRegs:
 				for (part = 0; part < ainfo->nregs; part ++) {
-					code = emit_strx (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + (part * 8)));
+					int offs = GTMREG_TO_INT (ins->inst_offset + (part * 8));
+					if (part + 1 < ainfo->nregs && IS_VALID_STPX_OFFSET (offs)) {
+						arm_stpx (code, ainfo->reg + part, ainfo->reg + part + 1, ins->inst_basereg, offs);
+						part++;
+						continue;
+					}
+					code = emit_strx (code, ainfo->reg + part, ins->inst_basereg, offs);
 				}
 				break;
 			case ArgHFA:
@@ -5714,6 +5814,7 @@ emit_store_regarray (guint8 *code, guint64 regs, int basereg, int offset)
 
 	for (i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
+			// FIXME: use IS_VALID_STPX_OFFSET before doing STPX
 			if (i + 1 < 32 && (regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_stpx (code, i, i + 1, basereg, offset + (i * 8));
 				i++;
@@ -5742,9 +5843,9 @@ emit_load_regarray (guint8 *code, guint64 regs, int basereg, int offset)
 	for (i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
 			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
-				if (offset + (i * 8) < 500)
+				if (IS_VALID_STPX_OFFSET (offset + (i * 8))) {
 					arm_ldpx (code, i, i + 1, basereg, offset + (i * 8));
-				else {
+				} else {
 					code = emit_ldrx (code, i, basereg, offset + (i * 8));
 					code = emit_ldrx (code, i + 1, basereg, offset + ((i + 1) * 8));
 				}
@@ -5773,6 +5874,7 @@ emit_store_regset (guint8 *code, guint64 regs, int basereg, int offset)
 	pos = 0;
 	for (i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
+			// FIXME: check IS_VALID_STPX_OFFSET before doing STPX
 			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_stpx (code, i, i + 1, basereg, offset + (pos * 8));
 				i++;
@@ -5849,7 +5951,7 @@ emit_store_regset_cfa (MonoCompile *cfg, guint8 *code, guint64 regs, int basereg
 		nregs = 1;
 		if (regs & (1 << i)) {
 			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
-				if (offset < 256) {
+				if (IS_VALID_STPX_OFFSET (offset + (pos * 8))) {
 					arm_stpx (code, i, i + 1, basereg, offset + (pos * 8));
 				} else {
 					code = emit_strx (code, i, basereg, offset + (pos * 8));
@@ -6063,8 +6165,15 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	case ArgVtypeInIRegs: {
 		MonoInst *ins = cfg->ret;
 
-		for (i = 0; i < cinfo->ret.nregs; ++i)
-			code = emit_ldrx (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + (i * 8)));
+		for (i = 0; i < cinfo->ret.nregs; ++i) {
+			int offs = GTMREG_TO_INT (ins->inst_offset + (i * 8));
+			if (i + 1 < cinfo->ret.nregs && IS_VALID_STPX_OFFSET (offs)) {
+				arm_ldpx (code, cinfo->ret.reg + i, cinfo->ret.reg + i + 1, ins->inst_basereg, offs);
+				i++;
+			} else { 
+				code = emit_ldrx (code, cinfo->ret.reg + i, ins->inst_basereg, offs);
+			}
+		}
 		break;
 	}
 	case ArgHFA: {

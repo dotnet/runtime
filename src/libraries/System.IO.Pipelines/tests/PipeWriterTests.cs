@@ -47,7 +47,7 @@ namespace System.IO.Pipelines.Tests
             try
             {
                 writer.Write(new Span<byte>(array, offset, length));
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (Exception ex)
             {
@@ -294,6 +294,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91547", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task CompleteWithLargeWriteThrows()
         {
             var completeDelay = TimeSpan.FromMilliseconds(10);

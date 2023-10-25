@@ -253,7 +253,7 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldDef">
-        private static ReadOnlySpan&lt;byte&gt; <xsl:call-template name="DefaultValueField"/> =&gt; new byte[] { <xsl:value-of select="@defaultDerInit"/> };
+        private static ReadOnlySpan&lt;byte&gt; <xsl:call-template name="DefaultValueField"/> =&gt; [<xsl:value-of select="@defaultDerInit"/>];
 </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldVerify">

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, UnloadabilityIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/37237 -->
     <GCStressIncompatible>true</GCStressIncompatible>

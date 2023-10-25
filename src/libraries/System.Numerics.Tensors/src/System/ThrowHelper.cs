@@ -14,5 +14,13 @@ namespace System
         [DoesNotReturn]
         public static void ThrowArgument_SpansMustHaveSameLength() =>
             throw new ArgumentException(SR.Argument_SpansMustHaveSameLength);
+
+        [DoesNotReturn]
+        public static void ThrowArgument_SpansMustBeNonEmpty() =>
+            throw new ArgumentException(SR.Argument_SpansMustBeNonEmpty);
+
+        [DoesNotReturn]
+        public static void ThrowArgument_InputAndDestinationSpanMustNotOverlap() =>
+            throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
     }
 }

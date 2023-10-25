@@ -319,6 +319,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReflectedTypeNode(type);
             });
 
+            _notReadOnlyFields = new NodeCache<FieldDesc, NotReadOnlyFieldNode>(field =>
+            {
+                return new NotReadOnlyFieldNode(field);
+            });
+
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
             {
                 return new GenericStaticBaseInfoNode(type);
@@ -355,12 +360,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
             {
-                return new FrozenStringNode(data, Target);
+                return new FrozenStringNode(data, TypeSystemContext);
             });
 
-            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, FrozenObjectNode>(key =>
+            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode>(key =>
             {
-                return new FrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
+                return new SerializedFrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -458,12 +463,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
             {
-                return new TypeMetadataNode(type, includeCustomAttributes: true);
-            });
-
-            _typesWithMetadataWithoutCustomAttributes = new NodeCache<MetadataType, TypeMetadataNode>(type =>
-            {
-                return new TypeMetadataNode(type, includeCustomAttributes: false);
+                return new TypeMetadataNode(type);
             });
 
             _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
@@ -1003,6 +1003,12 @@ namespace ILCompiler.DependencyAnalysis
             return _reflectedTypes.GetOrAdd(type);
         }
 
+        private NodeCache<FieldDesc, NotReadOnlyFieldNode> _notReadOnlyFields;
+        public NotReadOnlyFieldNode NotReadOnlyField(FieldDesc field)
+        {
+            return _notReadOnlyFields.GetOrAdd(field);
+        }
+
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
         internal GenericStaticBaseInfoNode GenericStaticBaseInfo(MetadataType type)
         {
@@ -1161,16 +1167,6 @@ namespace ILCompiler.DependencyAnalysis
             return _typesWithMetadata.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, TypeMetadataNode> _typesWithMetadataWithoutCustomAttributes;
-
-        internal TypeMetadataNode TypeMetadataWithoutCustomAttributes(MetadataType type)
-        {
-            // These are only meaningful for UsageBasedMetadataManager. We should not have them
-            // in the dependency graph otherwise.
-            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
-            return _typesWithMetadataWithoutCustomAttributes.GetOrAdd(type);
-        }
-
         private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithMetadata;
 
         internal MethodMetadataNode MethodMetadata(MethodDesc method)
@@ -1224,9 +1220,9 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
-        private NodeCache<SerializedFrozenObjectKey, FrozenObjectNode> _frozenObjectNodes;
+        private NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode> _frozenObjectNodes;
 
-        public FrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
+        public SerializedFrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
             return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
         }

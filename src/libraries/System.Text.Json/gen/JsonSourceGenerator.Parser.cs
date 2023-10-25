@@ -60,12 +60,7 @@ namespace System.Text.Json.SourceGeneration
                     location = _contextClassLocation;
                 }
 
-                Diagnostics.Add(new DiagnosticInfo
-                {
-                    Descriptor = descriptor,
-                    Location = location.GetTrimmedLocation(),
-                    MessageArgs = messageArgs ?? Array.Empty<object?>(),
-                });
+                Diagnostics.Add(DiagnosticInfo.Create(descriptor, location, messageArgs));
             }
 
             public Parser(KnownTypeSymbols knownSymbols)
@@ -590,19 +585,17 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 var typeRef = new TypeRef(type);
-                string typeInfoPropertyName = typeToGenerate.TypeInfoPropertyName ??
-                    type.ToIdentifierCompatibleSubstring(useUniqueName: false /* We leave identifier name conflicts to users, as codified below. */);
+                string typeInfoPropertyName = typeToGenerate.TypeInfoPropertyName ?? GetTypeInfoPropertyName(type);
 
                 if (classType is ClassType.TypeUnsupportedBySourceGen)
                 {
                     ReportDiagnostic(DiagnosticDescriptors.TypeNotSupported, typeToGenerate.AttributeLocation ?? typeToGenerate.Location, type.ToDisplayString());
                 }
 
-                // Workaround for https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
                 if (!_generatedContextAndTypeNames.Add((contextType.Name, typeInfoPropertyName)))
                 {
                     // The context name/property name combination will result in a conflict in generated types.
-                    // This is by design; we leave conflict resolution to the user.
+                    // Workaround for https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
                     ReportDiagnostic(DiagnosticDescriptors.DuplicateTypeName, typeToGenerate.AttributeLocation ?? _contextClassLocation, typeInfoPropertyName);
                     classType = ClassType.TypeUnsupportedBySourceGen;
                 }
@@ -870,7 +863,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 Location? typeLocation = typeToGenerate.Location;
                 List<PropertyGenerationSpec> properties = new();
-                PropertyHierarchyResolutionState state = new();
+                PropertyHierarchyResolutionState state = new(options);
                 hasExtensionDataProperty = false;
 
                 // Walk the type hierarchy starting from the current type up to the base type(s)
@@ -977,11 +970,10 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private ref struct PropertyHierarchyResolutionState
+            private ref struct PropertyHierarchyResolutionState(SourceGenerationOptionsSpec? options)
             {
-                public PropertyHierarchyResolutionState() { }
                 public readonly List<int> Properties = new();
-                public Dictionary<string, (PropertyGenerationSpec, ISymbol, int index)> AddedProperties = new();
+                public Dictionary<string, (PropertyGenerationSpec, ISymbol, int index)> AddedProperties = new(options?.PropertyNameCaseInsensitive == true ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
                 public Dictionary<string, ISymbol>? IgnoredMembers;
                 public bool IsPropertyOrderSpecified;
                 public bool HasInvalidConfigurationForFastPath;
@@ -1590,6 +1582,37 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return null;
+            }
+
+            private static string GetTypeInfoPropertyName(ITypeSymbol type)
+            {
+                if (type is IArrayTypeSymbol arrayType)
+                {
+                    int rank = arrayType.Rank;
+                    string suffix = rank == 1 ? "Array" : $"Array{rank}D"; // Array, Array2D, Array3D, ...
+                    return GetTypeInfoPropertyName(arrayType.ElementType) + suffix;
+                }
+
+                if (type is not INamedTypeSymbol namedType || !namedType.IsGenericType)
+                {
+                    return type.Name;
+                }
+
+                StringBuilder sb = new();
+
+                string name = namedType.Name;
+
+                sb.Append(name);
+
+                if (namedType.GetAllTypeArgumentsInScope() is List<ITypeSymbol> typeArgsInScope)
+                {
+                    foreach (ITypeSymbol genericArg in typeArgsInScope)
+                    {
+                        sb.Append(GetTypeInfoPropertyName(genericArg));
+                    }
+                }
+
+                return sb.ToString();
             }
 
             private bool TryGetDeserializationConstructor(

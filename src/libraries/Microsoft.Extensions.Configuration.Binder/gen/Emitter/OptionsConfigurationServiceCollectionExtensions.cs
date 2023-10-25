@@ -7,11 +7,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Emitter
         {
-            private bool ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection methods) => (_sourceGenSpec.MethodsToGen_ServiceCollectionExt & methods) != 0;
-
             private void EmitBindingExtensions_IServiceCollection()
             {
-                if (!ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Any))
+                if (!ShouldEmitMethods(MethodsToGen.ServiceCollectionExt_Any))
                 {
                     return;
                 }
@@ -26,26 +24,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 const string defaultNameExpr = "string.Empty";
                 string configParam = $"{Identifier.IConfiguration} {Identifier.config}";
 
-                if (ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Configure_T))
+                if (ShouldEmitMethods(MethodsToGen.ServiceCollectionExt_Configure_T))
                 {
-                    EmitStartMethod(MethodsToGen_Extensions_ServiceCollection.Configure_T, configParam);
+                    EmitStartMethod(MethodsToGen.ServiceCollectionExt_Configure_T, configParam);
                     _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {defaultNameExpr}, {Identifier.config}, {Identifier.configureOptions}: null);");
                     EmitEndBlock();
                 }
 
-                if (ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Configure_T_name))
+                if (ShouldEmitMethods(MethodsToGen.ServiceCollectionExt_Configure_T_name))
                 {
                     EmitStartMethod(
-                        MethodsToGen_Extensions_ServiceCollection.Configure_T_name,
+                        MethodsToGen.ServiceCollectionExt_Configure_T_name,
                         paramList: $"string? {Identifier.name}, " + configParam);
                     _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {Identifier.name}, {Identifier.config}, {Identifier.configureOptions}: null);");
                     EmitEndBlock();
                 }
 
-                if (ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Configure_T_BinderOptions))
+                if (ShouldEmitMethods(MethodsToGen.ServiceCollectionExt_Configure_T_BinderOptions))
                 {
                     EmitStartMethod(
-                        MethodsToGen_Extensions_ServiceCollection.Configure_T_BinderOptions,
+                        MethodsToGen.ServiceCollectionExt_Configure_T_BinderOptions,
                         paramList: configParam + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}");
                     _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {defaultNameExpr}, {Identifier.config}, {Identifier.configureOptions});");
                     EmitEndBlock();
@@ -54,9 +52,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // Core Configure method that the other overloads call.
                 // Like the others, it is public API that could be called directly by users.
                 // So, it is always generated whenever a Configure overload is called.
-                EmitStartMethod(MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions, paramList: $"string? {Identifier.name}, " + configParam + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}");
-                EmitCheckForNullArgument_WithBlankLine(Identifier.services);
-                EmitCheckForNullArgument_WithBlankLine(Identifier.config);
+                EmitStartMethod(MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions, paramList: $"string? {Identifier.name}, " + configParam + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}");
+                EmitCheckForNullArgument_WithBlankLine(Identifier.services, _emitThrowIfNullMethod);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.config, _emitThrowIfNullMethod);
                 _writer.WriteLine($$"""
                     OptionsServiceCollectionExtensions.AddOptions({{Identifier.services}});
                     {{Identifier.services}}.{{Identifier.AddSingleton}}<{{Identifier.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>>(new {{Identifier.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.config}}));
@@ -65,7 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitEndBlock();
             }
 
-            private void EmitStartMethod(MethodsToGen_Extensions_ServiceCollection overload, string paramList)
+            private void EmitStartMethod(MethodsToGen overload, string paramList)
             {
                 paramList = $"this {Identifier.IServiceCollection} {Identifier.services}, {paramList}";
 

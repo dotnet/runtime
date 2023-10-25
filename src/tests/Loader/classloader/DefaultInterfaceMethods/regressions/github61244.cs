@@ -1,6 +1,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // In GH issue 61244 the mono runtime aborted when inflating the default
 // interface method because the context used was from the base interface.
@@ -18,9 +19,10 @@ using System;
 // regression that caused Mono to incorrectly instantiate generic
 // interfaces that appeared in the MethodImpl table
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = new TestClass().DoTest();
         if (result != 100)

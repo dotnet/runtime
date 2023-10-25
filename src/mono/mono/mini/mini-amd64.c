@@ -6770,6 +6770,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XOP: {
+			switch (ins->inst_c0) {
+			case INTRINS_SSE_PAUSE:
+				amd64_pause (code);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_XOP_X_X_X: {
 			switch (ins->inst_c0) {
 			case INTRINS_SSE_PHADDW:
@@ -7661,9 +7672,9 @@ mono_arch_register_lowlevel_calls (void)
 
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
 #if _MSC_VER
-	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, __chkstk, "mono_chkstk_win64", NULL, TRUE, "__chkstk");
+	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, (gconstpointer)__chkstk, "mono_chkstk_win64", NULL, TRUE, "__chkstk");
 #else
-	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, ___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, "___chkstk_ms");
+	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, (gconstpointer)___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, "___chkstk_ms");
 #endif
 #endif
 }

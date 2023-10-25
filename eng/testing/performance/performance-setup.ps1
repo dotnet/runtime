@@ -14,7 +14,7 @@ Param(
     [string] $Kind="micro",
     [switch] $LLVM,
     [switch] $MonoInterpreter,
-    [switch] $MonoAOT, 
+    [switch] $MonoAOT,
     [switch] $Internal,
     [switch] $Compare,
     [string] $MonoDotnet="",
@@ -27,6 +27,7 @@ Param(
     [switch] $PhysicalPromotion,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
+    [switch] $HybridGlobalization,
     [string] $MauiVersion,
     [switch] $UseLocalCommitTime
 )
@@ -100,6 +101,10 @@ if ($iOSNativeAOT) {
     $Configurations += " iOSStripSymbols=$iOSStripSymbols"
 }
 
+if ($HybridGlobalization -eq "True") {
+    $Configurations += " HybridGlobalization=True"
+}
+
 # FIX ME: This is a workaround until we get this from the actual pipeline
 $CleanedBranchName = "main"
 if($Branch.Contains("refs/heads/release"))
@@ -124,7 +129,7 @@ if ($UseLocalCommitTime) {
 
 if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
-    
+
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
@@ -187,8 +192,10 @@ Write-PipelineSetVariable -Name 'UseBaselineCoreRun' -Value "$UseBaselineCoreRun
 Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRepo" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'MonoAOT' -Value "$MonoAOT" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iOSLlvmBuild" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iOSStripSymbols" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'hybridGlobalization' -Value "$HybridGlobalization" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false

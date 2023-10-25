@@ -57,7 +57,7 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
-        private readonly SortedSet<EmbeddedObjectNode> _frozenObjects = new SortedSet<EmbeddedObjectNode>(CompilerComparer.Instance);
+        private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
@@ -293,11 +293,6 @@ namespace ILCompiler
                 _frozenObjects.Add(frozenObj);
             }
 
-            if (obj is FrozenStringNode frozenStr)
-            {
-                _frozenObjects.Add(frozenStr);
-            }
-
             if (obj is GenericStaticBaseInfoNode genericStaticBaseInfo)
             {
                 _typesWithGenericStaticBaseInfo.Add(genericStaticBaseInfo.Type);
@@ -478,13 +473,13 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated EETypes.
         /// </summary>
-        public virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, bool isFullType)
+        public virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
             MetadataCategory category = GetMetadataCategory(type);
 
             if ((category & MetadataCategory.Description) != 0)
             {
-                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, type, isFullType);
+                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, type);
             }
         }
 
@@ -493,7 +488,7 @@ namespace ILCompiler
             // MetadataManagers can override this to provide additional dependencies caused by using a module
         }
 
-        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, bool isFullType)
+        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
@@ -751,7 +746,7 @@ namespace ILCompiler
             return _typeTemplates;
         }
 
-        public IEnumerable<EmbeddedObjectNode> GetFrozenObjects()
+        public IEnumerable<FrozenObjectNode> GetFrozenObjects()
         {
             return _frozenObjects;
         }

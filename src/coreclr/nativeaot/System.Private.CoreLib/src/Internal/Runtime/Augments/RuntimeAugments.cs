@@ -569,11 +569,6 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().HasCctor;
         }
 
-        public static RuntimeTypeHandle RuntimeTypeHandleOf<T>()
-        {
-            return new RuntimeTypeHandle(EETypePtr.EETypePtrOf<T>());
-        }
-
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
         {
             return RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot));
@@ -607,7 +602,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe RuntimeTypeHandle GetFunctionPointerReturnType(RuntimeTypeHandle typeHandle)
         {
-            return new RuntimeTypeHandle(new EETypePtr(typeHandle.ToMethodTable()->FunctionPointerReturnType));
+            return new RuntimeTypeHandle(typeHandle.ToMethodTable()->FunctionPointerReturnType);
         }
 
         public static unsafe int GetFunctionPointerParameterCount(RuntimeTypeHandle typeHandle)
@@ -618,7 +613,7 @@ namespace Internal.Runtime.Augments
         public static unsafe RuntimeTypeHandle GetFunctionPointerParameterType(RuntimeTypeHandle typeHandle, int argumentIndex)
         {
             Debug.Assert(argumentIndex < GetFunctionPointerParameterCount(typeHandle));
-            return new RuntimeTypeHandle(new EETypePtr(typeHandle.ToMethodTable()->FunctionPointerParameters[argumentIndex]));
+            return new RuntimeTypeHandle(typeHandle.ToMethodTable()->FunctionPointerParameters[argumentIndex]);
         }
 
         public static unsafe RuntimeTypeHandle[] GetFunctionPointerParameterTypes(RuntimeTypeHandle typeHandle)
@@ -631,7 +626,7 @@ namespace Internal.Runtime.Augments
             MethodTableList parameters = typeHandle.ToMethodTable()->FunctionPointerParameters;
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = new RuntimeTypeHandle(new EETypePtr(parameters[i]));
+                result[i] = new RuntimeTypeHandle(parameters[i]);
             }
 
             return result;

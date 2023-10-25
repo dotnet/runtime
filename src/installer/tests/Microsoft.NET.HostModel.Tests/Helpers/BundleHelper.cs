@@ -14,7 +14,6 @@ namespace BundleTests.Helpers
 {
     public static class BundleHelper
     {
-        public const string DotnetBundleExtractBaseEnvVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
         public const string CoreServicingEnvVariable = "CORE_SERVICING";
 
         public static string GetHostPath(TestProjectFixture fixture)
@@ -52,44 +51,37 @@ namespace BundleTests.Helpers
             return Path.GetFileNameWithoutExtension(GetAppName(fixture));
         }
 
-        public static string[] GetBundledFiles(TestProjectFixture fixture)
+        public static List<string> GetExtractedFiles(Manifest manifest, BundleOptions bundleOptions)
         {
-            string appBaseName = GetAppBaseName(fixture);
-            return new string[] { $"{appBaseName}.dll", $"{appBaseName}.deps.json", $"{appBaseName}.runtimeconfig.json" };
-        }
-
-        public static string[] GetExtractedFiles(TestProjectFixture fixture, BundleOptions bundleOptions)
-        {
-            switch (bundleOptions & ~BundleOptions.EnableCompression)
+            List<string> expected = new List<string>();
+            foreach (FileEntry file in manifest.Files)
             {
-                case BundleOptions.None:
-                case BundleOptions.BundleOtherFiles:
-                case BundleOptions.BundleSymbolFiles:
-                    throw new ArgumentException($"Bundle option {bundleOptions} doesn't extract any files to disk.");
+                if (!ShouldBeExtracted(file.Type, bundleOptions))
+                    continue;
 
-                case BundleOptions.BundleAllContent:
-                    return Directory.GetFiles(GetPublishPath(fixture))
-                        .Select(f => Path.GetFileName(f))
-                        .Except(GetFilesNeverExtracted(fixture)).ToArray();
-
-                case BundleOptions.BundleNativeBinaries:
-                    return new string[] { Path.GetFileName(fixture.TestProject.CoreClrDll) };
-
-                default:
-                    throw new ArgumentException("Unsupported bundle option.");
+                expected.Add(file.RelativePath);
             }
-        }
 
-        public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
-        {
-            string appBaseName = GetAppBaseName(fixture);
-            return new string[] { $"{appBaseName}",
-                                  $"{appBaseName}.dll",
-                                  $"{appBaseName}.exe",
-                                  $"{appBaseName}.pdb",
-                                  $"{appBaseName}.runtimeconfig.dev.json",
-                                  Path.GetFileName(fixture.TestProject.HostFxrDll),
-                                  Path.GetFileName(fixture.TestProject.HostPolicyDll) };
+            return expected;
+
+            static bool ShouldBeExtracted(FileType type, BundleOptions options)
+            {
+                switch (type)
+                {
+                    case FileType.Assembly:
+                    case FileType.DepsJson:
+                    case FileType.RuntimeConfigJson:
+                        return options.HasFlag(BundleOptions.BundleAllContent);
+                    case FileType.NativeBinary:
+                        return options.HasFlag(BundleOptions.BundleNativeBinaries);
+                    case FileType.Symbols:
+                        return options.HasFlag(BundleOptions.BundleSymbolFiles);
+                    case FileType.Unknown:
+                        return options.HasFlag(BundleOptions.BundleOtherFiles);
+                    default:
+                        return false;
+                }
+            }
         }
 
         public static string GetPublishPath(TestProjectFixture fixture)

@@ -59,6 +59,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void CurrentManagedThreadId_DifferentForActiveThreads()
         {
             var ids = new HashSet<int>();
@@ -470,7 +471,7 @@ namespace System.Tests
             if (attributes == (FileAttributes)(-1))
             {
                 int error = Marshal.GetLastPInvokeError();
-                Assert.False(true, $"error {error} getting attributes for {path}");
+                Assert.Fail($"error {error} getting attributes for {path}");
             }
 
             Assert.True((attributes & FileAttributes.Directory) == FileAttributes.Directory, $"not a directory: {path}");

@@ -25,6 +25,7 @@ struct CallsiteDetails
         BeginInvoke     = 0x01,
         EndInvoke       = 0x02,
         Ctor            = 0x04,
+        HResultReturn   = 0x08,
     };
     INT32 Flags;
 };

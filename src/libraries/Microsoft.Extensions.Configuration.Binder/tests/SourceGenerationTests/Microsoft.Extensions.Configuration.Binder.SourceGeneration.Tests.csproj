@@ -2,9 +2,11 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <!-- Type not supported; property on type not suppported -->
-    <NoWarn>SYSLIB1100,SYSLIB1101</NoWarn>
-    <Features>$(Features);InterceptorsPreview</Features>
+    <!-- Type not supported; property on type not supported -->
+    <NoWarn>$(NoWarn);SYSLIB1100,SYSLIB1101</NoWarn>
+    <!-- Logic not generated for unknown/unsupported type. -->
+    <NoWarn>$(NoWarn);SYSLIB1103,SYSLIB1104</NoWarn>
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
@@ -20,6 +22,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
+    <Compile Include="$(CommonPath)..\tests\SourceGenerators\GeneratorTestHelpers.cs" Link="SourceGenerators\GeneratorTestHelpers.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs" Link="Common\ConfigurationProviderExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs" Link="Common\TestStreamHelpers.cs" />
@@ -43,18 +46,17 @@
     <ProjectReference Include="..\..\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Content Include="Baselines\*.generated.txt;
-                      Baselines\ConfigurationBinder\*.generated.txt;
-                      Baselines\OptionsBuilder\*.generated.txt;
-                      Baselines\ServiceCollection\*.generated.txt">
+  <ItemGroup>
+    <Content Include="Baselines\**\*;">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 
+    <Compile Include="ConfigBindingGenTestDriver.cs" />
     <Compile Include="GeneratorTests.cs" />
     <Compile Include="GeneratorTests.Baselines.cs" />
     <Compile Include="GeneratorTests.Baselines.Options.cs" />
     <Compile Include="GeneratorTests.Helpers.cs" />
+    <Compile Include="GeneratorTests.Incremental.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

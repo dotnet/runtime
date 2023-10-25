@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
         {
-            if (JSHostImplementation.ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference))
+            if (JSHostImplementation.ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
             {
                 reference.TryGetTarget(out JSObject? jsObject);
                 if (shouldAddInflight != 0)
@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             JSObject? res = null;
 
-            if (!JSHostImplementation.ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
+            if (!JSHostImplementation.ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
                 !reference.TryGetTarget(out res) ||
                 res.IsDisposed)
             {
@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
 #pragma warning restore CS0612 // Type or member is obsolete
-                JSHostImplementation.ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
+                JSHostImplementation.ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             if (shouldAddInflight != 0)
             {
