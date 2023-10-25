@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -255,8 +256,8 @@ namespace System.Reflection.Emit.Tests
                 ILGenerator il = methodBuilder.GetILGenerator();
                 LocalBuilder intLocal = il.DeclareLocal(typeof(int));
                 LocalBuilder stringLocal = il.DeclareLocal(typeof(string));
-                LocalBuilder shortLocal = il.DeclareLocal(typeof(short));
-                LocalBuilder int2Local = il.DeclareLocal(typeof(int));
+                LocalBuilder shortLocal = il.DeclareLocal(typeof(short), pinned: true); ;
+                LocalBuilder int2Local = il.DeclareLocal(typeof(int), pinned: false);
                 il.Emit(OpCodes.Ldarg, 1);
                 il.Emit(OpCodes.Stloc_1);
                 il.Emit(OpCodes.Ldstr, "string value");
@@ -285,6 +286,18 @@ namespace System.Reflection.Emit.Tests
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
                 MethodBody body = typeFromDisk.GetMethod("Method1").GetMethodBody();
                 Assert.Equal(4, body.LocalVariables.Count);
+                Assert.Equal(intLocal.LocalIndex, body.LocalVariables[0].LocalIndex);
+                Assert.Equal(intLocal.LocalType.FullName, body.LocalVariables[0].LocalType.FullName);
+                Assert.Equal(intLocal.IsPinned, body.LocalVariables[0].IsPinned);
+                Assert.Equal(stringLocal.LocalIndex, body.LocalVariables[1].LocalIndex);
+                Assert.Equal(stringLocal.LocalType.FullName, body.LocalVariables[1].LocalType.FullName);
+                Assert.Equal(stringLocal.IsPinned, body.LocalVariables[1].IsPinned);
+                Assert.Equal(shortLocal.LocalIndex, body.LocalVariables[2].LocalIndex);
+                Assert.Equal(shortLocal.LocalType.FullName, body.LocalVariables[2].LocalType.FullName);
+                Assert.Equal(shortLocal.IsPinned, body.LocalVariables[2].IsPinned);
+                Assert.Equal(int2Local.LocalIndex, body.LocalVariables[3].LocalIndex);
+                Assert.Equal(int2Local.LocalType.FullName, body.LocalVariables[3].LocalType.FullName);
+                Assert.Equal(int2Local.IsPinned, body.LocalVariables[3].IsPinned);
                 byte[]? bodyBytes = body.GetILAsByteArray();
                 Assert.Equal((byte)OpCodes.Ldarg_1.Value, bodyBytes[0]);
                 Assert.Equal((byte)OpCodes.Stloc_1.Value, bodyBytes[1]);
