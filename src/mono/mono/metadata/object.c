@@ -647,9 +647,9 @@ retry_top:
 				mono_type_initialization_unlock ();
 				goto retry_top;
 			} else if (wait_result == 0) {
-				/* success.. we were signaled that the other thread is done.  Proceed */
+				/* Success: we were signaled that the other thread is done.  Proceed */
 			} else {
-				g_error ("unexpected return value %d from mono_coop_cond_timedwait", wait_result);
+				g_assert_not_reached ();
 			}
 		}
 		mono_type_init_unlock (lock);
