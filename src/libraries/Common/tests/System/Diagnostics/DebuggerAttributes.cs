@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -14,6 +14,8 @@ namespace System.Diagnostics
         public object Instance { get; set; }
         public IEnumerable<PropertyInfo> Properties { get; set; }
     }
+
+    internal record DebuggerDisplayResult(string Value, string Key, string Type);
 
     internal static class DebuggerAttributes
     {
@@ -110,24 +112,61 @@ namespace System.Diagnostics
             return proxyType;
         }
 
-        internal static string ValidateDebuggerDisplayReferences(object obj)
+        private static CustomAttributeData GetDebuggerDisplayAttribute(Type type)
         {
-            // Get the DebuggerDisplayAttribute for obj
-            Type objType = obj.GetType();
             CustomAttributeData[] attrs =
-                objType.GetTypeInfo().CustomAttributes
+                type.GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerDisplayAttribute))
                 .ToArray();
             if (attrs.Length != 1)
             {
-                throw new InvalidOperationException($"Expected one DebuggerDisplayAttribute on {objType}.");
+                throw new InvalidOperationException($"Expected one DebuggerDisplayAttribute on {type}.");
             }
-            CustomAttributeData cad = attrs[0];
+            return attrs[0];
+        }
+
+        internal static DebuggerDisplayResult ValidateFullyDebuggerDisplayReferences(object obj)
+        {
+            CustomAttributeData cad = GetDebuggerDisplayAttribute(obj.GetType());
+
+            // Get the text of the DebuggerDisplayAttribute
+            string attrText = (string)cad.ConstructorArguments[0].Value;
+            string formattedValue = EvaluateDisplayString(attrText, obj);
+
+            string formattedKey = FormatDebuggerDisplayNamedArgument(nameof(DebuggerDisplayAttribute.Name), cad, obj);
+            string formattedType = FormatDebuggerDisplayNamedArgument(nameof(DebuggerDisplayAttribute.Type), cad, obj);
+
+            return new (Value: formattedValue, Key: formattedKey, Type: formattedType);
+        }
+
+        private static string FormatDebuggerDisplayNamedArgument(string argumentName, CustomAttributeData debuggerDisplayAttributeData, object obj)
+        {
+            CustomAttributeNamedArgument namedAttribute = debuggerDisplayAttributeData.NamedArguments.FirstOrDefault(na => na.MemberName == argumentName);
+            if (namedAttribute != default)
+            {
+                var value = (string?)namedAttribute.TypedValue.Value;
+                if (!string.IsNullOrEmpty(value))
+                {
+                    return EvaluateDisplayString(value, obj);
+                }
+            }
+            return "";
+        }
+
+        internal static string ValidateDebuggerDisplayReferences(object obj)
+        {
+            CustomAttributeData cad = GetDebuggerDisplayAttribute(obj.GetType());
 
             // Get the text of the DebuggerDisplayAttribute
             string attrText = (string)cad.ConstructorArguments[0].Value;
 
-            string[] segments = attrText.Split(new[] { '{', '}' });
+            return EvaluateDisplayString(attrText, obj);
+        }
+
+        private static string EvaluateDisplayString(string displayString, object obj)
+        {
+            Type objType = obj.GetType();
+            string[] segments = displayString.Split(['{', '}']);
 
             if (segments.Length % 2 == 0)
             {
