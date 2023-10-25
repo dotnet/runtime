@@ -396,6 +396,8 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             using (DSA dsa = DSAFactory.Create())
             {
+                dsa.ImportParameters(DSATestData.GetDSA1024Params());
+
                 bool result = dsa.TrySignData(
                     "hello"u8,
                     (Span<byte>)null,
