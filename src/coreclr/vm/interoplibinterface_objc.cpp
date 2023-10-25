@@ -33,6 +33,8 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
             && isReferencedCallback != NULL
             && trackedObjectEnteredFinalization != NULL);
 
+    _ASSERTE(!"Artificial assert failure to test dump experience.");
+
     BOOL success = FALSE;
 
     BEGIN_QCALL;
