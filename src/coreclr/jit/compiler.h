@@ -4805,7 +4805,7 @@ public:
     void fgMorphStmts(BasicBlock* block);
     void fgMorphBlocks();
 
-    void fgMergeBlockReturn(BasicBlock* block);
+    bool fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
     void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);

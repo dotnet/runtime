@@ -6089,65 +6089,13 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
     // If this block has a flow successor, make suitable updates.
     //
-    BasicBlock* nextBlock = compCurBB->GetUniqueSucc();
+    BasicBlock* const succBlock = compCurBB->GetUniqueSucc();
 
-    if (nextBlock == nullptr)
+    if (succBlock == nullptr)
     {
         // No unique successor. compCurBB should be a return.
         //
         assert(compCurBB->KindIs(BBJ_RETURN));
-    }
-    else
-    {
-        // Flow no longer reaches nextBlock from here.
-        //
-        fgRemoveRefPred(nextBlock, compCurBB);
-
-        // Adjust profile weights of the successor blocks.
-        //
-        // Note if this is a tail call to loop, further updates
-        // are needed once we install the loop edge.
-        //
-        BasicBlock* curBlock = compCurBB;
-        if (curBlock->hasProfileWeight())
-        {
-            weight_t weightLoss = curBlock->bbWeight;
-
-            while (nextBlock->hasProfileWeight())
-            {
-                // Since we have linear flow we can update the next block weight.
-                //
-                weight_t const nextWeight    = nextBlock->bbWeight;
-                weight_t const newNextWeight = nextWeight - weightLoss;
-
-                // If the math would result in a negative weight then there's
-                // no local repair we can do; just leave things inconsistent.
-                //
-                if (newNextWeight >= 0)
-                {
-                    // Note if we'd already morphed the IR in nextblock we might
-                    // have done something profile sensitive that we should arguably reconsider.
-                    //
-                    JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
-                            nextWeight, newNextWeight);
-
-                    nextBlock->setBBProfileWeight(newNextWeight);
-                }
-                else
-                {
-                    JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
-                            " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
-                            nextBlock->bbNum, nextWeight, compCurBB->bbNum, weightLoss);
-                }
-
-                curBlock  = nextBlock;
-                nextBlock = curBlock->GetUniqueSucc();
-                if (nextBlock == nullptr)
-                {
-                    break;
-                }
-            }
-        }
     }
 
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
@@ -6160,7 +6108,71 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // BBJ_RETURN, but if the call falls through to a ret, and we are doing a
         // tailcall, change it here.
         // (compCurBB may have a jump target, so use SetJumpKind() to avoid nulling it)
-        compCurBB->SetJumpKind(BBJ_RETURN);
+        //
+        // When we use CORINFO_TAILCALL_HELPERs then the call will return.
+        //
+        if (canFastTailCall || tailCallViaJitHelper)
+        {
+            // The call won't return.
+            //
+            if (succBlock != nullptr)
+            {
+                JITDUMP("Flow no longer reaches from " FMT_BB " -> " FMT_BB ", removing edge\n", compCurBB->bbNum,
+                        succBlock->bbNum);
+
+                // Trim the profile data from the linear chain of successor blocks
+                //
+                if (compCurBB->hasProfileWeight())
+                {
+                    weight_t    weightLoss = compCurBB->bbWeight;
+                    BasicBlock* nextBlock  = succBlock;
+
+                    while (nextBlock->hasProfileWeight())
+                    {
+                        // Since we have linear flow we can update the next block weight.
+                        //
+                        weight_t const nextWeight    = nextBlock->bbWeight;
+                        weight_t const newNextWeight = nextWeight - weightLoss;
+
+                        // If the math would result in a negative weight then there's
+                        // no local repair we can do; just leave things inconsistent.
+                        //
+                        if (newNextWeight >= 0)
+                        {
+                            // Note if we'd already morphed the IR in nextblock we might
+                            // have done something profile sensitive that we should arguably reconsider.
+                            //
+                            JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n",
+                                    nextBlock->bbNum, nextWeight, newNextWeight);
+
+                            nextBlock->setBBProfileWeight(newNextWeight);
+                        }
+                        else
+                        {
+                            JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                                    " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                                    nextBlock->bbNum, nextWeight, compCurBB->bbNum, weightLoss);
+                        }
+
+                        nextBlock = nextBlock->GetUniqueSucc();
+
+                        if (nextBlock == nullptr)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                // Remove the flow edge
+                //
+                fgRemoveRefPred(succBlock, compCurBB);
+            }
+
+            // Modify the block kind
+            //
+            JITDUMP("Setting " FMT_BB " to BBJ_RETURN\n", compCurBB->bbNum);
+            compCurBB->SetJumpKind(BBJ_RETURN);
+        }
     }
 
     GenTree* stmtExpr = fgMorphStmt->GetRootNode();
@@ -7470,11 +7482,19 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // Finish hooking things up.
     fgAddRefPred(block->GetJumpDest(), block);
     block->bbFlags &= ~BBF_HAS_JMP;
+
+    // If block was the genReturnBB, it no longer is.
+    //
+    if (block == genReturnBB)
+    {
+        JITDUMP("Forgetting genReturnBB " FMT_BB " and genReturnLcl V%02u\n", genReturnBB->bbNum, genReturnLocal);
+        genReturnBB    = nullptr;
+        genReturnLocal = BAD_VAR_NUM;
+    }
 }
 
 //------------------------------------------------------------------------------
 // fgAssignRecursiveCallArgToCallerParam : Assign argument to a recursive call to the corresponding caller parameter.
-//
 //
 // Arguments:
 //    arg  -  argument to assign
@@ -13902,15 +13922,6 @@ void Compiler::fgMorphBlocks()
         // Process all statement trees in the basic block.
         fgMorphStmts(block);
 
-        // Do we need to merge the result of this block into a single return block?
-        if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
-        {
-            if ((genReturnBB != nullptr) && (genReturnBB != block))
-            {
-                fgMergeBlockReturn(block);
-            }
-        }
-
         block = block->Next();
     } while (block != nullptr);
 
@@ -13938,128 +13949,6 @@ void Compiler::fgMorphBlocks()
         fgDispBasicBlocks(true);
     }
 #endif
-}
-
-//------------------------------------------------------------------------
-// fgMergeBlockReturn: assign the block return value (if any) into the single return temp
-//   and branch to the single return block.
-//
-// Arguments:
-//   block - the block to process.
-//
-// Notes:
-//   A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
-//   For example a method returning void could have an empty block with jump kind BBJ_RETURN.
-//   Such blocks do materialize as part of in-lining.
-//
-//   A block with jump kind BBJ_RETURN does not necessarily need to end with GT_RETURN.
-//   It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
-//   For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
-//   is BAD_VAR_NUM.
-//
-void Compiler::fgMergeBlockReturn(BasicBlock* block)
-{
-    assert(block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
-    assert((genReturnBB != nullptr) && (genReturnBB != block));
-
-    // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
-
-    Statement* lastStmt = block->lastStmt();
-    GenTree*   ret      = (lastStmt != nullptr) ? lastStmt->GetRootNode() : nullptr;
-
-    if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
-    {
-        // This return was generated during epilog merging, so leave it alone
-    }
-    else
-    {
-        // We'll jump to the genReturnBB.
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(TARGET_X86)
-        if (info.compFlags & CORINFO_FLG_SYNCH)
-        {
-            fgConvertSyncReturnToLeave(block);
-        }
-        else
-#endif // !TARGET_X86
-        {
-            block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
-            fgAddRefPred(genReturnBB, block);
-            fgReturnCount--;
-        }
-        if (genReturnLocal != BAD_VAR_NUM)
-        {
-            // replace the GT_RETURN node to be a STORE_LCL_VAR that stores the return value into genReturnLocal.
-
-            // Method must be returning a value other than TYP_VOID.
-            noway_assert(compMethodHasRetVal());
-
-            // This block must be ending with a GT_RETURN
-            noway_assert(lastStmt != nullptr);
-            noway_assert(lastStmt->GetNextStmt() == nullptr);
-            noway_assert(ret != nullptr);
-
-            // GT_RETURN must have non-null operand as the method is returning the value assigned to
-            // genReturnLocal
-            noway_assert(ret->OperGet() == GT_RETURN);
-            noway_assert(ret->gtGetOp1() != nullptr);
-
-            Statement*       pAfterStatement = lastStmt;
-            const DebugInfo& di              = lastStmt->GetDebugInfo();
-            GenTree*         tree =
-                gtNewTempStore(genReturnLocal, ret->gtGetOp1(), CHECK_SPILL_NONE, &pAfterStatement, di, block);
-            if (tree->OperIsCopyBlkOp())
-            {
-                tree = fgMorphCopyBlock(tree);
-            }
-            else if (tree->OperIsInitBlkOp())
-            {
-                tree = fgMorphInitBlock(tree);
-            }
-
-            if (pAfterStatement == lastStmt)
-            {
-                lastStmt->SetRootNode(tree);
-            }
-            else
-            {
-                // gtNewTempStore inserted additional statements after last
-                fgRemoveStmt(block, lastStmt);
-                Statement* newStmt = gtNewStmt(tree, di);
-                fgInsertStmtAfter(block, pAfterStatement, newStmt);
-                lastStmt = newStmt;
-            }
-        }
-        else if (ret != nullptr && ret->OperGet() == GT_RETURN)
-        {
-            // This block ends with a GT_RETURN
-            noway_assert(lastStmt != nullptr);
-            noway_assert(lastStmt->GetNextStmt() == nullptr);
-
-            // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
-            // block
-            noway_assert(ret->TypeGet() == TYP_VOID);
-            noway_assert(ret->gtGetOp1() == nullptr);
-
-            fgRemoveStmt(block, lastStmt);
-        }
-
-        JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
-        DISPBLOCK(block);
-
-        if (block->hasProfileWeight())
-        {
-            weight_t const oldWeight = genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
-            weight_t const newWeight = oldWeight + block->bbWeight;
-
-            JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
-                    block->bbNum, genReturnBB->bbNum);
-
-            genReturnBB->setBBProfileWeight(newWeight);
-            DISPBLOCK(genReturnBB);
-        }
-    }
 }
 
 /*****************************************************************************
@@ -15399,12 +15288,20 @@ bool Compiler::fgCheckStmtAfterTailCall()
         GenTree* callExpr = callStmt->GetRootNode();
         if (!callExpr->OperIs(GT_STORE_LCL_VAR))
         {
-            // The next stmt can be GT_RETURN(TYP_VOID) or GT_RETURN(lclVar),
+            // The next stmt can be GT_RETURN(TYP_VOID) or GT_RETURN(lclVar)
+            // or GT_STORE_LCL_VAR(genReturnLocal, ...)
             // where lclVar was return buffer in the call for structs or simd.
             Statement* retStmt = nextMorphStmt;
             GenTree*   retExpr = retStmt->GetRootNode();
-            noway_assert(retExpr->gtOper == GT_RETURN);
 
+            if (retExpr->OperIs(GT_STORE_LCL_VAR))
+            {
+                assert(retExpr->AsLclVarCommon()->GetLclNum() == genReturnLocal);
+            }
+            else
+            {
+                noway_assert(retExpr->gtOper == GT_RETURN);
+            }
             nextMorphStmt = retStmt->GetNextStmt();
         }
         else

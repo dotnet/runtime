@@ -2367,8 +2367,13 @@ private:
                 assert(searchLimit < maxReturns);
                 mergedReturnBlock = CreateReturnBB(searchLimit);
                 comp->genReturnBB = mergedReturnBlock;
-                // Downstream code expects the `genReturnBB` to always remain
-                // once created, so that it can redirect flow edges to it.
+
+                // In principle we should be able to remove the proctection
+                // we add here, and remove the genReturnBB if it becomes unreachable,
+                // since we now introduce all the flow to it during this phase.
+                //
+                // But we'll keep this as is for now.
+                //
                 mergedReturnBlock->bbFlags |= BBF_DONT_REMOVE;
             }
         }
@@ -2471,10 +2476,11 @@ private:
 // Notes:
 //   * rewrites shared generic catches in to filters
 //   * adds code to handle modifiable this
-//   * determines number of epilogs and merges returns
+//   * determines number of epilogs and merges "same constant" returns
 //   * does special setup for pinvoke/reverse pinvoke methods
 //   * adds callouts and EH for synchronized methods
 //   * adds just my code callback
+//   * merges returns to common return block if necessary
 //
 // Returns:
 //   Suitable phase status.
@@ -2752,6 +2758,20 @@ PhaseStatus Compiler::fgAddInternal()
         madeChanges = true;
     }
 
+    if (genReturnBB != nullptr)
+    {
+        for (BasicBlock* const block : Blocks())
+        {
+            // We can see BBF_HAS_JMP from CEE_JMP importation. Exclude such here
+            //
+            if ((block != genReturnBB) && block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+            {
+                fgMergeBlockReturn(block);
+                madeChanges = true;
+            }
+        }
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -2762,6 +2782,122 @@ PhaseStatus Compiler::fgAddInternal()
 #endif
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// fgMergeBlockReturn: assign the block return value (if any) into the single return temp
+//   and branch to the single return block.
+//
+// Arguments:
+//   block - the block to process.
+//
+// Returns:
+//   true if block was modified to branch to the single return block
+//
+// Notes:
+//   A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
+//   For example a method returning void could have an empty block with jump kind BBJ_RETURN.
+//   Such blocks do materialize as part of in-lining.
+//
+//   A block with jump kind BBJ_RETURN does not necessarily need to end with GT_RETURN.
+//   It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
+//   For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
+//   is BAD_VAR_NUM.
+//
+bool Compiler::fgMergeBlockReturn(BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
+    assert((genReturnBB != nullptr) && (genReturnBB != block));
+
+    // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
+
+    Statement* lastStmt = block->lastStmt();
+    GenTree*   ret      = (lastStmt != nullptr) ? lastStmt->GetRootNode() : nullptr;
+
+    if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
+    {
+        // This return was generated during epilog merging, so leave it alone
+        return false;
+    }
+
+#if !defined(TARGET_X86)
+    if (info.compFlags & CORINFO_FLG_SYNCH)
+    {
+        fgConvertSyncReturnToLeave(block);
+        return true;
+    }
+#endif // !TARGET_X86
+
+    // We'll jump to the genReturnBB.
+    //
+    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
+    fgAddRefPred(genReturnBB, block);
+    fgReturnCount--;
+
+    if (genReturnLocal != BAD_VAR_NUM)
+    {
+        // replace the GT_RETURN node to be a STORE_LCL_VAR that stores the return value into genReturnLocal.
+
+        // Method must be returning a value other than TYP_VOID.
+        noway_assert(compMethodHasRetVal());
+
+        // This block must be ending with a GT_RETURN
+        noway_assert(lastStmt != nullptr);
+        noway_assert(lastStmt->GetNextStmt() == nullptr);
+        noway_assert(ret != nullptr);
+
+        // GT_RETURN must have non-null operand as the method is returning the value assigned to
+        // genReturnLocal
+        noway_assert(ret->OperGet() == GT_RETURN);
+        noway_assert(ret->gtGetOp1() != nullptr);
+
+        Statement*       pAfterStatement = lastStmt;
+        const DebugInfo& di              = lastStmt->GetDebugInfo();
+        GenTree* tree = gtNewTempStore(genReturnLocal, ret->gtGetOp1(), CHECK_SPILL_NONE, &pAfterStatement, di, block);
+
+        if (pAfterStatement == lastStmt)
+        {
+            lastStmt->SetRootNode(tree);
+        }
+        else
+        {
+            // gtNewTempStore inserted additional statements after last
+            fgRemoveStmt(block, lastStmt);
+            Statement* newStmt = gtNewStmt(tree, di);
+            fgInsertStmtAfter(block, pAfterStatement, newStmt);
+            lastStmt = newStmt;
+        }
+    }
+    else if (ret != nullptr && ret->OperGet() == GT_RETURN)
+    {
+        // This block ends with a GT_RETURN
+        noway_assert(lastStmt != nullptr);
+        noway_assert(lastStmt->GetNextStmt() == nullptr);
+
+        // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
+        // block
+        noway_assert(ret->TypeGet() == TYP_VOID);
+        noway_assert(ret->gtGetOp1() == nullptr);
+
+        fgRemoveStmt(block, lastStmt);
+    }
+
+    JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
+    DISPBLOCK(block);
+
+    if (block->hasProfileWeight())
+    {
+        weight_t const oldWeight = genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
+        weight_t const newWeight = oldWeight + block->bbWeight;
+
+        JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
+                block->bbNum, genReturnBB->bbNum);
+
+        genReturnBB->setBBProfileWeight(newWeight);
+        DISPBLOCK(genReturnBB);
+    }
+
+    return true;
 }
 
 /*****************************************************************************/
