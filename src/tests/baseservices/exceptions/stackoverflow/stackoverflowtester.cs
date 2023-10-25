@@ -303,7 +303,15 @@ namespace TestStackOverflow
         static int Main()
         {
             s_currentPath = Directory.GetCurrentDirectory();
-            // s_corerunPath = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
+            if (TestLibrary.Utilities.IsNativeAot)
+            {
+                // CORE_ROOT is not set when running native AOT tests
+                s_corerunPath = "";
+            }
+            else
+            {
+                s_corerunPath = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
+            }
 
             if (!TestStackOverflowSmallFrameMainThread())
             {
