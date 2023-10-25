@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
                 // length.  Of course, the String reference points to the memory
                 // after the sync block, so don't count that.
                 // This property allows C#'s fixed statement to work on Strings.
-                // On 64 bit platforms, this should be 12 (8+4) and on 32 bit 8 (4+4).
+                // On 64 bit platforms, this should be 20 and on 32 bit 12.
 #if TARGET_64BIT
                 20;
 #else // 32
