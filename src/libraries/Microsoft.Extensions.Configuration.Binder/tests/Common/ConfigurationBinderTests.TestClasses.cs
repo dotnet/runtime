@@ -842,6 +842,11 @@ namespace Microsoft.Extensions
         {
             public int Value2 { get; set; }
         }
+        
+        internal class ClassWithAbstractProp
+        {
+            public AbstractBase AbstractProp { get; set; }
+        }
 
         internal class ClassWithAbstractCtorParam
         {
@@ -886,6 +891,12 @@ namespace Microsoft.Extensions
                 get => _myIntProperty;
                 set => throw new InvalidOperationException("Not expected");
             }
+        }
+
+        public class SimplePoco
+        {
+            public string A { get; set; }
+            public string B { get; set; }
         }
 
     }

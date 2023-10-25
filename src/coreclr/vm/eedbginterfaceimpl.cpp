@@ -630,7 +630,6 @@ PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-
     return pFD->GetNativeCode();
 }
 

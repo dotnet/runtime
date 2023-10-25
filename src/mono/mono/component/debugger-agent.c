@@ -5258,6 +5258,13 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		nfields = 0;
 		iter = NULL;
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
+			if (G_UNLIKELY (!f->type)) {
+				ERROR_DECL(error);
+				mono_field_resolve_type (f, error);
+				mono_error_cleanup (error);
+				if (!f->type)
+					continue;
+			}
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 			if (mono_field_is_deleted (f))
@@ -5275,6 +5282,13 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 
 		iter = NULL;
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
+			if (G_UNLIKELY (!f->type)) {
+				ERROR_DECL(error);
+				mono_field_resolve_type (f, error);
+				mono_error_cleanup (error);
+				if (!f->type)
+					continue;
+			}
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 			if (mono_field_is_deleted (f))
@@ -5375,6 +5389,13 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 
 	nfields = decode_int (buf, &buf, limit);
 	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (G_UNLIKELY (!f->type)) {
+			ERROR_DECL(error);
+			mono_field_resolve_type (f, error);
+			mono_error_cleanup (error);
+			if (!f->type)
+				continue;
+		}
 		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (f))
@@ -5476,6 +5497,13 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 
 	nfields = decode_int (buf, &buf, limit);
 	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (G_UNLIKELY (!f->type)) {
+			ERROR_DECL(error);
+			mono_field_resolve_type (f, error);
+			mono_error_cleanup (error);
+			if (!f->type)
+				continue;
+		}
 		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (f))
@@ -8481,6 +8509,13 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		buffer_add_int (buf, nfields);
 
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
+			if (G_UNLIKELY (!f->type)) {
+				ERROR_DECL(field_error);
+				mono_field_resolve_type (f, field_error);
+				mono_error_cleanup (field_error);
+				if (!f->type)
+					continue;
+			}
 			buffer_add_fieldid (buf, domain, f);
 			buffer_add_string (buf, f->name);
 			buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
@@ -8861,6 +8896,13 @@ set_value:
 				int nfields = 0;
 				gpointer iter = NULL;
 				while ((f = mono_class_get_fields_internal (klass, &iter))) {
+					if (G_UNLIKELY (!f->type)) {
+						ERROR_DECL(field_error);
+						mono_field_resolve_type (f, field_error);
+						mono_error_cleanup (field_error);
+						if (!f->type)
+							continue;
+					}
 					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 						continue;
 					if (mono_field_is_deleted (f))
@@ -8871,6 +8913,13 @@ set_value:
 
 				iter = NULL;
 				while ((f = mono_class_get_fields_internal (klass, &iter))) {
+					if (G_UNLIKELY (!f->type)) {
+						ERROR_DECL(field_error);
+						mono_field_resolve_type (f, field_error);
+						mono_error_cleanup (field_error);
+						if (!f->type)
+							continue;
+					}
 					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 						continue;
 					if (mono_field_is_deleted (f))

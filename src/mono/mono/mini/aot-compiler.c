@@ -10708,6 +10708,18 @@ execute_system (const char * command)
 
 #ifdef ENABLE_LLVM
 
+#ifdef HOST_WIN32
+#define OPT_NAME "opt.exe"
+#else
+#define OPT_NAME "opt"
+#endif
+
+#ifdef HOST_WIN32
+#define LLC_NAME "llc.exe"
+#else
+#define LLC_NAME "llc"
+#endif
+
 /*
  * emit_llvm_file:
  *
@@ -10776,11 +10788,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 	} else {
 #if LLVM_API_VERSION >= 1600
 		/* The safepoints pass requires new pass manager syntax*/
-		opts = g_strdup ("-disable-tail-calls -passes='");
+		opts = g_strdup ("-disable-tail-calls -passes=\"");
 		if (!acfg->aot_opts.llvm_only) {
 			opts = g_strdup_printf ("%sdefault<O2>,", opts);
 		}
-		opts = g_strdup_printf ("%splace-safepoints' -spp-all-backedges", opts);
+		opts = g_strdup_printf ("%splace-safepoints\" -spp-all-backedges", opts);
 #elif LLVM_API_VERSION >= 1300
 		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
@@ -10810,7 +10822,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		opts = g_strdup_printf ("%s -fp-contract=fast -enable-no-infs-fp-math -enable-no-nans-fp-math -enable-no-signed-zeros-fp-math -enable-no-trapping-fp-math -enable-unsafe-fp-math", opts);
 	}
 
-	command = g_strdup_printf ("\"%sopt\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
+	command = g_strdup_printf ("\"%s" OPT_NAME "\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
 	aot_printf (acfg, "Executing opt: %s\n", command);
 	if (execute_system (command) != 0)
 		return FALSE;
@@ -10885,7 +10897,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		g_string_append_printf (acfg->llc_args, " -mattr=%s", acfg->aot_opts.llvm_cpu_attr);
 	}
 
-	command = g_strdup_printf ("\"%sllc\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
+	command = g_strdup_printf ("\"%s" LLC_NAME "\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
 	g_free (output_fname);
 
 	aot_printf (acfg, "Executing llc: %s\n", command);
