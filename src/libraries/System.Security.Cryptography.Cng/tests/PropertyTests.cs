@@ -164,7 +164,7 @@ namespace System.Security.Cryptography.Cng.Tests
         [Fact]
         public static void TestConstructorSpan()
         {
-            var name = "dotnet-test";
+            string name = "dotnet-test";
             ReadOnlySpan<byte> value = [1, 2, 3, 4, 5];
 
             CngProperty property = new CngProperty(name, value, CngPropertyOptions.CustomProperty);
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Cng.Tests
         [Fact]
         public static void TestConstructorSpan_NameNull()
         {
-            var name = "dotnet-test";
+            string name = null!;
             var value = new byte[12];
             value[5] = 1;
             value[6] = 2;
