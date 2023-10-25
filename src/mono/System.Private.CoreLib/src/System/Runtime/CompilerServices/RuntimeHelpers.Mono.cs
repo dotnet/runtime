@@ -34,11 +34,6 @@ namespace System.Runtime.CompilerServices
         {
             [NonVersionable]
             get =>
-                // Number of bytes from the address pointed to by a reference to
-                // a String to the first 16-bit character in the String.  Skip
-                // over the MethodTable pointer, & String
-                // length.  Of course, the String reference points to the memory
-                // after the sync block, so don't count that.
                 // This property allows C#'s fixed statement to work on Strings.
                 // On 64 bit platforms, this should be 20 and on 32 bit 12.
 #if TARGET_64BIT
