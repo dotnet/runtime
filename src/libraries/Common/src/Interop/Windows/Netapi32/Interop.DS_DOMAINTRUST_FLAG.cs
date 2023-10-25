@@ -17,6 +17,5 @@ internal static partial class Interop
             DS_DOMAIN_NATIVE_MODE = 0x0010,
             DS_DOMAIN_DIRECT_INBOUND = 0x0020
         }
-
     }
 }
