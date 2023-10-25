@@ -799,7 +799,7 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         }
 
         uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-        uint64_t seekResult = lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
+        uint64_t seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET);
         if (seekResult != pagemapOffset)
         {
             int seekErrno = errno;

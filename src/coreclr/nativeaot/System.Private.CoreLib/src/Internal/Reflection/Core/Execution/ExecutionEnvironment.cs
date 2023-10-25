@@ -53,18 +53,14 @@ namespace Internal.Reflection.Core.Execution
         public abstract bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle);
 
         public abstract bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle);
-        public abstract RuntimeTypeHandle GetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle);
 
         public abstract bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle);
 
         public abstract bool TryGetFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle functionPointerTypeHandle);
-        public abstract void GetFunctionPointerTypeComponents(RuntimeTypeHandle functionPointerHandle, out RuntimeTypeHandle returnTypeHandle, out RuntimeTypeHandle[] parameterHandles, out bool isUnmanaged);
 
         public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
-        public abstract RuntimeTypeHandle GetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle);
 
         public abstract bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle);
-        public abstract RuntimeTypeHandle GetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle);
 
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
         public abstract bool TryGetConstructedGenericTypeForComponentsNoConstraintCheck(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);

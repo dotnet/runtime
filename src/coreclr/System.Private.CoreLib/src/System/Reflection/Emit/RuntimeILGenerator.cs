@@ -128,7 +128,7 @@ namespace System.Reflection.Emit
                 m_ILStream[m_length++] = (byte)opcodeValue;
             }
 
-            UpdateStackSize(opcode, opcode.StackDifference());
+            UpdateStackSize(opcode, opcode.EvaluationStackDelta);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

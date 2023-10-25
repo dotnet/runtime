@@ -3338,8 +3338,8 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef FEATURE_READYTORUN
         else if (call->IsR2ROrVirtualStubRelativeIndir())
         {
-            assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-                   ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+            assert((call->IsR2RRelativeIndir() && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+                   (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
             regNumber tmpReg = call->GetSingleTempReg();

@@ -28,6 +28,11 @@ namespace Sample
                 new BlazorReachManaged(),
                 new BlazorFirstUI(),
                 new BlazorReachManagedCold(),
+                new BlazorReachManagedSnapshot(),
+                new BrowserPageShow(),
+                new BrowserReachManaged(),
+                new BrowserReachManagedCold(),
+                new BrowserReachManagedSnapshot(),
             };
         }
 
@@ -74,14 +79,14 @@ namespace Sample
         abstract class BlazorAppStartMeasurement : BenchTask.Measurement
         {
             protected readonly string urlBase = "blazor-template/";
-            protected readonly string framePage = "";
+            protected virtual string FramePage => "";
 
             public override async Task<bool> IsEnabled()
             {
                 using var client = new HttpClient();
                 try
                 {
-                    var url = $"{MainApp.Origin()}/{urlBase}{framePage}";
+                    var url = $"{MainApp.Origin()}/{urlBase}{FramePage}";
                     await client.GetStringAsync(url);
                 }
                 catch
@@ -94,7 +99,7 @@ namespace Sample
 
             public override Task BeforeBatch()
             {
-                MainApp.SetFramePage(framePage);
+                MainApp.SetFramePage(FramePage);
 
                 return Task.CompletedTask;
             }
@@ -124,6 +129,19 @@ namespace Sample
             }
         }
 
+        class BlazorReachManagedSnapshot : BlazorAppStartMeasurement
+        {
+            public override string Name => "Blazor Reach managed snapshot";
+            public override int InitialSamples => 3;
+            public override bool HasRunStepAsync => true;
+            protected override string FramePage => "start.html?memorySnapshot=true";
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.FrameReachedManaged(null, urlBase);
+            }
+        }
+
         class BlazorFirstUI : BlazorAppStartMeasurement
         {
             public override string Name => "Blazor First UI";
@@ -139,6 +157,85 @@ namespace Sample
         class BlazorReachManagedCold : BlazorAppStartMeasurement
         {
             public override string Name => "Blazor Reach managed cold";
+            public override int InitialSamples => 1;
+            public override int RunLength => 20000;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.FrameReachedManaged(Guid.NewGuid().ToString(), urlBase);
+            }
+        }
+
+        abstract class BrowserAppStartMeasurement : BenchTask.Measurement
+        {
+            protected readonly string urlBase = "browser-template/";
+            protected virtual string FramePage => "";
+
+            public override async Task<bool> IsEnabled()
+            {
+                using var client = new HttpClient();
+                try
+                {
+                    var url = $"{MainApp.Origin()}/{urlBase}{FramePage}";
+                    await client.GetStringAsync(url);
+                }
+                catch
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            public override Task BeforeBatch()
+            {
+                MainApp.SetFramePage(FramePage);
+
+                return Task.CompletedTask;
+            }
+        }
+
+        class BrowserPageShow : BrowserAppStartMeasurement
+        {
+            public override string Name => "Browser Page show";
+            public override int InitialSamples => 3;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.PageShow(null, urlBase);
+            }
+        }
+
+        class BrowserReachManaged : BrowserAppStartMeasurement
+        {
+            public override string Name => "Browser Reach managed";
+            public override int InitialSamples => 3;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.FrameReachedManaged(null, urlBase);
+            }
+        }
+
+        class BrowserReachManagedSnapshot : BrowserAppStartMeasurement
+        {
+            public override string Name => "Browser Reach managed snapshot";
+            public override int InitialSamples => 3;
+            public override bool HasRunStepAsync => true;
+            protected override string FramePage => "start.html?memorySnapshot=true";
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.FrameReachedManaged(null, urlBase);
+            }
+        }
+
+        class BrowserReachManagedCold : BrowserAppStartMeasurement
+        {
+            public override string Name => "Browser Reach managed cold";
             public override int InitialSamples => 1;
             public override int RunLength => 20000;
             public override bool HasRunStepAsync => true;

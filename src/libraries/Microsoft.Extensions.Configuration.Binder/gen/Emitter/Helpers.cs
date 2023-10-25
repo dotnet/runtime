@@ -229,18 +229,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _emitBlankLineBeforeNextStatement = true;
             }
 
-            private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool voidReturn = false)
+            private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool useThrowIfNullMethod, bool voidReturn = false)
             {
-                string returnExpr = voidReturn
-                    ? "return"
-                    : $"throw new ArgumentNullException(nameof({paramName}))";
-
-                _writer.WriteLine($$"""
+                if (voidReturn)
+                {
+                    _writer.WriteLine($$"""
                     if ({{paramName}} is null)
                     {
-                        {{returnExpr}};
+                        return;
                     }
                     """);
+                }
+                else
+                {
+                    string throwIfNullExpr = useThrowIfNullMethod
+                    ? $"ArgumentNullException.ThrowIfNull({paramName});"
+                    : $$"""
+                    if ({{paramName}} is null)
+                    {
+                        throw new ArgumentNullException(nameof({{paramName}}));
+                    }
+                    """;
+
+                    _writer.WriteLine(throwIfNullExpr);
+                }
 
                 _writer.WriteLine();
             }
