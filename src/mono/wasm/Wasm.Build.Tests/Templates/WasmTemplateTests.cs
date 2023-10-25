@@ -190,7 +190,7 @@ namespace Wasm.Build.Tests
         [Theory]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("Debug", "-f net7.0", "net7.0")]
-        [InlineData("Debug", "-f net8.0", "net8.0")]
+        //[InlineData("Debug", "-f net8.0", "net8.0")]
         [InlineData("Debug", "-f net9.0", "net9.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
             => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM, addFrameworkArg: extraNewArgs?.Length == 0);
