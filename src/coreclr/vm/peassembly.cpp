@@ -342,8 +342,13 @@ void PEAssembly::ConvertMDInternalToReadWrite(bool openForWriting)
                 //if the debugger queries, it will now see that we have RW metadata
                 m_MDImportIsRW_Debugger_Use_Only = TRUE;
 
-                m_pMDImport->AddRef();
-                HRESULT hr=m_pConvertedMDImport->SetUserContextData(pOld);
+                // Swapped -- get the metadata to hang onto the old Internal import.
+                // Additionally, now both m_pMDImport and m_pConvertedMDImport point to
+                // the same RW MDImport. Up the references such that both have to be freed
+                // before freeing the RW copy and the RO that hangs off it.
+                pConvertedImport->AddRef();
+                HRESULT hr = pConvertedImport->SetUserContextData(pOld);
+
                 _ASSERTE(SUCCEEDED(hr)||!"Leaking old MDImport");
                 IfFailThrow(hr);
             }
@@ -408,8 +413,12 @@ void PEAssembly::ConvertMDInternalToReadWrite(bool openForWriting)
             m_MDImportIsRW_Debugger_Use_Only = TRUE;
 
             // Swapped -- get the metadata to hang onto the old Internal import.
-            m_pMDImport->AddRef();
-            HRESULT hr=m_pMDImport->SetUserContextData(pOld);
+            // Additionally, now both m_pMDImport and m_pConvertedMDImport point to
+            // the RW MDImport. Up the references such that both have to be freed
+            // before freeing the RW copy and the RO that hangs off it.
+            pNew->AddRef();
+            HRESULT hr = pNew->SetUserContextData(pOld);
+
             _ASSERTE(SUCCEEDED(hr)||!"Leaking old MDImport");
             IfFailThrow(hr);
         }
