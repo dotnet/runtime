@@ -112,7 +112,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
             return;
         }
 
-        if (!node->Data()->AsVecCon()->TypeIs(TYP_SIMD32) && !node->Data()->AsVecCon()->TypeIs(TYP_SIMD64))
+        if (!node->Data()->AsVecCon()->TypeIs(TYP_SIMD32, TYP_SIMD64))
         {
             return;
         }
