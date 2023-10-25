@@ -3,7 +3,7 @@
 
 namespace System.Runtime.InteropServices
 {
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Method, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class WasmImportAttribute : Attribute
     {
         public WasmImportAttribute() { }
