@@ -635,6 +635,9 @@ namespace System
         public static byte[] GetBytes(char value) { throw null; }
         public static byte[] GetBytes(double value) { throw null; }
         public static byte[] GetBytes(System.Half value) { throw null; }
+        public static byte[] GetBytes(System.Int128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static byte[] GetBytes(System.UInt128 value) { throw null; }
         public static byte[] GetBytes(short value) { throw null; }
         public static byte[] GetBytes(int value) { throw null; }
         public static byte[] GetBytes(long value) { throw null; }
@@ -662,6 +665,8 @@ namespace System
         public static double ToDouble(System.ReadOnlySpan<byte> value) { throw null; }
         public static System.Half ToHalf(byte[] value, int startIndex) { throw null; }
         public static System.Half ToHalf(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Int128 ToInt128(byte[] value, int startIndex) { throw null; }
+        public static System.Int128 ToInt128(System.ReadOnlySpan<byte> value) { throw null; }
         public static short ToInt16(byte[] value, int startIndex) { throw null; }
         public static short ToInt16(System.ReadOnlySpan<byte> value) { throw null; }
         public static int ToInt32(byte[] value, int startIndex) { throw null; }
@@ -673,6 +678,10 @@ namespace System
         public static string ToString(byte[] value) { throw null; }
         public static string ToString(byte[] value, int startIndex) { throw null; }
         public static string ToString(byte[] value, int startIndex, int length) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 ToUInt128(byte[] value, int startIndex) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 ToUInt128(System.ReadOnlySpan<byte> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort ToUInt16(byte[] value, int startIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -689,6 +698,9 @@ namespace System
         public static bool TryWriteBytes(System.Span<byte> destination, char value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, System.Half value) { throw null; }
+        public static bool TryWriteBytes(System.Span<byte> destination, System.Int128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryWriteBytes(System.Span<byte> destination, System.UInt128 value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, short value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, int value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, long value) { throw null; }
@@ -9638,6 +9650,8 @@ namespace System.IO
     }
     public static partial class File
     {
+        public static void AppendAllBytes(string path, byte[] bytes) { }
+		public static System.Threading.Tasks.Task AppendAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

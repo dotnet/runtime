@@ -175,7 +175,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     optPropKind propKind     = optPropKind::OPK_INVALID;
     bool        folded       = false;
 
-    if (tree->OperIsIndirOrArrMetaData() && !tree->OperIsAtomicZeroDiffQuirk())
+    if (tree->OperIsIndirOrArrMetaData())
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         folded = optFoldNullCheck(tree, nullCheckMap);

@@ -32,6 +32,7 @@
 #cmakedefine01 HAVE_MNTINFO
 #cmakedefine01 HAVE_STATFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_FSTYPENAME
+#cmakedefine01 HAVE_STATVFS_BASETYPE
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
@@ -94,6 +95,7 @@
 #cmakedefine01 HAVE_NETPACKET_PACKET_H
 #cmakedefine01 HAVE_NET_IF_ARP_H
 #cmakedefine01 HAVE_SYS_MNTENT_H
+#cmakedefine01 HAVE_MNTENT_H
 #cmakedefine01 HAVE_NET_IFMEDIA_H
 #cmakedefine01 HAVE_IOS_NET_IFMEDIA_H
 #cmakedefine01 HAVE_LINUX_RTNETLINK_H
@@ -134,6 +136,7 @@
 #cmakedefine01 HAVE_TERMIOS_H
 #cmakedefine01 HAVE_DLFCN_H
 #cmakedefine01 HAVE_PTHREAD_H
+#cmakedefine01 HAVE_SYS_STATFS_H
 #cmakedefine01 HAVE_SYS_STATVFS_H
 #cmakedefine01 HAVE_NET_IF_H
 #cmakedefine01 HAVE_SYS_PROCINFO_H
@@ -147,6 +150,8 @@
 #cmakedefine01 HAVE_MAKEDEV_SYSMACROSH
 #cmakedefine01 HAVE_GETGRGID_R
 #cmakedefine01 HAVE_TERMIOS2
+#cmakedefine01 HAVE_DIRENT_NAME_SIZE
+#cmakedefine01 DIRENT_NAME_SIZE
 
 #ifndef HOST_WASI
 #cmakedefine01 HAVE_GETRUSAGE

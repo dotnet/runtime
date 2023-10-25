@@ -214,7 +214,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(FileAttributes.ReadOnly, attributes);
 
             // Flag values honor naming policy correctly
-            options = CreateStringEnumOptionsForType<FileAttributes>(useGenericVariant, new SimpleSnakeCasePolicy());
+            options = CreateStringEnumOptionsForType<FileAttributes>(useGenericVariant, JsonNamingPolicy.SnakeCaseLower);
 
             json = JsonSerializer.Serialize(
                 FileAttributes.Directory | FileAttributes.Compressed | FileAttributes.IntegrityStream,
@@ -689,7 +689,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(true)]
         public static void Honor_EnumNamingPolicy_On_Deserialization(bool useGenericVariant)
         {
-            JsonSerializerOptions options = CreateStringEnumOptionsForType<BindingFlags>(useGenericVariant, new SimpleSnakeCasePolicy());
+            JsonSerializerOptions options = CreateStringEnumOptionsForType<BindingFlags>(useGenericVariant, JsonNamingPolicy.SnakeCaseLower);
 
             BindingFlags bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""non_public""", options);
             Assert.Equal(BindingFlags.NonPublic, bindingFlags);
@@ -714,9 +714,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(true)]
         public static void EnumDictionaryKeyDeserialization(bool useGenericVariant)
         {
-            JsonNamingPolicy snakeCasePolicy = new SimpleSnakeCasePolicy();
             JsonSerializerOptions options = CreateStringEnumOptionsForType<BindingFlags>(useGenericVariant);
-            options.DictionaryKeyPolicy = snakeCasePolicy;
+            options.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
 
             // Baseline.
             var dict = JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""NonPublic, Public"": 1}", options);
@@ -729,12 +728,30 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""non_public, static"": 0, ""NonPublic, Public"": 1}", options));
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void StringEnumWithNamingPolicyKeyDeserialization(bool useGenericVariant)
+        {
+            JsonSerializerOptions options = CreateStringEnumOptionsForType<BindingFlags>(useGenericVariant, JsonNamingPolicy.SnakeCaseLower);
+            options.DictionaryKeyPolicy = JsonNamingPolicy.KebabCaseUpper;
+
+            // DictionaryKeyPolicy not honored for dict key deserialization.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""NON-PUBLIC, PUBLIC"": 1}", options));
+
+            // EnumConverter naming policy honored.
+            Dictionary<BindingFlags, int> result = JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""non_public, static"": 0, ""NonPublic, Public"": 1, ""create_instance"": 2 }", options);
+            Assert.Contains(BindingFlags.NonPublic | BindingFlags.Static, result);
+            Assert.Contains(BindingFlags.NonPublic | BindingFlags.Public, result);
+            Assert.Contains(BindingFlags.CreateInstance, result);
+        }
+
         [Fact]
         public static void EnumDictionaryKeySerialization()
         {
             JsonSerializerOptions options = new()
             {
-                DictionaryKeyPolicy = new SimpleSnakeCasePolicy()
+                DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower
             };
 
             Dictionary<BindingFlags, int> dict = new()

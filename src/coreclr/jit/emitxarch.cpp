@@ -15844,25 +15844,38 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         // For forward jumps, record the address of the distance value
         id->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : nullptr;
 
-        // Cross jumps may not be encodable in a 32-bit displacement as the
-        // hot/cold code buffers may be allocated arbitrarily far away from
-        // each other. We simply encode a 0 under the assumption that the
-        // relocations will take care of it.
         bool crossJump = emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
-        assert(!crossJump || emitComp->opts.compReloc);
 
-        dst += emitOutputLong(dst, crossJump ? 0 : distVal);
+        int32_t encodedDisplacement;
+        if (emitComp->opts.compReloc && (!relAddr || crossJump))
+        {
+            // Cross jumps may not be encodable in a 32-bit displacement as the
+            // hot/cold code buffers may be allocated arbitrarily far away from
+            // each other. Similarly, absolute addresses when cross compiling
+            // for 32-bit may also not be representable. We simply encode a 0
+            // under the assumption that the relocations will take care of it.
+            encodedDisplacement = 0;
+        }
+        else
+        {
+            // For all other cases the displacement should be encodable in 32
+            // bits.
+            assert((distVal >= INT32_MIN) && (distVal <= INT32_MAX));
+            encodedDisplacement = static_cast<int32_t>(distVal);
+        }
+
+        dst += emitOutputLong(dst, encodedDisplacement);
 
         if (emitComp->opts.compReloc)
         {
             if (!relAddr)
             {
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
             }
             else if (crossJump)
             {
                 assert(id->idjKeepLong);
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), dst + distVal, IMAGE_REL_BASED_REL32);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), dst + distVal, IMAGE_REL_BASED_REL32);
             }
         }
     }
