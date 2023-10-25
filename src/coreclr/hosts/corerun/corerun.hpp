@@ -572,7 +572,7 @@ namespace pal
             // Make sure if we have an assembly with multiple extensions present,
             // we insert only one version of it.
             if (should_add(entry->d_name))
-                file_list << directory << dir_delim << entry->d_name << env_path_delim;
+                file_list << directory << entry->d_name << env_path_delim;
         }
 
         closedir(dir);
