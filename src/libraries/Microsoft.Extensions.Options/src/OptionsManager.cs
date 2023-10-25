@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly IOptionsFactory<TOptions> _factory;
-        private readonly OptionsCache<TOptions> _cache = new OptionsCache<TOptions>(); // Note: this is a private cache
+        private readonly IOptionsMonitorCache<TOptions> _cache = new OptionsCache<TOptions>(); // Note: this is a private cache
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
