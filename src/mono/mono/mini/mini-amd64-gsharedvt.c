@@ -163,6 +163,7 @@ get_arg_slots (ArgInfo *ainfo, int **out_slots, gboolean is_source_argument)
 		break;
 	case ArgInDoubleSSEReg:
 	case ArgInFloatSSEReg:
+	case ArgSIMDInSSEReg:
 		nsrc = 1;
 		src = g_malloc (nsrc * sizeof (int));
 		src [0] = map_freg (sreg);
@@ -224,20 +225,21 @@ static void
 handle_marshal_when_dst_gsharedvt (ArgInfo *src_info, int *arg_marshal)
 {
 	switch (src_info->storage) {
-		case ArgInIReg:
-		case ArgInDoubleSSEReg:
-		case ArgInFloatSSEReg:
-		case ArgValuetypeInReg:
-		case ArgOnStack:
-			*arg_marshal = GSHAREDVT_ARG_BYVAL_TO_BYREF;
-			break;
-		case ArgValuetypeAddrInIReg:
-		case ArgValuetypeAddrOnStack:
-			*arg_marshal = GSHAREDVT_ARG_NONE;
-			break;
-		default:
-			NOT_IMPLEMENTED; // See above
-			break;
+	case ArgInIReg:
+	case ArgInDoubleSSEReg:
+	case ArgInFloatSSEReg:
+	case ArgSIMDInSSEReg:
+	case ArgValuetypeInReg:
+	case ArgOnStack:
+		*arg_marshal = GSHAREDVT_ARG_BYVAL_TO_BYREF;
+		break;
+	case ArgValuetypeAddrInIReg:
+	case ArgValuetypeAddrOnStack:
+		*arg_marshal = GSHAREDVT_ARG_NONE;
+		break;
+	default:
+		NOT_IMPLEMENTED; // See above
+		break;
 	}
 }
 
@@ -331,6 +333,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		case ArgInIReg:
 		case ArgInDoubleSSEReg:
 		case ArgInFloatSSEReg:
+		case ArgSIMDInSSEReg:
 		case ArgValuetypeInReg:
 		case ArgOnStack:
 			nsrc = get_arg_slots (src_info, &src, TRUE);
@@ -499,6 +502,9 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		case ArgInDoubleSSEReg:
 		case ArgInFloatSSEReg:
 			info->ret_marshal = GSHAREDVT_RET_R8;
+			break;
+		case ArgSIMDInSSEReg:
+			info->ret_marshal = GSHAREDVT_RET_SIMD;
 			break;
 		case ArgValuetypeAddrInIReg:
 			break;

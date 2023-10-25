@@ -37,6 +37,7 @@ typedef enum {
 	GSHAREDVT_RET_I8,      // 8 byte integer
 	GSHAREDVT_RET_IREGS_1, // Load in first return register
 	GSHAREDVT_RET_R8,     // Double
+	GSHAREDVT_RET_SIMD,     // SIMD
 	GSHAREDVT_RET_NUM,
 } GSharedVtRetMarshal;
 

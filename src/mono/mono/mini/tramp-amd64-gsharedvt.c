@@ -224,7 +224,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	/*callconv in regs */
 	caller_reg_area_offset = offset;
-	reg_area_size = ALIGN_TO ((n_arg_regs + n_arg_fregs) * 8, MONO_ARCH_FRAME_ALIGNMENT);
+	reg_area_size = ALIGN_TO ((n_arg_regs * 8) + (n_arg_fregs * 16), MONO_ARCH_FRAME_ALIGNMENT);
 	offset += reg_area_size;
 
 	framesize = offset;
@@ -266,7 +266,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 		amd64_mov_membase_reg (code, AMD64_RSP, caller_reg_area_offset + i * 8, param_regs [i], sizeof (target_mgreg_t));
 
 	for (i = 0; i < n_arg_fregs; ++i)
-		amd64_sse_movsd_membase_reg (code, AMD64_RSP, caller_reg_area_offset + (i + n_arg_regs) * 8, i);
+		amd64_sse_movups_membase_reg (code, AMD64_RSP, caller_reg_area_offset + (n_arg_regs * 8) + (i * 16), i);
 
 	/* TODO Allocate stack area used to pass arguments to the method */
 
@@ -410,6 +410,9 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 			break;
 		case GSHAREDVT_RET_R8:
 			amd64_sse_movsd_reg_membase (code, AMD64_XMM0, AMD64_R11, 0);
+			break;
+		case GSHAREDVT_RET_SIMD:
+			amd64_sse_movups_reg_membase (code, AMD64_XMM0, AMD64_R11, 0);
 			break;
 		default:
 			x86_breakpoint (code); /* can't handle specific case */
