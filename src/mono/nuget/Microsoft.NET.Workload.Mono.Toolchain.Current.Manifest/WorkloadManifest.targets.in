@@ -37,6 +37,18 @@
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true'">$(WasmNativeWorkload)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(WasmNativeWorkloadAvailable)' == '' or '$(WasmNativeWorkload)' == 'false'">false</WasmNativeWorkloadAvailable>
     <WasmNativeWorkload>$(WasmNativeWorkloadAvailable)</WasmNativeWorkload>
+
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
+    <HybridGlobalization Condition="'$(HybridGlobalization)' == ''">false</HybridGlobalization>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
+    <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">false</NullabilityInfoContextSupport>
+    <_AggressiveAttributeTrimming Condition="'$(_AggressiveAttributeTrimming)' == ''">true</_AggressiveAttributeTrimming>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
