@@ -283,7 +283,7 @@ TADDR PEAssembly::GetIL(RVA il)
 
 #ifndef DACCESS_COMPILE
 
-void PEAssembly::OpenImporter(bool swapForRWMDImport)
+void PEAssembly::OpenImporter(bool openForWriting)
 {
     CONTRACTL
     {
@@ -296,7 +296,7 @@ void PEAssembly::OpenImporter(bool swapForRWMDImport)
     CONTRACTL_END;
 
     // Make sure internal MD is in RW format.
-    ConvertMDInternalToReadWrite(swapForRWMDImport);
+    ConvertMDInternalToReadWrite(openForWriting);
 
     IMetaDataImport2 *pIMDImport = NULL;
     IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)m_pConvertedMDImport,
@@ -308,7 +308,11 @@ void PEAssembly::OpenImporter(bool swapForRWMDImport)
         pIMDImport->Release();
 }
 
-void PEAssembly::ConvertMDInternalToReadWrite(bool swapForRWMDImport)
+// This call will take the cached MDImport, convert it to RW, and cache it. If
+// openForWriting is true it will make this RW view of the metadata go-live for the
+// rest of the runtime operations. If false is passed in, the VM will keep operating
+// over the RO copy and the expectation is that no edit-style operations are used.
+void PEAssembly::ConvertMDInternalToReadWrite(bool openForWriting)
 {
     CONTRACTL
     {
@@ -329,22 +333,21 @@ void PEAssembly::ConvertMDInternalToReadWrite(bool swapForRWMDImport)
 
     if (pConvertedImport != NULL)
     {
-        if (swapForRWMDImport && pOld != pConvertedImport)
+        if (openForWriting && pOld != pConvertedImport)
         {
             // We had converted the metadata before, now we are requesting
             // to replace the RO view we had with the converted one.
             if (InterlockedCompareExchangeT(&m_pMDImport, pConvertedImport, pOld) == pOld)
             {
+                //if the debugger queries, it will now see that we have RW metadata
+                m_MDImportIsRW_Debugger_Use_Only = TRUE;
+
                 m_pMDImport->AddRef();
                 HRESULT hr=m_pConvertedMDImport->SetUserContextData(pOld);
                 _ASSERTE(SUCCEEDED(hr)||!"Leaking old MDImport");
                 IfFailThrow(hr);
             }
-            else
-            {
-                // Even if we lost the race, the fields should now be the same.
-                _ASSERTE(pConvertedImport == m_pMDImport);
-            }
+            _ASSERTE(pConvertedImport == m_pMDImport);
         }
 
         return;
@@ -359,9 +362,11 @@ void PEAssembly::ConvertMDInternalToReadWrite(bool swapForRWMDImport)
             EX_THROW(EEMessageException, (hr));
         }
 
-        if ((m_pMDImport == m_pConvertedMDImport && pNew == pOld) || !swapForRWMDImport)
+        // We need this RW copy of the metadata if we need to swap the RW to be go-live.
+        // If we don't intend to swap, then we can release and return.
+        // If we've already swapped (m_pMDImport == m_pConvertedMDImport) and there was no change, bail as well.
+        if ((m_pMDImport == m_pConvertedMDImport && pNew == pOld) || !openForWriting)
         {
-            _ASSERTE(m_pConvertedMDImport != NULL);
             pNew->Release();
             return;
         }
@@ -395,7 +400,7 @@ void PEAssembly::ConvertMDInternalToReadWrite(bool swapForRWMDImport)
         pNew = m_pConvertedMDImport;
     }
 
-    if (swapForRWMDImport)
+    if (openForWriting)
     {
         if (InterlockedCompareExchangeT(&m_pMDImport, pNew, pOld) == pOld)
         {
@@ -453,7 +458,7 @@ void PEAssembly::OpenEmitter()
     CONTRACTL_END;
 
     // Make sure internal MD is in RW format.
-    ConvertMDInternalToReadWrite(/* swapForRWMDImport */ true);
+    ConvertMDInternalToReadWrite(/* openForWriting */ true);
 
     IMetaDataEmit *pIMDEmit = NULL;
     IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetMDImport(),

@@ -275,7 +275,7 @@ inline IMDInternalImport* PEAssembly::GetMDImport()
 
 #ifndef DACCESS_COMPILE
 
-inline IMetaDataImport2 *PEAssembly::GetRWImporter(bool swapForRWMDImport)
+inline IMetaDataImport2 *PEAssembly::GetRWImporter(bool openForWriting)
 {
     CONTRACT(IMetaDataImport2 *)
     {
@@ -288,7 +288,7 @@ inline IMetaDataImport2 *PEAssembly::GetRWImporter(bool swapForRWMDImport)
     CONTRACT_END;
 
     if (m_pImporter == NULL)
-        OpenImporter(swapForRWMDImport);
+        OpenImporter(openForWriting);
 
     RETURN m_pImporter;
 }

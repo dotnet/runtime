@@ -161,12 +161,16 @@ public:
 
 #ifndef DACCESS_COMPILE
     IMetaDataEmit *GetEmitter();
-    IMetaDataImport2 *GetRWImporter(bool swapForRWMDImport = true);
+    IMetaDataImport2 *GetRWImporter(bool openForWriting = true);
 #else
     TADDR GetMDInternalRWAddress();
 #endif // DACCESS_COMPILE
 
-    void ConvertMDInternalToReadWrite(bool swapForRWMDImport = true);
+    // This call will take the cached MDImport, convert it to RW, and cache it. If
+    // openForWriting is true it will make this RW view of the metadata go-live for the
+    // rest of the runtime operations. If false is passed in, the VM will keep operating
+    // over the RO copy and the expectation is that no edit-style operations are used.
+    void ConvertMDInternalToReadWrite(bool openForWriting = true);
 
     void GetMVID(GUID* pMvid);
     ULONG GetHashAlgId();
@@ -382,7 +386,7 @@ private:
 #endif
 
     void OpenMDImport();
-    void OpenImporter(bool swapForRWMDImport = true);
+    void OpenImporter(bool openForWriting = true);
     void OpenEmitter();
 
 private:
@@ -420,6 +424,11 @@ private:
 #endif
     };
 
+    // This holds a RW copy of the metadata for scenarios that need to have a public interface
+    // to give out, but that claim they don't need write access - such as the classic pdb reader.
+    // It will not go live until a facility that requires metadata edits requests it.
+    // See comment on ConvertMDInternalToReadWrite around the openForWriting parameter
+    // as well as its callers.
     IMDInternalImport* m_pConvertedMDImport;
 
     IMetaDataImport2* m_pImporter;

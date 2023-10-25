@@ -1027,14 +1027,14 @@ public:
         return m_pPEAssembly->GetEmitter();
     }
 
-    IMetaDataImport2 *GetRWImporter(bool swapForRWMDImport = true)
+    IMetaDataImport2 *GetRWImporter(bool openForWriting=true)
     {
         WRAPPER_NO_CONTRACT;
 
-        return m_pPEAssembly->GetRWImporter(swapForRWMDImport);
+        return m_pPEAssembly->GetRWImporter(openForWriting);
     }
 
-    HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, bool swapForRWMDImport, LPVOID * ppvInterface);
+    HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, bool openForWriting, LPVOID * ppvInterface);
 #endif // !DACCESS_COMPILE
 
 #if defined(FEATURE_READYTORUN)
