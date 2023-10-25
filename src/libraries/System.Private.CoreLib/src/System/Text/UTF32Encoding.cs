@@ -1122,8 +1122,8 @@ namespace System.Text
         public override ReadOnlySpan<byte> Preamble =>
             GetType() != typeof(UTF32Encoding) ? new ReadOnlySpan<byte>(GetPreamble()) : // in case a derived UTF32Encoding overrode GetPreamble
             !_emitUTF32ByteOrderMark ? default :
-            _bigEndian ? (ReadOnlySpan<byte>)new byte[4] { 0x00, 0x00, 0xFE, 0xFF } : // uses C# compiler's optimization for static byte[] data
-            (ReadOnlySpan<byte>)new byte[4] { 0xFF, 0xFE, 0x00, 0x00 };
+            _bigEndian ? [0x00, 0x00, 0xFE, 0xFF] :
+            [0xFF, 0xFE, 0x00, 0x00];
 
         public override bool Equals([NotNullWhen(true)] object? value)
         {

@@ -178,7 +178,7 @@ namespace System.Threading.Tasks.Tests
             }
             catch
             {
-                Assert.True(false, string.Format("TokenSourceDispose:    > ctr.Dispose() failed when referring to a disposed CTS"));
+                Assert.Fail(string.Format("TokenSourceDispose:    > ctr.Dispose() failed when referring to a disposed CTS"));
             }
 
             bool cr = tokenSource.IsCancellationRequested; //this is ok after dispose.
@@ -599,7 +599,7 @@ namespace System.Threading.Tasks.Tests
                     }
                     catch (Exception ex)
                     {
-                        Assert.True(false, string.Format("Cancel_ThrowOnFirstException:  The wrong exception type was thrown. ex=" + ex));
+                        Assert.Fail(string.Format("Cancel_ThrowOnFirstException:  The wrong exception type was thrown. ex=" + ex));
                     }
                     mre_CancelHasBeenEnacted.Set();
                 });
@@ -857,11 +857,11 @@ namespace System.Threading.Tasks.Tests
             {
                 if (ex is ObjectDisposedException)
                 {
-                    Assert.True(false, string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - ODE Occurred!"));
+                    Assert.Fail(string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - ODE Occurred!"));
                 }
                 else
                 {
-                    Assert.True(false, string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - Exception Occurred (not an ODE!): " + ex));
+                    Assert.Fail(string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - Exception Occurred (not an ODE!): " + ex));
                 }
             }
         }
@@ -984,9 +984,9 @@ namespace System.Threading.Tasks.Tests
                     {
                         // Accessing the Token property should throw an ObjectDisposedException
                         if (c.Token.CanBeCanceled)
-                            Assert.True(false, string.Format("DerivedCancellationTokenSource: Accessing the Token property should throw an ObjectDisposedException, but it did not."));
+                            Assert.Fail(string.Format("DerivedCancellationTokenSource: Accessing the Token property should throw an ObjectDisposedException, but it did not."));
                         else
-                            Assert.True(false, string.Format("DerivedCancellationTokenSource: Accessing the Token property should throw an ObjectDisposedException, but it did not."));
+                            Assert.Fail(string.Format("DerivedCancellationTokenSource: Accessing the Token property should throw an ObjectDisposedException, but it did not."));
                     });
             }
         }

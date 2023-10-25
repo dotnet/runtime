@@ -54,6 +54,13 @@
     <CoreRunArgument>--corerun $(BaseDirectory)/dotnet-mono/shared/Microsoft.NETCore.App/$(ProductVersion)/corerun</CoreRunArgument>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(MonoAOT)' == 'true' and '$(AGENT_OS)' == 'Windows_NT'">
+    <HelixPreCommands>$(HelixPreCommands);%HELIX_CORRELATION_PAYLOAD%\monoaot\mono-aot-cross --llvm --version</HelixPreCommands>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoAOT)' == 'true' and '$(AGENT_OS)' != 'Windows_NT'">
+    <HelixPreCommands>$(HelixPreCommands);$HELIX_CORRELATION_PAYLOAD/monoaot/mono-aot-cross --llvm --version</HelixPreCommands>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(UseCoreRun)' == 'true'">
     <CoreRunArgument>--corerun $(CoreRun)</CoreRunArgument>
   </PropertyGroup>
@@ -73,6 +80,8 @@
   <PropertyGroup>
     <WorkItemTimeout>6:00</WorkItemTimeout>
     <WorkItemTimeout Condition="'$(OnlySanityCheck)' == 'true'">1:30</WorkItemTimeout>
+
+    <ExtraBenchmarkDotNetArguments Condition="'$(OnlySanityCheck)' == 'true'">$(ExtraBenchmarkDotNetArguments) --filter System.Tests.Perf_*</ExtraBenchmarkDotNetArguments>
   </PropertyGroup>
 
   <ItemGroup>
@@ -124,7 +133,7 @@
     <FailOnTestFailure>false</FailOnTestFailure>
   </PropertyGroup>
 
-  <!-- 
+  <!--
     Partition the Microbenchmarks project, but nothing else
   -->
   <ItemGroup Condition="$(TargetCsproj.Contains('MicroBenchmarks.csproj'))">

@@ -98,7 +98,7 @@ bool RedhawkGCInterface::InitializeSubsystems()
         GetRuntimeInstance()->EnableConservativeStackReporting();
     }
 
-    HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
+    HRESULT hr = GCHeapUtilities::InitializeGC();
     if (FAILED(hr))
         return false;
 
@@ -503,7 +503,7 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
-    ASSERT(pObj1->GetMethodTable()->IsEquivalentTo(pObj2->GetMethodTable()));
+    ASSERT(pObj1->GetMethodTable() == pObj2->GetMethodTable());
     ASSERT(pObj1->GetMethodTable()->IsValueType());
 
     MethodTable * pEEType = pObj1->GetMethodTable();
@@ -732,10 +732,12 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     UNREFERENCED_PARAMETER(gen);
     UNREFERENCED_PARAMETER(reason);
 
+#ifdef FEATURE_EVENT_TRACE
     if (!fConcurrent)
     {
         ETW::GCLog::WalkHeap();
     }
+#endif // FEATURE_EVENT_TRACE
 }
 
 // Note on last parameter: when calling this for bgc, only ETW

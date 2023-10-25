@@ -236,6 +236,8 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
 #define MinSubICUVersion 1
 #define MaxSubICUVersion 5
 
+#define VERSIONED_LIB_NAME_LEN 64
+
 // Get filename of an ICU library with the requested version in the name
 // There are three possible cases of the version components values:
 // 1. Only majorVer is not equal to -1 => result is baseFileName.majorver
@@ -245,14 +247,16 @@ static void GetVersionedLibFileName(const char* baseFileName, int majorVer, int 
 {
     assert(majorVer != -1);
 
-    int nameLen = sprintf(result, "%s.%s%d", baseFileName, versionPrefix, majorVer);
+    int nameLen = snprintf(result, VERSIONED_LIB_NAME_LEN, "%s.%s%d", baseFileName, versionPrefix, majorVer);
 
     if (minorVer != -1)
     {
-        nameLen += sprintf(result + nameLen, ".%d", minorVer);
+        assert(nameLen <= VERSIONED_LIB_NAME_LEN);
+        nameLen += snprintf(result + nameLen, (size_t)(VERSIONED_LIB_NAME_LEN - nameLen), ".%d", minorVer);
         if (subVer != -1)
         {
-            sprintf(result + nameLen, ".%d", subVer);
+            assert(nameLen <= VERSIONED_LIB_NAME_LEN);
+            snprintf(result + nameLen, (size_t)(VERSIONED_LIB_NAME_LEN - nameLen), ".%d", subVer);
         }
     }
 }
@@ -260,8 +264,8 @@ static void GetVersionedLibFileName(const char* baseFileName, int majorVer, int 
 // Try to open the necessary ICU libraries
 static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
-    char libicuucName[64];
-    char libicui18nName[64];
+    char libicuucName[VERSIONED_LIB_NAME_LEN];
+    char libicui18nName[VERSIONED_LIB_NAME_LEN];
 
     c_static_assert_msg(sizeof("libicuuc.so") + MaxICUVersionStringLength <= sizeof(libicuucName), "The libicuucName is too small");
     GetVersionedLibFileName("libicuuc.so", majorVer, minorVer, subVer, versionPrefix, libicuucName);
@@ -417,7 +421,7 @@ static void InitializeUColClonePointers(char* symbolVersion)
     ucol_safeClone_ptr = (ucol_safeClone_func)GetProcAddress((HMODULE)libicui18n, symbolName);
 #else
     char symbolName[SYMBOL_NAME_SIZE];
-    sprintf(symbolName, "ucol_safeClone%s", symbolVersion);
+    snprintf(symbolName, SYMBOL_NAME_SIZE, "ucol_safeClone%s", symbolVersion);
     ucol_safeClone_ptr = (ucol_safeClone_func)dlsym(libicui18n, symbolName);
 #endif // defined(TARGET_WINDOWS)
 
@@ -446,7 +450,7 @@ static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
     ucol_setVariableTop_ptr = (ucol_setVariableTop_func)GetProcAddress((HMODULE)libicui18n, symbolName);
 #else
     char symbolName[SYMBOL_NAME_SIZE];
-    sprintf(symbolName, "ucol_setVariableTop%s", symbolVersion);
+    snprintf(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
     ucol_setVariableTop_ptr = (ucol_setVariableTop_func)dlsym(libicui18n, symbolName);
 #endif // defined(TARGET_OSX) || defined(TARGET_ANDROID)
 
@@ -538,7 +542,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 #if defined(TARGET_WINDOWS)
         sprintf_s(symbolSuffix, SYMBOL_CUSTOM_SUFFIX_SIZE, "_%s", suffix);
 #else
-        sprintf(symbolSuffix, "_%s", suffix);
+        snprintf(symbolSuffix, SYMBOL_CUSTOM_SUFFIX_SIZE, "_%s", suffix);
 #endif
     }
 

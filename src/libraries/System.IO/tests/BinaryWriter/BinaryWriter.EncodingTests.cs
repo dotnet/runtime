@@ -190,7 +190,7 @@ namespace System.IO.Tests
 
         private static bool IsUsingFastUtf8(BinaryWriter writer)
         {
-            return (bool)writer.GetType().GetField("_useFastUtf8", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(writer);
+            return (bool)typeof(BinaryWriter).GetField("_useFastUtf8", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(writer);
         }
 
         private static string GenerateLargeUnicodeString(int charCount)

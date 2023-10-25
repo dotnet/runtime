@@ -7,8 +7,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Xunit;
 
-internal class Program
+public class Program
 {
     public static int CompareDLLs(string folder1, string folder2)
     {
@@ -103,7 +104,8 @@ internal class Program
         return 0 == process.ExitCode;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string coreRootPath = Environment.GetEnvironmentVariable("CORE_ROOT");
         string compilationInputFolder = "TestAssemblies";
