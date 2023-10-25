@@ -148,12 +148,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
-		public Task UnusedComInterfaceIsRemovedWhenComFeatureExcluded ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task UnusedExplicitInterfaceHasMethodPreservedViaXml ()
 		{
 			return RunTest (allowMissingWarnings: true);

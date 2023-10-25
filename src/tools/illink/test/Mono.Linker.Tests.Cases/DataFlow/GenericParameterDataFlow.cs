@@ -3,10 +3,8 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
-using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -219,7 +217,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T> : BaseTypeWithOpenGenericDAMTAndRUC<T>, IGenericInterfaceTypeWithRequirements<T>
 		{
 			[ExpectedWarning ("IL2091", nameof (DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T>), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>))]
 			public DerivedTypeWithOpenGenericOnBaseWithRUCOnBase () { }
 		}
 

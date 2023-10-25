@@ -10,9 +10,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 	[RemovedAssembly ("library.dll")]
 	public class PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction
 	{
-#if NETCOREAPP
 		[Kept]
-#endif
 		private PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction ()
 		{
 		}
@@ -22,10 +20,8 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 		}
 
 		[PreserveDependency ("MethodPreservedViaDependencyAttribute()", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib", "library")]
-#if NETCOREAPP
 		[Kept]
 		[KeptAttributeAttribute (typeof (PreserveDependencyAttribute))]
-#endif
 		static void Dependency ()
 		{
 		}

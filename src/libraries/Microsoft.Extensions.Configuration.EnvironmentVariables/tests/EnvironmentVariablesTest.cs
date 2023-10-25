@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             Assert.Equal("SqlClient", envConfigSrc.Get("DEFAULTCONNECTION:PROVIDER"));
             Assert.Equal("AnotherTestConnectionString", envConfigSrc.Get("Inventory:CONNECTIONSTRING"));
             Assert.Equal("MySql", envConfigSrc.Get("Inventory:Provider"));
-            Assert.Equal("EnvironmentVariablesConfigurationProvider Prefix: ''", envConfigSrc.ToString());
+            Assert.Equal("EnvironmentVariablesConfigurationProvider", envConfigSrc.ToString());
         }
 
         [Fact]
@@ -284,6 +284,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             var dic = new Dictionary<string, string>

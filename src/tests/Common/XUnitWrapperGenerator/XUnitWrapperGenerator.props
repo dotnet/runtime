@@ -6,6 +6,7 @@
     <CompilerVisibleProperty Include="TargetArchitecture" />
     <CompilerVisibleProperty Include="Priority" />
     <!-- Properties that influence test harness generation -->
+    <CompilerVisibleProperty Include="InMergedTestDirectory" />
     <CompilerVisibleProperty Include="IsMergedTestRunnerAssembly" />
     <CompilerVisibleProperty Include="TestFilter" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IsOutOfProcessTestAssembly" />

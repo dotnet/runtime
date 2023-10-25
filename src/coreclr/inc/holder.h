@@ -1187,13 +1187,24 @@ FORCEINLINE void RegKeyRelease(HKEY k) {RegCloseKey(k);};
 typedef Wrapper<HKEY,DoNothing,RegKeyRelease> RegKeyHolder;
 #endif // HOST_WINDOWS
 
-class ErrorModeHolder
+class ErrorModeHolder final
 {
-    UINT m_oldMode;
+#ifdef HOST_WINDOWS
+    BOOL m_revert;
+    DWORD m_oldMode;
 public:
-    ErrorModeHolder(UINT newMode){m_oldMode=SetErrorMode(newMode);};
-    ~ErrorModeHolder(){SetErrorMode(m_oldMode);};
-    UINT OldMode() {return m_oldMode;};
+    ErrorModeHolder()
+        : m_revert{ FALSE }
+    {
+        DWORD newMode = SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS;
+        m_revert = ::SetThreadErrorMode(newMode, &m_oldMode);
+    }
+    ~ErrorModeHolder() noexcept
+    {
+        if (m_revert != FALSE)
+            (void)::SetThreadErrorMode(m_oldMode, NULL);
+    }
+#endif // HOST_WINDOWS
 };
 
 #ifdef HOST_WINDOWS

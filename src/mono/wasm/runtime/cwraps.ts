@@ -12,6 +12,7 @@ import type {
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 import { linkerDisableLegacyJsInterop, linkerEnableAotProfiler, linkerEnableBrowserProfiler, Module } from "./globals";
 import { mono_log_error } from "./logging";
+import { mono_assert } from "./globals";
 
 type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
@@ -76,6 +77,7 @@ const fn_signatures: SigLine[] = [
 
     //INTERNAL
     [false, "mono_wasm_exit", "void", ["number"]],
+    [false, "mono_wasm_abort", "void", []],
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     [false, "mono_wasm_enable_on_demand_gc", "void", ["number"]],
@@ -116,7 +118,6 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_adjust_abort_count", "number", ["number", "number"]],
     [true, "mono_jiterp_register_jit_call_thunk", "void", ["number", "number"]],
     [true, "mono_jiterp_type_get_raw_value_size", "number", ["number"]],
-    [true, "mono_jiterp_update_jit_call_dispatcher", "void", ["number"]],
     [true, "mono_jiterp_get_signature_has_this", "number", ["number"]],
     [true, "mono_jiterp_get_signature_return_type", "number", ["number"]],
     [true, "mono_jiterp_get_signature_param_count", "number", ["number"]],
@@ -137,6 +138,17 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
     [true, "mono_wasm_is_zero_page_reserved", "number", []],
     [true, "mono_jiterp_is_special_interface", "number", ["number"]],
+    [true, "mono_jiterp_initialize_table", "void", ["number", "number", "number"]],
+    [true, "mono_jiterp_allocate_table_entry", "number", ["number"]],
+    [true, "mono_jiterp_get_interp_entry_func", "number", ["number"]],
+    [true, "mono_jiterp_get_counter", "number", ["number"]],
+    [true, "mono_jiterp_modify_counter", "number", ["number", "number"]],
+    [true, "mono_jiterp_tlqueue_next", "number", ["number"]],
+    [true, "mono_jiterp_tlqueue_add", "number", ["number", "number"]],
+    [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
+    [true, "mono_jiterp_begin_catch", "void", ["number"]],
+    [true, "mono_jiterp_end_catch", "void", []],
+
     ...diagnostics_cwraps,
     ...legacy_interop_cwraps
 ];
@@ -205,7 +217,8 @@ export interface t_Cwraps {
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
 
     //INTERNAL
-    mono_wasm_exit(exit_code: number): number;
+    mono_wasm_exit(exit_code: number): void;
+    mono_wasm_abort(): void;
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_enable_on_demand_gc(enable: number): void;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
@@ -247,7 +260,6 @@ export interface t_Cwraps {
     mono_jiterp_get_options_version(): number;
     mono_jiterp_adjust_abort_count(opcode: number, delta: number): number;
     mono_jiterp_register_jit_call_thunk(cinfo: number, func: number): void;
-    mono_jiterp_update_jit_call_dispatcher(fn: number): void;
     mono_jiterp_get_signature_has_this(sig: VoidPtr): number;
     mono_jiterp_get_signature_return_type(sig: VoidPtr): MonoType;
     mono_jiterp_get_signature_param_count(sig: VoidPtr): number;
@@ -269,6 +281,18 @@ export interface t_Cwraps {
     mono_jiterp_get_opcode_info(opcode: number, type: number): number;
     mono_wasm_is_zero_page_reserved(): number;
     mono_jiterp_is_special_interface(klass: number): number;
+    mono_jiterp_initialize_table(type: number, firstIndex: number, lastIndex: number): void;
+    mono_jiterp_allocate_table_entry(type: number): number;
+    mono_jiterp_get_interp_entry_func(type: number): number;
+    mono_jiterp_get_counter(counter: number): number;
+    mono_jiterp_modify_counter(counter: number, delta: number): number;
+    // returns value or, if queue is empty, VoidPtrNull
+    mono_jiterp_tlqueue_next(queue: number): VoidPtr;
+    // returns new size of queue after add
+    mono_jiterp_tlqueue_add(queue: number, value: VoidPtr): number;
+    mono_jiterp_tlqueue_clear(queue: number): void;
+    mono_jiterp_begin_catch(ptr: number): void;
+    mono_jiterp_end_catch(): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

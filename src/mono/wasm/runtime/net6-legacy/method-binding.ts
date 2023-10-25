@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { legacy_c_functions as cwraps } from "../cwraps";
-import { ENVIRONMENT_IS_PTHREAD, Module } from "../globals";
+import { ENVIRONMENT_IS_PTHREAD, Module, mono_assert } from "../globals";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";

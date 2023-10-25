@@ -793,7 +793,14 @@ namespace System.Runtime.InteropServices.Tests
         public void IsNegative(float value)
         {
             bool result = NFloat.IsNegative(value);
-            Assert.Equal(float.IsNegative(value), result);
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(double.IsNegative(value), result);
+            }
+            else
+            {
+                Assert.Equal(float.IsNegative(value), result);
+            }
         }
 
         [Theory]
@@ -2544,6 +2551,126 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Equal(+expectedResult, NFloat.Lerp((NFloat)(+value1), (NFloat)(+value2), (NFloat)(amount)), 0);
             AssertExtensions.Equal((expectedResult == 0.0) ? expectedResult : -expectedResult, NFloat.Lerp((NFloat)(-value1), (NFloat)(-value2), (NFloat)(amount)), 0);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(float.NaN,                 float.NaN,                 0.0f)]
+        [InlineData(0.0f,                      0.0f,                      0.0f)]
+        [InlineData(0.318309886f,              0.0055555557f,             CrossPlatformMachineEpsilon32)]       // value:  (1 / pi)
+        [InlineData(0.434294482f,              0.007579869f,              CrossPlatformMachineEpsilon32)]       // value:  (log10(e))
+        [InlineData(0.5f,                      0.008726646f,              CrossPlatformMachineEpsilon32)]
+        [InlineData(0.636619772f,              0.011111111f,              CrossPlatformMachineEpsilon32)]       // value:  (2 / pi)
+        [InlineData(0.693147181f,              0.0120977005f,             CrossPlatformMachineEpsilon32)]       // value:  (ln(2))
+        [InlineData(0.707106781f,              0.012341342f,              CrossPlatformMachineEpsilon32)]       // value:  (1 / sqrt(2))
+        [InlineData(0.785398163f,              0.013707785f,              CrossPlatformMachineEpsilon32)]       // value:  (pi / 4)
+        [InlineData(1.0f,                      0.017453292f,              CrossPlatformMachineEpsilon32)]
+        [InlineData(1.12837917f,               0.019693933f,              CrossPlatformMachineEpsilon32)]       // value:  (2 / sqrt(pi))
+        [InlineData(1.41421356f,               0.024682684f,              CrossPlatformMachineEpsilon32)]       // value:  (sqrt(2))
+        [InlineData(1.44269504f,               0.025179777f,              CrossPlatformMachineEpsilon32)]       // value:  (log2(e))
+        [InlineData(1.5f,                      0.02617994f,               CrossPlatformMachineEpsilon32)]
+        [InlineData(1.57079633f,               0.02741557f,               CrossPlatformMachineEpsilon32)]       // value:  (pi / 2)
+        [InlineData(2.0f,                      0.034906585f,              CrossPlatformMachineEpsilon32)]
+        [InlineData(2.30258509f,               0.040187694f,              CrossPlatformMachineEpsilon32)]       // value:  (ln(10))
+        [InlineData(2.5f,                      0.043633234f,              CrossPlatformMachineEpsilon32)]
+        [InlineData(2.71828183f,               0.047442965f,              CrossPlatformMachineEpsilon32)]       // value:  (e)
+        [InlineData(3.0f,                      0.05235988f,               CrossPlatformMachineEpsilon32)]
+        [InlineData(3.14159265f,               0.05483114f,               CrossPlatformMachineEpsilon32)]       // value:  (pi)
+        [InlineData(3.5f,                      0.061086528f,              CrossPlatformMachineEpsilon32)]
+        [InlineData(float.PositiveInfinity,    float.PositiveInfinity,    0.0f)]
+        public static void DegreesToRadiansTest32(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, (float)NFloat.DegreesToRadians(-value), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, (float)NFloat.DegreesToRadians(+value), allowedVariance);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(double.NaN,               double.NaN,               0.0)]
+        [InlineData(0.0,                      0.0,                      0.0)]
+        [InlineData(0.31830988618379067,      0.005555555555555556,     CrossPlatformMachineEpsilon64)]       // value:  (1 / pi)
+        [InlineData(0.43429448190325183,      0.007579868632454674,     CrossPlatformMachineEpsilon64)]       // value:  (log10(e))
+        [InlineData(0.5,                      0.008726646259971648,     CrossPlatformMachineEpsilon64)]
+        [InlineData(0.63661977236758134,      0.011111111111111112,     CrossPlatformMachineEpsilon64)]       // value:  (2 / pi)
+        [InlineData(0.69314718055994531,      0.01209770050168668,      CrossPlatformMachineEpsilon64)]       // value:  (ln(2))
+        [InlineData(0.70710678118654752,      0.012341341494884351,     CrossPlatformMachineEpsilon64)]       // value:  (1 / sqrt(2))
+        [InlineData(0.78539816339744831,      0.013707783890401885,     CrossPlatformMachineEpsilon64)]       // value:  (pi / 4)
+        [InlineData(1.0,                      0.017453292519943295,     CrossPlatformMachineEpsilon64)]
+        [InlineData(1.1283791670955126,       0.019693931676727953,     CrossPlatformMachineEpsilon64)]       // value:  (2 / sqrt(pi))
+        [InlineData(1.4142135623730950,       0.024682682989768702,     CrossPlatformMachineEpsilon64)]       // value:  (sqrt(2))
+        [InlineData(1.4426950408889634,       0.02517977856570663,      CrossPlatformMachineEpsilon64)]       // value:  (log2(e))
+        [InlineData(1.5,                      0.02617993877991494,      CrossPlatformMachineEpsilon64)]
+        [InlineData(1.5707963267948966,       0.02741556778080377,      CrossPlatformMachineEpsilon64)]       // value:  (pi / 2)
+        [InlineData(2.0,                      0.03490658503988659,      CrossPlatformMachineEpsilon64)]
+        [InlineData(2.3025850929940457,       0.040187691180085916,     CrossPlatformMachineEpsilon64)]       // value:  (ln(10))
+        [InlineData(2.5,                      0.04363323129985824,      CrossPlatformMachineEpsilon64)]
+        [InlineData(2.7182818284590452,       0.047442967903742035,     CrossPlatformMachineEpsilon64)]       // value:  (e)
+        [InlineData(3.0,                      0.05235987755982988,      CrossPlatformMachineEpsilon64)]
+        [InlineData(3.1415926535897932,       0.05483113556160754,      CrossPlatformMachineEpsilon64)]       // value:  (pi)
+        [InlineData(3.5,                      0.061086523819801536,     CrossPlatformMachineEpsilon64)]
+        [InlineData(double.PositiveInfinity,  double.PositiveInfinity,  0.0)]
+        public static void DegreesToRadiansTest64(double value, double expectedResult, double allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, NFloat.DegreesToRadians((NFloat)(-value)), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, NFloat.DegreesToRadians((NFloat)(+value)), allowedVariance);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(float.NaN,                float.NaN,                  0.0)]
+        [InlineData(0.0f,                     0.0f,                       0.0)]
+        [InlineData(0.0055555557f,            0.318309886f,               CrossPlatformMachineEpsilon32)]       // expected:  (1 / pi)
+        [InlineData(0.007579869f,             0.434294482f,               CrossPlatformMachineEpsilon32)]       // expected:  (log10(e))
+        [InlineData(0.008726646f,             0.5f,                       CrossPlatformMachineEpsilon32)]
+        [InlineData(0.011111111f,             0.636619772f,               CrossPlatformMachineEpsilon32)]       // expected:  (2 / pi)
+        [InlineData(0.0120977005f,            0.693147181f,               CrossPlatformMachineEpsilon32)]       // expected:  (ln(2))
+        [InlineData(0.012341342f,             0.707106781f,               CrossPlatformMachineEpsilon32)]       // expected:  (1 / sqrt(2))
+        [InlineData(0.013707785f,             0.785398163f,               CrossPlatformMachineEpsilon32)]       // expected:  (pi / 4)
+        [InlineData(0.017453292f,             1.0f,                       CrossPlatformMachineEpsilon32)]
+        [InlineData(0.019693933f,             1.12837917f,                CrossPlatformMachineEpsilon32)]       // expected:  (2 / sqrt(pi))
+        [InlineData(0.024682684f,             1.41421356f,                CrossPlatformMachineEpsilon32)]       // expected:  (sqrt(2))
+        [InlineData(0.025179777f,             1.44269504f,                CrossPlatformMachineEpsilon32)]       // expected:  (log2(e))
+        [InlineData(0.02617994f,              1.5f,                       CrossPlatformMachineEpsilon32)]
+        [InlineData(0.02741557f,              1.57079633f,                CrossPlatformMachineEpsilon32)]       // expected:  (pi / 2)
+        [InlineData(0.034906585f,             2.0f,                       CrossPlatformMachineEpsilon32)]
+        [InlineData(0.040187694f,             2.30258509f,                CrossPlatformMachineEpsilon32)]       // expected:  (ln(10))
+        [InlineData(0.043633234f,             2.5f,                       CrossPlatformMachineEpsilon32)]
+        [InlineData(0.047442965f,             2.71828183f,                CrossPlatformMachineEpsilon32)]       // expected:  (e)
+        [InlineData(0.05235988f,              3.0f,                       CrossPlatformMachineEpsilon32)]
+        [InlineData(0.05483114f,              3.14159265f,                CrossPlatformMachineEpsilon32)]       // expected:  (pi)
+        [InlineData(0.061086528f,             3.5f,                       CrossPlatformMachineEpsilon32)]
+        [InlineData(float.PositiveInfinity,   float.PositiveInfinity,     0.0)]
+        public static void RadiansToDegreesTest32(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, (float)NFloat.RadiansToDegrees(-value), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, (float)NFloat.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(double.NaN,               double.NaN,               0.0)]
+        [InlineData(0.0,                      0.0,                      0.0)]
+        [InlineData(0.0055555555555555567,    0.3183098861837906,       CrossPlatformMachineEpsilon64)]       // expected:  (1 / pi)
+        [InlineData(0.0075798686324546743,    0.4342944819032518,       CrossPlatformMachineEpsilon64)]       // expected:  (log10(e))
+        [InlineData(0.008726646259971648,     0.5,                      CrossPlatformMachineEpsilon64)]
+        [InlineData(0.0111111111111111124,    0.6366197723675813,       CrossPlatformMachineEpsilon64)]       // expected:  (2 / pi)
+        [InlineData(0.0120977005016866801,    0.6931471805599453,       CrossPlatformMachineEpsilon64)]       // expected:  (ln(2))
+        [InlineData(0.0123413414948843512,    0.7071067811865475,       CrossPlatformMachineEpsilon64)]       // expected:  (1 / sqrt(2))
+        [InlineData(0.0137077838904018851,    0.7853981633974483,       CrossPlatformMachineEpsilon64)]       // expected:  (pi / 4)
+        [InlineData(0.017453292519943295,     1.0,                      CrossPlatformMachineEpsilon64)]
+        [InlineData(0.019693931676727953,     1.1283791670955126,       CrossPlatformMachineEpsilon64)]       // expected:  (2 / sqrt(pi))
+        [InlineData(0.024682682989768702,     1.4142135623730950,       CrossPlatformMachineEpsilon64)]       // expected:  (sqrt(2))
+        [InlineData(0.025179778565706630,     1.4426950408889634,       CrossPlatformMachineEpsilon64)]       // expected:  (log2(e))
+        [InlineData(0.026179938779914940,     1.5,                      CrossPlatformMachineEpsilon64)]
+        [InlineData(0.027415567780803770,     1.5707963267948966,       CrossPlatformMachineEpsilon64)]       // expected:  (pi / 2)
+        [InlineData(0.034906585039886590,     2.0,                      CrossPlatformMachineEpsilon64)]
+        [InlineData(0.040187691180085916,     2.3025850929940457,       CrossPlatformMachineEpsilon64)]       // expected:  (ln(10))
+        [InlineData(0.043633231299858240,     2.5,                      CrossPlatformMachineEpsilon64)]
+        [InlineData(0.047442967903742035,     2.7182818284590452,       CrossPlatformMachineEpsilon64)]       // expected:  (e)
+        [InlineData(0.052359877559829880,     3.0,                      CrossPlatformMachineEpsilon64)]
+        [InlineData(0.054831135561607540,     3.1415926535897932,       CrossPlatformMachineEpsilon64)]       // expected:  (pi)
+        [InlineData(0.061086523819801536,     3.5,                      CrossPlatformMachineEpsilon64)]
+        [InlineData(double.PositiveInfinity,  double.PositiveInfinity,  0.0)]
+        public static void RadiansToDegreesTest64(double value, double expectedResult, double allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, NFloat.RadiansToDegrees((NFloat)(-value)), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, NFloat.RadiansToDegrees((NFloat)(+value)), allowedVariance);
         }
     }
 }

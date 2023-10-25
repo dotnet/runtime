@@ -5,6 +5,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <NoWarn>$(NoWarn),CA2007</NoWarn>
     <UseAppHost>false</UseAppHost>
+    <RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>

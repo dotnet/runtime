@@ -284,12 +284,12 @@ private:
     static const unsigned VNFOA_KnownNonNullShift     = 5;
     static const unsigned VNFOA_SharedStaticShift     = 6;
 
-    static_assert(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
-    static_assert(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
-    static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
-    static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
-    static_assert(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
-    static_assert(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
+    static_assert_no_msg(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
+    static_assert_no_msg(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
+    static_assert_no_msg(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
+    static_assert_no_msg(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
+    static_assert_no_msg(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
+    static_assert_no_msg(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
@@ -681,9 +681,16 @@ public:
 
     ValueNum VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size);
 
+    ValueNum VNForMapSelectInner(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
+
     // A method that does the work for VNForMapSelect and may call itself recursively.
-    ValueNum VNForMapSelectWork(
-        ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN);
+    ValueNum VNForMapSelectWork(ValueNumKind            vnk,
+                                var_types               type,
+                                ValueNum                map,
+                                ValueNum                index,
+                                int*                    pBudget,
+                                bool*                   pUsedRecursiveVN,
+                                class SmallValueNumSet& loopMemoryDependencies);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
@@ -1800,6 +1807,33 @@ private:
             m_VNFunc4Map = new (m_alloc) VNFunc4ToValueNumMap(m_alloc);
         }
         return m_VNFunc4Map;
+    }
+
+    class MapSelectWorkCacheEntry
+    {
+        union {
+            ValueNum* m_memoryDependencies;
+            ValueNum  m_inlineMemoryDependencies[sizeof(ValueNum*) / sizeof(ValueNum)];
+        };
+
+        unsigned m_numMemoryDependencies = 0;
+
+    public:
+        ValueNum Result;
+
+        void SetMemoryDependencies(Compiler* comp, class SmallValueNumSet& deps);
+        void GetMemoryDependencies(Compiler* comp, class SmallValueNumSet& deps);
+    };
+
+    typedef JitHashTable<VNDefFuncApp<2>, VNDefFuncAppKeyFuncs<2>, MapSelectWorkCacheEntry> MapSelectWorkCache;
+    MapSelectWorkCache* m_mapSelectWorkCache = nullptr;
+    MapSelectWorkCache* GetMapSelectWorkCache()
+    {
+        if (m_mapSelectWorkCache == nullptr)
+        {
+            m_mapSelectWorkCache = new (m_alloc) MapSelectWorkCache(m_alloc);
+        }
+        return m_mapSelectWorkCache;
     }
 
     // We reserve Chunk 0 for "special" VNs.

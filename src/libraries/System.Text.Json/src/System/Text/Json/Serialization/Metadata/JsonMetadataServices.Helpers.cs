@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Regardless of the source generator we need to re-run the naming conflict resolution algorithm
             // at run time since it is possible that the naming policy or other configs can be different then.
-            JsonTypeInfo.PropertyHierarchyResolutionState state = new();
+            JsonTypeInfo.PropertyHierarchyResolutionState state = new(typeInfo.Options);
 
             foreach (JsonPropertyInfo jsonPropertyInfo in properties)
             {
@@ -160,7 +160,10 @@ namespace System.Text.Json.Serialization.Metadata
                 propertyList.AddPropertyWithConflictResolution(jsonPropertyInfo, ref state);
             }
 
-            // NB we don't need to sort source gen properties here since they were already sorted at compile time.
+            if (state.IsPropertyOrderSpecified)
+            {
+                propertyList.SortProperties();
+            }
         }
 
         private static JsonPropertyInfo<T> CreatePropertyInfoCore<T>(JsonPropertyInfoValues<T> propertyInfoValues, JsonSerializerOptions options)

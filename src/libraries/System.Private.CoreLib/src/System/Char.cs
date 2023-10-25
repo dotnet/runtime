@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: This is the value class representing a Unicode character
-** Char methods until we create this functionality.
-**
-**
-===========================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +13,9 @@ using System.Text;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a character as a UTF-16 code unit.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -62,8 +55,8 @@ namespace System
         // - 0x40 bit if set means 'is uppercase letter'
         // - 0x20 bit if set means 'is lowercase letter'
         // - bottom 5 bits are the UnicodeCategory of the character
-        private static ReadOnlySpan<byte> Latin1CharInfo => new byte[]
-        {
+        private static ReadOnlySpan<byte> Latin1CharInfo =>
+        [
         //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x8E, 0x8E, 0x8E, 0x8E, 0x0E, 0x0E, // U+0000..U+000F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0001..U+001F
@@ -81,7 +74,7 @@ namespace System
             0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x19, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x21, // U+000D..U+00DF
             0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+000E..U+00EF
             0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x19, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+000F..U+00FF
-        };
+        ];
 
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
         private static bool IsLatin1(char c) => (uint)c < (uint)Latin1CharInfo.Length;
@@ -1999,6 +1992,8 @@ namespace System
         static char IUtfChar<char>.CastFrom(int value) => (char)value;
         static char IUtfChar<char>.CastFrom(uint value) => (char)value;
         static char IUtfChar<char>.CastFrom(ulong value) => (char)value;
+
+        static uint IUtfChar<char>.CastToUInt32(char value) => value;
 
         //
         // IBinaryIntegerParseAndFormatInfo

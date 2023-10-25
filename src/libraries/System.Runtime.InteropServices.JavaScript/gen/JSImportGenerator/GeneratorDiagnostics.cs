@@ -3,6 +3,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -30,7 +31,7 @@ namespace Microsoft.Interop
         private const string Category = "JSImportGenerator";
 
         public static readonly DiagnosticDescriptor ConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessage)),
@@ -40,7 +41,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ConfigurationValueNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageValue)),
@@ -50,7 +51,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor MarshallingAttributeConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageMarshallingInfo)),
@@ -60,7 +61,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ReturnTypeNotSupportedWithDetails =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageReturnWithDetails)),
@@ -70,7 +71,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageParameter)),
@@ -80,7 +81,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ReturnTypeNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageReturn)),
@@ -90,7 +91,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ParameterTypeNotSupportedWithDetails =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageParameterWithDetails)),
@@ -100,7 +101,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ParameterConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageParameter)),
@@ -110,7 +111,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ReturnConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageReturn)),
@@ -120,7 +121,7 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor InvalidImportAttributedMethodSignature =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
             Ids.InvalidJSImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidJSImportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidJSImportAttributedMethodSignatureMessage)),
@@ -130,7 +131,7 @@ namespace Microsoft.Interop
             description: GetResourceString(nameof(SR.InvalidJSImportAttributedMethodDescription)));
 
         public static readonly DiagnosticDescriptor InvalidExportAttributedMethodSignature =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
             Ids.InvalidJSExportAttributeUsage,
             GetResourceString(nameof(SR.InvalidJSExportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidJSExportAttributedMethodSignatureMessage)),
@@ -140,7 +141,7 @@ namespace Microsoft.Interop
             description: GetResourceString(nameof(SR.InvalidJSExportAttributedMethodDescription)));
 
         public static readonly DiagnosticDescriptor InvalidImportAttributedMethodContainingTypeMissingModifiers =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
             Ids.InvalidJSImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidJSImportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
@@ -150,7 +151,7 @@ namespace Microsoft.Interop
             description: GetResourceString(nameof(SR.InvalidJSImportAttributedMethodDescription)));
 
         public static readonly DiagnosticDescriptor InvalidExportAttributedMethodContainingTypeMissingModifiers =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
             Ids.InvalidJSExportAttributeUsage,
             GetResourceString(nameof(SR.InvalidJSExportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
@@ -160,7 +161,7 @@ namespace Microsoft.Interop
             description: GetResourceString(nameof(SR.InvalidJSExportAttributedMethodDescription)));
 
         public static readonly DiagnosticDescriptor JSImportRequiresAllowUnsafeBlocks =
-                   new DiagnosticDescriptor(
+                   DiagnosticDescriptorHelper.Create(
                        Ids.JSImportRequiresAllowUnsafeBlocks,
                        GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksTitle)),
                        GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksMessage)),
@@ -170,7 +171,7 @@ namespace Microsoft.Interop
                        description: GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksDescription)));
 
         public static readonly DiagnosticDescriptor JSExportRequiresAllowUnsafeBlocks =
-                   new DiagnosticDescriptor(
+                   DiagnosticDescriptorHelper.Create(
                        Ids.JSExportRequiresAllowUnsafeBlocks,
                        GetResourceString(nameof(SR.JSExportRequiresAllowUnsafeBlocksTitle)),
                        GetResourceString(nameof(SR.JSExportRequiresAllowUnsafeBlocksMessage)),

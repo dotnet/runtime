@@ -5,6 +5,6 @@
   "retryOnRules": [
     { "testAssembly": { "wildcard": "System.Net.*" } },
     { "failureMessage": { "regex": ".*Timed out after .* waiting for the browser to be ready.*" } },
-    { "failureMessage": { "regex": "System.IO.IOException : Process for .*chrome .* unexpectedly exited.* during startup" } }
+    { "failureMessage": { "regex": "System.IO.IOException : Process for .*chrome.*unexpectedly exited.* during startup" } }
   ]
 }

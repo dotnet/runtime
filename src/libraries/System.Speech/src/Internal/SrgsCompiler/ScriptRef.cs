@@ -7,7 +7,7 @@ using System.Speech.Internal.SrgsParser;
 namespace System.Speech.Internal.SrgsCompiler
 {
     // list of rules with scripts
-    [DebuggerDisplay("rule=\"{_rule}\" method=\"{_sMethod}\" operation=\"{_method.ToString ()}\"")]
+    [DebuggerDisplay("rule = \"{_rule}\", method = \"{_sMethod}\", operation = \"{_method.ToString ()}\"")]
     internal class ScriptRef
     {
         #region Constructors

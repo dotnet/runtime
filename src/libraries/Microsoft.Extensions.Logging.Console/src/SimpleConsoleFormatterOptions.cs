@@ -25,19 +25,6 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         public bool SingleLine { get; set; }
 
-        internal override void Configure(IConfiguration configuration)
-        {
-            base.Configure(configuration);
-
-            if (ConsoleLoggerOptions.ParseEnum(configuration, nameof(ColorBehavior), out LoggerColorBehavior colorBehavior))
-            {
-                ColorBehavior = colorBehavior;
-            }
-
-            if (ConsoleLoggerOptions.ParseBool(configuration, nameof(SingleLine), out bool singleLine))
-            {
-                SingleLine = singleLine;
-            }
-        }
+        internal override void Configure(IConfiguration configuration) => configuration.Bind(this);
     }
 }

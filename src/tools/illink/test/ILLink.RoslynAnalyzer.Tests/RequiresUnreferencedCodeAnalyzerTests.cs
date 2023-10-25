@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-	ILLink.RoslynAnalyzer.RequiresUnreferencedCodeAnalyzer,
+	ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
 	ILLink.CodeFix.RequiresUnreferencedCodeCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -40,7 +40,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var test = new VerifyCS.Test {
 				TestCode = source,
 				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
+				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (

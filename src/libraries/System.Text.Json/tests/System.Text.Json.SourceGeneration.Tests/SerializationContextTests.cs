@@ -96,6 +96,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactoryProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterNullableProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]

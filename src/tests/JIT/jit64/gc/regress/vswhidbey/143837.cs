@@ -11,16 +11,6 @@ public class Test_143837
     public static DerivedClass static_DerivedClass;
 
     [Fact]
-    public static int TestEntryPoint()
-    {
-        if (Test1() != 100) return 1;
-
-        if (Test2() != 100) return 1;
-
-        Console.WriteLine("Pass");
-        return 100;
-    }
-
     public static int Test1()
     {
         try
@@ -54,6 +44,7 @@ public class Test_143837
         return -1;
     }
 
+    [Fact]
     public static int Test2()
     {
         try

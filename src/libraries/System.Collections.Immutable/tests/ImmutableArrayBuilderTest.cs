@@ -199,7 +199,7 @@ namespace System.Collections.Immutable.Tests
 
             // AddRange
             builder.AddRange(new ReadOnlySpan<string>(rangeElements));
-            
+
             // Assert
             Assert.Equal(expectedResult, builder);
         }
@@ -214,7 +214,7 @@ namespace System.Collections.Immutable.Tests
 
             // AddRange
             builder.AddRange(rangeElements.ToImmutableArray());
-            
+
             // Assert
             Assert.Equal(expectedResult, builder);
         }
@@ -226,7 +226,7 @@ namespace System.Collections.Immutable.Tests
             // Initialize builder
             var builderBase = new ImmutableArray<object>.Builder();
             builderBase.AddRange(builderElements);
-            
+
             // Prepare another builder to add
             var builder = new ImmutableArray<string>.Builder();
             builder.AddRange(rangeElements);
@@ -1108,7 +1108,7 @@ namespace System.Collections.Immutable.Tests
             builder.Add(3);
 
             ref readonly int safeRef = ref builder.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, builder.ItemRef(1));
 

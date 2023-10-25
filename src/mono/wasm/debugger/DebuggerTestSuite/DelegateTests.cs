@@ -11,7 +11,6 @@ using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
-
     public class DelegateTests : DebuggerTests
     {
         public DelegateTests(ITestOutputHelper testOutput) : base(testOutput)

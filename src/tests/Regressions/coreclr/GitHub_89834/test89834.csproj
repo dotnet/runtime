@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Requires explicit Main as it uses an async Main. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test89834.cs" />
+  </ItemGroup>
+</Project>

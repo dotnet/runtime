@@ -1,17 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { GlobalizationMode, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_info, mono_log_debug } from "./logging";
 
 export function init_globalization() {
-    loaderHelpers.invariantMode = loaderHelpers.config.globalizationMode === "invariant";
-    loaderHelpers.preferredIcuAsset = get_preferred_icu_asset();
+    loaderHelpers.preferredIcuAsset = getIcuResourceName(loaderHelpers.config);
+    loaderHelpers.invariantMode = loaderHelpers.config.globalizationMode == GlobalizationMode.Invariant;
 
     if (!loaderHelpers.invariantMode) {
         if (loaderHelpers.preferredIcuAsset) {
             mono_log_debug("ICU data archive(s) available, disabling invariant mode");
-        } else if (loaderHelpers.config.globalizationMode !== "icu") {
+        } else if (loaderHelpers.config.globalizationMode !== GlobalizationMode.Custom && loaderHelpers.config.globalizationMode !== GlobalizationMode.All && loaderHelpers.config.globalizationMode !== GlobalizationMode.Sharded) {
             mono_log_debug("ICU data archive(s) not available, using invariant globalization mode");
             loaderHelpers.invariantMode = true;
             loaderHelpers.preferredIcuAsset = null;
@@ -25,7 +26,7 @@ export function init_globalization() {
     const invariantEnv = "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT";
     const hybridEnv = "DOTNET_SYSTEM_GLOBALIZATION_HYBRID";
     const env_variables = loaderHelpers.config.environmentVariables!;
-    if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === "hybrid") {
+    if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
         env_variables[hybridEnv] = "1";
     }
     else if (env_variables[invariantEnv] === undefined && loaderHelpers.invariantMode) {
@@ -44,29 +45,44 @@ export function init_globalization() {
     }
 }
 
-export function get_preferred_icu_asset(): string | null {
-    if (!loaderHelpers.config.assets || loaderHelpers.invariantMode)
-        return null;
+export function getIcuResourceName(config: MonoConfig): string | null {
+    if (config.resources?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
+        // TODO: when starting on sidecar, we should pass default culture from UI thread
+        const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
 
-    // By setting <WasmIcuDataFileName> user can define what ICU source file they want to load.
-    // There is no need to check application's culture when <WasmIcuDataFileName> is set.
-    // If it was not set, then we have 3 "icu" assets in config and we should choose
-    // only one for loading, the one that matches the application's locale.
-    const icuAssets = loaderHelpers.config.assets.filter(a => a["behavior"] == "icu");
-    if (icuAssets.length === 1)
-        return icuAssets[0].name;
+        const icuFiles = Object.keys(config.resources.icu);
 
-    // reads the browsers locale / the OS's locale
-    const preferredCulture = ENVIRONMENT_IS_WEB ? navigator.language : Intl.DateTimeFormat().resolvedOptions().locale;
-    const prefix = preferredCulture.split("-")[0];
-    const CJK = "icudt_CJK.dat";
-    const EFIGS = "icudt_EFIGS.dat";
-    const OTHERS = "icudt_no_CJK.dat";
+        let icuFile = null;
+        if (config.globalizationMode === GlobalizationMode.Custom) {
+            if (icuFiles.length === 1) {
+                icuFile = icuFiles[0];
+            }
+        } else if (config.globalizationMode === GlobalizationMode.Hybrid) {
+            icuFile = "icudt_hybrid.dat";
+        } else if (!culture || config.globalizationMode === GlobalizationMode.All) {
+            icuFile = "icudt.dat";
+        } else if (config.globalizationMode === GlobalizationMode.Sharded) {
+            icuFile = getShardedIcuResourceName(culture);
+        }
 
-    // not all "fr-*", "it-*", "de-*", "es-*" are in EFIGS, only the one that is mostly used
-    if (prefix == "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(preferredCulture))
-        return EFIGS;
-    if (["zh", "ko", "ja"].includes(prefix))
-        return CJK;
-    return OTHERS;
+        if (icuFile && icuFiles.includes(icuFile)) {
+            return icuFile;
+        }
+    }
+
+    config.globalizationMode = GlobalizationMode.Invariant;
+    return null;
+}
+
+function getShardedIcuResourceName(culture: string): string {
+    const prefix = culture.split("-")[0];
+    if (prefix === "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(culture)) {
+        return "icudt_EFIGS.dat";
+    }
+
+    if (["zh", "ko", "ja"].includes(prefix)) {
+        return "icudt_CJK.dat";
+    }
+
+    return "icudt_no_CJK.dat";
 }

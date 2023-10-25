@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Reflection;
+using Xunit;
 
 namespace XarchHardwareIntrinsicTest._CpuId
 {
@@ -17,7 +18,8 @@ namespace XarchHardwareIntrinsicTest._CpuId
         const int Pass = 100;
         const int Fail = 0;
 
-        public unsafe static int Main()
+        [Fact]
+        public unsafe static int TestEntryPoint()
         {
             int testResult = Pass;
 
@@ -251,9 +253,13 @@ namespace XarchHardwareIntrinsicTest._CpuId
                     }
                 }
 
-                if (isVector512Throttling)
+                if (isAvx512HierarchyDisabled || isVector512Throttling)
                 {
                     preferredVectorByteLength = 256 / 8;
+                }
+                else
+                {
+                    preferredVectorByteLength = 512 / 8;
                 }
             }
 
@@ -362,7 +368,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
         static bool IsBitIncorrect(int register, int bitNumber, Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
         {
             bool isSupportedByHardware = (register & (1 << bitNumber)) != 0;
-            isHierarchyDisabled |= !GetDotnetEnable(name);
+            isHierarchyDisabled |= (!isSupported || !GetDotnetEnable(name));
 
             if (isSupported)
             {

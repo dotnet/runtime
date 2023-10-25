@@ -5,11 +5,21 @@ using System;
 
 namespace Microsoft.Extensions.Configuration
 {
+    /// <summary>
+    /// Specifies the key name for a configuration property.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class ConfigurationKeyNameAttribute : Attribute
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="ConfigurationKeyNameAttribute"/>.
+        /// </summary>
+        /// <param name="name">The key name.</param>
         public ConfigurationKeyNameAttribute(string name) => Name = name;
 
+        /// <summary>
+        /// The key name for a configuration property.
+        /// </summary>
         public string Name { get; }
     }
 }

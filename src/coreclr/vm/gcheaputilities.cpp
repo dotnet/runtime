@@ -4,9 +4,10 @@
 #include "common.h"
 #include "configuration.h"
 #include "gcheaputilities.h"
-#include "gcenv.ee.h"
 #include "appdomain.hpp"
 
+#include "../gc/env/gcenv.ee.h"
+#include "../gc/env/gctoeeinterface.standalone.inl"
 
 // These globals are variables used within the GC and maintained
 // by the EE for use in write barriers. It is the responsibility
@@ -344,6 +345,8 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
     g_gc_load_status = GC_LOAD_STATUS_START;
 
     LPCWSTR standaloneGcLocation = Configuration::GetKnobStringValue(W("System.GC.Name"), CLRConfig::EXTERNAL_GCName);
+    g_gc_dac_vars.major_version_number = GC_INTERFACE_MAJOR_VERSION;
+    g_gc_dac_vars.minor_version_number = GC_INTERFACE_MINOR_VERSION;
     if (!standaloneGcLocation)
     {
         return InitializeDefaultGC();

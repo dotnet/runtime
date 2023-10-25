@@ -10,6 +10,7 @@ using System.Threading;
 
 namespace System.Linq.Expressions.Compiler
 {
+    [RequiresDynamicCode("Assembly generation requires dynamic code generation.")]
     internal sealed class AssemblyGen
     {
         private static AssemblyGen? s_assembly;

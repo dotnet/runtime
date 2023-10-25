@@ -2,12 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -104,8 +100,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		private class DerivedWithoutRequires : ClassWithRequires
 		{
 			// This method contains implicit call to ClassWithRequires.ctor()
-			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public DerivedWithoutRequires () { }
 
 			public static void StaticMethodInInheritedClass () { }
@@ -313,8 +309,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public class DerivedNestedClass : ClassWithRequires
 			{
 				// This method contains implicit call to ClassWithRequires.ctor()
-				[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-				[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL2026")]
+				[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				public DerivedNestedClass () { }
 
 				public static void NestedStaticMethod () { }
@@ -498,8 +494,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// These should not be reported https://github.com/mono/linker/issues/2218
 			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			public static event EventHandler Event;
 		}
@@ -617,8 +611,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor.DerivedWithoutRequires", "ReflectionAccessOnCtor.BaseWithRequires")]
 			class DerivedWithoutRequires : BaseWithRequires
 			{
-				[ExpectedWarning ("IL2026", "--BaseWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)] // The body has direct call to the base.ctor()
-				[ExpectedWarning ("IL3050", "--BaseWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL2026", "--BaseWithRequires--")] // The body has direct call to the base.ctor()
+				[ExpectedWarning ("IL3050", "--BaseWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				public DerivedWithoutRequires () { }
 			}
 
@@ -855,10 +849,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				// These should be reported only in TestDirectReflectionAccess
 				// https://github.com/mono/linker/issues/2218
 				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				public static event EventHandler StaticEvent;
 			}

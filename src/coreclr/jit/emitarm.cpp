@@ -4379,7 +4379,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
 #ifdef DEBUG
     // Mark the finally call
-    if (ins == INS_b && emitComp->compCurBB->bbJumpKind == BBJ_CALLFINALLY)
+    if (ins == INS_b && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
     {
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
@@ -4523,7 +4523,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 #ifdef DEBUG
     // Mark the catch return
-    if (emitComp->compCurBB->bbJumpKind == BBJ_EHCATCHRET)
+    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
     {
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
@@ -4770,8 +4770,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        id->idSetIsCallRegPtr();
-
         if (isJump)
         {
             ins = INS_bx; // INS_bx  Reg
@@ -4850,6 +4848,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     dispIns(id);
     appendToCurIG(id);
+    emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
 }
 
 /*****************************************************************************
@@ -5415,7 +5414,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = 4; // Thumb-2 pretends all instructions are 4-bytes long for computing jump offsets?
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = %08XH\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
                dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, distVal);
     }
 #endif
@@ -5524,8 +5523,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 }
                 else
                 {
-                    assert(distVal >= CALL_DIST_MAX_NEG);
-                    assert(distVal <= CALL_DIST_MAX_POS);
+                    if ((distVal < CALL_DIST_MAX_NEG) || (distVal > CALL_DIST_MAX_POS))
+                        IMPL_LIMITATION("Method is too large");
 
                     if (distVal < 0)
                         code |= 1 << 26;

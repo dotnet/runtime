@@ -25,23 +25,20 @@ namespace System.Text.Json.SourceGeneration
             return compilation.GetBestTypeByMetadataName(type.FullName);
         }
 
-        public static string GetFullyQualifiedName(this ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-        public static Location? GetDiagnosticLocation(this ISymbol typeSymbol)
+        public static Location? GetLocation(this ISymbol typeSymbol)
             => typeSymbol.Locations.Length > 0 ? typeSymbol.Locations[0] : null;
 
-        public static Location? GetDiagnosticLocation(this AttributeData attributeData)
+        public static Location? GetLocation(this AttributeData attributeData)
         {
             SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
             return reference?.SyntaxTree.GetLocation(reference.Span);
         }
 
         /// <summary>
-        /// Creates a copy of the Location instance that does not capture a reference to Compilation.
+        /// Returns true if the specified location is contained in one of the syntax trees in the compilation.
         /// </summary>
-        [return: NotNullIfNotNull(nameof(location))]
-        public static Location? GetTrimmedLocation(this Location? location)
-            => location is null ? null : Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+        public static bool ContainsLocation(this Compilation compilation, Location location)
+            => location.SourceTree != null && compilation.ContainsSyntaxTree(location.SourceTree);
 
         /// <summary>
         /// Removes any type metadata that is erased at compile time, such as NRT annotations and tuple labels.
@@ -204,32 +201,17 @@ namespace System.Text.Json.SourceGeneration
             return false;
         }
 
-        public static ITypeSymbol[] GetAllTypeArgumentsInScope(this INamedTypeSymbol type)
-        {
-            if (!type.IsGenericType)
-            {
-                return Array.Empty<ITypeSymbol>();
-            }
-
-            var args = new List<ITypeSymbol>();
-            TraverseContainingTypes(type);
-            return args.ToArray();
-
-            void TraverseContainingTypes(INamedTypeSymbol current)
-            {
-                if (current.ContainingType is INamedTypeSymbol parent)
-                {
-                    TraverseContainingTypes(parent);
-                }
-
-                args.AddRange(current.TypeArguments);
-            }
-        }
-
         public static ITypeSymbol GetMemberType(this ISymbol member)
         {
             Debug.Assert(member is IFieldSymbol or IPropertySymbol);
             return member is IFieldSymbol fs ? fs.Type : ((IPropertySymbol)member).Type;
+        }
+
+        public static bool IsOverriddenOrShadowedBy(this ISymbol member, ISymbol otherMember)
+        {
+            Debug.Assert(member is IFieldSymbol or IPropertySymbol);
+            Debug.Assert(otherMember is IFieldSymbol or IPropertySymbol);
+            return member.Name == otherMember.Name && member.ContainingType.IsAssignableFrom(otherMember.ContainingType);
         }
 
         public static bool MemberNameNeedsAtSign(this ISymbol symbol)

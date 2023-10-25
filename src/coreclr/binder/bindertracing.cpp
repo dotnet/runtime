@@ -119,8 +119,8 @@ namespace BinderTracing
 {
     static thread_local bool t_AssemblyLoadStartInProgress = false;
 
-    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const SString& assemblyPath)
-        : m_bindRequest { assemblySpec, SString::Empty(), assemblyPath }
+    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const WCHAR* assemblyPath)
+        : m_bindRequest { assemblySpec, SString{ SString::Empty() }, SString{ assemblyPath } }
         , m_populatedBindRequest { false }
         , m_checkedIgnoreBind { false }
         , m_ignoreBind { false }
@@ -217,7 +217,13 @@ namespace BinderTracing
         // Use the error message that would be reported in the file load exception
         StackSString errorMsg;
         if (mvidMismatch)
-            errorMsg.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+        {
+            StackSString format;
+            format.LoadResource(CCompRC::Error, IDS_EE_FILELOAD_ERROR_GENERIC);
+            StackSString details;
+            details.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            errorMsg.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, m_assemblyName, details);
+        }
 
         const BindResult::AttemptResult *inContextAttempt = bindResult.GetAttempt(true /*foundInContext*/);
         const BindResult::AttemptResult *appAssembliesAttempt = bindResult.GetAttempt(false /*foundInContext*/);

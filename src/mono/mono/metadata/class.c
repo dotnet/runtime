@@ -418,6 +418,24 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		mono_type_name_check_byref (type, str);
 
 		break;
+	case MONO_TYPE_FNPTR: {
+		MonoTypeNameFormat nested_format;
+
+		nested_format = format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED ?
+			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
+
+		mono_type_get_name_recurse (type->data.method->ret, str, FALSE, nested_format);
+
+		g_string_append_c (str, '(');
+		for (int i = 0; i < type->data.method->param_count; ++i) {
+			mono_type_get_name_recurse (type->data.method->params[i], str, FALSE, nested_format);
+			if (i != type->data.method->param_count - 1)
+				g_string_append (str, ", ");
+		}
+		g_string_append_c (str, ')');
+
+		break;
+	}
 	default:
 		klass = mono_class_from_mono_type_internal (type);
 		if (m_class_get_nested_in (klass)) {
@@ -4082,7 +4100,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 			return;
 		}
 
-		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1) {
+		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1 && m_class_get_byval_arg (oklass)->type == MONO_TYPE_SZARRAY) {
 			if (mono_class_is_gtd (klass)) {
 				/* klass is an array special gtd like
 				 * IList`1<>, and oklass is X[] for some X.

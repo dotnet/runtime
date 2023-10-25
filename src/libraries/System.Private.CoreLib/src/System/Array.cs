@@ -372,7 +372,7 @@ namespace System
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
-            return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
+            return InternalGetValue(GetFlattenedIndex(indices));
         }
 
         public object? GetValue(int index)
@@ -388,7 +388,7 @@ namespace System
             if (Rank != 2)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
 
-            return InternalGetValue(GetFlattenedIndex(stackalloc int[] { index1, index2 }));
+            return InternalGetValue(GetFlattenedIndex([index1, index2]));
         }
 
         public object? GetValue(int index1, int index2, int index3)
@@ -396,7 +396,7 @@ namespace System
             if (Rank != 3)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
 
-            return InternalGetValue(GetFlattenedIndex(stackalloc int[] { index1, index2, index3 }));
+            return InternalGetValue(GetFlattenedIndex([index1, index2, index3]));
         }
 
         public void SetValue(object? value, int index)
@@ -412,7 +412,7 @@ namespace System
             if (Rank != 2)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
 
-            InternalSetValue(value, GetFlattenedIndex(stackalloc int[] { index1, index2 }));
+            InternalSetValue(value, GetFlattenedIndex([index1, index2]));
         }
 
         public void SetValue(object? value, int index1, int index2, int index3)
@@ -420,7 +420,7 @@ namespace System
             if (Rank != 3)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
 
-            InternalSetValue(value, GetFlattenedIndex(stackalloc int[] { index1, index2, index3 }));
+            InternalSetValue(value, GetFlattenedIndex([index1, index2, index3]));
         }
 
         public void SetValue(object? value, params int[] indices)
@@ -430,7 +430,7 @@ namespace System
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
-            InternalSetValue(value, GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
+            InternalSetValue(value, GetFlattenedIndex(indices));
         }
 
         public object? GetValue(long index)
@@ -2272,6 +2272,9 @@ namespace System
                 }
             }
 
+            // IntroSort is recursive; block it from being inlined into itself as
+            // this is currenly not profitable.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private void IntroSort(int lo, int hi, int depthLimit)
             {
                 Debug.Assert(hi >= lo);
@@ -2486,6 +2489,9 @@ namespace System
                 }
             }
 
+            // IntroSort is recursive; block it from being inlined into itself as
+            // this is currenly not profitable.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private void IntroSort(int lo, int hi, int depthLimit)
             {
                 Debug.Assert(hi >= lo);

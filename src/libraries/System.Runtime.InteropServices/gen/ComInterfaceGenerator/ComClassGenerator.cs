@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -104,7 +105,7 @@ namespace Microsoft.Interop
 
         private static readonly AttributeSyntax s_comExposedClassAttributeTemplate =
             Attribute(
-                GenericName(TypeNames.ComExposedClassAttribute)
+                GenericName(TypeNames.GlobalAlias + TypeNames.ComExposedClassAttribute)
                     .AddTypeArgumentListArguments(
                         IdentifierName(ClassInfoTypeName)));
         private static MemberDeclarationSyntax GenerateClassInfoAttributeOnUserType(ContainingSyntaxContext containingSyntaxContext, ContainingSyntax classSyntax) =>
@@ -124,12 +125,11 @@ namespace Microsoft.Interop
                     Token(SyntaxKind.FileKeyword),
                     Token(SyntaxKind.SealedKeyword),
                     Token(SyntaxKind.UnsafeKeyword))
-                .AddBaseListTypes(SimpleBaseType(ParseTypeName(TypeNames.IComExposedClass)))
+                .AddBaseListTypes(SimpleBaseType(TypeSyntaxes.IComExposedClass))
                 .AddMembers(
                     FieldDeclaration(
                         VariableDeclaration(
-                            PointerType(
-                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
+                            PointerType(TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
                             SingletonSeparatedList(VariableDeclarator(vtablesField))))
                     .AddModifiers(
                         Token(SyntaxKind.PrivateKeyword),
@@ -138,35 +138,25 @@ namespace Microsoft.Interop
             List<StatementSyntax> vtableInitializationBlock = new()
             {
                 // ComInterfaceEntry* vtables = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<ClassInfoTypeName>), sizeof(ComInterfaceEntry) * <numInterfaces>);
-                LocalDeclarationStatement(
-                    VariableDeclaration(
-                            PointerType(
-                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
-                            SingletonSeparatedList(
-                                VariableDeclarator(vtablesLocal)
-                                    .WithInitializer(EqualsValueClause(
-                                        CastExpression(
-                                            PointerType(
-                                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
-                                        InvocationExpression(
-                                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseTypeName(TypeNames.System_Runtime_CompilerServices_RuntimeHelpers),
-                                                IdentifierName("AllocateTypeAssociatedMemory")))
-                                        .AddArgumentListArguments(
-                                            Argument(TypeOfExpression(IdentifierName(ClassInfoTypeName))),
-                                            Argument(
-                                                BinaryExpression(
-                                                    SyntaxKind.MultiplyExpression,
-                                                    SizeOfExpression(ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
-                                                    LiteralExpression(
-                                                        SyntaxKind.NumericLiteralExpression,
-                                                        Literal(implementedInterfaces.Length))))))))))),
+                Declare(
+                    PointerType(TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
+                    vtablesLocal,
+                        CastExpression(
+                            PointerType(TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
+                            MethodInvocation(
+                                TypeSyntaxes.System_Runtime_CompilerServices_RuntimeHelpers,
+                                IdentifierName("AllocateTypeAssociatedMemory"),
+                                Argument(TypeOfExpression(IdentifierName(ClassInfoTypeName))),
+                                Argument(
+                                    BinaryExpression(
+                                        SyntaxKind.MultiplyExpression,
+                                        SizeOfExpression(TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
+                                        LiteralExpression(
+                                            SyntaxKind.NumericLiteralExpression,
+                                            Literal(implementedInterfaces.Length))))))),
+
                 // IIUnknownDerivedDetails details;
-                LocalDeclarationStatement(
-                    VariableDeclaration(
-                        ParseTypeName(TypeNames.IIUnknownDerivedDetails),
-                        SingletonSeparatedList(
-                            VariableDeclarator(detailsTempLocal))))
+                Declare(TypeSyntaxes.IIUnknownDerivedDetails, detailsTempLocal, initializeToDefault: false)
             };
             for (int i = 0; i < implementedInterfaces.Length; i++)
             {
@@ -174,54 +164,41 @@ namespace Microsoft.Interop
 
                 // details = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<ifaceName>).TypeHandle);
                 vtableInitializationBlock.Add(
-                    ExpressionStatement(
-                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(detailsTempLocal),
-                            InvocationExpression(
+                    AssignmentStatement(
+                        IdentifierName(detailsTempLocal),
+                        MethodInvocation(
+                                TypeSyntaxes.StrategyBasedComWrappers
+                                    .Dot(IdentifierName("DefaultIUnknownInterfaceDetailsStrategy")),
+                            IdentifierName("GetIUnknownDerivedDetails"),
+                            Argument(
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseTypeName(TypeNames.StrategyBasedComWrappers),
-                                        IdentifierName("DefaultIUnknownInterfaceDetailsStrategy")),
-                                    IdentifierName("GetIUnknownDerivedDetails")),
-                                ArgumentList(
-                                    SingletonSeparatedList(
-                                        Argument(
-                                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                TypeOfExpression(ParseName(ifaceName)),
-                                                IdentifierName("TypeHandle")))))))));
+                                    TypeOfExpression(ParseName(ifaceName)),
+                                    IdentifierName("TypeHandle"))))));
                 // vtable[i] = new() { IID = details.Iid, Vtable = details.ManagedVirtualMethodTable };
                 vtableInitializationBlock.Add(
-                    ExpressionStatement(
-                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                            ElementAccessExpression(
-                                IdentifierName(vtablesLocal),
-                                BracketedArgumentList(
-                                    SingletonSeparatedList(
-                                        Argument(
-                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(i)))))),
-                            ImplicitObjectCreationExpression(
-                                ArgumentList(),
-                                InitializerExpression(SyntaxKind.ObjectInitializerExpression,
-                                    SeparatedList(
-                                        new ExpressionSyntax[]
-                                        {
-                                            AssignmentExpression(
-                                                SyntaxKind.SimpleAssignmentExpression,
-                                                IdentifierName("IID"),
-                                                MemberAccessExpression(
-                                                    SyntaxKind.SimpleMemberAccessExpression,
-                                                    IdentifierName(detailsTempLocal),
-                                                    IdentifierName("Iid"))),
-                                            AssignmentExpression(
-                                                SyntaxKind.SimpleAssignmentExpression,
-                                                IdentifierName("Vtable"),
-                                                CastExpression(
-                                                    IdentifierName("nint"),
-                                                    MemberAccessExpression(
-                                                        SyntaxKind.SimpleMemberAccessExpression,
-                                                        IdentifierName(detailsTempLocal),
-                                                        IdentifierName("ManagedVirtualMethodTable"))))
-                                        }))))));
+                    AssignmentStatement(
+                        IndexExpression(
+                            IdentifierName(vtablesLocal),
+                            Argument(IntLiteral(i))),
+                        ImplicitObjectCreationExpression(
+                            ArgumentList(),
+                            InitializerExpression(SyntaxKind.ObjectInitializerExpression,
+                                SeparatedList(
+                                    new ExpressionSyntax[]
+                                    {
+                                        AssignmentExpression(
+                                            SyntaxKind.SimpleAssignmentExpression,
+                                            IdentifierName("IID"),
+                                            IdentifierName(detailsTempLocal)
+                                                .Dot(IdentifierName("Iid"))),
+                                        AssignmentExpression(
+                                            SyntaxKind.SimpleAssignmentExpression,
+                                            IdentifierName("Vtable"),
+                                            CastExpression(
+                                                IdentifierName("nint"),
+                                                    IdentifierName(detailsTempLocal)
+                                                    .Dot(IdentifierName("ManagedVirtualMethodTable"))))
+                                    })))));
             }
 
             // s_vtable = vtable;
@@ -253,7 +230,7 @@ namespace Microsoft.Interop
                 // { body }
                 MethodDeclaration(
                     PointerType(
-                        ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
+                        TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
                     "GetComInterfaceEntries")
                     .AddParameterListParameters(
                         Parameter(Identifier(countIdentifier))

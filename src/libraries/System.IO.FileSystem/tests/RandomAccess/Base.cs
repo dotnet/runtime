@@ -15,6 +15,8 @@ namespace System.IO.Tests
 
         protected virtual bool UsesOffsets => true;
 
+        protected virtual bool ThrowsForUnseekableFile => true;
+
         public static IEnumerable<object[]> GetSyncAsyncOptions()
         {
             yield return new object[] { FileOptions.None };
@@ -52,10 +54,13 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "System.IO.Pipes aren't supported on browser")]
         public void ThrowsNotSupportedExceptionForUnseekableFile()
         {
-            using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
-            using (SafeFileHandle handle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: false))
+            if (ThrowsForUnseekableFile)
             {
-                Assert.Throws<NotSupportedException>(() => MethodUnderTest(handle, Array.Empty<byte>(), 0));
+                using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
+                using (SafeFileHandle handle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: false))
+                {
+                    Assert.Throws<NotSupportedException>(() => MethodUnderTest(handle, Array.Empty<byte>(), 0));
+                }
             }
         }
 

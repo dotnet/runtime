@@ -534,6 +534,7 @@ namespace System.Diagnostics.Tests
         [InlineData(100, 102)]
         [InlineData(100, 103)]
         [InlineData(100, 104)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79906", TestRuntimes.Mono)]
         public void AllSubscriberStress(int numThreads, int numListenersPerThread)
         {
             // No listeners have been created yet
@@ -788,7 +789,7 @@ namespace System.Diagnostics.Tests
 
         public void OnError(Exception error)
         {
-            Assert.True(false, "Error happened on IObserver");
+            Assert.Fail("Error happened on IObserver");
         }
 
         public void OnNext(T value)

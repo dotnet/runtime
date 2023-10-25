@@ -4,6 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
@@ -18,6 +21,16 @@ namespace System.Text.Json
 #else
         public const string DoubleFormatString = "G17";
         public const string SingleFormatString = "G9";
+#endif
+
+#if NETCOREAPP
+        public static Half NextHalf(Random random)
+        {
+            double mantissa = (random.NextDouble() * 2.0) - 1.0;
+            double exponent = Math.Pow(2.0, random.Next(-15, 16));
+            Half value = (Half)(mantissa * exponent);
+            return value;
+        }
 #endif
 
         public static float NextFloat(Random random)
@@ -140,6 +153,39 @@ namespace System.Text.Json
                         sb.Append(pathNode);
                     }
                     return sb.ToString();
+                }
+            }
+        }
+
+        public static void AssertOptionsEqual(JsonSerializerOptions expected, JsonSerializerOptions actual)
+        {
+            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                Type propertyType = property.PropertyType;
+
+                if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
+                {
+                    continue; // readonly-ness is not a structural property of JsonSerializerOptions.
+                }
+                else if (propertyType == typeof(IList<JsonConverter>))
+                {
+                    var expectedConverters = (IList<JsonConverter>)property.GetValue(expected);
+                    var actualConverters = (IList<JsonConverter>)property.GetValue(actual);
+                    Assert.Equal(expectedConverters.Count, actualConverters.Count);
+                    for (int i = 0; i < actualConverters.Count; i++)
+                    {
+                        Assert.IsType(expectedConverters[i].GetType(), actualConverters[i]);
+                    }
+                }
+                else if (propertyType == typeof(IList<IJsonTypeInfoResolver>))
+                {
+                    var list1 = (IList<IJsonTypeInfoResolver>)property.GetValue(expected);
+                    var list2 = (IList<IJsonTypeInfoResolver>)property.GetValue(actual);
+                    Assert.Equal(list1, list2);
+                }
+                else
+                {
+                    Assert.Equal(property.GetValue(expected), property.GetValue(actual));
                 }
             }
         }

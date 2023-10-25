@@ -226,7 +226,7 @@
     <value>Image is either too small or contains an invalid byte offset or count.</value>
   </data>
   <data name="MetadataStringDecoderEncodingMustBeUtf8" xml:space="preserve">
-    <value>The MetadataStringDecoder instance used to instantiate the Metadata reader must have a UTF8 encoding.</value>
+    <value>The MetadataStringDecoder instance used to instantiate the Metadata reader must have a UTF-8 encoding.</value>
   </data>
   <data name="InvalidConstantValue" xml:space="preserve">
     <value>Invalid constant value.</value>

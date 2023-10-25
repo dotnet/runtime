@@ -21,6 +21,7 @@
   </PropertyGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
+    <WasmExtraFilesToDeploy Include="advanced-sample.lib.module.js" />
     <!-- add export GL object from Module -->
     <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />

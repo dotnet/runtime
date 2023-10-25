@@ -51,10 +51,7 @@ Arch:          {Arch}
             MethodProfileData[] dataArray = methodData.ToArray();
             foreach (MethodProfileData data in dataArray)
             {
-                if (!_methodData.ContainsKey(data.Method))
-                {
-                    _methodData.Add(data.Method, data);
-                }
+                _methodData.TryAdd(data.Method, data);
             }
             _partialNGen = partialNGen;
             _config = config;

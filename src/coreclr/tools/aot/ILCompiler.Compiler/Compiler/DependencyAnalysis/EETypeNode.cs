@@ -372,16 +372,8 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType defType = _type.GetClosestDefType();
 
-            // Interfaces don't have vtables and we don't need to track their slot use.
-            // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
-            // those have slots and we dispatch on them.
-            bool needsDependenciesForVirtualMethodImpls = !defType.IsInterface
-                || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
-
             // If we're producing a full vtable, none of the dependencies are conditional.
-            needsDependenciesForVirtualMethodImpls &= !factory.VTable(defType).HasFixedSlots;
-
-            if (needsDependenciesForVirtualMethodImpls)
+            if (!factory.VTable(defType).HasFixedSlots)
             {
                 bool isNonInterfaceAbstractType = !defType.IsInterface && ((MetadataType)defType).IsAbstract;
 
@@ -436,13 +428,23 @@ namespace ILCompiler.DependencyAnalysis
                     ((System.Collections.IStructuralEquatable)defType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
                     EqualityComparer<DefType>.Default));
 
+                // Interfaces don't have vtables and we don't need to track their instance method slot use.
+                // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
+                // those have slots and we dispatch on them.
+                bool needsDependenciesForInstanceInterfaceMethodImpls = !defType.IsInterface
+                    || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
+
                 // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
                 // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
                 // possible for any IFoo object to actually be an instance of T.
+                DefType defTypeDefinition = (DefType)defType.GetTypeDefinition();
                 DefType[] defTypeRuntimeInterfaces = defType.RuntimeInterfaces;
+                DefType[] defTypeDefinitionRuntimeInterfaces = defTypeDefinition.RuntimeInterfaces;
+                Debug.Assert(defTypeDefinitionRuntimeInterfaces.Length == defTypeRuntimeInterfaces.Length);
                 for (int interfaceIndex = 0; interfaceIndex < defTypeRuntimeInterfaces.Length; interfaceIndex++)
                 {
                     DefType interfaceType = defTypeRuntimeInterfaces[interfaceIndex];
+                    DefType definitionInterfaceType = defTypeDefinitionRuntimeInterfaces[interfaceIndex];
 
                     Debug.Assert(interfaceType.IsInterface);
 
@@ -456,11 +458,25 @@ namespace ILCompiler.DependencyAnalysis
 
                         bool isStaticInterfaceMethod = interfaceMethod.Signature.IsStatic;
 
+                        if (!isStaticInterfaceMethod && !needsDependenciesForInstanceInterfaceMethodImpls)
+                            continue;
+
+                        MethodDesc interfaceMethodDefinition = interfaceMethod;
+                        if (interfaceType != definitionInterfaceType)
+                            interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(interfaceMethodDefinition.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
+
                         MethodDesc implMethod = isStaticInterfaceMethod ?
-                            defType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :
-                            defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                            defTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethodDefinition) :
+                            defTypeDefinition.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodDefinition);
                         if (implMethod != null)
                         {
+                            TypeDesc implType = defType;
+                            while (!implType.HasSameTypeDefinition(implMethod.OwningType))
+                                implType = implType.BaseType;
+
+                            if (!implType.IsTypeDefinition)
+                                implMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(implMethod.GetTypicalMethodDefinition(), (InstantiatedType)implType);
+
                             if (isStaticInterfaceMethod)
                             {
                                 Debug.Assert(!implMethod.IsVirtual);
@@ -499,12 +515,7 @@ namespace ILCompiler.DependencyAnalysis
                             // Is the implementation provided by a default interface method?
                             // If so, add a dependency on the entrypoint directly since nobody else is going to do that
                             // (interface types have an empty vtable, modulo their generic dictionary).
-                            TypeDesc interfaceOnDefinition = defType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
-                            MethodDesc interfaceMethodDefinition = interfaceMethod;
-                            if (!interfaceType.IsTypeDefinition)
-                                interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(interfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceOnDefinition);
-
-                            var resolution = defType.GetTypeDefinition().ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodDefinition, out implMethod);
+                            var resolution = defTypeDefinition.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodDefinition, out implMethod);
                             if (resolution == DefaultInterfaceMethodResolution.DefaultImplementation)
                             {
                                 DefType providingInterfaceDefinitionType = (DefType)implMethod.OwningType;
@@ -790,7 +801,13 @@ namespace ILCompiler.DependencyAnalysis
                 int pointerSize = _type.Context.Target.PointerSize;
                 int objectSize;
 
-                if (_type.IsDefType)
+                if (_type.IsInterface)
+                {
+                    // Interfaces don't live on the GC heap. Don't bother computing a number.
+                    // Zero compresses better than any useless number we would come up with.
+                    return 0;
+                }
+                else if (_type.IsDefType)
                 {
                     LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
 
@@ -1137,9 +1154,9 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
                     if (factory.Target.SupportsRelativePointers)
-                        objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
+                        objData.EmitReloc(typeDefNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                     else
-                        objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
+                        objData.EmitPointerReloc(typeDefNode);
 
                     ISymbolNode compositionNode = _type.Instantiation.Length > 1
                         ? factory.GenericComposition(_type.Instantiation)

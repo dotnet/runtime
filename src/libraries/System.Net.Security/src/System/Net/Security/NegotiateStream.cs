@@ -640,7 +640,13 @@ namespace System.Net.Security
             ArgumentNullException.ThrowIfNull(credential);
             ArgumentNullException.ThrowIfNull(servicePrincipalName);
 
-            NegotiateStreamPal.ValidateImpersonationLevel(impersonationLevel);
+            if (impersonationLevel != TokenImpersonationLevel.Identification &&
+                impersonationLevel != TokenImpersonationLevel.Impersonation &&
+                impersonationLevel != TokenImpersonationLevel.Delegation)
+            {
+                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), impersonationLevel.ToString(), SR.net_auth_supported_impl_levels);
+            }
+
             if (_context is not null && IsServer != isServer)
             {
                 throw new InvalidOperationException(SR.net_auth_client_server);

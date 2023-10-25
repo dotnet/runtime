@@ -74,14 +74,18 @@ namespace System.Reflection.Emit
             try
             {
                 CreateDynMethod();
-                _method ??= new RuntimeMethodInfo(_mhandle);
-
-                return _method.Invoke(obj, invokeAttr, binder, parameters, culture);
+                return GetRuntimeMethodInfo().Invoke(obj, invokeAttr, binder, parameters, culture);
             }
             catch (MethodAccessException mae)
             {
                 throw new TargetInvocationException(SR.TargetInvocation_MethodCannotBeInvoked, mae);
             }
+        }
+
+        internal RuntimeMethodInfo GetRuntimeMethodInfo()
+        {
+            _method ??= new RuntimeMethodInfo(_mhandle);
+            return _method;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -142,7 +146,7 @@ namespace System.Reflection.Emit
             return _nrefs - 1;
         }
 
-        internal override int GetParametersCount() => GetParametersNoCopy().Length;
+        internal override int GetParametersCount() => GetParametersAsSpan().Length;
 
         private sealed class DynamicMethodTokenGenerator : ITokenGenerator
         {

@@ -38,14 +38,14 @@ run-browser:
 		echo "The tool dotnet-serve could not be found. Install with: $(DOTNET) tool install --global dotnet-serve"; \
 		exit 1; \
 	else  \
-		$(DOTNET) serve -d:bin/$(CONFIG)/AppBundle $(CORS_HEADERS) $(OPEN_BROWSER) -p:8000; \
+		$(DOTNET) serve -S -d:bin/$(CONFIG)/AppBundle $(CORS_HEADERS) $(OPEN_BROWSER) -p:8000; \
 	fi
 
 run-console:
 	cd bin/$(CONFIG)/AppBundle && $(V8_PATH) --stack-trace-limit=1000 --single-threaded --expose_wasm --module $(MAIN_JS) -- $(ARGS)
 
 run-console-node:
-	cd bin/$(CONFIG)/AppBundle && node --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) $(ARGS)
+	cd bin/$(CONFIG)/AppBundle && node --stack-trace-limit=1000 --single-threaded --experimental-wasm-eh --expose_wasm $(MAIN_JS) $(ARGS)
 
 debug-console-node:
-	cd bin/$(CONFIG)/AppBundle && node --inspect=9222 --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) $(ARGS)
+	cd bin/$(CONFIG)/AppBundle && node --inspect=9222 --stack-trace-limit=1000 --single-threaded --experimental-wasm-eh --expose_wasm $(MAIN_JS) $(ARGS)

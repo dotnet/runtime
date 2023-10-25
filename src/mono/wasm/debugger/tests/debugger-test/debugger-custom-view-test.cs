@@ -67,11 +67,11 @@ namespace DebuggerTests
 
         string GetDebuggerDisplay ()
         {
-            return "First Int:" + someInt + " Second Int:" + someInt2;
+            return "First Int = " + someInt + ", Second Int = " + someInt2;
         }
     }
 
-    [DebuggerDisplay("FirstName: {FirstName}, SurName: {SurName}, Age: {Age}")]
+    [DebuggerDisplay("FirstName = {FirstName}, SurName = {SurName}, Age = {Age}")]
     public class Person {
         public string FirstName { get; set; }
         public string SurName { get; set; }

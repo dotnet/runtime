@@ -36,6 +36,7 @@ namespace System.Timers.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void TestTimerStartAutoReset()
         {
             using (var timer = new TestTimer(1))

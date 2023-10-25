@@ -11,7 +11,6 @@ namespace Microsoft.NET.HostModel.ComHost
 {
     public class ComHost
     {
-        private const int E_INVALIDARG = unchecked((int)0x80070057);
         // These need to match RESOURCEID_CLSIDMAP and RESOURCETYPE_CLSIDMAP defined in comhost.h.
         private const int ClsidmapResourceId = 64;
         private const int ClsidmapResourceType = 1024;
@@ -61,15 +60,14 @@ namespace Microsoft.NET.HostModel.ComHost
                         try
                         {
                             byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
+                            if (tlbFileBytes.Length == 0)
+                                throw new InvalidTypeLibraryException(typeLibrary.Value);
+
                             updater.AddResource(tlbFileBytes, "typelib", (IntPtr)typeLibrary.Key);
                         }
                         catch (FileNotFoundException ex)
                         {
                             throw new TypeLibraryDoesNotExistException(typeLibrary.Value, ex);
-                        }
-                        catch (HResultException hr) when (hr.Win32HResult == E_INVALIDARG)
-                        {
-                            throw new InvalidTypeLibraryException(typeLibrary.Value, hr);
                         }
                     }
                 }

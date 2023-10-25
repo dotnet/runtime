@@ -175,7 +175,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="item">The object to add to the <see
         /// cref="IProducerConsumerCollection{T}"/>. The value can be a null
-        /// reference (Nothing in Visual Basic) for reference types.
+        /// reference (<see langword="Nothing" /> in Visual Basic) for reference types.
         /// </param>
         /// <returns>true if the object was added successfully; otherwise, false.</returns>
         /// <remarks>For <see cref="ConcurrentQueue{T}"/>, this operation will always add the object to the
@@ -597,7 +597,7 @@ namespace System.Collections.Concurrent
         /// <summary>Adds an object to the end of the <see cref="ConcurrentQueue{T}"/>.</summary>
         /// <param name="item">
         /// The object to add to the end of the <see cref="ConcurrentQueue{T}"/>.
-        /// The value can be a null reference (Nothing in Visual Basic) for reference types.
+        /// The value can be a null reference (<see langword="Nothing" /> in Visual Basic) for reference types.
         /// </param>
         public void Enqueue(T item)
         {

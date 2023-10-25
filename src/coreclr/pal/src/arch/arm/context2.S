@@ -118,7 +118,7 @@ LEAF_END RtlCaptureContext, _TEXT
 LEAF_ENTRY RtlRestoreContext, _TEXT
     END_PROLOGUE
 
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_CONTROL)
     beq     LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)

@@ -12,7 +12,7 @@ using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
-    internal sealed class OpenMethodInvoker : MethodInvoker
+    internal sealed class OpenMethodInvoker : MethodBaseInvoker
     {
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
@@ -20,6 +20,26 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         protected sealed override object CreateInstance(object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+        }
+
+        protected internal sealed override object CreateInstance(Span<object?> arguments)
+        {
+            throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+        }
+
+        protected internal sealed override object CreateInstanceWithFewArgs(Span<object?> arguments)
+        {
+            throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+        }
+
+        protected internal sealed override object? Invoke(object? thisObject, Span<object?> arguments)
+        {
+            throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+        }
+
+        protected internal sealed override object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments)
         {
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }

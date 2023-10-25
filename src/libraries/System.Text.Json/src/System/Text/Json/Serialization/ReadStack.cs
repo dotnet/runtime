@@ -386,26 +386,26 @@ namespace System.Text.Json
 
             for (int i = 0; i < _count - 1; i++)
             {
-                if (_stack[i].JsonTypeInfo.Converter.ConstructorIsParameterized)
+                if (_stack[i].JsonTypeInfo.UsesParameterizedConstructor)
                 {
                     return _stack[i].JsonTypeInfo;
                 }
             }
 
-            Debug.Assert(Current.JsonTypeInfo.Converter.ConstructorIsParameterized);
+            Debug.Assert(Current.JsonTypeInfo.UsesParameterizedConstructor);
             return Current.JsonTypeInfo;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetConstructorArgumentState()
         {
-            if (Current.JsonTypeInfo.Converter.ConstructorIsParameterized)
+            if (Current.JsonTypeInfo.UsesParameterizedConstructor)
             {
                 Current.CtorArgumentState ??= new();
             }
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.Converter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path = {JsonPath()}, Current = ConverterStrategy.{Current.JsonTypeInfo?.Converter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

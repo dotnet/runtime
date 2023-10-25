@@ -15,10 +15,10 @@ using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class AssemblyChecker
+	partial class AssemblyChecker
 	{
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
-		readonly LinkedTestCaseResult linkedTestCase;
+		readonly TrimmedTestCaseResult linkedTestCase;
 
 		HashSet<string> linkedMembers;
 		readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 		bool checkNames;
 
-		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
+		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
 		{
 			this.originalAssembly = original;
 			this.linkedAssembly = linked;
@@ -82,22 +82,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			Assert.IsEmpty (linkedMembers, "Linked output includes unexpected member");
-		}
-
-		static bool IsCompilerGeneratedMemberName (string memberName)
-		{
-			return memberName.Length > 0 && memberName[0] == '<';
-		}
-
-		static bool IsCompilerGeneratedMember (IMemberDefinition member)
-		{
-			if (IsCompilerGeneratedMemberName (member.Name))
-				return true;
-
-			if (member.DeclaringType != null)
-				return IsCompilerGeneratedMember (member.DeclaringType);
-
-			return false;
 		}
 
 		static bool IsBackingField (FieldDefinition field) => field.Name.StartsWith ("<") && field.Name.EndsWith (">k__BackingField");
@@ -860,12 +844,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static void VerifyPrivateImplementationDetailsType (ModuleDefinition src, ModuleDefinition linked, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails)
 		{
-			srcImplementationDetails = src.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+			srcImplementationDetails = src.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
 
 			if (srcImplementationDetails == null)
 				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
 
-			linkedImplementationDetails = linked.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+			linkedImplementationDetails = linked.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
 
 			if (linkedImplementationDetails == null)
 				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the linked assembly");
@@ -949,7 +933,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				foreach (var additionalExpectedAttributesFromFixedField in GetCustomAttributeCtorValues<object> (fixedField, nameof (KeptAttributeOnFixedBufferTypeAttribute)))
 					yield return additionalExpectedAttributesFromFixedField.ToString ();
-
 			}
 		}
 
@@ -1036,7 +1019,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 
 			foreach (var nestedType in src.NestedTypes) {
-				if (nestedType.Name != "<>O")
+				if (!IsDelegateBackingFieldsType (nestedType))
 					continue;
 
 				var linkedNestedType = linked.NestedTypes.FirstOrDefault (t => t.Name == nestedType.Name);

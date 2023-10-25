@@ -35,10 +35,10 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
+#include <minipal/cpuid.h>
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -90,9 +90,9 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
 
     // If a result array is passed then it should be an array type with pointer-sized components that are not
     // GC-references.
-    ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
-    ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultArray || pResultArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
+    ASSERT(!pResultArray || pResultArray->GetMethodTable()->IsArray());
+    ASSERT(!pResultArray || !pResultArray->GetMethodTable()->HasReferenceFields());
+    ASSERT(!pResultArray || pResultArray->GetMethodTable()->RawGetComponentSize() == sizeof(void*));
 
     uint32_t cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
     HANDLE * pResultElements = pResultArray ? (HANDLE*)(pResultArray + 1) : NULL;
@@ -338,18 +338,6 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
 #endif
 
     return pCodeOrg;
-}
-
-extern CrstStatic g_ThunkPoolLock;
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
-{
-    g_ThunkPoolLock.Enter();
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
-{
-    g_ThunkPoolLock.Leave();
 }
 
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()

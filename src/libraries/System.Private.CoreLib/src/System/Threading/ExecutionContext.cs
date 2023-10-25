@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: Capture execution  context for a thread
-**
-**
-===========================================================*/
-
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +14,9 @@ namespace System.Threading
 
     internal delegate void ContextCallback<TState>(ref TState state);
 
+    /// <summary>
+    /// Manages the execution context for the current thread.
+    /// </summary>
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         internal static readonly ExecutionContext Default = new ExecutionContext();

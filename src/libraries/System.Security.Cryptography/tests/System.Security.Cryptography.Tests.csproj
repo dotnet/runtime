@@ -5,7 +5,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0026;SYSLIB0027;SYSLIB0028</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -273,6 +272,7 @@
     <Compile Include="MD5Tests.cs" />
     <Compile Include="OidTests.cs" />
     <Compile Include="OidCollectionTests.cs" />
+    <Compile Include="OpenSslNamedKeysTests.manual.cs" />
     <Compile Include="PaddingModeTests.cs" />
     <Compile Include="PbeParametersTests.cs" />
     <Compile Include="PemEncodingTests.cs" />

@@ -203,22 +203,20 @@ namespace ILCompiler.DependencyAnalysis
 
             _threadStatics = new NodeCache<MetadataType, ISymbolDefinitionNode>(CreateThreadStaticsNode);
 
-            TypeThreadStaticIndexNode inlinedThreadStatiscIndexNode = null;
             if (_inlinedThreadStatics.IsComputed())
             {
                 _inlinedThreadStatiscNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
-                inlinedThreadStatiscIndexNode = new TypeThreadStaticIndexNode(_inlinedThreadStatiscNode);
             }
 
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
-                if (inlinedThreadStatiscIndexNode != null &&
-                _inlinedThreadStatics.GetOffsets().ContainsKey(type))
+                if (_inlinedThreadStatics.IsComputed() &&
+                    _inlinedThreadStatics.GetOffsets().ContainsKey(type))
                 {
-                    return inlinedThreadStatiscIndexNode;
+                    return new TypeThreadStaticIndexNode(type, _inlinedThreadStatiscNode);
                 }
 
-                return new TypeThreadStaticIndexNode(type);
+                return new TypeThreadStaticIndexNode(type, null);
             });
 
             _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
@@ -321,6 +319,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReflectedTypeNode(type);
             });
 
+            _notReadOnlyFields = new NodeCache<FieldDesc, NotReadOnlyFieldNode>(field =>
+            {
+                return new NotReadOnlyFieldNode(field);
+            });
+
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
             {
                 return new GenericStaticBaseInfoNode(type);
@@ -357,12 +360,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
             {
-                return new FrozenStringNode(data, Target);
+                return new FrozenStringNode(data, TypeSystemContext);
             });
 
-            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, FrozenObjectNode>(key =>
+            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode>(key =>
             {
-                return new FrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
+                return new SerializedFrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -985,9 +988,6 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
-            // We track reflectability at canonical method body level
-            method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
             return _reflectedMethods.GetOrAdd(method);
         }
 
@@ -1001,6 +1001,12 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectedTypeNode ReflectedType(TypeDesc type)
         {
             return _reflectedTypes.GetOrAdd(type);
+        }
+
+        private NodeCache<FieldDesc, NotReadOnlyFieldNode> _notReadOnlyFields;
+        public NotReadOnlyFieldNode NotReadOnlyField(FieldDesc field)
+        {
+            return _notReadOnlyFields.GetOrAdd(field);
         }
 
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
@@ -1214,9 +1220,9 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
-        private NodeCache<SerializedFrozenObjectKey, FrozenObjectNode> _frozenObjectNodes;
+        private NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode> _frozenObjectNodes;
 
-        public FrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
+        public SerializedFrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
             return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
         }

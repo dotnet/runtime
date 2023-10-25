@@ -108,6 +108,12 @@ void InitializeShim()
     }
 #endif // HOST_UNIX
 
+#ifdef HOST_WINDOWS
+    // Assertions will be sent to stderr instead of a pop-up dialog.
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+#endif // HOST_WINDOWS
+
     Logger::Initialize();
     SetLogFilePath();
     Logger::OpenLogFile(g_logFilePath);

@@ -5,7 +5,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Linq.Expressions.Tests
 {
