@@ -2824,15 +2824,16 @@ bool Compiler::fgMergeBlockReturn(BasicBlock* block)
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         fgConvertSyncReturnToLeave(block);
-        return true;
     }
+    else
 #endif // !TARGET_X86
-
-    // We'll jump to the genReturnBB.
-    //
-    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
-    fgAddRefPred(genReturnBB, block);
-    fgReturnCount--;
+    {
+        // We'll jump to the genReturnBB.
+        //
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
+        fgAddRefPred(genReturnBB, block);
+        fgReturnCount--;
+    }
 
     if (genReturnLocal != BAD_VAR_NUM)
     {
