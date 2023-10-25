@@ -546,8 +546,6 @@ namespace System.Collections.Generic
                 {
                     MoveDownCustomComparer(lastNode, index);
                 }
-
-                nodes[newSize] = default;
             }
 
             nodes[newSize] = default;
