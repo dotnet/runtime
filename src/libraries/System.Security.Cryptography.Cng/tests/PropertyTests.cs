@@ -184,7 +184,8 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 ReadOnlySpan<byte> span = value;
                 _ = new CngProperty(name, span, CngPropertyOptions.CustomProperty);
-            });
+            },
+            "name");
         }
     }
 }
