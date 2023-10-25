@@ -34,8 +34,6 @@ namespace System.Runtime.CompilerServices
         {
             [NonVersionable]
             get =>
-                // This property allows C#'s fixed statement to work on Strings.
-                // On 64 bit platforms, this should be 20 and on 32 bit 12.
 #if TARGET_64BIT
                 20;
 #else // 32
