@@ -168,5 +168,81 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(OpCodes.Ldc_I8.Value, longBody[0]);
             }
         }
+
+        [Fact]
+        public void ILOffset_Test()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+            MethodBuilder method = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[0]);
+            ILGenerator ilGenerator = method.GetILGenerator();
+
+            Assert.Equal(0, ilGenerator.ILOffset);
+            ilGenerator.Emit(OpCodes.Ret);
+            Assert.Equal(1, ilGenerator.ILOffset);
+        }
+
+        [Fact]
+        public void ILMaxStack_Test()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(long), new Type[] { typeof(int), typeof(long), typeof(short), typeof(byte) });
+                ILGenerator il1 = method1.GetILGenerator();
+
+                // public int Method1(int x, int y, short z, byte r) =>
+                //  x + (z + 2 * (r + (8 * y + 3 * (y - (5 + x))))
+                il1.Emit(OpCodes.Ldarg_1);     // push 1 MaxStack 1
+                il1.Emit(OpCodes.Ldarg_3);     // push 1 MaxStack 2
+                il1.Emit(OpCodes.Ldc_I4_2);    // push 1 MaxStack 3
+                il1.Emit(OpCodes.Ldarg_S, 4);  // push 1 MaxStack 4
+                il1.Emit(OpCodes.Ldc_I4_8);    // push 1 MaxStack 5
+                il1.Emit(OpCodes.Ldarg_2);     // push 1 MaxStack 6
+                il1.Emit(OpCodes.Mul);         // pop 2 push 1 MaxStack 5
+                il1.Emit(OpCodes.Ldc_I4_3);    // push 1 MaxStack 6
+                il1.Emit(OpCodes.Ldarg_2);     // push 1 MaxStack 7
+                il1.Emit(OpCodes.Ldc_I4_5);    // push 1 MaxStack 8
+                il1.Emit(OpCodes.Ldarg_1);     // push 1 MaxStack 9
+                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 8 
+                il1.Emit(OpCodes.Sub);         // pop 2 push 1 stack size 7
+                il1.Emit(OpCodes.Mul);         // pop 2 push 1 stack size 6
+                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 5
+                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 4
+                il1.Emit(OpCodes.Mul);         // pop 2 push 1 stack size 3
+                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 2
+                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 1
+                il1.Emit(OpCodes.Ret);         // pop 1 stack size 0
+
+                MethodBuilder method2 = type.DefineMethod("Method2", MethodAttributes.Public, typeof(int), new Type[] { typeof(int), typeof(byte) });
+                ILGenerator il2 = method2.GetILGenerator();
+
+                // int Method2(int x, int y) =>  x + (y + 18);
+                il2.Emit(OpCodes.Ldarg_1);     // push 1 MaxStack 1
+                il2.Emit(OpCodes.Ldarg_2);     // push 1 MaxStack 2
+                il2.Emit(OpCodes.Ldc_I4_S, 8); // push 1 MaxStack 3
+                il2.Emit(OpCodes.Add);         // pop 2 push 1 stack size 2
+                il2.Emit(OpCodes.Add);         // pop 2 push 1 stack size 1
+                il2.Emit(OpCodes.Ret);         // pop 1 stack size 0
+
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
+                Assert.Equal(9, getMaxStackSizeMethod.Invoke(il1, new object[0]));
+                Assert.Equal(3, getMaxStackSizeMethod.Invoke(il2, new object[0]));
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body1 = typeFromDisk.GetMethod("Method1").GetMethodBody();
+                MethodBody body2 = typeFromDisk.GetMethod("Method2").GetMethodBody();
+                Assert.Equal(9, body1.MaxStackSize);
+                Assert.Equal(8, body2.MaxStackSize); // apparently doesn't write lower than 8 
+            }
+        }
+
+        private MethodInfo LoadILGenerator_GetMaxStackSizeMethod()
+        {
+            Type ilgType = Type.GetType("System.Reflection.Emit.ILGeneratorImpl, System.Reflection.Emit", throwOnError: true)!;
+            return ilgType.GetMethod("GetMaxStackSize", BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
+        }
     }
 }
