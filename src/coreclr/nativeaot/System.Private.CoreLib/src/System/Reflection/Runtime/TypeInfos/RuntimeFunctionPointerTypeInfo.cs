@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.TypeInfos
             ArgumentNullException.ThrowIfNull(other);
 
             // This logic is written to match CoreCLR's behavior.
-            return other is Type && other is IRuntimeMemberInfoWithNoMetadataDefinition;
+            return other is RuntimeType runtimeType && runtimeType.GetRuntimeTypeInfo() is IRuntimeMemberInfoWithNoMetadataDefinition;
         }
 
         public override bool IsFunctionPointer => true;

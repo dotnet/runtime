@@ -66,7 +66,7 @@ namespace System.Reflection.Runtime.TypeInfos
             //
             // Because of these conditions, we can safely implement both the method token equivalence and the "is this type from the same implementor"
             // check as our regular Equals() method.
-            return Equals(other);
+            return ToType().Equals(other);
         }
 
         public sealed override int GenericParameterPosition

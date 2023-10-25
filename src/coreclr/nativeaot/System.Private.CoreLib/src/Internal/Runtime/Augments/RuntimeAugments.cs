@@ -858,27 +858,12 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhpCancelThreadAbort(thread);
         }
 
-        public static void RhYield()
-        {
-            RuntimeImports.RhYield();
-        }
-
         public static bool SupportsRelativePointers
         {
             get
             {
                 return Internal.Runtime.MethodTable.SupportsRelativePointers;
             }
-        }
-
-        public static bool IsPrimitive(RuntimeTypeHandle typeHandle)
-        {
-            return typeHandle.ToEETypePtr().IsPrimitive && !typeHandle.ToEETypePtr().IsEnum;
-        }
-
-        public static byte[] ComputePublicKeyToken(byte[] publicKey)
-        {
-            return System.Reflection.AssemblyNameHelpers.ComputePublicKeyToken(publicKey);
         }
     }
 }

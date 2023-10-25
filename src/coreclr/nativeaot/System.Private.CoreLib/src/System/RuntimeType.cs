@@ -11,6 +11,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
@@ -487,8 +488,9 @@ namespace System
         {
             get
             {
-                if (_pUnderlyingEEType != null)
-                    return false;
+                MethodTable* pEEType = _pUnderlyingEEType;
+                if (pEEType != null)
+                    return pEEType->IsGenericTypeDefinition;
                 return GetRuntimeTypeInfo().ContainsGenericParameters;
             }
         }
@@ -655,8 +657,15 @@ namespace System
 
         public override Type UnderlyingSystemType => this;
 
+        public override bool IsCollectible => false;
+        public override int MetadataToken => GetRuntimeTypeInfo().MetadataToken;
+
         public override Type? DeclaringType => GetRuntimeTypeInfo().DeclaringType;
         public override Type? ReflectedType => DeclaringType;
+
+        public override MethodBase? DeclaringMethod => GetRuntimeTypeInfo().DeclaringMethod;
+
+        public override StructLayoutAttribute StructLayoutAttribute => GetRuntimeTypeInfo().StructLayoutAttribute;
 
         protected override bool IsCOMObjectImpl() => false;
 
@@ -758,6 +767,19 @@ namespace System
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
             => GetRuntimeTypeInfo().GetInterface(name, ignoreCase);
+
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
+            => GetRuntimeTypeInfo().GetInterfaceMap(interfaceType);
+
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.PublicEvents
+            | DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+        public override MemberInfo[] GetDefaultMembers()
+            => GetRuntimeTypeInfo().GetDefaultMembers();
 
         public override bool IsDefined(Type attributeType, bool inherit)
             => GetRuntimeTypeInfo().IsDefined(attributeType, inherit);

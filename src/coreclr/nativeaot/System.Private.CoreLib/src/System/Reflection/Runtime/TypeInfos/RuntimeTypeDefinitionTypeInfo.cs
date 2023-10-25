@@ -20,16 +20,15 @@ namespace System.Reflection.Runtime.TypeInfos
             ArgumentNullException.ThrowIfNull(other);
 
             // Do not rewrite as a call to IsConstructedGenericType - we haven't yet established that "other" is a runtime-implemented member yet!
-            // TODO!!!
-            if (other is RuntimeType && ((Type)other).ToRuntimeTypeInfo() is RuntimeConstructedGenericTypeInfo otherConstructedGenericType)
-                other = otherConstructedGenericType.GetGenericTypeDefinition();
+            if (other is RuntimeType otherRuntimeType && otherRuntimeType.IsConstructedGenericType)
+                other = otherRuntimeType.GetGenericTypeDefinition();
 
             // Unlike most other MemberInfo objects, types never get cloned due to containing generic types being instantiated.
             // That is, their DeclaringType is always the generic type definition. As a Type, the ReflectedType property is always equal to the DeclaringType.
             //
             // Because of these conditions, we can safely implement both the method token equivalence and the "is this type from the same implementor"
             // check as our regular Equals() method.
-            return Equals(other);
+            return ToType().Equals(other);
         }
     }
 }

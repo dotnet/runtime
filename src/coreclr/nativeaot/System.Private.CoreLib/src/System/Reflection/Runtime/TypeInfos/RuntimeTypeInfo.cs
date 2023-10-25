@@ -370,7 +370,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public Type GetElementType()
         {
-            return InternalRuntimeElementType.ToType();
+            return InternalRuntimeElementType?.ToType();
         }
 
         //
