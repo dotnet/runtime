@@ -3221,6 +3221,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/pollingcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CircularCctors/CircularCctorTwoThreadsThreeCC/**">
+            <Issue>System.Threading.Thread.ThrowIfNoThreadStart: PlatformNotSupportedException</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
