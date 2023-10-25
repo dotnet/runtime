@@ -27,6 +27,7 @@ namespace System.Collections.Frozen.Tests
             from comparer in new[] { StringComparer.Ordinal, StringComparer.OrdinalIgnoreCase }
             from keys in new string[][]
             {
+                
                 // from https://github.com/dotnet/runtime/blob/a30de6d40f69ef612b514344a5ec83fffd10b957/src/libraries/Common/src/Interop/Unix/System.Native/Interop.MountPoints.FormatInfo.cs#L84-L327
                 new[]
                 {
@@ -133,14 +134,14 @@ namespace System.Collections.Frozen.Tests
                 },
 
                 // exercise left/right justified ordinal comparers
-                Enumerable.Range(0, 10).Select(i => $"{i}ABCDEFGH").ToArray(), // left justified single char ascii
-                Enumerable.Range(0, 10).Select(i => $"ABCDEFGH{i}").ToArray(), // right justified single char ascii
-                Enumerable.Range(0, 100).Select(i => $"{i:D2}ABCDEFGH").ToArray(), // left justified substring ascii
-                Enumerable.Range(0, 100).Select(i => $"ABCDEFGH{i:D2}").ToArray(), // right justified substring ascii
-                Enumerable.Range(0, 10).Select(i => $"{i}ABCDEFGH\U0001F600").ToArray(), // left justified single char non-ascii
-                Enumerable.Range(0, 10).Select(i => $"ABCDEFGH\U0001F600{i}").ToArray(), // right justified single char non-ascii
-                Enumerable.Range(0, 100).Select(i => $"{i:D2}ABCDEFGH\U0001F600").ToArray(), // left justified substring non-ascii
-                Enumerable.Range(0, 100).Select(i => $"ABCDEFGH\U0001F600{i:D2}").ToArray(), // right justified substring non-ascii
+                Enumerable.Range(0, 10).Select(i => $"{i}ABCDefgh").ToArray(), // left justified single char ascii
+                Enumerable.Range(0, 10).Select(i => $"ABCDefgh{i}").ToArray(), // right justified single char ascii
+                Enumerable.Range(0, 100).Select(i => $"{i:D2}ABCDefgh").ToArray(), // left justified substring ascii
+                Enumerable.Range(0, 100).Select(i => $"ABCDefgh{i:D2}").ToArray(), // right justified substring ascii
+                Enumerable.Range(0, 10).Select(i => $"{i}ABCDefgh\U0001F600").ToArray(), // left justified single char non-ascii
+                Enumerable.Range(0, 10).Select(i => $"ABCDefgh\U0001F600{i}").ToArray(), // right justified single char non-ascii
+                Enumerable.Range(0, 100).Select(i => $"{i:D2}ABCDefgh\U0001F600").ToArray(), // left justified substring non-ascii
+                Enumerable.Range(0, 100).Select(i => $"ABCDefgh\U0001F600{i:D2}").ToArray(), // right justified substring non-ascii
                 Enumerable.Range(0, 20).Select(i => i.ToString("D2")).Select(s => (char)(s[0] + 128) + "" + (char)(s[1] + 128)).ToArray(), // left-justified non-ascii
             }
             select new object[] { keys.ToDictionary(i => i, i => i, comparer) };
@@ -191,6 +192,23 @@ namespace System.Collections.Frozen.Tests
                     Assert.True(frozen.TryGetValue(pair.Key, out TValue value));
                     Assert.Equal(pair.Value, value);
                 }
+
+                if (typeof(TKey) == typeof(string) && ReferenceEquals(frozen.Comparer, StringComparer.OrdinalIgnoreCase))
+                {
+                    foreach (KeyValuePair<TKey, TValue> pair in source)
+                    {
+                        var keyUpper = (TKey)(object)((string)(object)pair.Key).ToUpper();
+                        var isValidTest = frozen.Comparer.Equals(pair.Key, keyUpper);
+                        if (isValidTest)
+                        {
+                            Assert.Equal(pair.Value, frozen.GetValueRefOrNullRef(keyUpper));
+                            Assert.Equal(pair.Value, frozen[keyUpper]);
+                            Assert.True(frozen.TryGetValue(keyUpper, out TValue value));
+                            Assert.Equal(pair.Value, value);
+                        }
+                    }
+                }
+
                 foreach (KeyValuePair<TKey, TValue> pair in frozen)
                 {
                     Assert.True(source.TryGetValue(pair.Key, out TValue value));
@@ -201,6 +219,7 @@ namespace System.Collections.Frozen.Tests
                 {
                     Assert.True(frozen.ContainsKey(key));
                 }
+
                 foreach (TKey key in frozen.Keys)
                 {
                     Assert.True(source.ContainsKey(key));
@@ -269,6 +288,22 @@ namespace System.Collections.Frozen.Tests
                     Assert.True(frozen.TryGetValue(pair.Key, out TKey actualKey));
                     Assert.Equal(pair.Key, actualKey);
                 }
+
+                if (typeof(TKey) == typeof(string) && ReferenceEquals(frozen.Comparer, StringComparer.OrdinalIgnoreCase))
+                {
+                    foreach (KeyValuePair<TKey, TValue> pair in source)
+                    {
+                        var keyUpper = (TKey)(object)((string)(object)pair.Key).ToUpper();
+                        var isValidTest = frozen.Comparer.Equals(pair.Key, keyUpper);
+                        if (isValidTest)
+                        {
+                            Assert.True(frozen.Contains(keyUpper));
+                            Assert.True(frozen.TryGetValue(keyUpper, out TKey actualKey));
+                            Assert.Equal(pair.Key, actualKey);
+                        }
+                    }
+                }
+
                 foreach (TKey key in frozen)
                 {
                     Assert.True(source.TryGetValue(key, out _));
@@ -278,6 +313,7 @@ namespace System.Collections.Frozen.Tests
                 {
                     Assert.True(frozen.Contains(key));
                 }
+
                 foreach (TKey item in frozen.Items)
                 {
                     Assert.True(source.ContainsKey(item));
