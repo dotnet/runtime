@@ -503,6 +503,58 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Removes the first occurrence the equals the specified parameter.
+        /// </summary>
+        /// <param name="element">The element to look for.</param>
+        /// <param name="removedElement">The actual element that got removed from the queue.</param>
+        /// <param name="priority">The priority value associated with the removed element.</param>
+        /// <param name="equalityComparer">The equality comparer governing element equality.</param>
+        /// <returns><see langword="true"/> if matching entry was found and removed, <see langword="false"/> otherwise.</returns>
+        /// <remarks>
+        /// The method performs a linear-time scan of every element in the heap, removing the first value found to match the <paramref name="element"/> parameter.
+        /// In case of duplicate entries, what entry does get removed is non-deterministic, does not take priority into account and reflects the structure of the heap at the time of removal.
+        /// </remarks>
+        public bool Remove(
+            TElement element,
+            [MaybeNullWhen(false)] out TElement removedElement,
+            [MaybeNullWhen(false)] out TPriority priority,
+            IEqualityComparer<TElement>? equalityComparer = null)
+        {
+            int index = FindIndex(element, equalityComparer);
+            if (index == -1)
+            {
+                removedElement = default;
+                priority = default;
+                return false;
+            }
+
+            (TElement Element, TPriority Priority)[] nodes = _nodes;
+            (removedElement, priority) = nodes[index];
+            int newSize = --_size;
+
+            if (index < newSize)
+            {
+                // We're removing an element from the middle of the heap.
+                // Pop the last element in the collection and sift downward from the removed index.
+                (TElement Element, TPriority Priority) lastNode = nodes[newSize];
+
+                if (_comparer == null)
+                {
+                    MoveDownDefaultComparer(lastNode, index);
+                }
+                else
+                {
+                    MoveDownCustomComparer(lastNode, index);
+                }
+
+                nodes[newSize] = default;
+            }
+
+            nodes[newSize] = default;
+            return true;
+        }
+
+        /// <summary>
         ///  Removes all items from the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public void Clear()
@@ -807,6 +859,42 @@ namespace System.Collections.Generic
             }
 
             nodes[nodeIndex] = node;
+        }
+
+        /// <summary>
+        /// Scans the heap for the first index containing an element equal to the specified parameter.
+        /// </summary>
+        private int FindIndex(TElement element, IEqualityComparer<TElement>? equalityComparer)
+        {
+            equalityComparer ??= EqualityComparer<TElement>.Default;
+            (TElement Element, TPriority Priority)[] nodes = _nodes;
+            int size = _size;
+
+            // Currently the JIT doesn't optimize direct EqualityComparer<T>.Default.Equals
+            // calls for reference types, so we want to cache the comparer instance instead.
+            // TODO https://github.com/dotnet/runtime/issues/10050: Update if this changes in the future.
+            if (typeof(TElement).IsValueType && equalityComparer == EqualityComparer<TElement>.Default)
+            {
+                for (int i = 0; i < size; i++)
+                {
+                    if (EqualityComparer<TElement>.Default.Equals(element, nodes[i].Element))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < size; i++)
+                {
+                    if (equalityComparer.Equals(element, nodes[i].Element))
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>
