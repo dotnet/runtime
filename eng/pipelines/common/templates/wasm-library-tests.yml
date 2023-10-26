@@ -8,7 +8,8 @@ parameters:
   platforms: []
   scenarios: ['normal']
   shouldContinueOnError: false
-  shouldRunSmokeOnly: false 
+  shouldRunSmokeOnly: false
+  buildConfig: Release
 
 jobs:
 
@@ -19,7 +20,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
+    buildConfig: ${{ parameters.buildConfig }}
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}

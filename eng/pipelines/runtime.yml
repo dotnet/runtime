@@ -608,6 +608,19 @@ extends:
           scenarios:
             - WasmTestOnBrowser
 
+      # Build and Smoke Tests only - Wasm Debug
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          nameSuffix: _Debug_Smoke
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          shouldRunSmokeOnly: true
+          buildConfig: Debug
+          alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - WasmTestOnBrowser
+
       # WASI/WASM
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
