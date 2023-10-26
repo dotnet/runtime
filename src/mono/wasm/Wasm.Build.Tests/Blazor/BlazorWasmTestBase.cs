@@ -23,9 +23,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     {
         _provider = GetProvider<BlazorWasmProjectProvider>();
         _provider.BundleDirName = "wwwroot";
-
-        if (DefaultTargetFrameworkForBlazor == "net8.0")
-            UseWBTOverridePackTargets = true;
     }
 
     public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)

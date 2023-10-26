@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Nodes;
 using Xunit.Abstractions;
@@ -89,6 +90,10 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         string id,
         BuildProjectOptions buildProjectOptions)
     {
+        if (buildProjectOptions.ExtraBuildEnvironmentVariables is null)
+            buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
+        buildProjectOptions.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
+
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions);
         if (buildProjectOptions.UseCache)
             _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, res.Output));

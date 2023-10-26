@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -60,6 +61,10 @@ public abstract class TestMainJsTestBase : BuildTestBase
         {
             throw new Exception("_projectDir should be set, to use options.createProject=false");
         }
+
+        if (options.ExtraBuildEnvironmentVariables is null)
+            options = options with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
+        options.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
 
         try
         {
