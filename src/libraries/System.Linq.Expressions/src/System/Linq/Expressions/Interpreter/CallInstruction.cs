@@ -83,11 +83,11 @@ namespace System.Linq.Expressions.Interpreter
             try
             {
 #if FEATURE_FAST_CREATE
-            if (argumentCount < MaxArgs)
-            {
-                res = FastCreate(info, parameters);
-            }
-            else
+                if (argumentCount < MaxArgs)
+                {
+                    res = FastCreate(info, parameters);
+                }
+                else
 #endif
                 {
                     res = SlowCreate(info, parameters);
