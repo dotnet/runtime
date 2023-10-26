@@ -149,24 +149,19 @@ Async2 methods will not be visible in reflection via the `Type.GetMethod`, `Type
 
 `Type.GetMemberWithSameMetadataDefinitionAs` will find the matching async variant method.
 
-### Modification of existing async infrastructure
 
-The only known modifications are to add the various new `INotifyCompletion2` and `INotifyCompletion3` interfaces to the awaitable types in the core libraries. 
-
-## Implementation of async2 design 1
-
-TBD, design in progress... there are some notes, but this is very incomplete at this moment.
+## Implementation of Unwinder based async2 implementation
 
 The general design is to leverage the notion that a normal code generated function at a function call point is effectively a state machine. The index for resumption is the IP that returning to the function will set, and the stackframe + saved registers are the current state of the state machine. I believe we can achieve performance comparable to synchronous code with this scheme for non-suspended scenarios, and we may achieve acceptable overall performance as an async mechanism if suspension is relatively rare.
 
-#### JIT Code changes
+### JIT Code changes
 1. Do not allow InlinedCallFrames to be linked to the frame chain across a suspend (Or disable p/invoke inlining in these methods)
 2. Report frame pointers as ByRef
 3. Report all pointers to locals as ByRef
-4. (If possible) tweak codegen for return processing to not use the address returned in RAX when doing byref returns
-5. Force the AwaitAwaiterFromRuntimeAsync to be treated as an async2 method even though it isn't marked as such (due to compiler limitations)
+4. Force the AwaitAwaiterFromRuntimeAsync to be treated as an async2 method even though it isn't marked as such (due to compiler limitations)
+5. Do not allow the JIT to hold onto a thread static base pointer across await points.
 
-#### Thunk from the Task api surface to async2 based implementation
+### Thunk from the Task api surface to async2 based implementation
 
 A thunk from the Task api surface to an async2 based implementation will have the following psuedocode if it is not required to throw `InvalidProgramException`
 
@@ -202,9 +197,52 @@ Task<ReturnType> ThunkAsync(ParameterType param1, ParameterType2 param2, ...)
 }
 ```
 
+### Implementation of `AwaitAwaiterFromRuntimeAsync`
+The implementation of this method captures every stack frame from itself down to the `ThunkAsync` function or `ResumptionFunc`. Each one of these stack frames is packaged up into a structure known as a `Tasklet`. These `Tasklet` objects are registered with the GC so that they will be properly reported, but that reporting is not based on normal GC reporting, but is instead a special codebase. Primarily this need to treat them as special is done so that ByRef pointers can be handled correctly. Once all of the stack frames are captured, then the set of unwound `Tasklet` and the awaiter object are placed in a thread local variable for use by the `ThunkAsync` or `ResumptionFunc` functions. Finally, the actual stack is unwound to the `ThunkAsync`/`ResumptionFunc` frame, which detects that the operation was suspended and does the appropriate thing. In the ThunkAsync implementation, this is done by the runtimeTaskState.FromResult method, which determines if it should ignore the result it acquired from the `TargetMethod` and instead just create a task to return. Finally, a delegate to `ResumptionFunc` is passed to the awaiter.
+
+`Tasklet` structures are designed to hold the data of a frame, the instruction pointer where execution should resume, the current state of any callee preserved registers that are used by the function, and layout/unwind information for finding GC data/and preserved register locations within the frame. Of particular interest is the handling for preserved registers. In the normal case of execution of JIT generated code, when a function needs to use a callee preserved register, it will generate code to store the current value of the register during the prolog of the method, and restore it during the epilog of the method. This unwinder based approach reverses that approach so that the `Tasklet` copy of the stack frame stores the "current" value of the register, and it is reported to the GC in that location when the `Tasklet` goes through GC reporting. The other detail of particular interest is that the data necessary to describe the locations of these preserved registers turns out to be exactly the data necessary to unwind a stack frame.
+
+The implementation of unwinding used to return back to the `ThunkAsync` method is currently written in a highly optimized assembly path which walks the list of preserved register locations, and resets them.
+
+Current implementation of this unwinder scheme use the standard CoreCLR unwinder and GC information reporter to build data structures that describe the unwind/GC data at a particular instruction pointer address, but in theory this should be amenable to a high performance cache.
+
+### Implementation of `ResumptionFunc`
+The dispatcher takes a collection of Tasklets, and resumes the one at the top of the stack, and if it returns, will pop it off the stack and execute the next one. It shall maintain structures such that the EH stack walker can find the list of stack frames that are still held in `Tasklet`s. In addition it shall be responsible for ensuring that the correct `ExecutionContext`/`SynchronizationContext` is maintained, and any `Tasklet` is resumed using the appropriate scheduler provided to the runtime. This implementation today is partial, but the basic structure is present to do so.
+
+#### Resumption of a Tasklet
+
+Once the `ResumptionFunc` has setup the global state to have the correct bits in it, it will call into a carefully crafted assembly stub (called `ResumeTaskletIntegerRegisterReturn` or `ResumeTaskletReferenceReturn`) which takes a `Tasklet*` as input as well as a pointer to a structure which holds the current return value that should be restored to the return value registers. This assembly stub shall copy the `Tasklet`'s stack frame onto the stack, swap any values in the preserved register locations with the current value of the preserved registers, and then tail jump to the instruction pointer held in the `Tasklet`. This resumption process was chosen to ensure that:
+1. The return address on the shadow CET stack does not need any updates upon `Tasklet` resumption.
+2. The runtime only resumes a single method at a time, which improves efficiency in the somewhat common case where there is a deep stack which has a loop in it.
+3. Once resumed, the stack appears as a normal stack to all stackwalking operations.
+
+### Expected characteristics of this approach
+1. The performance of code which does not suspend is effectively the same as normal synchronous code. (confirmed)
+2. The performance of code which suspends a lot is highly impacted by the cost of performing unwind, and somewhat by resumption cost. (under investigation)
+3. The cost of GC while `Tasklet`s exist is dependent on the number of live `Tasklet` objects. This is almost certainly a fairly high cost. (under investigation)
+4. This approach allows development of async code which uses ref parameters/locals and ByRefLike structures. (confirmed)
+
+## Shared implementation between Unwinder and JIT focussed implementation of runtime tasks
+
+It turns out that due to the api design of how async2 code interacts with the existing await pattern in IL, the thunk from async2 to existing Tasks and ValueTasks is the same for all designs.
+
+### Thunk from the async2 surface to Task api implementation
+
+```
+async2 ReturnType Thunk(ParameterType param1, ParameterType2 param2, ...)
+{
+    var awaiter = TargetMethod(param1, param2, ...).GetAwaiter();
+    if (!awaiter.IsCompleted)
+    {
+        RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync(awaiter);
+    }
+    return awaiter.GetResult();
+}
+```
+
 ## C# Language changes
 
-TBD
+TBD, and not part of this experiment. We have built something. It is strictly for demonstrating that code CAN be generated.
 
 Major identified concerns are
 
