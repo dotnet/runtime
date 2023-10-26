@@ -224,7 +224,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") } },
             new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray() },
             new object[] { new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XElement("parent", new XElement("child", "child text")) } }
-        };        
+        };
         [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XObject[] toReplace)
         {
@@ -248,7 +248,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
             }
         }
-        
+
         [Fact]
         public void ElementWithAttributes()
         {

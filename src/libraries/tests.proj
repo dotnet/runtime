@@ -385,13 +385,9 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/74413 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/91538 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Packaging\tests\System.IO.Packaging.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.ThreadPool\tests\System.Threading.ThreadPool.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/91593 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />

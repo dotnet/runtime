@@ -615,7 +615,7 @@ namespace System.Security.Cryptography.Tests
             string result = RandomNumberGenerator.GetString("!", 42);
             Assert.Equal(new string('!', 42), result);
         }
-        
+
         [Fact]
         public static void GetItems_CoinFlip_Int_RandomDistribution()
         {
@@ -640,7 +640,7 @@ namespace System.Security.Cryptography.Tests
             RandomNumberGenerator.GetItems(choices, generated);
             VerifyDistribution<bool>(generated, 0.5);
         }
-        
+
         [Fact]
         public static void GetItems_Bool_NoDeduplication()
         {
@@ -696,7 +696,7 @@ namespace System.Security.Cryptography.Tests
             Span<char> buffer = Span<char>.Empty;
             RandomNumberGenerator.GetHexString(buffer); // Shouldn't throw.
         }
-        
+
         [Theory]
         [MemberData(nameof(GetHexStringLengths))]
         public static void GetHexString_Allocating_Random(int length)
