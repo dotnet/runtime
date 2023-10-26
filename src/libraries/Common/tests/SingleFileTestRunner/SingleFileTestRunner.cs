@@ -167,7 +167,9 @@ public class SingleFileTestRunner : XunitTestFramework
     }
 }
 
-internal class ConsoleDiagnosticMessageSink : IMessageSink, Xunit.LongLivedMarshalByRefObject
+// This is about running on desktop FX, which we don't do
+#pragma warning disable xUnit3000
+internal class ConsoleDiagnosticMessageSink : IMessageSink
 {
     public bool OnMessage(IMessageSinkMessage message)
     {
@@ -178,3 +180,4 @@ internal class ConsoleDiagnosticMessageSink : IMessageSink, Xunit.LongLivedMarsh
         return false;
     }
 }
+#pragma warning restore xUnit3000
