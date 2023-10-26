@@ -377,6 +377,39 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None)]
+        public void UnmanagedCallback_InFileType_Compiles(BuildArgs buildArgs, string id)
+        {
+            string code =
+                """
+                using System;
+                using System.Runtime.InteropServices;
+                public class Test
+                {
+                    public static int Main()
+                    {
+                        Console.WriteLine("Main running");
+                        return 42;
+                    }
+                }
+
+                file class Foo
+                {
+                    [UnmanagedCallersOnly]
+                    public unsafe static extern void SomeFunction1(delegate* unmanaged<int> callback);
+                }
+                """;
+
+            (_, string output) = BuildForVariadicFunctionTests(
+                code,
+                buildArgs with { ProjectName = $"cb_filetype_{buildArgs.Config}" },
+                id
+            );
+
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+        }
+
+        [Theory]
+        [BuildAndRun(host: RunHost.None)]
         public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
         {
             // Build a library containing icalls with overloaded parameters.

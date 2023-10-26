@@ -308,7 +308,7 @@ internal sealed class PInvokeTableGenerator
 
             string module_symbol = _fixupSymbolName(method.DeclaringType!.Module!.Assembly!.GetName()!.Name!);
             uint token = (uint)method.MetadataToken;
-            string class_name = method.DeclaringType.Name;
+            string class_name = _fixupSymbolName(method.DeclaringType.Name);
             string method_name = method.Name;
             string entry_name = $"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}";
             if (callbackNames.Contains(entry_name))
