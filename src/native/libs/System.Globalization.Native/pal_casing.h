@@ -38,4 +38,6 @@ PALEXPORT int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* 
                                                                 uint16_t* lpDst,
                                                                 int32_t cwDstLength,
                                                                 int32_t bToUpper);
+
+PALEXPORT void GlobalizationNative_InitOrdinalCasingPageNative(int32_t pageNumber, UChar* pTarget);
 #endif
