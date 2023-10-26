@@ -4122,7 +4122,14 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 		dbg_unlock ();
 
 		if (assembly) {
-			process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
+			DebuggerTlsData *tls;
+			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
+			if (tls->invoke == NULL) {
+				process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
+			} else {
+				assembly_load(prof, assembly); //send later
+				break;
+			}
 		} else {
 			break;
 		}
@@ -5043,20 +5050,16 @@ buffer_add_info_for_null_value (Buffer* buf, MonoType* t, MonoDomain* domain)
 {
 	buffer_add_byte (buf, t->type);
 	switch (t->type) {
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_STRING:
-		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
-		break;
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:
-		buffer_add_byte (buf, m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type);
-		buffer_add_int (buf, m_class_get_rank (mono_class_from_mono_type_internal (t)));
-		if (m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type == MONO_TYPE_CLASS)
-			buffer_add_typeid (buf, domain, m_class_get_element_class (mono_class_from_mono_type_internal (t)));
-		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
-		break;
-	default:
-		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:
+			buffer_add_byte (buf, m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type);
+			buffer_add_int (buf, m_class_get_rank (mono_class_from_mono_type_internal (t)));
+			if (m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type == MONO_TYPE_CLASS)
+				buffer_add_typeid (buf, domain, m_class_get_element_class (mono_class_from_mono_type_internal (t)));
+			buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
+			break;
+		default:
+			buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
 	}
 }
 /*
@@ -5072,6 +5075,9 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 {
 	MonoObject *obj;
 	gboolean boxed_vtype = FALSE;
+
+	if (CHECK_ICORDBG (TRUE))
+		buffer_add_byte (buf, !!m_type_is_byref (t));
 
 	if (m_type_is_byref (t)) {
 		if (!(*(void**)addr)) {
@@ -5273,6 +5279,8 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 			if (mono_vtype_get_field_addr (addr, f) == addr && mono_class_from_mono_type_internal (t) == mono_class_from_mono_type_internal (f->type) && !boxed_vtype) //to avoid infinite recursion 
 			{
 				gssize val = *(gssize*)addr;
+				if (CHECK_ICORDBG (TRUE))
+					buffer_add_byte (buf, !!m_type_is_byref (f->type));
 				buffer_add_byte (buf, MONO_TYPE_PTR);
 				buffer_add_long (buf, val);
 				if (CHECK_PROTOCOL_VERSION(2, 46))
@@ -7940,6 +7948,17 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_objid (buf, o);
 		break;
 	}
+	case MDBGPROT_CMD_APPDOMAIN_GET_TYPE: {
+		MonoClass *klass;
+		domain = decode_domainid (p, &p, end, NULL, &err);
+		MonoTypeEnum type = decode_int (p, &p, end);
+		klass = decode_typeid (p, &p, end, NULL, &err);
+		int rank = decode_int (p, &p, end);
+		if (type == MONO_TYPE_SZARRAY || type == MONO_TYPE_ARRAY)
+			klass = mono_class_create_array (klass, rank);
+		buffer_add_typeid (buf, domain, klass);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -8280,6 +8299,14 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			buffer_add_int (buf, m_class_get_type_token (m_field_get_parent (f)));
 			buffer_add_int (buf, m_class_get_type_token (mono_class_from_mono_type_internal (f->type)));
 		}
+		break;
+	}
+	case MDBGPROT_CMD_FIELD_GET_TOKEN_AND_TYPE: {
+		MonoClassField *f = decode_fieldid (p, &p, end, &domain, &err);
+		buffer_add_int (buf, mono_class_get_field_token (f));
+		buffer_add_byte(buf, GINT_TO_UINT8(m_class_is_valuetype (mono_class_from_mono_type_internal (f->type))));
+		buffer_add_int (buf, f->type->type);
+		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
 		break;
 	}
 	default:
@@ -8886,43 +8913,8 @@ set_value:
 		if (CHECK_ICORDBG (TRUE))
 		{
 			buffer_add_byte(buf, GINT_TO_UINT8(m_class_is_valuetype (klass)));
-			if (m_class_is_valuetype (klass))
-			{
-				int nfields = 0;
-				gpointer iter = NULL;
-				while ((f = mono_class_get_fields_internal (klass, &iter))) {
-					if (G_UNLIKELY (!f->type)) {
-						ERROR_DECL(field_error);
-						mono_field_resolve_type (f, field_error);
-						mono_error_cleanup (field_error);
-						if (!f->type)
-							continue;
-					}
-					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
-						continue;
-					if (mono_field_is_deleted (f))
-						continue;
-					nfields ++;
-				}
-				buffer_add_int (buf, nfields);
-
-				iter = NULL;
-				while ((f = mono_class_get_fields_internal (klass, &iter))) {
-					if (G_UNLIKELY (!f->type)) {
-						ERROR_DECL(field_error);
-						mono_field_resolve_type (f, field_error);
-						mono_error_cleanup (field_error);
-						if (!f->type)
-							continue;
-					}
-					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
-						continue;
-					if (mono_field_is_deleted (f))
-						continue;
-					buffer_add_int (buf, mono_class_get_field_token (f));
-					buffer_add_byte (buf, f->type->type);
-				}
-			}
+			buffer_add_int (buf, m_class_get_byval_arg (klass)->type);
+			buffer_add_typeid (buf, domain, klass);
 		}
 		break;
 	}
@@ -9000,6 +8992,33 @@ set_value:
 	case MDBGPROT_CMD_TYPE_RANK: 
 	{
 		buffer_add_byte (buf, m_class_get_rank (klass));
+		break;
+	}
+	case MDBGPROT_CMD_TYPE_GET_FIELD_RVA: 
+	{
+		gpointer iter = NULL;
+		int field_token = decode_int (p, &p, end);
+		while ((f = mono_class_get_fields_internal (klass, &iter))) {
+			if (mono_class_get_field_token (f) == field_token)
+			{
+				if (f->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)
+				{
+					int swizzle = 1;
+					int align;
+				#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+					swizzle = mono_type_size (type, &align);
+				#endif
+
+					int dummy;
+					int count = mono_type_size (f->type, &dummy)/mono_type_size (f->type, &align);
+					const char* arr = mono_field_get_rva (f, swizzle);
+					m_dbgprot_buffer_add_byte_array (buf, arr, count);
+					err = ERR_NONE;
+					goto exit;
+				}
+			}
+		}
+		m_dbgprot_buffer_add_int (buf, 0);
 		break;
 	}
 	default:
@@ -10181,7 +10200,7 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			MonoTypeEnum type = m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type;
 			buffer_add_byte(buf, type);
 			buffer_add_int (buf, m_class_get_rank (arr->obj.vtable->klass));
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_GENERICINST || type == MONO_TYPE_OBJECT)
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_GENERICINST || type == MONO_TYPE_OBJECT || (CHECK_ICORDBG (TRUE) && type == MONO_TYPE_VALUETYPE))
 			{
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 				if (CHECK_ICORDBG (TRUE))
@@ -10389,8 +10408,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			}
 		}
-		if (!k)
-			goto invalid_fieldid;
+
 		while ((f = mono_class_get_fields_internal (k, &iter))) {
 			if (mono_class_get_field_token (f) == field_token) {
 				goto get_field_value;
