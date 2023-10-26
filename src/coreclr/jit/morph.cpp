@@ -6101,7 +6101,9 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // We enable shared-ret tail call optimization for recursive calls even if
     // FEATURE_TAILCALL_OPT_SHARED_RETURN is not defined.
-    if (gtIsRecursiveCall(call))
+    // Also handle blocks that were BBJ_RETURN but were modified during fgAddInternal.
+    //
+    if (gtIsRecursiveCall(call) || ((compCurBB->bbFlags & BBF_MERGED_RETURN) != 0))
 #endif
     {
         // Many tailcalls will have call and ret in the same block, and thus be

@@ -2831,6 +2831,7 @@ bool Compiler::fgMergeBlockReturn(BasicBlock* block)
         // We'll jump to the genReturnBB.
         //
         block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
+        block->bbFlags |= BBF_MERGED_RETURN;
         fgAddRefPred(genReturnBB, block);
         fgReturnCount--;
     }
