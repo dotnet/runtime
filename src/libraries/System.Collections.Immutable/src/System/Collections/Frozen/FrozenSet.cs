@@ -186,9 +186,8 @@ namespace System.Collections.Frozen
                     }
                     else
                     {
-                        frozenSet = analysis.IgnoreCaseForEquals
-                                    ? new OrdinalStringFrozenSet_FullCaseSensitiveHashCaseInsensitiveEquals(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                                    : new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        // if (IgnoreCaseForEquals) => Can only be true if there are no letters, thus case sensitive comparison still works here.
+                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
                     }
                 }
 

@@ -238,9 +238,8 @@ namespace System.Collections.Frozen
                     }
                     else
                     {
-                        frozenDictionary = analysis.IgnoreCaseForEquals
-                            ? new OrdinalStringFrozenDictionary_FullCaseSensitiveHashCaseInsensitiveEquals<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        // if (IgnoreCaseForEquals) => Can only be true if there are no letters, thus case sensitive comparison still works here.
+                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
                     }
                 }
 
