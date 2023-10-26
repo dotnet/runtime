@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Collections.Tests
 {
-    public class PriorityQueue_NonGeneric_Tests : TestBase
+    public partial class PriorityQueue_NonGeneric_Tests : TestBase
     {
         protected PriorityQueue<string, int> CreateSmallPriorityQueue(out HashSet<(string, int)> items)
         {
