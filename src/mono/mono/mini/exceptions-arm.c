@@ -86,11 +86,11 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	g_assert ((code - start) < 128);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("restore_context", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 
 	return start;
 }
@@ -137,11 +137,11 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	g_assert ((code - start) < 320);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("call_filter", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 
 	return start;
 }
@@ -309,7 +309,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 		else
 			icall_id = MONO_JIT_ICALL_mono_arm_throw_exception;
 
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (icall_id));
+		ji = mono_patch_info_list_prepend (ji, GPTRDIFF_TO_INT (code - start), MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (icall_id));
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)(gpointer)code = NULL;
@@ -323,11 +323,11 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	/* we should never reach this breakpoint */
 	ARM_DBRK (code);
 	g_assert ((code - start) < size);
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (tramp_name, start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 
 	return start;
 }

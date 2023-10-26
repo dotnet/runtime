@@ -42,7 +42,7 @@ namespace System.Xml.XmlSchemaTests
                     return;
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ namespace System.Xml.XmlSchemaTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ namespace System.Xml.XmlSchemaTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v7 - 430164_import Add(XmlSchema) does not check if location already exists")]
@@ -231,7 +231,7 @@ namespace System.Xml.XmlSchemaTests
             {
                 s.Compile();
                 _output.WriteLine("No exception thrown");
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaException e)
             {

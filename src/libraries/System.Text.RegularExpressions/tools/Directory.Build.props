@@ -1,3 +1,10 @@
 <Project>
-  <!-- Intentionally leaving this file empty in order to not import repo-level props -->
+
+  <!-- This is an empty Directory.Build.props file to prevent projects which reside
+       under this directory to use any of the repository local settings. -->
+  <PropertyGroup>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+
 </Project>

@@ -39,7 +39,7 @@ namespace Wasm.Build.Tests
 
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
-            string mainJsPath = Path.Combine(_projectDir!, "main.js");
+            string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
             // .withExitOnUnhandledError() is available only only >net7.0
@@ -179,25 +179,25 @@ namespace Wasm.Build.Tests
                             IsBrowserProject: false));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug", false)]
         [InlineData("Debug", true)]
         [InlineData("Release", false)]
         [InlineData("Release", true)]
         public void ConsoleBuildAndRunDefault(string config, bool relinking)
-            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework);
+            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework, addFrameworkArg: true);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("Debug", "-f net7.0", "net7.0")]
         [InlineData("Debug", "-f net8.0", "net8.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
-            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM);
+            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM, addFrameworkArg: extraNewArgs?.Length == 0);
 
-        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM)
+        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM, bool addFrameworkArg)
         {
             string id = $"{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs);
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs, addFrameworkArg: addFrameworkArg);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateProgramCS();
@@ -253,7 +253,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
             => await (forConsole
@@ -354,7 +354,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [MemberData(nameof(TestDataForConsolePublishAndRun))]
         public void ConsolePublishAndRun(string config, bool aot, bool relinking)
         {
@@ -406,18 +406,19 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
-        [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/90979")]
+        // [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
+        // [InlineData("-f net8.0", "net8.0", "./")]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("-f net7.0", "net7.0")]
         [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
-        [InlineData("-f net8.0", "net8.0", "./")]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";
             string id = $"browser_{config}_{GetRandomId()}";
-            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
+            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs, addFrameworkArg: extraNewArgs.Length == 0);
 
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
@@ -433,6 +434,60 @@ namespace Wasm.Build.Tests
             var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build -r browser-wasm --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+        }
+
+        [Theory]
+        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
+        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
+        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
+        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
+        public void BuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+        {
+            string id = $"{config}_{GetRandomId()}";
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            string projectName = Path.GetFileNameWithoutExtension(projectFile);
+
+            string extraPropertiesForDBP = "";
+            if (appendRID)
+                extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
+            if (useArtifacts)
+                extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
+
+            string projectDirectory = Path.GetDirectoryName(projectFile)!;
+            if (!string.IsNullOrEmpty(extraPropertiesForDBP))
+                AddItemsPropertiesToProject(Path.Combine(projectDirectory, "Directory.Build.props"),
+                                            extraPropertiesForDBP);
+
+            var buildOptions = new BuildProjectOptions(
+                                    DotnetWasmFromRuntimePack: true,
+                                    CreateProject: false,
+                                    HasV8Script: false,
+                                    MainJS: "main.mjs",
+                                    Publish: false,
+                                    TargetFramework: DefaultTargetFramework,
+                                    IsBrowserProject: false);
+            if (useArtifacts)
+            {
+                buildOptions = buildOptions with
+                {
+                    BinFrameworkDir = Path.Combine(
+                                            projectDirectory,
+                                            "bin",
+                                            id,
+                                            $"{config.ToLower()}_{BuildEnvironment.DefaultRuntimeIdentifier}",
+                                            "AppBundle",
+                                            "_framework")
+                };
+            }
+
+            var buildArgs = new BuildArgs(projectName, config, false, id, null);
+            buildArgs = ExpandBuildArgs(buildArgs);
+            BuildTemplateProject(buildArgs, id: id, buildOptions);
+
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                        .EnsureSuccessful();
         }
     }
 }

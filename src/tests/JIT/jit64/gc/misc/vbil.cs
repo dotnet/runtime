@@ -14,7 +14,7 @@ public class T
     public static bool GLOBAL = true;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         C c = new C();
 
@@ -26,6 +26,5 @@ public class T
         {
             System.Console.WriteLine(c.y);
         }
-        return 100;
     }
 }

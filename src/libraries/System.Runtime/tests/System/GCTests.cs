@@ -777,7 +777,7 @@ namespace System.Tests
             }
             catch (Exception e)
             {
-                Assert.True(false, $"({approach}, {timeout}) Error - Unexpected exception received: {e.ToString()}");
+                Assert.Fail($"({approach}, {timeout}) Error - Unexpected exception received: {e.ToString()}");
             }
             finally
             {
@@ -818,7 +818,6 @@ namespace System.Tests
 
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64935", TestPlatforms.FreeBSD)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [ConditionalFact(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
         public static void GetGCMemoryInfo()

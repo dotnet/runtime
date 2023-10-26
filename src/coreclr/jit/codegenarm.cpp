@@ -123,19 +123,19 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // we would have otherwise created retless calls.
     assert(block->isBBCallAlwaysPair());
 
-    assert(block->bbNext != NULL);
-    assert(block->bbNext->bbJumpKind == BBJ_ALWAYS);
-    assert(block->bbNext->bbJumpDest != NULL);
-    assert(block->bbNext->bbJumpDest->bbFlags & BBF_FINALLY_TARGET);
+    assert(!block->IsLast());
+    assert(block->Next()->KindIs(BBJ_ALWAYS));
+    assert(block->Next()->HasJump());
+    assert(block->Next()->GetJumpDest()->bbFlags & BBF_FINALLY_TARGET);
 
-    bbFinallyRet = block->bbNext->bbJumpDest;
+    bbFinallyRet = block->Next()->GetJumpDest();
 
     // Load the address where the finally funclet should return into LR.
     // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do the return.
     genMov32RelocatableDisplacement(bbFinallyRet, REG_LR);
 
     // Jump to the finally BB
-    inst_JMP(EJ_jmp, block->bbJumpDest);
+    inst_JMP(EJ_jmp, block->GetJumpDest());
 
     // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
     // jump target using bbJumpDest - that is already used to point
@@ -143,14 +143,14 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // block is RETLESS.
     assert(!(block->bbFlags & BBF_RETLESS_CALL));
     assert(block->isBBCallAlwaysPair());
-    return block->bbNext;
+    return block->Next();
 }
 
 //------------------------------------------------------------------------
 // genEHCatchRet:
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    genMov32RelocatableDisplacement(block->bbJumpDest, REG_INTRET);
+    genMov32RelocatableDisplacement(block->GetJumpDest(), REG_INTRET);
 }
 
 //------------------------------------------------------------------------
@@ -630,11 +630,11 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
     unsigned     jmpTabBase;
 
     jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, false);
@@ -1294,12 +1294,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 //
 void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_tst, reg, reg, genActualType(op));
-    inst_JMP(EJ_ne, compiler->compCurBB->bbJumpDest);
+    inst_JMP(EJ_ne, compiler->compCurBB->GetJumpDest());
 }
 
 //------------------------------------------------------------------------

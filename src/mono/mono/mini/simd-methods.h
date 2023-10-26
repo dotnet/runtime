@@ -293,6 +293,7 @@ METHOD(ComputeCrc32C)
 // X86Base
 METHOD(BitScanForward)
 METHOD(BitScanReverse)
+METHOD(DivRem)
 METHOD(Pause)
 // Crypto
 METHOD(FixedRotate)

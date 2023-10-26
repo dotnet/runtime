@@ -207,4 +207,16 @@
   <data name="InaccessibleValidationAttributeTitle" xml:space="preserve">
     <value>Validation attribute on the member is inaccessible from the validator type..</value>
   </data>
+  <data name="OptionsUnsupportedLanguageVersionTitle" xml:space="preserve">
+    <value>C# language version not supported by the source generator.</value>
+  </data>
+  <data name="OptionsUnsupportedLanguageVersionMessage" xml:space="preserve">
+    <value>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</value>
+  </data>
+  <data name="TypeCannotBeUsedWithTheValidationAttributeTitle" xml:space="preserve">
+    <value>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</value>
+  </data>
+  <data name="TypeCannotBeUsedWithTheValidationAttributeMessage" xml:space="preserve">
+    <value>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</value>
+  </data>
 </root>

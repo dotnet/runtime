@@ -237,8 +237,17 @@ namespace System.Net
 
         private static void OnRead(IAsyncResult ares)
         {
-            HttpConnection cnc = (HttpConnection)ares.AsyncState!;
-            cnc.OnReadInternal(ares);
+            HttpConnection? cnc = null;
+            try
+            {
+                cnc = (HttpConnection)ares.AsyncState!;
+                cnc.OnReadInternal(ares);
+            }
+            catch
+            {
+                cnc?.Close(true);
+                return;
+            }
         }
 
         private void OnReadInternal(IAsyncResult ares)

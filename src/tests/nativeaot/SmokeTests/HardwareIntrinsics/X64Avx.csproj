@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
     <!-- Sanitizers increase the binary size, so it ends up outside of our expected range. -->

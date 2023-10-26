@@ -325,7 +325,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 if (infraEx != null)
                 {
-                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.ToString())%3B
+                    Assert.Fail("Test Infrastructure Failure: " + infraEx.ToString())%3B
                 }
                 else
                 {
@@ -432,7 +432,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 if (infraEx != null)
                 {
-                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.ToString())%3B
+                    Assert.Fail("Test Infrastructure Failure: " + infraEx.ToString())%3B
                 }
                 else
                 {

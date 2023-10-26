@@ -168,6 +168,7 @@ enum {
 	ASYNC_SUSPEND_STATE_INDEX = 1,
 };
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union {
 	int32_t raw;
 	struct {
@@ -176,6 +177,7 @@ typedef union {
 		int32_t suspend_count : 8;
 	};
 } MonoThreadStateMachine;
+MONO_RESTORE_WARNING
 
 /*
  * These flags control how the rest of the runtime will see and interact with

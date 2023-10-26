@@ -1023,7 +1023,6 @@ namespace System.Numerics.Tests
             VerifyMagnitudePhaseProperties(complex, magnitude, phase);
         }
 
-        [Fact]
         public static IEnumerable<object[]> Log_TestData()
         {
             yield return new object[] { 1, 0, 0, 0 };

@@ -108,7 +108,7 @@ namespace System.Tests
 
         static void NotExpectedToBeCalledHandler(object sender, UnhandledExceptionEventArgs args)
         {
-            Assert.True(false, "UnhandledException handler not expected to be called");
+            Assert.Fail("UnhandledException handler not expected to be called");
         }
 
         static void MyHandler(object sender, UnhandledExceptionEventArgs args)
@@ -513,7 +513,7 @@ namespace System.Tests
                 bool AssemblyLoadFlag = false;
                 AssemblyLoadEventHandler handler = (sender, args) =>
                 {
-                    Assert.Same(AppDomain.CurrentDomain, sender);
+                    Assert.Equal(AppDomain.CurrentDomain, sender);
                     Assert.NotNull(args);
                     Assert.NotNull(args.LoadedAssembly);
 

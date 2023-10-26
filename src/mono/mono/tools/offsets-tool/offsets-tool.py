@@ -89,12 +89,14 @@ class OffsetsTool:
 
 		if "wasm" in args.abi:
 			if args.wasi_path != None:
-				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/14.0.4/include", args.mono_path + "/wasi/mono-include"]
+				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/16/include", args.mono_path + "/wasi/mono-include"]
 				self.target = Target ("TARGET_WASI", None, ["TARGET_WASM"] + WASI_DEFINES)
 				self.target_args += ["-target", args.abi]
 			else:
 				require_emscipten_path (args)
-				self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten", args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic"]
+				clang_path = os.path.dirname(args.libclang)
+				self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten", args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic",
+									 clang_path + "/../lib/clang/16/include"]
 				self.target = Target ("TARGET_WASM", None, [])
 				self.target_args += ["-target", args.abi]
 
@@ -281,7 +283,7 @@ class OffsetsTool:
 
 		clang_args = []
 		clang_args += self.target_args
-		clang_args += ['-std=gnu99', '-DMONO_GENERATING_OFFSETS']
+		clang_args += ['-std=gnu11', '-DMONO_GENERATING_OFFSETS']
 		for include in self.sys_includes:
 			clang_args.append ("-isystem")
 			clang_args.append (include)

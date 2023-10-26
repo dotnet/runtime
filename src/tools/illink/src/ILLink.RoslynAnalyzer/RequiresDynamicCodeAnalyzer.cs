@@ -33,11 +33,11 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresDynamicCodeOnStaticCtor;
 
-		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation) =>
-			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer, compilation);
+		internal override bool IsAnalyzerEnabled (AnalyzerOptions options) =>
+			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer);
 
 		protected override bool VerifyAttributeArguments (AttributeData attribute) =>
-			attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments[0] is { Type.SpecialType: SpecialType.System_String } ctorArg;
+			attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments is [ { Type.SpecialType: SpecialType.System_String }, ..];
 
 		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
 		{

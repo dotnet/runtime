@@ -997,7 +997,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
 
     if (g_MulticoreJitEnabled && (lenFile > 0))
     {
-        m_fullFileName = pRoot;
+        m_fullFileName.Set(pRoot);
 
         // Append separator if root does not end with one
         unsigned len = m_fullFileName.GetCount();
@@ -1146,7 +1146,7 @@ void MulticoreJitManager::SetProfileRoot(const WCHAR * pProfilePath)
     {
         if (InterlockedCompareExchange(& m_fSetProfileRootCalled, SETPROFILEROOTCALLED, 0) == 0) // Only allow the first call per appdomain
         {
-            m_profileRoot = pProfilePath;
+            m_profileRoot.Set(pProfilePath);
         }
     }
 }

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
-    <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="L-2-6-3D.cs" />

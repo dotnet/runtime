@@ -792,7 +792,7 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
     }
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
 /*****************************************************************************
  *  Last chance for the runtime support to do fixups in the context
  *  before execution continues inside an EnC updated function.
@@ -831,7 +831,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     T_CONTEXT oldCtx = *pCtx;
 
 #if defined(TARGET_X86)
-    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC\n"));
 
     /* Extract the necessary information from the info block header */
 
@@ -997,22 +996,29 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     _ASSERTE(pOldCodeInfo->HasFrameRegister());
     _ASSERTE(pNewCodeInfo->HasFrameRegister());
 
-    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
-
-    // x64: SP == FP before localloc
-    if (oldStackBase != GetFP(&oldCtx))
-        return E_FAIL;
 #elif defined(TARGET_ARM64)
     DWORD oldFixedStackSize = oldGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
     DWORD newFixedStackSize = newGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+#else
+    PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
+#endif
 
     LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
 
-    // ARM64: FP + 16 == SP + oldFixedStackSize before localloc
-    if (GetFP(&oldCtx) + 16 != oldStackBase + oldFixedStackSize)
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    // win-x64: SP == FP before localloc
+    if (oldStackBase != GetFP(&oldCtx))
+    {
         return E_FAIL;
+    }
 #else
-    PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
+    // All other 64-bit targets use frame chaining with the FP stored right below the
+    // return address (LR is always pushed on arm64). FP + 16 == SP + oldFixedStackSize
+    // gives the caller's SP before stack alloc.
+    if (GetFP(&oldCtx) + 16 != oldStackBase + oldFixedStackSize)
+    {
+        return E_FAIL;
+    }
 #endif
 
     // EnC remap inside handlers is not supported
@@ -1028,14 +1034,15 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     TADDR callerSP = oldStackBase + oldFixedStackSize;
 
 #ifdef _DEBUG
-    // If the old method has a PSPSym, then its value should == FP for x64 and callerSP for arm64
+    // If the old method has a PSPSym, then its value should == initial-SP (i.e.
+    // oldStackBase) for x64 and callerSP for arm64
     INT32 nOldPspSymStackSlot = oldGcDecoder.GetPSPSymStackSlot();
     if (nOldPspSymStackSlot != NO_PSP_SYM)
     {
 #if defined(TARGET_AMD64)
         TADDR oldPSP = *PTR_TADDR(oldStackBase + nOldPspSymStackSlot);
-        _ASSERTE(oldPSP == GetFP(&oldCtx));
-#elif defined(TARGET_ARM64)
+        _ASSERTE(oldPSP == oldStackBase);
+#else
         TADDR oldPSP = *PTR_TADDR(callerSP + nOldPspSymStackSlot);
         _ASSERTE(oldPSP == callerSP);
 #endif
@@ -1222,8 +1229,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
 
 #if defined(TARGET_X86)
         // Zero out all  the registers as some may hold new variables.
-        pCtx->Eax = pCtx->Ecx = pCtx->Edx = pCtx->Ebx =
-        pCtx->Esi = pCtx->Edi = 0;
+        pCtx->Eax = pCtx->Ecx = pCtx->Edx = pCtx->Ebx = pCtx->Esi = pCtx->Edi = 0;
 
         // 3) zero out the stack frame - this'll initialize _all_ variables
 
@@ -1240,7 +1246,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         _ASSERTE( frameHeaderSize <= oldInfo.stackSize );
         _ASSERTE( GetSizeOfFrameHeaderForEnC( &oldInfo ) == frameHeaderSize );
 
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
 
         // Next few statements zero out all registers that may end up holding new variables.
 
@@ -1276,7 +1282,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         // For EnC-compliant x64 code, FP == SP.  Since SP changed above, update FP now
         pCtx->Rbp = newStackBase;
 
-#elif defined(TARGET_ARM64)
+#else
+#if defined(TARGET_ARM64)
         // Zero out volatile part of stack frame
         // x0-x17
         memset(&pCtx->X[0], 0, sizeof(pCtx->X[0]) * 18);
@@ -1284,6 +1291,15 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         memset(&pCtx->V[0], 0, sizeof(pCtx->V[0]) * 8);
         // v16-v31
         memset(&pCtx->V[16], 0, sizeof(pCtx->V[0]) * 16);
+#elif defined(TARGET_AMD64)
+        // SysV ABI
+        pCtx->Rax = pCtx->Rdi = pCtx->Rsi = pCtx->Rdx = pCtx->Rcx = pCtx->R8 = pCtx->R9 = 0;
+
+        // volatile float registers
+        memset(&pCtx->Xmm0, 0, sizeof(pCtx->Xmm0) * 16);
+#else
+        PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
+#endif
 
         TADDR newStackBase = callerSP - newFixedStackSize;
 
@@ -1293,12 +1309,9 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         _ASSERTE(frameHeaderSize <= oldFixedStackSize);
         _ASSERTE(frameHeaderSize <= newFixedStackSize);
 
-        // EnC prolog saves only fp,lr and does it at sp-16. It should already
-        // be set up from previous version.
+        // EnC prolog saves only FP (and LR on arm64), and FP points to saved FP for frame chaining.
+        // These should already be set up from previous version.
         _ASSERTE(GetFP(pCtx) == callerSP - 16);
-
-#else   // !X86
-        PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
 #endif
 
         // Perform some debug-only sanity checks on stack variables.  Some checks are
@@ -1416,7 +1429,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         if (nNewPspSymStackSlot != NO_PSP_SYM)
         {
 #if defined(TARGET_AMD64)
-            *PTR_TADDR(newStackBase + nNewPspSymStackSlot) = GetFP(pCtx);
+            *PTR_TADDR(newStackBase + nNewPspSymStackSlot) = newStackBase;
 #elif defined(TARGET_ARM64)
             *PTR_TADDR(callerSP + nNewPspSymStackSlot) = callerSP;
 #else
@@ -1458,7 +1471,7 @@ ErrExit:
 
     return hr;
 }
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_METADATA_UPDATER
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -4445,7 +4458,7 @@ FCIMPL1(void, GCReporting::Unregister, GCFrame* frame)
 
     // Destroy the GCFrame.
     _ASSERTE(frame != NULL);
-    frame->Pop();
+    frame->Remove();
 }
 FCIMPLEND
 #endif // !DACCESS_COMPILE

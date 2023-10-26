@@ -2272,22 +2272,28 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 		mono_class_setup_vtable (info->klass);
 		// FIXME: Check type load
-		if (mono_class_is_interface (iface_class)) {
-			gboolean variance_used;
-			ioffset = mono_class_interface_offset_with_variance (info->klass, iface_class, &variance_used);
-			g_assert (ioffset != -1);
+
+		if (mono_class_is_interface (info->klass)) {
+			// If constrained class is interface, we don't learn anything new by constraining
+			method = info->method;
 		} else {
-			ioffset = 0;
+			if (mono_class_is_interface (iface_class)) {
+				gboolean variance_used;
+				ioffset = mono_class_interface_offset_with_variance (info->klass, iface_class, &variance_used);
+				g_assert (ioffset != -1);
+			} else {
+				ioffset = 0;
+			}
+
+			if (info->method->is_generic == 0 && mono_class_is_ginst (info->method->klass)) {
+				slot = mono_method_get_vtable_slot (((MonoMethodInflated*)(info->method))->declaring);
+			} else {
+				slot = mono_method_get_vtable_slot (info->method);
+			}
+			g_assert (slot != -1);
+			g_assert (m_class_get_vtable (info->klass));
+			method = m_class_get_vtable (info->klass) [ioffset + slot];
 		}
-		
-		if (info->method->is_generic == 0 && mono_class_is_ginst (info->method->klass)) {
-			slot = mono_method_get_vtable_slot (((MonoMethodInflated*)(info->method))->declaring);
-		} else {
-			slot = mono_method_get_vtable_slot (info->method);
-		}
-		g_assert (slot != -1);
-		g_assert (m_class_get_vtable (info->klass));
-		method = m_class_get_vtable (info->klass) [ioffset + slot];
 
 		if (info->method->is_inflated) {
 			MonoGenericContext *method_ctx = mono_method_get_context (info->method);
@@ -2886,7 +2892,8 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 		return data1 == data2;
 	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
-	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE:
+	case MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO: {
 		MonoJumpInfoVirtMethod *info1 = (MonoJumpInfoVirtMethod *)data1;
 		MonoJumpInfoVirtMethod *info2 = (MonoJumpInfoVirtMethod *)data2;
 

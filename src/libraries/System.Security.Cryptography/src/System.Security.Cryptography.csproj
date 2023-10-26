@@ -297,8 +297,6 @@
              Link="Common\System\Security\Cryptography\KdfWorkLimiter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\HashOneShotHelpers.cs"
-             Link="Common\System\Security\Cryptography\HashOneShotHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\IRuntimeAlgorithm.cs"
              Link="Common\System\Security\Cryptography\IRuntimeAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
@@ -847,6 +845,7 @@
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RSAWrapper.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.Unix.cs" />
     <Compile Include="System\Security\Cryptography\Shake128.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\Shake256.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
@@ -1223,6 +1222,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.ImportExport.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Keys.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pkcs12.macOS.cs" />

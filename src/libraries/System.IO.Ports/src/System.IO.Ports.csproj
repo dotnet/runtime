@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-unix;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-unix;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-unix;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-unix;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
@@ -38,9 +39,6 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Compile Include="System\IO\Ports\SerialPort.cs" />
     <Compile Include="System\IO\Ports\SerialStream.cs" />
     <Compile Include="System\IO\Ports\StopBits.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
@@ -143,7 +141,7 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs" Link="Common\System\Threading\Tasks\TaskToAsyncResult.cs" />
   </ItemGroup>
 

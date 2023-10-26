@@ -173,9 +173,8 @@ public class Test
 
     // This is trying to stress the JIT to ensure we do not encounter an assertion.
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new TestClass().Method0();
-        return 100;
     }
 }

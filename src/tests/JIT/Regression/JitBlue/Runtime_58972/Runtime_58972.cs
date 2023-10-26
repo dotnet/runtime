@@ -7,16 +7,15 @@ using Xunit;
 public class Runtime_58972
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         GetItem(new MyStruct[1], 0);
-        return 100;
     }
 
-	// This code results in a struct returned in register where we replace the local
-	// of type MyStruct by its only field, and where that field cannot be enregistered.
-	// We would potentially miss normalization if the struct was returned as an integer
-	// type and hit a defensive assertion because of it.
+    // This code results in a struct returned in register where we replace the local
+    // of type MyStruct by its only field, and where that field cannot be enregistered.
+    // We would potentially miss normalization if the struct was returned as an integer
+    // type and hit a defensive assertion because of it.
     static MyStruct GetItem(MyStruct[] a, int i)
     {
         try

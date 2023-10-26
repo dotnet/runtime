@@ -12,4 +12,15 @@
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DefineConstants>DEBUG;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+
+  <!--
+    These packages affect the design-time experience in VS, we update them
+    at the same cadance as the MicrosoftCodeAnalysisVersion_LatestVS version.
+    This property is set eng/Versions.props but we override it because the current
+    version 4.7.0 flags several warnings that need area-owner expertise to resolve.
+    TODO: https://github.com/dotnet/runtime/issues/91028.
+  -->
+  <PropertyGroup>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.5.0</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+  </PropertyGroup>
 </Project>

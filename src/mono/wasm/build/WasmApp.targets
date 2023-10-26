@@ -57,6 +57,8 @@
       - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 16777216 or size of the DLLs, whichever is larger.
                                               Corresponds to `-s INITIAL_MEMORY=...` emcc arg.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
+      - $(EmccMaximumHeapSize)              - Maximum heap size specified with `emcc`. Default value: 2147483648 or size of the DLLs, whichever is larger.
+                                              Corresponds to `-s MAXIMUM_MEMORY=...` emcc arg.
       - $(EmccStackSize)                    - Stack size. Default value: 5MB.
                                               Corresponds to `-s STACK_SIZE=...` emcc arg.
 
@@ -152,6 +154,7 @@
     <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">false</WasmStripILAfterAOT>
 
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
+    <BlazorCacheBootResources Condition="'$(BlazorCacheBootResources)' == ''">true</BlazorCacheBootResources>
   </PropertyGroup>
 
   <ItemGroup>
@@ -161,6 +164,10 @@
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Remove="@(SupportedPlatform)" />
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Include="browser" />
   </ItemGroup>
+
+  <PropertyGroup Label="Feature switches default values">
+    <MetricsSupport Condition="'$(MetricsSupport)' == ''">false</MetricsSupport>
+  </PropertyGroup>
 
   <PropertyGroup Label="Identify app bundle directory to run from">
     <!-- Allow running from custom WasmAppDir -->
@@ -175,7 +182,15 @@
 
       The path might not have been created yet, for example when creating a new project in VS, so don't use an Exists() check
     -->
-    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">$([System.IO.Path]::Combine($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+
+    <!-- This is the only case where OutputPath needs an additional part -->
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and '$(UseArtifactsOutput)' == '' and '$(AppendRuntimeIdentifierToOutputPath)' != 'false'">$([System.IO.Path]::Combine($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+
+    <!--
+      In case of UseArtifactsOutput==true, the path is like `OutputPath=./bin/wc0/debug_browser-wasm/`. And
+      it remains the same even if `AppendRuntimeIdentifierToOutputPath`==true .
+    -->
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">$([System.IO.Path]::Combine($(OutputPath), 'AppBundle'))</_AppBundleDirForRunCommand>
 
     <!-- Ensure the path is absolute. In case of VS, the cwd might not be the correct one, so explicitly
          use $(MSBuildProjectDirectory). -->
@@ -441,6 +456,7 @@
       WasmIncludeFullIcuData="$(WasmIncludeFullIcuData)"
       WasmIcuDataFileName="$(WasmIcuDataFileName)"
       RuntimeAssetsLocation="$(WasmRuntimeAssetsLocation)"
+      CacheBootResources="$(BlazorCacheBootResources)"
       >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
@@ -463,7 +479,7 @@
     </PropertyGroup>
 
     <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
-    
+
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
       Lines="$(V8ScriptShebang);v8 --expose_wasm --module $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
