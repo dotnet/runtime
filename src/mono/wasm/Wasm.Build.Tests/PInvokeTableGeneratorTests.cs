@@ -395,7 +395,7 @@ namespace Wasm.Build.Tests
                 file class Foo
                 {
                     [UnmanagedCallersOnly]
-                    public unsafe static extern void SomeFunction1(delegate* unmanaged<int> callback);
+                    public unsafe static extern void SomeFunction1(int i);
                 }
                 """;
 
