@@ -14,7 +14,7 @@ namespace System.Reflection.Emit
         protected LocalBuilder() { }
 
         /// <summary>
-        /// Returns the method where the local variable declared.
+        /// Returns the method where the local variable is declared.
         /// </summary>
         /// <remarks>Can be used for validating the containing method when referencing the local.</remarks>
         public abstract MethodInfo Method { get; }

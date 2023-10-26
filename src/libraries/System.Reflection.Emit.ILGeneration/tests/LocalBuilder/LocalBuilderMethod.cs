@@ -5,7 +5,6 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    // Mono doesn't support LocalBuilder.Method
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
     public class LocalBuilderMethod
     {
@@ -25,7 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void LocalBuilder_UseLocalsThatBelongsToTheMethod()
+        public void LocalBuilder_UseLocalsThatBelongToTheMethod()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public);
