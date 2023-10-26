@@ -5,13 +5,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using NodeId = int;
+using Distance = int;
 
 namespace System.Collections.Tests
 {
     public partial class PriorityQueue_NonGeneric_Tests
     {
         public record struct Graph(Edge[][] nodes);
-        public record struct Edge(NodeId neighbor, int weight);
+        public record struct Edge(NodeId neighbor, Distance weight);
 
         [Fact]
         public static void PriorityQueue_DijkstraSmokeTest()
@@ -27,7 +28,7 @@ namespace System.Collections.Tests
 
             NodeId startNode = 0;
 
-            (NodeId node, int distance)[] expectedDistances =
+            (NodeId node, Distance distance)[] expectedDistances =
             [
                 (0, 0),
                 (1, 7),
@@ -37,15 +38,15 @@ namespace System.Collections.Tests
                 (5, 11),
             ];
 
-            (int node, int distance)[] actualDistances = RunDijkstra(graph, startNode);
+            (NodeId node, Distance distance)[] actualDistances = RunDijkstra(graph, startNode);
 
             Assert.Equal(expectedDistances, actualDistances);
         }
 
-        public static (NodeId node, int distance)[] RunDijkstra(Graph graph, NodeId startNode)
+        public static (NodeId node, Distance distance)[] RunDijkstra(Graph graph, NodeId startNode)
         {
-            int[] distances = Enumerable.Repeat(int.MaxValue, graph.nodes.Length).ToArray();
-            var queue = new PriorityQueue<NodeId, int>();
+            Distance[] distances = Enumerable.Repeat(int.MaxValue, graph.nodes.Length).ToArray();
+            var queue = new PriorityQueue<NodeId, Distance>();
 
             distances[startNode] = 0;
             queue.Enqueue(startNode, 0);
@@ -53,12 +54,12 @@ namespace System.Collections.Tests
             do
             {
                 NodeId nodeId = queue.Dequeue();
-                int nodeDistance = distances[nodeId];
+                Distance nodeDistance = distances[nodeId];
 
                 foreach (Edge edge in graph.nodes[nodeId])
                 {
-                    int distance = distances[edge.neighbor];
-                    int newDistance = nodeDistance + edge.weight;
+                    Distance distance = distances[edge.neighbor];
+                    Distance newDistance = nodeDistance + edge.weight;
                     if (newDistance < distance)
                     {
                         distances[edge.neighbor] = newDistance;
