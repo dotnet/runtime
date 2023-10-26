@@ -18,6 +18,7 @@ namespace System.Reflection.Emit
         private int _maxStackSize;
         private int _currentStack;
         private List<LocalBuilder> _locals = new();
+        private Dictionary<Label, LabelHandle> _labelTable = new(2);
 
         internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
         {
@@ -54,8 +55,13 @@ namespace System.Reflection.Emit
             return local;
         }
 
-        public override Label DefineLabel() => throw new NotImplementedException();
-
+        public override Label DefineLabel()
+        {
+            LabelHandle metadataLabel = _il.DefineLabel();
+            Label emitLabel = CreateLabel(metadataLabel.Id);
+            _labelTable.Add(emitLabel, metadataLabel);
+            return emitLabel;
+        }
         private void UpdateStackSize(OpCode opCode)
         {
             _currentStack += opCode.EvaluationStackDelta;
@@ -205,8 +211,35 @@ namespace System.Reflection.Emit
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con) => throw new NotImplementedException();
-        public override void Emit(OpCode opcode, Label label) => throw new NotImplementedException();
-        public override void Emit(OpCode opcode, Label[] labels) => throw new NotImplementedException();
+
+        public override void Emit(OpCode opcode, Label label)
+        {
+            if (_labelTable.TryGetValue(label, out LabelHandle labelHandle))
+            {
+                _il.Branch((ILOpCode)opcode.Value, labelHandle);
+                UpdateStackSize(opcode);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_InvalidLabel);
+            }
+        }
+
+        public override void Emit(OpCode opcode, Label[] labels)
+        {
+            if (!opcode.Equals(OpCodes.Switch))
+            {
+                throw new ArgumentException(SR.Argument_MustBeSwitchOpCode, nameof(opcode));
+            }
+
+            SwitchInstructionEncoder switchEncoder = _il.Switch(labels.Length);
+            UpdateStackSize(opcode);
+
+            foreach (Label label in labels)
+            {
+                switchEncoder.Branch(_labelTable[label]);
+            }
+        }
 
         public override void Emit(OpCode opcode, LocalBuilder local)
         {
@@ -245,7 +278,19 @@ namespace System.Reflection.Emit
         public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
         public override void EndExceptionBlock() => throw new NotImplementedException();
         public override void EndScope() => throw new NotImplementedException();
-        public override void MarkLabel(Label loc) => throw new NotImplementedException();
+
+        public override void MarkLabel(Label loc)
+        {
+            if (_labelTable.TryGetValue(loc, out LabelHandle labelHandle))
+            {
+                _il.MarkLabel(labelHandle);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_InvalidLabel);
+            }
+        }
+
         public override void UsingNamespace(string usingNamespace) => throw new NotImplementedException();
     }
 }
