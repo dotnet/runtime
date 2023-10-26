@@ -31,6 +31,8 @@ elseif(HOST_SOLARIS)
   set(OS_LIBS socket pthread m ${CMAKE_DL_LIBS})
 elseif(HOST_FREEBSD)
   set(OS_LIBS pthread m)
+elseif(HOST_HAIKU)
+  set(OS_LIBS network)
 endif()
 
 #
@@ -280,7 +282,7 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
-elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD)
+elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD OR HOST_HAIKU)
 set(os_sources "${posix_sources}")
 elseif(HOST_WIN32)
 set(os_sources "${windows_sources}")
@@ -503,10 +505,14 @@ if(HOST_BROWSER)
   # This is the only source file which contains a c++ throw or catch
   add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-js PRIVATE monoapi eglib_api)
+  set_target_properties(mono-wasm-eh-js PROPERTIES COMPILE_FLAGS "-fexceptions")
+  set_target_properties(mono-wasm-eh-js PROPERTIES LINK_FLAGS "-fexceptions -s EXPORT_EXCEPTION_HANDLING_HELPERS=1")
   install(TARGETS mono-wasm-eh-js LIBRARY)
+
   add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
   set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions -s EXPORT_EXCEPTION_HANDLING_HELPERS=1")
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 

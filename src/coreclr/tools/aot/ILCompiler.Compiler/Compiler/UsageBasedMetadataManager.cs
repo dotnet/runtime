@@ -351,7 +351,7 @@ namespace ILCompiler
                     var rootProvider = new RootingServiceProvider(factory, dependencies.Add);
                     foreach (TypeDesc t in mdType.Module.GetAllTypes())
                     {
-                        RootingHelpers.TryRootType(rootProvider, t, reason);
+                        RootingHelpers.TryRootType(rootProvider, t, rootBaseTypes: false, reason);
                     }
                 }
             }

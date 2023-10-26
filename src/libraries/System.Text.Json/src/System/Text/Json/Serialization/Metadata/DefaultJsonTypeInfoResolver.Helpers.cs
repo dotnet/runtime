@@ -38,12 +38,20 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo CreateTypeInfoCore(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
-            typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
-            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
 
-            if (typeInfo.Kind == JsonTypeInfoKind.Object)
+            if (GetNumberHandlingForType(typeInfo.Type) is { } numberHandling)
             {
-                typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
+                typeInfo.NumberHandling = numberHandling;
+            }
+
+            if (GetObjectCreationHandlingForType(typeInfo.Type) is { } creationHandling)
+            {
+                typeInfo.PreferredPropertyObjectCreationHandling = creationHandling;
+            }
+
+            if (GetUnmappedMemberHandling(typeInfo.Type) is { } unmappedMemberHandling)
+            {
+                typeInfo.UnmappedMemberHandling = unmappedMemberHandling;
             }
 
             typeInfo.PopulatePolymorphismMetadata();
@@ -80,7 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool constructorHasSetsRequiredMembersAttribute =
                 typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
 
-            JsonTypeInfo.PropertyHierarchyResolutionState state = new();
+            JsonTypeInfo.PropertyHierarchyResolutionState state = new(typeInfo.Options);
 
             // Walk the type hierarchy starting from the current type up to the base type(s)
             foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())

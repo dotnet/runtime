@@ -660,7 +660,6 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT uint64_t REDHAWK_PALAPI PalGetTickCount64();
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t exitCode);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
@@ -709,6 +708,10 @@ REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
 REDHAWK_PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
+
+REDHAWK_PALIMPORT HANDLE PalLoadLibrary(const char* moduleName);
+
+REDHAWK_PALIMPORT void* PalGetProcAddress(HANDLE module, const char* functionName);
 
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);

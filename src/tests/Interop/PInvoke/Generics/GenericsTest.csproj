@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputType>exe</OutputType>
+    <NoWarn>$(NoWarn);xUnit2000</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

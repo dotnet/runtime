@@ -118,7 +118,7 @@ jobs:
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
         # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        additionalSetupParameters: '--dotnet-versions 8.0.0'
+        #additionalSetupParameters: '--dotnet-versions 8.0.0'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
@@ -145,7 +145,7 @@ jobs:
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
         # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
+        #additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
@@ -169,12 +169,12 @@ jobs:
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
+        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
 
-- ${{if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+- ${{if or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), in(variables['Build.DefinitionName'], 'runtime-wasm-perf')) }}:
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -191,6 +191,8 @@ jobs:
         projectFile: blazor_perf.proj
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
+        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}

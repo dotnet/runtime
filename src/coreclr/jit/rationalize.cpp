@@ -321,6 +321,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             assert(comp->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicName));
             break;
 
+        case GT_CAST:
+            if (node->AsCast()->CastOp()->OperIsSimple())
+            {
+                comp->fgSimpleLowerCastOfSmpOp(BlockRange(), node->AsCast());
+            }
+            break;
+
         default:
             // Check that we don't have nodes not allowed in HIR here.
             assert((node->DebugOperKind() & DBK_NOTHIR) == 0);
