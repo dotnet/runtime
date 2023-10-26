@@ -512,7 +512,7 @@ namespace System.Collections.Generic
         /// <returns><see langword="true"/> if matching entry was found and removed, <see langword="false"/> otherwise.</returns>
         /// <remarks>
         /// The method performs a linear-time scan of every element in the heap, removing the first value found to match the <paramref name="element"/> parameter.
-        /// In case of duplicate entries, what entry does get removed is non-deterministic, does not take priority into account and reflects the structure of the heap at the time of removal.
+        /// In case of duplicate entries, what entry does get removed is non-deterministic and does not take priority into account.
         /// </remarks>
         public bool Remove(
             TElement element,
