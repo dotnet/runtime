@@ -521,7 +521,7 @@ namespace System.Collections.Generic
             IEqualityComparer<TElement>? equalityComparer = null)
         {
             int index = FindIndex(element, equalityComparer);
-            if (index == -1)
+            if (index < 0)
             {
                 removedElement = default;
                 priority = default;
