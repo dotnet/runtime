@@ -57,7 +57,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCoreMain(section, instance, typeof(TOptions), configureBinder);
             });
 
-            optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>();
+            optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>(sp =>
+            {
+                return new ConfigurationChangeTokenSource<TOptions>(optionsBuilder.Name, sp.GetRequiredService<IConfiguration>());
+            });
+
             return optionsBuilder;
         }
         #endregion OptionsBuilder<TOptions> extensions.
