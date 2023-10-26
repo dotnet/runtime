@@ -624,11 +624,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ Backgro
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t arg2)
-{
-    TerminateProcess(GetCurrentProcess(), arg2);
-}
-
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent

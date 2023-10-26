@@ -8,7 +8,6 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoGetDayName
     {
-        [Fact]
         public static IEnumerable<object[]> GetDayName_TestData()
         {
             string[] englishDayNames = new string[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };

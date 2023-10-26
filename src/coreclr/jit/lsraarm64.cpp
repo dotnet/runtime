@@ -1624,7 +1624,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(intrin.op2 != nullptr);
                 assert(intrin.op3 != nullptr);
                 assert(isRMW);
-                srcCount += BuildOperandUses(intrin.op2);
+                if (!intrin.op2->isContainedIntOrIImmed())
+                {
+                    srcCount += BuildOperandUses(intrin.op2);
+                }
 
                 assert(intrinsicTree->OperIsMemoryLoadOrStore());
                 srcCount += BuildAddrUses(intrin.op3);

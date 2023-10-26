@@ -2979,7 +2979,7 @@ namespace System.Tests
 
                 default:
                     {
-                        Assert.True(false, "Unexpected to come here.");
+                        Assert.Fail("Unexpected to come here.");
                     }
                 break;
             }
