@@ -22,7 +22,7 @@ namespace System.Reflection.Emit
         }
         #endregion
 
-        #region Internal members
+        #region Internal Members
         internal MethodInfo GetMethodBuilder() => _method;
         #endregion
 

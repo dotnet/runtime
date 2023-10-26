@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -533,18 +532,15 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void LocalBuilderExceptions()
         {
-            using (TempFile file = TempFile.Create())
-            {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                ILGenerator il = type.DefineMethod("Method1", MethodAttributes.Public).GetILGenerator();
-                ILGenerator anotherIL = type.DefineMethod("AnotherMethod", MethodAttributes.Public).GetILGenerator();
-                LocalBuilder stringLocal = il.DeclareLocal(typeof(string));
-                LocalBuilder nullBuilder = null;
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+            ILGenerator il = type.DefineMethod("Method1", MethodAttributes.Public).GetILGenerator();
+            ILGenerator anotherIL = type.DefineMethod("AnotherMethod", MethodAttributes.Public).GetILGenerator();
+            LocalBuilder stringLocal = il.DeclareLocal(typeof(string));
+            LocalBuilder nullBuilder = null;
 
-                Assert.Throws<ArgumentNullException>(() => il.DeclareLocal(null!));
-                Assert.Throws<ArgumentNullException>(() => il.Emit(OpCodes.Ldloc, nullBuilder));
-                Assert.Throws<ArgumentException>(() => anotherIL.Emit(OpCodes.Ldloc, stringLocal));
-            }
+            Assert.Throws<ArgumentNullException>(() => il.DeclareLocal(null!));
+            Assert.Throws<ArgumentNullException>(() => il.Emit(OpCodes.Ldloc, nullBuilder));
+            Assert.Throws<ArgumentException>(() => anotherIL.Emit(OpCodes.Ldloc, stringLocal));
         }
     }
 }
