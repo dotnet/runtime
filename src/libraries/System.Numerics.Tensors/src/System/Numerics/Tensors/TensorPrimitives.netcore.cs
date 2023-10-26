@@ -625,6 +625,16 @@ namespace System.Numerics.Tensors
         /// <remarks>Assumes arguments have already been validated to be non-empty and equal length.</remarks>
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
             // Compute the same as:
             // TensorPrimitives.Dot(x, y) / (Math.Sqrt(TensorPrimitives.SumOfSquares(x)) * Math.Sqrt(TensorPrimitives.SumOfSquares(y)))
             // but only looping over each span once.
@@ -2512,12 +2522,16 @@ namespace System.Numerics.Tensors
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
+
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector512.EqualsAll(result, result))
+                Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0);
+                Vector512<float> current;
+
+                Vector512<float> nanMask = ~Vector512.Equals(result, result);
+                if (nanMask != Vector512<float>.Zero)
                 {
-                    return GetFirstNaN(result);
+                    return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
 
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
@@ -2528,9 +2542,11 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector512.LoadUnsafe(ref xRef, (uint)i);
-                    if (!Vector512.EqualsAll(current, current))
+
+                    nanMask = ~Vector512.Equals(current, current);
+                    if (nanMask != Vector512<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2541,15 +2557,14 @@ namespace System.Numerics.Tensors
                 if (i != x.Length)
                 {
                     current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
-                    if (!Vector512.EqualsAll(current, current))
+
+                    nanMask = ~Vector512.Equals(current, current);
+                    if (nanMask != Vector512<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = Vector512.ConditionalSelect(
-                        Vector512.Equals(CreateRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
-                        result,
-                        TMinMaxOperator.Invoke(result, current));
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -2563,10 +2578,13 @@ namespace System.Numerics.Tensors
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector256<float> result = Vector256.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector256.EqualsAll(result, result))
+                Vector256<float> result = Vector256.LoadUnsafe(ref xRef, 0);
+                Vector256<float> current;
+
+                Vector256<float> nanMask = ~Vector256.Equals(result, result);
+                if (nanMask != Vector256<float>.Zero)
                 {
-                    return GetFirstNaN(result);
+                    return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
 
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
@@ -2577,9 +2595,11 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector256.LoadUnsafe(ref xRef, (uint)i);
-                    if (!Vector256.EqualsAll(current, current))
+
+                    nanMask = ~Vector256.Equals(current, current);
+                    if (nanMask != Vector256<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2590,15 +2610,14 @@ namespace System.Numerics.Tensors
                 if (i != x.Length)
                 {
                     current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
-                    if (!Vector256.EqualsAll(current, current))
+
+                    nanMask = ~Vector256.Equals(current, current);
+                    if (nanMask != Vector256<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = Vector256.ConditionalSelect(
-                        Vector256.Equals(CreateRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
-                        result,
-                        TMinMaxOperator.Invoke(result, current));
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -2611,10 +2630,13 @@ namespace System.Numerics.Tensors
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector128<float> result = Vector128.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector128.EqualsAll(result, result))
+                Vector128<float> result = Vector128.LoadUnsafe(ref xRef, 0);
+                Vector128<float> current;
+
+                Vector128<float> nanMask = ~Vector128.Equals(result, result);
+                if (nanMask != Vector128<float>.Zero)
                 {
-                    return GetFirstNaN(result);
+                    return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
 
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
@@ -2625,9 +2647,11 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector128.LoadUnsafe(ref xRef, (uint)i);
-                    if (!Vector128.EqualsAll(current, current))
+
+                    nanMask = ~Vector128.Equals(current, current);
+                    if (nanMask != Vector128<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2638,15 +2662,14 @@ namespace System.Numerics.Tensors
                 if (i != x.Length)
                 {
                     current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
-                    if (!Vector128.EqualsAll(current, current))
+
+                    nanMask = ~Vector128.Equals(current, current);
+                    if (nanMask != Vector128<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = Vector128.ConditionalSelect(
-                        Vector128.Equals(CreateRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
-                        result,
-                        TMinMaxOperator.Invoke(result, current));
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -2654,30 +2677,33 @@ namespace System.Numerics.Tensors
             }
 
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
+            float curResult = x[0];
+            if (float.IsNaN(curResult))
             {
-                float result = x[0];
-                if (float.IsNaN(result))
-                {
-                    return result;
-                }
-
-                for (int i = 1; i < x.Length; i++)
-                {
-                    float current = x[i];
-                    if (float.IsNaN(current))
-                    {
-                        return current;
-                    }
-
-                    result = TMinMaxOperator.Invoke(result, current);
-                }
-
-                return result;
+                return curResult;
             }
+
+            for (int i = 1; i < x.Length; i++)
+            {
+                float current = x[i];
+                if (float.IsNaN(current))
+                {
+                    return current;
+                }
+
+                curResult = TMinMaxOperator.Invoke(curResult, current);
+            }
+
+            return curResult;
         }
 
         private static int IndexOfMinMaxCore<TIndexOfMinMax>(ReadOnlySpan<float> x) where TIndexOfMinMax : struct, IIndexOfOperator
         {
+            if (x.IsEmpty)
+            {
+                return -1;
+            }
+
             // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
             // It propagates NaN inputs back to the caller and
             // otherwise returns the index of the greater of the inputs.
@@ -9324,56 +9350,6 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<float> IsPositive(Vector512<float> vector) =>
             Vector512.GreaterThan(vector.AsInt32(), Vector512<int>.AllBitsSet).AsSingle();
-#endif
-
-        /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static float GetFirstNaN(Vector128<float> vector)
-        {
-            Debug.Assert(!Vector128.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector128.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-        /// <summary>Finds and returns the first NaN index value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static int GetFirstNaNIndex(Vector128<float> vector, Vector128<int> index)
-        {
-            Debug.Assert(!Vector128.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return index.GetElement(BitOperations.TrailingZeroCount((~Vector128.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-        /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static float GetFirstNaN(Vector256<float> vector)
-        {
-            Debug.Assert(!Vector256.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector256.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-        /// <summary>Finds and returns the first NaN index value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static int GetFirstNaNIndex(Vector256<float> vector, Vector256<int> index)
-        {
-            Debug.Assert(!Vector256.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return index.GetElement(BitOperations.TrailingZeroCount((~Vector256.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-#if NET8_0_OR_GREATER
-        /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static float GetFirstNaN(Vector512<float> vector)
-        {
-            Debug.Assert(!Vector512.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector512.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-        /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static int GetFirstNaNIndex(Vector512<float> vector, Vector512<int> index)
-        {
-            Debug.Assert(!Vector512.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return index.GetElement(BitOperations.TrailingZeroCount((~Vector512.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
 #endif
 
         /// <summary>Gets the base 2 logarithm of <paramref name="x"/>.</summary>
