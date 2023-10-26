@@ -658,6 +658,9 @@ namespace System
         public override Type UnderlyingSystemType => this;
 
         public override bool IsCollectible => false;
+
+        public override MemberTypes MemberType => GetRuntimeTypeInfo().MemberType;
+
         public override int MetadataToken => GetRuntimeTypeInfo().MetadataToken;
 
         public override Type? DeclaringType => GetRuntimeTypeInfo().DeclaringType;
