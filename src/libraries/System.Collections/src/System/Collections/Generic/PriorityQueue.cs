@@ -505,7 +505,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Removes the first occurrence that equals the specified parameter.
         /// </summary>
-        /// <param name="element">The element to look for.</param>
+        /// <param name="element">The element to try to remove.</param>
         /// <param name="removedElement">The actual element that got removed from the queue.</param>
         /// <param name="priority">The priority value associated with the removed element.</param>
         /// <param name="equalityComparer">The equality comparer governing element equality.</param>
