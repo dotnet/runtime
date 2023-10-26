@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			InvocationOnDynamicType.Test ();
 			DynamicMemberReference.Test ();
+			DynamicIndexerAccess.Test ();
 			DynamicInRequiresUnreferencedCodeClass.Test ();
 			InvocationOnDynamicTypeInMethodWithRUCDoesNotWarnTwoTimes.Test ();
 		}
@@ -94,6 +95,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void Write (dynamic d)
 			{
 				d.Member = 0;
+			}
+
+			public static void Test ()
+			{
+				Read (null);
+				Write (null);
+			}
+		}
+
+		class DynamicIndexerAccess
+		{
+			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.GetIndex", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+			static void Read (dynamic d)
+			{
+				var x = d[0];
+			}
+
+			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.SetIndex", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+			static void Write (dynamic d)
+			{
+				d[0] = 0;
 			}
 
 			public static void Test ()

@@ -286,6 +286,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				Visit (targetOperation, state);
 				break;
 			case IDynamicMemberReferenceOperation:
+			case IDynamicIndexerAccessOperation:
 				// Not yet implemented in analyzer:
 				// https://github.com/dotnet/runtime/issues/94057
 				break;
