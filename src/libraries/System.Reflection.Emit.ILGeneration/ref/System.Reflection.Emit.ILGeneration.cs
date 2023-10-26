@@ -62,8 +62,8 @@ namespace System.Reflection.Emit
         private readonly int _dummyPrimitive;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Emit.Label obj) { throw null; }
-        public int Id { get { throw null; } }
         public override int GetHashCode() { throw null; }
+        public int Id { get { throw null; } }
         public static bool operator ==(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { throw null; }
         public static bool operator !=(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { throw null; }
     }
