@@ -4,12 +4,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace TestStackOverflow
 {
     class Program
     {
+        const string ThisProjectName = "stackoverflowtester";
         static string s_corerunPath;
         static string s_currentPath;
 
@@ -17,14 +19,15 @@ namespace TestStackOverflow
         {
             Process testProcess = new Process();
             string executableExtension = TestLibrary.Utilities.IsWindows ? ".exe" : "";
-            testProcess.StartInfo.FileName = Path.Combine(s_currentPath, "..", testName, "native", $"{testName}{executableExtension}");
+            testProcess.StartInfo.FileName = Path.Combine(s_currentPath, "native", $"{ThisProjectName}{executableExtension}");
             testProcess.StartInfo.Arguments = testArgs;
             return testProcess;
         }
 
         static bool TestStackOverflow(string testName, string testArgs, out List<string> stderrLines, out bool checkStackFrame)
         {
-            Console.WriteLine($"Running {testName} test({testArgs})");
+            Console.WriteLine($"Running with args: {testName} {testArgs}");
+            testArgs = $"{testName} {testArgs}";
             List<string> lines = new List<string>();
 
             Process testProcess;
@@ -35,7 +38,7 @@ namespace TestStackOverflow
             else {
                 testProcess  = new Process();
                 testProcess.StartInfo.FileName = s_corerunPath;
-                testProcess.StartInfo.Arguments = $"{Path.Combine(s_currentPath, "..", testName, $"{testName}.dll")} {testArgs}";
+                testProcess.StartInfo.Arguments = $"{Path.Combine(s_currentPath, $"{ThisProjectName}.dll")} {testArgs}";
             }
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
@@ -300,8 +303,17 @@ namespace TestStackOverflow
             return false;
         }
 
-        static int Main()
+        static int Main(string[] args)
         {
+            if (args.Length > 0)
+            {
+                if (args[0] == "stackoverflow")
+                    StackOverflow.Run(args[1..]);
+
+                if (args[0] == "stackoverflow3")
+                    StackOverflow3.Run();
+            }
+
             s_currentPath = Directory.GetCurrentDirectory();
             if (TestLibrary.Utilities.IsNativeAot)
             {

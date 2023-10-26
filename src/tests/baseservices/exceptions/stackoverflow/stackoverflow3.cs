@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 
-namespace TestStackOverflow3
+namespace TestStackOverflow
 {
-    class Program
+    internal class StackOverflow3
     {
         private const int MAX_RECURSIVE_CALLS = 1000000;
         static int ctr = 0;
 
-        public static void Main()
+        public static void Run()
         {
-            Program ex = new Program();
+            StackOverflow3 ex = new StackOverflow3();
             ex.Execute();
         }
 
