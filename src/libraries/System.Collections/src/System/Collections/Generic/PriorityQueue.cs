@@ -868,7 +868,7 @@ namespace System.Collections.Generic
         private int FindIndex(TElement element, IEqualityComparer<TElement>? equalityComparer)
         {
             equalityComparer ??= EqualityComparer<TElement>.Default;
-            Span<(TElement Element, TPriority Priority)> nodes = _nodes.AsSpan(0, _size);
+            ReadOnlySpan<(TElement Element, TPriority Priority)> nodes = _nodes.AsSpan(0, _size);
 
             // Currently the JIT doesn't optimize direct EqualityComparer<T>.Default.Equals
             // calls for reference types, so we want to cache the comparer instance instead.
