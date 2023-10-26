@@ -373,10 +373,10 @@ internal sealed class PInvokeTableGenerator
         foreach (var cb in callbacks)
         {
             var method = cb.Method;
-            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
+            string module_symbol = _fixupSymbolName(method.DeclaringType!.Module!.Assembly!.GetName()!.Name!);
             string class_name = method.DeclaringType.Name;
             string method_name = method.Name;
-            w.WriteLine(_fixupSymbolName($"\"{module_symbol}_{class_name}_{method_name}\","));
+            w.WriteLine($"\"{module_symbol}_{class_name}_{method_name}\",");
         }
         w.WriteLine("};");
     }

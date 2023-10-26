@@ -376,8 +376,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.None)]
-        public void UnmanagedCallback_InFileType_Compiles(BuildArgs buildArgs, string id)
+        [BuildAndRun(host: RunHost.Chrome)]
+        public void UnmanagedCallback_InFileType(BuildArgs buildArgs, string id)
         {
             string code =
                 """
@@ -399,13 +399,16 @@ namespace Wasm.Build.Tests
                 }
                 """;
 
-            (_, string output) = BuildForVariadicFunctionTests(
+            (buildArgs, string output) = BuildForVariadicFunctionTests(
                 code,
                 buildArgs with { ProjectName = $"cb_filetype_{buildArgs.Config}" },
                 id
             );
 
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+    
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running", output);
         }
 
         [Theory]
