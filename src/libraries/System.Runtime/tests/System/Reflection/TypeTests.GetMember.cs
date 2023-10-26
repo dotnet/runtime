@@ -122,7 +122,7 @@ public static class TypeTests_GetMember
                     case MemberTypes.NestedType: nestedTypes++; break;
                     case MemberTypes.Property: properties++; break;
                     default:
-                        Assert.True(false, "Bad member type.");
+                        Assert.Fail("Bad member type.");
                         break;
                 }
             }

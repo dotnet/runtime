@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitBlankLineIfRequired();
                 EmitStartBlock($"public static object? {nameof(MethodsToGen_CoreBindingHelper.GetCore)}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, Action<{Identifier.BinderOptions}>? {Identifier.configureOptions})");
 
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, _emitThrowIfNullMethod);
 
                 _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureOptions});");
                 _writer.WriteLine();
@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitBlankLineIfRequired();
                 EmitStartBlock($"public static object? {nameof(MethodsToGen_CoreBindingHelper.GetValueCore)}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, string {Identifier.key})");
 
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, _emitThrowIfNullMethod);
                 _writer.WriteLine($@"{Identifier.IConfigurationSection} {Identifier.section} = {GetSectionFromConfigurationExpression(Identifier.key, addQuotes: false)};");
                 _writer.WriteLine();
 
@@ -224,7 +224,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitBlankLineIfRequired();
                 EmitStartBlock($"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}({Identifier.IConfiguration} {Identifier.configuration}, object {Identifier.instance}, Type {Identifier.type}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions})");
-                EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.instance, _emitThrowIfNullMethod, voidReturn: true);
                 EmitIConfigurationHasValueOrChildrenCheck(voidReturn: true);
                 _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureOptions});");
                 _writer.WriteLine();
@@ -475,24 +475,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitGetBinderOptionsHelper();
                 }
 
+                if (_emitEnumParseMethod)
+                {
+                    _writer.WriteLine();
+                    EmitEnumParseMethod();
+                    _emitBlankLineBeforeNextStatement = true;
+                }
+
                 if (_bindingHelperInfo.TypesForGen_ParsePrimitive is { Count: not 0 } stringParsableTypes)
                 {
-                    bool enumTypeExists = false;
-
                     foreach (ParsableFromStringSpec type in stringParsableTypes)
                     {
-                        EmitBlankLineIfRequired();
-
-                        if (type.StringParsableTypeKind == StringParsableTypeKind.Enum)
+                        if (type.StringParsableTypeKind is not StringParsableTypeKind.Enum)
                         {
-                            if (!enumTypeExists)
-                            {
-                                EmitEnumParseMethod();
-                                enumTypeExists = true;
-                            }
-                        }
-                        else
-                        {
+                            EmitBlankLineIfRequired();
                             EmitPrimitiveParseMethod(type);
                         }
                     }
@@ -585,16 +581,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof(T)}}");
 
+                string parseEnumCall = _emitGenericParseEnum ? "Enum.Parse<T>(value, ignoreCase: true)" : "(T)Enum.Parse(typeof(T), value, ignoreCase: true)";
                 _writer.WriteLine($$"""
                     public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
                     {
                         try
                         {
-                            #if NETFRAMEWORK || NETSTANDARD2_0
-                                return (T)Enum.Parse(typeof(T), value, ignoreCase: true);
-                            #else
-                                return Enum.Parse<T>(value, ignoreCase: true);
-                            #endif
+                            return {{parseEnumCall}};
                         }
                         catch ({{Identifier.Exception}} {{Identifier.exception}})
                         {
@@ -614,8 +607,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 switch (typeKind)
                 {
-                    case StringParsableTypeKind.Enum:
-                        return;
                     case StringParsableTypeKind.ByteArray:
                         {
                             parsedValueExpr = $"Convert.FromBase64String({Identifier.value})";
@@ -1047,15 +1038,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     else
                     {
                         Debug.Assert(!type.IsValueType);
-
+                        EmitStartBlock($"if ({instanceToBindExpr} is not null)");
+                        EmitBindCoreCall();
+                        EmitEndBlock();
                         if (type is ObjectSpec { InitExceptionMessage: string exMsg })
                         {
+                            EmitStartBlock("else");
                             _writer.WriteLine($@"throw new {Identifier.InvalidOperationException}(""{exMsg}"");");
-                        }
-                        else
-                        {
-                            EmitStartBlock($"if ({instanceToBindExpr} is not null)");
-                            EmitBindCoreCall();
                             EmitEndBlock();
                         }
                     }

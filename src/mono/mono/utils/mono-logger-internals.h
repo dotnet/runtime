@@ -64,6 +64,8 @@ mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
 #define MONO_TRACE_IS_TRACED(level, mask) \
 	G_UNLIKELY ((level) <= mono_internal_current_level && ((mask) & mono_internal_current_mask))
 
+MONO_DISABLE_WARNING(4505) // unreferenced function with internal linkage has been removed
+
 G_GNUC_UNUSED static void
 mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
 {
@@ -90,6 +92,8 @@ mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...)
 		va_end (args);
 	}
 }
+
+MONO_RESTORE_WARNING
 
 // __VA_ARGS__ is never empty, so a comma before it is always correct.
 #define mono_trace_error(...)	(mono_trace (G_LOG_LEVEL_ERROR, __VA_ARGS__))

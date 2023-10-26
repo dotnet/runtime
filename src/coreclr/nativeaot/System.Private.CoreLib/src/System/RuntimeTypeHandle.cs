@@ -18,15 +18,14 @@ namespace System
     {
         private IntPtr _value;
 
+        internal unsafe RuntimeTypeHandle(MethodTable* pEEType)
+            => _value = (IntPtr)pEEType;
+
         internal RuntimeTypeHandle(EETypePtr pEEType)
-            : this(pEEType.RawValue)
-        {
-        }
+            => _value = pEEType.RawValue;
 
         private RuntimeTypeHandle(IntPtr value)
-        {
-            _value = value;
-        }
+            => _value = value;
 
         public override bool Equals(object? obj)
         {

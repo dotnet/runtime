@@ -23,7 +23,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [ActiveIssue("https://github.com/dotnet/runtime/pull/92855#issuecomment-1746078670", TestRuntimes.Mono)]
         public static void {TestName}()
         {
-            var test = new LoadVector{Op1VectorType}x2Test__{Op1BaseType}();
+            var test = new {TestName}Test();
             if (test.IsSupported)
             {
                 // Validates basic functionality works
@@ -54,7 +54,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class LoadVector{Op1VectorType}x2Test__{Op1BaseType}
+    public sealed unsafe class {TestName}Test
     {
         private struct DataTable
         {
@@ -78,7 +78,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     throw new ArgumentException("Invalid value of alignment");
                 }
 
-                this.inArray = new byte[alignment * 2];
+                this.inArray = new byte[alignment * 2 * 2];
                 this.outArray1 = new byte[alignment * 2];
                 this.outArray2 = new byte[alignment * 2];
 
@@ -119,7 +119,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return new TestStruct();
             }
 
-            public void RunStructFldScenario(LoadVector{Op1VectorType}x2Test__{Op1BaseType} testClass)
+            public void RunStructFldScenario({TestName}Test testClass)
             {
                 (_fld1, _fld2) = {Isa}.{Method}(({Op1BaseType}*)testClass._dataTable.inArrayPtr);
 
@@ -139,10 +139,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public LoadVector{Op1VectorType}x2Test__{Op1BaseType}()
+        public {TestName}Test()
         {
             Succeeded = true;
-            for (var i = 0; i < OpElementCount; i++) { _data[i] = {NextValueOp2}; }
+            for (var i = 0; i < DestElementCount; i++) { _data[i] = {NextValueOp2}; }
             _dataTable = new DataTable(new {Op1BaseType}[OpElementCount], new {Op1BaseType}[OpElementCount], _data, LargestVectorSize);
         }
 
