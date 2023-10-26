@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
             for (int i = 0; i < 100; i++)
             {
                 Label label = ilGenerator.DefineLabel();
-                Assert.Equal(i, label.GetHashCode());
+                Assert.Equal(i, label.Id);
             }
         }
     }
