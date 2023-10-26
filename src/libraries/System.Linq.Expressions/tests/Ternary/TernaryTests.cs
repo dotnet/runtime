@@ -1108,7 +1108,9 @@ namespace System.Linq.Expressions.Tests
             Func<T> f = e.Compile(useInterpreter);
 
             if (default(T) == null)
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)(condition ? a : b), (object)f());
+#pragma warning restore xUnit2005
             else
                 Assert.Equal(condition ? a : b, f());
         }

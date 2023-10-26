@@ -197,10 +197,8 @@ jobs:
             filesToSign:
             - name: createdump
               path: $(buildProductRootFolderPath)
-              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
             - name: corerun
               path: $(buildProductRootFolderPath)
-              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
         - task: CopyFiles@2
           displayName: 'Copy signed createdump to sharedFramework'

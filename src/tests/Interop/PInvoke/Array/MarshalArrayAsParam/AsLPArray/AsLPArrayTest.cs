@@ -374,7 +374,7 @@ public class ArrayMarshal
 
         int[] iArrLength0 = InitArray<int>(0);
         Assert.True(CStyle_Array_Int_InOut_ZeroLength(iArrLength0));
-        Assert.Equal(0, iArrLength0.Length);
+        Assert.Empty(iArrLength0);
 
         uint[] uiArr = InitArray<uint>(ARRAY_SIZE);
         Assert.True(CStyle_Array_Uint_InOut(uiArr, ARRAY_SIZE));
@@ -503,7 +503,7 @@ public class ArrayMarshal
 
         int[] iArrLength0 = new int[0];
         Assert.True(CStyle_Array_Int_Out_ZeroLength(iArrLength0));
-        Assert.Equal(0, iArrLength0.Length);
+        Assert.Empty(iArrLength0);
 
         uint[] uiArr = new uint[ARRAY_SIZE];
         Assert.True(CStyle_Array_Uint_Out(uiArr, ARRAY_SIZE));
@@ -630,7 +630,8 @@ public class ArrayMarshal
     }
     #endregion
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try{
             TestMarshalByVal_NoAttributes();

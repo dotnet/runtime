@@ -127,19 +127,21 @@ function get_single_asset(behavior: SingleAssetBehaviors): AssetEntryInternal {
 
 export function resolve_single_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
     const asset = get_single_asset(behavior);
-    asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
+    if (!asset.resolvedUrl) {
+        asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
 
-    if (jsRuntimeModulesAssetTypes[asset.behavior]) {
-        // give loadBootResource chance to override the url for JS modules with 'dotnetjs' type
-        const customLoadResult = invokeLoadBootResource(asset);
-        if (customLoadResult) {
-            mono_assert(typeof customLoadResult === "string", "loadBootResource response for 'dotnetjs' type should be a URL string");
-            asset.resolvedUrl = customLoadResult;
-        } else {
-            asset.resolvedUrl = appendUniqueQuery(asset.resolvedUrl, asset.behavior);
+        if (jsRuntimeModulesAssetTypes[asset.behavior]) {
+            // give loadBootResource chance to override the url for JS modules with 'dotnetjs' type
+            const customLoadResult = invokeLoadBootResource(asset);
+            if (customLoadResult) {
+                mono_assert(typeof customLoadResult === "string", "loadBootResource response for 'dotnetjs' type should be a URL string");
+                asset.resolvedUrl = customLoadResult;
+            } else {
+                asset.resolvedUrl = appendUniqueQuery(asset.resolvedUrl, asset.behavior);
+            }
+        } else if (asset.behavior !== "dotnetwasm") {
+            throw new Error(`Unknown single asset behavior ${behavior}`);
         }
-    } else if (asset.behavior !== "dotnetwasm") {
-        throw new Error(`Unknown single asset behavior ${behavior}`);
     }
     return asset;
 }

@@ -228,7 +228,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
     }
-    GetEmitter()->emitIns_J(INS_call, block->bbJumpDest);
+    GetEmitter()->emitIns_J(INS_call, block->GetJumpDest());
 
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
@@ -253,7 +253,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         GetEmitter()->emitDisableGC();
 #endif // JIT32_GCENCODER
 
-        BasicBlock* const jumpDest = nextBlock->bbJumpDest;
+        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
 
         // Now go to where the finally funclet needs to return to.
         if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -316,7 +316,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        GetEmitter()->emitIns_J(INS_push_hide, nextBlock->bbJumpDest);
+        GetEmitter()->emitIns_J(INS_push_hide, nextBlock->GetJumpDest());
     }
     else
     {
@@ -325,7 +325,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
 
     // Jump to the finally BB
-    inst_JMP(EJ_jmp, block->bbJumpDest);
+    inst_JMP(EJ_jmp, block->GetJumpDest());
 
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -348,7 +348,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     // Generate a RIP-relative
     //         lea reg, [rip + disp32] ; the RIP is implicit
     // which will be position-independent.
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->bbJumpDest, REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->GetJumpDest(), REG_INTRET);
 }
 
 #else // !FEATURE_EH_FUNCLETS
@@ -1450,7 +1450,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_test, reg, reg, genActualType(op));
-    inst_JMP(EJ_jne, compiler->compCurBB->bbJumpDest);
+    inst_JMP(EJ_jne, compiler->compCurBB->GetJumpDest());
 }
 
 //------------------------------------------------------------------------
@@ -4270,8 +4270,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
@@ -4400,9 +4400,9 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
 
-    GenTree* location  = tree->gtOpLocation;  // arg1
-    GenTree* value     = tree->gtOpValue;     // arg2
-    GenTree* comparand = tree->gtOpComparand; // arg3
+    GenTree* location  = tree->Addr();      // arg1
+    GenTree* value     = tree->Data();      // arg2
+    GenTree* comparand = tree->Comparand(); // arg3
 
     assert(location->GetRegNum() != REG_NA && location->GetRegNum() != REG_RAX);
     assert(value->GetRegNum() != REG_NA && value->GetRegNum() != REG_RAX);

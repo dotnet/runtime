@@ -1324,16 +1324,17 @@ private:
 
                 LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
 
+                // Span's Length is never negative unconditionally
+                if (isSpanLength && (accessSize == genTypeSize(TYP_INT)))
+                {
+                    fieldVarDsc->SetIsNeverNegative(true);
+                }
+
                 // Retargeting the indirection to reference the promoted field would make it "wide", exposing
                 // the whole parent struct (with all of its fields).
                 if (accessSize > genTypeSize(fieldVarDsc))
                 {
                     return BAD_VAR_NUM;
-                }
-
-                if (isSpanLength && (accessSize == genTypeSize(TYP_INT)))
-                {
-                    fieldVarDsc->SetIsNeverNegative(true);
                 }
 
                 JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);

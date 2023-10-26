@@ -97,8 +97,8 @@ jobs:
           - template: /eng/pipelines/common/download-artifact-step.yml
             parameters:
               unpackFolder: $(_runtimeX64DownloadPath)
-              artifactFileName: 'CoreCLRProduct___${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
-              artifactName: 'CoreCLRProduct___${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}'
+              artifactFileName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
+              artifactName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}'
               displayName: 'CoreCLR product build (x64)'
 
         - template: /eng/pipelines/common/download-artifact-step.yml
