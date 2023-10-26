@@ -377,7 +377,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void UnmanagedCallback_InFileType(BuildArgs buildArgs, string id)
+        public void UnmanagedCallback_InFileType(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
                 """
