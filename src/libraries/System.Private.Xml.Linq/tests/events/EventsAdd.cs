@@ -514,6 +514,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Fact]
         public void XAttributeXAttributeAddAtDeepLevel()
         {

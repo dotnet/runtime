@@ -8868,6 +8868,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
             Third
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94048", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Fact]
         public static void DynamicCSharpRunTest()
         {

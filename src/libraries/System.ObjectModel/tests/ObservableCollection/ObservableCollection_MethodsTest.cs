@@ -93,6 +93,7 @@ namespace System.Collections.ObjectModel.Tests
         /// <summary>
         /// Tests that we can remove items at a specific index, at the middle beginning and end.
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94045", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Fact]
         public static void RemoveAtTest()
         {

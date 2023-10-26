@@ -186,6 +186,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XAttribute[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") } },
             new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray() }
         };
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Theory, MemberData(nameof(ExecuteXAttributeVariationParams))]
         public void ExecuteXAttributeVariation(XAttribute[] content)
         {
@@ -225,6 +226,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray() },
             new object[] { new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XElement("parent", new XElement("child", "child text")) } }
         };
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XObject[] toReplace)
         {
@@ -249,6 +251,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Fact]
         public void ElementWithAttributes()
         {

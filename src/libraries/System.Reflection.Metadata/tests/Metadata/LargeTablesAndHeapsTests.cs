@@ -70,6 +70,7 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94044", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Fact]
         public void Guids()
         {

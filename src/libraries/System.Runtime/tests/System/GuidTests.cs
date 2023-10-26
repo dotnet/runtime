@@ -119,6 +119,7 @@ namespace System.Tests
             Assert.Equal(s_testGuid, guid);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94043", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Fact]
         public static void NewGuid()
         {
@@ -129,6 +130,7 @@ namespace System.Tests
             Assert.NotEqual(guid1, guid2);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94043", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Fact]
         public static void NewGuid_Randomness()
         {
