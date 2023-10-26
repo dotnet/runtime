@@ -167,7 +167,7 @@ public class SingleFileTestRunner : XunitTestFramework
     }
 }
 
-internal class ConsoleDiagnosticMessageSink : IMessageSink, LongLivedMarshalByRefObject
+internal class ConsoleDiagnosticMessageSink : IMessageSink, Xunit.LongLivedMarshalByRefObject
 {
     public bool OnMessage(IMessageSinkMessage message)
     {
