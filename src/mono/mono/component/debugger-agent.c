@@ -9012,7 +9012,7 @@ set_value:
 					int dummy;
 					int count = mono_type_size (f->type, &dummy)/mono_type_size (f->type, &align);
 					const char* arr = mono_field_get_rva (f, swizzle);
-					m_dbgprot_buffer_add_byte_array (buf, arr, count);
+					m_dbgprot_buffer_add_byte_array (buf, (uint8_t *)arr, count);
 					err = ERR_NONE;
 					goto exit;
 				}
