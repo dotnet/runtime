@@ -1909,8 +1909,9 @@ AGAIN:
             {
                 jmp->idAddr()->iiaSetJmpOffset(jmpDist);
             }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
+            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
+                // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
@@ -1985,8 +1986,9 @@ AGAIN:
             {
                 jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
             }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
+            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
+                // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
