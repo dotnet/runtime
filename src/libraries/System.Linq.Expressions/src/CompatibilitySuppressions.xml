@@ -321,7 +321,85 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.BinaryOperationBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.ConvertBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.CreateInstanceBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.DeleteIndexBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.DeleteMemberBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
     <Target>T:System.Dynamic.DynamicMetaObjectBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.DynamicObject:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.GetIndexBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.GetMemberBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.InvokeBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.InvokeMemberBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.SetIndexBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.SetMemberBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>T:System.Dynamic.UnaryOperationBinder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
     <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
