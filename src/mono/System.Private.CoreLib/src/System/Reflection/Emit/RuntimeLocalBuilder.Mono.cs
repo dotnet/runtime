@@ -99,8 +99,5 @@ namespace System.Reflection.Emit
         {
             get { return endOffset; }
         }
-
-        // Mono uses ILGenerator instance instead of MethodBuilder, could not get reference to the MethodBuilder the local belongs to.
-        public override MethodInfo Method => throw new NotImplementedException();
     }
 }

@@ -71,7 +71,6 @@ namespace System.Reflection.Emit
         public override bool IsPinned { get { throw null; } }
         public override int LocalIndex { get { throw null; } }
         public override System.Type LocalType { get { throw null; } }
-        public abstract MethodInfo Method { get; }
     }
     public abstract partial class ParameterBuilder
     {

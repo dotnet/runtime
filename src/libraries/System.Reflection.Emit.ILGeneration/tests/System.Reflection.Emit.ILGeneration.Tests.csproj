@@ -22,7 +22,6 @@
     <Compile Include="LocalBuilder\LocalBuilderIsPinned.cs" />
     <Compile Include="LocalBuilder\LocalBuilderLocalIndex.cs" />
     <Compile Include="LocalBuilder\LocalBuilderLocalType.cs" />
-    <Compile Include="LocalBuilder\LocalBuilderMethod.cs" />
     <Compile Include="ParameterBuilder\PropertyTests.cs" />
     <Compile Include="ParameterBuilder\SetConstant.cs" />
     <Compile Include="ParameterBuilder\SetCustomAttributeTests.cs" />

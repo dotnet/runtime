@@ -22,11 +22,14 @@ namespace System.Reflection.Emit
         }
         #endregion
 
+        #region Internal members
+        internal MethodInfo GetMethodBuilder() => _method;
+        #endregion
+
         #region LocalVariableInfo Override
         public override bool IsPinned => _isPinned;
         public override Type LocalType => _localType;
         public override int LocalIndex => _localIndex;
-        public override MethodInfo Method => _method;
         #endregion
     }
 }

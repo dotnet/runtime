@@ -188,7 +188,7 @@ namespace System.Reflection.Emit
                 ILGeneratorImpl? il = method.ILGeneratorImpl;
                 if (il != null)
                 {
-                    StandaloneSignatureHandle signature = il.Locals == null ? default :
+                    StandaloneSignatureHandle signature = il.Locals.Count == 0 ? default :
                         _metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.LocalSignatureEncoder(il.Locals, this)));
                     offset = AddMethodBody(method, il, signature, methodBodyEncoder);
                 }

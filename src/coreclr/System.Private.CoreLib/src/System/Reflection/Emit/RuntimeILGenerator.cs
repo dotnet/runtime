@@ -820,7 +820,7 @@ namespace System.Reflection.Emit
 
             // Puts the opcode onto the IL stream followed by the information for local variable local.
             int tempVal = local.LocalIndex;
-            if (local.Method != m_methodBuilder)
+            if (((RuntimeLocalBuilder)local).GetMethodBuilder() != m_methodBuilder)
             {
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
             }

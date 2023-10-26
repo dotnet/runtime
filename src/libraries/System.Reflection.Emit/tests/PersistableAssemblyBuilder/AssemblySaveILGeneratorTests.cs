@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
