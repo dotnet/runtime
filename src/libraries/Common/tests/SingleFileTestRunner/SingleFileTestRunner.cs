@@ -72,16 +72,16 @@ public class SingleFileTestRunner : XunitTestFramework
             if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase))
             {
                 var traitKeyValue = args[i + 1].Split("=", StringSplitOptions.TrimEntries);
-                
+
                 if (!noTraits.TryGetValue(traitKeyValue[0], out List<string> values))
                 {
                     noTraits.Add(traitKeyValue[0], values = new List<string>());
                 }
-                
+
                 values.Add(traitKeyValue[1]);
                 i++;
             }
-            
+
             if (args[i].Equals("-xml", StringComparison.OrdinalIgnoreCase))
             {
                 xmlResultFileName = args[i + 1].Trim();
@@ -167,7 +167,7 @@ public class SingleFileTestRunner : XunitTestFramework
     }
 }
 
-internal class ConsoleDiagnosticMessageSink : IMessageSink
+internal class ConsoleDiagnosticMessageSink : IMessageSink, LongLivedMarshalByRefObject
 {
     public bool OnMessage(IMessageSinkMessage message)
     {
