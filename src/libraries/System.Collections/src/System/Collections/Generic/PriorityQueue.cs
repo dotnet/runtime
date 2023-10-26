@@ -503,7 +503,7 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Removes the first occurrence the equals the specified parameter.
+        /// Removes the first occurrence that equals the specified parameter.
         /// </summary>
         /// <param name="element">The element to look for.</param>
         /// <param name="removedElement">The actual element that got removed from the queue.</param>
