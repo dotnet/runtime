@@ -10,6 +10,162 @@ PhaseStatus Compiler::TransformAsync2()
     return transformation.Run();
 }
 
+class AsyncLiveness
+{
+    Compiler*              m_comp;
+    bool                   m_hasLiveness;
+    TreeLifeUpdater<false> m_updater;
+    unsigned               m_numVars;
+
+public:
+    AsyncLiveness(Compiler* comp, bool hasLiveness)
+        : m_comp(comp), m_hasLiveness(hasLiveness), m_updater(comp), m_numVars(comp->lvaCount)
+    {
+    }
+
+    void StartBlock(BasicBlock* block)
+    {
+        if (!m_hasLiveness)
+            return;
+
+        VarSetOps::Assign(m_comp, m_comp->compCurLife, block->bbLiveIn);
+    }
+
+    void Update(GenTree* node)
+    {
+        if (!m_hasLiveness)
+            return;
+
+        m_updater.UpdateLife(node);
+    }
+
+    bool IsLocalCaptureUnnecessary(unsigned lclNum)
+    {
+#if FEATURE_FIXED_OUT_ARGS
+        if (lclNum == m_comp->lvaOutgoingArgSpaceVar)
+        {
+            return true;
+        }
+#endif
+
+        if (lclNum == m_comp->lvaGSSecurityCookie)
+        {
+            // Initialized in prolog
+            return true;
+        }
+
+#ifdef FEATURE_EH_FUNCLETS
+        if (lclNum == m_comp->lvaPSPSym)
+        {
+            // Initialized in prolog
+            return true;
+        }
+#else
+        if (lclNum == m_comp->lvaShadowSPslotsVar)
+        {
+            // Only expected to be live in handlers
+            return true;
+        }
+#endif
+
+        if (lclNum == m_comp->lvaRetAddrVar)
+        {
+            return true;
+        }
+
+        if (lclNum == m_comp->lvaAsyncContinuationArg)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool IsLive(unsigned lclNum)
+    {
+        if (IsLocalCaptureUnnecessary(lclNum))
+        {
+            return false;
+        }
+
+        LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
+
+        if ((dsc->TypeGet() == TYP_BYREF) || ((dsc->TypeGet() == TYP_STRUCT) && dsc->GetLayout()->HasGCByRef()))
+        {
+            // Even if these are address exposed we expect them to be dead at
+            // suspension points. TODO: It would be good to somehow verify these
+            // aren't obviously live, if the JIT creates live ranges that span a
+            // suspension point then this makes it quite hard to diagnose that.
+            return false;
+        }
+
+        if (!m_hasLiveness)
+        {
+            return true;
+        }
+
+        if (dsc->lvRefCnt(RCS_NORMAL) == 0)
+        {
+            return false;
+        }
+
+        Compiler::lvaPromotionType promoType = m_comp->lvaGetPromotionType(dsc);
+        if (promoType == Compiler::PROMOTION_TYPE_INDEPENDENT)
+        {
+            // Independently promoted structs are handled only through their
+            // fields.
+            return false;
+        }
+
+        if (promoType == Compiler::PROMOTION_TYPE_DEPENDENT)
+        {
+            // Dependently promoted structs are handled only through the base
+            // struct local.
+            //
+            // A dependently promoted struct is live either if it has significant
+            // padding (since we do not track liveness for the significant
+            // padding), or if all its fields are dead.
+
+            if (dsc->lvAnySignificantPadding)
+            {
+                // We could technically only save the padding and the live fields
+                // in this case, but that's a lot of complexity for not a lot of
+                // gain.
+                return true;
+            }
+
+            for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+            {
+                LclVarDsc* fieldDsc = m_comp->lvaGetDesc(dsc->lvFieldLclStart + i);
+                if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_comp, m_comp->compCurLife, fieldDsc->lvVarIndex))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (dsc->lvIsStructField && (m_comp->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
+        {
+            return false;
+        }
+
+        return !dsc->lvTracked || VarSetOps::IsMember(m_comp, m_comp->compCurLife, dsc->lvVarIndex);
+    }
+
+    void GetLiveLocals(jitstd::vector<Async2Transformation::LiveLocalInfo>& liveLocals)
+    {
+        for (unsigned lclNum = 0; lclNum < m_numVars; lclNum++)
+        {
+            if (IsLive(lclNum))
+            {
+                liveLocals.push_back(Async2Transformation::LiveLocalInfo(lclNum));
+            }
+        }
+    }
+};
+
 PhaseStatus Async2Transformation::Run()
 {
     ArrayStack<BasicBlock*> worklist(m_comp->getAllocator(CMK_Async2));
@@ -46,14 +202,15 @@ PhaseStatus Async2Transformation::Run()
     m_objectClsHnd = m_comp->info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
     m_byteClsHnd   = m_comp->info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_BYTE);
 
-    m_comp->lvaComputeRefCounts(true, false);
+    if (m_comp->opts.OptimizationEnabled())
+    {
+        m_comp->lvaComputeRefCounts(true, false);
+        m_comp->fgLocalVarLiveness();
+        VarSetOps::AssignNoCopy(m_comp, m_comp->compCurLife, VarSetOps::MakeEmpty(m_comp));
+    }
 
-    m_comp->fgLocalVarLiveness();
-    m_livenessLvaCount = m_comp->lvaCount;
+    AsyncLiveness liveness(m_comp, m_comp->opts.OptimizationEnabled());
 
-    VarSetOps::AssignNoCopy(m_comp, m_comp->compCurLife, VarSetOps::MakeEmpty(m_comp));
-
-    TreeLifeUpdater<false>   life(m_comp);
     jitstd::vector<GenTree*> defs(m_comp->getAllocator(CMK_Async2));
 
     for (int i = 0; i < worklist.Height(); i++)
@@ -61,7 +218,7 @@ PhaseStatus Async2Transformation::Run()
         assert(defs.size() == 0);
 
         BasicBlock* block = worklist.Bottom(i);
-        VarSetOps::Assign(m_comp, m_comp->compCurLife, block->bbLiveIn);
+        liveness.StartBlock(block);
 
         bool any;
         do
@@ -86,11 +243,11 @@ PhaseStatus Async2Transformation::Run()
                     return GenTree::VisitResult::Continue;
                 });
 
-                life.UpdateLife(tree);
+                liveness.Update(tree);
 
                 if (tree->IsCall() && tree->AsCall()->IsAsync2() && !tree->AsCall()->IsTailCall())
                 {
-                    Transform(block, tree->AsCall(), defs, life, &block);
+                    Transform(block, tree->AsCall(), defs, liveness, &block);
                     defs.clear();
                     any = true;
                     break;
@@ -109,11 +266,8 @@ PhaseStatus Async2Transformation::Run()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-void Async2Transformation::Transform(BasicBlock*               block,
-                                     GenTreeCall*              call,
-                                     jitstd::vector<GenTree*>& defs,
-                                     TreeLifeUpdater<false>&   life,
-                                     BasicBlock**              pRemainder)
+void Async2Transformation::Transform(
+    BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, AsyncLiveness& life, BasicBlock** pRemainder)
 {
 #ifdef DEBUG
     if (m_comp->verbose)
@@ -137,16 +291,7 @@ void Async2Transformation::Transform(BasicBlock*               block,
 
     m_liveLocals.clear();
 
-    for (unsigned lclNum = 0; lclNum < m_livenessLvaCount; lclNum++)
-    {
-        if (!IsLive(lclNum))
-        {
-            continue;
-        }
-
-        m_liveLocals.push_back(LiveLocalInfo(lclNum));
-    }
-
+    life.GetLiveLocals(m_liveLocals);
     LiftLIREdges(block, call, defs, m_liveLocals);
 
 #ifdef DEBUG
@@ -225,11 +370,19 @@ void Async2Transformation::Transform(BasicBlock*               block,
         return lhs.Alignment > rhs.Alignment;
     });
 
-    unsigned dataSize = 0;
+    unsigned dataSize    = 0;
+    unsigned gcRefsCount = 0;
+
     // Result value is currently always stored boxed in the continuation as it
     // needs to be written by the resumption stub and by the asynchronous
     // callbacks. If we specialized the continuation type we could avoid this.
-    unsigned gcRefsCount = call->gtReturnType != TYP_VOID ? 1 : 0;
+    if (call->gtReturnType != TYP_VOID)
+        gcRefsCount++;
+
+    // For OSR, we store the patchpoint information at the beginning of the data
+    // (null in the tier0 version):
+    if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
+        dataSize += sizeof(int);
 
     for (LiveLocalInfo& inf : m_liveLocals)
     {
@@ -274,7 +427,7 @@ void Async2Transformation::Transform(BasicBlock*               block,
         else
         {
             // We will split after the store, but we still have to update liveness for it.
-            life.UpdateLife(call->gtNext);
+            life.Update(call->gtNext);
         }
 
         assert(call->gtNext->OperIsLocalStore() && (call->gtNext->Data() == call));
@@ -285,7 +438,7 @@ void Async2Transformation::Transform(BasicBlock*               block,
     GenTree* continuationArg = new (m_comp, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
     continuationArg->SetHasOrderingSideEffect();
 
-    GenTree* storeContinuation   = m_comp->gtNewStoreLclVarNode(m_returnedContinuationVar, continuationArg);
+    GenTree* storeContinuation = m_comp->gtNewStoreLclVarNode(m_returnedContinuationVar, continuationArg);
     LIR::AsRange(block).InsertAfter(insertAfter, continuationArg, storeContinuation);
 
     GenTree* null                 = m_comp->gtNewNull();
@@ -439,6 +592,20 @@ void Async2Transformation::Transform(BasicBlock*               block,
         GenTree* dataInd             = m_comp->gtNewIndir(TYP_REF, dataAddr, GTF_IND_NONFAULTING);
         GenTree* storeAllocedByteArr = m_comp->gtNewStoreLclVarNode(byteArrLclNum, dataInd);
         LIR::AsRange(retBB).InsertAtEnd(newContinuation, dataOffsetNode, dataAddr, dataInd, storeAllocedByteArr);
+
+        if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
+        {
+            GenTree* ilOffsetToStore;
+            if (m_comp->doesMethodHavePatchpoints())
+                ilOffsetToStore = m_comp->gtNewIconNode(-1);
+            else
+                ilOffsetToStore = m_comp->gtNewIconNode((int)m_comp->info.compILEntry);
+
+            GenTree* byteArr               = m_comp->gtNewLclvNode(byteArrLclNum, TYP_REF);
+            unsigned offset                = OFFSETOF__CORINFO_Array__data;
+            GenTree* storePatchpointOffset = StoreAtOffset(byteArr, offset, ilOffsetToStore);
+            LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storePatchpointOffset));
+        }
 
         // Fill in data
         for (LiveLocalInfo& inf : m_liveLocals)
@@ -740,75 +907,6 @@ GenTreeStoreInd* Async2Transformation::StoreAtOffset(GenTree* base, unsigned off
     return store;
 }
 
-bool Async2Transformation::IsLive(unsigned lclNum)
-{
-#if FEATURE_FIXED_OUT_ARGS
-    if (lclNum == m_comp->lvaOutgoingArgSpaceVar)
-    {
-        return false;
-    }
-#endif
-
-    LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
-    if (dsc->lvRefCnt(RCS_NORMAL) == 0)
-    {
-        return false;
-    }
-
-    if ((dsc->TypeGet() == TYP_BYREF) || ((dsc->TypeGet() == TYP_STRUCT) && dsc->GetLayout()->HasGCByRef()))
-    {
-        // Even if these are address exposed we expect them to be dead at
-        // suspension points. TODO: It would be good to somehow verify these
-        // aren't obviously live, if the JIT creates live ranges that span a
-        // suspension point then this makes it quite hard to diagnose that.
-        return false;
-    }
-
-    Compiler::lvaPromotionType promoType = m_comp->lvaGetPromotionType(dsc);
-    if (promoType == Compiler::PROMOTION_TYPE_INDEPENDENT)
-    {
-        // Independently promoted structs are handled only through their
-        // fields.
-        return false;
-    }
-
-    if (promoType == Compiler::PROMOTION_TYPE_DEPENDENT)
-    {
-        // Dependently promoted structs are handled only through the base
-        // struct local.
-        //
-        // A dependently promoted struct is live either if it has significant
-        // padding (since we do not track liveness for the significant
-        // padding), or if all its fields are dead.
-
-        if (dsc->lvAnySignificantPadding)
-        {
-            // We could technically only save the padding and the live fields
-            // in this case, but that's a lot of complexity for not a lot of
-            // gain.
-            return true;
-        }
-
-        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = m_comp->lvaGetDesc(dsc->lvFieldLclStart + i);
-            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_comp, m_comp->compCurLife, fieldDsc->lvVarIndex))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    if (dsc->lvIsStructField && (m_comp->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
-    {
-        return false;
-    }
-
-    return !dsc->lvTracked || VarSetOps::IsMember(m_comp, m_comp->compCurLife, dsc->lvVarIndex);
-}
-
 unsigned Async2Transformation::GetDataArrayVar()
 {
     if (m_dataArrayVar == BAD_VAR_NUM)
@@ -1013,5 +1111,72 @@ void Async2Transformation::CreateResumptionSwitch()
         {
             m_comp->fgAddRefPred(bb, switchBB);
         }
+    }
+
+    if (m_comp->doesMethodHavePatchpoints())
+    {
+        // If we have patchpoints then first check if we need to resume in the OSR version.
+        BasicBlock* callHelperBB = m_comp->fgNewBBafter(BBJ_THROW, m_comp->fgLastBBInMainFunction(), true);
+
+        BasicBlock* checkILOffsetBB = m_comp->fgNewBBbefore(BBJ_COND, newEntryBB->GetJumpDest(), true, callHelperBB);
+        m_comp->fgRemoveRefPred(newEntryBB->GetJumpDest(), newEntryBB);
+        newEntryBB->SetJumpDest(checkILOffsetBB);
+
+        m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
+        m_comp->fgAddRefPred(checkILOffsetBB->Next(), checkILOffsetBB);
+        m_comp->fgAddRefPred(checkILOffsetBB->GetJumpDest(), checkILOffsetBB);
+
+        // We need to dispatch to the OSR version if the IL offset is non-negative.
+        continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfData =
+            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
+        GenTree* dataArr          = LoadFromOffset(continuationArg, offsetOfData, TYP_REF);
+        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Array__data;
+        GenTree* ilOffset         = LoadFromOffset(dataArr, offsetOfIlOffset, TYP_INT);
+        unsigned ilOffsetLclNum   = m_comp->lvaGrabTemp(false DEBUGARG("IL offset for tier0 OSR method"));
+        m_comp->lvaGetDesc(ilOffsetLclNum)->lvType = TYP_INT;
+        GenTree* storeIlOffset                     = m_comp->gtNewStoreLclVarNode(ilOffsetLclNum, ilOffset);
+        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_comp, storeIlOffset));
+
+        ilOffset        = m_comp->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
+        GenTree* zero   = m_comp->gtNewIconNode(0);
+        GenTree* geZero = m_comp->gtNewOperNode(GT_GE, TYP_INT, ilOffset, zero);
+        GenTree* jtrue  = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, geZero);
+        LIR::AsRange(checkILOffsetBB).InsertAtEnd(ilOffset, zero, geZero, jtrue);
+
+        ilOffset                = m_comp->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
+        GenTreeCall* callHelper = m_comp->gtNewHelperCallNode(CORINFO_HELP_RESUME_OSR, TYP_VOID, ilOffset);
+        callHelper->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+
+        m_comp->compCurBB = callHelperBB;
+        m_comp->fgMorphTree(callHelper);
+
+        LIR::AsRange(callHelperBB).InsertAtEnd(LIR::SeqTree(m_comp, callHelper));
+    }
+    else if (m_comp->opts.IsOSR())
+    {
+        // If the tier-0 version resumed and then transitioned to the OSR
+        // version by normal means then we will see a non-zero continuation
+        // here that belongs to the tier0 method. In that case we should just
+        // ignore it, so create a BB that jumps back.
+        BasicBlock* checkILOffsetBB =
+            m_comp->fgNewBBbefore(BBJ_COND, newEntryBB->GetJumpDest(), true, newEntryBB->Next());
+        m_comp->fgRemoveRefPred(newEntryBB->GetJumpDest(), newEntryBB);
+        newEntryBB->SetJumpDest(checkILOffsetBB);
+
+        m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
+        m_comp->fgAddRefPred(checkILOffsetBB->Next(), checkILOffsetBB);
+        m_comp->fgAddRefPred(checkILOffsetBB->GetJumpDest(), checkILOffsetBB);
+
+        continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfData =
+            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
+        GenTree* dataArr          = LoadFromOffset(continuationArg, offsetOfData, TYP_REF);
+        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Array__data;
+        GenTree* ilOffset         = LoadFromOffset(dataArr, offsetOfIlOffset, TYP_INT);
+        GenTree* zero             = m_comp->gtNewIconNode(0);
+        GenTree* ltZero           = m_comp->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
+        GenTree* jtrue            = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
+        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_comp, jtrue));
     }
 }

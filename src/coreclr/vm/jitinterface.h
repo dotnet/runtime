@@ -869,7 +869,7 @@ public:
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
-    void CompressDebugInfo();
+    void CompressDebugInfo(PCODE nativeEntry);
 
     void reportRichMappings(
         ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
@@ -903,6 +903,8 @@ public:
 
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
+
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() override final;
 
 protected :
 

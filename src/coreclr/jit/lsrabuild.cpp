@@ -1246,8 +1246,8 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 
         assert((killMask & RBM_ASYNC_CONTINUATION_RET) != 0);
 
-        RegRecord* asyncRetRegRec = getRegisterRecord(REG_ASYNC_CONTINUATION_RET);
-        RefPosition* pos = asyncRetRegRec->lastRefPosition;
+        RegRecord*   asyncRetRegRec = getRegisterRecord(REG_ASYNC_CONTINUATION_RET);
+        RefPosition* pos            = asyncRetRegRec->lastRefPosition;
         assert(pos->refType == RefTypeKill);
         pos->busyUntilNextKill = true;
     }

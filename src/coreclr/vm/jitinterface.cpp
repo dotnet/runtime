@@ -64,6 +64,7 @@
 #endif
 
 #include "tailcallhelp.h"
+#include "patchpointinfo.h"
 
 #ifdef TARGET_WINDOWS
 EXTERN_C uint32_t _tls_index;
@@ -10942,7 +10943,7 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
     return result;
 }
 
-void CEEJitInfo::CompressDebugInfo()
+void CEEJitInfo::CompressDebugInfo(PCODE nativeEntry)
 {
     CONTRACTL {
         THROWS;
@@ -10965,6 +10966,9 @@ void CEEJitInfo::CompressDebugInfo()
 
     if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0))
         return;
+
+    if (patchpointInfo != NULL)
+        patchpointInfo->SetTier0EntryPoint(nativeEntry);
 
     JIT_TO_EE_TRANSITION();
 
@@ -12458,7 +12462,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     //
     if (SUCCEEDED(ret) && !((CEEJitInfo*)comp)->JitAgain())
     {
-        ((CEEJitInfo*)comp)->CompressDebugInfo();
+        ((CEEJitInfo*)comp)->CompressDebugInfo((PCODE)*nativeEntry);
 
 #ifdef FEATURE_INTERPRETER
         // We do this cleanup in the prestub, where we know whether the method
@@ -14293,7 +14297,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, LoaderAllocato
     return AllocateSignature(alloc, sigBuilder);
 }
 
-CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
 {
     CONTRACTL{
         THROWS;
@@ -14302,7 +14306,6 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
     } CONTRACTL_END;
 
     MethodDesc* md = m_pMethodBeingCompiled;
-    // Not hard to support, just requires calls through a pointer and passing the
     _ASSERTE(!md->IsSharedByGenericInstantiations());
 
     LoaderAllocator* loaderAlloc = md->GetLoaderAllocator();
@@ -14357,8 +14360,25 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
     nmArgs++;
 #endif
 
-    // TODO: This can use indirection of precode slot directly.
-    pCode->EmitLDC(md->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+    // Resumption stubs are uniquely coupled to the code version (since the
+    // continuation is), so we need to make sure we always keep calling the
+    // same version here.
+    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    NativeCodeVersion ncv = config->GetCodeVersion();
+    if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
+    {
+        // The OSR version needs to resume in the tier0 version. The tier0
+        // version will handle setting up the frame that the OSR version
+        // expects and then delegating back into the OSR version (knowing to do
+        // so through information stored in the continuation).
+        _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
+        pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
+    }
+    else
+    {
+        pCode->EmitLDC((DWORD_PTR)config->GetNativeCodeSlot());
+        pCode->EmitLDIND_I();
+    }
 
     pCode->EmitCALLI(pCode->GetSigToken(calliSig.GetRawSig(), calliSig.GetRawSigLen()), numArgs, msig.IsReturnTypeVoid() ? 0 : 1);
 
@@ -14605,6 +14625,12 @@ void CEEInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 }
 
 PatchpointInfo* CEEInfo::getOSRInfo(unsigned* ilOffset)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

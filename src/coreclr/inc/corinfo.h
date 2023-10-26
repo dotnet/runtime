@@ -663,6 +663,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
     CORINFO_HELP_ALLOC_CONTINUATION,
+    CORINFO_HELP_RESUME_OSR,
 
     CORINFO_HELP_COUNT,
 };

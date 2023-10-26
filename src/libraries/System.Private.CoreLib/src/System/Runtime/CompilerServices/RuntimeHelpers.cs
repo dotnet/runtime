@@ -126,6 +126,7 @@ namespace System.Runtime.CompilerServices
 
 #if !NATIVEAOT
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         [BypassReadyToRun]
         public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
@@ -166,6 +167,7 @@ namespace System.Runtime.CompilerServices
         // recognizes as an async2 call.
         [Intrinsic]
         [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
             if (RuntimeAsyncViaJitGeneratedStateMachines)

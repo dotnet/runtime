@@ -1,5 +1,7 @@
 class Async2Transformation
 {
+    friend class AsyncLiveness;
+
     struct LiveLocalInfo
     {
         unsigned LclNum;
@@ -15,7 +17,6 @@ class Async2Transformation
     };
 
     Compiler*                     m_comp;
-    unsigned                      m_livenessLvaCount = 0;
     jitstd::vector<LiveLocalInfo> m_liveLocals;
     CORINFO_ASYNC2_INFO           m_async2Info;
     CORINFO_CLASS_HANDLE          m_objectClsHnd;
@@ -35,7 +36,11 @@ class Async2Transformation
                       jitstd::vector<GenTree*>&      defs,
                       jitstd::vector<LiveLocalInfo>& liveLocals);
     bool IsLive(unsigned lclNum);
-    void Transform(BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, TreeLifeUpdater<false>& life, BasicBlock** remainder);
+    void Transform(BasicBlock*               block,
+                   GenTreeCall*              call,
+                   jitstd::vector<GenTree*>& defs,
+                   class AsyncLiveness&      life,
+                   BasicBlock**              remainder);
 
     GenTreeIndir* LoadFromOffset(GenTree* base, unsigned offset, var_types type);
     GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value);

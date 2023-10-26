@@ -193,7 +193,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     call->gtRetClsHnd     = nullptr;
     call->gtCallMoreFlags = GTF_CALL_M_EMPTY;
     call->gtControlExpr   = nullptr;
-    call->gtIsAsyncCall = false;
+    call->gtIsAsyncCall   = false;
     call->ClearInlineInfo();
 #ifdef UNIX_X86_ABI
     call->gtFlags |= GTF_CALL_POP_ARGS;

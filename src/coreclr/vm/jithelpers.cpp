@@ -51,6 +51,7 @@
 #include "onstackreplacement.h"
 #include "pgo.h"
 #include "pgo_formatprocessing.h"
+#include "patchpointinfo.h"
 
 #ifndef FEATURE_EH_FUNCLETS
 #include "excep.h"
@@ -5546,6 +5547,148 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 
     // END_PRESERVE_LAST_ERROR;
     ::SetLastError(dwLastError);
+}
+
+void JIT_ResumeOSR(unsigned ilOffset)
+{
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    // BEGIN_PRESERVE_LAST_ERROR;
+    DWORD dwLastError = ::GetLastError();
+    PCODE ip = (PCODE)_ReturnAddress();
+
+    Thread *pThread = GetThread();
+
+#ifdef FEATURE_HIJACK
+    // We can't crawl the stack of a thread that currently has a hijack pending
+    // (since the hijack routine won't be recognized by any code manager). So we
+    // Undo any hijack, the EE will re-attempt it later.
+    pThread->UnhijackThread();
+#endif
+
+    // Find context for the original method
+    CONTEXT *pFrameContext = NULL;
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD contextSize = 0;
+    ULONG64 xStateCompactionMask = 0;
+    DWORD contextFlags = CONTEXT_FULL;
+    if (Thread::AreCetShadowStacksEnabled())
+    {
+        xStateCompactionMask = XSTATE_MASK_CET_U;
+        contextFlags |= CONTEXT_XSTATE;
+    }
+
+    // The initialize call should fail but return contextSize
+    BOOL success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
+        InitializeContext(NULL, contextFlags, NULL, &contextSize);
+
+    _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
+
+    PVOID pBuffer = _alloca(contextSize);
+    success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
+        InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
+    _ASSERTE(success);
+#else // TARGET_WINDOWS && TARGET_AMD64
+    CONTEXT frameContext;
+    frameContext.ContextFlags = CONTEXT_FULL;
+    pFrameContext = &frameContext;
+#endif // TARGET_WINDOWS && TARGET_AMD64
+
+    // Find context for the original method
+    RtlCaptureContext(pFrameContext);
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    if (Thread::AreCetShadowStacksEnabled())
+    {
+        pFrameContext->ContextFlags |= CONTEXT_XSTATE;
+        SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
+        SetSSP(pFrameContext, _rdsspq());
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
+
+    // Walk back to the original method frame
+    pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
+
+    // Remember original method FP and SP because new method will inherit them.
+    UINT_PTR currentSP = GetSP(pFrameContext);
+    UINT_PTR currentFP = GetFP(pFrameContext);
+
+    // Now unwind back to the original method caller frame.
+    EECodeInfo callerCodeInfo(GetIP(pFrameContext));
+    ULONG_PTR establisherFrame = 0;
+    PVOID handlerData = NULL;
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
+        pFrameContext, &handlerData, &establisherFrame, NULL);
+
+    // Now, set FP and SP back to the values they had just before this helper was called,
+    // since the new method must have access to the original method frame.
+    //
+    // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
+    // use that to adjust the stack, likely saving some stack space.
+
+#if defined(TARGET_AMD64)
+    // If calls push the return address, we need to simulate that here, so the OSR
+    // method sees the "expected" SP misalgnment on entry.
+    _ASSERTE(currentSP % 16 == 0);
+    currentSP -= 8;
+
+#if defined(TARGET_WINDOWS)
+    DWORD64 ssp = GetSSP(pFrameContext);
+    if (ssp != 0)
+    {
+        SetSSP(pFrameContext, ssp - 8);
+    }
+#endif // TARGET_WINDOWS
+
+    pFrameContext->Rbp = currentFP;
+#endif // TARGET_AMD64
+
+    SetSP(pFrameContext, currentSP);
+
+    EECodeInfo codeInfo(ip);
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
+    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
+    PerPatchpointInfo* ppInfo = manager->GetPerPatchpointInfo(ip);
+
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    if (osrMethodCode == NULL)
+    {
+        PCODE tier0EntryAddr = (PCODE)codeInfo.GetStartAddress();
+        CodeVersionManager* codeVersionManager = pMD->GetCodeVersionManager();
+        CodeVersionManager::LockHolder lock;
+        NativeCodeVersionCollection nativeCodeVersions = codeVersionManager->GetNativeCodeVersions(pMD);
+        for (NativeCodeVersionIterator itr = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); itr != end; itr++)
+        {
+            if (itr->GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
+            {
+                unsigned versionILOffset;
+                PatchpointInfo* ppi = itr->GetOSRInfo(&versionILOffset);
+                if (ppi->GetTier0EntryPoint() == tier0EntryAddr && versionILOffset == ilOffset)
+                {
+                    osrMethodCode = itr->GetNativeCode();
+                    break;
+                }
+            }
+        }
+
+        ppInfo->m_osrMethodCode = osrMethodCode;
+    }
+
+    LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_ResumeOSR: patchpoint 0x%p TRANSITION to ip 0x%p\n", ip, osrMethodCode));
+    _ASSERTE(osrMethodCode != NULL);
+
+    // Install new entry point as IP
+    SetIP(pFrameContext, osrMethodCode);
+
+    // This method doesn't return normally so we have to manually restore things.
+    ::SetLastError(dwLastError);
+
+    // Transition!
+    ClrRestoreNonvolatileContext(pFrameContext);
 }
 
 // Jit helper invoked at a partial compilation patchpoint.

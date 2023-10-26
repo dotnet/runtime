@@ -519,7 +519,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
         }
 
-        // Temporary hack since these functions have to be recognizes as async2
+        // Temporary hack since these functions have to be recognized as async2
         // calls in JIT generated state machines only.
         if (compIsAsync2StateMachine() &&
             ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync) ||
@@ -2595,6 +2595,17 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines)
     {
         return gtNewIconNode(JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0 ? 1 : 0);
+    }
+
+    if ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync) ||
+        (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync))
+    {
+        // These are marked intrinsics simply to mark the call node as async,
+        // which the caller will do. Make sure we keep pIntrinsicName assigned
+        // (it would be overridden if we left this up to the rest of this
+        // function).
+        *pIntrinsicName = ni;
+        return nullptr;
     }
 
     bool betterToExpand = false;
@@ -9024,7 +9035,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         }
                         else if (strcmp(methodName, "UnsafeAwaitAwaiterFromRuntimeAsync") == 0)
                         {
-                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync;
+                            result =
+                                NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync;
                         }
                         else if (strcmp(methodName, "SuspendAsync2") == 0)
                         {
@@ -9032,7 +9044,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         }
                         else if (strcmp(methodName, "get_RuntimeAsyncViaJitGeneratedStateMachines") == 0)
                         {
-                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines;
+                            result =
+                                NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines;
                         }
                     }
                     else if (strcmp(className, "Unsafe") == 0)

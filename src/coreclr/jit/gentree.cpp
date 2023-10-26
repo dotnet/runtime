@@ -8096,7 +8096,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtRetClsHnd       = nullptr;
     node->gtControlExpr     = nullptr;
     node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
-    node->gtIsAsyncCall = false;
+    node->gtIsAsyncCall     = false;
     node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
@@ -9757,8 +9757,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     }
 
     copy->gtIsAsyncCall = tree->gtIsAsyncCall;
-    copy->gtCallType   = tree->gtCallType;
-    copy->gtReturnType = tree->gtReturnType;
+    copy->gtCallType    = tree->gtCallType;
+    copy->gtReturnType  = tree->gtReturnType;
 
 #if FEATURE_MULTIREG_RET
     copy->gtReturnTypeDesc = tree->gtReturnTypeDesc;
