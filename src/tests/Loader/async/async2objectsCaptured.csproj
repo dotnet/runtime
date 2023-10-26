@@ -3,6 +3,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="runtimetask-asyncfibonacci-without-yields.il" />
+    <Compile Include="async2objectsCaptured.cs" />
   </ItemGroup>
 </Project>

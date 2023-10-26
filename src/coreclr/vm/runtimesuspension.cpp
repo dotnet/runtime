@@ -626,7 +626,7 @@ void IterateTaskletsForGC(promote_func* pCallback, ScanContext* sc)
             pCallback((PTR_PTR_Object)(pLogicalRSP + pStackDataInfo->ObjectRefOffsets[iRef]), sc, 0);
         }
         
-        for (iRef = 0; iRef < pStackDataInfo->cObjectRefs; iRef++)
+        for (iRef = 0; iRef < pStackDataInfo->cByRefs; iRef++)
         {
             int32_t offset = pStackDataInfo->ByRefOffsets[iRef];
             uint32_t flags = GC_CALL_INTERIOR;
