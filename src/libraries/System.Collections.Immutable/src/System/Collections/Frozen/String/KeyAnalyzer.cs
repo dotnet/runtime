@@ -120,6 +120,8 @@ namespace System.Collections.Frozen
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCase = true;
 
+            bool ignoreCaseForEquals = ignoreCase;
+
             // If we're case-sensitive, it doesn't matter if the strings are ASCII or not.
             // But if we're case-insensitive, we can switch to a faster comparer if all the
             // substrings are ASCII, so we check each.
@@ -160,7 +162,7 @@ namespace System.Collections.Frozen
             }
 
             // Return the analysis results.
-            return new AnalysisResults(ignoreCase, allAsciiIfIgnoreCase, index, count, minLength, maxLength);
+            return new AnalysisResults(ignoreCase, ignoreCaseForEquals, allAsciiIfIgnoreCase, index, count, minLength, maxLength);
         }
 
         private delegate ReadOnlySpan<char> GetSpan(string s, int index, int count);
@@ -243,9 +245,10 @@ namespace System.Collections.Frozen
 
         internal readonly struct AnalysisResults
         {
-            public AnalysisResults(bool ignoreCase, bool allAsciiIfIgnoreCase, int hashIndex, int hashCount, int minLength, int maxLength)
+            public AnalysisResults(bool ignoreCaseForHash, bool ignoreCaseForEquals, bool allAsciiIfIgnoreCase, int hashIndex, int hashCount, int minLength, int maxLength)
             {
-                IgnoreCase = ignoreCase;
+                IgnoreCaseForHash = ignoreCaseForHash;
+                IgnoreCaseForEquals = ignoreCaseForEquals;
                 AllAsciiIfIgnoreCase = allAsciiIfIgnoreCase;
                 HashIndex = hashIndex;
                 HashCount = hashCount;
@@ -253,7 +256,8 @@ namespace System.Collections.Frozen
                 MaximumLengthDiff = maxLength - minLength;
             }
 
-            public bool IgnoreCase { get; }
+            public bool IgnoreCaseForHash { get; }
+            public bool IgnoreCaseForEquals { get; }
             public bool AllAsciiIfIgnoreCase { get; }
             public int HashIndex { get; }
             public int HashCount { get; }

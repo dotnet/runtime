@@ -197,8 +197,8 @@ namespace System.Collections.Frozen.Tests
                 {
                     foreach (KeyValuePair<TKey, TValue> pair in source)
                     {
-                        var keyUpper = (TKey)(object)((string)(object)pair.Key).ToUpper();
-                        var isValidTest = frozen.Comparer.Equals(pair.Key, keyUpper);
+                        TKey keyUpper = (TKey)(object)((string)(object)pair.Key).ToUpper();
+                        bool isValidTest = frozen.Comparer.Equals(pair.Key, keyUpper);
                         if (isValidTest)
                         {
                             Assert.Equal(pair.Value, frozen.GetValueRefOrNullRef(keyUpper));
@@ -293,8 +293,8 @@ namespace System.Collections.Frozen.Tests
                 {
                     foreach (KeyValuePair<TKey, TValue> pair in source)
                     {
-                        var keyUpper = (TKey)(object)((string)(object)pair.Key).ToUpper();
-                        var isValidTest = frozen.Comparer.Equals(pair.Key, keyUpper);
+                        TKey keyUpper = (TKey)(object)((string)(object)pair.Key).ToUpper();
+                        bool isValidTest = frozen.Comparer.Equals(pair.Key, keyUpper);
                         if (isValidTest)
                         {
                             Assert.True(frozen.Contains(keyUpper));
