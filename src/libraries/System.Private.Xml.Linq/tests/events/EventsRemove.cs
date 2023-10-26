@@ -19,7 +19,6 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XComment("Comment") }, 0 },
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, 1 }
         };
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [Theory, MemberData(nameof(ExecuteXDocumentVariationParams))]
         public void ExecuteXDocumentVariation(XNode[] content, int index)
         {
@@ -51,8 +50,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, 1 },
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, 2 },
             new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), 50 }
-        };
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        };        
         [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XNode[] content, int index)
         {
@@ -80,8 +78,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XAttribute[] { new XAttribute("xxx", "yyy"), new XAttribute("a", "aa") }, 1 },
             new object[] { new XAttribute[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") }, 0 },
             new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray(), 10 }
-        };
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        };        
         [Theory, MemberData(nameof(ExecuteXAttributeVariationParams))]
         public void ExecuteXAttributeVariation(XAttribute[] content, int index)
         {
@@ -148,8 +145,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 Assert.Equal("text1text0text2", elem.Value);
             }
         }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        
         [Fact]
         public void XElementWorkOnTextNodes3()
         {
@@ -175,8 +171,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 Assert.Equal("text1text0text2", elem.Value);
             }
         }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        
         [Fact]
         public void XElementWorkOnTextNodes4()
         {
@@ -196,8 +191,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 Assert.Equal("text2text0text1", elem.Value);
             }
         }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        
         [Fact]
         public void XAttributeRemoveOneByOne()
         {
@@ -223,8 +217,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
             }
         }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        
         [Fact]
         public void XElementRemoveOneByOne()
         {
@@ -250,8 +243,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
             }
         }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        
         [Fact]
         public void XAttributeRemoveSeq()
         {
@@ -274,8 +266,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
             }
         }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        
         [Fact]
         public void XElementRemoveSeq()
         {
@@ -298,8 +289,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
             }
         }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        
         [Fact]
         public void XElementParentedXNode()
         {
@@ -320,8 +310,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             Assert.Throws<InvalidOperationException>(() => { child.Remove(); });
             element.Verify();
         }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        
         [Fact]
         public void XElementChangeAttributesParentInThePreEventHandler()
         {
@@ -380,8 +369,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XComment("Comment") } },
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") } },
             new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray() }
-        };
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        };        
         [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XNode[] content)
         {
@@ -496,8 +484,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") } },
             new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray() },
             new object[] { new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XElement("parent", new XElement("child", "child text")) } }
-        };
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94039", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        };        
         [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XObject[] content)
         {
