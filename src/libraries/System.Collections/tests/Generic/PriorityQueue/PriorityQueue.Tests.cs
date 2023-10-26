@@ -173,10 +173,10 @@ namespace System.Collections.Tests
             PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
             queue.EnqueueRange([("value0", 0), ("value1", 1), ("value2", 2)]);
 
-
             Assert.True(queue.Remove("value1", out string removedElement, out int removedPriority));
             Assert.Equal("value1", removedElement);
             Assert.Equal(1, removedPriority);
+            Assert.Equal(2, queue.Count);
         }
 
         [Fact]
@@ -188,6 +188,19 @@ namespace System.Collections.Tests
             Assert.False(queue.Remove("value4", out string removedElement, out int removedPriority));
             Assert.Null(removedElement);
             Assert.Equal(0, removedPriority);
+            Assert.Equal(3, queue.Count);
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_Remove_DuplicateElement()
+        {
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
+            queue.EnqueueRange([("value0", 0), ("value1", 1), ("value0", 2)]);
+
+            Assert.True(queue.Remove("value0", out string removedElement, out int removedPriority));
+            Assert.Equal("value0", removedElement);
+            Assert.True(removedPriority is 0 or 2);
+            Assert.Equal(2, queue.Count);
         }
 
         [Fact]
@@ -200,6 +213,7 @@ namespace System.Collections.Tests
             Assert.True(queue.Remove("someOtherValue1", out string removedElement, out int removedPriority, equalityComparer));
             Assert.Equal("value1", removedElement);
             Assert.Equal(1, removedPriority);
+            Assert.Equal(2, queue.Count);
         }
 
         [Fact]
