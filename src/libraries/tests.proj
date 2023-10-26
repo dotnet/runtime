@@ -385,7 +385,6 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/74413 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/91538 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.ThreadPool\tests\System.Threading.ThreadPool.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Packaging\tests\System.IO.Packaging.Tests.csproj" />
@@ -397,8 +396,6 @@
     <!-- https://github.com/dotnet/runtime/issues/91593 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/94047 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO\tests\System.IO.Tests.csproj" />
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->
