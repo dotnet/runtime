@@ -186,4 +186,13 @@
   <data name="InvalidOperation_ShouldNotHaveMethodBody" xml:space="preserve">
     <value>Method body should not exist.</value>
   </data>
+  <data name="Argument_UnmatchedMethodForLocal" xml:space="preserve">
+    <value>Local passed in does not belong to this ILGenerator.</value>
+  </data>
+  <data name="Argument_InvalidLabel" xml:space="preserve">
+    <value>Invalid Label.</value>
+  </data>
+  <data name="Argument_MustBeSwitchOpCode" xml:space="preserve">
+    <value>Only 'OpCode.Switch' can be used.</value>
+  </data>
 </root>

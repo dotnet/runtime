@@ -8,11 +8,11 @@
     "dotnet": "8.0.100-rtm.23506.1"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "9.0.0-beta.23518.2",
-    "Microsoft.DotNet.Helix.Sdk": "9.0.0-beta.23518.2",
-    "Microsoft.DotNet.SharedFramework.Sdk": "9.0.0-beta.23518.2",
+    "Microsoft.DotNet.Arcade.Sdk": "9.0.0-beta.23527.1",
+    "Microsoft.DotNet.Helix.Sdk": "9.0.0-beta.23527.1",
+    "Microsoft.DotNet.SharedFramework.Sdk": "9.0.0-beta.23527.1",
     "Microsoft.Build.NoTargets": "3.7.0",
     "Microsoft.Build.Traversal": "3.4.0",
-    "Microsoft.NET.Sdk.IL": "9.0.0-alpha.1.23515.3"
+    "Microsoft.NET.Sdk.IL": "9.0.0-alpha.1.23523.1"
   }
 }

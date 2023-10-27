@@ -3221,11 +3221,6 @@ public:
     bool fgSafeBasicBlockCreation;
 #endif
 
-    BasicBlock* bbNewBasicBlock();
-    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
-    BasicBlock* bbNewBasicBlock(BBswtDesc* jumpSwt);
-    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind, unsigned jumpOffs);
-
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3735,12 +3730,12 @@ public:
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler* impInlineRoot();
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     unsigned __int64 getInlineCycleCount()
     {
         return m_compCycles;
     }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     bool fgNoStructPromotion;      // Set to TRUE to turn off struct promotion for this method.
     bool fgNoStructParamPromotion; // Set to TRUE to turn off struct promotion for parameters this method.
@@ -3786,14 +3781,16 @@ private:
     {
         PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
         PREFIX_TAILCALL_IMPLICIT =
-            0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
-        PREFIX_TAILCALL_STRESS =
-            0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
-        PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
-        PREFIX_VOLATILE    = 0x00001000,
-        PREFIX_UNALIGNED   = 0x00010000,
-        PREFIX_CONSTRAINED = 0x00100000,
-        PREFIX_READONLY    = 0x01000000
+            0x00000002, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+        PREFIX_TAILCALL    = PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT,
+        PREFIX_VOLATILE    = 0x00000004,
+        PREFIX_UNALIGNED   = 0x00000008,
+        PREFIX_CONSTRAINED = 0x00000010,
+        PREFIX_READONLY    = 0x00000020,
+
+#ifdef DEBUG
+        PREFIX_TAILCALL_STRESS = 0x00000040, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+#endif
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -4702,6 +4699,8 @@ public:
 
     bool fgGlobalMorph; // indicates if we are during the global morphing phase
                         // since fgMorphTree can be called from several places
+
+    bool fgGlobalMorphDone;
 
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
@@ -5663,7 +5662,7 @@ public:
     void fgDebugCheckLoopTable();
     void fgDebugCheckSsa();
 
-    void fgDebugCheckFlags(GenTree* tree);
+    void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
@@ -5713,6 +5712,10 @@ public:
                                 fgWalkPostFn* visitor,
                                 void*         pCallBackData = nullptr,
                                 bool          computeStack  = false);
+
+#ifdef DEBUG
+    void fgInvalidateBBLookup();
+#endif // DEBUG
 
     /**************************************************************************
      *                          PROTECTED
@@ -10041,12 +10044,12 @@ public:
 
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
         // Method hash is logically const, but computed
         // on first demand.
         mutable unsigned compMethodHashPrivate;
         unsigned         compMethodHash() const;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
         // things for pseudorandom nop insertion
@@ -10349,7 +10352,7 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     bool compHasSplitParam;
 #endif
 
@@ -10810,14 +10813,14 @@ public:
 private:
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // These variables are associated with maintaining SQM data about compile time.
     unsigned __int64 m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
                                                   // in the current compilation.
     unsigned __int64 m_compCycles;                // Net cycle count for current compilation
     DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
                                           // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG) || defined(INLINE_DATA)
+#endif                                    // defined(DEBUG)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause

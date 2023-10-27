@@ -4959,8 +4959,12 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     GetEmitter()->emitIns_R_S(INS_ld, EA_PTRSIZE, regGSValue, compiler->lvaGSSecurityCookie, 0);
 
     // Compare with the GC cookie constant
-    Compiler::AddCodeDsc* codeDsc = compiler->fgFindExcptnTarget(SpecialCodeKind::SCK_FAIL_FAST, 0);
-    GetEmitter()->emitIns_J_cond_la(INS_bne, codeDsc->acdDstBlk, regGSConst, regGSValue);
+    BasicBlock* gsCheckBlk = genCreateTempLabel();
+    GetEmitter()->emitIns_J_cond_la(INS_beq, gsCheckBlk, regGSConst, regGSValue);
+
+    // regGSConst and regGSValue aren't needed anymore, we can use them for helper call
+    genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
+    genDefineTempLabel(gsCheckBlk);
 }
 
 //---------------------------------------------------------------------
@@ -6908,10 +6912,12 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
     // Now we can actually use those slot ID's to declare live ranges.
     gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_DO_WORK, &callCnt);
 
+#ifdef FEATURE_REMAP_FUNCTION
     if (compiler->opts.compDbgEnC)
     {
         NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
     }
+#endif // FEATURE_REMAP_FUNCTION
 
     if (compiler->opts.IsReversePInvoke())
     {

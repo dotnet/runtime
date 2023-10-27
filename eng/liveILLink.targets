@@ -45,7 +45,7 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       OutputItemType="Analyzer"
-                      SetConfiguration="Configuaration=$(ToolsConfiguration)" />
+                      SetConfiguration="Configuration=$(ToolsConfiguration)" />
   </ItemGroup>
 
 </Project>
