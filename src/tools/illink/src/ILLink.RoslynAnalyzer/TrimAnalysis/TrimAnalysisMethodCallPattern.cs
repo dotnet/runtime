@@ -70,13 +70,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, diagnosticContext, default, out var _);
 			}
 
-            foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
-            {
-                if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, CalledMethod, OwningSymbol, context, out Diagnostic? diag))
-                    diagnosticContext.AddDiagnostic(diag);
-            }
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
+			{
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, CalledMethod, OwningSymbol, context, out Diagnostic? diag))
+					diagnosticContext.AddDiagnostic(diag);
+			}
 
-            return diagnosticContext.Diagnostics;
+			return diagnosticContext.Diagnostics;
 		}
 	}
 }
