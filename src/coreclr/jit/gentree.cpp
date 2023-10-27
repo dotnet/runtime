@@ -6957,9 +6957,14 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_CALL:
             assert(!"Unexpected GT_CALL in OperExceptions");
-
             return ExceptionSetFlags::All;
 
+        case GT_LOCKADD:
+        case GT_XAND:
+        case GT_XORR:
+        case GT_XADD:
+        case GT_XCHG:
+        case GT_CMPXCHG:
         case GT_IND:
         case GT_STOREIND:
         case GT_BLK:
@@ -7019,7 +7024,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            assert(!OperMayOverflow() && (!OperIsIndirOrArrMetaData() || OperIsAtomicZeroDiffQuirk()));
+            assert(!OperMayOverflow() && !OperIsIndirOrArrMetaData());
             return ExceptionSetFlags::None;
     }
 }
@@ -8453,7 +8458,6 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
     GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, data, layout);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
-
     gtInitializeStoreNode(store, data);
 
     return store;
@@ -8478,7 +8482,6 @@ GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenT
     GenTreeStoreInd* store = new (this, GT_STOREIND) GenTreeStoreInd(type, addr, data);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
-
     gtInitializeStoreNode(store, data);
 
     return store;
@@ -8543,7 +8546,7 @@ GenTree* Compiler::gtNewStoreValueNode(
 GenTree* Compiler::gtNewAtomicNode(genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand)
 {
     assert(GenTree::OperIsAtomicOp(oper) && ((oper == GT_CMPXCHG) == (comparand != nullptr)));
-    GenTree* node;
+    GenTreeIndir* node;
     if (comparand != nullptr)
     {
         node = new (this, GT_CMPXCHG) GenTreeCmpXchg(type, addr, value, comparand);
@@ -8554,8 +8557,9 @@ GenTree* Compiler::gtNewAtomicNode(genTreeOps oper, var_types type, GenTree* add
         node = new (this, oper) GenTreeIndir(oper, type, addr, value);
     }
 
-    // All atomics are opaque global stores.
-    node->AddAllEffectsFlags(GTF_ASG | GTF_GLOB_REF);
+    node->AddAllEffectsFlags(GTF_ASG); // All atomics are opaque global stores.
+    gtInitializeIndirNode(node, GTF_EMPTY);
+
     return node;
 }
 
@@ -10651,12 +10655,9 @@ bool GenTree::Precedes(GenTree* other)
 // Arguments:
 //    comp  - compiler instance
 //
-// Remarks:
-//    This should only be used for reads.
-//
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrMetaData() && OperIsSimple());
+    assert(OperIsIndirOrArrMetaData() && (OperIsSimple() || OperIs(GT_CMPXCHG)));
 
     if (IndirMayFault(comp))
     {
@@ -10672,6 +10673,10 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     if (OperIsBinary())
     {
         gtFlags |= gtGetOp2()->gtFlags & GTF_EXCEPT;
+    }
+    if (OperIs(GT_CMPXCHG))
+    {
+        gtFlags |= AsCmpXchg()->Comparand()->gtFlags & GTF_EXCEPT;
     }
 }
 

@@ -181,6 +181,29 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact]
+        public void VerifyFrameworkDescriptionContainsCorrectVersion()
+        {
+            var frameworkDescription = RuntimeInformation.FrameworkDescription;
+            var version = frameworkDescription.Substring(".NET".Length).Trim(); // remove ".NET" prefix
+
+            if (string.IsNullOrEmpty(version))
+                return;
+
+            Assert.DoesNotContain("+", version); // no git hash
+
+#if STABILIZE_PACKAGE_VERSION
+            // a stabilized version looks like 8.0.0
+            Assert.DoesNotContain("-", version);
+            Assert.True(Version.TryParse(version, out Version _));
+#else
+            // a non-stabilized version looks like 8.0.0-preview.5.23280.8 or 8.0.0-dev
+            Assert.Contains("-", version);
+            var versionNumber = version.Substring(0, version.IndexOf("-"));
+            Assert.True(Version.TryParse(versionNumber, out Version _));
+#endif
+        }
+
+        [Fact]
         public void VerifyOSDescription()
         {
             Assert.NotNull(RuntimeInformation.OSDescription);
