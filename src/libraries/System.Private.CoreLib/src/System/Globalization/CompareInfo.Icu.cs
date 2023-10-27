@@ -910,8 +910,8 @@ namespace System.Globalization
             }
         }
 
-        private static ReadOnlySpan<bool> HighCharTable => new bool[0x80]
-        {
+        private static ReadOnlySpan<bool> HighCharTable => // 0x80
+        [
             true, /* 0x0, 0x0 */
             true, /* 0x1, .*/
             true, /* 0x2, .*/
@@ -1040,6 +1040,6 @@ namespace System.Globalization
             false, /*0x7D, }*/
             false, /*0x7E, ~*/
             true, /*0x7F, */
-        };
+        ];
     }
 }

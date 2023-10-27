@@ -31,7 +31,6 @@ internal class Program
         TestCctorCycle.Run();
         TestReferenceTypeAllocation.Run();
         TestReferenceTypeWithGCPointerAllocation.Run();
-        TestReferenceTypeWithReadonlyNullGCPointerAllocation.Run();
         TestRelationalOperators.Run();
         TestTryFinally.Run();
         TestTryCatch.Run();
@@ -43,6 +42,7 @@ internal class Program
         TestInitFromOtherClassDouble.Run();
         TestDelegateToOtherClass.Run();
         TestLotsOfBackwardsBranches.Run();
+        TestSwitch.Run();
         TestDrawCircle.Run();
         TestValueTypeDup.Run();
         TestFunctionPointers.Run();
@@ -51,11 +51,14 @@ internal class Program
         TestInstanceDelegate.Run();
         TestStringFields.Run();
         TestSharedCode.Run();
+        TestSpan.Run();
         TestReadOnlySpan.Run();
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
+        TestIsValueType.Run();
         TestIndirectLoads.Run();
+        TestInitBlock.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -427,27 +430,6 @@ class TestReferenceTypeWithGCPointerAllocation
     }
 }
 
-class TestReferenceTypeWithReadonlyNullGCPointerAllocation
-{
-    class ReferenceType
-    {
-        public readonly string StringValue;
-
-        public ReferenceType(string stringvalue)
-        {
-            StringValue = stringvalue;
-        }
-    }
-
-    static ReferenceType s_referenceType = new ReferenceType(null);
-
-    public static void Run()
-    {
-        Assert.IsPreinitialized(typeof(TestReferenceTypeWithReadonlyNullGCPointerAllocation));
-        Assert.AreSame(null, s_referenceType.StringValue);
-    }
-}
-
 static class TestRelationalOperators
 {
     static int s_zeroInt = 0;
@@ -804,6 +786,41 @@ class TestLotsOfBackwardsBranches
     }
 }
 
+class TestSwitch
+{
+    class Switcher
+    {
+        public static int CaseMinus1 = Switch(-1);
+        public static int Case0 = Switch(0);
+        public static int Case6 = Switch(6);
+        public static int Case100 = Switch(100);
+
+        private static int Switch(int x)
+        {
+            switch (x)
+            {
+                case 0: return 100;
+                case 1: return 200;
+                case 2: return 300;
+                case 3: return 400;
+                case 4: return 500;
+                case 5: return 600;
+                case 6: return 700;
+                default: return 100000;
+            }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Switcher));
+        Assert.AreEqual(Switcher.CaseMinus1, 100000);
+        Assert.AreEqual(Switcher.Case0, 100);
+        Assert.AreEqual(Switcher.Case6, 700);
+        Assert.AreEqual(Switcher.Case100, 100000);
+    }
+}
+
 class TestDrawCircle
 {
     static class CircleHolder
@@ -1054,6 +1071,41 @@ class TestSharedCode
     }
 }
 
+class TestSpan
+{
+    class StackAlloc
+    {
+        public static byte FirstByte;
+        public static byte LastByte;
+        public static char FirstChar;
+        public static char LastChar;
+
+        static StackAlloc()
+        {
+            Span<byte> s1 = stackalloc byte[8];
+            s1.Slice(0, 1)[0] = 42;
+            s1.Slice(s1.Length - 1, 1)[0] = 100;
+            FirstByte = s1[0];
+            LastByte = s1[7];
+
+            Span<char> s2 = stackalloc char[8];
+            s2.Slice(0, 1)[0] = 'H';
+            s2.Slice(s2.Length - 1, 1)[0] = '!';
+            FirstChar = s2[0];
+            LastChar = s2[7];
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(StackAlloc));
+        Assert.AreEqual(42, StackAlloc.FirstByte);
+        Assert.AreEqual(100, StackAlloc.LastByte);
+        Assert.AreEqual('H', StackAlloc.FirstChar);
+        Assert.AreEqual('!', StackAlloc.LastChar);
+    }
+}
+
 class TestReadOnlySpan
 {
     class SimpleReadOnlySpanAccess
@@ -1236,6 +1288,24 @@ class TestTypeHandles
     }
 }
 
+class TestIsValueType
+{
+    class IsValueTypeTests
+    {
+        public static bool IntIsValueType = typeof(int).IsValueType;
+        public static bool CharStarIsValueType = typeof(char*).IsValueType;
+        public static bool ObjectIsValueType = typeof(object).IsValueType;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(IsValueTypeTests));
+        Assert.AreEqual(true, IsValueTypeTests.IntIsValueType);
+        Assert.AreEqual(false, IsValueTypeTests.CharStarIsValueType);
+        Assert.AreEqual(false, IsValueTypeTests.ObjectIsValueType);
+    }
+}
+
 class TestIndirectLoads
 {
     static unsafe U Read<T, U>(T val) where T : unmanaged where U : unmanaged
@@ -1256,6 +1326,42 @@ class TestIndirectLoads
         Assert.AreEqual(-1, LdindTester.Short);
         Assert.AreEqual(-1, LdindTester.Int);
         Assert.AreEqual(-1, LdindTester.Long);
+    }
+}
+
+class TestInitBlock
+{
+    class Simple
+    {
+        public static byte Value;
+
+        static Simple()
+        {
+            Value = 123;
+            Unsafe.InitBlockUnaligned(ref Value, 42, 1);
+        }
+    }
+
+    class Overrun
+    {
+        public static byte Value;
+        public static byte Pad;
+
+        static Overrun()
+        {
+            Value = 123;
+            Unsafe.InitBlockUnaligned(ref Value, 42, 2);
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Simple));
+        Assert.AreEqual(42, Simple.Value);
+
+        Assert.IsLazyInitialized(typeof(Overrun));
+        Assert.AreEqual(42, Overrun.Value);
+        Assert.AreEqual(42, Overrun.Pad);
     }
 }
 

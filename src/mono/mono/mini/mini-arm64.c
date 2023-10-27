@@ -26,12 +26,14 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-hwcap.h>
+#include <mono/utils/mono-bitutils.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal-shared.h>
 #include "llvm-intrinsics-types.h"
 
 #include "interp/interp.h"
+
 
 // The following defines are here to support the inclusion of simd-arm64.h
 #define EXPAND(x) x
@@ -507,24 +509,39 @@ emit_imm (guint8 *code, int dreg, int imm)
 static guint8*
 emit_imm64 (guint8 *code, int dreg, guint64 imm)
 {
-	if (imm == 0) {
-		arm_movzx (code, dreg, 0, 0);
-	} else {
-		gboolean is_inited = FALSE;
+	// Determine if there is more advantage to using movn or movz for initialization.
+	int num0 = 0, num1 = 0;
+	for (int idx = 0; idx < 64; idx+=16) {
+		int w = (imm >> idx) & 0xffff;
+		if (w == 0)
+			num0++;
+		else if (w == 0xffff)
+			num1++;
+	}
 
-		for (int idx = 0; idx < 64; idx += 16) {
-			int w = (imm >> idx) & 0xffff;
+	gboolean is_negated = num1 > num0;
+	gboolean is_inited = FALSE;
 
-			if (w) {
-				if (is_inited) {
-					arm_movkx (code, dreg, w, idx);
-				} else {
-					arm_movzx (code, dreg, w, idx);
-					is_inited = TRUE;
-				}
-			}
+	for (int idx = 0; idx < 64; idx+=16) {
+		int w = (imm >> idx) & 0xffff;
+		if (!is_inited && is_negated && w != 0xffff) {
+			arm_movnx (code, dreg, (~w) & 0xffff, idx);
+			is_inited = TRUE;
+		} else if (!is_inited && !is_negated && w != 0x0) {
+			arm_movzx (code, dreg, w, idx);
+			is_inited = TRUE;
+		} else if (is_inited && ((is_negated && w != 0xffff) || (!is_negated && w != 0x0))) {
+			arm_movkx (code, dreg, w, idx);
 		}
 	}
+
+	if (!is_inited) {
+		if (is_negated)
+			arm_movnx (code, dreg, 0, 0);
+		else	
+			arm_movzx (code, dreg, 0, 0);
+	}
+
 	return code;
 }
 
@@ -620,12 +637,60 @@ emit_subx_sp_imm (guint8 *code, int imm)
 	return code;
 }
 
+static gboolean
+encode_arm64_logical_imm (guint64 imm, gboolean islong, int* pn, int* pimms, int* pimmr)
+{
+	if (imm == 0)
+		return FALSE;
+
+	// We recongnize the pattern 0*1+0* for 32- and 64-bit immediates.
+	// TODO: expand to full specification
+	int lsb_zero, band_one, msb_zero;
+	if (islong) {
+		lsb_zero = mono_tzcnt64 (imm);
+		msb_zero = mono_lzcnt64 (imm);
+		band_one = 64 - lsb_zero - msb_zero;
+
+		if (band_one == 0 || band_one == 64) 
+			return FALSE;
+	} else {
+		lsb_zero = mono_tzcnt32 ((guint32)imm);
+		msb_zero = mono_lzcnt32 ((guint32)imm);
+		band_one = 32 - lsb_zero - msb_zero;
+
+		if (band_one == 0 || band_one == 32) 
+			return FALSE;
+	}
+
+	guint64 expected_imm = ((1 << band_one) - 1) << lsb_zero;
+	if(imm != expected_imm)
+		return FALSE;
+
+	int imms = band_one - 1;
+	int immr = lsb_zero == 0 ? 0 : (msb_zero + band_one);
+	int n = islong ? 1 : 0;
+
+	g_assert (imms >= 0 && imms < 128);
+	g_assert (immr >= 0 && immr < 128);
+
+	if (pn) *pn = n;
+	if (pimms) *pimms = imms;
+	if (pimmr) *pimmr = immr;
+
+	return TRUE;
+}
+
+
 static WARN_UNUSED_RESULT guint8*
 emit_andw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_andw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_andw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_andw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -633,9 +698,13 @@ emit_andw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_andx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_andx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_andx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_andx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -643,9 +712,13 @@ emit_andx_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_orrw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_orrw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_orrw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_orrw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -653,9 +726,13 @@ emit_orrw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_orrx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_orrx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_orrx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_orrx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -663,9 +740,13 @@ emit_orrx_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_eorw_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_eorw (code, dreg, sreg, ARMREG_LR);
+	int imms, immr;
+	if (encode_arm64_logical_imm (imm, FALSE, NULL, &imms, &immr)) {
+		arm_eorw_imm (code, dreg, sreg, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_eorw (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -673,9 +754,13 @@ emit_eorw_imm (guint8 *code, int dreg, int sreg, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_eorx_imm (guint8 *code, int dreg, int sreg, int imm)
 {
-	// FIXME:
-	code = emit_imm (code, ARMREG_LR, imm);
-	arm_eorx (code, dreg, sreg, ARMREG_LR);
+	int n, imms, immr;
+	if (encode_arm64_logical_imm (imm, TRUE, &n, &imms, &immr)) {
+		arm_eorx_imm (code, dreg, sreg, n, immr, imms);
+	} else {
+		code = emit_imm (code, ARMREG_LR, imm);
+		arm_eorx (code, dreg, sreg, ARMREG_LR);
+	}
 
 	return code;
 }
@@ -2225,6 +2310,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		switch (t->type) {
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_I8:
@@ -2321,6 +2407,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		*(gpointer*)ret = (gpointer)res;
 		break;
 	case MONO_TYPE_I1:
@@ -3932,14 +4019,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_XZERO:
-			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
-				arm_neon_eor_8b (code, dreg, dreg, dreg);
-			else
-				arm_neon_eor_16b (code, dreg, dreg, dreg);
+			arm_neon_movi_b (code, get_vector_size_macro (ins), dreg, 0);
 			break;
 		case OP_XONES:
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
-			arm_neon_not_16b (code, dreg, dreg);
+			arm_neon_movi_b (code, get_vector_size_macro (ins), dreg, 0xff);
 			break;
 		case OP_XEXTRACT: 
 			code = emit_xextract (code, (ins->inst_c1 == 8) ? VREG_LOW : VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
@@ -4065,18 +4148,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
+			int idx_to = GTMREG_TO_UINT32 (ins->inst_c0) & 0xff;
+			int idx_from = GTMREG_TO_UINT32 (ins->inst_c0) >> 8;
 			if (dreg != sreg1) {
 				if (dreg != sreg2) {
 					arm_neon_mov (code, dreg, sreg1);
-					arm_neon_ins_e(code, t, dreg, sreg2, GTMREG_TO_UINT32 (ins->inst_c0), 0);
+					arm_neon_ins_e(code, t, dreg, sreg2, idx_to, idx_from);
 				} else {
 					arm_neon_mov (code, NEON_TMP_REG, sreg1);
-					arm_neon_ins_e(code, t, NEON_TMP_REG, sreg2, GTMREG_TO_UINT32 (ins->inst_c0), 0);
+					arm_neon_ins_e(code, t, NEON_TMP_REG, sreg2, idx_to, idx_from);
 					arm_neon_mov (code, dreg, NEON_TMP_REG);
 				}
 			} else {
 				g_assert (dreg != sreg2);
-				arm_neon_ins_e(code, t, dreg, sreg2, GTMREG_TO_UINT32 (ins->inst_c0), 0);
+				arm_neon_ins_e(code, t, dreg, sreg2, idx_to, idx_from);
 			}
 			break;
 		}
@@ -4133,7 +4218,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CREATE_SCALAR_INT: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			arm_neon_movi_b (code, VREG_FULL, dreg, 0);
 			arm_neon_ins_g(code, t, dreg, sreg1, 0);
 			break;
 		}
@@ -4148,7 +4233,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 			// Use a temp register for zero op, as sreg1 and dreg share the same register here
-			arm_neon_eor_16b (code, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 			arm_neon_ins_e(code, t, NEON_TMP_REG, sreg1, 0, 0);
 			arm_neon_mov (code, dreg, NEON_TMP_REG);
 			break;
@@ -4183,17 +4268,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XLOWER: {
 			if (dreg == sreg1) {
 				// clean the upper half
-				arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+				arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 				arm_neon_ins_e (code, SIZE_8, dreg, NEON_TMP_REG, 1, 0); 
 			} else {
-				arm_neon_eor (code, VREG_FULL, dreg, dreg, dreg);
+				arm_neon_movi_b (code, VREG_FULL, dreg, 0);
 				arm_neon_mov_8b (code, dreg, sreg1);
 			}
 			break;
 		}
 		case OP_XUPPER:
 			// shift in 64 zeros from the left
-			arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 			arm_neon_ext_16b (code, dreg, sreg1, NEON_TMP_REG, 8);
 			break;
 	

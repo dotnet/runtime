@@ -40,7 +40,7 @@ namespace System.Tests
                     break;
 
                 default:
-                    Assert.True(false, "Unexpected number of args passed to test");
+                    Assert.Fail("Unexpected number of args passed to test");
                     break;
             }
 

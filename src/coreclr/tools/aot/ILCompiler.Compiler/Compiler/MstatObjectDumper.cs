@@ -12,10 +12,12 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Debug = System.Diagnostics.Debug;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using AssemblyName = System.Reflection.AssemblyName;
 
@@ -24,12 +26,15 @@ namespace ILCompiler
     public class MstatObjectDumper : ObjectDumper
     {
         private const int VersionMajor = 2;
-        private const int VersionMinor = 0;
+        private const int VersionMinor = 1;
 
         private readonly string _fileName;
         private readonly MstatEmitter _emitter;
 
         private readonly InstructionEncoder _types = new InstructionEncoder(new BlobBuilder());
+        private readonly InstructionEncoder _fieldRvas = new InstructionEncoder(new BlobBuilder());
+        private readonly InstructionEncoder _frozenObjects = new InstructionEncoder(new BlobBuilder());
+        private readonly InstructionEncoder _manifestResources = new InstructionEncoder(new BlobBuilder());
 
         private readonly BlobBuilder _mangledNames = new BlobBuilder();
 
@@ -71,12 +76,69 @@ namespace ILCompiler
                 case MethodExceptionHandlingInfoNode ehInfoNode:
                     _methodEhInfo.Add(ehInfoNode.Method, objectData.Data.Length);
                     break;
+                case FieldRvaDataNode rvaDataNode:
+                    _fieldRvas.OpCode(ILOpCode.Ldtoken);
+                    _fieldRvas.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(rvaDataNode.Field));
+                    _fieldRvas.LoadConstantI4(rvaDataNode.Field.GetFieldRvaData().Length);
+                    _fieldRvas.LoadConstantI4(AppendMangledName(DependencyNodeCore<NodeFactory>.GetNodeName(node, factory)));
+                    // Breakdown of RVA data was introduced in MSTAT 2.1. Readers of 2.0 should still see it in the
+                    // global blobs section. We can remove it from there in 3.0.
+                    if (VersionMajor == 2)
+                        goto reportAsBlob;
+                case ArrayOfFrozenObjectsNode:
+                    DumpFrozenRegion(factory);
+                    // Breakdown of frozen regions was introduced in MSTAT 2.1. Readers of 2.0 should still see it in the
+                    // global blobs section. We can remove it from there in 3.0.
+                    if (VersionMajor == 2)
+                        goto reportAsBlob;
+                case ResourceDataNode resourceData:
+                    DumpResourceData(factory, resourceData);
+                    // Breakdown of resource data was introduced in MSTAT 2.1. Readers of 2.0 should still see it in the
+                    // global blobs section. We can remove it from there in 3.0.
+                    if (VersionMajor == 2)
+                        goto reportAsBlob;
                 default:
+                reportAsBlob:
                     string nodeName = GetObjectNodeName(node);
                     if (!_blobs.TryGetValue(nodeName, out int size))
                         size = 0;
                     _blobs[nodeName] = size + objectData.Data.Length;
                     break;
+            }
+        }
+
+        private void DumpFrozenRegion(NodeFactory factory)
+        {
+            Debug.Assert(_frozenObjects.Offset == 0);
+
+            foreach (FrozenObjectNode frozenObject in factory.MetadataManager.GetFrozenObjects())
+            {
+                _frozenObjects.OpCode(ILOpCode.Ldtoken);
+                _frozenObjects.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(frozenObject.ObjectType));
+                _frozenObjects.LoadConstantI4(frozenObject.Size);
+                _frozenObjects.LoadConstantI4(AppendMangledName(DependencyNodeCore<NodeFactory>.GetNodeName(frozenObject, factory)));
+
+                if (frozenObject is SerializedFrozenObjectNode serObj)
+                {
+                    _frozenObjects.OpCode(ILOpCode.Ldtoken);
+                    _frozenObjects.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(serObj.OwningType));
+                }
+                else
+                {
+                    _frozenObjects.LoadConstantI4(0);
+                }
+            }
+        }
+
+        private void DumpResourceData(NodeFactory factory, ResourceDataNode resourceData)
+        {
+            Debug.Assert(_manifestResources.Offset == 0);
+
+            foreach (ResourceIndexData resource in resourceData.GetOrCreateIndexData(factory))
+            {
+                _manifestResources.LoadConstantI4(MetadataTokens.GetToken(_emitter.GetAssemblyRef(resource.Assembly)));
+                _manifestResources.LoadString(_emitter.GetUserStringHandle(resource.ResourceName));
+                _manifestResources.LoadConstantI4(resource.Length);
             }
         }
 
@@ -110,6 +172,9 @@ namespace ILCompiler
             _emitter.AddGlobalMethod("Methods", methods, 0);
             _emitter.AddGlobalMethod("Types", _types, 0);
             _emitter.AddGlobalMethod("Blobs", blobs, 0);
+            _emitter.AddGlobalMethod("RvaFields", _fieldRvas, 0);
+            _emitter.AddGlobalMethod("FrozenObjects", _frozenObjects, 0);
+            _emitter.AddGlobalMethod("ManifestResources", _manifestResources, 0);
 
             _emitter.AddPESection(".names", _mangledNames);
 

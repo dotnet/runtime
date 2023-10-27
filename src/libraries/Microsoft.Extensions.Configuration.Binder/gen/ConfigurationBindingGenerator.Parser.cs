@@ -26,6 +26,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private readonly InterceptorInfo.Builder _interceptorInfoBuilder = new();
             private BindingHelperInfo.Builder? _helperInfoBuilder; // Init'ed with type index when registering interceptors, after creating type specs.
+            private bool _emitEnumParseMethod;
+            private bool _emitGenericParseEnum;
 
             public List<DiagnosticInfo>? Diagnostics { get; private set; }
 
@@ -45,12 +47,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ParseInvocations(invocations);
                 CreateTypeSpecs(cancellationToken);
                 RegisterInterceptors();
+                CheckIfToEmitParseEnumMethod();
 
                 return new SourceGenerationSpec
                 {
                     InterceptorInfo = _interceptorInfoBuilder.ToIncrementalValue(),
                     BindingHelperInfo = _helperInfoBuilder!.ToIncrementalValue(),
                     ConfigTypes = _createdTypeSpecs.Values.OrderBy(s => s.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
+                    EmitEnumParseMethod = _emitEnumParseMethod,
+                    EmitGenericParseEnum = _emitGenericParseEnum,
+                    EmitThrowIfNullMethod = IsThrowIfNullMethodToBeEmitted()
                 };
             }
 
@@ -583,9 +589,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
 
-                            PropertySpec spec = new(property)
+                            PropertySpec spec = new(property, propertyTypeRef)
                             {
-                                TypeRef = propertyTypeRef,
                                 ConfigurationKeyName = configKeyName
                             };
 
@@ -617,9 +622,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                         else
                         {
-                            ParameterSpec paramSpec = new ParameterSpec(parameter)
+                            ParameterSpec paramSpec = new ParameterSpec(parameter, propertySpec.TypeRef)
                             {
-                                TypeRef = propertySpec.TypeRef,
                                 ConfigurationKeyName = propertySpec.ConfigurationKeyName,
                             };
 
@@ -841,6 +845,45 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Diagnostics ??= new List<DiagnosticInfo>();
                 Diagnostics.Add(DiagnosticInfo.Create(descriptor, trimmedLocation, messageArgs));
+            }
+
+            private void CheckIfToEmitParseEnumMethod()
+            {
+                foreach (var typeSymbol in _createdTypeSpecs.Keys)
+                {
+                    if (IsEnum(typeSymbol))
+                    {
+                        _emitEnumParseMethod = true;
+                        _emitGenericParseEnum = _typeSymbols.Enum.GetMembers("Parse").Any(m => m is IMethodSymbol methodSymbol && methodSymbol.IsGenericMethod);
+                        return;
+                    }
+                }
+            }
+
+            private bool IsThrowIfNullMethodToBeEmitted()
+            {
+                if (_typeSymbols.ArgumentNullException is not null)
+                {
+                    var throwIfNullMethods = _typeSymbols.ArgumentNullException.GetMembers("ThrowIfNull");
+
+                    foreach (var throwIfNullMethod in throwIfNullMethods)
+                    {
+                        if (throwIfNullMethod is IMethodSymbol throwIfNullMethodSymbol && throwIfNullMethodSymbol.IsStatic && throwIfNullMethodSymbol.Parameters.Length == 2)
+                        {
+                            var parameters = throwIfNullMethodSymbol.Parameters;
+                            var firstParam = parameters[0];
+                            var secondParam = parameters[1];
+
+                            if (firstParam.Name == "argument" && firstParam.Type.SpecialType == SpecialType.System_Object
+                                && secondParam.Name == "paramName" && secondParam.Type.Equals(_typeSymbols.String, SymbolEqualityComparer.Default))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                return false;
             }
         }
     }

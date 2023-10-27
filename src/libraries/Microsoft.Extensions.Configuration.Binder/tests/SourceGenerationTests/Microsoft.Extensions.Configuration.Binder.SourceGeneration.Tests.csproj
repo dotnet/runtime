@@ -6,8 +6,6 @@
     <NoWarn>$(NoWarn);SYSLIB1100,SYSLIB1101</NoWarn>
     <!-- Logic not generated for unknown/unsupported type. -->
     <NoWarn>$(NoWarn);SYSLIB1103,SYSLIB1104</NoWarn>
-    <Features>$(Features);InterceptorsPreview</Features>
-    <!-- TODO: Remove InterceptorsPreview feature after 8.0 RC2 SDK is used for build -->
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
@@ -48,8 +46,8 @@
     <ProjectReference Include="..\..\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Content Include="Baselines\*.generated.txt;Baselines\ConfigurationBinder\*.generated.txt;Baselines\OptionsBuilder\*.generated.txt;Baselines\ServiceCollection\*.generated.txt">
+  <ItemGroup>
+    <Content Include="Baselines\**\*;">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 
