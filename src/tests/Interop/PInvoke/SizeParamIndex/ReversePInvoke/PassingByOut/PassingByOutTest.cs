@@ -192,7 +192,8 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try{
             RunTestByOut();

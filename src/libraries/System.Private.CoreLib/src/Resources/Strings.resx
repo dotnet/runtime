@@ -1732,9 +1732,6 @@
   <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
     <value>Larger than collection size.</value>
   </data>
-  <data name="ArgumentOutOfRange_BinaryReaderFillBuffer" xml:space="preserve">
-    <value>The number of bytes requested does not fit into BinaryReader's internal buffer.</value>
-  </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
     <value>Argument must be between {0} and {1}.</value>
   </data>

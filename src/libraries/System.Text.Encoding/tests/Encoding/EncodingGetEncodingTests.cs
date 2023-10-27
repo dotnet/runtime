@@ -123,7 +123,7 @@ namespace System.Text.Tests
             foreach (var mapping in s_codePageToWebNameMappings)
             {
                 Encoding encoding = Encoding.GetEncoding(mapping.CodePage);
-                Assert.True(string.Equals(mapping.WebName, encoding.WebName, StringComparison.OrdinalIgnoreCase));
+                Assert.Equal(mapping.WebName, encoding.WebName, StringComparer.OrdinalIgnoreCase);
             }
         }
 

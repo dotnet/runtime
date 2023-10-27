@@ -8065,7 +8065,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // TYP_BLK locals.
         // TODO-Cleanup: Can probably be removed now since TYP_BLK does not
         // exist anymore.
-        if (pComp->compMayConvertTailCallToLoop)
+        if (pComp->doesMethodHaveRecursiveTailcall())
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;

@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task ValueTypesAreInvalidAsBindInputs()
         {
             string source = """
@@ -225,7 +225,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [ActiveIssue("Work out why we aren't getting all the expected diagnostics.")]
         public async Task IssueDiagnosticsForAllOffendingCallsites()
         {

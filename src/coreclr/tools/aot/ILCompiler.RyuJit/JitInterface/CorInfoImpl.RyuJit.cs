@@ -2261,7 +2261,7 @@ namespace Internal.JitInterface
                                 }
                                 return false;
 
-                            case FrozenObjectNode or FrozenStringNode:
+                            case FrozenObjectNode:
                                 Debug.Assert(valueOffset == 0);
                                 Debug.Assert(bufferSize == targetPtrSize);
 
@@ -2315,13 +2315,7 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
-            object obj = HandleToObject(objPtr);
-            return obj switch
-            {
-                FrozenStringNode => ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
-                FrozenObjectNode frozenObj => ObjectToHandle(frozenObj.ObjectType),
-                _ => throw new NotImplementedException($"Unexpected object in getObjectType: {obj}")
-            };
+            return ObjectToHandle(((FrozenObjectNode)HandleToObject(objPtr)).ObjectType);
         }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -2334,13 +2328,7 @@ namespace Internal.JitInterface
 
         private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
         {
-            object obj = HandleToObject(objPtr);
-            return obj switch
-            {
-                FrozenStringNode => true,
-                FrozenObjectNode frozenObj => frozenObj.IsKnownImmutable,
-                _ => throw new NotImplementedException($"Unexpected object in isObjectImmutable: {obj}")
-            };
+            return ((FrozenObjectNode)HandleToObject(objPtr)).IsKnownImmutable;
         }
 
         private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
@@ -2355,13 +2343,7 @@ namespace Internal.JitInterface
 
         private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
-            object obj = HandleToObject(objHnd);
-            return obj switch
-            {
-                FrozenStringNode frozenStr => frozenStr.Data.Length,
-                FrozenObjectNode frozenObj when frozenObj.ObjectType.IsArray => frozenObj.GetArrayLength(),
-                _ => -1
-            };
+            return ((FrozenObjectNode)HandleToObject(objHnd)).ArrayLength ?? -1;
         }
 
         private bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)

@@ -45,7 +45,7 @@ namespace System.Numerics.Tensors
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
-        public static unsafe void Add(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
+        public static void Add(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
             InvokeSpanSpanIntoSpan<AddOperator>(x, y, destination);
 
         /// <summary>Computes the element-wise addition of single-precision floating-point numbers in the specified tensors.</summary>
@@ -169,20 +169,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
-        {
-            if (x.IsEmpty)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            return CosineSimilarityCore(x, y);
-        }
+        public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y) =>
+            CosineSimilarityCore(x, y);
 
         /// <summary>Computes the distance between two points, specified as non-empty, equal-length tensors of single-precision floating-point numbers, in Euclidean space.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -213,11 +201,6 @@ namespace System.Numerics.Tensors
             if (x.IsEmpty)
             {
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
             return MathF.Sqrt(Aggregate<SubtractSquaredOperator, AddOperator>(x, y));
@@ -282,15 +265,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
-        {
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            return Aggregate<MultiplyOperator, AddOperator>(x, y);
-        }
+        public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y) =>
+            Aggregate<MultiplyOperator, AddOperator>(x, y);
 
         /// <summary>Computes the element-wise result of raising <c>e</c> to the single-precision floating-point number powers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -326,41 +302,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static unsafe int IndexOfMax(ReadOnlySpan<float> x)
-        {
-            int result = -1;
-
-            if (!x.IsEmpty)
-            {
-                float max = float.NegativeInfinity;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    float current = x[i];
-
-                    if (current != max)
-                    {
-                        if (float.IsNaN(current))
-                        {
-                            return i;
-                        }
-
-                        if (max < current)
-                        {
-                            result = i;
-                            max = current;
-                        }
-                    }
-                    else if (IsNegative(max) && !IsNegative(current))
-                    {
-                        result = i;
-                        max = current;
-                    }
-                }
-            }
-
-            return result;
-        }
+        public static int IndexOfMax(ReadOnlySpan<float> x) =>
+            IndexOfMinMaxCore<IndexOfMaxOperator>(x);
 
         /// <summary>Searches for the index of the single-precision floating-point number with the largest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -376,45 +319,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static unsafe int IndexOfMaxMagnitude(ReadOnlySpan<float> x)
-        {
-            int result = -1;
-
-            if (!x.IsEmpty)
-            {
-                float max = float.NegativeInfinity;
-                float maxMag = float.NegativeInfinity;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    float current = x[i];
-                    float currentMag = Math.Abs(current);
-
-                    if (currentMag != maxMag)
-                    {
-                        if (float.IsNaN(currentMag))
-                        {
-                            return i;
-                        }
-
-                        if (maxMag < currentMag)
-                        {
-                            result = i;
-                            max = current;
-                            maxMag = currentMag;
-                        }
-                    }
-                    else if (IsNegative(max) && !IsNegative(current))
-                    {
-                        result = i;
-                        max = current;
-                        maxMag = currentMag;
-                    }
-                }
-            }
-
-            return result;
-        }
+        public static int IndexOfMaxMagnitude(ReadOnlySpan<float> x) =>
+            IndexOfMinMaxCore<IndexOfMaxMagnitudeOperator>(x);
 
         /// <summary>Searches for the index of the smallest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -429,41 +335,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static unsafe int IndexOfMin(ReadOnlySpan<float> x)
-        {
-            int result = -1;
-
-            if (!x.IsEmpty)
-            {
-                float min = float.PositiveInfinity;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    float current = x[i];
-
-                    if (current != min)
-                    {
-                        if (float.IsNaN(current))
-                        {
-                            return i;
-                        }
-
-                        if (current < min)
-                        {
-                            result = i;
-                            min = current;
-                        }
-                    }
-                    else if (IsNegative(current) && !IsNegative(min))
-                    {
-                        result = i;
-                        min = current;
-                    }
-                }
-            }
-
-            return result;
-        }
+        public static int IndexOfMin(ReadOnlySpan<float> x) =>
+            IndexOfMinMaxCore<IndexOfMinOperator>(x);
 
         /// <summary>Searches for the index of the single-precision floating-point number with the smallest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -479,45 +352,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static unsafe int IndexOfMinMagnitude(ReadOnlySpan<float> x)
-        {
-            int result = -1;
-
-            if (!x.IsEmpty)
-            {
-                float min = float.PositiveInfinity;
-                float minMag = float.PositiveInfinity;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    float current = x[i];
-                    float currentMag = Math.Abs(current);
-
-                    if (currentMag != minMag)
-                    {
-                        if (float.IsNaN(currentMag))
-                        {
-                            return i;
-                        }
-
-                        if (currentMag < minMag)
-                        {
-                            result = i;
-                            min = current;
-                            minMag = currentMag;
-                        }
-                    }
-                    else if (IsNegative(current) && !IsNegative(min))
-                    {
-                        result = i;
-                        min = current;
-                        minMag = currentMag;
-                    }
-                }
-            }
-
-            return result;
-        }
+        public static int IndexOfMinMagnitude(ReadOnlySpan<float> x) =>
+            IndexOfMinMaxCore<IndexOfMinMagnitudeOperator>(x);
 
         /// <summary>Computes the element-wise natural (base <c>e</c>) logarithm of single-precision floating-point numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -910,11 +746,6 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
             return Aggregate<SubtractOperator, MultiplyOperator>(x, y);
         }
 
@@ -944,11 +775,6 @@ namespace System.Numerics.Tensors
             if (x.IsEmpty)
             {
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
             return Aggregate<AddOperator, MultiplyOperator>(x, y);
@@ -1167,10 +993,45 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>Mask used to handle alignment elements before vectorized handling of the input.</summary>
+        /// <remarks>
+        /// Logically 16 rows of 16 uints. The Nth row should be used to handle N alignment elements at the
+        /// beginning of the input, where elements in the vector after that will be zero'd.
+        ///
+        /// There actually exists 17 rows in the table with the last row being a repeat of the first. This is
+        /// done because it allows the main algorithms to use a simplified algorithm when computing the amount
+        /// of misalignment where we always skip the first 16 elements, even if already aligned, so we don't
+        /// double process them. This allows us to avoid an additional branch.
+        /// </remarks>
+        private static ReadOnlySpan<uint> AlignmentUInt32Mask_16x16 =>
+        [
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+        ];
+
         /// <summary>Mask used to handle remaining elements after vectorized handling of the input.</summary>
         /// <remarks>
         /// Logically 16 rows of 16 uints. The Nth row should be used to handle N remaining elements at the
         /// end of the input, where elements in the vector prior to that will be zero'd.
+        ///
+        /// Much as with the AlignmentMask table, we actually have 17 rows where the last row is a repeat of
+        /// the first. Doing this allows us to avoid an additional branch and instead to always process the
+        /// last 16 elements via a conditional select instead.
         /// </remarks>
         private static ReadOnlySpan<uint> RemainderUInt32Mask_16x16 =>
         [
@@ -1190,7 +1051,7 @@ namespace System.Numerics.Tensors
             0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
             0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
             0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
         ];
     }
 }

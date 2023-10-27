@@ -495,12 +495,22 @@ namespace DebuggerTests
                     ("test.GetBoolNullable()", TBool(true)),
                     ("test.GetNull()", TBool(true)),
 
-                    ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
-                    ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
-                    ("test.GetDefaultAndRequiredParam(3, +2)", TNumber(5)),
-                    ("test.GetDefaultAndRequiredParam(3, -2)", TNumber(1)),
-                    ("test.GetDefaultAndRequiredParam(-123l, -1.1f)", TNumber("-124.1", isDecimal: true)), // long, float
-                    ("test.GetDefaultAndRequiredParam(-0.23)", TNumber("-32768.23", isDecimal: true)), // double, short
+                    ("test.SumDefaultAndRequiredParam(2)", TNumber(5)),
+                    ("test.SumDefaultAndRequiredParam(3, 2)", TNumber(5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(3, +2)", TNumber(5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(-3, -2)", TNumber(-5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(-3)", TNumber(-6)), // default: -3
+                    ("test.SumDefaultNegativeAndRequiredParamLongInts(-1l, -2l)", TNumber(-3)),
+                    ("test.SumDefaultNegativeAndRequiredParamLongInts(-1l)", TNumber(-124)), // default: -123l
+                    ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f, -1.1f)", TNumber("-2.2", isDecimal: true)),
+                    ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f)", TNumber("-4.4", isDecimal: true)), // default: -3.3f
+                    ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1, -0.2)", TNumber("-0.30000000000000004", isDecimal: true)), // expected result for doubles copied from coreclr response
+                    ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1)", TNumber("-3.3000000000000003", isDecimal: true)), // default: -3.2
+                    // https://github.com/dotnet/runtime/issues/93057
+                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-1, -120)", TNumber(-121)), // we have no way of testing it, debugger recognizes passed literals as integers and does not find the correct overload. We would need to cast to short and we don't support passing parameters with a cast.
+                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-1)", TNumber(-124)), // default: -123
+                    // ("test.GetDefaultNegativeShortInt(-123)", TNumber(-123)),
+                    ("test.GetDefaultNegativeShortInt()", TNumber(-123)), // default: -123
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
@@ -759,13 +769,32 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("f[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
-                   ("f[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
-                   ("f[aChar, \"&\", longString]", TString("9-&-longString")),
-                   ("f[f.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
-                   ("f[f.numArray[j], f.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
-                   ("f[f.numArray[f.numList[0]], f.numArray[i]]", TNumber("3")),
-                   ("f[f.numArray[f.numList[0]], f.numArray[f.numArray[i]]]", TNumber("4"))
+                   ("c[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
+                   ("c[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
+                   ("c[aChar, \"&\", longString]", TString("9-&-longString")),
+                   ("c[cc.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
+                   ("c[cc.numArray[j], cc.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
+                   ("c[cc.numArray[cc.numList[0]], cc.numArray[i]]", TNumber("3")),
+                   ("c[cc.numArray[cc.numList[0]], cc.numArray[cc.numArray[i]]]", TNumber("4"))
+                ); 
+           });
+
+        [Fact]
+        public async Task EvaluateValueTypeIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("s[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
+                   ("s[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
+                   ("s[aChar, \"&\", longString]", TString("9-&-longString")),
+                   ("s[cc.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
+                   ("s[cc.numArray[j], cc.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
+                   ("s[cc.numArray[cc.numList[0]], cc.numArray[i]]", TNumber("3")),
+                   ("s[cc.numArray[cc.numList[0]], cc.numArray[cc.numArray[i]]]", TNumber("4"))
                 ); 
            });
 

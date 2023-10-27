@@ -856,7 +856,8 @@ BasicBlock* CodeGen::genCreateTempLabel()
     compiler->fgSafeBasicBlockCreation = true;
 #endif
 
-    BasicBlock* block = compiler->bbNewBasicBlock(BBJ_NONE);
+    // Label doesn't need a jump kind
+    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
 
 #ifdef DEBUG
     compiler->fgSafeBasicBlockCreation = false;
@@ -5885,6 +5886,13 @@ void CodeGen::genFnProlog()
     if (isRoot && compiler->opts.IsOSR())
     {
         initReg = REG_IP1;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    // For LoongArch64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH;
     }
 #endif
 

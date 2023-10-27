@@ -15,7 +15,7 @@ namespace ComWrappersTests
     using TestLibrary;
     using Xunit;
 
-    class Program : IDisposable
+    public class Program : IDisposable
     {
         class TestComWrappers : ComWrappers
         {
@@ -376,7 +376,7 @@ namespace ComWrappersTests
 
             unsafe static void CallSetValue(ComWrappers wrappers)
             {
-                Assert.NotEqual(null, Test.Resurrected);
+                Assert.NotNull(Test.Resurrected);
                 IntPtr nativeInstance = wrappers.GetOrCreateComInterfaceForObject(Test.Resurrected, CreateComInterfaceFlags.None);
                 Assert.NotEqual(IntPtr.Zero, nativeInstance);
 
@@ -729,7 +729,7 @@ namespace ComWrappersTests
                     case FailureMode.ThrowException:
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
-                        Assert.True(false, "Invalid failure mode");
+                        Assert.Fail("Invalid failure mode");
                         throw new UnreachableException();
                 }
             }
@@ -743,7 +743,7 @@ namespace ComWrappersTests
                     case FailureMode.ThrowException:
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
-                        Assert.True(false, "Invalid failure mode");
+                        Assert.Fail("Invalid failure mode");
                         throw new UnreachableException();
                 }
             }

@@ -457,6 +457,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	 * on this cond var.
 	 */
 
+retry_top:
 	mono_type_initialization_lock ();
 	/* double check... */
 	if (vtable->initialized) {
@@ -506,6 +507,12 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		blocked = GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (lock->initializing_tid));
 		while ((pending_lock = (TypeInitializationLock*) g_hash_table_lookup (blocked_thread_hash, blocked))) {
 			if (mono_native_thread_id_equals (pending_lock->initializing_tid, tid)) {
+				if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE)) {
+					char* type_name = mono_type_full_name (m_class_get_byval_arg (klass));
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Detected deadlock for class .cctor for %s from '%s'", type_name, m_class_get_image (klass)->name);
+					g_free (type_name);
+				}
+
 				if (!pending_lock->done) {
 					mono_type_initialization_unlock ();
 					goto return_true;
@@ -604,9 +611,49 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	} else {
 		/* this just blocks until the initializing thread is done */
 		mono_type_init_lock (lock);
-		while (!lock->done)
-			mono_coop_cond_wait (&lock->cond, &lock->mutex);
+		if (!lock->done) {
+			int timeout_ms = 500;
+			int wait_result = mono_coop_cond_timedwait (&lock->cond, &lock->mutex, timeout_ms);
+			if (wait_result == -1) {
+				/* timed out - go around again from the beginning.  If we got here
+				 * from the "is_blocked = FALSE" case, above (another thread was
+				 * blocked on the current thread, but on a lock that was already
+				 * done but it didn't get to wake up yet), then it might still be
+				 * the case that the current thread cannot proceed even if the other
+				 * thread got to wake up - there might be a new deadlock.  We need
+				 * to re-evaluate.
+				 *
+				 * This can happen if two threads A and B need to call the cctors
+                                 * for classes X and Y but in opposite orders, and also call a cctor
+                                 * for a third class Z.  (That is thread A wants to init: X, Z, Y;
+                                 * thread B wants to init: Y, Z, X.)  In that case, if B is waiting
+                                 * for A to finish initializing Z, and A (the current thread )
+                                 * already finished Z and wants to init Y. In A, control will come
+                                 * here with "lock" being Y's lock.  But we will time out because B
+                                 * will see that A is responsible for initializing X and will also
+                                 * block.  So A is waiting for B to finish Y and B is waiting for A
+                                 * to finish X.  So the fact that A allowed B to wait for Z to
+                                 * finish didn't actually let us make progress.  Thread A must go
+                                 * around to the top once more and try to init Y - and detect that
+                                 * there is now a deadlock between X and Y.
+				 */
+				mono_type_init_unlock (lock);
+				// clean up blocked thread hash and lock refcount.
+				mono_type_initialization_lock ();
+				g_hash_table_remove (blocked_thread_hash, GUINT_TO_POINTER (tid));
+				gboolean deleted = unref_type_lock (lock);
+				if (deleted)
+					g_hash_table_remove (type_initialization_hash, vtable);
+				mono_type_initialization_unlock ();
+				goto retry_top;
+			} else if (wait_result == 0) {
+				/* Success: we were signaled that the other thread is done.  Proceed */
+			} else {
+				g_assert_not_reached ();
+			}
+		}
 		mono_type_init_unlock (lock);
+		g_assert (lock->done);
 	}
 
 	/* Do cleanup and setting vtable->initialized inside the global lock again */

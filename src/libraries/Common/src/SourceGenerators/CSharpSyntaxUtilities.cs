@@ -25,7 +25,7 @@ internal static class CSharpSyntaxUtilities
         switch (value)
         {
             case string @string:
-                return SymbolDisplay.FormatLiteral(@string, quote: true); ;
+                return SymbolDisplay.FormatLiteral(@string, quote: true);
             case char @char:
                 return SymbolDisplay.FormatLiteral(@char, quote: true);
             case double.NegativeInfinity:

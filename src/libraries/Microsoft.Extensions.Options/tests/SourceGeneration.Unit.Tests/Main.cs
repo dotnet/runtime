@@ -1813,4 +1813,48 @@ string lengthAttribute = "";
         Assert.True(emitResult.Success);
         // Console.WriteLine(emittedSource);
     }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public async Task UsingInterfaceAsPropertyTypeForLengthAttributesTests()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator(@"""
+            using System.Collections.Generic;
+
+            public class MyOptions
+            {
+                [Length(10, 20)]
+                public IList<string> P1 { get; set; }
+
+                [MinLength(4)]
+                public IList<string> P2 { get; set; }
+
+                [MaxLength(5)]
+                public IList<string> P3 { get; set; }
+
+                [Length(10, 20)]
+                public ICollection<string> P4 { get; set; }
+
+                [MinLength(4)]
+                public ICollection<string> P5 { get; set; }
+
+                [MaxLength(5)]
+                public ICollection<string> P6 { get; set; }
+            }
+
+            [OptionsValidator]
+            public partial class MyOptionsValidator : IValidateOptions<MyOptions>
+            {
+            }
+        """);
+
+        Assert.Empty(diagnostics);
+        Assert.Single(generatedSources);
+
+#if NETCOREAPP
+        string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netcore.g.cs");
+#else
+        string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netfx.g.cs");
+#endif // NETCOREAPP
+        Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
+    }
 }
