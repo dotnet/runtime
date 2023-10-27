@@ -3,7 +3,8 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CreateResponseFile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" /> 
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
@@ -211,7 +212,7 @@
 
       <_EmccCompileBitcodeRsp>$(_WasmIntermediateOutputPath)emcc-compile-bc.rsp</_EmccCompileBitcodeRsp>
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
-
+      
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
       <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
@@ -250,7 +251,7 @@
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="-emit-llvm" />
 
-      <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
+      <_EmccCFlags Include="-I&quot;%(_EmccIncludePaths.Identity)&quot;" />
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
@@ -355,7 +356,7 @@
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
 
-    <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <CreateResponseFile EmccCFlags="@(_EmccCFlags)" FilePath="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccCompileRsp)" />
     </ItemGroup>
