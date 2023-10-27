@@ -265,9 +265,23 @@ namespace ILLink.Shared.DataFlow
 						// Using predecessors in the finally. But not from outside the finally.
 						exceptionFinallyState = lattice.Top;
 						foreach (var predecessor in cfg.GetPredecessors (block)) {
-							var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState (predecessor.Block, out TValue predecessorFinallyState);
+							var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState (predecessor.Block, out TValue predecessorState);
 							Debug.Assert (isPredecessorInFinally);
-							exceptionFinallyState = lattice.Meet (exceptionFinallyState.Value, predecessorFinallyState);
+
+							// Propagate state through all finally blocks.
+							foreach (var exitedFinally in predecessor.FinallyRegions) {
+								TValue oldFinallyInputState = cfgState.GetFinallyInputState (exitedFinally);
+								TValue finallyInputState = lattice.Meet (oldFinallyInputState, predecessorState);
+
+								cfgState.SetFinallyInputState (exitedFinally, finallyInputState);
+								if (!changed && !finallyInputState.Equals (oldFinallyInputState))
+									changed = true;
+
+								TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
+								predecessorState = cfgState.Get (lastFinallyBlock).Current;
+							}
+
+							exceptionFinallyState = lattice.Meet (exceptionFinallyState.Value, predecessorState);
 						}
 
 						// For first block, also initialize it from the try or catch blocks.
