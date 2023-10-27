@@ -5820,8 +5820,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 		for (int i = 0; i < sig->param_count; i++) {
 			MonoType *arg_type = sig->params [i];
 			if (arg_type->data.klass && !strcmp (m_class_get_name (arg_type->data.klass), "SwiftSelf")) {
-				code = emit_ldrx (code, ARMREG_IP0, cfg->args[i]->inst_basereg, cfg->args[i]->inst_offset);
-				arm_movx (code, ARMREG_R20, ARMREG_IP0);
+				code = emit_ldrx (code, ARMREG_R20, cfg->args[i]->inst_basereg, cfg->args[i]->inst_offset);
 				break;
 			}
 		}
