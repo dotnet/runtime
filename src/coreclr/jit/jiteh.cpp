@@ -2012,7 +2012,7 @@ bool Compiler::fgNormalizeEHCase1()
         {
             // ...then we want to insert an empty, non-removable block outside the try to be the new first block of the
             // handler.
-            BasicBlock* newHndStart = bbNewBasicBlock(BBJ_NONE);
+            BasicBlock* newHndStart = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
             fgInsertBBbefore(handlerStart, newHndStart);
             fgAddRefPred(handlerStart, newHndStart);
 
@@ -2181,7 +2181,7 @@ bool Compiler::fgNormalizeEHCase2()
                         // We've got multiple 'try' blocks starting at the same place!
                         // Add a new first 'try' block for 'ehOuter' that will be outside 'eh'.
 
-                        BasicBlock* newTryStart = bbNewBasicBlock(BBJ_NONE);
+                        BasicBlock* newTryStart = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
                         newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
                         fgAddRefPred(insertBeforeBlk, newTryStart);
@@ -2375,7 +2375,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Create a new bb for the fake filter
             BasicBlock* handlerBb = eh->ebdHndBeg;
-            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET, handlerBb);
+            BasicBlock* filterBb  = BasicBlock::bbNewBasicBlock(this, BBJ_EHFILTERRET, handlerBb);
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2660,7 +2660,7 @@ bool Compiler::fgNormalizeEHCase3()
                     // Add a new last block for 'ehOuter' that will be outside the EH region with which it encloses and
                     // shares a 'last' pointer
 
-                    BasicBlock* newLast = bbNewBasicBlock(BBJ_NONE);
+                    BasicBlock* newLast = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
                     newLast->bbRefs     = 0;
                     assert(insertAfterBlk != nullptr);
                     fgInsertBBafter(insertAfterBlk, newLast);

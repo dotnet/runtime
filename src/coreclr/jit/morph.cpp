@@ -12856,12 +12856,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->AsCmpXchg()->Addr()      = fgMorphTree(tree->AsCmpXchg()->Addr());
             tree->AsCmpXchg()->Data()      = fgMorphTree(tree->AsCmpXchg()->Data());
             tree->AsCmpXchg()->Comparand() = fgMorphTree(tree->AsCmpXchg()->Comparand());
-
-            tree->gtFlags &= (~GTF_EXCEPT & ~GTF_CALL);
-
-            tree->gtFlags |= tree->AsCmpXchg()->Addr()->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsCmpXchg()->Data()->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsCmpXchg()->Comparand()->gtFlags & GTF_ALL_EFFECT;
+            gtUpdateNodeSideEffects(tree);
             break;
 
         case GT_STORE_DYN_BLK:
