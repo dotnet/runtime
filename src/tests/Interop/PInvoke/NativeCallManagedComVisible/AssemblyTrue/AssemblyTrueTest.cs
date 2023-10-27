@@ -640,6 +640,9 @@ public class ComVisibleServer
     /// Test case set for ComVisible. The assembly is set as [assembly: ComVisible(false)]
     /// </summary>
     /// <returns></returns>
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnMono("Requires COM support")]
     private static void RunComVisibleTests()
     {
         int fooSuccessVal = 0;
@@ -893,21 +896,5 @@ public class ComVisibleServer
 
         Console.WriteLine("CCWTest_NestedInterfaceGenericVisibleTrue");
         Assert.Equal(Helpers.E_NOINTERFACE, CCWTest_NestedInterfaceGenericVisibleTrue((object)nestedGenericServer, out fooSuccessVal));
-    }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        try
-        {
-            RunComVisibleTests();
-
-            return 100;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
     }
 }
