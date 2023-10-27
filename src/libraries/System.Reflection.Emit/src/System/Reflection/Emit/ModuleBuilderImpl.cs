@@ -120,6 +120,8 @@ namespace System.Reflection.Emit
 
             WriteCustomAttributes(_customAttributes, moduleHandle);
 
+            PrePopulateTypeMembersTokens();
+
             // All generic parameters for all types and methods should be written in specific order
             List<GenericTypeParameterBuilderImpl> genericParams = new();
             // Add each type definition to metadata table.
@@ -131,7 +133,7 @@ namespace System.Reflection.Emit
                     parent = GetTypeHandle(typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeHandle = AddTypeDefinition(typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+                TypeDefinitionHandle typeHandle = AddTypeDefinition(typeBuilder, parent, typeBuilder._firsMethodToken, typeBuilder._firstFieldToken);
                 Debug.Assert(typeBuilder._handle.Equals(typeHandle));
 
                 if (typeBuilder.IsGenericType)
@@ -152,7 +154,7 @@ namespace System.Reflection.Emit
                     foreach (Type iface in typeBuilder._interfaces)
                     {
                         _metadataBuilder.AddInterfaceImplementation(typeHandle, GetTypeHandle(iface));
-                        // TODO: need to add interface mapping between interface method and implemented method
+                        // TODO: need to add interface mapping between interface field and implemented field
                     }
                 }
 
@@ -181,7 +183,26 @@ namespace System.Reflection.Emit
             }
         }
 
-        // All method handles need to pre populated so that they can be referenced from other method's IL
+        // Need to pre populate all type members tokens so that they can be referenced from other type's metadata
+        private void PrePopulateTypeMembersTokens()
+        {
+            foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
+            {
+                typeBuilder._firsMethodToken = _nextMethodDefRowId;
+                typeBuilder._firstFieldToken = _nextFieldDefRowId;
+                PrePopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
+                PrePopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
+            }
+        }
+
+        private void PrePopulateFieldDefinitionHandles(List<FieldBuilderImpl> fieldDefinitions)
+        {
+            foreach (FieldBuilderImpl field in fieldDefinitions)
+            {
+                field._handle = MetadataTokens.FieldDefinitionHandle(_nextFieldDefRowId++);
+            }
+        }
+
         private void PrePopulateMethodDefinitionHandles(List<MethodBuilderImpl> methods)
         {
             foreach (MethodBuilderImpl method in methods)
@@ -192,8 +213,6 @@ namespace System.Reflection.Emit
 
         private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
         {
-            PrePopulateMethodDefinitionHandles(methods);
-
             foreach (MethodBuilderImpl method in methods)
             {
                 int offset = -1;
@@ -270,23 +289,23 @@ namespace System.Reflection.Emit
         {
             foreach (FieldBuilderImpl field in typeBuilder._fieldDefinitions)
             {
-                field._handle = AddFieldDefinition(field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
-                WriteCustomAttributes(field._customAttributes, field._handle);
-                _nextFieldDefRowId++;
+                FieldDefinitionHandle handle = AddFieldDefinition(field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
+                Debug.Assert(field._handle == handle);
+                WriteCustomAttributes(field._customAttributes, handle);
 
                 if (field._offset > 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
                 {
-                    AddFieldLayout(field._handle, field._offset);
+                    AddFieldLayout(handle, field._offset);
                 }
 
                 if (field._marshallingData != null)
                 {
-                    AddMarshalling(field._handle, field._marshallingData.SerializeMarshallingData());
+                    AddMarshalling(handle, field._marshallingData.SerializeMarshallingData());
                 }
 
                 if (field._defaultValue != DBNull.Value)
                 {
-                    AddDefaultValue(field._handle, field._defaultValue);
+                    AddDefaultValue(handle, field._defaultValue);
                 }
             }
         }

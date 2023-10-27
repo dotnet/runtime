@@ -437,11 +437,10 @@ namespace System.Reflection.Emit.Tests
                 ilMain.Emit(OpCodes.Ldarg_1);
                 ilMain.Emit(OpCodes.Call, methodMultiply);
                 ilMain.Emit(OpCodes.Box, typeof(int));
-                ilMain.Emit(OpCodes.Call, writeLineObj);               
+                ilMain.Emit(OpCodes.Call, writeLineObj);
                 ilMain.Emit(OpCodes.Ret);
 
                 saveMethod.Invoke(ab, new object[] { file.Path });
-                Console.WriteLine(file.Path);
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -467,6 +466,93 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[44]);
                 // Bytes 24, 46, 47, 48 are token for writeLineObj, but it is not same as the value before save
                 Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
+            }
+        }
+
+        [Fact]
+        public void EmitWriteLineMacroTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type1, out MethodInfo saveMethod);
+                MethodBuilder method = type1.DefineMethod("meth", MethodAttributes.Public, typeof(int), Type.EmptyTypes);
+                FieldBuilder field = type1.DefineField("field", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldc_I4_1);
+                ilGenerator.Emit(OpCodes.Stsfld, field);
+                ilGenerator.EmitWriteLine(field);
+                ilGenerator.EmitWriteLine("Emit WriteLine");
+                // TODO: ilGenerator.EmitWriteLine(local); later
+                ilGenerator.Emit(OpCodes.Ldsfld, field);
+                ilGenerator.Emit(OpCodes.Ret);
+
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                byte[]? bodyBytes = typeFromDisk.GetMethod("meth").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldc_I4_1.Value, bodyBytes[0]);
+                Assert.Equal(OpCodes.Stsfld.Value, bodyBytes[1]);
+                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(2, 4)));
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[6]);
+                Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[11]);
+                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(12, 4)));
+                Assert.Equal(OpCodes.Callvirt.Value, bodyBytes[16]);
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[21]);
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[26]);
+                Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[31]);
+                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(32, 4)));
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[36]);
+            }
+        }
+
+        [Fact]
+        public void ReferenceStaticFieldAndMethodsInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder methodMain = tb.DefineMethod("Main", MethodAttributes.Public, typeof(int), new[] { typeof(int) });
+                TypeBuilder anotherType = ab.GetDynamicModule("MyModule").DefineType("AnotherType", TypeAttributes.Public);
+                FieldBuilder field = anotherType.DefineField("StaticField", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+                MethodBuilder staticMethod = anotherType.DefineMethod("StaticMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+
+ /*             class MyType
+                { 
+                    int Main(int a)
+                    {
+                        AnotherType.StaticField = a;
+                        AnotherType.StaticMethod();
+                        return AnotherType.StaticField;
+                    }
+                }
+                public class AnotherType
+                {
+                    public static int StaticField;
+                    void static StaticMethod() { }
+                }*/
+                ILGenerator ilMain = methodMain.GetILGenerator();
+                ilMain.Emit(OpCodes.Call, staticMethod);
+                ilMain.Emit(OpCodes.Ldarg_1);
+                ilMain.Emit(OpCodes.Stsfld, field);
+                ilMain.Emit(OpCodes.Ldsfld, field);
+                ilMain.Emit(OpCodes.Ret);
+                ILGenerator il = staticMethod.GetILGenerator();
+                il.Emit(OpCodes.Ret);
+
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                byte[]? bodyBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[0]);
+                Assert.Equal(staticMethod.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(1, 4)));
+                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[5]);
+                Assert.Equal(OpCodes.Stsfld.Value, bodyBytes[6]);
+                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(7, 4)));
+                Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[11]);
+                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(12, 4)));
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[16]);
             }
         }
     }
