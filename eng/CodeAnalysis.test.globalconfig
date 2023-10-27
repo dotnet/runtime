@@ -1264,7 +1264,7 @@ dotnet_diagnostic.SA1134.severity = none
 dotnet_diagnostic.SA1135.severity = none
 
 # SA1136: Enum values should be on separate lines
-dotnet_diagnostic.SA1136.severity = warning
+dotnet_diagnostic.SA1136.severity = none
 
 # SA1137: Elements should have the same indentation
 dotnet_diagnostic.SA1137.severity = none
