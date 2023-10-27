@@ -77,7 +77,7 @@ namespace System.Linq
                 if (count == 1)
                 {
                     // If GetCount returns 1, then _source is empty and only _item should be returned
-                    return ToSingleItemList(_item);
+                    return new List<TSource>(1) { _item };
                 }
 
                 List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);

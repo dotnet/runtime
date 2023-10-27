@@ -275,13 +275,5 @@ namespace System.Linq
 
             return result;
         }
-
-        internal static List<TSource> ToSingleItemList<TSource>(TSource item)
-        {
-            List<TSource> list = new List<TSource>(1);
-            Span<TSource> span = SetCountAndGetSpan(list, 1);
-            span[0] = item;
-            return list;
-        }
     }
 }
