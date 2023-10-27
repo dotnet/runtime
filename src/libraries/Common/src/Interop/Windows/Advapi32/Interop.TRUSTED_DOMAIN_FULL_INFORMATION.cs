@@ -8,7 +8,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal sealed class TRUSTED_DOMAIN_FULL_INFORMATION
+        internal struct TRUSTED_DOMAIN_FULL_INFORMATION
         {
             public TRUSTED_DOMAIN_INFORMATION_EX Information;
             internal TRUSTED_POSIX_OFFSET_INFO? PosixOffset;

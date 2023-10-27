@@ -613,8 +613,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // get the managed structure representation
-                    Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION domainInfo = new Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION();
-                    Marshal.PtrToStructure(buffer, domainInfo);
+                    Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION domainInfo = Marshal.PtrToStructure<Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION>(buffer);
 
                     // validate the trust attribute first
                     ValidateTrustAttribute(domainInfo.Information!, isForest, sourceName, targetName);
@@ -744,8 +743,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // get the managed structure representation
-                    Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION domainInfo = new Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION();
-                    Marshal.PtrToStructure(buffer, domainInfo);
+                    Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION domainInfo = Marshal.PtrToStructure<Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION>(buffer);
 
                     // validate the trust attribute first
                     ValidateTrustAttribute(domainInfo.Information!, isForest, sourceName, targetName);
