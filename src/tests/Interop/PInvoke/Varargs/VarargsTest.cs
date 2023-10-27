@@ -6,6 +6,7 @@ using System.Security;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 namespace PInvokeTests
@@ -34,6 +35,9 @@ namespace PInvokeTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnMono("PInvoke Varargs/ArgIterator marshalling not supported on Mono")]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         public static int TestEntryPoint()
         {
             var passed = true;

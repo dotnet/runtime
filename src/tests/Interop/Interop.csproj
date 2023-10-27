@@ -17,13 +17,16 @@
     <Compile Include="ArrayMarshalling/**/*.cs" />
     <Compile Include="MarshalAPI/**/*.cs" />
 
-    <!-- Reference nested CMake projects from the merged wrapper so we don't need to be process-isolated to run them. -->
-    <CMakeProjectReference Include="StringMarshalling/**/CMakeLists.txt" />
+    <!-- Reference the CMake projects for the directly-compiled-in tests -->
     <CMakeProjectReference Include="SimpleStruct/**/CMakeLists.txt" />
     <CMakeProjectReference Include="RefCharArray/**/CMakeLists.txt" />
     <CMakeProjectReference Include="LayoutClass/**/CMakeLists.txt" />
     <CMakeProjectReference Include="ArrayMarshalling/**/CMakeLists.txt" />
     <CMakeProjectReference Include="MarshalAPI/**/CMakeLists.txt" />
+
+    <!-- Reference nested CMake projects from the merged wrapper so we don't need to be process-isolated to run them. -->
+    <CMakeProjectReference Include="StringMarshalling/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="PInvoke/**/CMakeLists.txt" />
 
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
