@@ -174,10 +174,10 @@ namespace Mono.Linker
 			Context.LogError (null, DiagnosticId.MissingArgumentForCommanLineOptionName, optionName);
 		}
 
-		public enum DependenciesFileFormat 
-		{ 
-			Xml, 
-			Dgml 
+		public enum DependenciesFileFormat
+		{
+			Xml,
+			Dgml
 		};
 
 		// Perform setup of the LinkContext and parse the arguments.
