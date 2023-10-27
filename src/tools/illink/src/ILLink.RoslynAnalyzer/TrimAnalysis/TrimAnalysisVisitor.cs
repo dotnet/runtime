@@ -302,11 +302,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				break;
 
 			case IntrinsicId.Object_GetType: {
-					// In the analyzer if the instance is an empty set of values, it actually means "unknown" value
-					// which in this case we want to warn about.
-					MultiValue instanceValue = instance.IsEmpty () ? UnknownValue.Instance : instance;
-
-					foreach (var valueNode in instanceValue) {
+					foreach (var valueNode in instance) {
 						// Note that valueNode can be statically typed as some generic argument type.
 						// For example:
 						//   void Method<T>(T instance) { instance.GetType().... }

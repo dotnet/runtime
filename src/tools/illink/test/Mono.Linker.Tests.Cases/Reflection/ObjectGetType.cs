@@ -682,7 +682,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2075", "GetMethod")]
+			// https://github.com/dotnet/linker/issues/2755
+			[ExpectedWarning ("IL2075", "GetMethod", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public static void Test ()
 			{
 				new Derived ().GetType ().GetMethod ("Method");
@@ -1585,7 +1586,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			// https://github.com/dotnet/runtime/issues/93720
-			[ExpectedWarning ("IL2072")]
+			// https://github.com/dotnet/linker/issues/2755
+			[ExpectedWarning ("IL2072", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestIsInstOf (object o)
 			{
 				if (o is Target t) {
