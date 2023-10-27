@@ -629,7 +629,11 @@ namespace System
         public override bool IsInstanceOfType([NotNullWhen(true)] object? o)
         {
             MethodTable* pEEType = _pUnderlyingEEType;
-            return pEEType != null && RuntimeImports.IsInstanceOf(pEEType, o) != null;
+            if (pEEType == null || pEEType->IsGenericTypeDefinition)
+                return false;
+            if (pEEType->IsNullable)
+                pEEType = pEEType->NullableType;
+            return RuntimeImports.IsInstanceOf(pEEType, o) != null;
         }
 
         //
