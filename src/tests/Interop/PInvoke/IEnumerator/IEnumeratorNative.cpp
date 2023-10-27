@@ -98,6 +98,13 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyIntegerEnumeration(IDispat
         return hr;
     }
 
+    hr = VariantClear(&result);
+    
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
     hr = VerifyIntegerEnumerator(pEnum, start, count);
 
     pEnum->Release();
