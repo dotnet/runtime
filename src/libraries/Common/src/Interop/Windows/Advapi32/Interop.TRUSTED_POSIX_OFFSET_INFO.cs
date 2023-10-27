@@ -8,7 +8,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal sealed class TRUSTED_POSIX_OFFSET_INFO
+        internal struct TRUSTED_POSIX_OFFSET_INFO
         {
             internal int Offset;
         }
