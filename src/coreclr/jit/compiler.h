@@ -6859,6 +6859,7 @@ protected:
     void optPrintCSEDataFlowSet(EXPSET_VALARG_TP cseDataFlowSet, bool includeBits = true);
 
     EXPSET_TP cseCallKillsMask; // Computed once - A mask that is used to kill available CSEs at callsites
+    EXPSET_TP cseAsyncKillsMask; // Computed once - A mask that is used to kill available BYREF CSEs at async suspension points
 
     /* Generic list of nodes - used by the CSE logic */
 

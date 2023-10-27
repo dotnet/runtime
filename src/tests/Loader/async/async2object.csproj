@@ -3,6 +3,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="async2object.cs" />
+    <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>

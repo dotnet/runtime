@@ -527,6 +527,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             assert((call != nullptr) && call->OperIs(GT_CALL));
             call->AsCall()->gtIsAsyncCall = true;
+            JITDUMP("Marking [%06u] as a special-case async call\n", dspTreeID(call));
         }
     }
     assert(sig);

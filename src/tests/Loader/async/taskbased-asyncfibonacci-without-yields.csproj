@@ -4,6 +4,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="taskbased-asyncfibonacci-without-yields.cs" />
+    <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>

@@ -3335,6 +3335,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             printf("OPTIONS: Jit invoked for ngen\n");
         }
+
+        if (compIsAsync2StateMachine())
+        {
+            printf("OPTIONS: compilation is an async2 state machine\n");
+        }
+        else if (compIsAsync2ViaUnwinding())
+        {
+            printf("OPTIONS: compilation is an async2 function (via unwinding)\n");
+        }
     }
 #endif
 

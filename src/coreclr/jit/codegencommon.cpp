@@ -1807,6 +1807,15 @@ void CodeGen::genGenerateMachineCode()
             printf("; OSR variant for entry point 0x%x\n", compiler->info.compILEntry);
         }
 
+        if (compiler->compIsAsync2StateMachine())
+        {
+            printf("; async2 state machine\n");
+        }
+        else if (compiler->compIsAsync2ViaUnwinding())
+        {
+            printf("; async2 via unwinding\n");
+        }
+
         if ((compiler->opts.compFlags & CLFLG_MAXOPT) == CLFLG_MAXOPT)
         {
             printf("; optimized code\n");
