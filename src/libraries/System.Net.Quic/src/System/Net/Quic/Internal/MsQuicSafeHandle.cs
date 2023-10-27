@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 
@@ -92,22 +93,19 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     /// </summary>
     private readonly MsQuicSafeHandle? _parent;
 
-#if DEBUG
     /// <summary>
-    /// Native memory to hold TLS secrets. It needs to live same cycle as the underlying connection.
+    /// Additional, dependent object to be disposed only after the safe handle gets released.
     /// </summary>
-    private unsafe QUIC_TLS_SECRETS* _tlsSecrets;
+    private IDisposable? _disposable;
 
-    public unsafe QUIC_TLS_SECRETS* GetSecretsBuffer()
+    public IDisposable Disposable
     {
-        if (_tlsSecrets == null)
+        set
         {
-            _tlsSecrets = (QUIC_TLS_SECRETS*)NativeMemory.Alloc((nuint)sizeof(QUIC_TLS_SECRETS));
+            Debug.Assert(_disposable is null);
+            _disposable = value;
         }
-
-        return _tlsSecrets;
     }
-#endif
 
     public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
         : base(handle, safeHandleType)
@@ -140,13 +138,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
                 NetEventSource.Info(this, $"{this} {_parent} ref count decremented");
             }
         }
-#if DEBUG
-        if (_tlsSecrets != null)
-        {
-            NativeMemory.Clear(_tlsSecrets, (nuint)sizeof(QUIC_TLS_SECRETS));
-            NativeMemory.Free(_tlsSecrets);
-        }
-#endif
+        _disposable?.Dispose();
         return true;
     }
 }

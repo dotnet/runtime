@@ -345,7 +345,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
-            options.PropertyNamingPolicy = new SimpleSnakeCasePolicy();
+            options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
 
             dynamic obj = JsonSerializer.Deserialize<dynamic>(Json, options);
 

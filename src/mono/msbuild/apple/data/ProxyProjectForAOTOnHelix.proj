@@ -53,9 +53,14 @@
     </ItemGroup>
 
     <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(UseRuntimeComponents)' == 'true'">
+      <RuntimeComponents Include="diagnostics_tracing" />
+      <RuntimeComponents Include="marshal-ilgen" />
+    </ItemGroup>
+
   </Target>
 
   <Target Name="_PublishRuntimePack"

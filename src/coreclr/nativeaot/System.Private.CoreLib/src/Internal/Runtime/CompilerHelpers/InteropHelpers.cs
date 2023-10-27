@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices.ObjectiveC;
 using System.Runtime.Loader;
 using System.Text;
@@ -576,8 +577,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
 #if TARGET_WINDOWS
 #pragma warning disable CA1416
-            Variant* data = (Variant*)pDstNativeVariant;
-            data->Clear();
+            ComVariant* data = (ComVariant*)pDstNativeVariant;
+            data->Dispose();
 #pragma warning restore CA1416
 #else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

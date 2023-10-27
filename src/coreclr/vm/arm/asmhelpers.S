@@ -827,9 +827,13 @@ g_rgWriteBarrierDescriptors:
     LEAF_ENTRY JIT_WriteBarrier_Callable
 
     // Branch to the write barrier
+#if defined(__clang__)
     ldr     r2, =JIT_WriteBarrier_Loc-(1f+4) // or R3? See targetarm.h
 1:
     add     r2, pc
+#else
+    ldr     r2, =JIT_WriteBarrier_Loc
+#endif
     ldr     pc, [r2]
 
     LEAF_END JIT_WriteBarrier_Callable
