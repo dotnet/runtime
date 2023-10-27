@@ -15295,6 +15295,10 @@ bool Compiler::fgCheckStmtAfterTailCall()
             {
                 assert(retExpr->AsLclVarCommon()->GetLclNum() == genReturnLocal);
             }
+            else if (retExpr->OperIs(GT_NOP))
+            {
+                // ignore
+            }
             else
             {
                 noway_assert(retExpr->gtOper == GT_RETURN);
