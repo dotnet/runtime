@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Netapi32
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal sealed class DS_DOMAIN_TRUSTS
+        internal struct DS_DOMAIN_TRUSTS
         {
             public IntPtr NetbiosDomainName;
             public IntPtr DnsDomainName;

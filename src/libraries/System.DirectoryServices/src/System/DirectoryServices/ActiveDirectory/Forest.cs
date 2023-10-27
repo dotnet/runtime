@@ -1117,8 +1117,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     for (int i = 0; i < count; i++)
                     {
                         addr = IntPtr.Add(domains, i * Marshal.SizeOf(typeof(Interop.Netapi32.DS_DOMAIN_TRUSTS)));
-                        Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = new Interop.Netapi32.DS_DOMAIN_TRUSTS();
-                        Marshal.PtrToStructure(addr, unmanagedTrust);
+                        Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = Marshal.PtrToStructure<Interop.Netapi32.DS_DOMAIN_TRUSTS>(addr);
 
                         // whether this is the case that a paticular forest trust info is needed
                         if (targetForestName != null)
