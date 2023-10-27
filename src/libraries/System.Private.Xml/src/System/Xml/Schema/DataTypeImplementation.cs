@@ -1129,13 +1129,13 @@ namespace System.Xml.Schema
                 arrayType = _itemType.ListValueType;
             }
 
-            Array array = Array.CreateInstanceFromArrayType(arrayType, values.Count);
-            values.CopyTo(array);
-
             if (values.Count < _minListSize)
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
+
+            Array array = Array.CreateInstanceFromArrayType(arrayType, values.Count);
+            values.CopyTo(array);
 
             exception = listFacetsChecker.CheckValueFacets(array, this);
             if (exception != null) goto Error;

@@ -1946,6 +1946,22 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(GenericClass<>))]
+        // not using any by-ref type here as MakeArrayType throws for them, same goes for Type.GetType("SomeByRef[]")
+        public void CreateInstanceFromArrayType_NotSupportedArrayType_ThrowsNotSupportedException(Type elementType)
+        {
+            foreach (Type type in new Type[] { elementType, elementType.MakeArrayType() /* array of arrays */ })
+            {
+                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(), 0));
+                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(rank: 2), 0, 0));
+                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(rank: 3), 0, 0, 0));
+                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(), new int[1]));
+                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(), new int[1], new int[1]));
+            }
+        }
+
+        [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(GenericClass<>))]
         [InlineData(typeof(Span<int>))]

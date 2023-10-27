@@ -226,8 +226,8 @@ namespace System
             ArgumentNullException.ThrowIfNull(arrayType);
             ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-            if (!arrayType.IsArray)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
+            ValidateArrayType(arrayType);
+
             if (arrayType.GetArrayRank() != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported, ExceptionArgument.arrayType);
 
@@ -257,11 +257,11 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(arrayType);
             ArgumentNullException.ThrowIfNull(lengths);
+
+            ValidateArrayType(arrayType);
+
             if (lengths.Length == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
-
-            if (!arrayType.IsArray)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
             if (arrayType.GetArrayRank() != lengths.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices, ExceptionArgument.lengths);
 
@@ -307,13 +307,13 @@ namespace System
             ArgumentNullException.ThrowIfNull(arrayType);
             ArgumentNullException.ThrowIfNull(lengths);
             ArgumentNullException.ThrowIfNull(lowerBounds);
+
+            ValidateArrayType(arrayType);
+
             if (lengths.Length != lowerBounds.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
             if (lengths.Length == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
-
-            if (!arrayType.IsArray)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
             if (arrayType.GetArrayRank() != lengths.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices, ExceptionArgument.lengths);
 
@@ -328,6 +328,29 @@ namespace System
             fixed (int* pLengths = &lengths[0])
             fixed (int* pLowerBounds = &lowerBounds[0])
                 return InternalCreateFromArrayType(arrayType, lengths.Length, pLengths, pLowerBounds);
+        }
+
+        private static void ValidateArrayType(Type arrayType)
+        {
+            if (!arrayType.IsArray)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
+
+            ValidateElementType(arrayType.GetElementType()!);
+        }
+
+        private static void ValidateElementType(Type elementType)
+        {
+            while (elementType.IsArray)
+            {
+                elementType = elementType.GetElementType()!;
+            }
+
+            if (elementType.IsByRef || elementType.IsByRefLike)
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ByRefLikeArray);
+            if (elementType == typeof(void))
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_VoidArray);
+            if (elementType.ContainsGenericParameters)
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_OpenType);
         }
 
         public static void Copy(Array sourceArray, Array destinationArray, long length)

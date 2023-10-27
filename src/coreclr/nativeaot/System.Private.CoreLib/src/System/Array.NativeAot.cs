@@ -111,22 +111,6 @@ namespace System
             }
         }
 
-#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6451
-        private static void ValidateElementType(Type elementType)
-        {
-            while (elementType.IsArray)
-            {
-                elementType = elementType.GetElementType()!;
-            }
-            if (elementType.IsByRef || elementType.IsByRefLike)
-                throw new NotSupportedException(SR.NotSupported_ByRefLikeArray);
-            if (elementType == typeof(void))
-                throw new NotSupportedException(SR.NotSupported_VoidArray);
-            if (elementType.ContainsGenericParameters)
-                throw new NotSupportedException(SR.NotSupported_OpenType);
-        }
-#pragma warning restore CA1859
-
         public unsafe void Initialize()
         {
             EETypePtr pElementEEType = ElementEEType;
