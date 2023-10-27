@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -16,6 +17,7 @@ namespace System.Reflection.Emit
         private bool _hasDynamicStackAllocation;
         private int _maxStackSize;
         private int _currentStack;
+        private Dictionary<Label, LabelHandle> _labelTable = new(2);
 
         internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
         {
@@ -39,8 +41,14 @@ namespace System.Reflection.Emit
         public override void BeginFinallyBlock() => throw new NotImplementedException();
         public override void BeginScope() => throw new NotImplementedException();
         public override LocalBuilder DeclareLocal(Type localType, bool pinned) => throw new NotImplementedException();
-        public override Label DefineLabel() => throw new NotImplementedException();
 
+        public override Label DefineLabel()
+        {
+            LabelHandle metadataLabel = _il.DefineLabel();
+            Label emitLabel = CreateLabel(metadataLabel.Id);
+            _labelTable.Add(emitLabel, metadataLabel);
+            return emitLabel;
+        }
         private void UpdateStackSize(OpCode opCode)
         {
             _currentStack += opCode.EvaluationStackDelta;
@@ -190,8 +198,36 @@ namespace System.Reflection.Emit
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con) => throw new NotImplementedException();
-        public override void Emit(OpCode opcode, Label label) => throw new NotImplementedException();
-        public override void Emit(OpCode opcode, Label[] labels) => throw new NotImplementedException();
+
+        public override void Emit(OpCode opcode, Label label)
+        {
+            if (_labelTable.TryGetValue(label, out LabelHandle labelHandle))
+            {
+                _il.Branch((ILOpCode)opcode.Value, labelHandle);
+                UpdateStackSize(opcode);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_InvalidLabel);
+            }
+        }
+
+        public override void Emit(OpCode opcode, Label[] labels)
+        {
+            if (!opcode.Equals(OpCodes.Switch))
+            {
+                throw new ArgumentException(SR.Argument_MustBeSwitchOpCode, nameof(opcode));
+            }
+
+            SwitchInstructionEncoder switchEncoder = _il.Switch(labels.Length);
+            UpdateStackSize(opcode);
+
+            foreach (Label label in labels)
+            {
+                switchEncoder.Branch(_labelTable[label]);
+            }
+        }
+
         public override void Emit(OpCode opcode, LocalBuilder local) => throw new NotImplementedException();
         public override void Emit(OpCode opcode, SignatureHelper signature) => throw new NotImplementedException();
         public override void Emit(OpCode opcode, FieldInfo field) => throw new NotImplementedException();
@@ -202,7 +238,19 @@ namespace System.Reflection.Emit
         public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
         public override void EndExceptionBlock() => throw new NotImplementedException();
         public override void EndScope() => throw new NotImplementedException();
-        public override void MarkLabel(Label loc) => throw new NotImplementedException();
+
+        public override void MarkLabel(Label loc)
+        {
+            if (_labelTable.TryGetValue(loc, out LabelHandle labelHandle))
+            {
+                _il.MarkLabel(labelHandle);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_InvalidLabel);
+            }
+        }
+
         public override void UsingNamespace(string usingNamespace) => throw new NotImplementedException();
     }
 }

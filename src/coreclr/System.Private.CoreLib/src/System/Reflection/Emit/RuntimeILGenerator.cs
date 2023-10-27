@@ -275,7 +275,7 @@ namespace System.Reflection.Emit
             // Gets the position in the stream of a particular label.
             // Verifies that the label exists and that it has been given a value.
 
-            int index = lbl.GetLabelValue();
+            int index = lbl.Id;
 
             if (index < 0 || index >= m_labelCount || m_labelList is null)
                 throw new ArgumentException(SR.Argument_BadLabel);
@@ -308,7 +308,7 @@ namespace System.Reflection.Emit
                 m_fixupInstSize = instSize
             };
 
-            int labelIndex = lbl.GetLabelValue();
+            int labelIndex = lbl.Id;
             if (labelIndex < 0 || labelIndex >= m_labelCount || m_labelList is null)
                 throw new ArgumentException(SR.Argument_BadLabel);
 
@@ -974,7 +974,7 @@ namespace System.Reflection.Emit
             // Check if we've already set this label.
             // The only reason why we might have set this is if we have a finally block.
 
-            Label label = m_labelList![endLabel.GetLabelValue()].m_pos != -1
+            Label label = m_labelList![endLabel.Id].m_pos != -1
                 ? current.m_finallyEndLabel
                 : endLabel;
 
@@ -1115,7 +1115,7 @@ namespace System.Reflection.Emit
             // Defines a label by setting the position where that label is found within the stream.
             // Does not allow a label to be defined more than once.
 
-            int labelIndex = loc.GetLabelValue();
+            int labelIndex = loc.Id;
 
             // This should only happen if a label from another generator is used with this one.
             if (m_labelList is null || labelIndex < 0 || labelIndex >= m_labelList.Length)

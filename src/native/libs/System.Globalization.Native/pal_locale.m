@@ -93,6 +93,48 @@ static void GetParent(const char* localeID, char* parent, int32_t parentCapacity
        parent[i] = 0;
 }
 
+/**
+ * Lookup 'key' in the array 'list'.  The array 'list' should contain
+ * a NULL entry, followed by more entries, and a second NULL entry.
+ *
+ * The 'list' param should be LANGUAGES, LANGUAGES_3, COUNTRIES, or
+ * COUNTRIES_3.
+ */
+static int16_t _findIndex(const char* const* list, const char* key)
+{
+    const char* const* anchor = list;
+    int32_t pass = 0;
+
+    /* Make two passes through two NULL-terminated arrays at 'list' */
+    while (pass++ < 2) {
+        while (*list) {
+            if (strcmp(key, *list) == 0) {
+                return (int16_t)(list - anchor);
+            }
+            list++;
+        }
+        ++list;     /* skip final NULL *CWB*/
+    }
+    return -1;
+}
+
+static const char* getISO3CountryByCountryCode(const char* countryCode)
+{
+    int16_t offset = _findIndex(COUNTRIES, countryCode);
+    if (offset < 0)
+        return "";
+
+    return COUNTRIES_3[offset];
+}
+
+static const char* getISO3LanguageByLangCode(const char* langCode)
+{
+    int16_t offset = _findIndex(LANGUAGES, langCode);
+    if (offset < 0)
+        return "";
+    return LANGUAGES_3[offset];
+}
+
 const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData)
 {
     @autoreleasepool
@@ -190,7 +232,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             case LocaleString_Iso639LanguageThreeLetterName:
             {
                 NSString *iso639_2 = [currentLocale objectForKey:NSLocaleLanguageCode];
-                return iso639_2 == nil ? strdup("") : strdup(uloc_getISO3LanguageByLangCode([iso639_2 UTF8String]));
+                return iso639_2 == nil ? strdup("") : strdup(getISO3LanguageByLangCode([iso639_2 UTF8String]));
             }
             case LocaleString_Iso3166CountryName:
                 value = [currentLocale objectForKey:NSLocaleCountryCode];
@@ -198,7 +240,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             case LocaleString_Iso3166CountryName2:
             {
                 NSString* countryCode = [currentLocale objectForKey:NSLocaleCountryCode];
-                return countryCode == nil ? strdup("") : strdup(uloc_getISO3CountryByCountryCode([countryCode UTF8String]));
+                return countryCode == nil ? strdup("") : strdup(getISO3CountryByCountryCode([countryCode UTF8String]));
             }
             case LocaleString_NaNSymbol:
                 value = numberFormatter.notANumberSymbol;
