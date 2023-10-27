@@ -181,6 +181,13 @@ namespace System.Globalization
 
         internal static unsafe bool GetDefaultLocaleName([NotNullWhen(true)] out string? windowsName)
         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                windowsName = Interop.Globalization.GetDefaultLocaleNameNative();
+                return windowsName != null && windowsName.Length > 0;
+            }
+#endif
             // Get the default (system) locale name from ICU
             char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
             if (!Interop.Globalization.GetDefaultLocaleName(buffer, ICU_ULOC_FULLNAME_CAPACITY))
