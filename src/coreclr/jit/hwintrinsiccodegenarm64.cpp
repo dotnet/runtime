@@ -797,7 +797,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_AdvSimd_StoreVector64x2:
+            case NI_AdvSimd_StoreVector64x3:
+            case NI_AdvSimd_StoreVector64x4:
             case NI_AdvSimd_Arm64_StoreVector128x2:
+            case NI_AdvSimd_Arm64_StoreVector128x3:
+            case NI_AdvSimd_Arm64_StoreVector128x4:
             {
                 unsigned regCount = 0;
 
@@ -817,7 +821,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(argReg == argNode->GetRegNum());
                     argReg = REG_NEXT(argReg);
                 }
-                assert(regCount == 2);
 #endif
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
