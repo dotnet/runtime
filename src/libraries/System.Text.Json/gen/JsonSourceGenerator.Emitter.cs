@@ -1344,7 +1344,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static string FormatBool(bool value) => value ? "true" : "false";
             private static string FormatStringLiteral(string? value)
-                => value is null ? "null" : SyntaxFactory.Literal(value).ToFullString();
+                => value is null ? "null" : SymbolDisplay.FormatLiteral(value, quote: true);
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance
