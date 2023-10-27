@@ -8,6 +8,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace Miscellaneous;
+
 public static unsafe class CopyCtor
 {
     public static unsafe int StructWithCtorTest(StructWithCtor* ptrStruct, ref StructWithCtor refStruct)
@@ -27,9 +29,11 @@ public static unsafe class CopyCtor
     }
 
     [Fact]
+    [SkipOnMono("Not supported on Mono")]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static unsafe void ValidateCopyConstructorAndDestructorCalled()
     {
-        TestDelegate del = (TestDelegate)Delegate.CreateDelegate(typeof(TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
+        CopyCtorUtil.TestDelegate del = (CopyCtorUtil.TestDelegate)Delegate.CreateDelegate(typeof(CopyCtorUtil.TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
         StructWithCtor s1 = new StructWithCtor();
         StructWithCtor s2 = new StructWithCtor();
         s1._instanceField = 1;

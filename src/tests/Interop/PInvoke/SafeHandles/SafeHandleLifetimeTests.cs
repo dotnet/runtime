@@ -12,6 +12,8 @@ namespace SafeHandleTests
     {
         private static readonly IntPtr initialValue = new IntPtr(458613);
         private static readonly IntPtr newValue = new IntPtr(987185);
+
+        [Fact]
         public static void RunTest()
         {
             var testHandle = new TestSafeHandle(initialValue);

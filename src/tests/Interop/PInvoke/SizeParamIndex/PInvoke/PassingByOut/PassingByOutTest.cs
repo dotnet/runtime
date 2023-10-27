@@ -5,10 +5,11 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace SizeParamIndex.PInvoke;
 /// <summary>
 ///  Pass Array Size by out keyword using SizeParamIndex Attributes
 /// </summary>
-public class ClientMarshalArrayAsSizeParamIndexByOutTest
+public class PassingByOutTest
 {
 
     #region ByOut

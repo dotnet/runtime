@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace MarshalArrayAsField.LPArray;
 public class Test
 {
     [DllImport("MarshalArrayByValArrayNative", CallingConvention = CallingConvention.Cdecl)]

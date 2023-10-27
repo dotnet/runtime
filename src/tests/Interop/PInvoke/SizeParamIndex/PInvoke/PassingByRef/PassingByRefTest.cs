@@ -5,11 +5,13 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace SizeParamIndex.PInvoke;
+
 /// <summary>
 ///  Pass LPArray Size by ref keyword using SizeParamIndex Attributes
 /// </summary>
 
-public class ClientMarshalArrayAsSizeParamIndexByRefTest
+public class PassingByRefTest
 {
 
     #region ByRef

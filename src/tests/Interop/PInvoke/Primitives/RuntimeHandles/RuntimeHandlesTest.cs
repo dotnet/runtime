@@ -6,17 +6,18 @@ using System;
 using System.Reflection;
 using Xunit;
 
-class TestClass
-{
-    public int field;
-
-    public void Method()
-    {
-    }
-}
 
 public class RuntimeHandlesTest
 {
+    class TestClass
+    {
+        public int field;
+
+        public void Method()
+        {
+        }
+    }
+
     [DllImport("RuntimeHandlesNative")]
     private static extern bool Marshal_In(RuntimeMethodHandle expected, IntPtr handle);
     [DllImport("RuntimeHandlesNative")]

@@ -10,6 +10,7 @@ namespace SafeHandleTests
 {
     public class InvalidSafeHandleMarshallingTests
     {
+        [Fact]
         public static void RunTest()
         {
             if (TestLibrary.Utilities.IsWindows)

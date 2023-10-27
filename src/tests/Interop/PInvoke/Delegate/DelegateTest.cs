@@ -5,12 +5,12 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using Xunit;
-
 using static DelegateTestNative;
 
 public class DelegateTest
 {
-    private static void TestFunctionPointer()
+    [Fact]
+    public static void TestFunctionPointer()
     {
         int expectedValue = 987654;
         int TestFunction() => expectedValue;
@@ -60,7 +60,8 @@ public class DelegateTest
         }
     }
 
-    private static void TestIDispatch()
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void TestIDispatch()
     {
         int expectedValue = 987654;
         int TestFunction() => expectedValue;
@@ -117,24 +118,5 @@ public class DelegateTest
         }
 
         Assert.Throws<MarshalDirectiveException>(() => MarshalDelegateAsInterface(TestFunction));
-    }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        try
-        {
-            TestFunctionPointer();
-            if (OperatingSystem.IsWindows())
-            {
-                TestIDispatch();
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
-        return 100;
     }
 }

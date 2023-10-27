@@ -18,7 +18,7 @@ static class DelegateTestNative
     {
         public int expectedValue;
         [MarshalAs(UnmanagedType.IDispatch)]
-        
+
         public TestDelegate del;
     }
 

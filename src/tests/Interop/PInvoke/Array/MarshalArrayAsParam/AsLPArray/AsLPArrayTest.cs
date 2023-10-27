@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 using TestLibrary;
 using Xunit;
 
+namespace MarshalArrayAsParam.LPArray;
+
 public class ArrayMarshal
 {
     private static int NumArrOfStructElements1 = 10;

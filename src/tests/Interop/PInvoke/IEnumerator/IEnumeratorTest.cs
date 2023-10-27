@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 namespace PInvokeTests
@@ -38,10 +39,7 @@ namespace PInvokeTests
         public static extern IEnumerator PassThroughEnumerator(IEnumerator enumerator);
     }
 
-    [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnMono("Requires COM support")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/37237", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsGCStress))]
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
     public static class IEnumeratorTests
     {
         [Fact]

@@ -5,6 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace MarshalArrayAsField.ByValArray;
+
 #region Sequential
 #region sequential struct definition
 [StructLayout(LayoutKind.Sequential)]

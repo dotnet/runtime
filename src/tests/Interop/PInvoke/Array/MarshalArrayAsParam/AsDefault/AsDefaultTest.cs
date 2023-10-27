@@ -5,6 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace MarshalArrayAsParam.Default;
+
 public class ArrayMarshal
 {
     public struct TestStruct

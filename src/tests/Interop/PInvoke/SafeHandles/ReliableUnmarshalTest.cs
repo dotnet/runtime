@@ -10,6 +10,7 @@ namespace SafeHandleTests
 {
     public class ReliableUnmarshalTest
     {
+        [Fact]
         public static void RunTest()
         {
             // Test that our SafeHandle-derived object has its underlying handle set after a P/Invoke
