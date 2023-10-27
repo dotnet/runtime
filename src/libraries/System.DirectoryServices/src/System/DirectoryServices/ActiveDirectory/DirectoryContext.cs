@@ -551,12 +551,12 @@ namespace System.DirectoryServices.ActiveDirectory
             return serverName;
         }
 
-        internal static string GetLoggedOnDomain()
+        internal static unsafe string GetLoggedOnDomain()
         {
             string? domainName = null;
 
             Interop.Secur32.NegotiateCallerNameRequest requestBuffer = default;
-            int requestBufferLength = (int)Marshal.SizeOf(requestBuffer);
+            int requestBufferLength = sizeof(Interop.Secur32.NegotiateCallerNameRequest);
 
             IntPtr pResponseBuffer = IntPtr.Zero;
             NegotiateCallerNameResponse responseBuffer = new NegotiateCallerNameResponse();
