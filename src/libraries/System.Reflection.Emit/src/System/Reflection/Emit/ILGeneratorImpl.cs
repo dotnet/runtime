@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -219,7 +220,32 @@ namespace System.Reflection.Emit
             _il.Token(tempVal);
         }
 
-        public override void Emit(OpCode opcode, ConstructorInfo con) => throw new NotImplementedException();
+        public override void Emit(OpCode opcode, ConstructorInfo con)
+        {
+            ArgumentNullException.ThrowIfNull(con);
+
+            if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
+            {
+                throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
+            }
+
+            int stackchange = 0;
+            // Push the return value if there is one.
+            stackchange++;
+            // Pop the parameters.
+            stackchange -= con.GetParameters().Length;
+            // Pop the this parameter if the constructor is non-static and the
+            // instruction is not newobj.
+            if (!con.IsStatic && !opcode.Equals(OpCodes.Newobj))
+            {
+                stackchange--;
+            }
+
+            UpdateStackSize(opcode, stackchange);
+            _il.OpCode((ILOpCode)opcode.Value);
+            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
+                (con, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
+        }
 
         public override void Emit(OpCode opcode, Label label)
         {
@@ -236,6 +262,8 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, Label[] labels)
         {
+            ArgumentNullException.ThrowIfNull(labels);
+
             if (!opcode.Equals(OpCodes.Switch))
             {
                 throw new ArgumentException(SR.Argument_MustBeSwitchOpCode, nameof(opcode));
@@ -322,8 +350,18 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(methodInfo);
 
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
+            {
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
+            }
 
+            _il.OpCode((ILOpCode)opcode.Value);
+            UpdateStackSize(opcode, GetStackChange(opcode, methodInfo, optionalParameterTypes));
+            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
+                (methodInfo, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
+        }
+
+        private static int GetStackChange(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
+        {
             int stackchange = 0;
 
             // Push the return value if there is one.
@@ -355,10 +393,7 @@ namespace System.Reflection.Emit
                 stackchange -= optionalParameterTypes.Length;
             }
 
-            _il.OpCode((ILOpCode)opcode.Value);
-            UpdateStackSize(opcode, stackchange);
-            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
-                (methodInfo, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
+            return stackchange;
         }
 
         public override void EmitCalli(OpCode opcode, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes) => throw new NotImplementedException();

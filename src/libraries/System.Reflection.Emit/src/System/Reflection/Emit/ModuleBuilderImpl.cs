@@ -154,7 +154,7 @@ namespace System.Reflection.Emit
                     foreach (Type iface in typeBuilder._interfaces)
                     {
                         _metadataBuilder.AddInterfaceImplementation(typeHandle, GetTypeHandle(iface));
-                        // TODO: need to add interface mapping between interface field and implemented field
+                        // TODO: need to add interface mapping between interface method and implemented method
                     }
                 }
 
@@ -381,6 +381,11 @@ namespace System.Reflection.Emit
             if (member is FieldInfo field)
             {
                 return MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this);
+            }
+
+            if (member is ConstructorInfo ctor)
+            {
+                return MetadataSignatureHelper.ConstructorSignatureEncoder(ctor.GetParameters(), this);
             }
 
             throw new NotSupportedException();

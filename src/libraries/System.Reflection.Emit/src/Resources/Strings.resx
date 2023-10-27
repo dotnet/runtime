@@ -198,4 +198,7 @@
   <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
     <value>The specified opcode cannot be passed to EmitCall.</value>
   </data>
+  <data name="InvalidOperation_NotAVarArgCallingConvention" xml:space="preserve">
+    <value>Calling convention must be VarArgs.</value>
+  </data>
 </root>
