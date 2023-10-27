@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference, GC.WaitForPendingFinalizers -->
+    <!-- Needed for AutoreleasePoolSupport -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">true</CLRTestTargetUnsupported>

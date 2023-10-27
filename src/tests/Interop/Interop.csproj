@@ -47,6 +47,23 @@
     <CMakeProjectReference Include="MarshalAPI/**/CMakeLists.txt" />
     <CMakeProjectReference Include="PInvoke/**/CMakeLists.txt" />
 
+    <WindowsOnlyCMakeProjectReference Include="MarshalAPI/IUnknown/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/Attributes/LCID/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/BestFitMapping/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/Variant/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/Varargs/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/NativeCallManagedComVisible/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/IEnumerator/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/CustomMarshalers/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="ArrayMarshalling/SafeArray/**/CMakeLists.txt" />
+
+    <!--
+      Our CMake project reference system validates that we have output artifacts for each referenced directory.
+      For our Windows-only tests, we only build the native assets on Windows. So, we need to remove the CMake project reference
+      for these directories to get the build to pass.
+    -->
+    <CMakeProjectReference Condition="'$(TargetOS)' != 'windows'" Remove="@(WindowsOnlyCMakeProjectReference)" />
+
     <!-- Reference nested CMake projects from the merged wrapper so we don't need to be process-isolated to run them. -->
     <CMakeProjectReference Include="StringMarshalling/**/CMakeLists.txt" />
   </ItemGroup>
