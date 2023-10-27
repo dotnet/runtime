@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -11,6 +12,58 @@ namespace Microsoft.Interop
 {
     internal static class LibraryImportGeneratorHelpers
     {
+        public static MarshallingInfoParser CreateMarshallingInfoParser(StubEnvironment env, TargetFrameworkSettings tf, GeneratorDiagnosticsBag diagnostics, IMethodSymbol method, InteropAttributeCompilationData interopAttributeData, AttributeData unparsedAttributeData)
+        {
+            // Compute the current default string encoding value.
+            CharEncoding defaultEncoding = CharEncoding.Undefined;
+            if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
+            {
+                defaultEncoding = interopAttributeData.StringMarshalling switch
+                {
+                    StringMarshalling.Utf16 => CharEncoding.Utf16,
+                    StringMarshalling.Utf8 => CharEncoding.Utf8,
+                    StringMarshalling.Custom => CharEncoding.Custom,
+                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
+                };
+            }
+            else if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
+            {
+                defaultEncoding = CharEncoding.Custom;
+            }
+
+            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, interopAttributeData.StringMarshallingCustomType);
+
+            var useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(
+                    new MarshalAsAttributeParser(diagnostics, defaultInfo),
+                    new MarshalUsingAttributeParser(env.Compilation, diagnostics));
+
+            IMarshallingInfoAttributeParser marshalAsAttributeParser = new MarshalAsAttributeParser(diagnostics, defaultInfo);
+
+            if (tf.TargetFramework == TargetFramework.Net && tf.Version.Major >= 7)
+            {
+                // If we have support for the attributed marshalling model, then we want to use that to provide the marshalling logic
+                // when possible. On other target frameworks, we'll fall back to using the Forwarder logic and re-emitting the MarshalAs attribute.
+                marshalAsAttributeParser = new MarshalAsWithCustomMarshallersParser(env.Compilation, diagnostics, marshalAsAttributeParser);
+            }
+
+            return new MarshallingInfoParser(
+                diagnostics,
+                new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
+                useSiteAttributeParsers,
+                ImmutableArray.Create(
+                    marshalAsAttributeParser,
+                    new MarshalUsingAttributeParser(env.Compilation, diagnostics),
+                    new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
+                    new ComInterfaceMarshallingInfoProvider(env.Compilation)),
+                ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
+                    new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
+                    new ArrayMarshallingInfoProvider(env.Compilation),
+                    new CharMarshallingInfoProvider(defaultInfo),
+                    new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo),
+                    new BooleanMarshallingInfoProvider(),
+                    new BlittableTypeMarshallingInfoProvider(env.Compilation)));
+        }
+
         public static IMarshallingGeneratorFactory CreateGeneratorFactory(TargetFrameworkSettings tf, LibraryImportGeneratorOptions options, EnvironmentFlags env)
         {
             IMarshallingGeneratorFactory generatorFactory;
@@ -57,6 +110,7 @@ namespace Microsoft.Interop
                 }
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
+                generatorFactory = new BreakingChangeDetector(generatorFactory);
             }
 
             return generatorFactory;

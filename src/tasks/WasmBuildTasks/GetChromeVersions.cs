@@ -96,7 +96,7 @@ public partial class GetChromeVersions : MBU.Task
         int numMajorVersionsTried = 0;
 
         string curMajorVersion = string.Empty;
-        await foreach (string version in GetVersionsAsync())
+        await foreach (string version in GetVersionsAsync().ConfigureAwait(false))
         {
             string majorVersion = version[..version.IndexOf('.')];
             if (curMajorVersion != majorVersion)
@@ -292,7 +292,7 @@ public partial class GetChromeVersions : MBU.Task
             {
                 Log.LogMessage(MessageImportance.Low, $"Downloading {url} ...");
                 using Stream stream = await s_httpClient.GetStreamAsync(url).ConfigureAwait(false);
-                using FileStream fs = File.OpenWrite(filePath);
+                using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
                 await stream.CopyToAsync(fs).ConfigureAwait(false);
             }
             catch (HttpRequestException hre)
