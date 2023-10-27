@@ -19,7 +19,7 @@ namespace TestStackOverflow
         {
             Process testProcess = new Process();
             string executableExtension = TestLibrary.Utilities.IsWindows ? ".exe" : "";
-            testProcess.StartInfo.FileName = Path.Combine(s_currentPath, "native", $"{ThisProjectName}{executableExtension}");
+            testProcess.StartInfo.FileName = Environment.ProcessPath;
             testProcess.StartInfo.Arguments = testArgs;
             return testProcess;
         }
