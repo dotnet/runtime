@@ -85,7 +85,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             return !Log.HasLoggedErrors;
         }
 
-        private void Write(string path, ITaskItem[] flags)
+        private static void Write(string path, ITaskItem[] flags)
         {
             using (StreamWriter outputFile = new StreamWriter(path))
             {
