@@ -5,7 +5,7 @@
   <!-- Add the CoreCLRTestLibrary dependency -->
   <ItemGroup Condition="'$(IgnoreCoreCLRTestLibraryDependency)' != 'true'">
     <ProjectReference
-      Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+      Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 
   <Target Name="CopyInteropNativeRuntimeDependencies"

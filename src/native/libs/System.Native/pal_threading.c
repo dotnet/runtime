@@ -233,14 +233,6 @@ int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(voi
     error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     assert(error == 0);
 
-#ifdef ENSURE_PRIMARY_STACK_SIZE
-    // TODO: https://github.com/dotnet/runtimelab/issues/791
-    if (stackSize == 0)
-    {
-        stackSize = 1536 * 1024;
-    }
-#endif
-
     if (stackSize > 0)
     {
         if (stackSize < (uintptr_t)PTHREAD_STACK_MIN)

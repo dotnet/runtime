@@ -19,10 +19,11 @@
         $(AppleBuildSupportDir) - directory which has all the tasks, targets, and runtimepack
 -->
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.props" />
 
   <PropertyGroup>
-    <_NetCoreAppCurrent>net8.0</_NetCoreAppCurrent>
+    <!-- Keep these underscored targets in sync with the root Directory.Build.props -->
+    <_NetCoreAppCurrent>net9.0</_NetCoreAppCurrent>
+    <TargetFramework>$(_NetCoreAppCurrent)</TargetFramework>
     <_NetCoreAppToolCurrent>net8.0</_NetCoreAppToolCurrent>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
@@ -56,6 +57,15 @@
     <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'LibraryBuilder'))</LibraryBuilderDir>
 
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross'))</MonoAotCrossDir>
+    <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'ilc'))</CoreCLRILCompilerDir>
+    <ILCompilerTargetsDir>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'BuildIntegration'))</ILCompilerTargetsDir>
+    <ILCompilerTargetsPath>$([MSBuild]::NormalizePath('$(ILCompilerTargetsDir)', 'Microsoft.DotNet.ILCompiler.SingleEntry.targets'))</ILCompilerTargetsPath>
+    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
+    <IlcSdkPath>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'aotsdk'))</IlcSdkPath>
+    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackLibDir)</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
+    <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
+    <ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</ILLinkTasksAssembly>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
@@ -72,5 +82,8 @@
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
   </PropertyGroup>
+
+  <!-- Due to dependencies on resolving properties like: $(MicrosoftNetCoreAppRuntimePackRidDir) we need to import the default props at the end -->
+  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.props" />
 
 </Project>

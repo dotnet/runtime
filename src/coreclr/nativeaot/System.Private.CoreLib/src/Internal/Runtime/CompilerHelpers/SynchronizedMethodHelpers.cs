@@ -25,13 +25,7 @@ namespace Internal.Runtime.CompilerHelpers
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            if (lck.TryAcquire(0))
-            {
-                lockTaken = true;
-                return;
-            }
-
-            Monitor.TryAcquireContended(lck, obj, Timeout.Infinite);
+            Monitor.TryAcquireSlow(lck, obj, Timeout.Infinite);
             lockTaken = true;
         }
         private static void MonitorExit(object obj, ref bool lockTaken)
@@ -59,13 +53,7 @@ namespace Internal.Runtime.CompilerHelpers
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            if (lck.TryAcquire(0))
-            {
-                lockTaken = true;
-                return;
-            }
-
-            Monitor.TryAcquireContended(lck, obj, Timeout.Infinite);
+            Monitor.TryAcquireSlow(lck, obj, Timeout.Infinite);
             lockTaken = true;
         }
         private static unsafe void MonitorExitStatic(MethodTable* pMT, ref bool lockTaken)
@@ -79,7 +67,7 @@ namespace Internal.Runtime.CompilerHelpers
             lockTaken = false;
         }
 
-        private static unsafe Type GetStaticLockObject(MethodTable* pMT)
+        private static unsafe RuntimeType GetStaticLockObject(MethodTable* pMT)
         {
             return Type.GetTypeFromMethodTable(pMT);
         }

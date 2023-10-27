@@ -132,11 +132,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var fixture = sharedTestState.PortableAppFixture_Published
                 .Copy();
 
-            // Since SDK doesn't support building framework dependent apphost yet, emulate that behavior
-            // by creating the executable from apphost.exe
-            var appExe = fixture.TestProject.AppExe;
-            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
-            AppHostExtensions.BindAppHost(appExe);
+            string appExe = fixture.TestProject.AppExe;
+            fixture.TestProject.BuiltApp.CreateAppHost();
 
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
@@ -174,11 +171,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var fixture = sharedTestState.PortableAppFixture_Published
                 .Copy();
 
-            // Since SDK doesn't support building framework dependent apphost yet, emulate that behavior
-            // by creating the executable from apphost.exe
-            var appExe = fixture.TestProject.AppExe;
-            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
-            AppHostExtensions.BindAppHost(appExe);
+            string appExe = fixture.TestProject.AppExe;
+            fixture.TestProject.BuiltApp.CreateAppHost();
 
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
@@ -331,8 +325,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
-            AppHostExtensions.BindAppHost(appExe);
+            fixture.TestProject.BuiltApp.CreateAppHost();
 
             string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "cliErrors"));
             using (new TestArtifact(invalidDotNet))
@@ -383,9 +376,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
-            AppHostExtensions.BindAppHost(appExe);
-            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+            fixture.TestProject.BuiltApp.CreateAppHost(isWindowsGui: true);
 
             string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
             using (new TestArtifact(invalidDotNet))
@@ -428,9 +419,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
-            AppHostExtensions.BindAppHost(appExe);
-            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+            fixture.TestProject.BuiltApp.CreateAppHost(isWindowsGui: true);
 
             string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
             using (new TestArtifact(invalidDotNet))
@@ -463,9 +452,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
-            AppHostExtensions.BindAppHost(appExe);
-            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+            fixture.TestProject.BuiltApp.CreateAppHost(isWindowsGui: true);
 
             string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
             using (new TestArtifact(dotnetWithMockHostFxr))
@@ -504,9 +491,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
-            AppHostExtensions.BindAppHost(appExe);
-            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+            fixture.TestProject.BuiltApp.CreateAppHost(isWindowsGui: true);
 
             string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
             using (new TestArtifact(invalidDotNet))
@@ -568,8 +553,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 MockApp = new TestApp(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "portableAppActivation")), "App");
                 Directory.CreateDirectory(MockApp.Location);
                 File.WriteAllText(MockApp.AppDll, string.Empty);
-                File.Copy(Binaries.AppHost.FilePath, MockApp.AppExe);
-                AppHostExtensions.BindAppHost(MockApp.AppExe);
+                MockApp.CreateAppHost(copyResources: false);
             }
 
             public void Dispose()

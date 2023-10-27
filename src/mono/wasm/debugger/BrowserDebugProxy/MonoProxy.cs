@@ -34,14 +34,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool JustMyCode { get; private set; }
         private PauseOnExceptionsKind _defaultPauseOnExceptions { get; set; }
 
-        protected readonly ProxyOptions _options;
-
-        public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
+        public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(options, logger, loggerId)
         {
             UrlSymbolServerList = new List<string>();
             RuntimeId = runtimeId;
-            _options = options;
             _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
+            JustMyCode = options?.JustMyCode ?? false;
         }
 
         internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
@@ -147,7 +145,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Contexts.ClearContexts(sessionId);
                         return false;
                     }
-
+                case "Debugger.scriptParsed":
+                    {
+                        if (args["url"]?.ToString()?.Contains("/_framework/") == true) //is from dotnet runtime framework
+                        {
+                            if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                                context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
+                        }
+                        return false;
+                    }
                 case "Debugger.paused":
                     {
                         return await OnDebuggerPaused(sessionId, args, token);
@@ -236,11 +242,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 default:
                     {
-                        //avoid pausing when justMyCode is enabled and it's a wasm function
-                        if (JustMyCode && args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
+                        if (JustMyCode)
                         {
-                            await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
-                            return true;
+                            if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) || !context.IsRuntimeReady)
+                                return false;
+                            //avoid pausing when justMyCode is enabled and it's a wasm function
+                            if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
+                            {
+                                await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                                return true;
+                            }
+                            //avoid pausing when justMyCode is enabled and it's a framework function
+                            var scriptId = args?["callFrames"]?[0]?["location"]?["scriptId"]?.Value<int>();
+                            if (!context.IsSkippingHiddenMethod && !context.IsSteppingThroughMethod && scriptId is not null && context.FrameworkScriptList.Contains(scriptId.Value))
+                            {
+                                await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                                return true;
+                            }
                         }
                         break;
                     }
@@ -1108,6 +1126,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         function_name.StartsWith("_mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal) ||
                         function_name.StartsWith("mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal)))
                 {
+                    await SymbolicateFunctionName(sessionId, context, frame, token);
                     callFrames.Add(frame);
                 }
             }
@@ -1129,6 +1148,33 @@ namespace Microsoft.WebAssembly.Diagnostics
             await SendEvent(sessionId, "Debugger.paused", o, token);
 
             return true;
+        }
+
+        private async Task SymbolicateFunctionName(SessionId sessionId, ExecutionContext context, JObject frame, CancellationToken token)
+        {
+            string funcPrefix = "$func";
+            string functionName = frame["functionName"]?.Value<string>();
+            if (!functionName.StartsWith(funcPrefix, StringComparison.Ordinal) || !int.TryParse(functionName[funcPrefix.Length..], out var funcId))
+            {
+                return;
+            }
+
+            if (context.WasmFunctionIds is null)
+            {
+                Result getIds = await SendMonoCommand(sessionId, MonoCommands.GetWasmFunctionIds(RuntimeId), token);
+                if (getIds.IsOk)
+                {
+                    string[] symbols = getIds.Value?["result"]?["value"]?.ToObject<string[]>();
+                    context.WasmFunctionIds = symbols;
+                }
+                else
+                {
+                    context.WasmFunctionIds = Array.Empty<string>();
+                }
+            }
+
+            if (context.WasmFunctionIds.Length > funcId)
+                frame["functionName"] = context.WasmFunctionIds[funcId];
         }
 
         internal virtual void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Task<Result> debuggerAgentBufferTask)
@@ -1277,7 +1323,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             if (context.CallStack.Count <= 1 && kind == StepKind.Out)
-                return false;
+            {
+                Frame scope = context.CallStack.FirstOrDefault<Frame>();
+                if (scope is null || !(await context.SdbAgent.IsAsyncMethod(scope.Method.DebugId, token)))
+                    return false;
+            }
             var ret = await TryStepOnManagedCodeAndStepOutIfNotPossible(msgId, context, kind, token);
             if (ret)
                 SendResponse(msgId, Result.Ok(new JObject()), token);

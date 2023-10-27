@@ -61,7 +61,7 @@ namespace System.Reflection
 
             // _isValueTypeInstanceMethod = method.DeclaringType?.IsValueType ?? false;
 
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
 
             _argumentCount = parameters.Length;
 
@@ -579,7 +579,7 @@ namespace System.Reflection
 
         private unsafe object? GetCoercedDefaultValue(int index, in ArgumentInfo argumentInfo)
         {
-            object? defaultValue = Method.GetParametersNoCopy()[index].DefaultValue;
+            object? defaultValue = Method.GetParametersAsSpan()[index].DefaultValue;
             if (defaultValue == DBNull.Value)
                 throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
 
@@ -769,13 +769,11 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
-                    {
-                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
-                    }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 
@@ -806,13 +804,11 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
-                    {
-                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
-                    }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 
@@ -837,6 +833,11 @@ namespace System.Reflection
                 Type type = Type.GetTypeFromMethodTable(_returnType.ToPointer());
                 Debug.Assert(type.IsPointer);
                 obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref byref), type);
+            }
+            else if ((_returnTransform & Transform.FunctionPointer) != 0)
+            {
+                Debug.Assert(Type.GetTypeFromMethodTable(_returnType.ToPointer()).IsFunctionPointer);
+                obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref byref);
             }
             else if ((_returnTransform & Transform.Reference) != 0)
             {
@@ -887,7 +888,12 @@ namespace System.Reflection
         [InlineArray(MaxStackAllocArgCount)]
         internal ref struct StackAllocatedByRefs
         {
+            // We're intentionally taking advantage of the runtime functionality, even if the language functionality won't work
+            // CS9184: 'Inline arrays' language feature is not supported for inline array types with element field which is either a 'ref' field, or has type that is not valid as a type argument.
+
+#pragma warning disable CS9184
             internal ref byte _arg0;
+#pragma warning restore CS9184
         }
     }
 }

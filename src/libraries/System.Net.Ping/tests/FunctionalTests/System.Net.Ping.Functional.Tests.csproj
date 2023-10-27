@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <!-- Test APIs introduced after 1.0 -->
   <ItemGroup>

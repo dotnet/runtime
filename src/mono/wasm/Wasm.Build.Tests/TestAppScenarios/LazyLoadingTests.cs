@@ -26,7 +26,7 @@ public class LazyLoadingTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "LazyLoadingTest"));
+        var result = await RunSdkStyleApp(new(Configuration: "Debug", TestScenario: "LazyLoadingTest"));
         Assert.True(result.TestOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
     }
 
@@ -38,7 +38,6 @@ public class LazyLoadingTests : AppTestBase
 
         var result = await RunSdkStyleApp(new(
             Configuration: "Debug",
-            ForPublish: true,
             TestScenario: "LazyLoadingTest",
             BrowserQueryString: new Dictionary<string, string> { ["loadRequiredAssembly"] = "false" },
             ExpectedExitCode: 1

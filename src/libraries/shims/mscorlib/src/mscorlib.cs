@@ -109,3 +109,9 @@
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore<>))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.Sources.ValueTaskSourceOnCompletedFlags))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.Sources.ValueTaskSourceStatus))]
+// These types are required for back-compatibility with .NET Framework and previous versions of .NETCoreApp. -->
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.Emit.PEFileKinds))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.AssemblyRegistrationFlags))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.ExporterEventKind))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.RegistrationClassContext))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.RegistrationConnectionType))]

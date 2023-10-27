@@ -50,7 +50,14 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// </summary>
         /// <returns> The configuration name. </returns>
         public override string ToString()
-            => $"{GetType().Name} Prefix: '{_prefix}'";
+        {
+            string s = GetType().Name;
+            if (!string.IsNullOrEmpty(_prefix))
+            {
+                s += $" Prefix: '{_prefix}'";
+            }
+            return s;
+        }
 
         internal void Load(IDictionary envVariables)
         {

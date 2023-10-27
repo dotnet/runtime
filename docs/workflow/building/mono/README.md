@@ -55,24 +55,24 @@ build.cmd mono --build
 ### Useful Build Arguments
 Here are a list of build arguments that may be of use:
 
-`/p:MonoEnableLlvm=true` - Builds mono w/ LLVM
+`/p:MonoEnableLLVM=true` - Builds mono w/ LLVM
 
-`/p:MonoEnableLlvm=true /p:MonoLLVMDir=path/to/llvm` - Builds mono w/ LLVM from a custom path
+`/p:MonoEnableLLVM=true /p:MonoLLVMDir=path/to/llvm` - Builds mono w/ LLVM from a custom path
 
-`/p:MonoEnableLlvm=true /p:MonoLLVMDir=path/to/llvm /p:MonoLLVMUseCxx11Abi=true` - Builds mono w/ LLVM
+`/p:MonoEnableLLVM=true /p:MonoLLVMDir=path/to/llvm /p:MonoLLVMUseCxx11Abi=true` - Builds mono w/ LLVM
 from a custom path (and that LLVM was built with C++11 ABI)
 
 For `build.sh`
 
 `/p:DisableCrossgen=true` - Skips building the installer if you don't need it (builds faster)
 
-`-p:KeepNativeSymbols=true` - Keep the symbols in the binary instead of stripping them out to a separate file. This helps with debugging Mono with lldb.
+`/p:KeepNativeSymbols=true` - Keep the symbols in the binary instead of stripping them out to a separate file. This helps with debugging Mono with lldb.
 
 The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-See the instructions for [Building WebAssembly](../../building/libraries/webassembly-instructions.md).
+See the instructions for [Building WebAssembly](../../../../src/mono/wasm/README.md).
 
 ### Android
 

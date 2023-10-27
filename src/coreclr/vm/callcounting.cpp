@@ -660,6 +660,13 @@ bool CallCountingManager::SetCodeEntryPoint(
             CallCount callCountThreshold = g_pConfig->TieredCompilation_CallCountThreshold();
             _ASSERTE(callCountThreshold != 0);
 
+            // Let's tier up all cast helpers faster than other methods. This is because we want to import them as
+            // direct calls in codegen and they need to be promoted earlier than their callers.
+            if (methodDesc->GetMethodTable() == g_pCastHelpers)
+            {
+                callCountThreshold = max(1, (CallCount)(callCountThreshold / 2));
+            }
+
             NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);
             callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);
             callCountingInfo = callCountingInfoHolder.Extract();

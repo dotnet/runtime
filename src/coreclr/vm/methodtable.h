@@ -566,7 +566,6 @@ public:
 
 public:
     PTR_Module GetModule();
-    PTR_Module GetModule_NoLogging();
     Assembly *GetAssembly();
 
     PTR_Module GetModuleIfLoaded();
@@ -776,8 +775,8 @@ public:
 #endif
 
 #if defined(TARGET_RISCV64)
-    static bool IsRiscv64OnlyOneField(MethodTable * pMT);
-    static int GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+    static bool IsRiscV64OnlyOneField(MethodTable * pMT);
+    static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -860,7 +859,7 @@ public:
 
     void AllocateRegularStaticBoxes();
     void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
-    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0, bool canBeFrozen = false);
+    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen = false);
 
     void CheckRestore();
 
@@ -876,17 +875,11 @@ public:
 
     void SetIsRestored();
 
-    inline BOOL IsRestored_NoLogging()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return !(GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
-    }
     inline BOOL IsRestored()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return IsRestored_NoLogging();
+        return !(GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
     }
 
     //-------------------------------------------------------------------
@@ -912,7 +905,7 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
 
         InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
     }
@@ -928,7 +921,7 @@ public:
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
     }
 
     // If canCompare is true, this method ensure an atomic operation for setting
@@ -939,7 +932,7 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
+            InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags,
                 MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
         }
         else
@@ -951,13 +944,13 @@ public:
     inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -971,7 +964,7 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
 
         InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
     }
@@ -1405,13 +1398,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNumVirtuals_NoLogging();
-    }
-
-    inline WORD GetNumVirtuals_NoLogging()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
         return m_wNumVirtuals;
     }
 
@@ -1807,7 +1793,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_pParentMethodTable = pParentMethodTable;
 #ifdef _DEBUG
-        GetWriteableDataForWrite_NoLogging()->SetParentMethodTablePointerValid();
+        GetWriteableDataForWrite()->SetParentMethodTablePointerValid();
 #endif
     }
 #endif // !DACCESS_COMPILE
@@ -1820,8 +1806,6 @@ public:
     // Note that it is not generally the case that GetClass.GetMethodTable() == t.
 
     PTR_EEClass GetClass();
-
-    inline PTR_EEClass GetClass_NoLogging();
 
     PTR_EEClass GetClassWithPossibleAV();
 
@@ -2262,6 +2246,7 @@ public:
     void SetHasCriticalFinalizer()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!HasComponentSize());
         SetFlag(enum_flag_HasCriticalFinalizer);
     }
     // Does this class have non-trivial finalization requirements?
@@ -2275,7 +2260,7 @@ public:
     DWORD HasCriticalFinalizer() const
     {
         LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_HasCriticalFinalizer);
+        return !HasComponentSize() && GetFlag(enum_flag_HasCriticalFinalizer);
     }
 
     //-------------------------------------------------------------------
@@ -2558,18 +2543,11 @@ public:
 
     // Get the RID/token for the metadata for the corresponding type declaration
     unsigned GetTypeDefRid();
-    unsigned GetTypeDefRid_NoLogging();
 
     inline mdTypeDef GetCl()
     {
         LIMITED_METHOD_CONTRACT;
         return TokenFromRid(GetTypeDefRid(), mdtTypeDef);
-    }
-
-    inline mdTypeDef GetCl_NoLogging()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return TokenFromRid(GetTypeDefRid_NoLogging(), mdtTypeDef);
     }
 
     void SetCl(mdTypeDef token);
@@ -2749,22 +2727,10 @@ public:
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetWriteableData_NoLogging();
-    }
-
-    inline PTR_Const_MethodTableWriteableData GetWriteableData_NoLogging() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
         return MethodTable::m_pWriteableData;
     }
 
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetWriteableDataForWrite_NoLogging();
-    }
-
-    inline PTR_MethodTableWriteableData GetWriteableDataForWrite_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return MethodTable::m_pWriteableData;
@@ -3326,15 +3292,15 @@ private:
         // apply to Strings / Arrays.
 
         enum_flag_UNUSED_ComponentSize_1    = 0x00000001,
-
-        enum_flag_StaticsMask               = 0x00000006,
+        // GC depends on this bit
+        enum_flag_HasCriticalFinalizer      = 0x00000002, // finalizer must be run on Appdomain Unload
+        enum_flag_StaticsMask               = 0x0000000C,
         enum_flag_StaticsMask_NonDynamic    = 0x00000000,
-        enum_flag_StaticsMask_Dynamic       = 0x00000002,   // dynamic statics (EnC, reflection.emit)
+        enum_flag_StaticsMask_Dynamic       = 0x00000008,   // dynamic statics (EnC, reflection.emit)
         enum_flag_StaticsMask_Generics      = 0x00000004,   // generics statics
-        enum_flag_StaticsMask_CrossModuleGenerics       = 0x00000006, // cross module generics statics (NGen)
-        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000002, // helper constant to get rid of unnecessary check
+        enum_flag_StaticsMask_CrossModuleGenerics       = 0x0000000C, // cross module generics statics (NGen)
+        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000008, // helper constant to get rid of unnecessary check
 
-        enum_flag_NotInPZM                  = 0x00000008,   // True if this type is not in its PreferredZapModule
 
         enum_flag_GenericsMask              = 0x00000030,
         enum_flag_GenericsMask_NonGeneric   = 0x00000000,   // no instantiation
@@ -3363,9 +3329,10 @@ private:
 
         enum_flag_IsByRefLike               = 0x00001000,
 
+        enum_flag_NotInPZM                  = 0x00002000,   // True if this type is not in its PreferredZapModule
+
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.
-        enum_flag_UNUSED_ComponentSize_5    = 0x00002000,
         enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
         enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
 
@@ -3377,7 +3344,8 @@ private:
         // As you change the flags in WFLAGS_LOW_ENUM you also need to change this
         // to be up to date to reflect the default values of those flags for the
         // case where this MethodTable is for a String or Array
-        enum_flag_StringArrayValues = SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
+        enum_flag_StringArrayValues = SET_FALSE(enum_flag_HasCriticalFinalizer) |
+                                      SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
                                       SET_FALSE(enum_flag_NotInPZM) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
                                       SET_FALSE(enum_flag_HasVariance) |
@@ -3422,9 +3390,10 @@ private:
         enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask
 
 
+        // GC depends on this bit
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-        enum_flag_IDynamicInterfaceCastable   = 0x00200000, // class implements IDynamicInterfaceCastable interface
+        enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
@@ -3436,8 +3405,8 @@ private:
 
         enum_flag_IsTrackedReferenceWithFinalizer   = 0x04000000,
 
-        enum_flag_HasCriticalFinalizer        = 0x08000000, // finalizer must be run on Appdomain Unload
-        enum_flag_Collectible                 = 0x10000000,
+        // GC depends on this bit
+        enum_flag_Collectible                 = 0x00200000,
         enum_flag_ContainsGenericVariables    = 0x20000000,   // we cache this flag to help detect these efficiently and
                                                               // to detect this condition when restoring
 

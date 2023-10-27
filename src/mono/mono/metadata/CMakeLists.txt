@@ -65,9 +65,6 @@ set(metadata_common_sources
     cominterop.h
     components.h
     components.c
-    coree.c
-    coree.h
-    coree-internals.h
     debug-helpers.c
     debug-mono-symfile.c
     debug-mono-ppdb.h
@@ -202,13 +199,28 @@ endif()
 
 set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources}")
 
+if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
+    add_library(metadata_objects_shared OBJECT ${metadata_sources})
+    target_compile_definitions(metadata_objects_shared PRIVATE ${metadata_compile_definitions})
+    target_link_libraries(metadata_objects_shared PRIVATE monoapi eglib_api utils_objects_shared)
+    # note: metadata_objects is an object library, so this doesn't force linking with sgen,
+    # it just adds the relevant include directories - which we need even with Boehm
+    target_link_libraries(metadata_objects_shared PRIVATE sgen_objects_shared)
+    target_compile_definitions(metadata_objects_shared PRIVATE -DMONO_DLL_EXPORT)
+    target_include_directories(metadata_objects_shared PRIVATE ${PROJECT_BINARY_DIR}/../..
+        ${PROJECT_SOURCE_DIR}/../..
+        ${PROJECT_SOURCE_DIR}/..)
+endif()
+
 add_library(metadata_objects OBJECT ${metadata_sources})
 target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
 target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
 # it just adds the relevant include directories - which we need even with Boehm
 target_link_libraries(metadata_objects PRIVATE sgen_objects)
-target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
+if(NOT HOST_WIN32)
+    target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
+endif()
 target_include_directories(metadata_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)

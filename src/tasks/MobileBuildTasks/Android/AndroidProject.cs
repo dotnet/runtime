@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Microsoft.Android.Build.Ndk;
+using Microsoft.Mobile.Build.Clang;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -41,7 +42,7 @@ namespace Microsoft.Android.Build
         }
 
         // builds using NDK toolchain
-        public void Build(string workingDir, AndroidBuildOptions buildOptions, bool stripDebugSymbols = false, string apiLevel = DefaultMinApiLevel)
+        public void Build(string workingDir, ClangBuildOptions buildOptions, bool stripDebugSymbols = false, string apiLevel = DefaultMinApiLevel)
         {
             NdkTools tools = new NdkTools(targetArchitecture, GetHostOS(), apiLevel);
 
@@ -90,7 +91,7 @@ namespace Microsoft.Android.Build
             return Path.Combine(workingDir, projectName);
         }
 
-        private static string BuildClangArgs(AndroidBuildOptions buildOptions)
+        private static string BuildClangArgs(ClangBuildOptions buildOptions)
         {
             StringBuilder ret = new StringBuilder();
 
@@ -122,9 +123,8 @@ namespace Microsoft.Android.Build
                 string rootPath = Path.GetDirectoryName(lib)!;
                 string libName = Path.GetFileName(lib);
 
-                if (!libDirs.Contains(rootPath))
+                if (libDirs.Add(rootPath))
                 {
-                    libDirs.Add(rootPath);
                     ret.Append($"-L {rootPath} ");
                 }
                 ret.Append($"-l:{libName} ");

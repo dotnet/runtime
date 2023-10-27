@@ -1668,7 +1668,13 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				i++; /* skip the next record */
 				continue;
 			}
-			/* fallthru */
+			// don't expect to see any other func codes with this table
+			g_assert (func_code == ENC_FUNC_DEFAULT);
+			// If it's an addition, it's an added type definition, continue.
+
+			// If it's a modification, Roslyn sometimes sends this when a custom
+			// attribute is deleted from a type definition.
+			break;
 		}
 		default:
 			if (!is_addition) {
@@ -2279,16 +2285,42 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					 * especially since from the next generation's point of view
 					 * that's what adding a field/method will be. */
 					break;
-				case ENC_FUNC_ADD_EVENT:
-					g_assert_not_reached (); /* FIXME: implement me */
 				default:
 					g_assert_not_reached (); /* unknown func_code */
 				}
 				break;
+			} else {
+				switch (func_code) {
+				case ENC_FUNC_DEFAULT:
+					// Roslyn sends this sometimes when it deletes a custom
+					// attribute.  In this case no rows of the table def have
+					// should have changed from the previous generation.
+
+					// Note: we may want to check that Parent and Interfaces
+					// haven't changed.  But note that's tricky to do: we can't
+					// just compare tokens: the parent could be a TypeRef token,
+					// and roslyn does send a new typeref row (that ends up
+					// referencing the same type definition).  But we also don't
+					// want to convert to a `MonoClass*` too eagerly - if the
+					// class hasn't been used yet we don't want to kick off
+					// class initialization (which could mention the current
+					// class thanks to generic arguments - see class-init.c)
+					// Same with Interfaces.  Fields and Methods in an EnC
+					// updated row are zero.  So that only really leaves
+					// Attributes as the only column we can compare, which
+					// wouldn't tell us much (and perhaps in the future Roslyn
+					// could allow changing visibility, so we wouldn't want to
+					// compare for equality, anyway) So... we're done.
+					break;
+				case ENC_FUNC_ADD_METHOD:
+				case ENC_FUNC_ADD_FIELD:
+					/* modifying an existing class by adding a method or field, etc. */
+					break;
+				default:
+					/* not expecting anything else */
+					g_assert_not_reached ();
+				}
 			}
-			/* modifying an existing class by adding a method or field, etc. */
-			g_assert (!is_addition);
-			g_assert (func_code != ENC_FUNC_DEFAULT);
 			break;
 		}
 		case MONO_TABLE_NESTEDCLASS: {

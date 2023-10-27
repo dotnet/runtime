@@ -1204,6 +1204,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddHttpClient_GetAwaiterAndResult_InSingleThreadedSynchronizationContext_ShouldNotHangs()
         {
             // Arrange
@@ -1367,6 +1368,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91673", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddHttpClient_ConfigurePrimaryHttpMessageHandler_ApplyChangesPrimaryHandler()
         {
             // Arrange
@@ -1390,7 +1392,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Same(testCredentials, ((HttpClientHandler)testBuilder.PrimaryHandler).Credentials);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpClient_ConfigureAdditionalHttpMessageHandlers_ModifyAdditionalHandlers()
         {
             // Arrange

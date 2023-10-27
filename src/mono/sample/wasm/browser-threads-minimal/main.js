@@ -79,7 +79,6 @@ try {
     let w0 = await exports.Sample.Test.WsClientMain("wss://corefx-net-http11.azurewebsites.net/WebSocket/EchoWebSocket.ashx");
     console.log("smoke: WsClientMain done " + w0);
 
-    /* ActiveIssue https://github.com/dotnet/runtime/issues/88057
     console.log("smoke: running FetchBackground(blurst.txt)");
     let s = await exports.Sample.Test.FetchBackground(resolveUrl("./blurst.txt"));
     console.log("smoke: FetchBackground(blurst.txt) done");
@@ -96,7 +95,7 @@ try {
         const msg = `Unexpected FetchBackground(missing) result ${s}`;
         document.getElementById("out").innerHTML = msg;
         throw new Error(msg);
-    }*/
+    }
 
     console.log("smoke: running TaskRunCompute");
     const r1 = await exports.Sample.Test.RunBackgroundTaskRunCompute();

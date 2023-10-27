@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="$(MSBuildProjectName).csproj" />
+    <MergedWrapperProjectReference Remove="classloader/generics/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="classloader/regressions/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="classloader/TypeGeneratorTests/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="classloader/StaticVirtualMethods/GenericContext/Generator/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="classloader/StaticVirtualMethods/TypeHierarchy/Generator/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

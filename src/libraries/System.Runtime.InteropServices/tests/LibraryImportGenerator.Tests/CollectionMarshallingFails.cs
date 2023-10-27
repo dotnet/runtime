@@ -329,6 +329,8 @@ namespace LibraryImportGenerator.IntegrationTests
 
         public static IntStructWrapper ConvertToManaged(nint unmanaged) => s_IntStructWrapperMarshalling.ConvertToManaged(unmanaged);
 
+        public static nint ConvertToUnmanaged(IntStructWrapper managed) => throw new NotImplementedException();
+
         /// <summary>
         /// The number of elements that are expected to be cleaned up / freed.
         /// </summary>
@@ -366,6 +368,8 @@ namespace LibraryImportGenerator.IntegrationTests
 
         public static BoolStruct ConvertToManaged(nint unmanaged) => s_BoolStructMarshalling.ConvertToManaged(unmanaged);
 
+        public static nint ConvertToUnmanaged(BoolStruct managed) => throw new NotImplementedException();
+
         /// <summary>
         /// The number of elements that are expected to be cleaned up / freed.
         /// </summary>
@@ -390,10 +394,10 @@ namespace LibraryImportGenerator.IntegrationTests
     /// so the pinvoke should not be run if it will access marshalled objects. Make sure to call ThrowOnNthMarshalledElement such that marshalling
     /// the array will fail before the pinvoke is run.
     /// </summary>
+
     [CustomMarshaller(typeof(BoolStruct), MarshalMode.ElementIn, typeof(EnforceLastElementMarshalledCleanupBoolStruct))]
     [CustomMarshaller(typeof(BoolStruct), MarshalMode.ElementRef, typeof(EnforceLastElementMarshalledCleanupBoolStruct))]
     [CustomMarshaller(typeof(BoolStruct), MarshalMode.ElementOut, typeof(EnforceLastElementMarshalledCleanupBoolStruct))]
-    [CustomMarshaller(typeof(char), MarshalMode.ElementIn, typeof(EnforceLastElementMarshalledCleanupBoolStruct))]
     static class EnforceLastElementMarshalledCleanupBoolStruct
     {
         private static MarshallingExceptionManager<BoolStruct> s_BoolStructMarshalling = new(_dummyPtr, default);
@@ -409,8 +413,6 @@ namespace LibraryImportGenerator.IntegrationTests
             if (obj != _dummyPtr)
                 s_BoolStructMarshalling.Throw($"Freed unmarshalled pointer: {obj}");
         }
-
-        public static nint ConvertToUnmanaged(char managed) => throw new NotImplementedException();
 
         public static BoolStruct ConvertToManaged(nint unmanaged) => throw new NotImplementedException();
     }

@@ -13,8 +13,6 @@ using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-#nullable enable
-
 namespace Microsoft.WebAssembly.Build.Tasks
 {
     /// <summary>
@@ -35,6 +33,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public string       Arguments              { get; set; } = string.Empty;
         public string?      WorkingDirectory       { get; set; }
         public string       OutputMessageImportance{ get; set; } = "Low";
+        public string?      MessageToIndicateCompiling { get; set; }
 
         [Output]
         public ITaskItem[]? OutputFiles            { get; private set; }
@@ -116,6 +115,9 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                 if (_numCompiled > 0)
                     Log.LogMessage(MessageImportance.High, $"[{_numCompiled}/{SourceFiles.Length}] skipped unchanged files");
+
+                if (!string.IsNullOrEmpty(MessageToIndicateCompiling))
+                    Log.LogMessage(MessageImportance.High, MessageToIndicateCompiling);
 
                 Log.LogMessage(MessageImportance.Low, "Using environment variables:");
                 foreach (var kvp in envVarsDict)

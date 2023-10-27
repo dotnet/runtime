@@ -39,7 +39,12 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
-
+        public static bool ReleaseRuntime
+#if RELEASE_RUNTIME
+            => true;
+#else
+            => false;
+#endif
         public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
 
         public static bool WasmSingleThreaded => !WasmMultiThreaded;
@@ -1296,7 +1301,7 @@ namespace DebuggerTests
             if (expected?.Equals(actual) == true)
                 return;
 
-            throw new AssertActualExpectedException(
+            throw EqualException.ForMismatchedValues(
                 expected, actual,
                 $"[{label}]\n");
         }
@@ -1581,14 +1586,13 @@ namespace DebuggerTests
             }
         }
 
-        internal async Task SetJustMyCode(bool enabled)
+        internal virtual async Task SetJustMyCode(bool enabled)
         {
             var req = JObject.FromObject(new { JustMyCodeStepping = enabled });
             var res = await cli.SendCommand("DotnetDebugger.setDebuggerProperty", req, token);
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
         }
-
 
         internal async Task SetSymbolOptions(JObject param)
         {

@@ -215,7 +215,7 @@ unsigned emitter::emitInt32CnsCnt;
 unsigned emitter::emitNegCnsCnt;
 unsigned emitter::emitPow2CnsCnt;
 
-void emitterStaticStats(FILE* fout)
+void emitterStaticStats()
 {
     // The IG buffer size depends on whether we are storing a debug info pointer or not. For our purposes
     // here, do not include that.
@@ -226,6 +226,8 @@ void emitterStaticStats(FILE* fout)
     // insGroup members
 
     insGroup* igDummy = nullptr;
+
+    FILE* fout = jitstdout();
 
     fprintf(fout, "\n");
     fprintf(fout, "insGroup:\n");
@@ -590,13 +592,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -747,6 +749,10 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmMskCalleeTrash = emitComp->rbmMskCalleeTrash;
+#endif // TARGET_XARCH
 }
 
 void emitter::emitEndCG()
@@ -1650,7 +1656,22 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG ||
         (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
     {
-        emitNxtIG(true);
+        // If the current IG has instructions, then we need to create a new one.
+        if (emitCurIGnonEmpty())
+        {
+            emitNxtIG(true);
+        }
+        else
+        {
+            if (emitNoGCIG)
+            {
+                emitCurIG->igFlags |= IGF_NOGCINTERRUPT;
+            }
+            else
+            {
+                emitCurIG->igFlags &= ~IGF_NOGCINTERRUPT;
+            }
+        }
     }
 
     /* Grab the space for the instruction */
@@ -3039,68 +3060,69 @@ void emitter::emitSplit(emitLocation*         startLoc,
     UNATIVE_OFFSET curSize;
     UNATIVE_OFFSET candidateSize;
 
+    auto splitIfNecessary = [&]() {
+        if (curSize < maxSplitSize)
+        {
+            return;
+        }
+
+        // Is there a candidate?
+        if (igLastCandidate == NULL)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; we don't have a candidate to report\n", ig->igNum);
+#endif
+            return;
+        }
+
+        // Don't report the same thing twice (this also happens for the first block, since igLastReported is
+        // initialized to igStart).
+        if (igLastCandidate == igLastReported)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; we already reported it\n", igLastCandidate->igNum);
+#endif
+            return;
+        }
+
+        // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
+        // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
+        // the split size will be much larger than the maximum size of an instruction group. The invariant we want
+        // to maintain is that each fragment contains a non-zero amount of code.
+        if (candidateSize == 0)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
+#endif
+            return;
+        }
+
+// Report it!
+
+#ifdef DEBUG
+        if (EMITVERBOSE)
+        {
+            printf("emitSplit: split at IG%02u is size %x, %s than requested maximum size of %x\n",
+                   igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
+                   maxSplitSize);
+        }
+#endif
+
+        // hand memory ownership to the callback function
+        emitLocation* pEmitLoc = new (emitComp, CMK_Unknown) emitLocation(igLastCandidate);
+        callbackFunc(context, pEmitLoc);
+        igLastReported  = igLastCandidate;
+        igLastCandidate = NULL;
+        curSize -= candidateSize;
+    };
+
     for (igPrev = NULL, ig = igLastReported = igStart, igLastCandidate = NULL, candidateSize = 0, curSize = 0;
          ig != igEnd && ig != NULL; igPrev = ig, ig = ig->igNext)
     {
-        // Keep looking until we've gone past the maximum split size
-        if (curSize >= maxSplitSize)
-        {
-            bool reportCandidate = true;
-
-            // Is there a candidate?
-            if (igLastCandidate == NULL)
-            {
-#ifdef DEBUG
-                if (EMITVERBOSE)
-                    printf("emitSplit: can't split at IG%02u; we don't have a candidate to report\n", ig->igNum);
-#endif
-                reportCandidate = false;
-            }
-
-            // Don't report the same thing twice (this also happens for the first block, since igLastReported is
-            // initialized to igStart).
-            if (igLastCandidate == igLastReported)
-            {
-#ifdef DEBUG
-                if (EMITVERBOSE)
-                    printf("emitSplit: can't split at IG%02u; we already reported it\n", igLastCandidate->igNum);
-#endif
-                reportCandidate = false;
-            }
-
-            // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
-            // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
-            // the split size will be much larger than the maximum size of an instruction group. The invariant we want
-            // to maintain is that each fragment contains a non-zero amount of code.
-            if (reportCandidate && (candidateSize == 0))
-            {
-#ifdef DEBUG
-                if (EMITVERBOSE)
-                    printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
-#endif
-                reportCandidate = false;
-            }
-
-            // Report it!
-            if (reportCandidate)
-            {
-#ifdef DEBUG
-                if (EMITVERBOSE)
-                {
-                    printf("emitSplit: split at IG%02u is size %d, %s than requested maximum size of %d\n",
-                           igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
-                           maxSplitSize);
-                }
-#endif
-
-                // hand memory ownership to the callback function
-                emitLocation* pEmitLoc = new (emitComp, CMK_Unknown) emitLocation(igLastCandidate);
-                callbackFunc(context, pEmitLoc);
-                igLastReported  = igLastCandidate;
-                igLastCandidate = NULL;
-                curSize -= candidateSize;
-            }
-        }
+        splitIfNecessary();
 
         // Update the current candidate to be this block, if it isn't in the middle of a
         // prolog or epilog, which we can't split. All we know is that certain
@@ -3121,6 +3143,9 @@ void emitter::emitSplit(emitLocation*         startLoc,
         curSize += ig->igSize;
 
     } // end for loop
+
+    splitIfNecessary();
+    assert(curSize < UW_MAX_FRAGMENT_SIZE_BYTES);
 }
 
 /*****************************************************************************
@@ -3528,11 +3553,11 @@ void emitter::emitDispVarSet()
 
             if (of < 0)
             {
-                printf("-%02XH", -of);
+                printf("-0x%02X", -of);
             }
             else if (of > 0)
             {
-                printf("+%02XH", +of);
+                printf("+0x%02X", +of);
             }
 
             printf("]");
@@ -4109,7 +4134,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         if (jitdump)
         {
-            printf("%soffs=%06XH, size=%04XH", separator, ig->igOffs, ig->igSize);
+            printf("%soffs=0x%06X, size=0x%04X", separator, ig->igOffs, ig->igSize);
             separator = ", ";
         }
 
@@ -5947,7 +5972,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
-    // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
+    // We don't rely on (block->GetJumpDest()->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
     if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {
@@ -7117,12 +7142,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
                     if (emitComp->opts.disAddr)
                     {
-                        printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
+                        printf("              ;; offset=0x%04X", emitCurCodeOffs(cp));
                     }
                     else
 #endif // DEBUG
                     {
-                        printf("  ;; offset=%04XH", emitCurCodeOffs(cp));
+                        printf("  ;; offset=0x%04X", emitCurCodeOffs(cp));
                     }
                 }
                 printf("\n");
@@ -7134,7 +7159,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             printf("\n%s:", emitLabelString(ig));
             if (!emitComp->opts.disDiffable)
             {
-                printf("                ;; offset=%04XH", emitCurCodeOffs(cp));
+                printf("                ;; offset=0x%04X", emitCurCodeOffs(cp));
             }
             printf("\n");
         }
@@ -7537,7 +7562,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
+                    // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7553,7 +7578,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
+                    // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7588,7 +7613,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // emit offsets after the loop with wrong value (for example for GC ref variables).
     unsigned unusedSize = emitTotalCodeSize - actualCodeSize;
 
-    JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
+    JITDUMP("\n\nAllocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
             actualCodeSize, unusedSize);
 
     BYTE* cpRW = cp + writeableOffset;
@@ -8050,7 +8075,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     if (attr == EA_4BYTE)
     {
-        f        = forceCastToFloat(constValue);
+        f        = FloatingPointUtils::convertToSingle(constValue);
         cnsAddr  = &f;
         dataType = TYP_FLOAT;
     }
@@ -8285,7 +8310,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 switch (dsc->dsDataType)
                 {
                     case TYP_FLOAT:
-                        printf(" ; float  %9.6g", (double)*reinterpret_cast<float*>(&dsc->dsCont));
+                        printf(" ; float  %9.6g",
+                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&dsc->dsCont)));
                         break;
                     case TYP_DOUBLE:
                         printf(" ; double %12.9g", *reinterpret_cast<double*>(&dsc->dsCont));
@@ -8431,7 +8457,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                     case TYP_FLOAT:
                         assert(data->dsSize >= 4);
                         printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
-                        printf("\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
+                        printf("\t; %9.6g",
+                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
                         i += 4;
                         break;
 
@@ -9856,7 +9883,7 @@ void emitter::emitStackPop(BYTE* addr, bool isCall, unsigned char callInstrSize,
         // recorded (when we're doing the ptr reg map for a non-fully-interruptible method).
         if (emitFullGCinfo
 #ifndef JIT32_GCENCODER
-            || (emitComp->IsFullPtrRegMapRequired() && (!emitComp->GetInterruptible()) && isCall)
+            || (emitComp->IsFullPtrRegMapRequired() && !emitComp->GetInterruptible() && isCall)
 #endif // JIT32_GCENCODER
                 )
         {

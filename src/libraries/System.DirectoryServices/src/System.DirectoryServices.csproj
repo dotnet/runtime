@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822</NoWarn>
@@ -149,9 +151,9 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Compile Include="Interop\NativeMethods.cs" />
     <Compile Include="Interop\SafeNativeMethods.cs" />
     <Compile Include="Interop\UnsafeNativeMethods.cs" />
+
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
-             Link="Common\DisableRuntimeMarshalling.cs"
-             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs"
@@ -247,4 +249,5 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
+
 </Project>

@@ -81,7 +81,6 @@ bool IntegralRange::Contains(int64_t value) const
 {
     switch (type)
     {
-        case TYP_BOOL:
         case TYP_UBYTE:
         case TYP_USHORT:
             return SymbolicIntegerValue::Zero;
@@ -113,7 +112,6 @@ bool IntegralRange::Contains(int64_t value) const
     {
         case TYP_BYTE:
             return SymbolicIntegerValue::ByteMax;
-        case TYP_BOOL:
         case TYP_UBYTE:
             return SymbolicIntegerValue::UByteMax;
         case TYP_SHORT:
@@ -167,6 +165,37 @@ bool IntegralRange::Contains(int64_t value) const
                 rangeType = static_cast<var_types>(node->AsCall()->gtReturnType);
             }
             break;
+
+        case GT_IND:
+        {
+            GenTree* const addr = node->AsIndir()->Addr();
+
+            if (node->TypeIs(TYP_INT) && addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+                addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
+            {
+                GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
+
+                if (compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
+                {
+                    assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
+                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                }
+            }
+            break;
+        }
+
+        case GT_LCL_FLD:
+        {
+            GenTreeLclFld* const lclFld = node->AsLclFld();
+            LclVarDsc* const     varDsc = compiler->lvaGetDesc(lclFld);
+
+            if (node->TypeIs(TYP_INT) && varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
+            break;
+        }
 
         case GT_LCL_VAR:
         {
@@ -890,7 +919,6 @@ ssize_t Compiler::optCastConstantSmall(ssize_t iconVal, var_types smallType)
         case TYP_USHORT:
             return uint16_t(iconVal);
 
-        case TYP_BOOL:
         case TYP_UBYTE:
             return uint8_t(iconVal);
 
@@ -2267,27 +2295,27 @@ void Compiler::optAssertionGen(GenTree* tree)
             }
             break;
 
-        case GT_BLK:
         case GT_IND:
+            // Dynamic block copy sources could be zero-sized and so should not generate assertions.
+            if (tree->TypeIs(TYP_STRUCT))
+            {
+                break;
+            }
+            FALLTHROUGH;
+
+        case GT_XAND:
+        case GT_XORR:
+        case GT_XADD:
+        case GT_XCHG:
+        case GT_CMPXCHG:
+        case GT_BLK:
         case GT_STOREIND:
         case GT_STORE_BLK:
-            // Dynamic block copy sources should not generate non-null assertions; we detect them via NO_CSE.
-            if (tree->CanCSE())
-            {
-                assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
-            }
-            break;
-
+        case GT_NULLCHECK:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
-            // An array meta-data access is an indirection (but doesn't derive from GenTreeIndir).
-            assertionInfo = optCreateAssertion(tree->AsArrCommon()->ArrRef(), nullptr, OAK_NOT_EQUAL);
-            break;
-
-        case GT_NULLCHECK:
-            // Explicit null checks always create non-null assertions.
-            assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
+            assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, OAK_NOT_EQUAL);
             break;
 
         case GT_INTRINSIC:
@@ -2587,7 +2615,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             {
                 // Implicit conversion to float or double
                 assert(varTypeIsFloating(tree->TypeGet()));
-                conValTree = gtNewDconNode(value, tree->TypeGet());
+                conValTree = gtNewDconNode(FloatingPointUtils::convertToDouble(value), tree->TypeGet());
             }
             break;
         }
@@ -2646,7 +2674,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
                     case TYP_DOUBLE:
                         // Same sized reinterpretation of bits to double
-                        conValTree = gtNewDconNode(*(reinterpret_cast<double*>(&value)));
+                        conValTree = gtNewDconNodeD(*(reinterpret_cast<double*>(&value)));
                         break;
 
                     default:
@@ -2697,7 +2725,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
-                        conValTree = gtNewDconNode(*reinterpret_cast<float*>(&value), TYP_FLOAT);
+                        conValTree = gtNewDconNodeF(BitOperations::UInt32BitsToSingle((uint32_t)value));
                         break;
 
                     case TYP_DOUBLE:
@@ -2706,7 +2734,6 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         unreached();
                         break;
 
-                    case TYP_BOOL:
                     case TYP_BYTE:
                     case TYP_UBYTE:
                     case TYP_SHORT:
@@ -4452,7 +4479,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
         indir->gtFlags |= GTF_IND_NONFAULTING;
 
         // Set this flag to prevent reordering
-        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+        indir->SetHasOrderingSideEffect();
 
         return true;
     }
@@ -5262,7 +5289,7 @@ public:
     {
         ASSERT_TP pAssertionOut;
 
-        if (predBlock->bbJumpKind == BBJ_COND && (predBlock->bbJumpDest == block))
+        if (predBlock->KindIs(BBJ_COND) && predBlock->HasJumpTo(block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
 
@@ -5270,7 +5297,7 @@ public:
             {
                 // Scenario where next block and conditional block, both point to the same block.
                 // In such case, intersect the assertions present on both the out edges of predBlock.
-                assert(predBlock->bbNext == block);
+                assert(predBlock->NextIs(block));
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
                 if (VerboseDataflow())
@@ -5462,9 +5489,9 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 
             printf(FMT_BB " valueGen = ", block->bbNum);
             optPrintAssertionIndices(block->bbAssertionGen);
-            if (block->bbJumpKind == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
-                printf(" => " FMT_BB " valueGen = ", block->bbJumpDest->bbNum);
+                printf(" => " FMT_BB " valueGen = ", block->GetJumpDest()->bbNum);
                 optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
@@ -6022,9 +6049,9 @@ PhaseStatus Compiler::optAssertionPropMain()
             printf(FMT_BB ":\n", block->bbNum);
             optDumpAssertionIndices(" in   = ", block->bbAssertionIn, "\n");
             optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
-            if (block->bbJumpKind == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
-                printf(" " FMT_BB " = ", block->bbJumpDest->bbNum);
+                printf(" " FMT_BB " = ", block->GetJumpDest()->bbNum);
                 optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }

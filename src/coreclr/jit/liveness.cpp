@@ -288,7 +288,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
             if ((call->IsUnmanaged() || call->IsTailCallViaJitHelper()) && compMethodRequiresPInvokeFrame())
             {
-                assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+                assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
                 if (!opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
                 {
                     // Get the FrameRoot local and mark it as used.
@@ -365,7 +365,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             }
         }
 
-        for (block = fgFirstBB; block; block = block->bbNext)
+        for (block = fgFirstBB; block; block = block->Next())
         {
             // Strictly speaking, the assignments for the "Def" cases aren't necessary here.
             // The empty set would do as well.  Use means "use-before-def", so as long as that's
@@ -378,7 +378,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             block->bbMemoryLiveIn  = fullMemoryKindSet;
             block->bbMemoryLiveOut = fullMemoryKindSet;
 
-            switch (block->bbJumpKind)
+            switch (block->GetJumpKind())
             {
                 case BBJ_EHFINALLYRET:
                 case BBJ_EHFAULTRET:
@@ -407,7 +407,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
     // memory that is not a GC Heap def.
     byrefStatesMatchGcHeapStates = true;
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (block = fgFirstBB; block; block = block->Next())
     {
         VarSetOps::ClearD(this, fgCurUseSet);
         VarSetOps::ClearD(this, fgCurDefSet);
@@ -491,9 +491,9 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
         // Mark the FrameListRoot as used, if applicable.
 
-        if (block->bbJumpKind == BBJ_RETURN && compMethodRequiresPInvokeFrame())
+        if (block->KindIs(BBJ_RETURN) && compMethodRequiresPInvokeFrame())
         {
-            assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+            assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
             if (!opts.ShouldUsePInvokeHelpers())
             {
                 // 32-bit targets always pop the frame in the epilog.
@@ -886,33 +886,33 @@ void Compiler::fgExtendDbgLifetimes()
     {
         VarSetOps::ClearD(this, initVars);
 
-        switch (block->bbJumpKind)
+        switch (block->GetJumpKind())
         {
             case BBJ_NONE:
-                PREFIX_ASSUME(block->bbNext != nullptr);
-                VarSetOps::UnionD(this, initVars, block->bbNext->bbScope);
+                PREFIX_ASSUME(!block->IsLast());
+                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
                 break;
 
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
-                VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
                 break;
 
             case BBJ_CALLFINALLY:
                 if (!(block->bbFlags & BBF_RETLESS_CALL))
                 {
                     assert(block->isBBCallAlwaysPair());
-                    PREFIX_ASSUME(block->bbNext != nullptr);
-                    VarSetOps::UnionD(this, initVars, block->bbNext->bbScope);
+                    PREFIX_ASSUME(!block->IsLast());
+                    VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
                 }
-                VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
                 break;
 
             case BBJ_COND:
-                PREFIX_ASSUME(block->bbNext != nullptr);
-                VarSetOps::UnionD(this, initVars, block->bbNext->bbScope);
-                VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
+                PREFIX_ASSUME(!block->IsLast());
+                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
                 break;
 
             case BBJ_SWITCH:
@@ -1039,14 +1039,14 @@ void Compiler::fgExtendDbgLifetimes()
 }
 
 //------------------------------------------------------------------------
-// fgGetHandlerLiveVars: determine set of locals live because of implicit
+// fgAddHandlerLiveVars: determine set of locals live because of implicit
 //   exception flow from a block.
 //
 // Arguments:
 //    block - the block in question
-//
-// Returns:
-//    Additional set of locals to be considered live throughout the block.
+//    ehHandlerLiveVars - On entry, contains an allocated VARSET_TP that the
+//                        function will add handler live vars into.
+//    memoryLiveness    - Set of memory liveness that will be added to.
 //
 // Notes:
 //    Assumes caller has screened candidate blocks to only those with
@@ -1073,116 +1073,61 @@ void Compiler::fgExtendDbgLifetimes()
 //    {
 //        Console.WriteLine("In catch 1");
 //    }
-
-VARSET_VALRET_TP Compiler::fgGetHandlerLiveVars(BasicBlock* block)
+//
+void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness)
 {
-    noway_assert(block);
-    noway_assert(ehBlockHasExnFlowDsc(block));
+    assert(block->HasPotentialEHSuccs(this));
 
-    VARSET_TP liveVars(VarSetOps::MakeEmpty(this));
-    EHblkDsc* HBtab = ehGetBlockExnFlowDsc(block);
-
-    do
+    if (ehBlockHasExnFlowDsc(block))
     {
-        /* Either we enter the filter first or the catch/finally */
-        if (HBtab->HasFilter())
+        EHblkDsc* HBtab = ehGetBlockExnFlowDsc(block);
+
+        do
         {
-            VarSetOps::UnionD(this, liveVars, HBtab->ebdFilter->bbLiveIn);
-#if defined(FEATURE_EH_FUNCLETS)
-            // The EH subsystem can trigger a stack walk after the filter
-            // has returned, but before invoking the handler, and the only
-            // IP address reported from this method will be the original
-            // faulting instruction, thus everything in the try body
-            // must report as live any variables live-out of the filter
-            // (which is the same as those live-in to the handler)
-            VarSetOps::UnionD(this, liveVars, HBtab->ebdHndBeg->bbLiveIn);
-#endif // FEATURE_EH_FUNCLETS
-        }
-        else
-        {
-            VarSetOps::UnionD(this, liveVars, HBtab->ebdHndBeg->bbLiveIn);
-        }
-
-        /* If we have nested try's edbEnclosing will provide them */
-        noway_assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
-                     (HBtab->ebdEnclosingTryIndex > ehGetIndex(HBtab)));
-
-        unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
-        if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            break;
-        }
-        HBtab = ehGetDsc(outerIndex);
-
-    } while (true);
-
-    // If this block is within a filter, we also need to report as live
-    // any vars live into enclosed finally or fault handlers, since the
-    // filter will run during the first EH pass, and enclosed or enclosing
-    // handlers will run during the second EH pass. So all these handlers
-    // are "exception flow" successors of the filter.
-    //
-    // Note we are relying on ehBlockHasExnFlowDsc to return true
-    // for any filter block that we should examine here.
-    if (block->hasHndIndex())
-    {
-        const unsigned thisHndIndex   = block->getHndIndex();
-        EHblkDsc*      enclosingHBtab = ehGetDsc(thisHndIndex);
-
-        if (enclosingHBtab->InFilterRegionBBRange(block))
-        {
-            assert(enclosingHBtab->HasFilter());
-
-            // Search the EH table for enclosed regions.
-            //
-            // All the enclosed regions will be lower numbered and
-            // immediately prior to and contiguous with the enclosing
-            // region in the EH tab.
-            unsigned index = thisHndIndex;
-
-            while (index > 0)
+            /* Either we enter the filter first or the catch/finally */
+            if (HBtab->HasFilter())
             {
-                index--;
-                unsigned enclosingIndex = ehGetEnclosingTryIndex(index);
-                bool     isEnclosed     = false;
-
-                // To verify this is an enclosed region, search up
-                // through the enclosing regions until we find the
-                // region associated with the filter.
-                while (enclosingIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    if (enclosingIndex == thisHndIndex)
-                    {
-                        isEnclosed = true;
-                        break;
-                    }
-
-                    enclosingIndex = ehGetEnclosingTryIndex(enclosingIndex);
-                }
-
-                // If we found an enclosed region, check if the region
-                // is a try fault or try finally, and if so, add any
-                // locals live into the enclosed region's handler into this
-                // block's live-in set.
-                if (isEnclosed)
-                {
-                    EHblkDsc* enclosedHBtab = ehGetDsc(index);
-
-                    if (enclosedHBtab->HasFinallyOrFaultHandler())
-                    {
-                        VarSetOps::UnionD(this, liveVars, enclosedHBtab->ebdHndBeg->bbLiveIn);
-                    }
-                }
-                // Once we run across a non-enclosed region, we can stop searching.
-                else
-                {
-                    break;
-                }
+                VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdFilter->bbLiveIn);
+                memoryLiveness |= HBtab->ebdFilter->bbMemoryLiveIn;
+#if defined(FEATURE_EH_FUNCLETS)
+                // The EH subsystem can trigger a stack walk after the filter
+                // has returned, but before invoking the handler, and the only
+                // IP address reported from this method will be the original
+                // faulting instruction, thus everything in the try body
+                // must report as live any variables live-out of the filter
+                // (which is the same as those live-in to the handler)
+                VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdHndBeg->bbLiveIn);
+                memoryLiveness |= HBtab->ebdHndBeg->bbMemoryLiveIn;
+#endif // FEATURE_EH_FUNCLETS
             }
-        }
+            else
+            {
+                VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdHndBeg->bbLiveIn);
+                memoryLiveness |= HBtab->ebdHndBeg->bbMemoryLiveIn;
+            }
+
+            /* If we have nested try's edbEnclosing will provide them */
+            noway_assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
+                         (HBtab->ebdEnclosingTryIndex > ehGetIndex(HBtab)));
+
+            unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
+            if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                break;
+            }
+            HBtab = ehGetDsc(outerIndex);
+
+        } while (true);
     }
 
-    return liveVars;
+    if (bbInFilterBBRange(block))
+    {
+        block->VisitEHSecondPassSuccs(this, [this, &ehHandlerLiveVars, &memoryLiveness](BasicBlock* succ) {
+            VarSetOps::UnionD(this, ehHandlerLiveVars, succ->bbLiveIn);
+            memoryLiveness |= succ->bbMemoryLiveIn;
+            return BasicBlockVisit::Continue;
+        });
+    }
 }
 
 class LiveVarAnalysis
@@ -1195,6 +1140,7 @@ class LiveVarAnalysis
     unsigned  m_memoryLiveOut;
     VARSET_TP m_liveIn;
     VARSET_TP m_liveOut;
+    VARSET_TP m_ehHandlerLiveVars;
 
     LiveVarAnalysis(Compiler* compiler)
         : m_compiler(compiler)
@@ -1203,6 +1149,7 @@ class LiveVarAnalysis
         , m_memoryLiveOut(emptyMemoryKindSet)
         , m_liveIn(VarSetOps::MakeEmpty(compiler))
         , m_liveOut(VarSetOps::MakeEmpty(compiler))
+        , m_ehHandlerLiveVars(VarSetOps::MakeEmpty(compiler))
     {
     }
 
@@ -1248,8 +1195,11 @@ class LiveVarAnalysis
             }
         }
 
-        // Additionally, union in all the live-in tracked vars of successors.
-        block->VisitAllSuccs(m_compiler, [=](BasicBlock* succ) {
+        // Additionally, union in all the live-in tracked vars of regular
+        // successors. EH successors need to be handled more conservatively
+        // (their live-in state is live in this entire basic block). Those are
+        // handled below.
+        block->VisitRegularSuccs(m_compiler, [=](BasicBlock* succ) {
             VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
             m_memoryLiveOut |= succ->bbMemoryLiveIn;
             if (succ->bbNum <= block->bbNum)
@@ -1272,24 +1222,25 @@ class LiveVarAnalysis
         /* Compute the 'm_liveIn'  set */
         VarSetOps::LivenessD(m_compiler, m_liveIn, block->bbVarDef, block->bbVarUse, m_liveOut);
 
-        // Even if block->bbMemoryDef is set, we must assume that it doesn't kill memory liveness from m_memoryLiveOut,
-        // since (without proof otherwise) the use and def may touch different memory at run-time.
-        m_memoryLiveIn = m_memoryLiveOut | block->bbMemoryUse;
-
         // Does this block have implicit exception flow to a filter or handler?
         // If so, include the effects of that flow.
-        if (m_compiler->ehBlockHasExnFlowDsc(block))
+        if (block->HasPotentialEHSuccs(m_compiler))
         {
-            const VARSET_TP& liveVars(m_compiler->fgGetHandlerLiveVars(block));
-            VarSetOps::UnionD(m_compiler, m_liveIn, liveVars);
-            VarSetOps::UnionD(m_compiler, m_liveOut, liveVars);
+            VarSetOps::ClearD(m_compiler, m_ehHandlerLiveVars);
+            m_compiler->fgAddHandlerLiveVars(block, m_ehHandlerLiveVars, m_memoryLiveOut);
+            VarSetOps::UnionD(m_compiler, m_liveIn, m_ehHandlerLiveVars);
+            VarSetOps::UnionD(m_compiler, m_liveOut, m_ehHandlerLiveVars);
 
             // Implicit eh edges can induce loop-like behavior,
             // so make sure we iterate to closure.
             m_hasPossibleBackEdge = true;
         }
 
-        /* Has there been any change in either live set? */
+        // Even if block->bbMemoryDef is set, we must assume that it doesn't kill memory liveness from m_memoryLiveOut,
+        // since (without proof otherwise) the use and def may touch different memory at run-time.
+        m_memoryLiveIn = m_memoryLiveOut | block->bbMemoryUse;
+
+        // Has there been any change in either live set?
 
         bool liveInChanged = !VarSetOps::Equal(m_compiler, block->bbLiveIn, m_liveIn);
         if (liveInChanged || !VarSetOps::Equal(m_compiler, block->bbLiveOut, m_liveOut))
@@ -1354,11 +1305,11 @@ class LiveVarAnalysis
             m_memoryLiveIn  = emptyMemoryKindSet;
             m_memoryLiveOut = emptyMemoryKindSet;
 
-            for (BasicBlock* block = m_compiler->fgLastBB; block; block = block->bbPrev)
+            for (BasicBlock* block = m_compiler->fgLastBB; block; block = block->Prev())
             {
                 // sometimes block numbers are not monotonically increasing which
                 // would cause us not to identify backedges
-                if (block->bbNext && block->bbNext->bbNum <= block->bbNum)
+                if (!block->IsLast() && block->Next()->bbNum <= block->bbNum)
                 {
                     m_hasPossibleBackEdge = true;
                 }
@@ -1440,7 +1391,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     // This ensure that this variable is kept alive at the tail-call
     if (call->IsTailCallViaJitHelper() && compMethodRequiresPInvokeFrame())
     {
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             // Get the FrameListRoot local and make it live.
@@ -1461,7 +1412,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())
     {
         // Get the FrameListRoot local and make it live.
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
         {
             LclVarDsc* frameVarDsc = lvaGetDesc(info.compLvFrameListRoot);
@@ -2500,7 +2451,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
         {
             // Get the set of live variables on exit from an exception region.
             VarSetOps::UnionD(this, exceptVars, block->bbLiveOut);
-            if (block->bbJumpKind == BBJ_EHFINALLYRET)
+            if (block->KindIs(BBJ_EHFINALLYRET))
             {
                 // Live on exit from finally.
                 // We track these separately because, in addition to having EH live-out semantics,
@@ -2568,6 +2519,8 @@ void Compiler::fgInterBlockLocalVarLiveness()
      * Now fill in liveness info within each basic block - Backward DataFlow
      */
 
+    VARSET_TP volatileVars(VarSetOps::MakeEmpty(this));
+
     for (BasicBlock* const block : Blocks())
     {
         /* Tell everyone what block we're working on */
@@ -2576,12 +2529,12 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
         /* Remember those vars live on entry to exception handlers */
         /* if we are part of a try block */
+        VarSetOps::ClearD(this, volatileVars);
 
-        VARSET_TP volatileVars(VarSetOps::MakeEmpty(this));
-
-        if (ehBlockHasExnFlowDsc(block))
+        if (block->HasPotentialEHSuccs(this))
         {
-            VarSetOps::Assign(this, volatileVars, fgGetHandlerLiveVars(block));
+            MemoryKindSet memoryLiveness = 0;
+            fgAddHandlerLiveVars(block, volatileVars, memoryLiveness);
 
             // volatileVars is a subset of exceptVars
             noway_assert(VarSetOps::IsSubset(this, volatileVars, exceptVars));

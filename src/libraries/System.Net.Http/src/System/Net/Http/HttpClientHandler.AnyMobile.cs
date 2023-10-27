@@ -4,12 +4,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -20,17 +20,48 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        private readonly SocketsHttpHandler? _socketHandler;
+        private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods = new();
+
         private readonly HttpMessageHandler? _nativeHandler;
-        private MetricsHandler? _metricsHandler;
+        private IMeterFactory? _nativeMeterFactory;
+        private MetricsHandler? _nativeMetricsHandler;
 
-        private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
-            new ConcurrentDictionary<string, MethodInfo?>();
+        private readonly SocketsHttpHandler? _socketHandler;
 
-        private IMeterFactory? _meterFactory;
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
+
+        private HttpMessageHandler Handler
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    if (_nativeMetricsHandler is null)
+                    {
+                        // We only setup these handlers for the native handler. SocketsHttpHandler already does this internally.
+                        HttpMessageHandler handler = _nativeHandler!;
+
+                        if (DiagnosticsHandler.IsGloballyEnabled())
+                        {
+                            handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+                        }
+
+                        MetricsHandler metricsHandler = new MetricsHandler(handler, _nativeMeterFactory, out _);
+
+                        // Ensure a single handler is used for all requests.
+                        Interlocked.CompareExchange(ref _nativeMetricsHandler, metricsHandler, null);
+                    }
+
+                    return _nativeMetricsHandler;
+                }
+                else
+                {
+                    return _socketHandler!;
+                }
+            }
+        }
 
         public HttpClientHandler()
         {
@@ -53,7 +84,7 @@ namespace System.Net.Http
 
                 if (IsNativeHandlerEnabled)
                 {
-                    _nativeHandler!.Dispose();
+                    Handler.Dispose();
                 }
                 else
                 {
@@ -67,15 +98,34 @@ namespace System.Net.Http
         [CLSCompliant(false)]
         public IMeterFactory? MeterFactory
         {
-            get => _meterFactory;
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return _nativeMeterFactory;
+                }
+                else
+                {
+                    return _socketHandler!.MeterFactory;
+                }
+            }
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
-                if (_metricsHandler != null)
+
+                if (IsNativeHandlerEnabled)
                 {
-                    throw new InvalidOperationException(SR.net_http_operation_started);
+                    if (_nativeMetricsHandler is not null)
+                    {
+                        throw new InvalidOperationException(SR.net_http_operation_started);
+                    }
+
+                    _nativeMeterFactory = value;
                 }
-                _meterFactory = value;
+                else
+                {
+                    _socketHandler!.MeterFactory = value;
+                }
             }
         }
 
@@ -720,8 +770,7 @@ namespace System.Net.Http
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            MetricsHandler handler = _metricsHandler ?? SetupHandlerChain();
-            return handler.SendAsync(request, cancellationToken);
+            return Handler.SendAsync(request, cancellationToken);
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
@@ -737,49 +786,11 @@ namespace System.Net.Http
             }
         }
 
-        private MetricsHandler SetupHandlerChain()
-        {
-            HttpMessageHandler handler = IsNativeHandlerEnabled ? _nativeHandler! : _socketHandler!;
-            if (DiagnosticsHandler.IsGloballyEnabled())
-            {
-                handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
-            }
-            MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory, out _);
-
-            // Ensure a single handler is used for all requests.
-            if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
-            {
-                handler.Dispose();
-            }
-            return _metricsHandler;
-        }
-
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {
             // Hack to trigger an InvalidOperationException if a property that's stored on
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _socketHandler!.SslOptions = _socketHandler!.SslOptions;
-        }
-
-        private object InvokeNativeHandlerMethod(string name, params object?[] parameters)
-        {
-            MethodInfo? method;
-
-            if (!s_cachedMethods.TryGetValue(name, out method))
-            {
-                method = _nativeHandler!.GetType()!.GetMethod(name);
-                s_cachedMethods[name] = method;
-            }
-
-            try
-            {
-                return method!.Invoke(_nativeHandler, parameters)!;
-            }
-            catch (TargetInvocationException e)
-            {
-                ExceptionDispatchInfo.Capture(e.InnerException!).Throw();
-                throw;
-            }
         }
 
         private static bool IsNativeHandlerEnabled => RuntimeSettingParser.QueryRuntimeSettingSwitch(

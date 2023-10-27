@@ -202,6 +202,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void MutualExclusionTest()
         {
             var threadLocked = new AutoResetEvent(false);
@@ -286,6 +287,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(GetValidNames))]
         public void OpenExisting(string name)
         {
@@ -421,6 +423,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91547", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
         public void AbandonExisting(
             string name,
@@ -661,6 +664,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -721,6 +725,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");

@@ -66,7 +66,7 @@ static void SetupHashStack ()
 
         PAL_TRY(void *, unused, NULL) {
             FHashStack func;
-            HMODULE hmod = LoadLibraryExA ("mscorrfs.dll", NULL, 0);
+            HMODULE hmod = WszLoadLibrary(W("mscorrfs.dll"), NULL, 0);
             if (hmod) {
                 func = (FHashStack)GetProcAddress (hmod, "HashStack");
                 if (func == 0) {
@@ -132,7 +132,7 @@ HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName)
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 {
     WRAPPER_NO_CONTRACT;
-    return WszLoadLibraryEx(lpLibFileName, hFile, dwFlags);
+    return WszLoadLibrary(lpLibFileName, hFile, dwFlags);
 }
 
 BOOL CLRFreeLibrary(HMODULE hModule)

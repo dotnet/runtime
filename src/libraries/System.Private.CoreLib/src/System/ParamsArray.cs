@@ -12,14 +12,10 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    [InlineArray(Length)]
+    [InlineArray(2)]
     internal struct TwoObjects
     {
-        private const int Length = 2;
         internal object? Arg0;
-
-        [UnscopedRef]
-        private ref object? this[int i] => ref Unsafe.Add(ref Arg0, i);
 
         public TwoObjects(object? arg0, object? arg1)
         {
@@ -28,14 +24,10 @@ namespace System
         }
     }
 
-    [InlineArray(Length)]
+    [InlineArray(3)]
     internal struct ThreeObjects
     {
-        private const int Length = 3;
         internal object? Arg0;
-
-        [UnscopedRef]
-        private ref object? this[int i] => ref Unsafe.Add(ref Arg0, i);
 
         public ThreeObjects(object? arg0, object? arg1, object? arg2)
         {

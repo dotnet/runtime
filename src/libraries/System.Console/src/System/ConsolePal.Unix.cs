@@ -222,10 +222,6 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                if (!string.IsNullOrEmpty(TerminalFormatStringsInstance.ClearScrollbackBuffer))
-                {
-                    WriteStdoutAnsiString(TerminalFormatStringsInstance.ClearScrollbackBuffer);
-                }
                 WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
             }
         }
@@ -820,8 +816,8 @@ namespace System
                     // The values of the ConsoleColor enums unfortunately don't map to the
                     // corresponding ANSI values.  We need to do the mapping manually.
                     // See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-                    ReadOnlySpan<byte> consoleColorToAnsiCode = new byte[] // rely on C# compiler optimization to avoid array allocation
-                    {
+                    ReadOnlySpan<byte> consoleColorToAnsiCode =
+                    [
                         // Dark/Normal colors
                         0, // Black,
                         4, // DarkBlue,
@@ -841,7 +837,7 @@ namespace System
                         13, // Magenta,
                         11, // Yellow,
                         15  // White
-                    };
+                    ];
 
                     int ansiCode = consoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);

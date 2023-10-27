@@ -25,10 +25,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            if (jsonTypeInfo.CreateObject != null || state.Current.IsPopulating)
+            if (!jsonTypeInfo.UsesParameterizedConstructor || state.Current.IsPopulating)
             {
                 // Fall back to default object converter in following cases:
-                // - if user has set a default constructor delegate with contract customization
+                // - if user configuration has invalidated the parameterized constructor
                 // - we're continuing populating an object.
                 return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
             }
@@ -306,7 +306,15 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (!(jsonParameterInfo!.ShouldDeserialize))
                     {
-                        reader.Skip();
+                        // The Utf8JsonReader.Skip() method will fail fast if it detects that we're reading
+                        // from a partially read buffer, regardless of whether the next value is available.
+                        // This can result in erroneous failures in cases where a custom converter is calling
+                        // into a built-in converter (cf. https://github.com/dotnet/runtime/issues/74108).
+                        // For this reason we need to call the TrySkip() method instead -- the serializer
+                        // should guarantee sufficient read-ahead has been performed for the current object.
+                        bool success = reader.TrySkip();
+                        Debug.Assert(success, "Serializer should guarantee sufficient read-ahead has been done.");
+
                         state.Current.EndConstructorParameter();
                         continue;
                     }
@@ -359,7 +367,8 @@ namespace System.Text.Json.Serialization.Converters
                             state.Current.JsonPropertyNameAsString);
                     }
 
-                    reader.Skip();
+                    bool success = reader.TrySkip();
+                    Debug.Assert(success, "Serializer should guarantee sufficient read-ahead has been done.");
 
                     state.Current.EndProperty();
                 }

@@ -60,6 +60,8 @@
              Link="Common\System\Net\CookieParser.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+                 Link="Common\System\Net\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
@@ -68,6 +70,8 @@
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddress.cs"
              Link="Common\System\Net\SocketAddress.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressExtensions.cs"
+             Link="Common\System\Net\SocketAddressExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformation.cs"

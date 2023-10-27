@@ -4,7 +4,13 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using Mono.Linker.Tests.Cases.DataFlow;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+
+[assembly: KeptAttributeAttribute (typeof (AttributeConstructorDataflow.KeepsPublicPropertiesAttribute))]
+// https://github.com/dotnet/linker/issues/2273
+[assembly: ExpectedWarning ("IL2026", "--ClassWithKeptPublicProperties--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+[assembly: AttributeConstructorDataflow.KeepsPublicProperties (typeof (AttributeConstructorDataflow.ClassWithKeptPublicProperties))]
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -20,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods")]
 		[KeepsPublicFields (null, null)]
 		[TypeArray (new Type[] { typeof (AttributeConstructorDataflow) })]
-		// Trimmer only for now - https://github.com/dotnet/linker/issues/2273
+		// https://github.com/dotnet/linker/issues/2273
 		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void Main ()
 		{
@@ -72,6 +78,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		// Used to test assembly-level attribute
+		[Kept]
+		[KeptBaseType (typeof (Attribute))]
+		public class KeepsPublicPropertiesAttribute : Attribute
+		{
+			[Kept]
+			public KeepsPublicPropertiesAttribute (
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+				Type type)
+			{
+			}
+		}
+
 		[Kept]
 		class ClassWithKeptPublicConstructor
 		{
@@ -91,6 +111,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
 			public static void KeptMethod () { }
 			static void Method () { }
+		}
+
+		[Kept]
+		public class ClassWithKeptPublicProperties
+		{
+			[Kept]
+			public static int KeptProperty {
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--ClassWithKeptPublicProperties--")]
+				get => 0;
+			}
+			static int Property { get; }
 		}
 
 		[Kept]

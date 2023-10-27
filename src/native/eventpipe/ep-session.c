@@ -26,6 +26,10 @@ static
 void
 session_create_streaming_thread (EventPipeSession *session);
 
+static
+void
+ep_session_remove_dangling_session_states (EventPipeSession *session);
+
 /*
  * EventPipeSession.
  */
@@ -130,6 +134,7 @@ ep_session_alloc (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool stackwalk_requested,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
@@ -204,7 +209,7 @@ ep_session_alloc (
 	instance->session_start_time = ep_system_timestamp_get ();
 	instance->session_start_timestamp = ep_perf_timestamp_get ();
 	instance->paused = false;
-	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk ();
+	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk () && stackwalk_requested;
 	instance->started = 0;
 
 ep_on_exit:
@@ -221,6 +226,48 @@ ep_on_error:
 }
 
 void
+ep_session_remove_dangling_session_states (EventPipeSession *session)
+{
+	ep_return_void_if_nok (session != NULL);
+
+	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
+
+	dn_vector_ptr_custom_init_params_t params = {0, };
+	params.allocator = (dn_allocator_t *)&allocator;
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
+
+	dn_vector_ptr_t threads;
+
+	if (dn_vector_ptr_custom_init (&threads, &params)) {
+		ep_thread_get_threads (&threads);
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
+			if (thread) {
+				EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1);
+				EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
+				if (session_state) {
+					// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
+					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access 
+					// the session from the thread session state. Whenever we terminate a session we check to make sure
+					// we haven't leaked any thread session states.
+					ep_thread_delete_session_state(thread, session);
+				}
+				EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1);
+
+				ep_thread_release (thread);
+			}
+		} DN_VECTOR_PTR_FOREACH_END;
+
+		dn_vector_ptr_dispose (&threads);
+	}
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
+
+void
 ep_session_free (EventPipeSession *session)
 {
 	ep_return_void_if_nok (session != NULL);
@@ -233,6 +280,8 @@ ep_session_free (EventPipeSession *session)
 
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
+
+	ep_session_remove_dangling_session_states (session);
 
 	ep_rt_object_free (session);
 }
@@ -281,24 +330,16 @@ ep_session_enable_rundown (EventPipeSession *session)
 	const uint64_t keywords = 0x80020139;
 	const EventPipeEventLevel verbose_logging_level = EP_EVENT_LEVEL_VERBOSE;
 
-	EventPipeProviderConfiguration rundown_providers [2];
-	uint32_t rundown_providers_len = (uint32_t)ARRAY_SIZE (rundown_providers);
+	EventPipeProviderConfiguration rundown_provider;
+	ep_provider_config_init (&rundown_provider, ep_config_get_rundown_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Rundown provider.
 
-	ep_provider_config_init (&rundown_providers [0], ep_config_get_public_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Public provider.
-	ep_provider_config_init (&rundown_providers [1], ep_config_get_rundown_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Rundown provider.
+	EventPipeSessionProvider *session_provider = ep_session_provider_alloc (
+		ep_provider_config_get_provider_name (&rundown_provider),
+		ep_provider_config_get_keywords (&rundown_provider),
+		ep_provider_config_get_logging_level (&rundown_provider),
+		ep_provider_config_get_filter_data (&rundown_provider));
 
-	// Update provider list with rundown configuration.
-	for (uint32_t i = 0; i < rundown_providers_len; ++i) {
-		const EventPipeProviderConfiguration *config = &rundown_providers [i];
-
-		EventPipeSessionProvider *session_provider = ep_session_provider_alloc (
-			ep_provider_config_get_provider_name (config),
-			ep_provider_config_get_keywords (config),
-			ep_provider_config_get_logging_level (config),
-			ep_provider_config_get_filter_data (config));
-
-		ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider));
-	}
+	ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider));
 
 	ep_session_set_rundown_enabled (session, true);
 	result = true;

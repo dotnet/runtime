@@ -37,9 +37,10 @@
       <ReproResponseLines Include="--feature:System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=false" />
       <ReproResponseLines Include="--feature:System.Diagnostics.Tracing.EventSource.IsSupported=false" />
       <ReproResponseLines Include="--feature:System.Resources.ResourceManager.AllowCustomResourceTypes=false" />
-      <ReproResponseLines Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
-      <ReproResponseLines Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
+      <ReproResponseLines Include="--feature:System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported=false" />
+      <ReproResponseLines Include="--feature:System.Globalization.Invariant=true" />
+      <ReproResponseLines Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(OutputPath)\compile-with-$(LibrariesConfiguration)-libs.rsp"

@@ -32,11 +32,23 @@ namespace Microsoft.Extensions.Primitives
         private StringComparison Comparison { get; }
         private StringComparer Comparer { get; }
 
+        /// <summary>
+        /// Compares two <see cref="StringSegment"/> objects and returns an indication of their relative sort order.
+        /// </summary>
+        /// <param name="x">The first <see cref="StringSegment"/> to compare.</param>
+        /// <param name="y">The second <see cref="StringSegment"/> to compare.</param>
+        /// <returns>A 32-bit signed integer that indicates the lexical relationship between the two comparands.</returns>
         public int Compare(StringSegment x, StringSegment y)
         {
             return StringSegment.Compare(x, y, Comparison);
         }
 
+        /// <summary>
+        /// Determines whether two <see cref="StringSegment"/> objects are equal.
+        /// </summary>
+        /// <param name="x">The first <see cref="StringSegment"/> to compare.</param>
+        /// <param name="y">The second <see cref="StringSegment"/> to compare.</param>
+        /// <returns><see langword="true"/> if the two <see cref="StringSegment"/> objects are equal; otherwise, <see langword="false"/>.</returns>
         public bool Equals(StringSegment x, StringSegment y)
         {
             return StringSegment.Equals(x, y, Comparison);

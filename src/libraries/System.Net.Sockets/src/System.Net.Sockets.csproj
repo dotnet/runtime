@@ -59,6 +59,8 @@
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandleMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugSafeHandleMinusOneIsInvalid.cs" />
     <!-- System.Net common -->
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+             Link="Common\System\Net\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs"
              Link="Common\System\Net\IPEndPointStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
@@ -67,17 +69,12 @@
              Link="Common\System\Net\ExceptionCheck.cs" />
     <Compile Include="$(CommonPath)System\Net\RangeValidationHelpers.cs"
              Link="Common\System\Net\RangeValidationHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Net\SocketAddress.cs"
-             Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
              Link="Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressExtensions.cs"
+             Link="Common\System\Net\SocketAddressExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />
-    <!-- System.Net.Internals -->
-    <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
-             Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
-             Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketExceptionFactory.cs"
              Link="Common\System\Net\Sockets\SocketExceptionFactory.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs"

@@ -24,6 +24,7 @@ namespace System
 #pragma warning disable SYSLIB1056 // Specified native type is invalid
     [NativeMarshalling(typeof(ReadOnlySpanMarshaller<,>))]
 #pragma warning restore SYSLIB1056 // Specified native type is invalid
+    [Intrinsic]
     public readonly ref struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -113,7 +114,7 @@ namespace System
         /// <summary>Creates a new <see cref="ReadOnlySpan{T}"/> of length 1 around the specified reference.</summary>
         /// <param name="reference">A reference to data.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlySpan(in T reference)
+        public ReadOnlySpan(ref readonly T reference)
         {
             _reference = ref Unsafe.AsRef(in reference);
             _length = 1;

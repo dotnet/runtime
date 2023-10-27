@@ -383,23 +383,6 @@ PTR_Module MethodTable::GetModule()
 }
 
 //==========================================================================================
-PTR_Module MethodTable::GetModule_NoLogging()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // Fast path for non-generic non-array case
-    if ((m_dwFlags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == 0)
-        return GetLoaderModule();
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (!pMTForModule->HasModuleOverride())
-        return pMTForModule->GetLoaderModule();
-
-    TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return *dac_cast<DPTR(PTR_Module)>(pSlot);
-}
-
-//==========================================================================================
 PTR_DispatchMap MethodTable::GetDispatchMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -731,7 +714,6 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
     // with whatever type it returns.
     if (pServerMT->IsIDynamicInterfaceCastable()
-        && !pItfMD->HasMethodInstantiation()
         && !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
     {
         TypeHandle implTypeHandle;
@@ -1084,7 +1066,7 @@ BOOL MethodTable::FindDynamicallyAddedInterface(MethodTable *pInterface)
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(IsRestored_NoLogging());
+    _ASSERTE(IsRestored());
     _ASSERTE(HasDynamicInterfaceMap());     // This should never be called on for a type that is not an extensible RCW.
 
     unsigned cDynInterfaces = GetNumDynamicallyAddedInterfaces();
@@ -1107,7 +1089,7 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
         PRECONDITION(HasDynamicInterfaceMap());    // This should never be called on for a type that is not an extensible RCW.
     }
     CONTRACTL_END;
@@ -1435,7 +1417,7 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(pTargetMT->IsInterface());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1476,7 +1458,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(pTargetMT->HasVariance());
         PRECONDITION(pTargetMT->IsInterface() || pTargetMT->IsDelegate());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1618,7 +1600,7 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
         MODE_COOPERATIVE;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -2190,6 +2172,45 @@ BOOL MethodTable::IsClassPreInited()
 
 //========================================================================================
 
+namespace
+{
+    // Does this type have fields that are implicitly defined through repetition and not explicitly defined in metadata?
+    bool HasImpliedRepeatedFields(MethodTable* pMT, MethodTable* pFirstFieldValueType = nullptr)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pMT));
+        }
+        CONTRACTL_END;
+
+        // InlineArray types and fixed buffer types have implied repeated fields.
+        // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+        if (pMT->GetClass()->IsInlineArray())
+        {
+            return true;
+        }
+
+        DWORD numIntroducedFields = pMT->GetNumIntroducedInstanceFields();
+        FieldDesc *pFieldStart = pMT->GetApproxFieldDescListRaw();
+        CorElementType firstFieldElementType = pFieldStart->GetFieldType();
+
+        // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+        // and who's size is an exact multiple of the size of the field.
+        // It is possible that we catch a false positive with this check, but that chance is extremely slim
+        // and the user can always change their structure to something more descriptive of what they want
+        // instead of adding additional padding at the end of a one-field structure.
+        // We do this check here to save looking up the FixedBufferAttribute when loading the field
+        // from metadata.
+        return numIntroducedFields == 1
+                        && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
+                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
+                        && (pFieldStart->GetOffset() == 0)
+                        && pMT->HasLayout()
+                        && (pMT->GetNumInstanceFieldBytes() % pFieldStart->GetSize(pFirstFieldValueType) == 0);
+    }
+}
+
 #if defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(_DEBUG) && defined(LOGGING)
@@ -2290,13 +2311,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                                                      bool useNativeLayout,
                                                      MethodTable** pByValueClassCache)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DWORD numIntroducedFields = GetNumIntroducedInstanceFields();
 
@@ -2340,23 +2355,9 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
-    CorElementType firstFieldElementType = pFieldStart->GetFieldType();
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, ByValueClassCacheLookup(pByValueClassCache, 0));
 
-    // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-    // and who's size is an exact multiple of the size of the field.
-    // It is possible that we catch a false positive with this check, but that chance is extremely slim
-    // and the user can always change their structure to something more descriptive of what they want
-    // instead of adding additional padding at the end of a one-field structure.
-    // We do this check here to save looking up the FixedBufferAttribute when loading the field
-    // from metadata.
-    bool isFixedBuffer = numIntroducedFields == 1
-                                && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                                    || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                                && (pFieldStart->GetOffset() == 0)
-                                && HasLayout()
-                                && (GetNumInstanceFieldBytes() % pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0)) == 0);
-
-    if (isFixedBuffer)
+    if (hasImpliedRepeatedFields)
     {
         numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0));
     }
@@ -2365,13 +2366,13 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     {
         FieldDesc* pField;
         DWORD fieldOffset;
-        unsigned int fieldIndexForSize = fieldIndex;
+        unsigned int fieldIndexForCacheLookup = fieldIndex;
 
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             pField = pFieldStart;
-            fieldIndexForSize = 0;
-            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
+            fieldIndexForCacheLookup = 0;
+            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
         }
         else
         {
@@ -2381,7 +2382,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
+        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
         _ASSERTE(fieldSize != (unsigned int)-1);
 
         // The field can't span past the end of the struct.
@@ -2402,7 +2403,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         {
             TypeHandle th;
             if (pByValueClassCache != NULL)
-                th = TypeHandle(pByValueClassCache[fieldIndex]);
+                th = TypeHandle(pByValueClassCache[fieldIndexForCacheLookup]);
             else
                 th = pField->GetApproxFieldTypeHandleThrowing();
             _ASSERTE(!th.IsNull());
@@ -2515,13 +2516,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
                                                     unsigned int startOffsetOfStruct,
                                                     EEClassNativeLayoutInfo const* pNativeLayoutInfo)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef DACCESS_COMPILE
     // No register classification for this case.
@@ -2543,22 +2538,9 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         return false;
     }
 
-    // A fixed buffer type is always a value type that has exactly one value type field at offset 0
-    // and who's size is an exact multiple of the size of the field.
-    // It is possible that we catch a false positive with this check, but that chance is extremely slim
-    // and the user can always change their structure to something more descriptive of what they want
-    // instead of adding additional padding at the end of a one-field structure.
-    // We do this check here to save looking up the FixedBufferAttribute when loading the field
-    // from metadata.
-    CorElementType firstFieldElementType = pNativeFieldDescs->GetFieldDesc()->GetFieldType();
-    bool isFixedBuffer = numIntroducedFields == 1
-                                && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                                    || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                                && (pNativeFieldDescs->GetExternalOffset() == 0)
-                                && IsValueType()
-                                && (pNativeLayoutInfo->GetSize() % pNativeFieldDescs->NativeSize() == 0);
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
 
-    if (isFixedBuffer)
+    if (hasImpliedRepeatedFields)
     {
         numIntroducedFields = pNativeLayoutInfo->GetSize() / pNativeFieldDescs->NativeSize();
     }
@@ -2597,7 +2579,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
         const NativeFieldDescriptor* pNFD;
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             // Reuse the first field marshaler for all fields if a fixed buffer.
             pNFD = pNativeFieldDescs;
@@ -2619,7 +2601,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         unsigned int fieldNativeSize = pNFD->NativeSize();
         DWORD fieldOffset = pNFD->GetExternalOffset();
 
-        if (isFixedBuffer)
+        if (hasImpliedRepeatedFields)
         {
             // Since we reuse the NativeFieldDescriptor for fixed buffers, we need to adjust the offset.
             fieldOffset += fieldIndex * fieldNativeSize;
@@ -2999,13 +2981,11 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields != 1)
@@ -3249,13 +3229,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields > 2)
@@ -3427,7 +3405,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            _ASSERTE(pMethodTable->GetNativeSize() == 8);
+                            _ASSERTE((pMethodTable->GetNativeSize() == 8) || (pMethodTable->GetNativeSize() == 16));
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
@@ -3556,7 +3534,7 @@ _End_arg:
 
 #if defined(TARGET_RISCV64)
 
-bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
+bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
 {
     TypeHandle th(pMT);
 
@@ -3590,7 +3568,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
                     pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        ret = IsRiscv64OnlyOneField(pMethodTable);
+                        ret = IsRiscV64OnlyOneField(pMethodTable);
                     }
                 }
             }
@@ -3619,13 +3597,11 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields != 1)
@@ -3645,7 +3621,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
                     if (nfc == NativeFieldCategory::NESTED)
                     {
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        ret = IsRiscv64OnlyOneField(pMethodTable);
+                        ret = IsRiscV64OnlyOneField(pMethodTable);
                     }
                     else if (nfc != NativeFieldCategory::ILLEGAL)
                     {
@@ -3664,7 +3640,7 @@ _End_arg:
     return ret;
 }
 
-int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     TypeHandle th(cls);
 
@@ -3703,7 +3679,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                    size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                 }
             }
             else if (numIntroducedFields == 2)
@@ -3746,9 +3722,9 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldFirst->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsRiscv64OnlyOneField(pMethodTable))
+                    if (IsRiscV64OnlyOneField(pMethodTable))
                     {
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
@@ -3802,9 +3778,9 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldSecond[0].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsRiscv64OnlyOneField(pMethodTable))
+                    if (IsRiscV64OnlyOneField(pMethodTable))
                     {
-                        int size2 = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        int size2 = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldSecond[0].GetSize() == 8)
@@ -3869,13 +3845,11 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                 CorElementType fieldType = pFieldStart->GetFieldType();
 
-                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
-                                    && (pFieldStart->GetOffset() == 0)
-                                    && pMethodTable->HasLayout()
-                                    && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
 
-                if (isFixedBuffer)
+                if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
                     if (numIntroducedFields > 2)
@@ -3927,7 +3901,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     if (nfc == NativeFieldCategory::NESTED)
                     {
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         return size;
                     }
                     else if (nfc == NativeFieldCategory::FLOAT)
@@ -4011,13 +3985,13 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs->GetNestedNativeMethodTable();
 
-                        if (!IsRiscv64OnlyOneField(pMethodTable2))
+                        if (!IsRiscV64OnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
 
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldStart->GetSize() == 8)
@@ -4047,7 +4021,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            _ASSERTE(pMethodTable->GetNativeSize() == 8);
+                            _ASSERTE((pMethodTable->GetNativeSize() == 8) || (pMethodTable->GetNativeSize() == 16));
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
@@ -4085,6 +4059,12 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                     }
+
+                    // Pass with two integer registers in `struct {int a, int b, float/double c}` cases
+                    if ((size | STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_SECOND) == size)
+                    {
+                        size = STRUCT_NO_FLOAT_FIELD;
+                    }
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
@@ -4101,13 +4081,13 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs[1].GetNestedNativeMethodTable();
 
-                        if (!IsRiscv64OnlyOneField(pMethodTable2))
+                        if (!IsRiscV64OnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
 
-                        if ((GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+                        if ((GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldStart[1].GetSize() == 4)
                             {
@@ -4213,8 +4193,9 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        CONTRACTL_END;
     }
+    CONTRACTL_END
+
     _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
 
     // Static fields are not pinned in collectible types so we need to protect the address
@@ -4233,7 +4214,7 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         {
             LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
             const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
-            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, canBeFrozen);
+            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, canBeFrozen);
             SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
         }
     }
@@ -4241,15 +4222,15 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
 }
 
 //==========================================================================================
-OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle, bool canBeFrozen)
+OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        CONTRACTL_END;
     }
+    CONTRACTL_END
 
     _ASSERTE(pFieldMT->IsValueType());
 
@@ -4261,7 +4242,6 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     {
         // In case if we don't plan to collect this handle we may try to allocate it on FOH
         _ASSERT(!pFieldMT->ContainsPointers());
-        _ASSERT(pHandle == nullptr);
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
         // obj can be null in case if struct is huge (>64kb)
@@ -4271,25 +4251,7 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
         }
     }
 
-    obj = AllocateObject(pFieldMT);
-
-    // Pin the object if necessary
-    if (fPinned)
-    {
-        LOG((LF_CLASSLOADER, LL_INFO10000, "\tSTATICS:Pinning static (VT fixed address attribute) of type %s\n", pFieldMT->GetDebugClassName()));
-        OBJECTHANDLE oh = GetAppDomain()->CreatePinningHandle(obj);
-        if (pHandle)
-        {
-            *pHandle = oh;
-        }
-    }
-    else
-    {
-        if (pHandle)
-        {
-            *pHandle = NULL;
-        }
-    }
+    obj = AllocateObject(pFieldMT, fPinned ? GC_ALLOC_PINNED_OBJECT_HEAP : GC_ALLOC_NO_FLAGS);
 
     return obj;
 }
@@ -5243,7 +5205,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     // First ensure that we're loaded to just below CLASS_DEPENDENCIES_LOADED
     ClassLoader::EnsureLoaded(this, (ClassLoadLevel) (level-1));
 
-    CONSISTENCY_CHECK(IsRestored_NoLogging());
+    CONSISTENCY_CHECK(IsRestored());
     CONSISTENCY_CHECK(!HasApproxParent());
 
     if ((level == CLASS_LOADED) && !IsSharedByGenericInstantiations())
@@ -5596,7 +5558,7 @@ void MethodTable::SetOHDelegate (OBJECTHANDLE _ohDelegate)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(GetClass());
-    GetClass_NoLogging()->SetOHDelegate(_ohDelegate);
+    GetClass()->SetOHDelegate(_ohDelegate);
 }
 
 //==========================================================================================
@@ -5734,9 +5696,9 @@ CorElementType MethodTable::GetInternalCorElementType()
     // DAC may be targeting a dump; dumps do not guarantee you can retrieve the EEClass from
     // the MethodTable so this is not expected to work in a DAC build.
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    if (IsRestored_NoLogging())
+    if (IsRestored())
     {
-        PTR_EEClass pClass = GetClass_NoLogging();
+        PTR_EEClass pClass = GetClass();
         if (ret != pClass->GetInternalCorElementType())
         {
             _ASSERTE(!"Mismatched results in MethodTable::GetInternalCorElementType");
@@ -5853,7 +5815,7 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
         break;
     }
 
-    GetClass_NoLogging()->SetInternalCorElementType(_NormType);
+    GetClass()->SetInternalCorElementType(_NormType);
     _ASSERTE(GetInternalCorElementType() == _NormType);
 }
 
@@ -6434,7 +6396,7 @@ namespace
                 {
                     resolveVirtualStaticMethodFlags |= ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc;
                 }
-                
+
                 candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
                     interfaceMT,
                     interfaceMD,
@@ -7083,7 +7045,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             // Remember that we didn't find the GUID, so we can skip looking during
             // future checks. (Note that this is a very important optimization in the
             // prejit case.)
-            GetClass_NoLogging()->SetHasNoGuid();
+            GetClass()->SetHasNoGuid();
         }
     }
 
@@ -7299,14 +7261,6 @@ unsigned MethodTable::GetTypeDefRid()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return GetTypeDefRid_NoLogging();
-}
-
-//==========================================================================================
-unsigned MethodTable::GetTypeDefRid_NoLogging()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
     WORD token = m_wToken;
 
     if (token == METHODTABLE_TOKEN_OVERFLOW)
@@ -7398,7 +7352,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
 
     // workaround: Type loader accesses partially initialized datastructures that interferes with IBC logging.
     // Once type loader is fixed to do not access partially  initialized datastructures, this can go away.
-    if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
+    if (!GetWriteableData()->IsParentMethodTablePointerValid())
         return FALSE;
 
     return TRUE;
@@ -7430,8 +7384,8 @@ MethodTable * MethodTable::GetMethodTableMatchingParentClass(MethodTable * pWhic
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pWhichParent));
-        PRECONDITION(IsRestored_NoLogging());
-        PRECONDITION(pWhichParent->IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
+        PRECONDITION(pWhichParent->IsRestored());
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -7486,8 +7440,8 @@ Instantiation MethodTable::GetInstantiationOfParentClass(MethodTable *pWhichPare
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pWhichParent));
-        PRECONDITION(IsRestored_NoLogging());
-        PRECONDITION(pWhichParent->IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
+        PRECONDITION(pWhichParent->IsRestored());
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -8786,10 +8740,10 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
     }
     CONTRACTL_END;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (pDefMD->IsEnCAddedMethod())
         return GetParallelMethodDescForEnC(this, pDefMD);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     return GetMethodDescForSlot(pDefMD->GetSlot());
 }
@@ -9275,9 +9229,9 @@ MethodTable::TryResolveConstraintMethodApprox(
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
-        BOOL uniqueResolution;
+        BOOL uniqueResolution = TRUE;
 
-        ResolveVirtualStaticMethodFlags flags = ResolveVirtualStaticMethodFlags::AllowVariantMatches 
+        ResolveVirtualStaticMethodFlags flags = ResolveVirtualStaticMethodFlags::AllowVariantMatches
                                               | ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc;
         if (pfForceUseRuntimeLookup != NULL)
         {
@@ -9288,7 +9242,8 @@ MethodTable::TryResolveConstraintMethodApprox(
             thInterfaceType.GetMethodTable(),
             pInterfaceMD,
             flags,
-            &uniqueResolution);
+            (pfForceUseRuntimeLookup != NULL ? &uniqueResolution : NULL));
+
         if (result == NULL || !uniqueResolution)
         {
             _ASSERTE(pfForceUseRuntimeLookup != NULL);

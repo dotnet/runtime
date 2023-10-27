@@ -14,7 +14,7 @@ namespace System.Net.NameResolution.Tests
 {
     public class MetricsTest
     {
-        private const string DnsLookupsRequested = "dns-lookups-requested";
+        private const string DnsLookupDuration = "dns.lookup.duration";
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ResolveValidHostName_MetricsRecorded()
@@ -23,7 +23,7 @@ namespace System.Net.NameResolution.Tests
             {
                 const string ValidHostName = "localhost";
 
-                using var recorder = new InstrumentRecorder<long>(DnsLookupsRequested);
+                using var recorder = new InstrumentRecorder<double>(DnsLookupDuration);
 
                 await Dns.GetHostEntryAsync(ValidHostName);
                 await Dns.GetHostAddressesAsync(ValidHostName);
@@ -34,10 +34,10 @@ namespace System.Net.NameResolution.Tests
                 Dns.EndGetHostEntry(Dns.BeginGetHostEntry(ValidHostName, null, null));
                 Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(ValidHostName, null, null));
 
-                long[] measurements = GetMeasurementsForHostname(recorder, ValidHostName);
+                double[] measurements = GetMeasurementsForHostname(recorder, ValidHostName);
 
                 Assert.Equal(6, measurements.Length);
-                Assert.All(measurements, m => Assert.Equal(1, m));
+                Assert.All(measurements, m => Assert.True(m > double.Epsilon));
             }).Dispose();
         }
 
@@ -46,7 +46,7 @@ namespace System.Net.NameResolution.Tests
         {
             const string InvalidHostName = $"invalid...example.com...{nameof(ResolveInvalidHostName_MetricsRecorded)}";
 
-            using var recorder = new InstrumentRecorder<long>(DnsLookupsRequested);
+            using var recorder = new InstrumentRecorder<double>(DnsLookupDuration);
 
             await Assert.ThrowsAnyAsync<SocketException>(async () => await Dns.GetHostEntryAsync(InvalidHostName));
             await Assert.ThrowsAnyAsync<SocketException>(async () => await Dns.GetHostAddressesAsync(InvalidHostName));
@@ -57,17 +57,26 @@ namespace System.Net.NameResolution.Tests
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostEntry(Dns.BeginGetHostEntry(InvalidHostName, null, null)));
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(InvalidHostName, null, null)));
 
-            long[] measurements = GetMeasurementsForHostname(recorder, InvalidHostName);
+            double[] measurements = GetMeasurementsForHostname(recorder, InvalidHostName, "host_not_found");
 
             Assert.Equal(6, measurements.Length);
-            Assert.All(measurements, m => Assert.Equal(1, m));
+            Assert.All(measurements, m => Assert.True(m > double.Epsilon));
         }
 
-        private static long[] GetMeasurementsForHostname(InstrumentRecorder<long> recorder, string hostname)
+        private static double[] GetMeasurementsForHostname(InstrumentRecorder<double> recorder, string hostname, string? expectedErrorType = null)
         {
             return recorder
                 .GetMeasurements()
-                .Where(m => m.Tags.ToArray().Any(t => t.Key == "hostname" && t.Value is string hostnameTag && hostnameTag == hostname))
+                .Where(m =>
+                {
+                    KeyValuePair<string, object?>[] tags = m.Tags.ToArray();
+                    if (!tags.Any(t => t.Key == "dns.question.name" && t.Value is string hostnameTag && hostnameTag == hostname))
+                    {
+                        return false;
+                    }
+                    string? actualErrorType = tags.FirstOrDefault(t => t.Key == "error.type").Value as string;
+                    return expectedErrorType == actualErrorType;
+                })
                 .Select(m => m.Value)
                 .ToArray();
         }

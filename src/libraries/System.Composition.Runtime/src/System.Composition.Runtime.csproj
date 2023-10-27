@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <RootNamespace>System.Composition</RootNamespace>
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsPackable>true</IsPackable>
@@ -11,6 +9,10 @@
 
 Commonly Used Types:
 System.Composition.CompositionContext</PackageDescription>
+    
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

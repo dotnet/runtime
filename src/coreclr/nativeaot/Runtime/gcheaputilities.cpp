@@ -47,6 +47,18 @@ extern "C" HRESULT GC_Initialize(
 
 #ifndef DACCESS_COMPILE
 
+HRESULT InitializeGCSelector();
+
+HRESULT GCHeapUtilities::InitializeGC()
+{
+    return InitializeGCSelector();
+}
+
+HRESULT InitializeDefaultGC()
+{
+    return GCHeapUtilities::InitializeDefaultGC();
+}
+
 // Initializes a non-standalone GC. The protocol for initializing a non-standalone GC
 // is similar to loading a standalone one, except that the GC_VersionInfo and
 // GC_Initialize symbols are linked to directory and thus don't need to be loaded.

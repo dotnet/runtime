@@ -31,10 +31,9 @@ public class Form1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Form1 f = new Form1();
-        return 100;
     }
 }
 

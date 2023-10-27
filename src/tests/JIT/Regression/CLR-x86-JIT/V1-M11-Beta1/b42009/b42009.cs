@@ -23,11 +23,10 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int[] an = new int[2];
             Static2(ref an);
-            return 100;
         }
     }
 }

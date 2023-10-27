@@ -188,11 +188,12 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents = null,
+        IEnumerable<string> runtimeComponents,
         string? nativeMainSource = null,
-        bool useNativeAOTRuntime = false)
+        bool useNativeAOTRuntime = false,
+        bool isLibraryMode = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime, isLibraryMode);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -251,9 +252,10 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents = null,
+        IEnumerable<string> runtimeComponents,
         string? nativeMainSource = null,
-        bool useNativeAOTRuntime = false)
+        bool useNativeAOTRuntime = false,
+        bool isLibraryMode = false)
     {
         // bundle everything as resources excluding native files
         var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "icudt*" };
@@ -313,7 +315,8 @@ internal sealed class Xcode
         string appResources = string.Join(Environment.NewLine, asmDataFiles.Select(r => "    " + r));
         appResources += string.Join(Environment.NewLine, resources.Where(r => !r.EndsWith("-llvm.o")).Select(r => "    " + Path.GetRelativePath(binDir, r)));
 
-        string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
+        string cmakeTemplateName = (isLibraryMode) ? "CMakeLists-librarymode.txt.template" : "CMakeLists.txt.template";
+        string cmakeLists = Utils.GetEmbeddedResource(cmakeTemplateName)
             .Replace("%UseNativeAOTRuntime%", useNativeAOTRuntime ? "TRUE" : "FALSE")
             .Replace("%ProjectName%", projectName)
             .Replace("%AppResources%", appResources)
@@ -322,83 +325,76 @@ internal sealed class Xcode
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
 
         string toLink = "";
+        string aotSources = "";
+        string aotList = "";
 
-        string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
-        string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
-        bool staticLinkAllComponents = false;
-        string[] staticLinkedComponents = Array.Empty<string>();
-
-        if (!string.IsNullOrEmpty(runtimeComponents) && runtimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-            staticLinkAllComponents = true;
-        else if (!string.IsNullOrEmpty(runtimeComponents))
-            staticLinkedComponents = runtimeComponents.Split(";");
-
-        // by default, component stubs will be linked and depending on how mono runtime has been build,
-        // stubs can disable or dynamic load components.
-        foreach (string staticComponentStubLib in staticComponentStubLibs)
+        if (isLibraryMode)
         {
-            string componentLibToLink = staticComponentStubLib;
-            if (staticLinkAllComponents)
+            string dylibName = $"lib{projectName}.dylib";
+            cmakeLists = cmakeLists.Replace("%DYLIB_PATH%", $"{Path.Combine(binDir, dylibName)}");
+        }
+        else
+        {
+            string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
+            string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
+
+            // by default, component stubs will be linked and depending on how mono runtime has been build,
+            // stubs can disable or dynamic load components.
+            foreach (string staticComponentStubLib in staticComponentStubLibs)
             {
-                // static link component.
-                componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                foreach (string staticLinkedComponent in staticLinkedComponents)
+                string componentLibToLink = staticComponentStubLib;
+                foreach (string runtimeComponent in runtimeComponents)
                 {
-                    if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
+                    if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
                     {
                         // static link component.
                         componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
                         break;
                     }
                 }
+
+                // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
+                if (!File.Exists(componentLibToLink))
+                {
+                    Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                    componentLibToLink = staticComponentStubLib;
+                }
+
+                toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
             }
 
-            // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
-            if (!File.Exists(componentLibToLink))
+            string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
+            foreach (string lib in Directory.GetFiles(workspace, "*.a"))
             {
-                Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
-                componentLibToLink = staticComponentStubLib;
+                // all component libs already added to linker.
+                if (allComponentLibs.Any(lib.Contains))
+                    continue;
+
+                string libName = Path.GetFileNameWithoutExtension(lib);
+                // libmono must always be statically linked, for other librarires we can use dylibs
+                bool dylibExists = libName != "libmonosgen-2.0" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
+
+                if (useNativeAOTRuntime)
+                {
+                    // link NativeAOT framework libs without '-force_load'
+                    toLink += $"    {lib}{Environment.NewLine}";
+                }
+                else if (forceAOT || !(preferDylibs && dylibExists))
+                {
+                    // these libraries are pinvoked
+                    // -force_load will be removed once we enable direct-pinvokes for AOT
+                    toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+                }
             }
 
-            toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
-        }
-
-        string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
-        foreach (string lib in Directory.GetFiles(workspace, "*.a"))
-        {
-            // all component libs already added to linker.
-            if (allComponentLibs.Any(lib.Contains))
-                continue;
-
-            string libName = Path.GetFileNameWithoutExtension(lib);
-            // libmono must always be statically linked, for other librarires we can use dylibs
-            bool dylibExists = libName != "libmonosgen-2.0" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
-
-            if (useNativeAOTRuntime)
+            foreach (string asm in asmFiles)
             {
-                // link NativeAOT framework libs without '-force_load'
-                toLink += $"    {lib}{Environment.NewLine}";
+                // these libraries are linked via modules.m
+                var name = Path.GetFileNameWithoutExtension(asm);
+                aotSources += $"add_library({projectName}_{name} OBJECT {asm}){Environment.NewLine}";
+                toLink += $"    {projectName}_{name}{Environment.NewLine}";
+                aotList += $" {projectName}_{name}";
             }
-            else if (forceAOT || !(preferDylibs && dylibExists))
-            {
-                // these libraries are pinvoked
-                // -force_load will be removed once we enable direct-pinvokes for AOT
-                toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
-            }
-        }
-
-        string aotSources = "";
-        string aotList = "";
-        foreach (string asm in asmFiles)
-        {
-            // these libraries are linked via modules.m
-            var name = Path.GetFileNameWithoutExtension(asm);
-            aotSources += $"add_library({projectName}_{name} OBJECT {asm}){Environment.NewLine}";
-            toLink += $"    {projectName}_{name}{Environment.NewLine}";
-            aotList += $" {projectName}_{name}";
         }
 
         foreach (string asmLinkFile in asmLinkFiles)
@@ -486,23 +482,24 @@ internal sealed class Xcode
             File.WriteAllText(Path.Combine(binDir, "runtime.h"),
                 Utils.GetEmbeddedResource("runtime.h"));
 
-            // forward pinvokes to "__Internal"
-            var dllMap = new StringBuilder();
+            // lookup statically linked libraries via dlsym(), see handle_pinvoke_override() in runtime.m
+            var pinvokeOverrides = new StringBuilder();
             foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
             {
                 string aFileName = Path.GetFileNameWithoutExtension(aFile);
-                dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+                pinvokeOverrides.AppendLine($"        \"{aFileName}\",");
 
                 // also register with or without "lib" prefix
                 aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
-                dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+                pinvokeOverrides.AppendLine($"        \"{aFileName}\",");
             }
 
-            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"System.Globalization.Native\", NULL, \"__Internal\", NULL);");
+            pinvokeOverrides.AppendLine($"        \"System.Globalization.Native\",");
 
+            string runtimeTemplateName = (isLibraryMode) ? "runtime-librarymode.m" : "runtime.m";
             File.WriteAllText(Path.Combine(binDir, "runtime.m"),
-                Utils.GetEmbeddedResource("runtime.m")
-                    .Replace("//%DllMap%", dllMap.ToString())
+                Utils.GetEmbeddedResource(runtimeTemplateName)
+                    .Replace("//%PInvokeOverrideLibraries%", pinvokeOverrides.ToString())
                     .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                     .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
         }

@@ -465,9 +465,9 @@ namespace System
             }
         }
 
-        /// <summary>Returns a <see cref="bool"/> telling whether a given integral value, or its name as a string, exists in a specified enumeration.</summary>
+        /// <summary>Returns a <see cref="bool"/> telling whether a given integral value exists in a specified enumeration.</summary>
         /// <typeparam name="TEnum">The type of the enumeration.</typeparam>
-        /// <param name="value">The value or name of a constant in <typeparamref name="TEnum"/>.</param>
+        /// <param name="value">The value in <typeparamref name="TEnum"/>.</param>
         /// <returns><see langword="true"/> if a given integral value exists in a specified enumeration; <see langword="false"/>, otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum

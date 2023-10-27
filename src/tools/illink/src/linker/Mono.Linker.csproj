@@ -24,6 +24,43 @@
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
 
+  <Target Name="_ComputePackRuntimeConfigFilePath">
+    <PropertyGroup>
+      <PackRuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(ProjectRuntimeConfigFilePath), pack.json))</PackRuntimeConfigFilePath>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Generate a runtimeconfig.pack.json file that has the runtime version replaced by version of dotnet/runtime being built.
+       This will be the version used by the ILLink.Tasks package. -->
+  <Target Name="GeneratePackageRuntimeConfig" AfterTargets="GenerateBuildRuntimeConfigurationFiles"
+          DependsOnTargets="_ComputePackRuntimeConfigFilePath"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
+    <PropertyGroup>
+      <_RuntimeConfigContents>$([System.IO.File]::ReadAllText('$(ProjectRuntimeConfigFilePath)'))</_RuntimeConfigContents>
+      <ReplacementPattern>"version": ".*"</ReplacementPattern>
+      <ReplacementString>"version": "$(Version)"</ReplacementString>
+      <_NewRuntimeConfigContents>$([System.Text.RegularExpressions.Regex]::Replace($(_RuntimeConfigContents), $(ReplacementPattern), $(ReplacementString)))</_NewRuntimeConfigContents>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(PackRuntimeConfigFilePath)"
+                      Lines="$(_NewRuntimeConfigContents)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <!-- Ensure that the pack.json file flows to ILLink.Tasks so that it can be included in the package.
+       The original runtimeconfig.json file (included by default) is also needed so that projects which use
+       the ILLink.Tasks build output can run illink using the LKG SDK. -->
+  <Target Name="AddPackageRuntimeConfigToCopyItemsForReferencingProjects"
+          DependsOnTargets="_ComputePackRuntimeConfigFilePath"
+          AfterTargets="AddDepsJsonAndRuntimeConfigToCopyItemsForReferencingProjects">
+    <ItemGroup>
+      <AllItemsFullPathWithTargetPath Include="$(PackRuntimeConfigFilePath)"
+                                      TargetPath="$([System.IO.Path]::GetFileName($(PackRuntimeConfigFilePath)))"
+                                      CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
   <!-- The default pack logic will include the implementation assembly in lib.
        This also adds the reference assembly under ref. -->
   <Target Name="_AddReferenceAssemblyToPackage" DependsOnTargets="ResolveProjectReferences">

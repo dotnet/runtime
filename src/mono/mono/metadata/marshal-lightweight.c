@@ -436,6 +436,7 @@ handle_enum:
 		/* nothing to do */
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		/* The result is an IntPtr */
 		mono_mb_emit_op (mb, CEE_BOX, mono_defaults.int_class);
 		break;
@@ -2093,13 +2094,13 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 		if (!closed_over_null) {
 			for (i = 1; i <= sig->param_count; ++i) {
 				mono_mb_emit_ldarg (mb, i);
-				if (i == 1 && (MONO_TYPE_ISSTRUCT (sig->params [0]) || MONO_TYPE_IS_PRIMITIVE (sig->params [0])))
-					mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (sig->params [0]));
+				if (i == 1) {
+					MonoType *t = sig->params [0];
+					if (!m_type_is_byref (t))
+						mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (t));
+				}
 			}
-			if (MONO_TYPE_ISSTRUCT (sig->params [0]) || MONO_TYPE_IS_PRIMITIVE (sig->params [0]))
-				mono_mb_emit_ldarg_addr (mb, 1);
-			else
-				mono_mb_emit_ldarg (mb, 1);
+			mono_mb_emit_ldarg_addr (mb, 1);
 			mono_mb_emit_ldarg (mb, 0);
 			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
 			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
@@ -2446,7 +2447,10 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
-		emit_missing_method_error (mb, find_method_error, "constructor");
+		if (mono_error_get_error_code (find_method_error) == MONO_ERROR_GENERIC)
+			mono_mb_emit_exception_for_error (mb, find_method_error);
+		else
+			emit_missing_method_error (mb, find_method_error, "constructor");
 		mono_error_cleanup (find_method_error);
 		return;
 	}
@@ -2491,7 +2495,10 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	else
 		target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
-		emit_missing_method_error (mb, find_method_error, member_name);
+		if (mono_error_get_error_code (find_method_error) == MONO_ERROR_GENERIC)
+			mono_mb_emit_exception_for_error (mb, find_method_error);
+		else
+			emit_missing_method_error (mb, find_method_error, member_name);
 		mono_error_cleanup (find_method_error);
 		return;
 	}

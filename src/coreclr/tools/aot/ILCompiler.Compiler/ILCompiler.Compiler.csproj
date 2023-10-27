@@ -30,6 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\Compiler\ImpliedRepeatedFieldDesc.cs" Link="Compiler\ImpliedRepeatedFieldDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFields.cs" Link="Compiler\TypeWithRepeatedFields.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" Link="Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
@@ -208,6 +211,9 @@
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\RuntimeConstants.cs">
       <Link>Common\RuntimeConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Internal\Runtime\StackTraceData.cs">
+      <Link>Common\StackTraceData.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\UniversalGenericParameterLayout.cs">
       <Link>Common\UniversalGenericParameterLayout.cs</Link>
@@ -406,16 +412,17 @@
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FunctionPointerMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsHashtableEntryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVarianceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodImplNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InlineableStringsResourceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NotReadOnlyFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PointerTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedFieldNode.cs" />
@@ -446,6 +453,7 @@
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
+    <Compile Include="Compiler\HardwareIntrinsicILProvider.cs" />
     <Compile Include="Compiler\IInliningPolicy.cs" />
     <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
@@ -453,7 +461,7 @@
     <Compile Include="Compiler\InlinedThreadStatics.cs" />
     <Compile Include="Compiler\MstatObjectDumper.cs" />
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SerializedFrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
     <Compile Include="Compiler\MetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodMetadataNode.cs" />
@@ -579,6 +587,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
+    <Compile Include="Compiler\ReadOnlyFieldPolicy.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />

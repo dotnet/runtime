@@ -14,8 +14,9 @@
     <SkipWorkloadsTestingTargetsImport Condition="'$(SkipWorkloadsTestingTargetsImport)' == ''">true</SkipWorkloadsTestingTargetsImport>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">true</RunAOTCompilation>
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
+    <RunAOTCompilation Condition="'$(RuntimeFlavor)' == 'Mono' ">true</RunAOTCompilation>
+    <UseNativeAOTRuntime Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</UseNativeAOTRuntime>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -164,5 +165,4 @@
           DependsOnTargets="InstallWorkloadUsingArtifacts"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'" />
 </Project>
