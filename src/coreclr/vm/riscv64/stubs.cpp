@@ -1511,10 +1511,19 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-#define END_DYNAMIC_HELPER_EMIT() \
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    SIZE_T cb = size; \
+    SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
+    BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    ExecutableWriterHolder<BYTE> startWriterHolder(pStartRX, cbAligned); \
+    BYTE * pStart = startWriterHolder.GetRW(); \
+    size_t rxOffset = pStartRX - pStart; \
+    BYTE * p = pStart;
 
+#define END_DYNAMIC_HELPER_EMIT() \
+    _ASSERTE(pStart + cb == p); \
+    while (p < pStart + cbAligned) { *(DWORD*)p = 0xffffff0f/*badcode*/; p += 4; }\
+    ClrFlushInstructionCache(pStart, cbAligned); \
+    return (PCODE)pStart
 // Uses x8 as scratch register to store address of data label
 // After load x8 is increment to point to next data
 // only accepts positive offsets
@@ -1525,68 +1534,461 @@ static void LoadRegPair(BYTE* p, int reg1, int reg2, UINT32 offset)
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(32);
+
+    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    p += 4;
+    *(DWORD*)p = 0x0102b503;// ld a0, 16(t0)
+    p += 4;
+    *(DWORD*)p = 0x0182b283;// ld t0, 24(t0)
+    p += 4;
+    *(DWORD*)p = 0x00028067;// jr t0
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+    // target
+    *(PCODE*)p = target;
+    p += 8;
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 // Caller must ensure sufficient byte are allocated including padding (if applicable)
 void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    STANDARD_VM_CONTRACT;
+
+    *(DWORD*)p = 0x0000297;// auipc t0, 0
+    p += 4;
+    *(DWORD*)p = 0x0102b503;// ld a0, 16(t0)
+    p += 4;
+    *(DWORD*)p = 0x0182b283;// ld t0, 24(t0)
+    p += 4;
+    *(DWORD*)p = 0x00028067;// jr t0
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+    // target
+    *(PCODE*)p = target;
+    p += 8;
 }
 
 PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(32);
+
+    EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(48);
+
+    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    p += 4;
+   *(DWORD*)p = 0x0182b503;// ld a0, 24(t0)
+    p += 4;
+    *(DWORD*)p = 0x0202b583;// ld a1, 32(t0)
+    p += 4;
+    *(DWORD*)p = 0x0282b283;// ld t0, 40(t0)
+    p += 4;
+    *(DWORD*)p = 0x00028067;// jr t0
+    p += 4;
+
+    // nop, padding to make 8 byte aligned
+    *(DWORD*)p = 0x00000013;
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+    // arg2
+    *(TADDR*)p = arg2;
+    p += 8;
+    // target
+    *(TADDR*)p = target;
+    p += 8;
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(40);
+
+    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    p += 4;
+    *(DWORD*)p = 0x00050593;// mv a1, a0
+    p += 4;
+    *(DWORD*)p = 0x0182b503;// ld a0, 24(t0)
+    p += 4;
+    *(DWORD*)p = 0x0202b283;// ld t0, 32(t0)
+    p += 4;
+    *(DWORD*)p = 0x00028067;// jr t0
+    p += 4;
+
+    // nop, padding to make 8 byte aligned
+    *(DWORD*)p = 0x00000013;
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+    // target
+    *(TADDR*)p = target;
+    p += 8;
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(4);
+
+    *(DWORD*)p = 0x00008067;// ret
+    p += 4;
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(24);
+
+    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    p += 4;
+    *(DWORD*)p = 0x0102b503;// ld a0, 16(t0)
+    p += 4;
+    *(DWORD*)p = 0x00008067;// ret
+    p += 4;
+    *(DWORD*)p = 0x00000013;// nop, padding to make 8 byte aligned
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR arg, INT8 offset)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(32);
+
+    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    p += 4;
+    *(DWORD*)p = 0x0182b503;// ld a0,24(t0)
+    p += 4;
+    *(DWORD*)p = 0x00053503;// ld a0,0(a0)
+    p += 4;
+    *(DWORD*)p = 0x00050513 | ((offset & 0xfff)<<20);// addi a0,a0,offset
+    p += 4;
+    *(DWORD*)p = 0x00008067;// ret
+    p += 4;
+    *(DWORD*)p = 0x00000013;// nop, padding to make 8 byte aligned
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(32);
+
+    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    p += 4;
+    *(DWORD*)p = 0x0102b603;// ld a2,16(t0)
+    p += 4;
+    *(DWORD*)p = 0x0182b283;// ld t0,24(t0)
+    p += 4;
+    *(DWORD*)p = 0x00028067;// jr t0
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+
+    // target
+    *(TADDR*)p = target;
+    p += 8;
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(48);
+
+    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    p += 4;
+    *(DWORD*)p = 0x0182b603;// ld a2,24(t0)
+    p += 4;
+    *(DWORD*)p = 0x0202b683;// ld a3,32(t0)
+    p += 4;
+    *(DWORD*)p = 0x0282b283;// ld t0,40(t0)
+    p += 4;
+    *(DWORD*)p = 0x00028067;// jr t0
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+    // arg2
+    *(TADDR*)p = arg2;
+    p += 8;
+    // target
+    *(TADDR*)p = target;
+    p += 8;
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    return NULL;
+    STANDARD_VM_CONTRACT;
+
+    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
+        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
+        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+
+    GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
+    ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));
+    argsWriterHolder.GetRW()->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
+    argsWriterHolder.GetRW()->signature = pLookup->signature;
+    argsWriterHolder.GetRW()->module = (CORINFO_MODULE_HANDLE)pModule;
+
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
+
+    // It's available only via the run-time helper function
+    if (pLookup->indirections == CORINFO_USEHELPER)
+    {
+        BEGIN_DYNAMIC_HELPER_EMIT(32);
+
+        // a0 already contains generic context parameter
+        // reuse EmitHelperWithArg for below two operations
+        // a1 <- pArgs
+        // branch to helperAddress
+        EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
+
+        END_DYNAMIC_HELPER_EMIT();
+    }
+    else
+    {
+        int codeSize = 0;
+        int indirectionsDataSize = 0;
+        if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+        {
+            codeSize += 4; //mv t2, 0
+        }
+
+        for (WORD i = 0; i < pLookup->indirections; i++) {
+            _ASSERTE(pLookup->offsets[i] >= 0);
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            {
+                codeSize += (pLookup->sizeOffset > 2047 ? 28 : 16);
+                indirectionsDataSize += (pLookup->sizeOffset > 2047 ? 4 : 0);
+            }
+
+            codeSize += (pLookup->offsets[i] > 2047 ? 16 : 4); // if( > 2047) (8 bytes) else 4 bytes for instructions.
+            indirectionsDataSize += (pLookup->offsets[i] > 2047 ? 4 : 0); // 4 bytes for storing indirection offset values
+        }
+
+        codeSize += indirectionsDataSize ? 4 : 0; // auipc
+
+        if (pLookup->testForNull)
+        {
+            codeSize += 12; // ori-beq-jalr
+
+            //padding for 8-byte align (required by EmitHelperWithArg)
+            if (codeSize & 0x7)
+                codeSize += 4;
+
+            codeSize += 32; // size of EmitHelperWithArg
+        }
+        else
+        {
+            codeSize += 4; /* jalr */
+        }
+
+        // the offset value of data_label.
+        uint dataOffset = codeSize;
+
+        codeSize += indirectionsDataSize;
+
+        BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
+
+        BYTE * old_p = p;
+
+        if (indirectionsDataSize)
+        {
+            // auipc  t4, 0
+            *(DWORD*)p = 0x00000e97;
+            p += 4;
+        }
+
+        if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+        {
+            // mv  t2, a0
+            *(DWORD*)p = 0x00050393;
+            p += 4;
+        }
+
+        BYTE* pBLECall = NULL;
+
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            {
+                _ASSERTE(pLookup->testForNull && i > 0);
+
+                if (pLookup->sizeOffset > 2047)
+                {
+                    // auipc  t4, 0
+                    *(DWORD*)p = 0x00000297; p += 4;
+                    // lw  t4, dataOffset(t4)
+                    *(DWORD*)p = 0x000eae83 | (dataOffset << 20); p += 4;
+                    // add  t5, a0, t4
+                    *(DWORD*)p = 0x01d50f33; p += 4;
+                    // ld  t5, 0(t5)
+                    *(DWORD*)p = 0x000f3f03; 
+
+                    // move to next indirection offset data
+                    dataOffset = dataOffset - 16 + 4; // subtract 16 as we have moved PC by 16 and add 4 as next data is at 4 bytes from previous data
+                }
+                else
+                {
+                    // ld  t5, #(pLookup->sizeOffset)(a0)
+                    *(DWORD*)p = 0x00053f03 | ((UINT32)pLookup->sizeOffset << 20); p += 4;
+                    dataOffset -= 4; // subtract 4 as we have moved PC by 4
+                }
+                // lui  t4, (slotOffset&0xfffff000)>>12
+                *(DWORD*)p = 0x00000eb7 | ((((UINT32)slotOffset & 0xfffff000) >> 12) << 12); p += 4;
+                // addi  t4, t4, (slotOffset&0xfff)
+                *(DWORD*)p = 0x000e8e93 | ((slotOffset & 0xfff) << 20); p += 4;
+                dataOffset -= 8;
+                // blt  t4, t5, CALL HELPER
+                pBLECall = p;       // Offset filled later
+                *(DWORD*)p = 0x01eec063; p += 4;
+                dataOffset -= 4;
+            }
+
+            if(pLookup->offsets[i] > 2047)
+            {
+                _ASSERTE(dataOffset < 2047);
+                // auipc  t4, 0
+                *(DWORD*)p = 0x00000297;
+                p += 4;
+                // lw  t4, dataOffset(t4)
+                *(DWORD*)p = 0x000eae83 | ((dataOffset & 0xfff) << 20);
+                p += 4;
+                // add a0, a0, t4
+                *(DWORD*)p = 0x01d50533; 
+                // lw  a0, 0(a0)
+                *(DWORD*)p = 0x00052503; 
+                p += 4;
+                // move to next indirection offset data
+                dataOffset = dataOffset - 16 + 4; // subtract 16 as we have moved PC by 16 and add 4 as next data is at 4 bytes from previous data
+            }
+            else
+            {
+                // offset must be 8 byte aligned
+                _ASSERTE((pLookup->offsets[i] & 0x7) == 0);
+                // ld  a0, #(pLookup->offsets[i])(a0)
+                *(DWORD*)p = 0x00053503 | ((UINT32)pLookup->offsets[i] << 20);
+                p += 4;
+                dataOffset -= 4; // subtract 4 as we have moved PC by 4
+            }
+        }
+
+        // No null test required
+        if (!pLookup->testForNull)
+        {
+            _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+            // ret
+            *(DWORD*)p = 0x00008067;
+            p += 4;
+        }
+        else
+        {
+            // beq  a0, x0, CALL HELPER:
+            *(DWORD*)p = 0x00050063;
+            p += 4;
+
+            // ret
+            *(DWORD*)p = 0x00008067;
+            p += 4;
+
+            // CALL HELPER:
+            if(pBLECall != NULL)
+                *(DWORD*)pBLECall |= ((UINT32)(p - pBLECall) << 8);
+
+            // ori  a0,t2,0
+            *(DWORD*)p = 0x0003e513;
+            p += 4;
+            if ((uintptr_t)(p - old_p) & 0x7)
+            {
+                // nop, padding for 8-byte align (required by EmitHelperWithArg)
+                *(DWORD*)p = 0x00000013;
+                p += 4;
+            }
+
+            // reuse EmitHelperWithArg for below two operations
+            // a1 <- pArgs
+            // branch to helperAddress
+            EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
+        }
+
+        // data_label:
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK && pLookup->sizeOffset > 2047)
+            {
+                *(UINT32*)p = (UINT32)pLookup->sizeOffset;
+                p += 4;
+            }
+            if(pLookup->offsets[i] > 2047)
+            {
+                *(UINT32*)p = (UINT32)pLookup->offsets[i];
+                p += 4;
+            }
+        }
+
+        END_DYNAMIC_HELPER_EMIT();
+    }
 }
 #endif // FEATURE_READYTORUN
 
