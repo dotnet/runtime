@@ -12912,12 +12912,6 @@ namespace System.Runtime.CompilerServices
         public InlineArrayAttribute(int length) { }
         public int Length { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple = false)]
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public sealed partial class SwiftErrorReturnAttribute : System.Attribute
-    {
-        public SwiftErrorReturnAttribute() { }
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class IsByRefLikeAttribute : System.Attribute
@@ -13510,6 +13504,26 @@ namespace System.Runtime.InteropServices
         Sequential = 0,
         Explicit = 2,
         Auto = 3,
+    }
+
+    public struct SwiftSelf
+    {
+        public IntPtr Value { get; set; }
+
+        public SwiftSelf(IntPtr value)
+        {
+            Value = value;
+        }
+    }
+
+    public readonly struct SwiftError
+    {
+        public IntPtr Value { get; }
+
+        public SwiftError(IntPtr value)
+        {
+            Value = value;
+        }
     }
     public readonly partial struct OSPlatform : System.IEquatable<System.Runtime.InteropServices.OSPlatform>
     {

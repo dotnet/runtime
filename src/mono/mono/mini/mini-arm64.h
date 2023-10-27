@@ -119,7 +119,6 @@ typedef struct {
 	MonoInst *seq_point_info_var;
 	MonoInst *ss_tramp_var;
 	MonoInst *bp_tramp_var;
-	MonoInst *interop_var;
 	guint8 *thunks;
 	int thunks_size;
 } MonoCompileArch;
@@ -234,7 +233,6 @@ typedef enum {
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,
 	ArgHFA,
-	ArgSwiftError,
 	ArgNone
 } ArgStorage;
 

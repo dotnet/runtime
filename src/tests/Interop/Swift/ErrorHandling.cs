@@ -7,7 +7,7 @@ public class ErrorHandlingTests
 {
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport("libErrorHandling.dylib", EntryPoint = "$s13ErrorHandling22someFuncThatMightThrow5dummy04willG0SiSV_SbtKF")]
-    public static extern nint SomeFuncThatMightThrow ([SwiftErrorReturn]ref IntPtr error, bool willThrow);
+    public static extern nint SomeFuncThatMightThrow (ref SwiftError error, bool willThrow);
 
     [DllImport("libErrorHandling.dylib", EntryPoint = "$s13ErrorHandling06handleA04fromySPyAA02MyA0OG_tF")]
     public static extern void handleError (IntPtr handle);
@@ -15,11 +15,11 @@ public class ErrorHandlingTests
     [Fact]
     public static int TestEntryPoint()
     {
-        IntPtr errorHandle = IntPtr.Zero; 
+        SwiftError errorHandle = new SwiftError();
         SomeFuncThatMightThrow(ref errorHandle, true);
-        if (errorHandle != IntPtr.Zero) {
-            Console.WriteLine($"Error instance from R21: 0x{errorHandle:X16}");
-            handleError(errorHandle);
+        if (errorHandle.Value != IntPtr.Zero) {
+            Console.WriteLine($"Error instance from R21: 0x{errorHandle.Value:X16}");
+            handleError(errorHandle.Value);
             return 100;
         } else {
             return 101;

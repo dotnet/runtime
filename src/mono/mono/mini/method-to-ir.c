@@ -8494,6 +8494,26 @@ calli_end:
 			if (ins_flag & MONO_INST_TAILCALL)
 				mini_test_tailcall (cfg, tailcall);
 
+			if (method->signature->call_convention == MONO_CALL_SWIFTCALL) {
+				int swift_self_args = 0;
+				int swift_error_args = 0;
+				for (int i = 0; i < method->signature->param_count; i++) {
+					MonoType *arg_type = method->signature->params [i];
+					if (arg_type->data.klass && !strcmp (m_class_get_name (arg_type->data.klass), "SwiftSelf")) {
+						swift_self_args++;
+					}
+					if (arg_type->data.klass && !strcmp (m_class_get_name (arg_type->data.klass), "SwiftError")) {
+						swift_error_args++;
+					}
+				}
+				if (swift_self_args > 1 || swift_error_args > 1) {
+					mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Method signature contains multiple SwiftSelf/SwiftError arguments."));
+				}
+				// Optimization ideas:
+				//  - If Swift types not found, remove CallConvSwift attribute
+				//  - Else, keep arg index
+			}
+
 			/* End of call, INS should contain the result of the call, if any */
 
 			if (push_res && !MONO_TYPE_IS_VOID (fsig->ret)) {

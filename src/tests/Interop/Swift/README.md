@@ -230,8 +230,8 @@ Build the tests:
 ```
 Build the native library:
 ```sh
-swiftc -emit-library ./src/tests/Interop/Swift/MathLibrary.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libMathLibrary.dylib
 swiftc -emit-library ./src/tests/Interop/Swift/ErrorHandling.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libErrorHandling.dylib
+swiftc -emit-library ./src/tests/Interop/Swift/SelfContext.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libSelfContext.dylib
 ```
 Run the tests:
 ```

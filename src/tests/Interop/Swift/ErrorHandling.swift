@@ -2,7 +2,6 @@ import Foundation
 
 public enum MyError: Error {
     case runtimeError(String)
-    case runtimeErrorTest(String)
 }
 
 public func someFuncThatMightThrow (dummy: UnsafeRawPointer, willThrow: Bool) throws -> Int {

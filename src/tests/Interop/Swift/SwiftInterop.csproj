@@ -2,13 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BuildAsStandalone>true</BuildAsStandalone>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="SelfContext.cs" />
     <Compile Include="ErrorHandling.cs" />
-    <!-- <Compile Include="DefaultParams.cs" />
-    <Compile Include="Varargs.cs" />
-    <Compile Include="ClosureFunctions.cs" /> -->
-
-    <!-- TODO: Add missing tests from the library -->
   </ItemGroup>
 </Project>
