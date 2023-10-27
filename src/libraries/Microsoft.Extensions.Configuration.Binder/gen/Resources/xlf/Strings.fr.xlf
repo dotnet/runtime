@@ -17,6 +17,11 @@
         <target state="translated">Impossible de déterminer le type cible d’un appel de classeur</target>
         <note />
       </trans-unit>
+      <trans-unit id="DelegateNotSupported">
+        <source>Delegate type is not supported: '{0}'</source>
+        <target state="new">Delegate type is not supported: '{0}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">Le type de clé du dictionnaire n’est pas pris en charge : ‘{0}‘.</target>

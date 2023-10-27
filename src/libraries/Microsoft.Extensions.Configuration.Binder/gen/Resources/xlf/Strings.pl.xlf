@@ -17,6 +17,11 @@
         <target state="translated">Nie można określić typu docelowego dla wywołania integratora</target>
         <note />
       </trans-unit>
+      <trans-unit id="DelegateNotSupported">
+        <source>Delegate type is not supported: '{0}'</source>
+        <target state="new">Delegate type is not supported: '{0}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">Typ klucza słownika nie jest obsługiwany: „{0}”.</target>

@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public static DiagnosticDescriptor MultipleParameterizedConstructors { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.MultipleParameterizedConstructors));
                 public static DiagnosticDescriptor MultiDimArraysNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.MultiDimArraysNotSupported));
                 public static DiagnosticDescriptor NullableUnderlyingTypeNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.NullableUnderlyingTypeNotSupported));
+                public static DiagnosticDescriptor DelegateNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.DelegateNotSupported));
 
                 public static DiagnosticDescriptor PropertyNotSupported { get; } = DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1101",
@@ -74,6 +75,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         NotSupportedReason.MultipleParameterizedConstructors => MultipleParameterizedConstructors,
                         NotSupportedReason.MultiDimArraysNotSupported => MultiDimArraysNotSupported,
                         NotSupportedReason.NullableUnderlyingTypeNotSupported => NullableUnderlyingTypeNotSupported,
+                        NotSupportedReason.DelegateNotSupported => DelegateNotSupported,
                         _ => throw new InvalidOperationException()
                     };
             }

@@ -201,6 +201,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     spec = new ConfigurationSectionSpec(type);
                 }
+                else if (type.TypeKind is TypeKind.Delegate)
+                {
+                    spec = CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.DelegateNotSupported);
+                }
                 else if (type is INamedTypeSymbol)
                 {
                     spec = CreateObjectSpec(typeParseInfo);

@@ -17,6 +17,11 @@
         <target state="translated">Cílový typ volání vazače nelze určit</target>
         <note />
       </trans-unit>
+      <trans-unit id="DelegateNotSupported">
+        <source>Delegate type is not supported: '{0}'</source>
+        <target state="new">Delegate type is not supported: '{0}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">Typ klíče slovníku se nepodporuje:„{0}“.</target>

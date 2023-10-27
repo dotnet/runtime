@@ -17,6 +17,11 @@
         <target state="translated">No se pudo determinar el tipo de destino para una llamada de enlazador</target>
         <note />
       </trans-unit>
+      <trans-unit id="DelegateNotSupported">
+        <source>Delegate type is not supported: '{0}'</source>
+        <target state="new">Delegate type is not supported: '{0}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">No se admite el tipo de clave de diccionario: "{0}".</target>

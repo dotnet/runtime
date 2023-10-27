@@ -168,4 +168,7 @@
   <data name="ValueTypesInvalidForBindTitle" xml:space="preserve">
     <value>Value types are invalid inputs to configuration 'Bind' methods</value>
   </data>
+  <data name="DelegateNotSupported" xml:space="preserve">
+    <value>Delegate type is not supported: '{0}'</value>
+  </data>
 </root>

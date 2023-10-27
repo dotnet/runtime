@@ -17,6 +17,11 @@
         <target state="translated">바인더 호출의 대상 유형을 확인할 수 없습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DelegateNotSupported">
+        <source>Delegate type is not supported: '{0}'</source>
+        <target state="new">Delegate type is not supported: '{0}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">사전 키 유형이 지원되지 않습니다: '{0}'.</target>

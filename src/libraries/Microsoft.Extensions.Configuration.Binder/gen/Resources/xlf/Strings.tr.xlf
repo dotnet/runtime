@@ -17,6 +17,11 @@
         <target state="translated">Bir bağlayıcı çağrısının hedef türü belirlenemedi</target>
         <note />
       </trans-unit>
+      <trans-unit id="DelegateNotSupported">
+        <source>Delegate type is not supported: '{0}'</source>
+        <target state="new">Delegate type is not supported: '{0}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">Sözlük anahtarı türü desteklenmiyor: '{0}'.</target>

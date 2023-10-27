@@ -62,5 +62,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         MultipleParameterizedConstructors = 6,
         MultiDimArraysNotSupported = 7,
         NullableUnderlyingTypeNotSupported = 8,
+        DelegateNotSupported = 9,
     }
 }

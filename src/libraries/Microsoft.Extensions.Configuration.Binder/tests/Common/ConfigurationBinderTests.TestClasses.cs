@@ -129,7 +129,7 @@ namespace Microsoft.Extensions
             public StringComparison? NSC { get; }
             public char? NC { get; }
 
-            public ClassWhereParametersHaveDefaultValue(string? name, string address, 
+            public ClassWhereParametersHaveDefaultValue(string? name, string address,
                 int age = 42, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M, StringComparison sc = StringComparison.Ordinal, char c = 'q',
                 int? nage = 42, float? nf = 42.0f, double? nd = 3.14159, decimal? nm = 3.1415926535897932384626433M, StringComparison? nsc = StringComparison.Ordinal, char? nc = 'q')
             {
@@ -803,6 +803,9 @@ namespace Microsoft.Extensions
         public class GraphWithUnsupportedMember
         {
             public JsonWriterOptions WriterOptions { get; set; }
+
+            // this member should be omitted from source gen completely.
+            public Func<string, UnreferencedNamespace.EmptyClass> F { get; set; }
         }
 
         public record RemoteAuthenticationOptions<TRemoteAuthenticationProviderOptions> where TRemoteAuthenticationProviderOptions : new()
@@ -867,7 +870,7 @@ namespace Microsoft.Extensions
         {
             public int Value2 { get; set; }
         }
-        
+
         internal class ClassWithAbstractProp
         {
             public AbstractBase AbstractProp { get; set; }
@@ -925,4 +928,9 @@ namespace Microsoft.Extensions
         }
 
     }
+}
+
+namespace UnreferencedNamespace
+{
+    public class EmptyClass { }
 }
