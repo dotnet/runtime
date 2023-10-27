@@ -1003,7 +1003,7 @@ public class ComVisibleServer
     }
 
     [Fact]
-    public static int RunTestsInALC()
+    public static void RunTestsInALC()
     {
         TestLibrary.Utilities.ExecuteAndUnload(typeof(ComVisibleServer).Assembly.Location, nameof(ComVisibleServer), nameof(RunComVisibleTests));
     }
