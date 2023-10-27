@@ -1074,7 +1074,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private TrustRelationshipInformationCollection GetTrustsHelper(string? targetForestName)
+        private unsafe TrustRelationshipInformationCollection GetTrustsHelper(string? targetForestName)
         {
             string? serverName = null;
             IntPtr domains = (IntPtr)0;
@@ -1116,7 +1116,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     IntPtr addr = (IntPtr)0;
                     for (int i = 0; i < count; i++)
                     {
-                        addr = IntPtr.Add(domains, i * Marshal.SizeOf(typeof(Interop.Netapi32.DS_DOMAIN_TRUSTS)));
+                        addr = IntPtr.Add(domains, i * sizeof(Interop.Netapi32.DS_DOMAIN_TRUSTS));
                         Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = Marshal.PtrToStructure<Interop.Netapi32.DS_DOMAIN_TRUSTS>(addr);
 
                         // whether this is the case that a paticular forest trust info is needed

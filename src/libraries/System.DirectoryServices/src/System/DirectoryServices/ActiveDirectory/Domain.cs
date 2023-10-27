@@ -1235,7 +1235,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return childDomains;
         }
 
-        private ArrayList GetTrustsHelper(string? targetDomainName)
+        private unsafe ArrayList GetTrustsHelper(string? targetDomainName)
         {
             string? serverName;
             IntPtr domains = (IntPtr)0;
@@ -1289,7 +1289,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     for (int i = 0; i < count; i++)
                     {
                         // get the unmanaged trust object
-                        addr = IntPtr.Add(domains, +i * Marshal.SizeOf(typeof(Interop.Netapi32.DS_DOMAIN_TRUSTS)));
+                        addr = IntPtr.Add(domains, +i * sizeof(Interop.Netapi32.DS_DOMAIN_TRUSTS));
                         Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = Marshal.PtrToStructure<Interop.Netapi32.DS_DOMAIN_TRUSTS>(addr);
 
                         unmanagedTrustList.Add(unmanagedTrust);
