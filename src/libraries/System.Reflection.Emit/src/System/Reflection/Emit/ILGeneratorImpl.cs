@@ -245,7 +245,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(local);
 
-            if (local is LocalBuilderImpl localBuilder && localBuilder.GetMethodBuilder() != _methodBuilder)
+            if (local is not LocalBuilderImpl localBuilder || localBuilder.GetMethodBuilder() != _methodBuilder)
             {
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
             }
