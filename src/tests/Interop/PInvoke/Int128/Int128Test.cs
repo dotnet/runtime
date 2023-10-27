@@ -102,6 +102,7 @@ unsafe partial class Int128Native
 public unsafe partial class Int128Native
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69399", TestRuntimes.Mono)]
     public static void TestInt128FieldLayout()
     {
         // This test checks that the alignment rules of Int128 structs match the native compiler
@@ -135,6 +136,8 @@ public unsafe partial class Int128Native
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74209")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69531", TestRuntimes.Mono)]
     public static void TestInt128()
     {
         Int128 value1 = Int128Native.GetInt128(1, 2);
