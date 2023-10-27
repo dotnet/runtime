@@ -14,12 +14,22 @@ namespace System.Collections.Tests
         public static IEnumerable<object[]> TestDebuggerAttributes_DictionaryInputs()
         {
             yield return new object[] { new Dictionary<int, string>(), new KeyValuePair<string, string>[0] };
+            yield return new object[] { new Dictionary<int, string>().AsReadOnly(), new KeyValuePair<string, string>[0] };
             yield return new object[] { new SortedDictionary<string, int>(), new KeyValuePair<string, string>[0] };
             yield return new object[] { new Hashtable(), new KeyValuePair<string, string>[0] };
+            yield return new object[] { Hashtable.Synchronized(new Hashtable()), new KeyValuePair<string, string>[0] };
             yield return new object[] { new SortedList(), new KeyValuePair<string, string>[0] };
+            yield return new object[] { SortedList.Synchronized(new SortedList()), new KeyValuePair<string, string>[0] };
             yield return new object[] { new Exception().Data, new KeyValuePair<string, string>[0] };
 
             yield return new object[] { new Dictionary<int, string>{{1, "One"}, {2, "Two"}},
+                new KeyValuePair<string, string>[]
+                {
+                    KeyValuePair.Create("[1]", "\"One\""),
+                    KeyValuePair.Create("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string>{{1, "One"}, {2, "Two"}}.AsReadOnly(),
                 new KeyValuePair<string, string>[]
                 {
                     KeyValuePair.Create("[1]", "\"One\""),
@@ -40,7 +50,21 @@ namespace System.Collections.Tests
                     KeyValuePair.Create("[\"b\"]", "\"B\""),
                 }
             };
+            yield return new object[] { Hashtable.Synchronized(new Hashtable { { "a", 1 }, { "b", "B" } }),
+                new KeyValuePair<string, string>[]
+                {
+                    KeyValuePair.Create("[\"a\"]", "1"),
+                    KeyValuePair.Create("[\"b\"]", "\"B\""),
+                }
+            };
             yield return new object[] { new SortedList { { "a", 1 }, { "b", "B" } },
+                new KeyValuePair<string, string>[]
+                {
+                    KeyValuePair.Create("[\"a\"]", "1"),
+                    KeyValuePair.Create("[\"b\"]", "\"B\""),
+                }
+            };
+            yield return new object[] { SortedList.Synchronized(new SortedList { { "a", 1 }, { "b", "B" } }),
                 new KeyValuePair<string, string>[]
                 {
                     KeyValuePair.Create("[\"a\"]", "1"),

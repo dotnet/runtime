@@ -15,7 +15,12 @@ namespace System.Diagnostics
         public IEnumerable<PropertyInfo> Properties { get; set; }
     }
 
-    internal record DebuggerDisplayResult(string Value, string Key, string Type);
+    internal class DebuggerDisplayResult
+    {
+        public string Value { get; set; }
+        public string Key { get; set; }
+        public string Type { get; set; }
+    }
 
     internal static class DebuggerAttributes
     {
@@ -88,18 +93,52 @@ namespace System.Diagnostics
 
         public static Type GetProxyType(Type type) => GetProxyType(type, type.GenericTypeArguments);
 
+        internal static DebuggerDisplayResult ValidateFullyDebuggerDisplayReferences(object obj)
+        {
+            CustomAttributeData cad = FindAttribute(obj.GetType(), attributeType: typeof(DebuggerDisplayAttribute));
+
+            // Get the text of the DebuggerDisplayAttribute
+            string attrText = (string)cad.ConstructorArguments[0].Value;
+            string formattedValue = EvaluateDisplayString(attrText, obj);
+
+            string formattedKey = FormatDebuggerDisplayNamedArgument(nameof(DebuggerDisplayAttribute.Name), cad, obj);
+            string formattedType = FormatDebuggerDisplayNamedArgument(nameof(DebuggerDisplayAttribute.Type), cad, obj);
+
+            return new DebuggerDisplayResult { Value = formattedValue, Key = formattedKey, Type = formattedType };
+        }
+
+        internal static string ValidateDebuggerDisplayReferences(object obj)
+        {
+            CustomAttributeData cad = FindAttribute(obj.GetType(), attributeType: typeof(DebuggerDisplayAttribute));
+
+            // Get the text of the DebuggerDisplayAttribute
+            string attrText = (string)cad.ConstructorArguments[0].Value;
+
+            return EvaluateDisplayString(attrText, obj);
+        }
+
+        private static CustomAttributeData FindAttribute(Type type, Type attributeType)
+        {
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                CustomAttributeData[] attributes = t.GetTypeInfo().CustomAttributes
+                    .Where(a => a.AttributeType == attributeType)
+                    .ToArray();
+                if (attributes.Length != 0)
+                {
+                    if (attributes.Length > 1)
+                    {
+                        throw new InvalidOperationException($"Expected one {attributeType.Name} on {type} but found more.");
+                    }
+                    return attributes[0];
+                }
+            }
+            throw new InvalidOperationException($"Expected one {attributeType.Name} on {type}.");
+        }
+
         private static Type GetProxyType(Type type, Type[] genericTypeArguments)
         {
-            // Get the DebuggerTypeProxyAttribute for obj
-            CustomAttributeData[] attrs =
-                type.GetTypeInfo().CustomAttributes
-                .Where(a => a.AttributeType == typeof(DebuggerTypeProxyAttribute))
-                .ToArray();
-            if (attrs.Length != 1)
-            {
-                throw new InvalidOperationException($"Expected one DebuggerTypeProxyAttribute on {type}.");
-            }
-            CustomAttributeData cad = attrs[0];
+            CustomAttributeData cad = FindAttribute(type, attributeType: typeof(DebuggerTypeProxyAttribute));
 
             Type proxyType = cad.ConstructorArguments[0].ArgumentType == typeof(Type) ?
                 (Type)cad.ConstructorArguments[0].Value :
@@ -110,33 +149,6 @@ namespace System.Diagnostics
             }
 
             return proxyType;
-        }
-
-        private static CustomAttributeData GetDebuggerDisplayAttribute(Type type)
-        {
-            CustomAttributeData[] attrs =
-                type.GetTypeInfo().CustomAttributes
-                .Where(a => a.AttributeType == typeof(DebuggerDisplayAttribute))
-                .ToArray();
-            if (attrs.Length != 1)
-            {
-                throw new InvalidOperationException($"Expected one DebuggerDisplayAttribute on {type}.");
-            }
-            return attrs[0];
-        }
-
-        internal static DebuggerDisplayResult ValidateFullyDebuggerDisplayReferences(object obj)
-        {
-            CustomAttributeData cad = GetDebuggerDisplayAttribute(obj.GetType());
-
-            // Get the text of the DebuggerDisplayAttribute
-            string attrText = (string)cad.ConstructorArguments[0].Value;
-            string formattedValue = EvaluateDisplayString(attrText, obj);
-
-            string formattedKey = FormatDebuggerDisplayNamedArgument(nameof(DebuggerDisplayAttribute.Name), cad, obj);
-            string formattedType = FormatDebuggerDisplayNamedArgument(nameof(DebuggerDisplayAttribute.Type), cad, obj);
-
-            return new (Value: formattedValue, Key: formattedKey, Type: formattedType);
         }
 
         private static string FormatDebuggerDisplayNamedArgument(string argumentName, CustomAttributeData debuggerDisplayAttributeData, object obj)
@@ -151,16 +163,6 @@ namespace System.Diagnostics
                 }
             }
             return "";
-        }
-
-        internal static string ValidateDebuggerDisplayReferences(object obj)
-        {
-            CustomAttributeData cad = GetDebuggerDisplayAttribute(obj.GetType());
-
-            // Get the text of the DebuggerDisplayAttribute
-            string attrText = (string)cad.ConstructorArguments[0].Value;
-
-            return EvaluateDisplayString(attrText, obj);
         }
 
         private static string EvaluateDisplayString(string displayString, object obj)

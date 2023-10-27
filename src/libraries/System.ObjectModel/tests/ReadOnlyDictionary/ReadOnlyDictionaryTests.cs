@@ -239,8 +239,8 @@ namespace System.Collections.ObjectModel.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(dict);
             DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
             PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
-            KeyValuePair<int, int>[] pairs = itemProperty.GetValue(info.Instance) as KeyValuePair<int, int>[];
-            Assert.Equal(dict, pairs);
+            var itemArray = itemProperty.GetValue(info.Instance) as Array;
+            Assert.Equal(dict.Count, itemArray.Length);
 
             DebuggerAttributes.ValidateDebuggerDisplayReferences(dict.Keys);
             info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, dict.Keys);
