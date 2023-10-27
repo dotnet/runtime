@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -16,14 +17,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
+		readonly FeatureContextLattice FeatureContextLattice;
 
-		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice)
+		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice, FeatureContextLattice featureContextLattice)
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
 			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
 			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
 			Lattice = lattice;
+			FeatureContextLattice = featureContextLattice;
 		}
 
 		public void Add (TrimAnalysisAssignmentPattern trimAnalysisPattern, bool isReturnValue)
@@ -41,7 +44,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			AssignmentPatterns[(trimAnalysisPattern.Operation, isReturnValue)] = trimAnalysisPattern.Merge (Lattice, existingPattern);
+			AssignmentPatterns[(trimAnalysisPattern.Operation, isReturnValue)] = trimAnalysisPattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisFieldAccessPattern pattern)
@@ -51,9 +54,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
-			// and there's only one way to "access" a field.
-			Debug.Assert (existingPattern == pattern, "Field access patterns should be identical");
+			FieldAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisMethodCallPattern pattern)
@@ -63,7 +64,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			MethodCallPatterns[pattern.Operation] = pattern.Merge (Lattice, existingPattern);
+			MethodCallPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisReflectionAccessPattern pattern)
@@ -73,9 +74,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
-			// and there's only one way to access the referenced method.
-			Debug.Assert (existingPattern == pattern, "Reflection access patterns should be identical");
+			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)

@@ -13,25 +13,39 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.FlowAnalysis;
-using LocalStateValue = ILLink.RoslynAnalyzer.DataFlow.LocalState<
-	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>>;
+using LocalStateValue = ILLink.RoslynAnalyzer.DataFlow.LocalContextState<
+	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>,
+	ILLink.RoslynAnalyzer.DataFlow.FeatureContext
+>;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public class TrimDataFlowAnalysis : LocalDataFlowAnalysis<MultiValue, ValueSetLattice<SingleValue>, TrimAnalysisVisitor>
+	public class TrimDataFlowAnalysis : LocalDataFlowAnalysis<
+		MultiValue,
+		FeatureContext,
+		ValueSetLattice<SingleValue>,
+		FeatureContextLattice,
+		TrimAnalysisVisitor,
+		FeatureCheckValue>
 	{
 		public TrimAnalysisPatternStore TrimAnalysisPatterns { get; }
 
-		public TrimDataFlowAnalysis (OperationBlockAnalysisContext context, IOperation operationBlock)
-			: base (context, operationBlock)
+		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
+
+		public TrimDataFlowAnalysis (
+			OperationBlockAnalysisContext context,
+			DataFlowAnalyzerContext dataFlowAnalyzerContext,
+			IOperation operationBlock)
+			: base (context, operationBlock, initialContext: FeatureContext.None)
 		{
-			TrimAnalysisPatterns = new TrimAnalysisPatternStore (Lattice.Lattice.ValueLattice);
+			TrimAnalysisPatterns = new TrimAnalysisPatternStore (lattice.LocalStateLattice.Lattice.ValueLattice, lattice.ContextLattice);
+			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext dataFlowAnalyzerContext)
+		public IEnumerable<Diagnostic> CollectDiagnostics ()
 		{
-			return TrimAnalysisPatterns.CollectDiagnostics (dataFlowAnalyzerContext);
+			return TrimAnalysisPatterns.CollectDiagnostics (_dataFlowAnalyzerContext);
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (
@@ -39,7 +53,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState)
-		 => new (Lattice, owningSymbol, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState);
+		 => new (lattice, owningSymbol, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState, _dataFlowAnalyzerContext);
 
 #if DEBUG
 #pragma warning disable CA1805 // Do not initialize unnecessarily
@@ -79,6 +93,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			if (methodName?.Equals (traceMethod) == true)
 				trace = true;
+			if (trace)
+				TraceWriteLine("Tracing method " + methodName);
 		}
 
 		public override void TraceVisitBlock (BlockProxy block)
@@ -96,7 +112,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 			TraceWrite ("predecessors: ");
 			foreach (var predecessor in cfg.GetPredecessors (block)) {
-				var predProxy = predecessor.Block;
+				var predProxy = predecessor.Source;
 				TraceWrite (predProxy.Block.Ordinal + " ");
 			}
 			TraceWriteLine ("");

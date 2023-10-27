@@ -1015,31 +1015,31 @@ namespace Mono.Linker.Dataflow
 			foreach (var value in maybeReferenceValue) {
 				switch (value) {
 				case FieldReferenceValue fieldReferenceValue:
-					dereferencedValue = MultiValue.Meet (
+					dereferencedValue = MultiValue.Union (
 						dereferencedValue,
 						CompilerGeneratedState.IsHoistedLocal (fieldReferenceValue.FieldDefinition)
 							? interproceduralState.GetHoistedLocal (new HoistedLocalKey (fieldReferenceValue.FieldDefinition))
 							: GetFieldValue (fieldReferenceValue.FieldDefinition));
 					break;
 				case ParameterReferenceValue parameterReferenceValue:
-					dereferencedValue = MultiValue.Meet (
+					dereferencedValue = MultiValue.Union (
 						dereferencedValue,
 						GetMethodParameterValue (parameterReferenceValue.Parameter));
 					break;
 				case LocalVariableReferenceValue localVariableReferenceValue:
 					if (locals.TryGetValue (localVariableReferenceValue.LocalDefinition, out var valueBasicBlockPair))
-						dereferencedValue = MultiValue.Meet (dereferencedValue, valueBasicBlockPair.Value);
+						dereferencedValue = MultiValue.Union (dereferencedValue, valueBasicBlockPair.Value);
 					else
-						dereferencedValue = MultiValue.Meet (dereferencedValue, UnknownValue.Instance);
+						dereferencedValue = MultiValue.Union (dereferencedValue, UnknownValue.Instance);
 					break;
 				case ReferenceValue referenceValue:
 					throw new NotImplementedException ($"Unhandled dereference of ReferenceValue of type {referenceValue.GetType ().FullName}");
 				// Incomplete handling for ref values
 				case FieldValue fieldValue:
-					dereferencedValue = MultiValue.Meet (dereferencedValue, fieldValue);
+					dereferencedValue = MultiValue.Union (dereferencedValue, fieldValue);
 					break;
 				default:
-					dereferencedValue = MultiValue.Meet (dereferencedValue, value);
+					dereferencedValue = MultiValue.Union (dereferencedValue, value);
 					break;
 				}
 			}

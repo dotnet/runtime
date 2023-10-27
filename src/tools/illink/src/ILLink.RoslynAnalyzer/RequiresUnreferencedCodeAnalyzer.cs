@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -60,6 +61,10 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
+		public const string UnreferencedCode = nameof (UnreferencedCode);
+
+		internal override string FeatureName => UnreferencedCode;
+
 		private protected override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresUnreferencedCodeAttribute;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Class;
@@ -72,6 +77,19 @@ namespace ILLink.RoslynAnalyzer
 
 		internal override bool IsAnalyzerEnabled (AnalyzerOptions options) =>
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer);
+
+		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol)
+		{
+			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("Mono.Linker.Tests.Cases.DataFlow.TestFeatures");
+			if (runtimeFeaturesType == null)
+				return false;
+
+			var isDynamicCodeSupportedProperty = runtimeFeaturesType.GetMembers ("IsUnreferencedCodeSupported").OfType<IPropertySymbol> ().FirstOrDefault ();
+			if (isDynamicCodeSupportedProperty == null)
+				return false;
+
+			return SymbolEqualityComparer.Default.Equals (propertySymbol, isDynamicCodeSupportedProperty);
+		}
 
 		protected override bool CreateSpecialIncompatibleMembersDiagnostic (
 			IOperation operation,

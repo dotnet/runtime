@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 
 // This is needed due to NativeAOT which doesn't enable nullable globally yet
 #nullable enable
@@ -19,23 +20,78 @@ namespace ILLink.Shared.DataFlow
 		Finally
 	}
 
+	public enum ConditionKind
+	{
+		None,
+		WhenFalse,
+		WhenTrue,
+	}
+
 	public interface IRegion<TRegion> : IEquatable<TRegion>
 	{
 		RegionKind Kind { get; }
 	}
 
+	public interface IBlock<TBlock> : IEquatable<TBlock>
+	{
+		ConditionKind ConditionKind { get; }
+	}
+
 	public interface IControlFlowGraph<TBlock, TRegion>
-		where TBlock : IEquatable<TBlock>
+		where TBlock : struct, IBlock<TBlock>
 		where TRegion : IRegion<TRegion>
 	{
 
-		public readonly struct Predecessor
+		public readonly struct ControlFlowBranch : IEquatable<ControlFlowBranch>
+		{
+			public readonly TBlock Source;
+			private readonly TBlock? Destination;
+
+			public readonly ImmutableArray<TRegion> FinallyRegions;
+			public readonly bool IsConditional;
+			public ControlFlowBranch (TBlock source, TBlock? destination, ImmutableArray<TRegion> finallyRegions, bool isConditional)
+			{
+				Source = source;
+				Destination = destination;
+				FinallyRegions = finallyRegions;
+				IsConditional = isConditional;
+			}
+
+			public bool Equals (ControlFlowBranch other)
+			{
+				if (!Source.Equals (other.Source))
+					return false;
+
+				if (IsConditional != other.IsConditional)
+					return false;
+
+				if (Destination == null)
+					return other.Destination == null;
+
+				return Destination.Equals (other.Destination);
+			}
+
+			public override bool Equals (object? obj)
+			{
+				return obj is ControlFlowBranch other && Equals (other);
+			}
+
+			public override int GetHashCode ()
+			{
+				return HashUtils.Combine (
+					Source.GetHashCode (),
+					Destination?.GetHashCode () ?? typeof (ControlFlowBranch).GetHashCode (),
+					IsConditional.GetHashCode ());
+			}
+		}
+
+		public readonly struct Successor
 		{
 			public readonly TBlock Block;
-			public readonly ImmutableArray<TRegion> FinallyRegions;
-			public Predecessor (TBlock block, ImmutableArray<TRegion> finallyRegions)
+			public readonly bool IsConditional;
+			public Successor (TBlock block, bool isConditional)
 			{
-				(Block, FinallyRegions) = (block, finallyRegions);
+				(Block, IsConditional) = (block, isConditional);
 			}
 		}
 
@@ -46,7 +102,11 @@ namespace ILLink.Shared.DataFlow
 		// This does not include predecessor edges for exceptional control flow into
 		// catch regions or finally regions. It also doesn't include edges for non-exceptional
 		// control flow from try -> finally or from catch -> finally.
-		IEnumerable<Predecessor> GetPredecessors (TBlock block);
+		IEnumerable<ControlFlowBranch> GetPredecessors (TBlock block);
+
+		ControlFlowBranch? GetConditionalSuccessor (TBlock block);
+
+		ControlFlowBranch? GetFallThroughSuccessor (TBlock block);
 
 		bool TryGetEnclosingTryOrCatchOrFilter (TBlock block, [NotNullWhen (true)] out TRegion? tryOrCatchOrFilterRegion);
 

@@ -80,7 +80,7 @@ namespace ILLink.RoslynAnalyzer
 
 		public override void Initialize (AnalysisContext context)
 		{
-			if (!System.Diagnostics.Debugger.IsAttached)
+			if (!Debugger.IsAttached)
 				context.EnableConcurrentExecution ();
 			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
 			context.RegisterCompilationStartAction (context => {
@@ -90,9 +90,9 @@ namespace ILLink.RoslynAnalyzer
 
 				context.RegisterOperationBlockAction (context => {
 					foreach (var operationBlock in context.OperationBlocks) {
-						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, operationBlock);
+						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, dataFlowAnalyzerContext, operationBlock);
 						trimDataFlowAnalysis.InterproceduralAnalyze ();
-						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics (dataFlowAnalyzerContext))
+						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics ())
 							context.ReportDiagnostic (diagnostic);
 					}
 				});
