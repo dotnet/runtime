@@ -18,6 +18,13 @@ namespace AssemblyChecker
     /// </summary>
     public class Program
     {
+        private const string HelpText = @"
+Usage:
+    <filePath>: Check if the file-path is a managed assembly.
+    --is-debug <filePath>: Check if the file-path is a managed assembly that is built with debuggability.
+    --is-exe <filePath>: Check if the file-path is a managed assembly that is an executable.
+";
+
         static bool IsAssembly(string path)
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -80,6 +87,13 @@ namespace AssemblyChecker
             {
                 Console.Error.WriteLine("Expected assembly file-path.");
                 return 2;
+            }
+
+            // Help
+            if (args.Contains("-h"))
+            {
+                Console.WriteLine(HelpText);
+                return 0;
             }
 
             if (args.Length == 1)
