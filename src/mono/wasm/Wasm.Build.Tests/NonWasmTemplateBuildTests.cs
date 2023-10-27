@@ -67,8 +67,11 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
         )
         .MultiplyWithSingleArgs
         (
+            // Disable net6 and net7 tests for now, as the latest versions aren't in the feeds yet
+            /*
             "net6.0",
             s_previousTargetFramework,
+            */
             s_latestTargetFramework
         )
         .UnwrapItemsAsArrays().ToList();
