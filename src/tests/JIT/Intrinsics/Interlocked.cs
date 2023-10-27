@@ -17,21 +17,21 @@ namespace InterlockedTest
         {
             // use no inline methods to avoid indirect call inlining in the future
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static delegate*<ref byte, byte, byte> ExchangeByte() => &Interlocked.Exchange<byte>;
+            static delegate*<ref byte, byte, byte> ExchangeByte() => &Interlocked.Exchange;
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static delegate*<ref short, short, short> ExchangeShort() => &Interlocked.Exchange<short>;
+            static delegate*<ref short, short, short> ExchangeShort() => &Interlocked.Exchange;
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static delegate*<ref sbyte, sbyte, sbyte> ExchangeSByte() => &Interlocked.Exchange<sbyte>;
+            static delegate*<ref sbyte, sbyte, sbyte> ExchangeSByte() => &Interlocked.Exchange;
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static delegate*<ref ushort, ushort, ushort> ExchangeUShort() => &Interlocked.Exchange<ushort>;
+            static delegate*<ref ushort, ushort, ushort> ExchangeUShort() => &Interlocked.Exchange;
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static delegate*<ref byte, byte, byte, byte> CompareExchangeByte() => &Interlocked.CompareExchange<byte>;
+            static delegate*<ref byte, byte, byte, byte> CompareExchangeByte() => &Interlocked.CompareExchange;
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static delegate*<ref short, short, short, short> CompareExchangeShort() => &Interlocked.CompareExchange<short>;
+            static delegate*<ref short, short, short, short> CompareExchangeShort() => &Interlocked.CompareExchange;
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static delegate*<ref sbyte, sbyte, sbyte, sbyte> CompareExchangeSByte() => &Interlocked.CompareExchange<sbyte>;
+            static delegate*<ref sbyte, sbyte, sbyte, sbyte> CompareExchangeSByte() => &Interlocked.CompareExchange;
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static delegate*<ref ushort, ushort, ushort, ushort> CompareExchangeUShort() => &Interlocked.CompareExchange<ushort>;
+            static delegate*<ref ushort, ushort, ushort, ushort> CompareExchangeUShort() => &Interlocked.CompareExchange;
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static long GetValue<T>(T val) where T : unmanaged
@@ -188,7 +188,7 @@ namespace InterlockedTest
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void ThrowsNRE<T>(Action action, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
+        static void ThrowsNRE(Action action, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
         {
             try
             {

@@ -3245,6 +3245,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
+
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
@@ -3259,7 +3260,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if ((retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
-                    // Intrinsify "object" overload in case of null assignment
+                    // Intrinsify "object" overload in case of null or NonGC assignment
                     // since we don't need the write barrier.
                 }
                 else if (!varTypeIsIntegral(retType))
@@ -3297,11 +3298,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
-
                 if ((retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
-                    // Intrinsify "object" overload in case of null assignment
+                    // Intrinsify "object" overload in case of null or NonGC assignment
                     // since we don't need the write barrier.
                     assert(ni == NI_System_Threading_Interlocked_Exchange);
                 }
