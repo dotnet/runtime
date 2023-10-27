@@ -49,7 +49,6 @@
 
     <!-- Reference nested CMake projects from the merged wrapper so we don't need to be process-isolated to run them. -->
     <CMakeProjectReference Include="StringMarshalling/**/CMakeLists.txt" />
-    <CMakeProjectReference Include="PInvoke/**/CMakeLists.txt" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
