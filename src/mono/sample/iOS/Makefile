@@ -8,10 +8,9 @@ APP_SANDBOX?=false
 STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
 HYBRID_GLOBALIZATION?=false
 
-#If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
-#If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
-#If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is disabled, use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
-#RUNTIME_COMPONENTS=marshal-ilgen;diagnostics_tracing
+#If DIAGNOSTIC_PORTS is enabled, @(RuntimeComponents) must also include 'diagnostics_tracing'.
+#If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is optional.
+#If @(RuntimeComponents) includes 'diagnostics_tracing', and DIAGNOSTIC_PORTS is disabled, then use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
 #DIAGNOSTIC_PORTS=$(DOTNET_DiagnosticPorts)
@@ -45,7 +44,6 @@ run: clean appbuilder
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
-	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/bl
 
@@ -57,7 +55,6 @@ run-sim: clean appbuilder
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:MonoForceInterpreter=false \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
-	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/bl
 
@@ -69,7 +66,6 @@ run-sim-interp: clean appbuilder
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:MonoForceInterpreter=true \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
-	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/bl
 
@@ -82,7 +78,6 @@ run-catalyst: clean appbuilder
 	/p:MonoForceInterpreter=false \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:EnableAppSandbox=$(APP_SANDBOX) \
-	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	/bl
 
 run-catalyst-interp: clean appbuilder
@@ -94,7 +89,6 @@ run-catalyst-interp: clean appbuilder
 	/p:MonoForceInterpreter=true \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:EnableAppSandbox=$(APP_SANDBOX) \
-	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	/bl
 
 clean:

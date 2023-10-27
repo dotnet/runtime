@@ -3,7 +3,9 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -16,12 +18,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			ExponentialArrayStates.Test ();
 			ExponentialArrayStatesDataFlow.Test<int> ();
 			ArrayStatesDataFlow.Test<int> ();
+			ExponentialArrayInStateMachine.Test ();
 		}
 
 		class ExponentialArrayStates
 		{
 			public static void Test ()
 			{
+				typeof (TestType).RequiresAll (); // Force data flow analysis
+
 				object[] data = new object[20];
 				if (true) data[0] = new object ();
 				if (true) data[1] = new object ();
@@ -163,5 +168,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static bool Condition => Random.Shared.Next (2) == 0;
 		}
+
+		class ExponentialArrayInStateMachine
+		{
+			// Force state machine
+			static async Task RecursiveReassignment ()
+			{
+				typeof (TestType).RequiresAll (); // Force data flow analysis
+
+				object[] args = null;
+				args = new[] { args };
+			}
+
+			public static void Test()
+			{
+				RecursiveReassignment ().Wait ();
+			}
+		}
+
+		class TestType { }
 	}
 }

@@ -59,7 +59,11 @@ struct _EventPipeSession_Internal {
 	// we expect to remove it in the future once that limitation is resolved other scenarios are discouraged from using this given that
 	// we plan to make it go away
 	bool paused;
-	// Set via environment variable to enable or disable stack collection globally
+	// The callstacks are not always useful while the stackwalk can be very costly, especially with the frequent events
+	// Thus the stackwalk can be enabled or disabled per session
+	// By default the callstack collection is enabled
+	// The IPC option allows to disable the callstack collection for specific session
+	// The environment variable disables the callstack collection for all sessions (the IPC option will be ignored)
 	bool enable_stackwalk;
 	// Indicate that session is fully running (streaming thread started).
 	volatile uint32_t started;
@@ -89,6 +93,7 @@ ep_session_alloc (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool stackwalk_requested,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,

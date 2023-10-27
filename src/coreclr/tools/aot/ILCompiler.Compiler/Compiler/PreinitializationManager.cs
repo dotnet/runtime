@@ -14,10 +14,10 @@ namespace ILCompiler
     {
         private readonly bool _supportsLazyCctors;
 
-        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy)
+        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy)
         {
             _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", throwIfNotFound: false) != null;
-            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider, policy);
+            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider, policy, readOnlyPolicy);
         }
 
         /// <summary>
@@ -136,12 +136,14 @@ namespace ILCompiler
             private readonly CompilationModuleGroup _compilationGroup;
             private readonly ILProvider _ilProvider;
             internal readonly TypePreinit.TypePreinitializationPolicy _policy;
+            private readonly ReadOnlyFieldPolicy _readOnlyPolicy;
 
-            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinit.TypePreinitializationPolicy policy)
+            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy)
             {
                 _compilationGroup = compilationGroup;
                 _ilProvider = ilProvider;
                 _policy = policy;
+                _readOnlyPolicy = readOnlyPolicy;
             }
 
             protected override bool CompareKeyToValue(MetadataType key, TypePreinit.PreinitializationInfo value) => key == value.Type;
@@ -151,7 +153,7 @@ namespace ILCompiler
 
             protected override TypePreinit.PreinitializationInfo CreateValueFromKey(MetadataType key)
             {
-                var info = TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, key);
+                var info = TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, _readOnlyPolicy, key);
 
                 // We either successfully preinitialized or
                 // the type doesn't have a canonical form or

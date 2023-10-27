@@ -41,7 +41,7 @@ public partial class FunctionPtr
         {
             IntPtr fcnptr = FunctionPointerNative.GetVoidVoidFcnPtr();
             VoidDelegate del = (VoidDelegate)Marshal.GetDelegateForFunctionPointer(fcnptr, typeof(VoidDelegate));
-            Assert.Equal(null, del.Target);
+            Assert.Null(del.Target);
             Assert.Equal("Invoke", del.Method.Name);
 
             // Round trip of a native function pointer is never legal for a non-concrete Delegate type
@@ -105,7 +105,8 @@ public partial class FunctionPtr
         Assert.Equal(expectedValue, outVar);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

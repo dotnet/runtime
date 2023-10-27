@@ -11,7 +11,6 @@ parameters:
   container: ''
   buildSteps: []
   dependsOn: []
-  dependsOnGlobalBuild: false
   dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []
@@ -339,38 +338,14 @@ jobs:
             df -h
           displayName: Disk Usage before Build
 
-    # Build the default subset non-MacOS platforms
-      - ${{ if ne(parameters.osGroup, 'osx') }}:
-        - script: $(BaseJobBuildCommand)
-          displayName: Build
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
-
-      # Build corehost, sign and add entitlements to MacOS binaries
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - script: $(BaseJobBuildCommand) -subset host.native
-          displayName: Build CoreHost
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
-
-        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
-            parameters:
-              filesToSign:
-              - name: dotnet
-                path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-                entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-              - name: apphost
-                path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-                entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-
-        - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.pretest+host.tests+packs
-          displayName: Build and Package
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
+      - script: $(BaseJobBuildCommand)
+        displayName: Build
+        continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
       - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
           displayName: Collect vslogs on exit
           condition: always()
-
 
       - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: |
