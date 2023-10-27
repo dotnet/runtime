@@ -718,8 +718,8 @@
     </ILStrip>
 
     <ItemGroup>
-      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
-      <_WasmAssembliesInternal Include="@(_UpdatedAssembliesAfterILStrip)" />
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" Condition="'$(WasmStripILAfterAOT)' == 'true'" />
+      <_WasmAssembliesInternal Include="@(_UpdatedAssembliesAfterILStrip)" Condition="'$(WasmStripILAfterAOT)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
