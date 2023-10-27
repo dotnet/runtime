@@ -9,7 +9,7 @@ using Xunit;
 
 public class child
 {
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         const int Pass = 100;
@@ -24,12 +24,12 @@ public class child
             return Fail;
     }
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining)] 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int AndRef(int x, ref int a)
     {
         x &= a;
         return x;
     }
-    
+
 }
 

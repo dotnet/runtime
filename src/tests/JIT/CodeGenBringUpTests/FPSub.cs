@@ -14,7 +14,7 @@ public class BringUpTest_FPSub
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPSub(float x, float y) { return x-y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPSub(17f, 9f);

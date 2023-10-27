@@ -104,7 +104,7 @@ static class UDivConst
 
 public static class UDivProgram
 {
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         const int Pass = 100;

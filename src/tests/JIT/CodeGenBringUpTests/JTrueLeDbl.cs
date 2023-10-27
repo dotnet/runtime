@@ -25,7 +25,7 @@ public class BringUpTest_JTrueLeDbl
         return returnValue;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int returnValue = Pass;

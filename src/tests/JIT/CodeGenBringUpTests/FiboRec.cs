@@ -22,7 +22,7 @@ public class BringUpTest_FiboRec
         return a;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = FiboRec(0, 1, 7);

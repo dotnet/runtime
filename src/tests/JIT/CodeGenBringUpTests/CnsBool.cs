@@ -13,8 +13,8 @@ public class BringUpTest_CnsBool
 
     // Returns !b
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static bool CnsBool(bool b) 
-    { 
+    public static bool CnsBool(bool b)
+    {
        // Thisis just to exercise bool constants.
        // Otherwise we could write this as "return !b"
        if (b == true)
@@ -23,7 +23,7 @@ public class BringUpTest_CnsBool
        return true;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         bool b = CnsBool(false);

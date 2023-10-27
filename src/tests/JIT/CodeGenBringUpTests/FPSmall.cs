@@ -12,8 +12,8 @@ public class BringUpTest_FPSmall
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static float FPSmall(float x, float y) 
-    { 
+    public static float FPSmall(float x, float y)
+    {
        float result;
        if (y < x)
            result = y;
@@ -22,7 +22,7 @@ public class BringUpTest_FPSmall
        return result;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPSmall(3f, 2f);

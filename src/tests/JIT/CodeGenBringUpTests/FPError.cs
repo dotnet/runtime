@@ -12,11 +12,11 @@ public class BringUpTest_FPError
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static float FPError(float x, float y) { 
+    public static float FPError(float x, float y) {
          return x - (x/y)*y;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPError(81f, 16f);

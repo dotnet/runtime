@@ -12,13 +12,13 @@ public class BringUpTest_DblAvg2
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static double DblAvg2(double x, double y) 
-    { 
+    public static double DblAvg2(double x, double y)
+    {
        double z = (x+y)/2.0f;
-       return z; 
+       return z;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblAvg2(5f, 7f);

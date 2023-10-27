@@ -33,7 +33,7 @@ public class BringUpTest_JTrueEqInt1
         return returnValue;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int returnValue = Pass;

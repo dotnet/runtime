@@ -14,7 +14,7 @@ public class BringUpTest_DblSub
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Double DblSub(Double x, Double y) { return x-y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         Double y = DblSub(17d, 9d);

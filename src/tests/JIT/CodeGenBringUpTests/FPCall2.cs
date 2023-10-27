@@ -12,10 +12,10 @@ public class BringUpTest_FPCall2
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static float FPAvg2(float x, float y) 
-    { 
+    public static float FPAvg2(float x, float y)
+    {
        float z = (x+y)/2.0f;
-       return z; 
+       return z;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -28,7 +28,7 @@ public class BringUpTest_FPCall2
         return FPAvg2(FPAvg2(a, b), FPAvg2(c, d));
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPCall2(1f, 2f, 3f, 4f);

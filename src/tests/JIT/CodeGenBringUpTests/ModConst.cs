@@ -176,7 +176,7 @@ static class ModConst
 
 public static class ModProgram
 {
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         const int Pass = 100;

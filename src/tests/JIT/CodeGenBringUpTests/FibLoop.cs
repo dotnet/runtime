@@ -26,7 +26,7 @@ public class BringUpTest_FibLoop
         return curr;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = FibLoop(7);

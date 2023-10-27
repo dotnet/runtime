@@ -14,7 +14,7 @@ public class BringUpTest_And1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int And1(int x) { return x & 1; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = And1(17);

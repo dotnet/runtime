@@ -12,10 +12,10 @@ public class BringUpTest_DblCall2
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static double DblAvg2(double x, double y) 
-    { 
+    public static double DblAvg2(double x, double y)
+    {
        double z = (x+y)/2.0d;
-       return z; 
+       return z;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -24,7 +24,7 @@ public class BringUpTest_DblCall2
         return DblAvg2(DblAvg2(a, b), DblAvg2(c, d));
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblCall2(1d, 2d, 3d, 4d);

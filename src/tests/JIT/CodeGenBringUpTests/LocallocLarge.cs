@@ -61,7 +61,7 @@ public class BringUpTest_LocallocLarge
         return ok;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         for (int j = 2; j < 1024 * 100; j += 331)

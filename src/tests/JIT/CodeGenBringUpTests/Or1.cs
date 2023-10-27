@@ -14,7 +14,7 @@ public class BringUpTest_Or1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int Or1(int x) { return x | 0xa; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = Or1(4);

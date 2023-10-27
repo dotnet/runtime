@@ -15,13 +15,13 @@ public class BringUpTest_DblCall1
     public static double DblNeg(double x) { return -x; }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static double DblCall1(double f) { 
+    public static double DblCall1(double f) {
         double x = DblNeg(f);
         double zero = x + f;
         return zero;
     }
-                                       
-    [Fact]
+
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblCall1(-1d);

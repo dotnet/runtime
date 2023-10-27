@@ -33,7 +33,7 @@ public class BringUpTest_LngConv
     public static sbyte LngConv(long x, out sbyte y) { return y = (sbyte)x; }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static uint LngConv() 
+    public static uint LngConv()
     {
         uint num6 = (uint)((IntPtr)0x4234abcdL);
         Console.WriteLine(num6);
@@ -46,7 +46,7 @@ public class BringUpTest_LngConv
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int a;
@@ -62,7 +62,7 @@ public class BringUpTest_LngConv
         LngConv(x, out a);
         Console.WriteLine(a);
         if (a != -1000798464) return Fail;
-        
+
         LngConv(x, out b);
         Console.WriteLine(b);
         if (b != 3294168832U) return Fail;
@@ -74,7 +74,7 @@ public class BringUpTest_LngConv
         LngConv(x, out d);
         Console.WriteLine(d);
         if (d != 1792) return Fail;
-               
+
         LngConv(x, out e);
         Console.WriteLine(e);
         if (e != 0) return Fail;

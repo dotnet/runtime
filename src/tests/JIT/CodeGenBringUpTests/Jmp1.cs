@@ -25,7 +25,7 @@ L3:
         return x+1;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = Jmp1(1);

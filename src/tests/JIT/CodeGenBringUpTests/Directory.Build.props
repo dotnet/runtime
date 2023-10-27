@@ -6,5 +6,6 @@
   <PropertyGroup>
     <RunAnalyzers>true</RunAnalyzers>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
 </Project>

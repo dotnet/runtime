@@ -14,7 +14,7 @@ public class BringUpTest_FPNeg
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPNeg(float x) { return -x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPNeg(-1f);

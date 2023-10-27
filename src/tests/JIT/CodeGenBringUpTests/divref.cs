@@ -9,7 +9,7 @@ using Xunit;
 
 public class child
 {
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int b = 5;

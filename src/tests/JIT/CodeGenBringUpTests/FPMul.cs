@@ -14,7 +14,7 @@ public class BringUpTest_FPMul
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPMul(float x, float y) { return x*y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPMul(7f, 9f);

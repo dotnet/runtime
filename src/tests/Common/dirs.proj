@@ -80,7 +80,7 @@
         <GroupNumber>1</GroupNumber>
       </_GroupStartsWith> -->
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\CodeGenBringUpTests\DblNeg_ro.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\CodeGenBringUpTests\CodeGenBringUpTests_d.csproj">
         <GroupNumber>2</GroupNumber>
       </_GroupStartsWith>
 

@@ -12,25 +12,25 @@ public class BringUpTest_FPFillArray
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static float FPArray(float []x) 
-    { 
+    public static float FPArray(float []x)
+    {
        float sum = 0;
        for (int i=0; i < x.Length; ++i)
            sum += x[i];
 
-       return sum / x.Length; 
+       return sum / x.Length;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static int FPFillArray(float []x, int start, int end, float y) 
-    { 
+    public static int FPFillArray(float []x, int start, int end, float y)
+    {
        for (int i=start; i< end; ++i)
           x[i] = y++;
 
        return end-start;
-    }    
+    }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float []arr = new float[5];

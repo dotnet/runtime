@@ -17,7 +17,7 @@ public class BringUpTest_Args4
         return a+b+c+d;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = Args4(1,2,3,4);

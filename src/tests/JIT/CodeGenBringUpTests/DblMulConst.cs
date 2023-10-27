@@ -14,7 +14,7 @@ public class BringUpTest_DblMulConst
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblMulConst(double r) { return 3.14d *r*r; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblMulConst(10d);

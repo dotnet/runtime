@@ -11,7 +11,7 @@ public class BringUpTest_Call1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     internal static void M() { Console.WriteLine("Hello"); }
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    [Fact]
+    [Fact, OuterLoop]
     public static void Call1() => M();
 }
 

@@ -14,7 +14,7 @@ public class BringUpTest_NotAndNeg
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int NotAndNeg(int x, int y) { return -x ^ ~y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = NotAndNeg(1, 0);

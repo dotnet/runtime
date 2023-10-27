@@ -109,7 +109,7 @@ public class Test_RecursiveTailCall
             if (x == 1) throw new GenericException<T>();
         }
         catch (GenericException<T>)
-        {            
+        {
             return 1;
         }
 
@@ -131,7 +131,7 @@ public class Test_RecursiveTailCall
         return TestStackParam(i1 - 1, i2, i3, i4);
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         const int Pass = 100;

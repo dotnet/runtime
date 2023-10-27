@@ -15,13 +15,13 @@ public class BringUpTest_FPCall1
     public static float FPNeg(float x) { return -x; }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static float FPCall1(float f) { 
+    public static float FPCall1(float f) {
         float x = FPNeg(f);
         float zero = x + f;
         return zero;
     }
-                                       
-    [Fact]
+
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPCall1(-1f);

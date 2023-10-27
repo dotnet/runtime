@@ -35,7 +35,7 @@ public class BringUpTest_LocallocB_N
         return -1;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int ret;

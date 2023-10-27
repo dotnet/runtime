@@ -14,7 +14,7 @@ public class BringUpTest_LeftShift
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int LeftShift(int x, int y) { return x << y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = LeftShift(12, 3);

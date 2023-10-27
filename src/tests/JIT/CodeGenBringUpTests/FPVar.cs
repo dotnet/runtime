@@ -12,13 +12,13 @@ public class BringUpTest_FPVar
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static float FPVar(float x, float y) 
-    { 
+    public static float FPVar(float x, float y)
+    {
        float z = x+y;
-       return z; 
+       return z;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPVar(1f, 1f);

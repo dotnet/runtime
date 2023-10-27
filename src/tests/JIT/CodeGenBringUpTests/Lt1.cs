@@ -17,7 +17,7 @@ public class BringUpTest_Lt1
         return x < 1;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         bool y = Lt1(1);

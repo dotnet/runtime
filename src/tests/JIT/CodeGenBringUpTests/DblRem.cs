@@ -14,7 +14,7 @@ public class BringUpTest_DblRem
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblRem(double x, double y) { return x%y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblRem(81f, 45f);

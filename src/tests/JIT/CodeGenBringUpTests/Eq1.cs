@@ -17,7 +17,7 @@ public class BringUpTest_Eq1
         return x == 1;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         bool y = Eq1(1);

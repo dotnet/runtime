@@ -18,7 +18,7 @@ public class BringUpTest_Unbox
         return (int)o;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int r = 3;

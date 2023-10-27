@@ -14,7 +14,7 @@ public class BringUpTest_DblAddConst
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblAddConst(double x) { return x+1; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblAddConst(13d);

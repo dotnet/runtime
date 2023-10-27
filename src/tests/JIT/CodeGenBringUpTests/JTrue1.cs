@@ -19,7 +19,7 @@ public class BringUpTest_JTrue1
         return 0;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = JTrue1(1);

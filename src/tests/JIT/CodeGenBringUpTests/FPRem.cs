@@ -14,7 +14,7 @@ public class BringUpTest_FPRem
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPRem(float x, float y) { return x%y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPRem(81f, 16f);

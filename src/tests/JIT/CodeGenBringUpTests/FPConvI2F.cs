@@ -29,14 +29,14 @@ public class BringUpTest_FPConvI2F
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPConvI2F(Int16 x) { return (float)x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int result = Fail;
         float x = FPConvI2F((int)3);
         Console.WriteLine(x);
         if (Math.Abs(x-3f) <= Single.Epsilon) result = Pass;
-        
+
         int result2 = Fail;
         double y = FPConvI2F((UInt32)5);
         Console.WriteLine(y);

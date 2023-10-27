@@ -14,7 +14,7 @@ public class BringUpTest_AsgAdd1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int AsgAdd1(int x) { x += 1; return x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (AsgAdd1(0) == 1) return Pass;

@@ -14,7 +14,7 @@ public class BringUpTest_DblAdd
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblAdd(double x, double y) { return x+y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblAdd(1d, 1d);
