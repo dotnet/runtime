@@ -58,7 +58,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				return;
 			}
 
-
 			Debug.Assert (Context.OwningSymbol is not IMethodSymbol methodSymbol ||
 				methodSymbol.MethodKind is not (MethodKind.LambdaMethod or MethodKind.LocalFunction));
 			var startMethod = new MethodBodyValue (Context.OwningSymbol, Context.GetControlFlowGraph (OperationBlock));
@@ -68,9 +67,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				oldInterproceduralState = interproceduralState.Clone ();
 
 				foreach (var method in oldInterproceduralState.Methods) {
-					if (method.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						continue;
-
 					AnalyzeMethod (method, ref interproceduralState);
 				}
 			}

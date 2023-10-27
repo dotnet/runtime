@@ -10097,7 +10097,6 @@ void gc_heap::update_ro_segment (heap_segment* seg, uint8_t* allocated, uint8_t*
 {
     enter_spin_lock (&gc_heap::gc_lock);
 
-    assert (use_frozen_segments_p);
     assert (heap_segment_read_only_p (seg));
     assert (allocated <= committed);
     assert (committed <= heap_segment_reserved (seg));
