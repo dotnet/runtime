@@ -36,20 +36,21 @@ unsafe partial class GenericsNative
     public static extern Vector64<long> AddVector64Ls(in Vector64<long> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVector64L()
+    [Fact]
+    public static void TestVector64L()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64L(1L));
 
         Vector64<long> value2;
         GenericsNative.GetVector64LOut(1L, &value2);
-        Assert.Equal(value2.GetElement(0), 1L);
+        Assert.Equal(1L, value2.GetElement(0));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64LOut(1L, out Vector64<long> value3));
 
         Vector64<long>* value4 = GenericsNative.GetVector64LPtr(1L);
-        Assert.Equal(value4->GetElement(0), 1L);
+        Assert.Equal(1L, value4->GetElement(0));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64LRef(1L));
 

@@ -23,9 +23,10 @@ unsafe partial class GenericsNative
     public static extern Span<char> AddSpanCs(in Span<char> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestSpanC()
+    [Fact]
+    public static void TestSpanC()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetSpanC('1'));
 

@@ -26,9 +26,10 @@ unsafe partial class GenericsNative
     public static extern long? AddNullableLs(in long? pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestNullableL()
+    [Fact]
+    public static void TestNullableL()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetNullableL(true, 1L));
 

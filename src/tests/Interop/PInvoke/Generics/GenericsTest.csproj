@@ -2,7 +2,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);xUnit2000</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
