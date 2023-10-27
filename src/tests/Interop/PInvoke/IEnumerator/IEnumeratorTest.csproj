@@ -7,8 +7,6 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- IEnumerator/IEnumerable marshalling unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <!-- RefCounted handle to System.Runtime.InteropServices.CustomMarshalers.EnumVariantViewOfEnumerator holds the LoaderAllocator alive via System.Linq.Enumerable+RangeIterator -->
-    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

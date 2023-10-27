@@ -777,7 +777,7 @@ namespace System.Tests
             }
             catch (Exception e)
             {
-                Assert.True(false, $"({approach}, {timeout}) Error - Unexpected exception received: {e.ToString()}");
+                Assert.Fail($"({approach}, {timeout}) Error - Unexpected exception received: {e.ToString()}");
             }
             finally
             {

@@ -33,7 +33,7 @@
     transport packages to flow dependencies anymore -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">false</CreatePackedPackage>
 
-    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;osx;android;linux;freebsd;netbsd;illumos;solaris</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;osx;android;linux;freebsd;netbsd;illumos;solaris;haiku</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
     <_isSupportedOSGroup>true</_isSupportedOSGroup>
@@ -104,6 +104,9 @@
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';solaris;'))">
     <OfficialBuildRID Include="solaris-x64" />
+  </ItemGroup>
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';haiku;'))">
+    <OfficialBuildRID Include="haiku-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';windows;'))">
     <OfficialBuildRID Include="win-x86">

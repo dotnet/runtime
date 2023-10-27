@@ -94,7 +94,7 @@ namespace System.Net.Http.Json
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
-            => SerializeToStreamAsyncCore(stream, async: true, CancellationToken.None);
+            => SerializeToStreamAsyncCore(stream, CancellationToken.None);
 
         protected override bool TryComputeLength(out long length)
         {
@@ -102,67 +102,56 @@ namespace System.Net.Http.Json
             return false;
         }
 
-        private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
+        private Task SerializeToStreamAsyncCore(Stream targetStream, CancellationToken cancellationToken)
         {
             Encoding? targetEncoding = JsonHelpers.GetEncoding(this);
 
-            // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
-            if (targetEncoding != null && targetEncoding != Encoding.UTF8)
-            {
-#if NETCOREAPP
-                Stream transcodingStream = Encoding.CreateTranscodingStream(targetStream, targetEncoding, Encoding.UTF8, leaveOpen: true);
-                try
-                {
-                    if (async)
-                    {
-                        await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        JsonSerializer.Serialize(transcodingStream, Value, _typeInfo);
-                    }
-                }
-                finally
-                {
-                    // Dispose/DisposeAsync will flush any partial write buffers. In practice our partial write
-                    // buffers should be empty as we expect JsonSerializer to emit only well-formed UTF-8 data.
-                    if (async)
-                    {
-                        await transcodingStream.DisposeAsync().ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        transcodingStream.Dispose();
-                    }
-                }
-#else
-                Debug.Assert(async, "HttpContent synchronous serialization is only supported since .NET 5.0");
+            return targetEncoding != null && targetEncoding != Encoding.UTF8
+                ? SerializeToStreamAsyncTranscoding(targetStream, async: true, targetEncoding, cancellationToken)
+                : JsonSerializer.SerializeAsync(targetStream, Value, _typeInfo, cancellationToken);
+        }
 
-                using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
-                {
-                    await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
-                    // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
-                    // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
-                    // acceptable to Flush a Stream (multiple times) prior to completion.
-                    await transcodingStream.FinalWriteAsync(cancellationToken).ConfigureAwait(false);
-                }
-#endif
-            }
-            else
+        private async Task SerializeToStreamAsyncTranscoding(Stream targetStream, bool async, Encoding targetEncoding, CancellationToken cancellationToken)
+        {
+            // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
+#if NETCOREAPP
+            Stream transcodingStream = Encoding.CreateTranscodingStream(targetStream, targetEncoding, Encoding.UTF8, leaveOpen: true);
+            try
             {
                 if (async)
                 {
-                    await JsonSerializer.SerializeAsync(targetStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-#if NETCOREAPP
-                    JsonSerializer.Serialize(targetStream, Value, _typeInfo);
-#else
-                    Debug.Fail("HttpContent synchronous serialization is only supported since .NET 5.0");
-#endif
+                    JsonSerializer.Serialize(transcodingStream, Value, _typeInfo);
                 }
             }
+            finally
+            {
+                // Dispose/DisposeAsync will flush any partial write buffers. In practice our partial write
+                // buffers should be empty as we expect JsonSerializer to emit only well-formed UTF-8 data.
+                if (async)
+                {
+                    await transcodingStream.DisposeAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    transcodingStream.Dispose();
+                }
+            }
+#else
+            Debug.Assert(async, "HttpContent synchronous serialization is only supported since .NET 5.0");
+
+            using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
+            {
+                await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
+                // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
+                // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
+                // acceptable to Flush a Stream (multiple times) prior to completion.
+                await transcodingStream.FinalWriteAsync(cancellationToken).ConfigureAwait(false);
+            }
+#endif
         }
 
         private static void EnsureTypeCompatibility(object? inputValue, Type inputType)

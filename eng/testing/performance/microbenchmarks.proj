@@ -80,6 +80,8 @@
   <PropertyGroup>
     <WorkItemTimeout>6:00</WorkItemTimeout>
     <WorkItemTimeout Condition="'$(OnlySanityCheck)' == 'true'">1:30</WorkItemTimeout>
+
+    <ExtraBenchmarkDotNetArguments Condition="'$(OnlySanityCheck)' == 'true'">$(ExtraBenchmarkDotNetArguments) --filter System.Tests.Perf_*</ExtraBenchmarkDotNetArguments>
   </PropertyGroup>
 
   <ItemGroup>
