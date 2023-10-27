@@ -773,7 +773,6 @@ namespace System.Net.Security
                         // No data written out but there is Alert
                         int index = outUnmanagedBuffer[0].cbBuffer == 0 && outUnmanagedBuffer[1].cbBuffer > 0 ? 1 : 0;
 
-                        //outSecBuffer.type = outUnmanagedBuffer[index].BufferType;
                         int length = outUnmanagedBuffer[index].cbBuffer;
                         if (isSspiAllocated)
                         {
