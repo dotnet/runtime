@@ -18,7 +18,6 @@ namespace TestStackOverflow
         static Process GetNativeAotProcess(string testName, string testArgs)
         {
             Process testProcess = new Process();
-            string executableExtension = TestLibrary.Utilities.IsWindows ? ".exe" : "";
             testProcess.StartInfo.FileName = Environment.ProcessPath;
             testProcess.StartInfo.Arguments = testArgs;
             return testProcess;
