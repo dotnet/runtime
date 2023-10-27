@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Nodes;
 using Xunit.Abstractions;
@@ -21,7 +22,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         _provider.BundleDirName = "AppBundle";
     }
 
-    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = true)
+    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false)
     {
         InitPaths(id);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
@@ -37,7 +38,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
               <Import Project="WasmOverridePacks.targets" Condition="'$(WBTOverrideRuntimePack)' == 'true'" />
             </Project>
             """);
-        if (BuildEnvironment.UseWBTOverridePackTargets)
+        if (UseWBTOverridePackTargets)
             File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
         if (addFrameworkArg)
@@ -89,6 +90,10 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         string id,
         BuildProjectOptions buildProjectOptions)
     {
+        if (buildProjectOptions.ExtraBuildEnvironmentVariables is null)
+            buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
+        buildProjectOptions.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
+
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions);
         if (buildProjectOptions.UseCache)
             _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
