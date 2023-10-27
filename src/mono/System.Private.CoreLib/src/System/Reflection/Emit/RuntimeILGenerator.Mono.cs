@@ -619,8 +619,7 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, LocalBuilder local)
         {
             ArgumentNullException.ThrowIfNull(local);
-            RuntimeLocalBuilder localBuilder = (RuntimeLocalBuilder)local;
-            if (localBuilder.ilgen != this)
+            if (local is not RuntimeLocalBuilder localBuilder || localBuilder.ilgen != this)
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
 
             uint pos = localBuilder.position;
