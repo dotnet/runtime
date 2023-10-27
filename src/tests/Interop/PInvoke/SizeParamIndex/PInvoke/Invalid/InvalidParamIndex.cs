@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public class Program
+public class InvalidSizeParamIndex
 {
     [DllImport("Unused")]
     static extern void SizeParamIndexTooBig(
@@ -16,9 +16,14 @@ public class Program
         out string arrSize, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] out byte[] arrByte);
 
     [Fact]
-    public static void TestEntryPoint()
+    public static void TooBig()
     {
         Assert.Throws<MarshalDirectiveException>(() => SizeParamIndexTooBig(out var _, out var _));
+    }
+
+    [Fact]
+    public static void WrongType()
+    {
         Assert.Throws<MarshalDirectiveException>(() => SizeParamIndexWrongType(out var _, out var _));
     }
 }

@@ -9,6 +9,25 @@ using Xunit;
 
 using static LPTStrTestNative;
 
+[OuterLoop]
+public partial class StringTests
+{
+}
+
+
+[OuterLoop]
+public partial class StringBuilderTests
+{
+}
+
+
+[OuterLoop]
+public partial class StringInStructTests
+{
+}
+
+
+[OuterLoop]
 public class LPTStrTest
 {
     private static readonly string InitialString = "Hello World";
@@ -16,23 +35,7 @@ public class LPTStrTest
     private static readonly string LongUnicodeString = "\uD83D\uDC68\u200D\uD83D\uDC68\u200D\uD83D\uDC67\u200D\uD83D\uDC67\uD83D\uDC31\u200D\uD83D\uDC64";
 
     [Fact]
-    public static int TestEntryPoint()
-    {
-        try
-        {
-            CommonStringTests.RunTests();
-            RunStringBuilderTests();
-            RunByValTStrTests();
-        }
-        catch (System.Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-            return 101;
-        }
-        return 100;
-    }
-
-    private static void RunStringBuilderTests()
+    public static void RunStringBuilderTests()
     {
         int length = 10;
         StringBuilder nullTerminatorBuilder = new StringBuilder(length);
@@ -40,7 +43,8 @@ public class LPTStrTest
         Assert.True(Verify_NullTerminators_PastEnd_Out(nullTerminatorBuilder, length));
     }
 
-    private static void RunByValTStrTests()
+    [Fact]
+    public static void RunByValTStrTests()
     {
         Assert.True(MatchFuncNameAnsi(new ByValStringInStructAnsi { str = nameof(MatchFuncNameAnsi)}));
 

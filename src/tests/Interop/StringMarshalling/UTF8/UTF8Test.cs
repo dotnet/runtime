@@ -237,6 +237,7 @@ public class Test
                                };
 
     [Fact]
+    [OuterLoop]
     public static void TestEntryPoint()
     {
         // Test string as [In,Out] parameter

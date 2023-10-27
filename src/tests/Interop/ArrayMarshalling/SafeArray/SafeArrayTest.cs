@@ -12,6 +12,8 @@ using Xunit;
 public class Tester
 {
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnMono("Requires COM support")]
     public static int TestEntryPoint()
     {
         try

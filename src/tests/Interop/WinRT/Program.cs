@@ -17,18 +17,9 @@ namespace WinRT
         private static bool ObjectIsI(object o) => o is I;
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void CannotLoadWinRTType()
         {
-            try
-            {
-                Assert.Throws<TypeLoadException>(() => ObjectIsI(new object()));
-            }
-            catch (System.Exception ex)
-            {
-                Console.WriteLine(ex);
-                return 101;
-            }
-            return 100;
+            Assert.Throws<TypeLoadException>(() => ObjectIsI(new object()));
         }
     }
 }

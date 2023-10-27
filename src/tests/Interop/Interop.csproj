@@ -1,6 +1,31 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Directly compile tests into the merged wrapper -->
+    <Compile Include="WinRT/*.cs" />
+    <Compile Include="StructPacking/*.cs" />
+    <Compile Include="SimpleStruct/*.cs" />
+    <Compile Include="RefCharArray/*.cs" />
+    <Compile Include="IDynamicInterfaceCastable/*.cs" />
+    <Compile Include="LayoutClass/*.cs" />
+    <Compile Include="ArrayMarshalling/**/*.cs" />
+    <Compile Include="MarshalAPI/**/*.cs" />
+
+    <!-- Reference nested CMake projects from the merged wrapper so we don't need to be process-isolated to run them. -->
+    <CMakeProjectReference Include="StringMarshalling/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="SimpleStruct/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="RefCharArray/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="LayoutClass/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="ArrayMarshalling/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="MarshalAPI/**/CMakeLists.txt" />
+
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

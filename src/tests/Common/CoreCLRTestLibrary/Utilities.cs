@@ -95,6 +95,7 @@ namespace TestLibrary
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
+        public static bool IsNotNativeAot => !IsNativeAot;
 
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
         public static bool IsSingleFile => !HasAssemblyFiles;
@@ -455,6 +456,31 @@ namespace TestLibrary
             }
 
             return exitCode;
+        }
+
+        private static void ExecuteAndUnloadInternal(string assemblyPath, string typeName, string methodName, object[] args, out WeakReference alcWeakRef)
+        {
+            AssemblyLoadContext alc = new AssemblyLoadContext($"[{assemblyPath}]{typeName}.{methodName}", true);
+            alcWeakRef = new WeakReference(alc);
+
+            Assembly asm = alc.LoadFromAssemblyPath(assemblyPath);
+            Type testType = asm.GetType(typeName);
+            testType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static).Invoke(null, args);
+            alc.Unload();
+        }
+
+        public static void ExecuteAndUnload(string assemblyPath, string typeName, string methodName, params object[] args)
+        {
+            WeakReference alcWeakRef;
+            ExecuteAndUnloadInternal(assemblyPath, typeName, methodName, args, out alcWeakRef);
+
+            for (int i = 0; i < 8 && alcWeakRef.IsAlive; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.False(alcWeakRef.IsAlive);
         }
     }
 }

@@ -511,6 +511,7 @@ namespace PInvokeTests
         #endregion
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             bool retVal = true;

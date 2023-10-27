@@ -100,7 +100,7 @@ struct AutoLayoutMaxPacking<T> : ITestStructure
     public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
 }
 
-public unsafe class Program
+public unsafe partial class Program
 {
     const int Pass = 100;
     const int Fail = 0;

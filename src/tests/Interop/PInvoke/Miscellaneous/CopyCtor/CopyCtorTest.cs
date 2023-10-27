@@ -27,17 +27,15 @@ public static unsafe class CopyCtor
     }
 
     [Fact]
-    public static unsafe int TestEntryPoint()
+    public static unsafe void ValidateCopyConstructorAndDestructorCalled()
     {
         TestDelegate del = (TestDelegate)Delegate.CreateDelegate(typeof(TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
         StructWithCtor s1 = new StructWithCtor();
         StructWithCtor s2 = new StructWithCtor();
         s1._instanceField = 1;
         s2._instanceField = 2;
-        int returnVal = FunctionPointer.Call_FunctionPointer(Marshal.GetFunctionPointerForDelegate(del), &s1, ref s2);
+        Assert.Equal(100, FunctionPointer.Call_FunctionPointer(Marshal.GetFunctionPointerForDelegate(del), &s1, ref s2));
 
         GC.KeepAlive(del);
-
-        return returnVal;
     }
 }
