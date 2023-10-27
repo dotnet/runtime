@@ -25,7 +25,7 @@
 //
 
 //
-// System.Reflection.Emit/LocalBuilder.cs
+// System.Reflection.Emit/RuntimeLocalBuilder.cs
 //
 // Authors:
 //   Paolo Molaro (lupus@ximian.com)
@@ -41,7 +41,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
-    public sealed partial class LocalBuilder : LocalVariableInfo
+    internal sealed partial class RuntimeLocalBuilder : LocalBuilder
     {
 #region Sync with MonoReflectionLocalBuilder in object-internals.h
         internal Type type;
@@ -55,7 +55,7 @@ namespace System.Reflection.Emit
         private int endOffset;
 
         [DynamicDependency(nameof(name))]  // Automatically keeps all previous fields too due to StructLayout
-        internal LocalBuilder(Type t, ILGenerator ilgen)
+        internal RuntimeLocalBuilder(Type t, ILGenerator ilgen)
         {
             this.type = t;
             this.ilgen = ilgen;

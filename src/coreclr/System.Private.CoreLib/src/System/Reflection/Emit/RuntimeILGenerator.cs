@@ -819,8 +819,8 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(local);
 
             // Puts the opcode onto the IL stream followed by the information for local variable local.
-            int tempVal = local.GetLocalIndex();
-            if (local.GetMethodBuilder() != m_methodBuilder)
+            int tempVal = local.LocalIndex;
+            if (local is not RuntimeLocalBuilder localBuilder || localBuilder.GetMethodBuilder() != m_methodBuilder)
             {
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
             }
@@ -1185,7 +1185,7 @@ namespace System.Reflection.Emit
             // add the localType to local signature
             m_localSignature.AddArgument(localType, pinned);
 
-            return new LocalBuilder(m_localCount++, localType, methodBuilder, pinned);
+            return new RuntimeLocalBuilder(m_localCount++, localType, methodBuilder, pinned);
         }
 
         public override void UsingNamespace(string usingNamespace)

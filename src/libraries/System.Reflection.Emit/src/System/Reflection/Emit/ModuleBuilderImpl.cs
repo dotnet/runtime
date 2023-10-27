@@ -220,7 +220,9 @@ namespace System.Reflection.Emit
                 if (il != null)
                 {
                     FillMemberReferences(il);
-                    offset = AddMethodBody(method, il, methodBodyEncoder);
+                    StandaloneSignatureHandle signature = il.Locals.Count == 0 ? default :
+                        _metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.LocalSignatureEncoder(il.Locals, this)));
+                    offset = AddMethodBody(method, il, signature, methodBodyEncoder);
                 }
 
                 MethodDefinitionHandle handle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), offset, _nextParameterRowId);
@@ -268,7 +270,6 @@ namespace System.Reflection.Emit
                 }
             }
         }
-
         private void FillMemberReferences(ILGeneratorImpl il)
         {
             foreach (KeyValuePair<MemberInfo, BlobWriter> pair in il.GetMemberReferences())
@@ -277,11 +278,11 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static int AddMethodBody(MethodBuilderImpl method, ILGeneratorImpl il, MethodBodyStreamEncoder methodBodyEncoder) =>
-            methodBodyEncoder.AddMethodBody(
+        private static int AddMethodBody(MethodBuilderImpl method, ILGeneratorImpl il, StandaloneSignatureHandle signature, MethodBodyStreamEncoder bodyEncoder) =>
+            bodyEncoder.AddMethodBody(
                 instructionEncoder: il.Instructions,
                 maxStack: il.GetMaxStackSize(),
-                localVariablesSignature: default, // TODO
+                localVariablesSignature: signature,
                 attributes: method.InitLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None,
                 hasDynamicStackAllocation: il.HasDynamicStackAllocation);
 

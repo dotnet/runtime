@@ -67,9 +67,9 @@ namespace System.Reflection.Emit
         public static bool operator ==(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { throw null; }
         public static bool operator !=(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { throw null; }
     }
-    public sealed partial class LocalBuilder : System.Reflection.LocalVariableInfo
+    public abstract class LocalBuilder : System.Reflection.LocalVariableInfo
     {
-        internal LocalBuilder() { }
+        protected LocalBuilder() { }
         public override bool IsPinned { get { throw null; } }
         public override int LocalIndex { get { throw null; } }
         public override System.Type LocalType { get { throw null; } }
