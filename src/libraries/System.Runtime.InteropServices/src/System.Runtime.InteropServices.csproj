@@ -34,6 +34,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComExposedClassAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComImportInteropInterfaceDetailsStrategy.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComInterfaceOptions.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ComVariantMarshaller.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\UniqueComInterfaceMarshaller.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComInterfaceMarshaller.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComObject.cs" />
