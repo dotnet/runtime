@@ -92,14 +92,8 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyIntegerEnumeration(IDispat
     IEnumVARIANT* pEnum;
 
     hr = V_UNKNOWN(&result)->QueryInterface<IEnumVARIANT>(&pEnum);
+    VariantClear(&result);
 
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    hr = VariantClear(&result);
-    
     if (FAILED(hr))
     {
         return hr;
