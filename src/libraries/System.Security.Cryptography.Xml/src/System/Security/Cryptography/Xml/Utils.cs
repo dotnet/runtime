@@ -722,7 +722,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static string EncodeHexString(byte[] sArray)
         {
-            return HexConverter.ToString(sArray);
+            return Convert.ToHexString(sArray);
         }
 
         internal static byte[] DecodeHexString(string s)

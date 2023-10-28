@@ -367,7 +367,7 @@ namespace Internal.Cryptography
 #if NETCOREAPP || NETSTANDARD2_1
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
-            return HexConverter.ToString(ba, HexConverter.Casing.Upper);
+            return Convert.ToHexString(ba);
         }
 #else
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)

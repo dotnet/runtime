@@ -197,7 +197,7 @@ namespace System.Security.Cryptography.Xml
             if (bytes == null)
                 return NullString;
 
-            return HexConverter.ToString(bytes, HexConverter.Casing.Lower);
+            return Convert.ToHexStringLower(bytes);
         }
 
         /// <summary>
