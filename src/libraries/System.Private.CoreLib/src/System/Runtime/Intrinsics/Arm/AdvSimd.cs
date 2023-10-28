@@ -2099,7 +2099,7 @@ namespace System.Runtime.Intrinsics.Arm
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadVector128x2AndUnzip(byte* address) => LoadVector128x2AndUnzip(address)
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadVector128x2AndUnzip(byte* address) => LoadVector128x2AndUnzip(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B }, [Xn]
