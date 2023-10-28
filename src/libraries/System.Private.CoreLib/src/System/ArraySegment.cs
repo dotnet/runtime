@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace System
 {
@@ -20,8 +19,8 @@ namespace System
     // (ie, users could assign a new value to the old location).
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    [DebuggerDisplay("{DebuggerToString(),nq}")]
-    [DebuggerTypeProxy(typeof(ArraySegment<>.ArraySegmentDebugView))]
+    [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
+    [DebuggerDisplay("Count = {Count}")]
 #pragma warning disable CA1066 // adding IEquatable<T> implementation could change semantics of code like that in xunit that queries for IEquatable vs enumerating contents
     public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
 #pragma warning restore CA1066
@@ -287,12 +286,6 @@ namespace System
             }
 
             return $"System.ArraySegment<{typeof(T).Name}>[{_count}]";
-        }
-
-        private sealed class ArraySegmentDebugView(ArraySegment<T> array)
-        {
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public T[] Items => array.AsSpan().ToArray();
         }
 
         public struct Enumerator : IEnumerator<T>
