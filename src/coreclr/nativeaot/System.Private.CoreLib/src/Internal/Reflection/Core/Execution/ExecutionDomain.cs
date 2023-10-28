@@ -39,7 +39,7 @@ namespace Internal.Reflection.Core.Execution
         //
         public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
+            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
             RuntimeNamedMethodInfo? runtimeNamedMethodInfo = null;
 
             if (methodHandle.IsNativeFormatMetadataBased)
@@ -86,7 +86,7 @@ namespace Internal.Reflection.Core.Execution
                 RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[genericMethodTypeArgumentHandles.Length];
                 for (int i = 0; i < genericMethodTypeArgumentHandles.Length; i++)
                 {
-                    genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
+                    genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetRuntimeTypeInfoForRuntimeTypeHandle();
                 }
                 return RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(runtimeNamedMethodInfo, genericTypeArguments);
             }
@@ -118,19 +118,19 @@ namespace Internal.Reflection.Core.Execution
         internal static RuntimeTypeInfo GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             RuntimeTypeHandle elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle);
+            return elementTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle().GetArrayType(typeHandle);
         }
 
         internal static RuntimeTypeInfo GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
         {
             RuntimeTypeHandle elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
+            return elementTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
         }
 
         internal static RuntimeTypeInfo GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
+            return targetTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
         internal static RuntimeTypeInfo GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -139,12 +139,12 @@ namespace Internal.Reflection.Core.Execution
             RuntimeTypeHandle[] parameterHandles = RuntimeAugments.GetFunctionPointerParameterTypes(typeHandle);
             bool isUnmanaged = RuntimeAugments.IsUnmanagedFunctionPointerType(typeHandle);
 
-            RuntimeTypeInfo returnType = returnTypeHandle.GetTypeForRuntimeTypeHandle();
+            RuntimeTypeInfo returnType = returnTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
             int count = parameterHandles.Length;
             RuntimeTypeInfo[] parameterTypes = new RuntimeTypeInfo[count];
             for (int i = 0; i < count; i++)
             {
-                parameterTypes[i] = parameterHandles[i].GetTypeForRuntimeTypeHandle();
+                parameterTypes[i] = parameterHandles[i].GetRuntimeTypeInfoForRuntimeTypeHandle();
             }
 
             return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, typeHandle);
@@ -153,7 +153,7 @@ namespace Internal.Reflection.Core.Execution
         internal static RuntimeTypeInfo GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetByRefType(typeHandle);
+            return targetTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle().GetByRefType(typeHandle);
         }
 
         internal static RuntimeTypeInfo GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -162,12 +162,12 @@ namespace Internal.Reflection.Core.Execution
             RuntimeTypeHandle[] genericTypeArgumentHandles;
             genericTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(typeHandle, out genericTypeArgumentHandles);
 
-            RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetTypeForRuntimeTypeHandle();
+            RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
             int count = genericTypeArgumentHandles.Length;
             RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[count];
             for (int i = 0; i < count; i++)
             {
-                genericTypeArguments[i] = genericTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
+                genericTypeArguments[i] = genericTypeArgumentHandles[i].GetRuntimeTypeInfoForRuntimeTypeHandle();
             }
             return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle);
         }

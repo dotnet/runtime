@@ -93,8 +93,8 @@ namespace System.Reflection.Runtime.General
                     throw new ArgumentException(SR.Argument_InvalidHandle);
                 if (!actualDeclaringTypeHandle.Equals(declaringTypeHandle))
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveMethodHandle,
-                        declaringTypeHandle.GetTypeForRuntimeTypeHandle(),
-                        actualDeclaringTypeHandle.GetTypeForRuntimeTypeHandle()));
+                        declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                        actualDeclaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle()));
             }
 
             MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
@@ -136,8 +136,8 @@ namespace System.Reflection.Runtime.General
                     throw new ArgumentException(SR.Argument_InvalidHandle);
                 if (!actualDeclaringTypeHandle.Equals(declaringTypeHandle))
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveFieldHandle,
-                        declaringTypeHandle.GetTypeForRuntimeTypeHandle(),
-                        actualDeclaringTypeHandle.GetTypeForRuntimeTypeHandle()));
+                        declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                        actualDeclaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle()));
             }
 
             FieldInfo fieldInfo = GetFieldInfo(declaringTypeHandle, fieldHandle);
@@ -161,7 +161,7 @@ namespace System.Reflection.Runtime.General
 
         private static RuntimeFieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
-            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
+            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
             NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
 
             // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.

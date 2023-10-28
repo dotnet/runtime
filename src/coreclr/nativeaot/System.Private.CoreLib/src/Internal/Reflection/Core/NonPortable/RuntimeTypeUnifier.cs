@@ -18,12 +18,12 @@ namespace Internal.Reflection.Core.NonPortable
         //
         // Retrieves the unified Type object for given RuntimeTypeHandle (this is basically the Type.GetTypeFromHandle() api without the input validation.)
         //
-        internal static unsafe RuntimeType GetRuntimeTypeForMethodTable(MethodTable* pMT)
+        internal static unsafe RuntimeType GetRuntimeTypeForMethodTable(MethodTable* eeType)
         {
             // If writable data is supported, we shouldn't be using the hashtable - the runtime type
             // is accessible through a couple indirections from the MethodTable which is much faster.
             Debug.Assert(!Internal.Runtime.MethodTable.SupportsWritableData);
-            return s_instance.GetOrAdd((IntPtr)pMT);
+            return s_instance.GetOrAdd((IntPtr)eeType);
         }
 
         protected sealed override unsafe RuntimeType Factory(IntPtr rawRuntimeTypeHandleKey)

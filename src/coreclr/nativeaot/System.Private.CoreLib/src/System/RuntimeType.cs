@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -15,7 +13,6 @@ using System.Runtime.InteropServices;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
-using Internal.Runtime.Augments;
 
 namespace System
 {

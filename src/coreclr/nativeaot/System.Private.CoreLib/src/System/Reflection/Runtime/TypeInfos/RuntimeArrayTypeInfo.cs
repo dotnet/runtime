@@ -296,7 +296,7 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
-                RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle();
+                RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetRuntimeTypeInfoForRuntimeTypeHandle();
                 return projectionRuntimeTypeForArrays;
             }
         }

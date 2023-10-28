@@ -111,11 +111,9 @@ namespace System.Reflection.Runtime.General
             return genericType;
         }
 
-        public static RuntimeTypeInfo GetTypeForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)
+        public static RuntimeTypeInfo GetRuntimeTypeInfoForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)
         {
-            // TODO: Avoid creating the type unless necessary?
-            Type type = Type.GetTypeFromHandle(typeHandle)!;
-            return type.ToRuntimeTypeInfo();
+            return Type.GetTypeFromHandle(typeHandle)!.ToRuntimeTypeInfo();
         }
 
         //======================================================================================================
