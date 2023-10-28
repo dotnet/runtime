@@ -180,11 +180,10 @@ namespace System.Security.Cryptography.Cng.Tests
             value[6] = 2;
             value[7] = 3;
 
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                ReadOnlySpan<byte> span = value;
-                _ = new CngProperty(name, span, CngPropertyOptions.CustomProperty);
-            });
+            var exception = Assert.ThrowsAny<ArgumentNullException>(
+                () => new CngProperty(name, (ReadOnlySpan<byte>)value, CngPropertyOptions.CustomProperty)
+            );
+            Assert.Equal("name", exception.ParamName);
         }
     }
 }
