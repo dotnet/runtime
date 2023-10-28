@@ -5894,12 +5894,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         }
     }
 
-    if (!fgValidateIRForTailCall(call))
-    {
-        failTailCall("Unexpected statements after the tail call");
-        return nullptr;
-    }
-
     const char* failReason      = nullptr;
     bool        canFastTailCall = fgCanFastTailCall(call, &failReason);
 
@@ -6087,6 +6081,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         call->gtArgs.ResetFinalArgsAndABIInfo();
 #endif
     }
+
+    fgValidateIRForTailCall(call);
 
     // If this block has a flow successor, make suitable updates.
     //
@@ -6338,10 +6334,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 // fgValidateIRForTailCall:
 //     Validate that the IR looks ok to perform a tailcall.
 //
-// Returns:
-//    false if IR after the tail call has non-negligble effects,
-//    in which case the tail call should be abandoned.
-//
 // Arguments:
 //     call - The call that we are dispatching as a tailcall.
 //
@@ -6349,14 +6341,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 //   This function needs to handle somewhat complex IR that appears after
 //   tailcall candidates due to inlining.
 //
-bool Compiler::fgValidateIRForTailCall(GenTreeCall* call)
+void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 {
+#ifdef DEBUG
     class TailCallIRValidatorVisitor final : public GenTreeVisitor<TailCallIRValidatorVisitor>
     {
         GenTreeCall* m_tailcall;
         unsigned     m_lclNum;
         bool         m_active;
-        bool         m_isValid;
 
     public:
         enum
@@ -6365,23 +6357,14 @@ bool Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             UseExecutionOrder = true,
         };
 
-        bool IsValid() const
-        {
-            return m_isValid;
-        }
-        void SetIsNotValid()
-        {
-            m_isValid = false;
-        }
-
         TailCallIRValidatorVisitor(Compiler* comp, GenTreeCall* tailcall)
-            : GenTreeVisitor(comp), m_tailcall(tailcall), m_lclNum(BAD_VAR_NUM), m_active(false), m_isValid(true)
+            : GenTreeVisitor(comp), m_tailcall(tailcall), m_lclNum(BAD_VAR_NUM), m_active(false)
         {
         }
 
         fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTree* const tree = *use;
+            GenTree* tree = *use;
 
             // Wait until we get to the actual call...
             if (!m_active)
@@ -6396,13 +6379,8 @@ bool Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 
             if (tree->OperIs(GT_RETURN))
             {
-                if (!tree->TypeIs(TYP_VOID) && !ValidateUse(tree->gtGetOp1()))
-                {
-                    JITDUMP("Tail call validation failed: expected return to be result of tailcall\n");
-                    DISPTREE(tree);
-                    m_isValid = false;
-                }
-
+                assert((tree->TypeIs(TYP_VOID) || ValidateUse(tree->gtGetOp1())) &&
+                       "Expected return to be result of tailcall");
                 return WALK_ABORT;
             }
 
@@ -6425,32 +6403,17 @@ bool Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             //
             else if (tree->OperIs(GT_STORE_LCL_VAR))
             {
-                if (!ValidateUse(tree->AsLclVar()->Data()))
-                {
-                    JITDUMP("Tail call validation failed: [%06u] is not use of V%02u\n", m_compiler->dspTreeID(tree),
-                            m_lclNum);
-                    m_isValid = false;
-                    return WALK_ABORT;
-                }
-
+                assert(ValidateUse(tree->AsLclVar()->Data()) && "Expected value of store to be result of tailcall");
                 m_lclNum = tree->AsLclVar()->GetLclNum();
             }
             else if (tree->OperIs(GT_LCL_VAR))
             {
-                if (!ValidateUse(tree))
-                {
-                    JITDUMP("Tail call validation failed [%06u] is not use of V%02u\n", m_compiler->dspTreeID(tree),
-                            m_lclNum);
-                    m_isValid = false;
-                    return WALK_ABORT;
-                }
+                assert(ValidateUse(tree) && "Expected use of local to be tailcall value");
             }
             else
             {
-                JITDUMP("Tail call validation failed: unexpected tree\n");
                 DISPTREE(tree);
-                m_isValid = false;
-                return WALK_ABORT;
+                assert(!"Unexpected tree op after call marked as tailcall");
             }
 
             return WALK_CONTINUE;
@@ -6483,39 +6446,24 @@ bool Compiler::fgValidateIRForTailCall(GenTreeCall* call)
         }
     };
 
-    JITDUMP("Validating IR for tail call candidate [%06u] in " FMT_STMT "\n", dspTreeID(call), compCurStmt->GetID());
-
     TailCallIRValidatorVisitor visitor(this, call);
-    for (Statement* stmt = compCurStmt; visitor.IsValid() && (stmt != nullptr); stmt = stmt->GetNextStmt())
+    for (Statement* stmt = compCurStmt; stmt != nullptr; stmt = stmt->GetNextStmt())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
 
     BasicBlock* bb = compCurBB;
-    while (!bb->KindIs(BBJ_RETURN) && visitor.IsValid())
+    while (!bb->KindIs(BBJ_RETURN))
     {
-        BasicBlock* const succBB = bb->GetUniqueSucc();
+        bb = bb->GetUniqueSucc();
+        assert((bb != nullptr) && "Expected straight flow after tailcall");
 
-        if (succBB == nullptr)
-        {
-            JITDUMP("Tail call validation failed: " FMT_BB " does not have linear flow\n", bb->bbNum);
-            visitor.SetIsNotValid();
-            break;
-        }
-
-        for (Statement* stmt : succBB->Statements())
+        for (Statement* stmt : bb->Statements())
         {
             visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-            if (!visitor.IsValid())
-            {
-                break;
-            }
         }
-
-        bb = succBB;
     }
-
-    return visitor.IsValid();
+#endif
 }
 
 //------------------------------------------------------------------------
