@@ -278,16 +278,6 @@ namespace System
             }
         }
 
-        private string DebuggerToString()
-        {
-            if (typeof(T) == typeof(char))
-            {
-                return this.AsSpan().ToString();
-            }
-
-            return $"System.ArraySegment<{typeof(T).Name}>[{_count}]";
-        }
-
         public struct Enumerator : IEnumerator<T>
         {
             private readonly T[]? _array;
