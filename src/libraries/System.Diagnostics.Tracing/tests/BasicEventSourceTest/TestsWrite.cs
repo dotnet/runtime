@@ -13,7 +13,6 @@ using System.Diagnostics;
 
 namespace BasicEventSourceTests
 {
-#pragma warning disable SA1136 // Enum values should be on separate lines
     internal enum Color { Red, Blue, Green };
     internal enum ColorUInt32 : uint { Red, Blue, Green };
     internal enum ColorByte : byte { Red, Blue, Green };
@@ -22,7 +21,6 @@ namespace BasicEventSourceTests
     internal enum ColorUInt16 : ushort { Red, Blue, Green };
     internal enum ColorInt64 : long { Red, Blue, Green };
     internal enum ColorUInt64 : ulong { Red, Blue, Green };
-#pragma warning restore
 
     public partial class TestsWrite
     {
