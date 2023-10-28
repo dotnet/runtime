@@ -565,7 +565,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static string UpdateTrust(DirectoryContext context, string? sourceName, string? targetName, string password, bool isForest)
+        internal static unsafe string UpdateTrust(DirectoryContext context, string? sourceName, string? targetName, string password, bool isForest)
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
@@ -658,7 +658,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // reconstruct the unmanaged structure to set it back
                     domainInfo.AuthInformation = AuthInfoEx;
-                    newBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION)));
+                    newBuffer = Marshal.AllocHGlobal(sizeof(Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION));
                     Marshal.StructureToPtr(domainInfo, newBuffer, false);
 
                     result = Interop.Advapi32.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
@@ -696,7 +696,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void UpdateTrustDirection(DirectoryContext context, string? sourceName, string? targetName, string password, bool isForest, TrustDirection newTrustDirection)
+        internal static unsafe void UpdateTrustDirection(DirectoryContext context, string? sourceName, string? targetName, string password, bool isForest, TrustDirection newTrustDirection)
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
@@ -800,7 +800,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // reset the trust direction
                     domainInfo.Information!.TrustDirection = (int)newTrustDirection;
 
-                    newBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION)));
+                    newBuffer = Marshal.AllocHGlobal(sizeof(Interop.Advapi32.TRUSTED_DOMAIN_FULL_INFORMATION));
                     Marshal.StructureToPtr(domainInfo, newBuffer, false);
 
                     result = Interop.Advapi32.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
