@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 {
 	[TestCaseRequirements (TestRunCharacteristics.TargetingNetCore, "Only for .NET Core")]
 	/// <summary>
-	/// Delegate and is created from 
+	/// Delegate and is created from
 	/// </summary>
 	[SetupLinkerTrimMode ("link")]
 	[KeptBaseOnTypeInAssembly (PlatformAssemblies.CoreLib, typeof (MulticastDelegate), PlatformAssemblies.CoreLib, typeof (Delegate))]
@@ -22,9 +22,6 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (Delegate), "Equals(System.Object)")]
 	[KeptInterfaceOnTypeInAssembly (PlatformAssemblies.CoreLib, typeof (Delegate), PlatformAssemblies.CoreLib, typeof (ICloneable))]
 	[KeptInterfaceOnTypeInAssembly (PlatformAssemblies.CoreLib, typeof (Delegate), PlatformAssemblies.CoreLib, typeof (ISerializable))]
-
-	// Fails due to Runtime critical type System.Reflection.CustomAttributeData not found.
-	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 	public class DelegateAndMulticastDelegateKeepInstantiatedReqs
 	{
 		public static void Main ()

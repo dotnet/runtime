@@ -39,7 +39,12 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
-
+        public static bool ReleaseRuntime
+#if RELEASE_RUNTIME
+            => true;
+#else
+            => false;
+#endif
         public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
 
         public static bool WasmSingleThreaded => !WasmMultiThreaded;
@@ -1296,7 +1301,7 @@ namespace DebuggerTests
             if (expected?.Equals(actual) == true)
                 return;
 
-            throw new AssertActualExpectedException(
+            throw EqualException.ForMismatchedValues(
                 expected, actual,
                 $"[{label}]\n");
         }

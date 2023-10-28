@@ -17,39 +17,29 @@ internal sealed class PInvokeTableGenerator
 
     private TaskLoggingHelper Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
+    private readonly HashSet<string> signatures = new();
+    private readonly List<PInvoke> pinvokes = new();
+    private readonly List<PInvokeCallback> callbacks = new();
+    private readonly PInvokeCollector _pinvokeCollector;
 
     public PInvokeTableGenerator(Func<string, string> fixupSymbolName, TaskLoggingHelper log)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
+        _pinvokeCollector = new(log);
     }
 
-    public IEnumerable<string> Generate(string[] pinvokeModules, IEnumerable<string> assemblies, string outputPath)
+    public void ScanAssembly(Assembly asm)
+    {
+        foreach (Type type in asm.GetTypes())
+            _pinvokeCollector.CollectPInvokes(pinvokes, callbacks, signatures, type);
+    }
+
+    public IEnumerable<string> Generate(string[] pinvokeModules, string outputPath)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
             modules[module] = module;
-
-        var signatures = new List<string>();
-
-        var pinvokes = new List<PInvoke>();
-        var callbacks = new List<PInvokeCallback>();
-
-        PInvokeCollector pinvokeCollector = new(Log);
-
-        var resolver = new PathAssemblyResolver(assemblies);
-        using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
-
-        foreach (var asmPath in assemblies)
-        {
-            if (!File.Exists(asmPath))
-                throw new LogAsErrorException($"Cannot find assembly {asmPath}");
-
-            Log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes");
-            var a = mlc.LoadFromAssemblyPath(asmPath);
-            foreach (var type in a.GetTypes())
-                pinvokeCollector.CollectPInvokes(pinvokes, callbacks, signatures, type);
-        }
 
         string tmpFileName = Path.GetTempFileName();
         try
@@ -57,7 +47,7 @@ internal sealed class PInvokeTableGenerator
             using (var w = File.CreateText(tmpFileName))
             {
                 EmitPInvokeTable(w, modules, pinvokes);
-                EmitNativeToInterp(w, ref callbacks);
+                EmitNativeToInterp(w, callbacks);
             }
 
             if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
@@ -270,7 +260,7 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
-    private void EmitNativeToInterp(StreamWriter w, ref List<PInvokeCallback> callbacks)
+    private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
         // These are called by native code, so they need to obtain
@@ -316,11 +306,11 @@ internal sealed class PInvokeTableGenerator
 
             bool is_void = method.ReturnType.Name == "Void";
 
-            string module_symbol = _fixupSymbolName(method.DeclaringType!.Module!.Assembly!.GetName()!.Name!);
+            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
             uint token = (uint)method.MetadataToken;
             string class_name = method.DeclaringType.Name;
             string method_name = method.Name;
-            string entry_name = $"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}";
+            string entry_name = _fixupSymbolName($"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}");
             if (callbackNames.Contains(entry_name))
             {
                 Error($"Two callbacks with the same name '{method_name}' are not supported.");

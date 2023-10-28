@@ -14,6 +14,7 @@ using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
+using Mono.Linker.Tests.TestCasesRunner.ILVerification;
 using NUnit.Framework;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
@@ -25,11 +26,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly BaseAssemblyResolver _linkedResolver;
 		readonly ReaderParameters _originalReaderParameters;
 		readonly ReaderParameters _linkedReaderParameters;
-		readonly PeVerifier _peVerifier;
 
 		public ResultChecker ()
 			: this (new TestCaseAssemblyResolver (), new TestCaseAssemblyResolver (),
-				new PeVerifier (),
 				new ReaderParameters {
 					SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
 				},
@@ -40,24 +39,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver,
-			PeVerifier peVerifier,
 			ReaderParameters originalReaderParameters, ReaderParameters linkedReaderParameters)
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
-			_peVerifier = peVerifier;
 			_originalReaderParameters = originalReaderParameters;
 			_linkedReaderParameters = linkedReaderParameters;
 		}
 
-		static void VerifyIL (NPath pathToAssembly, AssemblyDefinition linked)
-		{
-			using var verifier = new ILVerifier (pathToAssembly);
-			foreach (var result in verifier.Results)
-				Assert.Fail (ILVerifier.GetErrorMessage (result));
-		}
-
-		static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
+		protected static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
 		{
 			foreach (var typeRef in linked.MainModule.GetTypeReferences ()) {
 				switch (typeRef.Scope) {
@@ -89,23 +79,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		static bool ShouldValidateIL (AssemblyDefinition inputAssembly)
-		{
-			if (HasAttribute (inputAssembly, nameof (SkipPeVerifyAttribute)))
-				return false;
-
-			var caaIsUnsafeFlag = (CustomAttributeArgument caa) =>
-				caa.Type.IsTypeOf (WellKnownType.System_String)
-				&& (string) caa.Value == "/unsafe";
-			var customAttributeHasUnsafeFlag = (CustomAttribute ca) => ca.ConstructorArguments.Any (caaIsUnsafeFlag);
-			if (GetCustomAttributes (inputAssembly, nameof (SetupCompileArgumentAttribute))
-				.Any (customAttributeHasUnsafeFlag))
-				return false;
-
-			return true;
-		}
-
-		public virtual void Check (LinkedTestCaseResult linkResult)
+		public virtual void Check (TrimmedTestCaseResult linkResult)
 		{
 			InitializeResolvers (linkResult);
 
@@ -118,11 +92,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
 
 					var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
-
-					if (ShouldValidateIL (original)) {
-						VerifyIL (linkResult.OutputAssemblyPath, linked);
-						ValidateTypeRefsHaveValidAssemblyRefs (linked);
-					}
 
 					InitialChecking (linkResult, original, linked);
 
@@ -153,7 +122,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyILOfOtherAssemblies (LinkedTestCaseResult linkResult)
+		void VerifyILOfOtherAssemblies (TrimmedTestCaseResult linkResult)
 		{
 			foreach (var linkedAssemblyPath in linkResult.Sandbox.OutputDirectory.Files ("*.dll")) {
 				if (linkedAssemblyPath == linkResult.OutputAssemblyPath)
@@ -164,12 +133,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
+		protected virtual ILChecker CreateILChecker () => new ();
+
+		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
 		{
 			return new AssemblyChecker (original, linked, linkedTestCase);
 		}
 
-		void InitializeResolvers (LinkedTestCaseResult linkedResult)
+		void InitializeResolvers (TrimmedTestCaseResult linkedResult)
 		{
 			_originalsResolver.AddSearchDirectory (linkedResult.ExpectationsAssemblyPath.Parent.ToString ());
 			_linkedResolver.AddSearchDirectory (linkedResult.OutputAssemblyPath.Parent.ToString ());
@@ -244,7 +215,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyExitCode (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		void VerifyExitCode (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
 				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
@@ -299,16 +270,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		protected virtual void AdditionalChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
 		}
 
-		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
+		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
-			_peVerifier.Check (linkResult, original);
+			CreateILChecker ().Check(linkResult, original);
+			ValidateTypeRefsHaveValidAssemblyRefs (linked);
 		}
 
 		void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)
@@ -746,7 +718,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			var missingInLinked = originalTypes.Keys.Except (linkedTypes.Keys);
 
-			Assert.That (missingInLinked, Is.Empty, $"Expected all types to exist in the linked assembly, but one or more were missing");
+			Assert.That (missingInLinked, Is.Empty, $"Expected all types to exist in the linked assembly {linked.Name}, but one or more were missing");
 
 			foreach (var originalKvp in originalTypes) {
 				var linkedType = linkedTypes[originalKvp.Key];
@@ -781,7 +753,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			yield return assembly;
 		}
 
-		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger, bool checkRemainingErrors)
+		void VerifyLoggedMessages (AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
@@ -901,17 +873,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										}
 										if (memberDefinition is not MethodDefinition)
 											continue;
-										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
-										}
-										if (memberDefinition.Name == ".ctor" &&
-											memberDefinition.DeclaringType.FullName == expectedMember.FullName) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
+										if (actualName.StartsWith (expectedMember.DeclaringType.FullName)) {
+											if (memberDefinition.Name == ".cctor" &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
+											if (memberDefinition.Name == ".ctor" &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
 										}
 									} else if (attrProvider is AssemblyDefinition expectedAssembly) {
 										// Allow assembly-level attributes to match warnings from compiler-generated Main
@@ -1162,6 +1136,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
 				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (IsTypeInOtherAssemblyAssertion)) {
 					var assemblyName = (string) attr.ConstructorArguments[0].Value;
+
+					Tool? toolTarget = (Tool?) (int?) attr.GetPropertyValue ("Tool");
+					if (toolTarget is not null && !toolTarget.Value.HasFlag (Tool.Trimmer))
+						continue;
+
 					if (!checks.TryGetValue (assemblyName, out List<CustomAttribute> checksForAssembly))
 						checks[assemblyName] = checksForAssembly = new List<CustomAttribute> ();
 

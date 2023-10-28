@@ -3,5 +3,8 @@
     <type fullname="Microsoft.Extensions.DependencyInjection.ServiceProvider">
       <method signature="System.Boolean get_VerifyOpenGenericServiceTrimmability()" body="stub" value="true" feature="Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability" featurevalue="true" />
     </type>
+    <type fullname="Microsoft.Extensions.DependencyInjection.ServiceProvider">
+      <method signature="System.Boolean get_DisableDynamicEngine()" body="stub" value="true" feature="Microsoft.Extensions.DependencyInjection.DisableDynamicEngine" featurevalue="true" />
+    </type>
   </assembly>
 </linker>

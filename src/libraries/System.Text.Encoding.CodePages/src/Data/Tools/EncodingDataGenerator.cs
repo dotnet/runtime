@@ -341,11 +341,11 @@ namespace {2}
         // EncodingNameIndices contains the start index of every encoding name in the string
         // EncodingNames. We infer the length of each string by looking at the start index
         // of the next string.
-        private static ReadOnlySpan<int> EncodingNameIndices => new int[]
-        {
+        private static ReadOnlySpan<int> EncodingNameIndices =>
+        [
             0|, // {0} ({1:D})
             {2:D}|
-        };
+        ];
 ";
 
         // The format is:
@@ -358,10 +358,10 @@ namespace {2}
         // names listed in EncodingNames. The way mapping works is we binary search
         // EncodingNames using EncodingNamesIndices until we find a match for a given name.
         // The index of the entry in EncodingNamesIndices will be the index of codepage in CodePagesByName.
-        private static ReadOnlySpan<ushort> CodePagesByName => new ushort[]
-        {|
+        private static ReadOnlySpan<ushort> CodePagesByName =>
+        [|
             {0:D}, // {1}|
-        };
+        ];
 ";
 
         // The format is:
@@ -376,10 +376,10 @@ namespace {2}
         // given codepage. This is used to index WebNameIndices to get the start
         // index of the web name in the string WebNames, and to index
         // EnglishNameIndices to get the start of the English name in EnglishNames.
-        private static ReadOnlySpan<ushort> s_mappedCodePages => new ushort[]
-        {|
+        private static ReadOnlySpan<ushort> s_mappedCodePages =>
+        [|
             {0:D}, // {1}|
-        };
+        ];
 ";
 
         // The format is:
@@ -409,11 +409,11 @@ namespace {2}
         // WebNameIndices contains the start index of each code page's default
         // web name in the string WebNames. It is indexed by an index into
         // s_mappedCodePages.
-        private static ReadOnlySpan<int> WebNameIndices => new int[]
-        {
+        private static ReadOnlySpan<int> WebNameIndices =>
+        [
             0|, // {0} ({1:D})
             {2:D}|
-        };
+        ];
 ";
 
         // The format is:
@@ -442,11 +442,11 @@ namespace {2}
 @"
         // EnglishNameIndices contains the start index of each code page's English
         // name in the string EnglishNames. It is indexed by an index into s_mappedCodePages.
-        private static ReadOnlySpan<int> EnglishNameIndices => new int[]
-        {
+        private static ReadOnlySpan<int> EnglishNameIndices =>
+        [
             0|, // {0} ({1:D})
             {2:D}|
-        };
+        ];
 ";
 
         private const string Footer =

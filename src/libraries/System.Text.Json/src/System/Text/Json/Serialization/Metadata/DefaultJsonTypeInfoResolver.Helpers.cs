@@ -38,18 +38,26 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo CreateTypeInfoCore(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
-            typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
-            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
 
-            if (typeInfo.Kind == JsonTypeInfoKind.Object)
+            if (GetNumberHandlingForType(typeInfo.Type) is { } numberHandling)
             {
-                typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
+                typeInfo.NumberHandling = numberHandling;
+            }
+
+            if (GetObjectCreationHandlingForType(typeInfo.Type) is { } creationHandling)
+            {
+                typeInfo.PreferredPropertyObjectCreationHandling = creationHandling;
+            }
+
+            if (GetUnmappedMemberHandling(typeInfo.Type) is { } unmappedMemberHandling)
+            {
+                typeInfo.UnmappedMemberHandling = unmappedMemberHandling;
             }
 
             typeInfo.PopulatePolymorphismMetadata();
             typeInfo.MapInterfaceTypesToCallbacks();
 
-            Func<object>? createObject = MemberAccessor.CreateConstructor(typeInfo.Type);
+            Func<object>? createObject = DetermineCreateObjectDelegate(type, converter);
             typeInfo.SetCreateObjectIfCompatible(createObject);
             typeInfo.CreateObjectForExtensionDataProperty = createObject;
 
@@ -80,7 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool constructorHasSetsRequiredMembersAttribute =
                 typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
 
-            JsonTypeInfo.PropertyHierarchyResolutionState state = new();
+            JsonTypeInfo.PropertyHierarchyResolutionState state = new(typeInfo.Options);
 
             // Walk the type hierarchy starting from the current type up to the base type(s)
             foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())
@@ -410,6 +418,25 @@ namespace System.Text.Json.Serialization.Metadata
                     Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
                     break;
             }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static Func<object>? DetermineCreateObjectDelegate(Type type, JsonConverter converter)
+        {
+            ConstructorInfo? defaultCtor = null;
+
+            if (converter.ConstructorInfo != null && !converter.ConstructorIsParameterized)
+            {
+                // A parameterless constructor has been resolved by the converter
+                // (e.g. it might be a non-public ctor with JsonConverterAttribute).
+                defaultCtor = converter.ConstructorInfo;
+            }
+
+            // Fall back to resolving any public constructors on the type.
+            defaultCtor ??= type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+
+            return MemberAccessor.CreateParameterlessConstructor(type, defaultCtor);
         }
     }
 }

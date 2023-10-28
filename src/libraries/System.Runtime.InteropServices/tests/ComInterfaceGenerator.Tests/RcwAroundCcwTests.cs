@@ -200,17 +200,33 @@ namespace ComInterfaceGenerator.Tests
             var obj = CreateWrapper<StatefulMarshalling, IStatefulMarshalling>();
             var data = new StatefulType() { i = 42 };
 
+            int preCallFreeCount = StatefulTypeMarshaller.FreeCount;
             obj.Method(data);
             Assert.Equal(42, data.i);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
             obj.MethodIn(in data);
             Assert.Equal(42, data.i);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+
             var oldData = data;
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
             obj.MethodRef(ref data);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
             Assert.True(oldData == data); // We want reference equality here
+
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
             obj.MethodOut(out data);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
             Assert.Equal(1, data.i);
+
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
             Assert.Equal(1, obj.Return().i);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
             Assert.Equal(1, obj.ReturnPreserveSig().i);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
         }
 
         [Fact]
@@ -219,16 +235,67 @@ namespace ComInterfaceGenerator.Tests
             var obj = CreateWrapper<StatelessCallerAllocatedBufferMarshalling, IStatelessCallerAllocatedBufferMarshalling>();
             var data = new StatelessCallerAllocatedBufferType() { I = 42 };
 
+            // ManagedToUnmanagedIn should use Caller Allocated Buffer and not allocate
+            StatelessCallerAllocatedBufferTypeMarshaller.DisableAllocations();
+
+            var numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
             obj.Method(data);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
             Assert.Equal(42, data.I);
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
             obj.MethodIn(in data);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
             Assert.Equal(42, data.I);
+
+            // Other marshal modes will allocate
+            StatelessCallerAllocatedBufferTypeMarshaller.EnableAllocations();
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
             obj.MethodRef(ref data);
+            Assert.Equal(2 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+            StatelessCallerAllocatedBufferTypeMarshaller.AssertAllPointersFreed();
             Assert.Equal(200, data.I);
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
             obj.MethodOut(out data);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+            StatelessCallerAllocatedBufferTypeMarshaller.AssertAllPointersFreed();
             Assert.Equal(20, data.I);
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
             Assert.Equal(201, obj.Return().I);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
             Assert.Equal(202, obj.ReturnPreserveSig().I);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+        }
+
+        [Fact]
+        public void StatefulPinnedMarshalling()
+        {
+            var obj = CreateWrapper<StatefulPinnedMarshalling, IStatefulPinnedMarshalling>();
+            var data = new StatefulPinnedType() { I = 4 };
+
+            StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.DisableNonPinnedPath();
+
+            obj.Method(data);
+            Assert.Equal(4, data.I);
+
+            obj.MethodIn(in data);
+            Assert.Equal(4, data.I);
+
+            StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.EnableNonPinnedPath();
+
+            obj.MethodOut(out data);
+            Assert.Equal(102, data.I);
+
+            obj.MethodRef(ref data);
+            Assert.Equal(103, data.I);
+
+            data = obj.Return();
+            Assert.Equal(104, data.I);
         }
 
         [Fact]

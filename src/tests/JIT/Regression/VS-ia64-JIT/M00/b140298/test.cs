@@ -10,10 +10,9 @@ public class History
     private static Object with = null;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         CreateHistory(null, null, 0, 0, 0, 0, 0, DateTime.Now, 0, "ciao");
-        return 100;
     }
 
     public static History CreateHistory(Object nearobj, Object amode,

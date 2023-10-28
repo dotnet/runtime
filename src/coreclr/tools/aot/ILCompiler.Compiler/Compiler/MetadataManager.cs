@@ -57,7 +57,7 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
-        private readonly SortedSet<EmbeddedObjectNode> _frozenObjects = new SortedSet<EmbeddedObjectNode>(CompilerComparer.Instance);
+        private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
@@ -291,11 +291,6 @@ namespace ILCompiler
             if (obj is FrozenObjectNode frozenObj)
             {
                 _frozenObjects.Add(frozenObj);
-            }
-
-            if (obj is FrozenStringNode frozenStr)
-            {
-                _frozenObjects.Add(frozenStr);
             }
 
             if (obj is GenericStaticBaseInfoNode genericStaticBaseInfo)
@@ -619,7 +614,7 @@ namespace ILCompiler
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings,
                                                 out List<StackTraceMapping> stackTraceMapping);
 
-        protected StackTraceRecordData CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method)
+        protected StackTraceRecordData CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method, bool isHidden)
         {
             // In the metadata, we only represent the generic definition
             MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
@@ -668,7 +663,7 @@ namespace ILCompiler
                 methodInst = null;
             }
 
-            return new StackTraceRecordData(method, owningType, signature, name, methodInst);
+            return new StackTraceRecordData(method, owningType, signature, name, methodInst, isHidden);
         }
 
         /// <summary>
@@ -751,7 +746,7 @@ namespace ILCompiler
             return _typeTemplates;
         }
 
-        public IEnumerable<EmbeddedObjectNode> GetFrozenObjects()
+        public IEnumerable<FrozenObjectNode> GetFrozenObjects()
         {
             return _frozenObjects;
         }
@@ -950,10 +945,11 @@ namespace ILCompiler
         public readonly int MethodSignatureHandle;
         public readonly int MethodNameHandle;
         public readonly int MethodInstantiationArgumentCollectionHandle;
+        public readonly bool IsHidden;
 
-        public StackTraceMapping(MethodDesc method, int owningTypeHandle, int methodSignatureHandle, int methodNameHandle, int methodInstantiationArgumentCollectionHandle)
-            => (Method, OwningTypeHandle, MethodSignatureHandle, MethodNameHandle, MethodInstantiationArgumentCollectionHandle)
-            = (method, owningTypeHandle, methodSignatureHandle, methodNameHandle, methodInstantiationArgumentCollectionHandle);
+        public StackTraceMapping(MethodDesc method, int owningTypeHandle, int methodSignatureHandle, int methodNameHandle, int methodInstantiationArgumentCollectionHandle, bool isHidden)
+            => (Method, OwningTypeHandle, MethodSignatureHandle, MethodNameHandle, MethodInstantiationArgumentCollectionHandle, IsHidden)
+            = (method, owningTypeHandle, methodSignatureHandle, methodNameHandle, methodInstantiationArgumentCollectionHandle, isHidden);
     }
 
     public readonly struct StackTraceRecordData
@@ -963,10 +959,11 @@ namespace ILCompiler
         public readonly MetadataRecord MethodSignature;
         public readonly MetadataRecord MethodName;
         public readonly MetadataRecord MethodInstantiationArgumentCollection;
+        public readonly bool IsHidden;
 
-        public StackTraceRecordData(MethodDesc method, MetadataRecord owningType, MetadataRecord methodSignature, MetadataRecord methodName, MetadataRecord methodInstantiationArgumentCollection)
-            => (Method, OwningType, MethodSignature, MethodName, MethodInstantiationArgumentCollection)
-            = (method, owningType, methodSignature, methodName, methodInstantiationArgumentCollection);
+        public StackTraceRecordData(MethodDesc method, MetadataRecord owningType, MetadataRecord methodSignature, MetadataRecord methodName, MetadataRecord methodInstantiationArgumentCollection, bool isHidden)
+            => (Method, OwningType, MethodSignature, MethodName, MethodInstantiationArgumentCollection, IsHidden)
+            = (method, owningType, methodSignature, methodName, methodInstantiationArgumentCollection, isHidden);
     }
 
     [Flags]

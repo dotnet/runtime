@@ -462,6 +462,8 @@ namespace System.Linq.Expressions.Compiler
             return cr.Finish(expr);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "A NewArrayExpression has already been created. The original creator will get a warning that it is not trim compatible.")]
         private Result RewriteNewArrayExpression(Expression expr, Stack stack)
         {
             var node = (NewArrayExpression)expr;

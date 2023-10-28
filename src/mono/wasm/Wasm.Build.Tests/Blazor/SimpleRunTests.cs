@@ -22,7 +22,7 @@ public class SimpleRunTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public async Task BlazorBuildRunTest(string config)
@@ -34,7 +34,49 @@ public class SimpleRunTests : BlazorWasmTestBase
         await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
+    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
+    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
+    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
+    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
+    public async Task BlazorBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+    {
+        string id = $"{config}_{GetRandomId()}";
+        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        string projectName = Path.GetFileNameWithoutExtension(projectFile);
+
+        string extraPropertiesForDBP = "";
+        if (appendRID)
+            extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
+        if (useArtifacts)
+            extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
+
+        string projectDirectory = Path.GetDirectoryName(projectFile)!;
+        if (!string.IsNullOrEmpty(extraPropertiesForDBP))
+            AddItemsPropertiesToProject(Path.Combine(projectDirectory, "Directory.Build.props"),
+                                        extraPropertiesForDBP);
+
+        var buildArgs = new BuildArgs(projectName, config, false, id, null);
+        buildArgs = ExpandBuildArgs(buildArgs);
+
+        BlazorBuildOptions buildOptions = new(id, config, NativeFilesType.FromRuntimePack);
+        if (useArtifacts)
+        {
+            buildOptions = buildOptions with
+            {
+                BinFrameworkDir = Path.Combine(projectDirectory,
+                                               "bin",
+                                               id,
+                                               config.ToLower(),
+                                               "wwwroot",
+                                               "_framework")
+            };
+        }
+        BlazorBuild(buildOptions);
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+    }
+
+    [Theory]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
     [InlineData("Release", false)]

@@ -378,7 +378,7 @@ public:
                             int                   maxExactClasses,
                             CORINFO_CLASS_HANDLE* exactClsRet,
                             int                   result);
-    void dmpGetExactClasses(DLD key, DLD value);
+    void dmpGetExactClasses(DLD key, const Agnostic_GetExactClassesResult& value);
     int repGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
                            int                   maxExactClasses,
                            CORINFO_CLASS_HANDLE* exactClsRet);

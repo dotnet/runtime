@@ -22,6 +22,7 @@ namespace ApplyUpdateReferencedAssembly
             }
             public double Field1;
             public string Field2;
+            public string Field3Unused;
         }
     }
         

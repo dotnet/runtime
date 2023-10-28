@@ -250,7 +250,7 @@ namespace System.Runtime.CompilerServices
             TableMask(ref tableData) = size - 1;
 
             // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
-            byte shift = (byte)BitOperations.LeadingZeroCount(size - 1);
+            byte shift = (byte)BitOperations.LeadingZeroCount((nuint)(size - 1));
             HashShift(ref tableData) = shift;
 
             return table;

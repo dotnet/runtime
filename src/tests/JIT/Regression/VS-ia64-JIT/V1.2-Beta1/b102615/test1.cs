@@ -26,11 +26,10 @@ class C
 public class Test_test1
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         test1();
         test2();
-        return 100;
     }
 
     internal static void test1()

@@ -7,6 +7,7 @@ import { dotnet, exit } from './_framework/dotnet.js'
 
 let runBenchmark;
 let setTasks;
+let setExclusions;
 let getFullJsonResults;
 let legacyExportTargetInt;
 let jsExportTargetInt;
@@ -68,6 +69,7 @@ class MainApp {
         _jiterpreter_dump_stats = INTERNAL.jiterpreter_dump_stats.bind(INTERNAL);
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
+        setExclusions = exports.Sample.Test.SetExclusions;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
 
         legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
@@ -96,6 +98,10 @@ class MainApp {
         let tasks = url.searchParams.getAll('task');
         if (tasks != '') {
             setTasks(tasks.join(','));
+        }
+        let exclusions = url.searchParams.getAll('exclusions');
+        if (exclusions != '') {
+            setExclusions(exclusions.join(','));
         }
 
         const r = await fetch("/bootstrap.flag", {
@@ -129,30 +135,49 @@ class MainApp {
         return new Promise(resolve => setTimeout(() => resolve(runBenchmark()), 0));
     }
 
-    async pageShow(guid) {
+    origin() {
+        return window.location.origin;
+    }
+
+    async pageShow(guid, base) {
         try {
-            await this.waitFor('pageshow', guid);
+            await this.waitFor('pageshow', guid, base);
         } finally {
             this.removeFrame();
         }
     }
 
-    async frameReachedManaged(guid) {
+    async frameReachedManaged(guid, base) {
         try {
-            await this.waitFor('reached', guid);
+            await this.waitFor('reached', guid, base);
         } finally {
             this.removeFrame();
         }
     }
 
-    async waitFor(eventName, guid) {
+    async frameBlazorFirstUI(guid, base) {
+        try {
+            await this.waitFor('blazor: Rendered Index.razor', guid, base);
+        } finally {
+            this.removeFrame();
+        }
+    }
+
+    framePage = 'appstart-frame.html';
+
+    async setFramePage(page) {
+        this.framePage = page;
+    }
+
+    async waitFor(eventName, guid, base) {
         try {
             let promise;
             let promiseResolve;
             this._frame = document.createElement('iframe');
+            let page = (base ? base : '') + this.framePage;
             this._frame.src = guid
-                ? 'unique/' + guid + '/appstart-frame.html'
-                : 'appstart-frame.html';
+                ? 'unique/' + guid + '/' + page
+                : page;
 
             promise = new Promise(resolve => { promiseResolve = resolve; })
             window.resolveAppStartEvent = function (event) {
@@ -176,8 +201,11 @@ class MainApp {
 
 try {
     globalThis.mainApp = new MainApp();
+    globalThis.mainApp.FrameBlazorFirstUI = globalThis.mainApp.frameBlazorFirstUI.bind(globalThis.mainApp);
     globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
+    globalThis.mainApp.Origin = globalThis.mainApp.origin.bind(globalThis.mainApp);
+    globalThis.mainApp.SetFramePage = globalThis.mainApp.setFramePage.bind(globalThis.mainApp);
 
     const runtime = await dotnet
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])

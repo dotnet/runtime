@@ -15,5 +15,8 @@ public struct AA
         return new TestEnum[(long)(m_shStatic1 * 11u - m_shStatic1 * 11u)];
     }
     [Fact]
-    public static int TestEntryPoint() { Static2(null); return 100; }
+    public static void TestEntryPoint()
+    {
+        Static2(null);
+    }
 }

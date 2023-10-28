@@ -688,7 +688,7 @@ OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 3, 1, 1, MintOpNoArgs)
 /* Calls */
 OPDEF(MINT_CALL, "call", 4, 1, 1, MintOpMethodToken)
 OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 5, 1, 1, MintOpMethodToken)
-OPDEF(MINT_CALL_DELEGATE, "call.delegate", 5, 1, 1, MintOpTwoShorts)
+OPDEF(MINT_CALL_DELEGATE, "call.delegate", 6, 1, 1, MintOpTwoShorts)
 OPDEF(MINT_CALLI, "calli", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_CALLI_NAT, "calli.nat", 8, 1, 2, MintOpTwoShorts)
 OPDEF(MINT_CALLI_NAT_DYNAMIC, "calli.nat.dynamic", 5, 1, 2, MintOpShortInt)
@@ -826,10 +826,10 @@ OPDEF(MINT_METADATA_UPDATE_LDFLDA, "metadata_update.ldflda", 5, 1, 1, MintOpTwoS
 
 // This ifdef is fine because genmintops.py is generating output for HOST_BROWSER
 #if HOST_BROWSER
-OPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 3, 0, 0, MintOpInt)
-OPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 3, 0, 0, MintOpInt)
-OPDEF(MINT_TIER_ENTER_JITERPRETER, "tier_enter_jiterpreter", 3, 0, 0, MintOpInt)
-OPDEF(MINT_TIER_MONITOR_JITERPRETER, "tier_monitor_jiterpreter", 3, 0, 0, MintOpInt)
+OPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 4, 0, 0, MintOpShortAndInt)
+OPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 4, 0, 0, MintOpShortAndInt)
+OPDEF(MINT_TIER_ENTER_JITERPRETER, "tier_enter_jiterpreter", 4, 0, 0, MintOpShortAndInt)
+OPDEF(MINT_TIER_MONITOR_JITERPRETER, "tier_monitor_jiterpreter", 4, 0, 0, MintOpShortAndInt)
 #endif // HOST_BROWSER
 
 IROPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)

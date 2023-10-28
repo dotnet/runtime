@@ -24,6 +24,8 @@ const uint64_t SpecialDiagInfoAddress = 0x7fff1000;
 #endif
 #endif
 
+const uint64_t SpecialDiagInfoSize = 0x1000;
+
 struct SpecialDiagInfoHeader
 {
     char Signature[16];

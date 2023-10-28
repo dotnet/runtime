@@ -10,22 +10,23 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 {
 	public readonly struct CapturedReferenceValue : IEquatable<CapturedReferenceValue>
 	{
-		public readonly IOperation? Reference;
+		public readonly IOperation Reference;
 
 		public CapturedReferenceValue (IOperation operation)
 		{
 			switch (operation.Kind) {
 			case OperationKind.PropertyReference:
+			case OperationKind.EventReference:
 			case OperationKind.LocalReference:
 			case OperationKind.FieldReference:
 			case OperationKind.ParameterReference:
 			case OperationKind.ArrayElementReference:
+			case OperationKind.InlineArrayAccess:
 			case OperationKind.ImplicitIndexerReference:
 				break;
 			case OperationKind.None:
 			case OperationKind.InstanceReference:
 			case OperationKind.Invocation:
-			case OperationKind.EventReference:
 			case OperationKind.Invalid:
 				// These will just be ignored when referenced later.
 				break;
@@ -47,24 +48,5 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override int GetHashCode ()
 			=> Reference?.GetHashCode () ?? 0;
-	}
-
-
-	public struct CapturedReferenceLattice : ILattice<CapturedReferenceValue>
-	{
-		public CapturedReferenceValue Top => default;
-
-		public CapturedReferenceValue Meet (CapturedReferenceValue left, CapturedReferenceValue right)
-		{
-			if (left.Equals (right))
-				return left;
-			if (left.Reference == null)
-				return right;
-			if (right.Reference == null)
-				return left;
-			// Both non-null and different shouldn't happen.
-			// We assume that a flow capture can capture only a single property.
-			throw new InvalidOperationException ();
-		}
 	}
 }

@@ -526,7 +526,7 @@
     <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
   </data>
   <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
-    <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'.</value>
+    <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'. Custom converters can add support for dictionary key serialization by overriding the 'ReadAsPropertyName' and 'WriteAsPropertyName' methods.</value>
   </data>
   <data name="IgnoreConditionOnValueTypeInvalid" xml:space="preserve">
     <value>The ignore condition 'JsonIgnoreCondition.WhenWritingNull' is not valid on value-type member '{0}' on type '{1}'. Consider using 'JsonIgnoreCondition.WhenWritingDefault'.</value>
@@ -575,6 +575,9 @@
   </data>
   <data name="NodeWrongType" xml:space="preserve">
     <value>The node must be of type '{0}'.</value>
+  </data>
+  <data name="NodeParentWrongType" xml:space="preserve">
+    <value>The node must have a parent node of type '{0}'.</value>
   </data>
   <data name="NodeDuplicateKey" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
@@ -692,6 +695,9 @@
   </data>
   <data name="ObjectCreationHandlingPropertyCannotAllowReferenceHandling" xml:space="preserve">
     <value>JsonObjectCreationHandling.Populate is incompatible with reference handling.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors" xml:space="preserve">
+    <value>JsonObjectCreationHandling.Populate is currently not supported in types with parameterized constructors.</value>
   </data>
   <data name="FormatInt128" xml:space="preserve">
     <value>Either the JSON value is not in a supported format, or is out of bounds for an Int128.</value>

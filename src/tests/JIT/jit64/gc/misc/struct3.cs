@@ -18,12 +18,11 @@ public class Test_struct3
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM;
 
         sM.str = "test";
         c(sM, sM, sM);
-        return 100;
     }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -11,6 +12,12 @@ namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
+#if NET8_0_OR_GREATER
+        private static readonly SearchValues<char> s_charsToEscape = SearchValues.Create("\\[]+*&,");
+#else
+        private static ReadOnlySpan<char> s_charsToEscape => "\\[]+*&,".AsSpan();
+#endif
+
         [return: NotNullIfNotNull(nameof(original))]
         public static T[]? CloneArray<T>(this T[]? original)
         {
@@ -96,7 +103,7 @@ namespace System.Reflection.TypeLoading
         public static string EscapeTypeNameIdentifier(this string identifier)
         {
             // Some characters in a type name need to be escaped
-            if (identifier.IndexOfAny(s_charsToEscape) != -1)
+            if (TypeNameContainsTypeParserMetacharacters(identifier))
             {
                 StringBuilder sbEscapedName = new StringBuilder(identifier.Length);
                 foreach (char c in identifier)
@@ -113,12 +120,16 @@ namespace System.Reflection.TypeLoading
 
         public static bool TypeNameContainsTypeParserMetacharacters(this string identifier)
         {
-            return identifier.IndexOfAny(s_charsToEscape) != -1;
+            return identifier.AsSpan().IndexOfAny(s_charsToEscape) >= 0;
         }
 
         public static bool NeedsEscapingInTypeName(this char c)
         {
-            return Array.IndexOf(s_charsToEscape, c) >= 0;
+#if NET8_0_OR_GREATER
+            return s_charsToEscape.Contains(c);
+#else
+            return s_charsToEscape.IndexOf(c) >= 0;
+#endif
         }
 
         public static string UnescapeTypeNameIdentifier(this string identifier)
@@ -144,8 +155,6 @@ namespace System.Reflection.TypeLoading
             }
             return identifier;
         }
-
-        private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
         /// <summary>
         /// For AssemblyReferences, convert "unspecified" components from the ECMA format (0xffff) to the in-memory System.Version format (0xffffffff).

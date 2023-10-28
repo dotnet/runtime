@@ -62,7 +62,7 @@ namespace System.Net.Http.Json
         /// <typeparam name="TValue">The target type to deserialize to.</typeparam>
         /// <param name="client">The client used to send the request.</param>
         /// <param name="requestUri">The Uri the request is sent to.</param>
-        /// <param name="jsonTypeInfo">Source generated JsonTypeInfo to control the behavior during deserialization.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the behavior during deserialization.</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>An <see cref="IAsyncEnumerable{TValue}"/> that represents the deserialized response body.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is <see langword="null"/>.</exception>
@@ -80,7 +80,7 @@ namespace System.Net.Http.Json
         /// <typeparam name="TValue">The target type to deserialize to.</typeparam>
         /// <param name="client">The client used to send the request.</param>
         /// <param name="requestUri">The Uri the request is sent to.</param>
-        /// <param name="jsonTypeInfo">Source generated JsonTypeInfo to control the behavior during deserialization.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the behavior during deserialization.</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>An <see cref="IAsyncEnumerable{TValue}"/> that represents the deserialized response body.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is <see langword="null"/>.</exception>
@@ -135,10 +135,7 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
-            options ??= JsonSerializerOptions.Default;
-            options.MakeReadOnly();
-
-            var jsonTypeInfo = (JsonTypeInfo<TValue>)options.GetTypeInfo(typeof(TValue));
+            var jsonTypeInfo = (JsonTypeInfo<TValue>)JsonHelpers.GetJsonTypeInfo(typeof(TValue), options);
 
             return FromJsonStreamAsyncCore(client, requestUri, jsonTypeInfo, cancellationToken);
         }

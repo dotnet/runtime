@@ -1,5 +1,5 @@
 # escape=`
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:7.0-nanoserver-ltsc2022
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0-nanoserver-ltsc2022
 FROM $SDK_BASE_IMAGE
 
 # Use powershell as the default shell
@@ -8,7 +8,7 @@ SHELL ["pwsh", "-Command"]
 WORKDIR /app
 COPY . .
 
-ARG VERSION=8.0
+ARG VERSION=9.0
 ARG CONFIGURATION=Release
 
 RUN dotnet build -c $env:CONFIGURATION `

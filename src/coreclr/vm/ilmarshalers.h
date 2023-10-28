@@ -3138,39 +3138,13 @@ protected:
     void EmitClearNative(ILCodeStream* pslILEmit) override
     {
         WRAPPER_NO_CONTRACT;
-        ILCodeLabel* pNoManagedValueLabel = nullptr;
-        if (IsFieldMarshal(m_dwMarshalFlags))
-        {
-            pNoManagedValueLabel = pslILEmit->NewCodeLabel();
-            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
-            pslILEmit->EmitBRFALSE(pNoManagedValueLabel);
-        }
-
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearNativeMethod());
-
-        if (IsFieldMarshal(m_dwMarshalFlags))
-        {
-            pslILEmit->EmitLabel(pNoManagedValueLabel);
-        }
     }
 
     void EmitClearNativeContents(ILCodeStream* pslILEmit) override
     {
         WRAPPER_NO_CONTRACT;
-        ILCodeLabel* pNoManagedValueLabel = nullptr;
-        if (IsFieldMarshal(m_dwMarshalFlags))
-        {
-            pNoManagedValueLabel = pslILEmit->NewCodeLabel();
-            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
-            pslILEmit->EmitBRFALSE(pNoManagedValueLabel);
-        }
-
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearNativeContentsMethod());
-
-        if (IsFieldMarshal(m_dwMarshalFlags))
-        {
-            pslILEmit->EmitLabel(pNoManagedValueLabel);
-        }
     }
 
     bool NeedsClearCLR() override

@@ -10,7 +10,7 @@ namespace hello
     public class Class1
     {
         [Fact]
-        static public int TestEntryPoint()
+        static public void TestEntryPoint()
         {
             int i = 123;
             Console.WriteLine(i);
@@ -38,8 +38,6 @@ namespace hello
             incatch:
                 Console.WriteLine("end outer catch " + s);
             }
-
-            return 100;
         }
     }
 }

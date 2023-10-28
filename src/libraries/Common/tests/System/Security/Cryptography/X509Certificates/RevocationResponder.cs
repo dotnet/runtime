@@ -16,6 +16,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private static readonly bool s_traceEnabled =
             Environment.GetEnvironmentVariable("TRACE_REVOCATION_RESPONSE") != null;
 
+        private static readonly byte[] s_invalidResponse =
+            "<html><marquee>The server is down for maintenence.</marquee></html>"u8.ToArray();
+
         private readonly HttpListener _listener;
 
         private readonly Dictionary<string, CertificateAuthority> _aiaPaths =
@@ -29,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
         public string UriPrefix { get; }
 
-        public bool RespondEmpty { get; set; }
+        public RespondKind RespondKind { get; set; }
         public AiaResponseKind AiaResponseKind { get; set; }
 
         public TimeSpan ResponseDelay { get; set; }
@@ -183,7 +186,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     Thread.Sleep(ResponseDelay);
                 }
 
-                byte[] certData = RespondEmpty ? Array.Empty<byte>() : GetCertDataForAiaResponseKind(AiaResponseKind, authority);
+                byte[] certData = RespondKind switch
+                {
+                    RespondKind.Empty => Array.Empty<byte>(),
+                    RespondKind.Invalid => s_invalidResponse,
+                    _ => GetCertDataForAiaResponseKind(AiaResponseKind, authority),
+                };
 
                 responded = true;
                 context.Response.StatusCode = 200;
@@ -201,7 +209,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     Thread.Sleep(ResponseDelay);
                 }
 
-                byte[] crl = RespondEmpty ? Array.Empty<byte>() : authority.GetCrl();
+                byte[] crl = RespondKind switch
+                {
+                    RespondKind.Empty => Array.Empty<byte>(),
+                    RespondKind.Invalid => s_invalidResponse,
+                    _ => authority.GetCrl(),
+                };
 
                 responded = true;
                 context.Response.StatusCode = 200;
@@ -236,7 +249,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                             return;
                         }
 
-                        byte[] ocspResponse = RespondEmpty ? Array.Empty<byte>() : authority.BuildOcspResponse(certId, nonce);
+                        byte[] ocspResponse = RespondKind switch
+                        {
+                            RespondKind.Empty => Array.Empty<byte>(),
+                            RespondKind.Invalid => s_invalidResponse,
+                            _ => authority.BuildOcspResponse(certId, nonce),
+                        };
 
                         if (DelayedActions.HasFlag(DelayedActionsFlag.Ocsp))
                         {
@@ -309,7 +327,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
             else
             {
-                Assert.True(false, $"Unknown value AiaResponseKind.`{kind}`.");
+                Assert.Fail($"Unknown value AiaResponseKind.`{kind}`.");
                 return null;
             }
         }
@@ -327,7 +345,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
             else
             {
-                Assert.True(false, $"Unknown value AiaResponseKind.`{kind}`.");
+                Assert.Fail($"Unknown value AiaResponseKind.`{kind}`.");
                 return null;
             }
         }
@@ -467,5 +485,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
     {
         Cert = 0,
         Pkcs12 = 1,
+    }
+
+    public enum RespondKind
+    {
+        Normal = 0,
+        Empty = 1,
+        Invalid = 2,
     }
 }
