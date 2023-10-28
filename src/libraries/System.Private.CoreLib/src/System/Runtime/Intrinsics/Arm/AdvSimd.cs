@@ -9256,7 +9256,7 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         ///   A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
-        /// </summary>         
+        /// </summary>
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3, Vector64<byte> Value4) LoadVector64x4AndUnzip(byte* address) => LoadVector64x4AndUnzip(address);
 
         /// <summary>
