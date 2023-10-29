@@ -288,7 +288,6 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         private const int ERROR_CANCELLED = 1223;
         internal const int ERROR_DS_DRA_BAD_DN = 8439;
-        internal const int ERROR_DS_UNKNOWN_ERROR = 8431;
 
         //
         // This method maps some common COM Hresults to

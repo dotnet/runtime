@@ -111,6 +111,7 @@ internal static partial class Interop
         internal const int ERROR_NO_SITENAME = 0x77F;
         internal const int ERROR_NOT_A_REPARSE_POINT = 0x1126;
         internal const int ERROR_DS_NAME_UNPARSEABLE = 0x209E;
+        internal const int ERROR_DS_UNKNOWN_ERROR = 0x20EF;
         internal const int ERROR_DS_DRA_OUT_OF_MEM = 0x20FE;
         internal const int ERROR_DS_DRA_ACCESS_DENIED = 0x2105;
         internal const int DNS_ERROR_RCODE_NAME_ERROR = 0x232B;
