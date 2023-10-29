@@ -74,6 +74,7 @@ internal static partial class Interop
         internal const int ERROR_DDE_FAIL = 0x484;
         internal const int ERROR_DLL_NOT_FOUND = 0x485;
         internal const int ERROR_NOT_FOUND = 0x490;
+        internal const int ERROR_INVALID_DOMAINNAME = 0x4BC;
         internal const int ERROR_CANCELLED = 0x4C7;
         internal const int ERROR_NETWORK_UNREACHABLE = 0x4CF;
         internal const int ERROR_NON_ACCOUNT_SID = 0x4E9;

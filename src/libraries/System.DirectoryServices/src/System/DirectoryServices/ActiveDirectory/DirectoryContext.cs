@@ -232,7 +232,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             contextIsValid = true;
                         }
                     }
-                    else if (errorCode == NativeMethods.ERROR_INVALID_DOMAIN_NAME_FORMAT)
+                    else if (errorCode == Interop.Errors.ERROR_INVALID_DOMAINNAME)
                     {
                         // we can get this error if the target it server:port (not a valid domain)
                         contextIsValid = false;
@@ -281,7 +281,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         contextIsValid = true;
                     }
                 }
-                else if (errorCode == NativeMethods.ERROR_INVALID_DOMAIN_NAME_FORMAT)
+                else if (errorCode == Interop.Errors.ERROR_INVALID_DOMAINNAME)
                 {
                     // we can get this error if the target it server:port (not a valid forest)
                     contextIsValid = false;
@@ -326,7 +326,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         contextIsValid = true;
                     }
                 }
-                else if (errorCode == NativeMethods.ERROR_INVALID_DOMAIN_NAME_FORMAT)
+                else if (errorCode == Interop.Errors.ERROR_INVALID_DOMAINNAME)
                 {
                     // we can get this error if the target it server:port (not a valid application partition)
                     contextIsValid = false;

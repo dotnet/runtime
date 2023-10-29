@@ -273,7 +273,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private NativeMethods() { }
 
         internal const int VER_PLATFORM_WIN32_NT = 2;
-        internal const int ERROR_INVALID_DOMAIN_NAME_FORMAT = 1212;
         internal const int ERROR_NO_SUCH_DOMAIN = 1355;
         internal const int ERROR_NOT_ENOUGH_MEMORY = 8;
         internal const int ERROR_INVALID_FLAGS = 1004;
