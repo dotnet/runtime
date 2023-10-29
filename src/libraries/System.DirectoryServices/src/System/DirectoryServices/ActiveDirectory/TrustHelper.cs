@@ -26,7 +26,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int TRUST_TYPE_DOWNLEVEL = 0x00000001;
         internal const int TRUST_TYPE_UPLEVEL = 0x00000002;
         internal const int TRUST_TYPE_MIT = 0x00000003;
-        private const int ERROR_INVALID_LEVEL = 124;
         private const string PasswordCharacterSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+=[{]};:>|./?";
 
         internal static bool GetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, Interop.Advapi32.TRUST_ATTRIBUTE attribute, bool isForest)
@@ -401,7 +400,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                         else
                         {
-                            if (win32Error == ERROR_INVALID_LEVEL)
+                            if (win32Error == Interop.Errors.ERROR_INVALID_LEVEL)
                             {
                                 // it is pre-win2k SP3 dc that does not support NETLOGON_CONTROL_TC_VERIFY
                                 throw new NotSupportedException(SR.TrustVerificationNotSupport);
