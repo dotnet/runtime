@@ -286,8 +286,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static class ExceptionHelper
     {
-        private const int ERROR_CANCELLED = 1223;
-
         //
         // This method maps some common COM Hresults to
         // existing clr exceptions
@@ -427,7 +425,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string? source = Marshal.PtrToStringUni(error.pszSrcId);
                 string? target = Marshal.PtrToStringUni(error.pszSvrId);
 
-                if (error.dwWin32Err == ERROR_CANCELLED)
+                if (error.dwWin32Err == Interop.Errors.ERROR_CANCELLED)
                 {
                     // this is a special case. the failure is because user specifies SyncAllOptions.CheckServerAlivenessOnly, ignore it here
                     return null;
@@ -449,7 +447,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DS_REPSYNCALL_ERRINFO error = new DS_REPSYNCALL_ERRINFO();
                     Marshal.PtrToStructure(tempPtr, error);
                     // this is a special case. the failure is because user specifies SyncAllOptions.CheckServerAlivenessOnly, ignore it here
-                    if (error.dwWin32Err != ERROR_CANCELLED)
+                    if (error.dwWin32Err != Interop.Errors.ERROR_CANCELLED)
                     {
                         string message = GetErrorMessage(error.dwWin32Err, false);
                         string? source = Marshal.PtrToStringUni(error.pszSrcId);
