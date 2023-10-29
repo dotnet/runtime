@@ -287,7 +287,6 @@ namespace System.DirectoryServices.ActiveDirectory
     internal static class ExceptionHelper
     {
         private const int ERROR_CANCELLED = 1223;
-        internal const int ERROR_DS_DRA_BAD_DN = 8439;
 
         //
         // This method maps some common COM Hresults to
