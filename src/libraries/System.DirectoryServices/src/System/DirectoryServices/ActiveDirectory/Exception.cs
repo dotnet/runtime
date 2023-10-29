@@ -290,7 +290,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
         private const int ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
         private const int ERROR_DS_DRA_ACCESS_DENIED = 8453; // map to UnauthorizedAccessException
-        private const int RPC_S_OUT_OF_RESOURCES = 1721; // map to outofmemory exception
         internal const int RPC_S_SERVER_UNAVAILABLE = 1722; // map to ActiveDirectoryServerDownException
         internal const int RPC_S_CALL_FAILED = 1726; // map to ActiveDirectoryServerDownException
         private const int ERROR_CANCELLED = 1223;
@@ -399,7 +398,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 return new UnauthorizedAccessException(errorMsg);
 
-            else if ((errorCode == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY) || (errorCode == Interop.Errors.ERROR_OUTOFMEMORY) || (errorCode == ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == RPC_S_OUT_OF_RESOURCES))
+            else if ((errorCode == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY) || (errorCode == Interop.Errors.ERROR_OUTOFMEMORY) || (errorCode == ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == Interop.Errors.RPC_S_OUT_OF_RESOURCES))
 
                 return new OutOfMemoryException();
 
