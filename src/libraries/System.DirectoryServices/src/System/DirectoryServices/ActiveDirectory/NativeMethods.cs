@@ -274,7 +274,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal const int VER_PLATFORM_WIN32_NT = 2;
         internal const int DS_NAME_NO_ERROR = 0;
-        internal const int ERROR_NO_MORE_ITEMS = 259;
         internal const int ERROR_FILE_MARK_DETECTED = 1101;
         internal const int DNS_ERROR_RCODE_NAME_ERROR = 9003;
         internal const int ERROR_NO_SUCH_LOGON_SESSION = 1312;
