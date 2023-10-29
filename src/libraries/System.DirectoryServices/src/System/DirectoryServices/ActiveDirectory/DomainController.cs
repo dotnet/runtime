@@ -1276,7 +1276,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.PtrToStructure(currentItem, dsNameResultItem);
 
                         // check if the role owner is this dc
-                        if (dsNameResultItem.status == NativeMethods.DsNameNoError)
+                        if (dsNameResultItem.status == NativeMethods.DS_NAME_NO_ERROR)
                         {
                             if (dsNameResultItem.name!.Equals(NtdsaObjectName))
                             {

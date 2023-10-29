@@ -881,7 +881,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             DsNameResultItem dsNameResultItem = new DsNameResultItem();
 
                             Marshal.PtrToStructure(currentItem, dsNameResultItem);
-                            if (dsNameResultItem.status == NativeMethods.DsNameNoError)
+                            if (dsNameResultItem.status == NativeMethods.DS_NAME_NO_ERROR)
                             {
                                 string siteName = Utils.GetDNComponents(dsNameResultItem.name!)[0].Value!;
                                 // an existing site

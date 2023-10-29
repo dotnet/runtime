@@ -285,8 +285,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DsDomainControllerInfoLevel2 = 2;
         internal const int DsDomainControllerInfoLevel3 = 3;
 
-        internal const int DsNameNoError = 0;
-
         internal const int DnsSrvData = 33;
         internal const int DnsQueryBypassCache = 8;
 
