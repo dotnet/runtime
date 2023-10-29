@@ -20,12 +20,12 @@ namespace System.Net.NetworkInformation
         private SendOrPostCallback? _onPingCompletedDelegate;
         private byte[]? _defaultSendBuffer;
         private CancellationTokenSource? _timeoutOrCancellationSource;
-        // Used to differentiate between timeout and cancellation when _timeoutOrCancellationSource triggers
 
         // Thread safety:
         private const int Free = 0;
         private const int InProgress = 1;
         private new const int Disposed = 2;
+        // Used to differentiate between timeout and cancellation when _timeoutOrCancellationSource triggers
         private const int Cancelled = 3;
         private const int DisposeRequested = 4;
 
