@@ -600,7 +600,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         {
                             throw new OutOfMemoryException();
                         }
-                        else if ((result == 0) && (global::Interop.Advapi32.LsaNtStatusToWinError(protocolStatus) == NativeMethods.ERROR_NO_SUCH_LOGON_SESSION))
+                        else if ((result == 0) && (global::Interop.Advapi32.LsaNtStatusToWinError(protocolStatus) == Interop.Errors.ERROR_NO_SUCH_LOGON_SESSION))
                         {
                             // If this is a directory user, extract domain info from username
                             if (!Utils.IsSamUser())

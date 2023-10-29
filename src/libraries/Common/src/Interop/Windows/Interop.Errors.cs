@@ -82,6 +82,7 @@ internal static partial class Interop
         internal const int ERROR_NON_ACCOUNT_SID = 0x4E9;
         internal const int ERROR_NOT_ALL_ASSIGNED = 0x514;
         internal const int ERROR_UNKNOWN_REVISION = 0x519;
+        internal const int ERROR_NO_SUCH_LOGON_SESSION = 0x520;
         internal const int ERROR_INVALID_OWNER = 0x51B;
         internal const int ERROR_INVALID_PRIMARY_GROUP = 0x51C;
         internal const int ERROR_NO_SUCH_PRIVILEGE = 0x521;
