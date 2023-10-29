@@ -26,7 +26,7 @@ namespace System.Net.NetworkInformation
         private const int InProgress = 1;
         private new const int Disposed = 2;
         // Used to differentiate between timeout and cancellation when _timeoutOrCancellationSource triggers
-        private const int Cancelled = 3;
+        private const int Canceled = 3;
         private const int DisposeRequested = 4;
 
         private int _status = Free;
@@ -679,7 +679,7 @@ namespace System.Net.NetworkInformation
 
         private void SetCanceled()
         {
-            _status = Cancelled;
+            _status = Canceled;
             _timeoutOrCancellationSource?.Cancel();
         }
 
@@ -724,7 +724,7 @@ namespace System.Net.NetworkInformation
                 _timeoutOrCancellationSource.CancelAfter(timeout);
                 return await pingTask.ConfigureAwait(false);
             }
-            catch (Exception e) when (e is not PlatformNotSupportedException && !(e is OperationCanceledException && _status == Cancelled))
+            catch (Exception e) when (e is not PlatformNotSupportedException && !(e is OperationCanceledException && _status == Canceled))
             {
                 throw new PingException(SR.net_ping, e);
             }

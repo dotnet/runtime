@@ -327,7 +327,7 @@ namespace System.Net.NetworkInformation
             {
                 return CreatePingReply(IPStatus.PacketTooBig);
             }
-            catch (OperationCanceledException) when (_status != Cancelled)
+            catch (OperationCanceledException) when (_status != Canceled)
             {
             }
 
