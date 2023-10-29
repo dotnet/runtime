@@ -289,7 +289,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private const int ERROR_NOT_ENOUGH_MEMORY = 8; // map to outofmemory exception
         private const int ERROR_OUTOFMEMORY = 14; // map to outofmemory exception
         private const int ERROR_DS_DRA_OUT_OF_MEM = 8446;    // map to outofmemory exception
-        private const int ERROR_NO_SUCH_DOMAIN = 1355; // map to ActiveDirectoryServerDownException
         private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
         private const int ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
         private const int ERROR_DS_DRA_ACCESS_DENIED = 8453; // map to UnauthorizedAccessException
@@ -406,7 +405,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 return new OutOfMemoryException();
 
-            else if ((errorCode == ERROR_NO_LOGON_SERVERS) || (errorCode == ERROR_NO_SUCH_DOMAIN) || (errorCode == RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
+            else if ((errorCode == ERROR_NO_LOGON_SERVERS) || (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN) || (errorCode == RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
 
                 return new ActiveDirectoryServerDownException(errorMsg, errorCode, targetName);
 

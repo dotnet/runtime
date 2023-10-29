@@ -1003,7 +1003,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // call DsGetDcName
             errorCode = Locator.DsGetDcNameWrapper(null, domainName, siteName, (long)flag | (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
-            if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+            if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
             {
                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain, domainName), typeof(DomainController), null);
             }
@@ -1042,7 +1042,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 DomainControllerInfo domainControllerInfo;
                 int errorCode = Locator.DsGetDcNameWrapper(null, domainName ?? DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
-                if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     // return an empty collection
                     return new DomainControllerCollection(dcList);

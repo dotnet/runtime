@@ -93,7 +93,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     siteName = domainControllerInfo.ClientSiteName;
                 }
-                else if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                else if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     // return an empty collection
                     return dcs;

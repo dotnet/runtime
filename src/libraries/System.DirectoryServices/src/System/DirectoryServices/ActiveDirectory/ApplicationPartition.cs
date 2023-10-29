@@ -322,7 +322,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     errorCode = Locator.DsGetDcNameWrapper(null, appNCDnsName, null, (long)PrivateLocatorFlags.OnlyLDAPNeeded, out domainControllerInfo);
 
-                    if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                    if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                     {
                         throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ApplicationPartition), distinguishedName);
                     }
@@ -1188,7 +1188,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // call DsGetDcName
             errorCode = Locator.DsGetDcNameWrapper(null, _dnsName, siteName, (long)flag | (long)PrivateLocatorFlags.OnlyLDAPNeeded, out domainControllerInfo);
 
-            if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+            if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
             {
                 throw new ActiveDirectoryObjectNotFoundException(SR.ReplicaNotFound, typeof(DirectoryServer), null);
             }

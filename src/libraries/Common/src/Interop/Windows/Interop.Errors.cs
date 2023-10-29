@@ -90,6 +90,7 @@ internal static partial class Interop
         internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
         internal const int ERROR_CANT_OPEN_ANONYMOUS = 0x543;
         internal const int ERROR_NO_SECURITY_ON_OBJECT = 0x546;
+        internal const int ERROR_NO_SUCH_DOMAIN = 0x54B;
         internal const int ERROR_CANNOT_IMPERSONATE = 0x558;
         internal const int ERROR_CLASS_ALREADY_EXISTS = 0x582;
         internal const int ERROR_NO_SYSTEM_RESOURCES = 0x5AA;

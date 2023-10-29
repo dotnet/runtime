@@ -210,13 +210,13 @@ namespace System.DirectoryServices.ActiveDirectory
                     DomainControllerInfo domainControllerInfo;
                     errorCode = Locator.DsGetDcNameWrapper(null, tmpTarget, null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
-                    if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                    if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                     {
                         // try with force rediscovery
 
                         errorCode = Locator.DsGetDcNameWrapper(null, tmpTarget, null, (long)PrivateLocatorFlags.DirectoryServicesRequired | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
-                        if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                        if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                         {
                             contextIsValid = false;
                         }
@@ -259,13 +259,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 DomainControllerInfo domainControllerInfo;
                 errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)(PrivateLocatorFlags.GCRequired | PrivateLocatorFlags.DirectoryServicesRequired), out domainControllerInfo);
 
-                if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     // try with force rediscovery
 
                     errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)((PrivateLocatorFlags.GCRequired | PrivateLocatorFlags.DirectoryServicesRequired)) | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
-                    if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                    if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                     {
                         contextIsValid = false;
                     }
@@ -307,13 +307,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 DomainControllerInfo domainControllerInfo;
                 errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)PrivateLocatorFlags.OnlyLDAPNeeded, out domainControllerInfo);
 
-                if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     // try with force rediscovery
 
                     errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)PrivateLocatorFlags.OnlyLDAPNeeded | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
-                    if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                    if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                     {
                         contextIsValid = false;
                     }
@@ -475,7 +475,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             // if there is no forest associated with the logged on domain, then we return false
             //
-            else if (errorCode != NativeMethods.ERROR_NO_SUCH_DOMAIN)
+            else if (errorCode != Interop.Errors.ERROR_NO_SUCH_DOMAIN)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(errorCode);
             }
@@ -660,11 +660,11 @@ namespace System.DirectoryServices.ActiveDirectory
             // Locator.DsGetDcNameWrapper internally passes the ReturnDNSName flag when calling DsGetDcName
             //
             errorCode = Locator.DsGetDcNameWrapper(null, domainName, null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
-            if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+            if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
             {
                 // try again with force rediscovery
                 errorCode = Locator.DsGetDcNameWrapper(null, domainName, null, (long)((long)PrivateLocatorFlags.DirectoryServicesRequired | (long)LocatorOptions.ForceRediscovery), out domainControllerInfo);
-                if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     return null;
                 }
