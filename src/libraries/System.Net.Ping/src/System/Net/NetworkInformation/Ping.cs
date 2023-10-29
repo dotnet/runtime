@@ -18,16 +18,17 @@ namespace System.Net.NetworkInformation
 
         private readonly ManualResetEventSlim _lockObject = new ManualResetEventSlim(initialState: true); // doubles as the ability to wait on the current operation
         private SendOrPostCallback? _onPingCompletedDelegate;
-        private bool _disposeRequested;
         private byte[]? _defaultSendBuffer;
         private CancellationTokenSource? _timeoutOrCancellationSource;
         // Used to differentiate between timeout and cancellation when _timeoutOrCancellationSource triggers
-        private bool _canceled;
 
         // Thread safety:
         private const int Free = 0;
         private const int InProgress = 1;
         private new const int Disposed = 2;
+        private const int Cancelled = 3;
+        private const int DisposeRequested = 4;
+
         private int _status = Free;
 
         public Ping()
@@ -44,7 +45,7 @@ namespace System.Net.NetworkInformation
 
         private void CheckArgs(int timeout, byte[] buffer)
         {
-            ObjectDisposedException.ThrowIf(_disposeRequested, this);
+            ObjectDisposedException.ThrowIf(_status == DisposeRequested, this);
             ArgumentNullException.ThrowIfNull(buffer);
 
             if (buffer.Length > MaxBufferSize)
@@ -72,7 +73,7 @@ namespace System.Net.NetworkInformation
 
         private void CheckDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposeRequested, this);
+            ObjectDisposedException.ThrowIf(_status == DisposeRequested, this);
         }
 
         [MemberNotNull(nameof(_timeoutOrCancellationSource))]
@@ -85,7 +86,6 @@ namespace System.Net.NetworkInformation
                 if (currentStatus == Free)
                 {
                     _timeoutOrCancellationSource ??= new();
-                    _canceled = false;
                     _status = InProgress;
                     _lockObject.Reset();
                     return;
@@ -127,7 +127,7 @@ namespace System.Net.NetworkInformation
                 _lockObject.Set();
             }
 
-            if (_disposeRequested)
+            if (_status == DisposeRequested)
             {
                 InternalDispose();
             }
@@ -135,7 +135,7 @@ namespace System.Net.NetworkInformation
 
         private void InternalDispose()
         {
-            _disposeRequested = true;
+            _status = DisposeRequested;
 
             lock (_lockObject)
             {
@@ -679,7 +679,7 @@ namespace System.Net.NetworkInformation
 
         private void SetCanceled()
         {
-            _canceled = true;
+            _status = Cancelled;
             _timeoutOrCancellationSource?.Cancel();
         }
 
@@ -724,7 +724,7 @@ namespace System.Net.NetworkInformation
                 _timeoutOrCancellationSource.CancelAfter(timeout);
                 return await pingTask.ConfigureAwait(false);
             }
-            catch (Exception e) when (e is not PlatformNotSupportedException && !(e is OperationCanceledException && _canceled))
+            catch (Exception e) when (e is not PlatformNotSupportedException && !(e is OperationCanceledException && _status == Cancelled))
             {
                 throw new PingException(SR.net_ping, e);
             }
