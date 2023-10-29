@@ -92,7 +92,7 @@ namespace System.Net.NetworkInformation
                 {
                     pingProcess.Kill();
                 }
-                if (_canceled)
+                if (_status == Cancelled)
                 {
                     throw;
                 }
