@@ -118,7 +118,7 @@ namespace System.Net.NetworkInformation
         {
             lock (_lockObject)
             {
-                Debug.Assert(_status == InProgress, $"Invalid status: {_status}");
+                Debug.Assert(_status == InProgress || _status == Canceled, $"Invalid status: {_status}");
                 _status = Free;
                 if (!_timeoutOrCancellationSource!.TryReset())
                 {
