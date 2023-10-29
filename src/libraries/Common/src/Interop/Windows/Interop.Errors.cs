@@ -108,6 +108,7 @@ internal static partial class Interop
         internal const int ERROR_RESOURCE_TYPE_NOT_FOUND = 0x715;
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
         internal const int RPC_S_CALL_CANCELED = 0x71A;
+        internal const int ERROR_NO_SITENAME = 0x77F;
         internal const int ERROR_NOT_A_REPARSE_POINT = 0x1126;
         internal const int ERROR_DS_DRA_OUT_OF_MEM = 0x20FE;
         internal const int ERROR_DS_DRA_ACCESS_DENIED = 0x2105;

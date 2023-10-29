@@ -58,8 +58,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _SMTPBridgeRetrieved;
         private bool _RPCBridgeRetrieved;
 
-        private const int ERROR_NO_SITENAME = 1919;
-
         public static ActiveDirectorySite FindByName(DirectoryContext context, string siteName)
         {
             // find an existing site
@@ -200,7 +198,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (result != 0)
             {
                 // computer is not in a site
-                if (result == ERROR_NO_SITENAME)
+                if (result == Interop.Errors.ERROR_NO_SITENAME)
                     throw new ActiveDirectoryObjectNotFoundException(SR.NoCurrentSite, typeof(ActiveDirectorySite), null);
                 else
                     throw ExceptionHelper.GetExceptionFromErrorCode(result);
