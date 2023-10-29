@@ -128,7 +128,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateObject);
+            return RuntimeImports.RhGetRuntimeHelperForType(type.ToEETypePtr(), RuntimeHelperKind.AllocateObject);
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -435,20 +435,9 @@ namespace Internal.Runtime.Augments
             return true;
         }
 
-        private static RuntimeTypeHandle CreateRuntimeTypeHandle(EETypePtr eeType)
-        {
-            return new RuntimeTypeHandle(eeType);
-        }
-
-        private static EETypePtr CreateEETypePtr(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return runtimeTypeHandle.ToEETypePtr();
-        }
-
         public static int GetGCDescSize(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return RuntimeImports.RhGetGCDescSize(eeType);
+            return RuntimeImports.RhGetGCDescSize(typeHandle.ToEETypePtr());
         }
 
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
@@ -458,14 +447,12 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle GetInterface(RuntimeTypeHandle typeHandle, int index)
         {
-            EETypePtr eeInterface = typeHandle.ToEETypePtr().Interfaces[index];
-            return CreateRuntimeTypeHandle(eeInterface);
+            return new RuntimeTypeHandle(typeHandle.ToEETypePtr().Interfaces[index]);
         }
 
         public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
         {
-            EETypePtr eeInterfaceType = CreateEETypePtr(interfaceTypeHandle);
-            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(eeInterfaceType, slotNumber);
+            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(interfaceTypeHandle.ToEETypePtr(), slotNumber);
             if (cell == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return cell;
@@ -537,13 +524,13 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
         {
-            return RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot));
+            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToEETypePtr(), interfaceType.ToEETypePtr(), checked((ushort)slot));
         }
 
         public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
         {
             EETypePtr genericContextPtr = default;
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot), &genericContextPtr);
+            IntPtr result = RuntimeImports.RhResolveDispatchOnType(instanceType.ToEETypePtr(), interfaceType.ToEETypePtr(), checked((ushort)slot), &genericContextPtr);
             if (result != IntPtr.Zero)
                 genericContext = new RuntimeTypeHandle(genericContextPtr);
             else
@@ -553,7 +540,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr ResolveDispatch(object instance, RuntimeTypeHandle interfaceType, int slot)
         {
-            return RuntimeImports.RhResolveDispatch(instance, CreateEETypePtr(interfaceType), checked((ushort)slot));
+            return RuntimeImports.RhResolveDispatch(instance, interfaceType.ToEETypePtr(), checked((ushort)slot));
         }
 
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
