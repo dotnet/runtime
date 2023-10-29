@@ -401,11 +401,12 @@ namespace System.DirectoryServices
                 Interop.Activeds.ADsSetLastError(Interop.Errors.ERROR_SUCCESS, null, null);
             }
 
-            private unsafe int GetLastError(ref int errorCode)
+            private int GetLastError(ref int errorCode)
             {
-                char c1 = '\0', c2 = '\0';
+                Span<char> errorBuffer = Span<char>.Empty;
+                Span<char> nameBuffer = Span<char>.Empty;
                 errorCode = Interop.Errors.ERROR_SUCCESS;
-                return Interop.Activeds.ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
+                return Interop.Activeds.ADsGetLastError(out errorCode, errorBuffer, errorBuffer.Length, nameBuffer, nameBuffer.Length);
             }
         }
     }
