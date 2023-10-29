@@ -286,7 +286,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static class ExceptionHelper
     {
-        private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
         private const int ERROR_CANCELLED = 1223;
         internal const int ERROR_DS_DRA_BAD_DN = 8439;
         internal const int ERROR_DS_NAME_UNPARSEABLE = 8350;
@@ -389,7 +388,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             string errorMsg = GetErrorMessage(errorCode, false);
 
-            if ((errorCode == ERROR_ACCESS_DENIED) || (errorCode == Interop.Errors.ERROR_DS_DRA_ACCESS_DENIED))
+            if ((errorCode == Interop.Errors.ERROR_ACCESS_DENIED) || (errorCode == Interop.Errors.ERROR_DS_DRA_ACCESS_DENIED))
 
                 return new UnauthorizedAccessException(errorMsg);
 
