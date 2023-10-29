@@ -44,26 +44,10 @@ Usage:
 
         static bool IsDebug(string path)
         {
-            var asm = Assembly.LoadFrom(path);
-            object[] attribs = asm.GetCustomAttributes(typeof(DebuggableAttribute), false);
-
-            if (attribs.Length > 0)
-            {
-                return
-                    attribs.Any(x =>
-                    {
-                        DebuggableAttribute? debuggableAttribute = attribs[0] as DebuggableAttribute;
-                        if (debuggableAttribute != null)
-                        {
-                            return debuggableAttribute.IsJITOptimizerDisabled;
-                        }
-                        return false;
-                    });
-            }
-            else
-            {
-                return false;
-            }
+            return
+                Assembly.LoadFrom(path)
+                .GetCustomAttributes(typeof(DebuggableAttribute), false)
+                .OfType<DebuggableAttribute>().Any(x => x.IsJITOptimizerDisabled);
         }
 
         static bool IsExe(string path)
@@ -85,7 +69,8 @@ Usage:
         {
             if (args.Length == 0)
             {
-                Console.Error.WriteLine("Expected assembly file-path.");
+                Console.WriteLine(HelpText);
+                Console.Error.WriteLine("\nExpected assembly file-path.");
                 return 2;
             }
 
@@ -98,10 +83,7 @@ Usage:
 
             if (args.Length == 1)
             {
-                if (IsAssembly(args[0]))
-                    return 0;
-                else
-                    return 1;
+                return IsAssembly(args[0]) ? 0 : 1;
             }
 
             if (args.Length == 2)
@@ -110,29 +92,25 @@ Usage:
                 {
                     case "--is-debug":
                         {
-                            if (IsDebug(args[1]))
-                                return 0;
-                            else
-                                return 1;
+                            return IsDebug(args[1]) ? 0 : 1;
                         }
 
                     case "--is-exe":
                         {
-                            if (IsExe(args[1]))
-                                return 0;
-                            else
-                                return 1;
+                            return IsExe(args[1]) ? 0 : 1;
                         }
 
                     default:
                         {
-                            Console.Error.WriteLine("Invalid option.");
+                            Console.WriteLine(HelpText);
+                            Console.Error.WriteLine("\nInvalid option.");
                             return 2;
                         }
                 }
             }
 
-            Console.Error.WriteLine("Too many arguments.");
+            Console.WriteLine(HelpText);
+            Console.Error.WriteLine("\nToo many arguments.");
             return 2;
         }
     }
