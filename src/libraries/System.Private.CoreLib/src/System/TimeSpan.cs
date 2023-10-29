@@ -359,7 +359,7 @@ namespace System
             return Interval(value, TicksPerMillisecond);
         }
 
-        public static TimeSpan FromMilliseconds(long milliseconds) 
+        public static TimeSpan FromMilliseconds(long milliseconds)
         {
             return new TimeSpan(milliseconds * TicksPerMillisecond);
         }
