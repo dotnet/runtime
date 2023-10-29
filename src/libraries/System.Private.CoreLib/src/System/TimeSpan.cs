@@ -273,19 +273,19 @@ namespace System
 
         public static TimeSpan FromDays(int days)
         {
-            return Interval(days, TicksPerDay);
+            return new TimeSpan((long)days * TicksPerDay);
         }
 
         public static TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
         {
-            long totalTicks = (long)days * TicksPerDay 
-                            + (long)hours * TicksPerHour
-                            + minutes * TicksPerMinute
-                            + seconds * TicksPerSecond
-                            + milliseconds * TicksPerMillisecond
-                            + microseconds * TicksPerMicrosecond;
+            long totalTicks = (long)days * TicksPerDay
+                + (long)hours * TicksPerHour
+                + minutes * TicksPerMinute
+                + seconds * TicksPerSecond
+                + milliseconds * TicksPerMillisecond
+                + microseconds * TicksPerMicrosecond;
     
-            return IntervalFromLongTicks(totalTicks);
+            return new TimeSpan(totalTicks);
         }
 
         public TimeSpan Duration()
@@ -326,18 +326,18 @@ namespace System
 
         public static TimeSpan FromHours(int hours)
         {
-            return Interval(hours, TicksPerHour);
+            return new TimeSpan((long)hours * TicksPerHour);
         }
 
         public static TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
         {
             long totalTicks = (long)hours * TicksPerHour
-                            + minutes * TicksPerMinute
-                            + seconds * TicksPerSecond
-                            + milliseconds * TicksPerMillisecond
-                            + microseconds * TicksPerMicrosecond;
+                + minutes * TicksPerMinute
+                + seconds * TicksPerSecond
+                + milliseconds * TicksPerMillisecond
+                + microseconds * TicksPerMicrosecond;
     
-            return IntervalFromLongTicks(totalTicks);
+            return new TimeSpan(totalTicks);
         }
 
         private static TimeSpan Interval(double value, double scale)
@@ -345,11 +345,6 @@ namespace System
             if (double.IsNaN(value))
                 ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN();
             return IntervalFromDoubleTicks(value * scale);
-        }
-
-        private static TimeSpan Interval(long value, long scale)
-        {
-            return IntervalFromLongTicks(value * scale);
         }
 
         private static TimeSpan IntervalFromDoubleTicks(double ticks)
@@ -361,17 +356,6 @@ namespace System
             return new TimeSpan((long)ticks);
         }
 
-        private static TimeSpan IntervalFromLongTicks(long ticks)
-        {
-            if (ticks == long.MaxValue)
-                return MaxValue;
-
-            if (ticks == long.MinValue)
-                return MinValue;
-            
-            return new TimeSpan(ticks);
-        }
-
         public static TimeSpan FromMilliseconds(double value)
         {
             return Interval(value, TicksPerMillisecond);
@@ -379,15 +363,15 @@ namespace System
 
         public static TimeSpan FromMilliseconds(long milliseconds) 
         {
-            return Interval(milliseconds, TicksPerMillisecond);
+            return new TimeSpan(milliseconds * TicksPerMillisecond);
         }
 
         public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0)
         {
             long totalTicks = milliseconds * TicksPerMillisecond
-                            + microseconds * TicksPerMicrosecond;
+                + microseconds * TicksPerMicrosecond;
 
-            return IntervalFromLongTicks(totalTicks);
+            return new TimeSpan(totalTicks);
         }
 
         /// <summary>
@@ -417,7 +401,7 @@ namespace System
 
         public static TimeSpan FromMicroseconds(long microseconds)
         {
-            return Interval(microseconds, TicksPerMicrosecond);
+            return new TimeSpan(microseconds * TicksPerMicrosecond);
         }
 
         public static TimeSpan FromMinutes(double value)
@@ -427,17 +411,17 @@ namespace System
 
         public static TimeSpan FromMinutes(long minutes)
         {
-            return Interval(value, TicksPerMinute);
+            return new TimeSpan(minutes * TicksPerMinute);
         }
 
         public static TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0)
         {
             long totalTicks = minutes * TicksPerMinute
-                            + seconds * TicksPerSecond
-                            + milliseconds * TicksPerMillisecond
-                            + microseconds * TicksPerMicrosecond;
+                + seconds * TicksPerSecond
+                + milliseconds * TicksPerMillisecond
+                + microseconds * TicksPerMicrosecond;
 
-            return IntervalFromLongTicks(totalTicks);
+            return new TimeSpan(totalTicks);
         }
 
         public TimeSpan Negate()
@@ -454,16 +438,16 @@ namespace System
 
         public static TimeSpan FromSeconds(long seconds)
         {
-            return Interval(seconds, TicksPerSecond);
+            return new TimeSpan(seconds * TicksPerSecond);
         }
 
         public static TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0)
         {
             long totalTicks = seconds * TicksPerSecond
-                            + milliseconds * TicksPerMillisecond
-                            + microseconds * TicksPerMicrosecond;
+                + milliseconds * TicksPerMillisecond
+                + microseconds * TicksPerMicrosecond;
 
-            return IntervalFromLongTicks(totalTicks);
+            return new TimeSpan(totalTicks);
         }
 
         public TimeSpan Subtract(TimeSpan ts)
