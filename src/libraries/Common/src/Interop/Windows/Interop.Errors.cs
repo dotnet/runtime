@@ -63,6 +63,7 @@ internal static partial class Interop
         internal const int ERROR_OPERATION_ABORTED = 0x3E3;
         internal const int ERROR_IO_INCOMPLETE = 0x3E4;
         internal const int ERROR_IO_PENDING = 0x3E5;
+        internal const int ERROR_INVALID_FLAGS = 0x3EC;
         internal const int ERROR_NO_TOKEN = 0x3f0;
         internal const int ERROR_SERVICE_DOES_NOT_EXIST = 0x424;
         internal const int ERROR_EXCEPTION_IN_SERVICE = 0x428;

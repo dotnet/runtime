@@ -1008,7 +1008,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain, domainName), typeof(DomainController), null);
             }
             // this can only occur when flag is being explicitly passed (since the flags that we pass internally are valid)
-            if (errorCode == NativeMethods.ERROR_INVALID_FLAGS)
+            if (errorCode == Interop.Errors.ERROR_INVALID_FLAGS)
             {
                 throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
