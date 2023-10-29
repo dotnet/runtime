@@ -61,18 +61,18 @@ namespace System.Threading
         //
         // bit 0: True if the lock is held, false otherwise.
         //
-        // bit 1: True if we've set the event to wake a waiting thread.  The waiter resets this to false when it
-        //        wakes up.  This avoids the overhead of setting the event multiple times.
+        // bit 1: True if nonwaiters must not get ahead of waiters when acquiring a contended lock.
         //
-        // bit 2: True if nonwaiters must not get ahead of waiters when acquiring a contended lock.
+        // sign bit: True if we've set the event to wake a waiting thread.  The waiter resets this to false when it
+        //        wakes up.  This avoids the overhead of setting the event multiple times.
         //
         // everything else: A count of the number of threads waiting on the event.
         //
         private const uint Unlocked = 0;
         private const uint Locked = 1;
-        private const uint WaiterWoken = 2;
-        private const uint YieldToWaiters = 4;
-        private const uint WaiterCountIncrement = 8;
+        private const uint YieldToWaiters = 2;
+        private const uint WaiterCountIncrement = 4;
+        private const uint WaiterWoken = 1u << 31;
 
         private uint _state;
         private uint _recursionCount;
@@ -273,7 +273,7 @@ namespace System.Threading
             uint origState = _state;
             if ((origState & (YieldToWaiters | Locked)) == 0)
             {
-                uint newState = origState | Locked;
+                uint newState = origState + Locked;
                 if (Interlocked.CompareExchange(ref _state, newState, origState) == origState)
                 {
                     Debug.Assert(_owningThreadId == 0);
@@ -436,6 +436,11 @@ namespace System.Threading
                         if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
                         {
                             // GOT THE LOCK!!
+                            Debug.Assert((_state | Locked) != 0);
+                            Debug.Assert(_owningThreadId == 0);
+                            Debug.Assert(_recursionCount == 0);
+                            _owningThreadId = currentThreadId.Id;
+
                             if (hasWaited)
                                 _wakeWatchDog = 0;
 
@@ -458,11 +463,6 @@ namespace System.Threading
                                 // we can allow a bit more spinning.
                                 _spinCount = (short)(spinLimit + 1);
                             }
-
-                            Debug.Assert((_state | Locked) != 0);
-                            Debug.Assert(_owningThreadId == 0);
-                            Debug.Assert(_recursionCount == 0);
-                            _owningThreadId = currentThreadId.Id;
 
                             if (contentionTrackingStartedTicks != 0)
                                 LogContentionEnd(contentionTrackingStartedTicks);
@@ -573,7 +573,7 @@ namespace System.Threading
                 // If we are the last waiter though, we will clear WaiterWoken and YieldToWaiters
                 // just so that lock would not look like contended.
                 if (newState < WaiterCountIncrement)
-                    newState = newState & ~WaiterWoken & ~YieldToWaiters;
+                    newState &= ~(WaiterWoken | YieldToWaiters);
 
                 if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
                 {
@@ -690,7 +690,7 @@ namespace System.Threading
             Debug.Assert(_recursionCount == 0);
             _owningThreadId = 0;
             uint origState = Interlocked.Decrement(ref _state);
-            if (origState < WaiterCountIncrement || (origState & WaiterWoken) != 0)
+            if ((int)origState < (int)WaiterCountIncrement) // true if have no waiters or WaiterWoken is set
             {
                 return;
             }
@@ -708,7 +708,7 @@ namespace System.Threading
             while (true)
             {
                 uint oldState = _state;
-                if (oldState >= WaiterCountIncrement && (oldState & WaiterWoken) == 0)
+                if ((int)oldState >= (int)WaiterCountIncrement) // false is WaiterWoken is set
                 {
                     // there are waiters, and nobody has woken one.
                     uint newState = oldState | WaiterWoken;

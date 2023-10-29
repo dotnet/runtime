@@ -406,7 +406,7 @@ namespace System.Threading
                                     return -1;
                                 }
 
-                                // rare contention on owned lock,
+                                // rare contention on a lock that we own,
                                 // perhaps hashcode was installed or finalization bits were touched.
                                 // we still own the lock though and may be able to increment, try again
                                 continue;
@@ -423,12 +423,9 @@ namespace System.Threading
                     }
                 }
 
-                if (retries != 0)
-                {
-                    // spin a bit before retrying (1 spinwait is roughly 35 nsec)
-                    // the object is not pinned here
-                    Thread.SpinWaitInternal(i);
-                }
+                // spin a bit before retrying (1 spinwait is roughly 35 nsec)
+                // the object is not pinned here
+                Thread.SpinWaitInternal(i);
             }
 
             // owned by somebody else
