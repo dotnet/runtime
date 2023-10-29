@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -14,7 +15,7 @@ namespace System.Collections.Tests
         public static IEnumerable<object[]> TestDebuggerAttributes_DictionaryInputs()
         {
             yield return new object[] { new Dictionary<int, string>(), new KeyValuePair<string, string>[0] };
-            yield return new object[] { new Dictionary<int, string>().AsReadOnly(), new KeyValuePair<string, string>[0] };
+            yield return new object[] { new ReadOnlyDictionary<int,string>(new Dictionary<int, string>()), new KeyValuePair<string, string>[0] };
             yield return new object[] { new SortedDictionary<string, int>(), new KeyValuePair<string, string>[0] };
             yield return new object[] { new Hashtable(), new KeyValuePair<string, string>[0] };
             yield return new object[] { Hashtable.Synchronized(new Hashtable()), new KeyValuePair<string, string>[0] };
@@ -25,57 +26,57 @@ namespace System.Collections.Tests
             yield return new object[] { new Dictionary<int, string>{{1, "One"}, {2, "Two"}},
                 new KeyValuePair<string, string>[]
                 {
-                    KeyValuePair.Create("[1]", "\"One\""),
-                    KeyValuePair.Create("[2]", "\"Two\""),
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
                 }
             };
-            yield return new object[] { new Dictionary<int, string>{{1, "One"}, {2, "Two"}}.AsReadOnly(),
+            yield return new object[] { new ReadOnlyDictionary<int,string>(new Dictionary<int, string>{{1, "One"}, {2, "Two"}}),
                 new KeyValuePair<string, string>[]
                 {
-                    KeyValuePair.Create("[1]", "\"One\""),
-                    KeyValuePair.Create("[2]", "\"Two\""),
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
                 }
             };
             yield return new object[] { new SortedDictionary<string, int>{{"One", 1}, {"Two", 2}} ,
                 new KeyValuePair<string, string>[]
                 {
-                    KeyValuePair.Create("[\"One\"]", "1"),
-                    KeyValuePair.Create("[\"Two\"]", "2"),
+                    new ("[\"One\"]", "1"),
+                    new ("[\"Two\"]", "2"),
                 }
             };
             yield return new object[] { new Hashtable { { "a", 1 }, { "b", "B" } },
                 new KeyValuePair<string, string>[]
                 {
-                    KeyValuePair.Create("[\"a\"]", "1"),
-                    KeyValuePair.Create("[\"b\"]", "\"B\""),
+                    new ("[\"a\"]", "1"),
+                    new ("[\"b\"]", "\"B\""),
                 }
             };
             yield return new object[] { Hashtable.Synchronized(new Hashtable { { "a", 1 }, { "b", "B" } }),
                 new KeyValuePair<string, string>[]
                 {
-                    KeyValuePair.Create("[\"a\"]", "1"),
-                    KeyValuePair.Create("[\"b\"]", "\"B\""),
+                    new ("[\"a\"]", "1"),
+                    new ("[\"b\"]", "\"B\""),
                 }
             };
             yield return new object[] { new SortedList { { "a", 1 }, { "b", "B" } },
                 new KeyValuePair<string, string>[]
                 {
-                    KeyValuePair.Create("[\"a\"]", "1"),
-                    KeyValuePair.Create("[\"b\"]", "\"B\""),
+                    new ("[\"a\"]", "1"),
+                    new ("[\"b\"]", "\"B\""),
                 }
             };
             yield return new object[] { SortedList.Synchronized(new SortedList { { "a", 1 }, { "b", "B" } }),
                 new KeyValuePair<string, string>[]
                 {
-                    KeyValuePair.Create("[\"a\"]", "1"),
-                    KeyValuePair.Create("[\"b\"]", "\"B\""),
+                    new ("[\"a\"]", "1"),
+                    new ("[\"b\"]", "\"B\""),
                 }
             };
             yield return new object[] { new Exception { Data = { { "a", 1 }, { "b", "B" } } }.Data,
                 new KeyValuePair<string, string>[]
                 {
-                    KeyValuePair.Create("[\"a\"]", "1"),
-                    KeyValuePair.Create("[\"b\"]", "\"B\""),
+                    new ("[\"a\"]", "1"),
+                    new ("[\"b\"]", "\"B\""),
                 }
             };
         }
@@ -141,7 +142,7 @@ namespace System.Collections.Tests
             var itemArray = itemProperty.GetValue(info.Instance) as Array;
             var formatted = itemArray.Cast<object>()
                 .Select(DebuggerAttributes.ValidateFullyDebuggerDisplayReferences)
-                .Select(formattedResult => KeyValuePair.Create(formattedResult.Key, formattedResult.Value))
+                .Select(formattedResult => new KeyValuePair<string, string>(formattedResult.Key, formattedResult.Value))
                .ToList();
 
             CollectionAsserts.EqualUnordered((ICollection)expected, formatted);
