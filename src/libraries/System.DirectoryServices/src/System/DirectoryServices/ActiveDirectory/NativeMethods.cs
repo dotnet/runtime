@@ -274,7 +274,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal const int VER_PLATFORM_WIN32_NT = 2;
         internal const int DS_NAME_NO_ERROR = 0;
-        internal const int DNS_ERROR_RCODE_NAME_ERROR = 9003;
 
         internal const int DS_NAME_FLAG_SYNTACTICAL_ONLY = 1;
         internal const int DS_FQDN_1779_NAME = 1;

@@ -146,14 +146,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     result = Interop.Netapi32.DsGetDcNext(retGetDcContext, ref sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
 
-                    if (result != 0 && result != Interop.Errors.ERROR_FILEMARK_DETECTED && result != NativeMethods.DNS_ERROR_RCODE_NAME_ERROR && result != Interop.Errors.ERROR_NO_MORE_ITEMS)
+                    if (result != 0 && result != Interop.Errors.ERROR_FILEMARK_DETECTED && result != Interop.Errors.DNS_ERROR_RCODE_NAME_ERROR && result != Interop.Errors.ERROR_NO_MORE_ITEMS)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode(result);
                     }
 
                     while (result != Interop.Errors.ERROR_NO_MORE_ITEMS)
                     {
-                        if (result != Interop.Errors.ERROR_FILEMARK_DETECTED && result != NativeMethods.DNS_ERROR_RCODE_NAME_ERROR)
+                        if (result != Interop.Errors.ERROR_FILEMARK_DETECTED && result != Interop.Errors.DNS_ERROR_RCODE_NAME_ERROR)
                         {
                             try
                             {
@@ -176,7 +176,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
 
                         result = Interop.Netapi32.DsGetDcNext(retGetDcContext, ref sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
-                        if (result != 0 && result != Interop.Errors.ERROR_FILEMARK_DETECTED && result != NativeMethods.DNS_ERROR_RCODE_NAME_ERROR && result != Interop.Errors.ERROR_NO_MORE_ITEMS)
+                        if (result != 0 && result != Interop.Errors.ERROR_FILEMARK_DETECTED && result != Interop.Errors.DNS_ERROR_RCODE_NAME_ERROR && result != Interop.Errors.ERROR_NO_MORE_ITEMS)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(result);
                         }

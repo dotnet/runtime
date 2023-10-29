@@ -104,6 +104,7 @@ internal static partial class Interop
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
         internal const int RPC_S_CALL_CANCELED = 0x71A;
         internal const int ERROR_NOT_A_REPARSE_POINT = 0x1126;
+        internal const int DNS_ERROR_RCODE_NAME_ERROR = 0x232B;
         internal const int ERROR_EVT_QUERY_RESULT_STALE = 0x3AA3;
         internal const int ERROR_EVT_QUERY_RESULT_INVALID_POSITION = 0x3AA4;
         internal const int ERROR_EVT_INVALID_EVENT_DATA = 0x3A9D;
