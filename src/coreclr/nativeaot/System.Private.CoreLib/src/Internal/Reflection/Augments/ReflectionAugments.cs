@@ -35,6 +35,7 @@ namespace Internal.Reflection.Augments
         //
         public static void Initialize(ReflectionCoreCallbacks reflectionCoreCallbacks)
         {
+            Debug.Assert(s_reflectionCoreCallbacks == null);
             s_reflectionCoreCallbacks = reflectionCoreCallbacks;
         }
 

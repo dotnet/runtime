@@ -25,18 +25,8 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================================
     internal sealed class ReflectionExecutionDomainCallbacksImplementation : ReflectionExecutionDomainCallbacks
     {
-        public ReflectionExecutionDomainCallbacksImplementation(ExecutionDomain executionDomain, ExecutionEnvironmentImplementation executionEnvironment)
+        public ReflectionExecutionDomainCallbacksImplementation()
         {
-            _executionDomain = executionDomain;
-            _executionEnvironment = executionEnvironment;
-        }
-
-        //=======================================================================================
-        // Missing metadata exception support.
-        //=======================================================================================
-        public sealed override Exception CreateMissingMetadataException(Type pertainant)
-        {
-            return _executionDomain.CreateMissingMetadataException(pertainant);
         }
 
         public sealed override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
@@ -67,13 +57,5 @@ namespace Internal.Reflection.Execution
         {
             return DelegateMethodInfoRetriever.GetDelegateMethodInfo(del);
         }
-
-        public sealed override Exception GetExceptionForHR(int hr)
-        {
-            return Marshal.GetExceptionForHR(hr);
-        }
-
-        private ExecutionDomain _executionDomain;
-        private ExecutionEnvironmentImplementation _executionEnvironment;
     }
 }

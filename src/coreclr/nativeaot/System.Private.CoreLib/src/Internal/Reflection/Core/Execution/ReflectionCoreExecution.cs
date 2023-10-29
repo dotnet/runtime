@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
 
@@ -22,14 +23,11 @@ namespace Internal.Reflection.Core.Execution
         public static void InitializeExecutionDomain(ReflectionDomainSetup executionDomainSetup, ExecutionEnvironment executionEnvironment)
         {
             ExecutionDomain executionDomain = new ExecutionDomain(executionDomainSetup, executionEnvironment);
-            //@todo: This check has a race window but since this is a private api targeted by the toolchain, perhaps this is not so critical.
-            if (s_executionDomain != null)
-                throw new InvalidOperationException(); // Multiple Initializes not allowed.
+            Debug.Assert(s_executionDomain == null);
             s_executionDomain = executionDomain;
 
             ReflectionCoreCallbacks reflectionCallbacks = new ReflectionCoreCallbacksImplementation();
             ReflectionAugments.Initialize(reflectionCallbacks);
-            return;
         }
 
         public static ExecutionDomain ExecutionDomain

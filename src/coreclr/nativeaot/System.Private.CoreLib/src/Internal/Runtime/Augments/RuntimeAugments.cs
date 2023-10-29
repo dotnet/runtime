@@ -332,11 +332,6 @@ namespace Internal.Runtime.Augments
             ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
 
-        public static object GetEnumValue(Enum e)
-        {
-            return e.GetValue();
-        }
-
         public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
         {
             Debug.Assert(enumTypeHandle.ToEETypePtr().IsEnum);

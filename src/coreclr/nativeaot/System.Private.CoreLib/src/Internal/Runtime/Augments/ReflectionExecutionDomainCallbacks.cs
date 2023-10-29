@@ -27,14 +27,9 @@ namespace Internal.Runtime.Augments
     {
         public abstract IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle);
 
-        // Flotsam and jetsam.
-        public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
-
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
         public abstract Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle);
 
         public abstract MethodInfo GetDelegateMethod(Delegate del);
-
-        public abstract Exception GetExceptionForHR(int hr);
     }
 }
