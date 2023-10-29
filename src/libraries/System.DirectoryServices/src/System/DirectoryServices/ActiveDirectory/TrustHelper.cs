@@ -13,7 +13,6 @@ namespace System.DirectoryServices.ActiveDirectory
     internal static class TrustHelper
     {
         private const int STATUS_OBJECT_NAME_NOT_FOUND = 2;
-        internal const int ERROR_NOT_FOUND = 1168;
         internal const int NETLOGON_QUERY_LEVEL = 2;
         internal const int NETLOGON_CONTROL_REDISCOVER = 5;
         private const int NETLOGON_CONTROL_TC_VERIFY = 10;
