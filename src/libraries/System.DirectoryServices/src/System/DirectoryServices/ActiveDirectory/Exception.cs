@@ -286,7 +286,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static class ExceptionHelper
     {
-        private const int ERROR_OUTOFMEMORY = 14; // map to outofmemory exception
         private const int ERROR_DS_DRA_OUT_OF_MEM = 8446;    // map to outofmemory exception
         private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
         private const int ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
@@ -400,7 +399,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 return new UnauthorizedAccessException(errorMsg);
 
-            else if ((errorCode == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY) || (errorCode == ERROR_OUTOFMEMORY) || (errorCode == ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == RPC_S_OUT_OF_RESOURCES))
+            else if ((errorCode == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY) || (errorCode == Interop.Errors.ERROR_OUTOFMEMORY) || (errorCode == ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == RPC_S_OUT_OF_RESOURCES))
 
                 return new OutOfMemoryException();
 

@@ -14,6 +14,7 @@ internal static partial class Interop
         internal const int ERROR_INVALID_HANDLE = 0x6;
         internal const int ERROR_NOT_ENOUGH_MEMORY = 0x8;
         internal const int ERROR_INVALID_DATA = 0xD;
+        internal const int ERROR_OUTOFMEMORY = 0xE;
         internal const int ERROR_INVALID_DRIVE = 0xF;
         internal const int ERROR_NO_MORE_FILES = 0x12;
         internal const int ERROR_NOT_READY = 0x15;
