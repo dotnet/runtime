@@ -124,7 +124,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/93737", TestPlatforms.Linux)]
         [OuterLoop("Connects to external server")]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on BSD like OSes.")]
         [Theory]
@@ -138,6 +137,12 @@ namespace System.Net.Sockets.Tests
         [InlineData("[::ffff:1.1.1.1]", true, false)]
         public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns, bool owning)
         {
+            if (UsesSync && !PlatformDetection.IsWindows)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
+                return;
+            }
+
             // Aborting sync operations for non-owning handles is not supported on Unix.
             if (!owning && UsesSync && !PlatformDetection.IsWindows)
             {
