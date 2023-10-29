@@ -12,6 +12,7 @@ using System.Reflection.Runtime.MethodInfos;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Augments;
+using Internal.Runtime.Augments;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 using System.Threading;
@@ -81,7 +82,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (!typeHandle.IsNull())
                 {
                     RuntimeTypeHandle baseTypeHandle;
-                    if (ReflectionCoreExecution.ExecutionEnvironment.TryGetBaseType(typeHandle, out baseTypeHandle))
+                    if (RuntimeAugments.TryGetBaseType(typeHandle, out baseTypeHandle))
                         return Type.GetTypeFromHandle(baseTypeHandle);
                 }
 
@@ -192,11 +193,17 @@ namespace System.Reflection.Runtime.TypeInfos
             if (!(interfaceType is RuntimeType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
+            RuntimeTypeHandle typeHandle = TypeHandle;
             RuntimeTypeHandle interfaceTypeHandle = interfaceType.TypeHandle;
 
-            ReflectionCoreExecution.ExecutionEnvironment.VerifyInterfaceIsImplemented(TypeHandle, interfaceTypeHandle);
-            Debug.Assert(interfaceType.IsInterface);
-            Debug.Assert(!IsInterface);
+            if (RuntimeAugments.IsInterface(typeHandle))
+                throw new ArgumentException(SR.Argument_InterfaceMap);
+
+            if (!RuntimeAugments.IsInterface(interfaceTypeHandle))
+                throw new ArgumentException(SR.Arg_MustBeInterface);
+
+            if (!RuntimeAugments.IsAssignableFrom(interfaceTypeHandle, typeHandle))
+                throw new ArgumentException(SR.Arg_NotFoundIFace);
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // runtime magic. We don't have accurate interface maps for them.
@@ -305,7 +312,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (haveTypeHandles)
             {
                 // If both types have type handles, let MRT handle this. It's not dependent on metadata.
-                if (ReflectionCoreExecution.ExecutionEnvironment.IsAssignableFrom(toTypeHandle, fromTypeHandle))
+                if (RuntimeAugments.IsAssignableFrom(toTypeHandle, fromTypeHandle))
                     return true;
 
                 // Runtime IsAssignableFrom does not handle casts from generic type definitions: always returns false. For those, we fall through to the
@@ -757,7 +764,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     if (!typeHandle.IsNull())
                     {
                         RuntimeTypeHandle baseTypeHandle;
-                        if (ReflectionCoreExecution.ExecutionEnvironment.TryGetBaseType(typeHandle, out baseTypeHandle))
+                        if (RuntimeAugments.TryGetBaseType(typeHandle, out baseTypeHandle))
                             return Type.GetTypeFromHandle(baseTypeHandle);
                     }
 

@@ -28,10 +28,9 @@ namespace Internal.Reflection.Core.Execution
     [CLSCompliant(false)]
     public sealed class ExecutionDomain
     {
-        internal ExecutionDomain(ReflectionDomainSetup executionDomainSetup, ExecutionEnvironment executionEnvironment)
+        internal ExecutionDomain(ExecutionEnvironment executionEnvironment)
         {
             ExecutionEnvironment = executionEnvironment;
-            ReflectionDomainSetup = executionDomainSetup;
         }
 
         //
@@ -177,12 +176,12 @@ namespace Internal.Reflection.Core.Execution
         //=======================================================================================
         public Exception CreateMissingMetadataException(Type pertainant)
         {
-            return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
+            return this.ExecutionEnvironment.CreateMissingMetadataException(pertainant);
         }
 
         public Exception CreateNonInvokabilityException(MemberInfo pertainant)
         {
-            return this.ReflectionDomainSetup.CreateNonInvokabilityException(pertainant);
+            return this.ExecutionEnvironment.CreateNonInvokabilityException(pertainant);
         }
 
         //=======================================================================================
@@ -198,7 +197,5 @@ namespace Internal.Reflection.Core.Execution
                 || type == typeof(nint) || type == typeof(nuint);
 
         internal ExecutionEnvironment ExecutionEnvironment { get; }
-
-        internal ReflectionDomainSetup ReflectionDomainSetup { get; }
     }
 }

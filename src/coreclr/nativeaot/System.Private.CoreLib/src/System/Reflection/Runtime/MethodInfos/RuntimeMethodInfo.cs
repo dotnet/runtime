@@ -14,6 +14,7 @@ using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.BindingFlagSupport;
 
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
@@ -312,13 +313,12 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             Debug.Assert(runtimeDelegateType.IsDelegate);
 
-            ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
             RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
 
             // Make sure the return type is assignment-compatible.
             Type expectedReturnType = ReturnParameter.ParameterType;
             Type actualReturnType = invokeMethod.ReturnParameter.ParameterType;
-            if (!IsAssignableFrom(executionEnvironment, actualReturnType, expectedReturnType))
+            if (!IsAssignableFrom(actualReturnType, expectedReturnType))
                 return null;
             if (expectedReturnType.IsValueType && !actualReturnType.IsValueType)
             {
@@ -352,7 +352,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     isOpen = false;
                     if (!targetParameterEnumerator.MoveNext())
                         return null;
-                    if (target != null && !IsAssignableFrom(executionEnvironment, targetParameterEnumerator.Current.ParameterType, target.GetType()))
+                    if (target != null && !IsAssignableFrom(targetParameterEnumerator.Current.ParameterType, target.GetType()))
                         return null;
                 }
             }
@@ -364,7 +364,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     isOpen = false;
                     if (!allowClosed)
                         return null;
-                    if (target != null && !IsAssignableFrom(executionEnvironment, this.DeclaringType, target.GetType()))
+                    if (target != null && !IsAssignableFrom(this.DeclaringType, target.GetType()))
                         return null;
                 }
                 else
@@ -378,7 +378,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     if (firstParameterOfMethodType.IsValueType)
                         firstParameterOfMethodType = firstParameterOfMethodType.MakeByRefType();
 
-                    if (!IsAssignableFrom(executionEnvironment, firstParameterOfMethodType, delegateParameterEnumerator.Current.ParameterType))
+                    if (!IsAssignableFrom(firstParameterOfMethodType, delegateParameterEnumerator.Current.ParameterType))
                         return null;
                     if (target != null)
                         return null;
@@ -390,7 +390,7 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 if (!targetParameterEnumerator.MoveNext())
                     return null;
-                if (!IsAssignableFrom(executionEnvironment, targetParameterEnumerator.Current.ParameterType, delegateParameterEnumerator.Current.ParameterType))
+                if (!IsAssignableFrom(targetParameterEnumerator.Current.ParameterType, delegateParameterEnumerator.Current.ParameterType))
                     return null;
             }
             if (targetParameterEnumerator.MoveNext())
@@ -404,7 +404,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return MethodInvoker.CreateDelegate(delegateType.TypeHandle, target, isStatic: isStatic, isVirtual: false, isOpen: isOpen);
         }
 
-        private static bool IsAssignableFrom(ExecutionEnvironment executionEnvironment, Type dstType, Type srcType)
+        private static bool IsAssignableFrom(Type dstType, Type srcType)
         {
             // byref types do not have a TypeHandle so we must treat these separately.
             if (dstType.IsByRef && srcType.IsByRef)
@@ -421,7 +421,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
 
             // If assignment compatible in the normal way, allow
-            if (executionEnvironment.IsAssignableFrom(dstType.TypeHandle, srcType.TypeHandle))
+            if (RuntimeAugments.IsAssignableFrom(dstType.TypeHandle, srcType.TypeHandle))
             {
                 return true;
             }

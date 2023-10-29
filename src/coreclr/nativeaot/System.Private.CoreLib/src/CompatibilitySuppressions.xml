@@ -699,10 +699,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Reflection.Core.ReflectionDomainSetup</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Reflection.Extensions.NonPortable.CustomAttributeInheritanceRules</Target>
   </Suppression>
   <Suppression>

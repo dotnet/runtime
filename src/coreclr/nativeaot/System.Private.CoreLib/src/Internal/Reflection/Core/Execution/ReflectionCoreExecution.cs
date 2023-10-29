@@ -20,9 +20,9 @@ namespace Internal.Reflection.Core.Execution
         //
         // One time initialization to supply the information needed to initialize the execution environment.
         //
-        public static void InitializeExecutionDomain(ReflectionDomainSetup executionDomainSetup, ExecutionEnvironment executionEnvironment)
+        public static void InitializeExecutionDomain(ExecutionEnvironment executionEnvironment)
         {
-            ExecutionDomain executionDomain = new ExecutionDomain(executionDomainSetup, executionEnvironment);
+            ExecutionDomain executionDomain = new ExecutionDomain(executionEnvironment);
             Debug.Assert(s_executionDomain == null);
             s_executionDomain = executionDomain;
 

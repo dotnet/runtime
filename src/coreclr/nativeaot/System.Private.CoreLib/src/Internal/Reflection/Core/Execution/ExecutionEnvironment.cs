@@ -25,24 +25,9 @@ namespace Internal.Reflection.Core.Execution
     public abstract class ExecutionEnvironment
     {
         //==============================================================================================
-        // Access to the underlying execution engine's object allocation routines.
-        //==============================================================================================
-        public abstract Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count);
-        public abstract Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds);
-
-        //==============================================================================================
         // Execution engine policies.
         //==============================================================================================
 
-        //
-        // This returns a generic type with one generic parameter (representing the array element type)
-        // whose base type and interface list determines what TypeInfo.BaseType and TypeInfo.ImplementedInterfaces
-        // return for types that return true for IsArray.
-        //
-        public abstract RuntimeTypeHandle ProjectionTypeForArrays { get; }
-        public abstract bool IsAssignableFrom(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType);
-        public abstract bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle);
-        public abstract void VerifyInterfaceIsImplemented(RuntimeTypeHandle typeHandle, RuntimeTypeHandle ifaceHandle);
         public abstract void GetInterfaceMap(Type instanceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
 
         //==============================================================================================
@@ -92,6 +77,10 @@ namespace Internal.Reflection.Core.Execution
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
         public abstract void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags);
         public abstract IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker);
+
+        public abstract AssemblyBinder AssemblyBinder { get; }
+        public abstract Exception CreateMissingMetadataException(Type pertainant);
+        public abstract Exception CreateNonInvokabilityException(MemberInfo pertainant);
 
         //==============================================================================================
         // Non-public methods

@@ -11,6 +11,7 @@ using System.Reflection.Runtime.MethodInfos;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -77,7 +78,7 @@ namespace System.Reflection.Runtime.TypeInfos
                             {
                                 lengths[i] = (int)(args[i]);
                             }
-                            return ReflectionCoreExecution.ExecutionEnvironment.NewMultiDimArray(arrayType.TypeHandle, lengths, null);
+                            return RuntimeAugments.NewMultiDimArray(arrayType.TypeHandle, lengths, null);
                         }
                     );
                 }
@@ -153,7 +154,7 @@ namespace System.Reflection.Runtime.TypeInfos
                                 lowerBounds[i] = (int)(args[i * 2]);
                                 lengths[i] = (int)(args[i * 2 + 1]);
                             }
-                            return ReflectionCoreExecution.ExecutionEnvironment.NewMultiDimArray(arrayType.TypeHandle, lengths, lowerBounds);
+                            return RuntimeAugments.NewMultiDimArray(arrayType.TypeHandle, lengths, lowerBounds);
                         }
                     );
                 }
@@ -295,7 +296,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
+                RuntimeTypeHandle projectionTypeHandleForArrays = RuntimeAugments.ProjectionTypeForArrays;
                 RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetRuntimeTypeInfoForRuntimeTypeHandle();
                 return projectionRuntimeTypeForArrays;
             }
@@ -307,7 +308,7 @@ namespace System.Reflection.Runtime.TypeInfos
         private static Array CreateJaggedArray(RuntimeTypeInfo arrayType, int[] lengths, int index)
         {
             int length = lengths[index];
-            Array jaggedArray = ReflectionCoreExecution.ExecutionEnvironment.NewArray(arrayType.TypeHandle, length);
+            Array jaggedArray = RuntimeAugments.NewArray(arrayType.TypeHandle, length);
             if (index != lengths.Length - 1)
             {
                 for (int i = 0; i < length; i++)

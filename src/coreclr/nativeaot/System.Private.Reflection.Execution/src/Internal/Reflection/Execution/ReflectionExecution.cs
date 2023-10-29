@@ -48,8 +48,7 @@ namespace Internal.Reflection.Execution
         {
             // Initialize Reflection.Core's one and only ExecutionDomain.
             var executionEnvironment = new ExecutionEnvironmentImplementation();
-            var setup = new ReflectionDomainSetupImplementation();
-            ReflectionCoreExecution.InitializeExecutionDomain(setup, executionEnvironment);
+            ReflectionCoreExecution.InitializeExecutionDomain(executionEnvironment);
 
             // Initialize our two-way communication with System.Private.CoreLib.
             var runtimeCallbacks = new ReflectionExecutionDomainCallbacksImplementation();
