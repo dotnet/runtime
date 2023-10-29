@@ -288,7 +288,6 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
         private const int ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
-        private const int ERROR_DS_DRA_ACCESS_DENIED = 8453; // map to UnauthorizedAccessException
         internal const int RPC_S_SERVER_UNAVAILABLE = 1722; // map to ActiveDirectoryServerDownException
         internal const int RPC_S_CALL_FAILED = 1726; // map to ActiveDirectoryServerDownException
         private const int ERROR_CANCELLED = 1223;
@@ -393,7 +392,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             string errorMsg = GetErrorMessage(errorCode, false);
 
-            if ((errorCode == ERROR_ACCESS_DENIED) || (errorCode == ERROR_DS_DRA_ACCESS_DENIED))
+            if ((errorCode == ERROR_ACCESS_DENIED) || (errorCode == Interop.Errors.ERROR_DS_DRA_ACCESS_DENIED))
 
                 return new UnauthorizedAccessException(errorMsg);
 
