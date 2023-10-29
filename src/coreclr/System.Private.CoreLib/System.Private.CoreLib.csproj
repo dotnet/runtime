@@ -264,8 +264,8 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs">
       <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
-      <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
+      <Link>Common\System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
     </Compile>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
