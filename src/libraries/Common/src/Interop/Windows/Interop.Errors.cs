@@ -102,6 +102,7 @@ internal static partial class Interop
         internal const int ERROR_TIMEOUT = 0x5B4;
         internal const int ERROR_EVENTLOG_FILE_CHANGED = 0x5DF;
         internal const int RPC_S_OUT_OF_RESOURCES = 0x6B9;
+        internal const int RPC_S_SERVER_UNAVAILABLE = 0x6BA;
         internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
         internal const int ERROR_RESOURCE_TYPE_NOT_FOUND = 0x715;
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;

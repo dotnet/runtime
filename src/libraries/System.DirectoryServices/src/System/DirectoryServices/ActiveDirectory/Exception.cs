@@ -287,7 +287,6 @@ namespace System.DirectoryServices.ActiveDirectory
     internal static class ExceptionHelper
     {
         private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
-        internal const int RPC_S_SERVER_UNAVAILABLE = 1722; // map to ActiveDirectoryServerDownException
         internal const int RPC_S_CALL_FAILED = 1726; // map to ActiveDirectoryServerDownException
         private const int ERROR_CANCELLED = 1223;
         internal const int ERROR_DS_DRA_BAD_DN = 8439;
@@ -399,7 +398,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 return new OutOfMemoryException();
 
-            else if ((errorCode == Interop.Errors.ERROR_NO_LOGON_SERVERS) || (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN) || (errorCode == RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
+            else if ((errorCode == Interop.Errors.ERROR_NO_LOGON_SERVERS) || (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN) || (errorCode == Interop.Errors.RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
 
                 return new ActiveDirectoryServerDownException(errorMsg, errorCode, targetName);
 

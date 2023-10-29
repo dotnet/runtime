@@ -738,7 +738,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         string? serverDownName = null;
                         // this is the error returned when the server that we want to sync from is down
-                        if (result == ExceptionHelper.RPC_S_SERVER_UNAVAILABLE)
+                        if (result == Interop.Errors.RPC_S_SERVER_UNAVAILABLE)
                             serverDownName = sourceServer;
                         // this is the error returned when the server that we want to get synced is down
                         else if (result == ExceptionHelper.RPC_S_CALL_FAILED)
