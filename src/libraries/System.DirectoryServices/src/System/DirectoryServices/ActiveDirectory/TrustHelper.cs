@@ -26,7 +26,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int TRUST_TYPE_DOWNLEVEL = 0x00000001;
         internal const int TRUST_TYPE_UPLEVEL = 0x00000002;
         internal const int TRUST_TYPE_MIT = 0x00000003;
-        private const int ERROR_ALREADY_EXISTS = 183;
         private const int ERROR_INVALID_LEVEL = 124;
         private const string PasswordCharacterSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+=[{]};:>|./?";
 
@@ -530,7 +529,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (result != 0)
                     {
                         result = global::Interop.Advapi32.LsaNtStatusToWinError(result);
-                        if (result == ERROR_ALREADY_EXISTS)
+                        if (result == Interop.Errors.ERROR_ALREADY_EXISTS)
                         {
                             if (isForest)
                                 throw new ActiveDirectoryObjectExistsException(SR.Format(SR.AlreadyExistingForestTrust, sourceName, targetName));
