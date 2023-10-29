@@ -273,7 +273,7 @@ namespace System.Net.NetworkInformation
             {
                 lock (_lockObject)
                 {
-                    canceled = _canceled;
+                    canceled = _status == Canceled;
 
                     reply = CreatePingReply();
                 }
