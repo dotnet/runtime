@@ -354,7 +354,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // this is the case of meta data
                     if (type == (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_METADATA_2_FOR_OBJ)
                     {
-                        if (result == ExceptionHelper.ERROR_DS_DRA_BAD_DN || result == ExceptionHelper.ERROR_DS_NAME_UNPARSEABLE)
+                        if (result == ExceptionHelper.ERROR_DS_DRA_BAD_DN || result == Interop.Errors.ERROR_DS_NAME_UNPARSEABLE)
                             throw new ArgumentException(ExceptionHelper.GetErrorMessage(result, false), "objectPath");
 
                         DirectoryEntry verifyEntry = DirectoryEntryManager.GetDirectoryEntry(this.context, partition);
