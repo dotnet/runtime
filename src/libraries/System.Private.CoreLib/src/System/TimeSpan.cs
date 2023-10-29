@@ -284,7 +284,6 @@ namespace System
                 + seconds * TicksPerSecond
                 + milliseconds * TicksPerMillisecond
                 + microseconds * TicksPerMicrosecond;
-    
             return new TimeSpan(totalTicks);
         }
 
@@ -336,7 +335,6 @@ namespace System
                 + seconds * TicksPerSecond
                 + milliseconds * TicksPerMillisecond
                 + microseconds * TicksPerMicrosecond;
-    
             return new TimeSpan(totalTicks);
         }
 
@@ -370,7 +368,6 @@ namespace System
         {
             long totalTicks = milliseconds * TicksPerMillisecond
                 + microseconds * TicksPerMicrosecond;
-
             return new TimeSpan(totalTicks);
         }
 
@@ -420,7 +417,6 @@ namespace System
                 + seconds * TicksPerSecond
                 + milliseconds * TicksPerMillisecond
                 + microseconds * TicksPerMicrosecond;
-
             return new TimeSpan(totalTicks);
         }
 
@@ -446,7 +442,6 @@ namespace System
             long totalTicks = seconds * TicksPerSecond
                 + milliseconds * TicksPerMillisecond
                 + microseconds * TicksPerMicrosecond;
-
             return new TimeSpan(totalTicks);
         }
 
