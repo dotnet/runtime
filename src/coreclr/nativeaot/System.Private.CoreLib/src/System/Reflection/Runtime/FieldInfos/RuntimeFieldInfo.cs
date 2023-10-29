@@ -214,7 +214,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     {
                         _lazyFieldAccessor = fieldAccessor = TryGetFieldAccessor();
                         if (fieldAccessor == null)
-                            throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(this);
+                            throw ReflectionCoreExecution.ExecutionEnvironment.CreateNonInvokabilityException(this);
                     }
                 }
                 return fieldAccessor;

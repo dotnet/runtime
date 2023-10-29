@@ -40,55 +40,13 @@ namespace System
         private static bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
         private static bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private RuntimeTypeInfo CreateRuntimeTypeInfo()
         {
             if (IsReflectionDisabled)
                 throw new NotSupportedException(SR.Reflection_Disabled);
 
-            MethodTable* pEEType = _pUnderlyingEEType;
-            Debug.Assert(pEEType != null);
-
-            RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(pEEType);
-
-            RuntimeTypeInfo runtimeTypeInfo;
-
-            if (pEEType->IsDefType)
-            {
-                if (pEEType->IsGeneric)
-                {
-                    runtimeTypeInfo = ExecutionDomain.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
-                }
-                else
-                {
-                    runtimeTypeInfo = ReflectionCoreExecution.ExecutionDomain.GetNamedTypeForHandle(runtimeTypeHandle);
-                }
-            }
-            else if (pEEType->IsArray)
-            {
-                if (!pEEType->IsSzArray)
-                    runtimeTypeInfo = ExecutionDomain.GetMdArrayTypeForHandle(runtimeTypeHandle, pEEType->ArrayRank);
-                else
-                    runtimeTypeInfo = ExecutionDomain.GetArrayTypeForHandle(runtimeTypeHandle);
-            }
-            else if (pEEType->IsPointer)
-            {
-                runtimeTypeInfo = ExecutionDomain.GetPointerTypeForHandle(runtimeTypeHandle);
-            }
-            else if (pEEType->IsFunctionPointer)
-            {
-                runtimeTypeInfo = ExecutionDomain.GetFunctionPointerTypeForHandle(runtimeTypeHandle);
-            }
-            else if (pEEType->IsByRef)
-            {
-                runtimeTypeInfo = ExecutionDomain.GetByRefTypeForHandle(runtimeTypeHandle);
-            }
-            else
-            {
-                Debug.Fail("Invalid RuntimeTypeHandle");
-                throw new ArgumentException(SR.Arg_InvalidHandle);
-            }
-
-            return (_runtimeTypeInfo = runtimeTypeInfo);
+            return (_runtimeTypeInfo = ExecutionDomain.GetRuntimeTypeInfo(_pUnderlyingEEType));
         }
 
         public override string? GetEnumName(object value)

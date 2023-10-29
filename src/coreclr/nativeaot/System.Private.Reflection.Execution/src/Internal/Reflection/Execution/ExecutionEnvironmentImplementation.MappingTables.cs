@@ -40,17 +40,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        private static RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
-        {
-            if (RuntimeAugments.IsGenericType(typeHandle))
-            {
-                return RuntimeAugments.GetGenericInstantiation(typeHandle, out typeArgumentsHandles);
-            }
-
-            typeArgumentsHandles = null;
-            return typeHandle;
-        }
-
         private static RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
@@ -254,7 +243,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override MethodBaseInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            MethodBase methodInfo = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBase methodInfo = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
             // Validate constraints first. This is potentially useless work if the method already exists, but it prevents bad
             // inputs to reach the type loader (we don't have support to e.g. represent pointer types within the type loader)

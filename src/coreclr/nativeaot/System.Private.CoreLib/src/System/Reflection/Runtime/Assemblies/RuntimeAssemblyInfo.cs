@@ -276,7 +276,7 @@ namespace System.Reflection.Runtime.Assemblies
             // Important: The result of this method is the return value of the AppDomain.GetAssemblies() api so
             // so it must return a freshly allocated array on each call.
 
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.AssemblyBinder;
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
             IList<AssemblyBindResult> bindResults = binder.GetLoadedAssemblies();
             Assembly[] results = new Assembly[bindResults.Count];
             for (int i = 0; i < bindResults.Count; i++)

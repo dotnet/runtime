@@ -22,30 +22,21 @@ namespace Internal.Reflection.Core.Execution
         //
         public static void InitializeExecutionDomain(ExecutionEnvironment executionEnvironment)
         {
-            ExecutionDomain executionDomain = new ExecutionDomain(executionEnvironment);
-            Debug.Assert(s_executionDomain == null);
-            s_executionDomain = executionDomain;
+            Debug.Assert(s_executionEnvironment == null);
+            s_executionEnvironment = executionEnvironment;
 
             ReflectionCoreCallbacks reflectionCallbacks = new ReflectionCoreCallbacksImplementation();
             ReflectionAugments.Initialize(reflectionCallbacks);
-        }
-
-        public static ExecutionDomain ExecutionDomain
-        {
-            get
-            {
-                return s_executionDomain;
-            }
         }
 
         internal static ExecutionEnvironment ExecutionEnvironment
         {
             get
             {
-                return ExecutionDomain.ExecutionEnvironment;
+                return s_executionEnvironment;
             }
         }
 
-        private static volatile ExecutionDomain s_executionDomain;
+        private static volatile ExecutionEnvironment s_executionEnvironment;
     }
 }

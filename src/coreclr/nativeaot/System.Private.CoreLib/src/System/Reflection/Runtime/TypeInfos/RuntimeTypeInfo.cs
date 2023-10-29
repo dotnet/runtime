@@ -509,7 +509,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 // representation of the type is in the native metadata and there's no MethodTable at the runtime side.
                 // If you squint hard, this is a missing metadata situation - the metadata is missing on the runtime side - and
                 // the action for the user to take is the same: go mess with RD.XML.
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this.ToType());
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(this.ToType());
             }
         }
 
@@ -780,6 +780,15 @@ namespace System.Reflection.Runtime.TypeInfos
                     return baseType;
                 }
 
+                static bool IsPrimitiveType(Type type)
+                    => type == typeof(bool) || type == typeof(char)
+                    || type == typeof(sbyte) || type == typeof(byte)
+                    || type == typeof(short) || type == typeof(ushort)
+                    || type == typeof(int) || type == typeof(uint)
+                    || type == typeof(long) || type == typeof(ulong)
+                    || type == typeof(float) || type == typeof(double)
+                    || type == typeof(nint) || type == typeof(nuint);
+
                 if (_lazyClassification == 0)
                 {
                     TypeClassification classification = TypeClassification.Computed;
@@ -796,7 +805,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         if (baseType == valueType && this.ToType() != enumType)
                         {
                             classification |= TypeClassification.IsValueType;
-                            if (ExecutionDomain.IsPrimitiveType(this.ToType()))
+                            if (IsPrimitiveType(this.ToType()))
                                 classification |= TypeClassification.IsPrimitive;
                         }
                     }

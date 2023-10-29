@@ -200,7 +200,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                 memberInfo = attributeType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
 
             if (memberInfo == null)
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(attributeType);
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(attributeType);
 
             return new CustomAttributeNamedArgument(memberInfo, typedValue);
         }

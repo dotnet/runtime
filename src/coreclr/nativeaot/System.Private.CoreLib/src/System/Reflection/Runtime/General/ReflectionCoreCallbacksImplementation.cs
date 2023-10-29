@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.General
             if (!executionEnvironment.TryGetMethodFromHandle(runtimeMethodHandle, out declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
                 throw new ArgumentException(SR.Argument_InvalidHandle);
 
-            MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBase methodBase = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodBase.DeclaringType.IsConstructedGenericType)  // For compat with desktop, insist that the caller pass us the declaring type to resolve members of generic types.
                 throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric, methodBase));
             return methodBase;
@@ -97,7 +97,7 @@ namespace System.Reflection.Runtime.General
                         actualDeclaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle()));
             }
 
-            MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBase methodBase = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
             return methodBase;
         }
 
@@ -399,7 +399,7 @@ namespace System.Reflection.Runtime.General
             if (info != null)
                 return info;
 
-            ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle, out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
+            ReflectionCoreExecution.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle, out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
 
             // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
             // That codepath would bring functionality to compare everything that was ever allocated in the program.
@@ -439,7 +439,7 @@ namespace System.Reflection.Runtime.General
             RuntimeMethodInfo invokeMethod = runtimeType.GetInvokeMethod();
 
             MethodBaseInvoker methodInvoker = invokeMethod.MethodInvoker;
-            IntPtr invokeThunk = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker);
+            IntPtr invokeThunk = ReflectionCoreExecution.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker);
 
             info = new DynamicInvokeInfo(invokeMethod, invokeThunk);
             runtimeType.GenericCache = info;

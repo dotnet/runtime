@@ -40,7 +40,7 @@ namespace Internal.Reflection.Execution
             }
 
             // We don't use the type argument handles as we want the uninstantiated method info
-            return ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles: null);
+            return ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles: null);
         }
 
         public sealed override Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle)
