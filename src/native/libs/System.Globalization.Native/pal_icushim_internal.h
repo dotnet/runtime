@@ -23,6 +23,7 @@
 // available before the function pointers are declared below.
 #include <unicode/utypes.h>
 #if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
@@ -34,7 +35,6 @@
 #include <unicode/uidna.h>
 #include <unicode/uldnames.h>
 #include <unicode/ulocdata.h>
-#include <unicode/uloc.h>
 #include <unicode/unorm2.h>
 #include <unicode/unum.h>
 #include <unicode/ures.h>
@@ -42,6 +42,7 @@
 #include <unicode/utf16.h>
 #include <unicode/urename.h>
 #include <unicode/ustring.h>
+
 #endif
 #endif
 

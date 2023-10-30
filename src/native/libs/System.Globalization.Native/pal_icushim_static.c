@@ -10,6 +10,7 @@
 #include <unicode/putil.h>
 #include <unicode/uversion.h>
 #include <unicode/localpointer.h>
+
 #if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 #include <unicode/utrace.h>
 #endif
