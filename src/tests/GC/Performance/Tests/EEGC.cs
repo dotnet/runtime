@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
 namespace EEGC
 {
     using System;
@@ -29,8 +28,7 @@ namespace EEGC
             }
         }
 
-        [Fact]
-        public static void TestEntryPoint()
+        public static void Main()
         {
             Node root;
             Node longLivedTree;

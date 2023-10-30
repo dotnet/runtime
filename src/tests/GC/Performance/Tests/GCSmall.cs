@@ -3,16 +3,14 @@
 
 using System;
 using System.Diagnostics;
-using Xunit;
 
 
-public class GCSmall
+internal class GCSmall
 {
     internal int i;
     internal int j;
 
-    [Fact]
-    public static void TestEntryPoint() 
+    public static void Main() 
     {
         long iterations = 200000000;
         GCSmall ns = new GCSmall();

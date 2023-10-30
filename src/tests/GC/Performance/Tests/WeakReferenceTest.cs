@@ -20,17 +20,17 @@ class WeakReferenceTest
     static void Main(string[] args)
     {
         if (args.Length!=3)
-        {
-            Usage();
-            return;
-        }
+		{
+			Usage();
+			return;
+		}
         
         long iterations = 0;
         if (!long.TryParse(args[0], out iterations))
-        {
-            Usage();
-            return;
-        }
+		{
+			Usage();
+			return;
+		}
 
         bool alive = true;
         if (args[1].ToLower()=="dead")

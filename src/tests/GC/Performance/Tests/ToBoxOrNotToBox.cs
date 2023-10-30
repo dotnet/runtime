@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 namespace ToBoxOrNotToBox
 {
@@ -70,7 +69,7 @@ namespace ToBoxOrNotToBox
         }
     }
 
-    public class Program
+    class Program
     {
         static void PerfTest2(int count, int length)
         {            
@@ -108,8 +107,7 @@ namespace ToBoxOrNotToBox
 
         }
         
-        [Fact]
-        public static void TestEntryPoint()
+        static void Main()
         {
 
             const int baseCount = 2000000;

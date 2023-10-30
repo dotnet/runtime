@@ -4,7 +4,6 @@
 using System;
 using System.Text;
 using System.Threading;
-using Xunit;
 
 public class StringConcat
 {
@@ -24,8 +23,7 @@ public class StringConcat
     public static String s9 = "91234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     public static String s10 = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    [Fact]
-    public static void TestEntryPoint()
+    public static void Main()
     {
         string str = null;
 

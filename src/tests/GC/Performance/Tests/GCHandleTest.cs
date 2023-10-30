@@ -3,9 +3,8 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
-public class GCHandleTest
+class GCHandleTest
 {         
     // test variables
     private Object[] m_objectArray;
@@ -13,8 +12,7 @@ public class GCHandleTest
     private const int m_numGCHs = 50;
     private long m_numIters;
     
-    [Fact]
-    public static void TestEntryPoint()
+    static void Main()
     {
         long iterations    = 200;
     
