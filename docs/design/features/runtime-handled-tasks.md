@@ -150,7 +150,7 @@ Async2 methods will not be visible in reflection via the `Type.GetMethod`, `Type
 `Type.GetMemberWithSameMetadataDefinitionAs` will find the matching async variant method.
 
 
-## Implementation of Unwinder based async2 implementation
+## Implementation of Unwinder based async2 prototype
 
 The general design is to leverage the notion that a normal code generated function at a function call point is effectively a state machine. The index for resumption is the IP that returning to the function will set, and the stackframe + saved registers are the current state of the state machine. I believe we can achieve performance comparable to synchronous code with this scheme for non-suspended scenarios, and we may achieve acceptable overall performance as an async mechanism if suspension is relatively rare.
 
@@ -222,7 +222,274 @@ Once the `ResumptionFunc` has setup the global state to have the correct bits in
 3. The cost of GC while `Tasklet`s exist is dependent on the number of live `Tasklet` objects. This is almost certainly a fairly high cost. (under investigation)
 4. This approach allows development of async code which uses ref parameters/locals and ByRefLike structures. (confirmed)
 
-## Shared implementation between Unwinder and JIT focussed implementation of runtime tasks
+## Implementation of prototype based on JIT generated state machines
+
+In the second prototype we leave it up to the JIT to generate the state machines for async2 functions.
+When awaiting an async2 function from within an async2 function the JIT generates suspension code to capture the live state in a continuation.
+In addition, the JIT generates code for each of these suspension points to be able to resume from the continuation that was created.
+
+### Suspension
+
+Communicating suspension is done by returning a non-zero continuation, using a special calling convention.
+The continuation is a normal GC ref so special care must be taken within the JIT and within the VM to handle proper GC reporting of this return value.
+On x64, the continuation is always returned in `rcx`.
+
+When a callee suspends by returning a non-zero continuation the caller itself suspends by creating its own continuation and returning it.
+Additionally, the generated suspension code links the continuations into a linked list.
+
+`Continuation` is defined as a simple class in the BCL:
+```csharp
+internal sealed unsafe class Continuation
+{
+    public Continuation? Next;
+    public delegate*<Continuation, Continuation?> Resume;
+    public uint State;
+    public CorInfoContinuationFlags Flags;
+    public byte[]? Data;
+    public object[]? GCData;
+}
+```
+
+This incurs extra cost on every call to an async2 method in the form of a test for whether the returned continuation is non-zero.
+
+### Resumption
+
+In addition to returning a continuation async2 methods also accept a continuation as an additional parameter.
+The parameter follows the normal calling convention; it is added in the parameter list after the generic context, return buffer or `this` parameter (whichever comes last).
+
+Resuming an async2 method is done by passing a non-zero continuation.
+The continuation must have been created by the same exact native code version that is being resumed.
+
+Passing a zero continuation is the same as starting the state machine.
+The JIT will automatically generate code to pass a zero continuation when calling an async2 method.
+
+When the JIT generates code for an async2 function it requests the runtime to create a resumption stub.
+The suspension code stores the pointer to the resumption stub in the `Continuation.Resume` field.
+
+The resumption stub implements the following:
+1. It calls into the original function passing the non-zero continuation
+2. It passes default values for all arguments, to make sure that the callee has the expected stack frame set up
+3. If the function returns a value, it ensures that the return value is propagated into the next continuation.
+Continuations expect that the next continuation has allocated space for the return value in its `GCData[0]` field.
+Currently return values are always boxed when propagating from one continuation to the next continuation.
+4. If the function returned a new continuation (i.e. it suspended again), the resumption stub returns it back to the caller.
+
+In pseudo-C#:
+```csharp
+static async2 int Foo(int a, int b)
+{
+    ...
+}
+
+static Continuation? IL_STUB_AsyncResume_Foo(Continuation continuation)
+{
+    delegate*<Continuation, int, int, int> foo = &Foo;
+    int result = foo(continuation, 0, 0);
+    Continuation? newContinuation = StubHelpers.Async2CallContinuation();
+
+    if (newContinuation == null)
+    {
+        continuation.Next.GCData[0] = (object)result;
+    }
+
+    return newContinuation;
+}
+```
+
+### Intrinsics used for suspension/resumption
+
+To interact with the async2 calling convention the JIT/VM provides the following intrinsics:
+```csharp
+// Retrieve the continuation returned by an async2 function
+[Intrinsic]
+internal static Continuation? Async2CallContinuation() => null;
+
+// Suspend the current function by immediately returning with a specific non-zero continuation.
+[Intrinsic]
+private static void SuspendAsync2(Continuation continuation) => throw new UnreachableException();
+```
+
+These intrinsics are NOT used by user code, but they are used internally by the async1<->async2 adapter later, which will be described later.
+
+`Async2CallContinuation()` is also used by generated resumption stubs to capture the returned continuation.
+
+Since the continuation is a normal parameter no intrinsic is required to allow the resumption stub to pass the continuation to the target.
+Instead, the resumption stub calls the target by `calli` with a signature that includes the continuation, in the same way as IL instantiating stubs work.
+
+### Handling OSR
+
+There is additional complexity necessary to handle OSR correctly:
+1. OSR expects that the frame was set up by a tier-0 method so resumption directly in an OSR method is not possible.
+Instead, the JIT generates code in the tier0 version to check for an OSR continuation in which case the tier-0 method transitions immediately
+to the OSR method on resumption.
+The resumption stub created for an OSR method thus points to its corresponding tier-0 code version.
+This is currently implemented by storing a link between OSR methods and corresponding tier-0 methods in `PatchpointInfo`.
+2. When resuming in a tier-0 method, if we transition to the OSR method by normal means, the OSR method will see a non-zero continuation that belongs to the tier-0 method.
+The OSR method must ignore the continuation in this case.
+
+### Interop: the async1<->async2 adapter layer
+
+Thunks of the same shapes are provided as for the unwinding prototype.
+
+#### async2 -> async1
+
+The only way to actually begin suspension of a chain of async2 methods happens when calling into an async1 method that suspends.
+As described previously these boundaries are generally expected to be handled by Roslyn by IL codegen that involves a check for `IsCompleted` followed by a call into one of the two `AwaitAwaiterFromRuntimeAsync` variants in the asynchronous case, finally followed by a `GetResult` call.
+The runtime will automatically provide such a stub if an async1 method is called with an async2 signature.
+
+The implementation of `AwaitAwaiterFromRuntimeAsync` is provided by the BCL.
+For the JIT state machines prototype it looks as follows:
+
+```csharp
+private struct RuntimeAsyncAwaitState
+{
+    public Continuation? SentinelContinuation;
+    public INotifyCompletion? Notifier;
+}
+
+[ThreadStatic]
+private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
+
+public static async2 void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+{
+    ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+    Continuation? sentinelContinuation = state.SentinelContinuation;
+    if (sentinelContinuation == null)
+        state.SentinelContinuation = sentinelContinuation = new Continuation();
+
+    state.Notifier = awaiter;
+    SuspendAsync2(sentinelContinuation);
+}
+
+```
+
+The helper starts the suspension by allocating a continuation into TLS, and returning it back to the caller.
+This is going to result in the JIT codegen unwinding through all calling async2 functions and linking all continuations together.
+The end result will be a linked list of continuations where the head of the continuation is available through TLS.
+
+The state stored in TLS is acted on by the async1 -> async2 adapter.
+
+#### async1 -> async2
+The async1 -> async2 adapter, which allows calling an async2 function as if it returns a `Task`, is implemented in the following pseudo-C#:
+
+```csharp
+static Task<int> FooAdapter(int a, int b)
+{
+    int result;
+    Continuation? continuation = null;
+    try
+    {
+        delegate*<Continuation, int, int, int> foo = &Foo;
+        result = foo(null, a, b);
+        continuation = StubHelpers.Async2CallContinuation();
+    }
+    catch (Exception ex)
+    {
+        return Task.FromException<int>(ex);
+    }
+
+    if (continuation == null)
+        return Task.FromResult(result);
+
+    return FinalizeTaskReturningThunk<int>(continuation);
+}
+```
+(TODO: ExecutionContext, SynchronizationContext handling...)
+
+The interesting bit is what happens in the asynchronous case, where we ended up in the async2 -> async1 adapter described above, which stored the head of the continuation into TLS.
+This is handled inside `Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)`:
+
+```csharp
+private static Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)
+{
+    TaskCompletionSource<T> tcs = new();
+    ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+    object[] gcData = new object[3];
+    gcData[2] = tcs;
+    continuation.Next = new Continuation
+    {
+        Resume = &ResumeTaskCompletionSource<T>,
+        GCData = gcData,
+        Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION | CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA,
+    };
+
+    Continuation headContinuation = state.SentinelContinuation!.Next!;
+    state.Notifier!.OnCompleted(() => DispatchContinuations(headContinuation));
+    return tcs.Task;
+}
+
+private static Continuation? ResumeTaskCompletionSource<T>(Continuation continuation, Exception? exception)
+{
+    var tcs = (TaskCompletionSource<T>)continuation.GCData![2];
+    Exception ex = (Exception)continuation.GCData![1];
+    if (ex == null)
+    {
+        tcs.SetResult((T)continuation.GCData![0]);
+    }
+    else
+    {
+        tcs.SetException(ex);
+    }
+
+    return null;
+}
+```
+A synthetic continuation is linked to the end of the chain; when resumed, this continuation will trigger the returned `Task<T>` to be completed via the `TaskCompletionSource<T>`.
+With the entire continuation set up properly the `OnCompleted` method of the awaiter stored in TLS can be invoked; it queues a callback to the `DispatchContinuations` function with the head continuation retrieved through TLS.
+
+The final piece of the puzzle is what happens when the awaiter actually invokes the callback asynchronously.
+It delegates to `DispatchContinuations`, another function part of the BCL.
+This function repeatedly dispatches the next continuation by calling its resumption stub.
+It also accounts for potential exceptions thrown, and propagates it into the next relevant continuation.
+Finally, it handles the case where a resumed async2 function suspends again.
+
+```csharp
+private static unsafe void DispatchContinuations(Continuation? continuation)
+{
+    Debug.Assert(continuation != null);
+
+    while (true)
+    {
+        Continuation? newContinuation = null;
+        try
+        {
+            newContinuation = continuation.Resume(continuation);
+        }
+        catch (Exception ex)
+        {
+            continuation = UnwindToPossibleHandler(continuation);
+            continuation.GCData![(continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0 ? 1 : 0] = ex;
+            continue;
+        }
+
+        if (newContinuation != null)
+        {
+            newContinuation.Next = continuation.Next;
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation headContinuation = state.SentinelContinuation!.Next!;
+            state.Notifier!.OnCompleted(() => DispatchContinuations(headContinuation));
+            return;
+        }
+
+        continuation = continuation.Next;
+        if (continuation == null)
+            break;
+    }
+}
+
+private static Continuation UnwindToPossibleHandler(Continuation continuation)
+{
+    while (true)
+    {
+        Debug.Assert(continuation.Next != null);
+        continuation = continuation.Next;
+        if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+            return continuation;
+    }
+}
+```
+
+## Shared implementation between Unwinder and JIT focused implementation of runtime tasks
 
 It turns out that due to the api design of how async2 code interacts with the existing await pattern in IL, the thunk from async2 to existing Tasks and ValueTasks is the same for all designs.
 
