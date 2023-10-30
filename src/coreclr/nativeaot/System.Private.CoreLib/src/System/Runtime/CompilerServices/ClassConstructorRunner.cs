@@ -111,7 +111,7 @@ namespace System.Runtime.CompilerServices
                         cctors[cctorIndex].HoldingThread = ManagedThreadIdNone;
                         NoisyLog("Releasing cctor lock, context={0}, thread={1}", pContext, currentManagedThreadId);
 
-                        cctorLock.Release();
+                        cctorLock.Exit();
                     }
                 }
                 else
@@ -142,10 +142,10 @@ namespace System.Runtime.CompilerServices
             int cctorIndex = cctor.Index;
             Cctor[] cctors = cctor.Array;
             Lock lck = cctors[cctorIndex].Lock;
-            if (lck.IsAcquired)
+            if (lck.IsHeldByCurrentThread)
                 return false;     // Thread recursively triggered the same cctor.
 
-            if (lck.TryAcquire(waitIntervalInMS))
+            if (lck.TryEnter(waitIntervalInMS))
                 return true;
 
             // We couldn't acquire the lock. See if this .cctor is involved in a cross-thread deadlock.  If so, break
@@ -164,7 +164,7 @@ namespace System.Runtime.CompilerServices
                 // deadlock themselves, then that's a bug in user code.
                 for (;;)
                 {
-                    using (LockHolder.Hold(s_cctorGlobalLock))
+                    using (s_cctorGlobalLock.EnterScope())
                     {
                         // Ask the guy who holds the cctor lock we're trying to acquire who he's waiting for. Keep
                         // walking down that chain until we either discover a cycle or reach a non-blocking state. Note
@@ -233,7 +233,7 @@ namespace System.Runtime.CompilerServices
                         waitIntervalInMS *= 2;
 
                     // We didn't find a cycle yet, try to take the lock again.
-                    if (lck.TryAcquire(waitIntervalInMS))
+                    if (lck.TryEnter(waitIntervalInMS))
                         return true;
                 } // infinite loop
             }
@@ -283,7 +283,7 @@ namespace System.Runtime.CompilerServices
                 }
 #endif // TARGET_WASM
 
-                using (LockHolder.Hold(s_cctorGlobalLock))
+                using (s_cctorGlobalLock.EnterScope())
                 {
                     Cctor[]? resultArray = null;
                     int resultIndex = -1;
@@ -355,14 +355,14 @@ namespace System.Runtime.CompilerServices
             {
                 get
                 {
-                    Debug.Assert(s_cctorGlobalLock.IsAcquired);
+                    Debug.Assert(s_cctorGlobalLock.IsHeldByCurrentThread);
                     return s_count;
                 }
             }
 
             public static void Release(CctorHandle cctor)
             {
-                using (LockHolder.Hold(s_cctorGlobalLock))
+                using (s_cctorGlobalLock.EnterScope())
                 {
                     Cctor[] cctors = cctor.Array;
                     int cctorIndex = cctor.Index;
@@ -419,7 +419,7 @@ namespace System.Runtime.CompilerServices
 #else
                 const int Grow = 10;
 #endif
-                using (LockHolder.Hold(s_cctorGlobalLock))
+                using (s_cctorGlobalLock.EnterScope())
                 {
                     s_blockingRecords ??= new BlockingRecord[Grow];
                     int found;
@@ -450,14 +450,14 @@ namespace System.Runtime.CompilerServices
             public static void UnmarkThreadAsBlocked(int blockRecordIndex)
             {
                 // This method must never throw
-                s_cctorGlobalLock.Acquire();
+                s_cctorGlobalLock.Enter();
                 s_blockingRecords[blockRecordIndex].BlockedOn = new CctorHandle(null, 0);
-                s_cctorGlobalLock.Release();
+                s_cctorGlobalLock.Exit();
             }
 
             public static CctorHandle GetCctorThatThreadIsBlockedOn(int managedThreadId)
             {
-                Debug.Assert(s_cctorGlobalLock.IsAcquired);
+                Debug.Assert(s_cctorGlobalLock.IsHeldByCurrentThread);
                 for (int i = 0; i < s_nextBlockingRecordIndex; i++)
                 {
                     if (s_blockingRecords[i].ManagedThreadId == managedThreadId)

@@ -264,6 +264,7 @@
     <MSBuild Projects="@(ProjectReference)"
         Targets="CopyAllNativeProjectReferenceBinaries"
         Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+        SkipNonexistentTargets="true"
         BuildInParallel="true" />
   </Target>
 
@@ -507,7 +508,7 @@
 
     <ItemGroup>
       <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
     </ItemGroup>
   </Target>
 
@@ -592,6 +593,7 @@
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+  <Import Project="$(RepoRoot)eng/liveILLink.targets" />
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <Content Include="@(SanitizerRuntimeToCopy->'$(CoreCLRArtifactsPath)/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />

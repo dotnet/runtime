@@ -296,6 +296,10 @@
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.cs"
              Link="Common\Interop\Linux\Interop.ProcFsStat.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.ParseMapModules.cs"
@@ -317,6 +321,8 @@
              Link="Common\Interop\OSX\Interop.libproc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs"
              Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libSystem.cs"
+             Link="Common\Interop\OSX\Interop.Interop.libSystem.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>

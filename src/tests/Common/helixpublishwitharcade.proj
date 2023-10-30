@@ -215,7 +215,7 @@
            1) they are in LegacyPayloadsRootDirectory or
            2) they are grouped by XUnitWrapperGrouping. -->
       <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(LegacyPayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
-         <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunatelly, we can't do this right here. -->
+         <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunately, we can't do this right here. -->
          <PayloadGroup></PayloadGroup>
       </_XUnitWrapperDll>
 
@@ -412,9 +412,13 @@
       <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' == 'true'">%25HELIX_CORRELATION_PAYLOAD%25/</XUnitLogCheckerHelixPath>
       <XUnitLogCheckerHelixPath>$(XUnitLogCheckerHelixPath)XUnitLogChecker/</XUnitLogCheckerHelixPath>
 
-      <XUnitLogCheckerArgs>$(_MergedWrapperRunScriptDirectoryRelative) $(_MergedWrapperName)</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs>--results-path $(_MergedWrapperRunScriptDirectoryRelative)</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs>$(XUnitLogCheckerArgs) --test-wrapper $(_MergedWrapperName)</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs>$(XUnitLogCheckerArgs) --dumps-path</XUnitLogCheckerArgs>
+
       <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' != 'true'">$(XUnitLogCheckerArgs) %24HELIX_DUMP_FOLDER</XUnitLogCheckerArgs>
       <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' == 'true'">$(XUnitLogCheckerArgs) %25HELIX_DUMP_FOLDER%25</XUnitLogCheckerArgs>
+
       <XUnitLogCheckerCommand>dotnet $(XUnitLogCheckerHelixPath)XUnitLogChecker.dll $(XUnitLogCheckerArgs)</XUnitLogCheckerCommand>
     </PropertyGroup>
 
@@ -874,6 +878,11 @@
       </HelixWorkItem>
     </ItemGroup>
   </Target>
+
+  <!-- Adhoc-sign createdump so we can use it in our tests -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'osx'">
+    <HelixPreCommands>$(HelixPreCommands);codesign -s - -f --preserve-metadata=entitlements $HELIX_CORRELATION_PAYLOAD/createdump</HelixPreCommands>
+  </PropertyGroup>
 
   <PropertyGroup>
     <SigningCommand Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">

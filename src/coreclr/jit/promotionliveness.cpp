@@ -299,9 +299,9 @@ void PromotionLiveness::InterBlockLiveness()
     {
         changed = false;
 
-        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->bbPrev)
+        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->Prev())
         {
-            m_hasPossibleBackEdge |= block->bbNext && (block->bbNext->bbNum <= block->bbNum);
+            m_hasPossibleBackEdge |= !block->IsLast() && (block->Next()->bbNum <= block->bbNum);
             changed |= PerBlockLiveness(block);
         }
 

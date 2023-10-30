@@ -4,9 +4,10 @@
 #include "common.h"
 #include "configuration.h"
 #include "gcheaputilities.h"
-#include "gcenv.ee.h"
 #include "appdomain.hpp"
 
+#include "../gc/env/gcenv.ee.h"
+#include "../gc/env/gctoeeinterface.standalone.inl"
 
 // These globals are variables used within the GC and maintained
 // by the EE for use in write barriers. It is the responsibility

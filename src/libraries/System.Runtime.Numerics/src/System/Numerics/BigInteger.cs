@@ -22,10 +22,10 @@ namespace System.Numerics
           IBinaryInteger<BigInteger>,
           ISignedNumber<BigInteger>
     {
-        private const uint kuMaskHighBit = unchecked((uint)int.MinValue);
-        private const int kcbitUint = 32;
-        private const int kcbitUlong = 64;
-        private const int DecimalScaleFactorMask = 0x00FF0000;
+        internal const uint kuMaskHighBit = unchecked((uint)int.MinValue);
+        internal const int kcbitUint = 32;
+        internal const int kcbitUlong = 64;
+        internal const int DecimalScaleFactorMask = 0x00FF0000;
 
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
@@ -1130,19 +1130,7 @@ namespace System.Numerics
             AssertValid();
             other.AssertValid();
 
-            if (_sign != other._sign)
-                return false;
-            if (_bits == other._bits)
-                // _sign == other._sign && _bits == null && other._bits == null
-                return true;
-
-            if (_bits == null || other._bits == null)
-                return false;
-            int cu = _bits.Length;
-            if (cu != other._bits.Length)
-                return false;
-            int cuDiff = GetDiffLength(_bits, other._bits, cu);
-            return cuDiff == 0;
+            return _sign == other._sign && _bits.AsSpan().SequenceEqual(other._bits);
         }
 
         public int CompareTo(long other)

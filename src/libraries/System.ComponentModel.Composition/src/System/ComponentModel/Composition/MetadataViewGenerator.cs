@@ -65,7 +65,7 @@ namespace System.ComponentModel.Composition
         public const string MetadataItemValue       = "MetadataItemValue";
         public const string MetadataViewFactoryName = "Create";
 
-        private static readonly Lock _lock = new Lock();
+        private static readonly ReadWriteLock _lock = new ReadWriteLock();
         private static readonly Dictionary<Type, MetadataViewFactory> _metadataViewFactories = new Dictionary<Type, MetadataViewFactory>();
         private static readonly AssemblyName ProxyAssemblyName = new AssemblyName($"MetadataViewProxies_{Guid.NewGuid()}");
         private static ModuleBuilder? transparentProxyModuleBuilder;

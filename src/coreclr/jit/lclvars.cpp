@@ -259,9 +259,9 @@ void Compiler::lvaInitTypeRef()
     LclVarDsc*              varDsc    = varDscInfo.varDsc;
     CORINFO_ARG_LIST_HANDLE localsSig = info.compMethodInfo->locals.args;
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     compHasSplitParam = varDscInfo.hasSplitParam;
-#endif
+#endif // TARGET_ARM || TARGET_RISCV64
 
     for (unsigned i = 0; i < info.compMethodInfo->locals.numArgs;
          i++, varNum++, varDsc++, localsSig = info.compCompHnd->getArgNext(localsSig))
@@ -1043,6 +1043,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         varDscInfo->setAllRegArgUsed(argRegTypeInStruct1);
 #if FEATURE_FASTTAILCALL
                         varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
+#endif
+#ifdef TARGET_RISCV64
+                        varDscInfo->hasSplitParam = true;
 #endif
                     }
                 }
@@ -2388,6 +2391,11 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvIsOSRLocal        = varDsc->lvIsOSRLocal;
         fieldVarDsc->lvIsOSRExposedLocal = varDsc->lvIsOSRExposedLocal;
 
+        if (varDsc->IsSpan() && fieldVarDsc->lvFldOffset == OFFSETOF__CORINFO_Span__length)
+        {
+            fieldVarDsc->SetIsNeverNegative(true);
+        }
+
         // This new local may be the first time we've seen a long typed local.
         if (fieldVarDsc->lvType == TYP_LONG)
         {
@@ -2928,6 +2936,8 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             varDsc->lvStructDoubleAlign = 1;
         }
 #endif // not TARGET_64BIT
+
+        varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
         // GS checks require the stack to be re-ordered, which can't be done with EnC.
@@ -4014,7 +4024,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     /* Is this a call to unmanaged code ? */
     if (tree->IsCall() && compMethodRequiresPInvokeFrame())
     {
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             /* Get the special variable descriptor */
@@ -4246,7 +4256,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     // If we have direct pinvokes, verify the frame list root local was set up properly
     if (compMethodRequiresPInvokeFrame())
     {
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             noway_assert(info.compLvFrameListRoot >= info.compLocalsCount && info.compLvFrameListRoot < lvaCount);
@@ -7569,6 +7579,14 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" tier0-frame");
     }
+    if (varDsc->lvIsHoist)
+    {
+        printf(" hoist");
+    }
+    if (varDsc->lvIsMultiDefCSE)
+    {
+        printf(" multi-def");
+    }
 
 #ifndef TARGET_64BIT
     if (varDsc->lvStructDoubleAlign)
@@ -8050,7 +8068,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // TYP_BLK locals.
         // TODO-Cleanup: Can probably be removed now since TYP_BLK does not
         // exist anymore.
-        if (pComp->compMayConvertTailCallToLoop)
+        if (pComp->doesMethodHaveRecursiveTailcall())
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;

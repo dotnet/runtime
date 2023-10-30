@@ -379,21 +379,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (intrin.numOperands)
             {
                 case 1:
-                    if (intrin.op1->isContained())
-                    {
-                        assert(ins == INS_ld1);
-
-                        // Emit 'ldr target, [base, index]'
-                        GenTreeAddrMode* lea = intrin.op1->AsAddrMode();
-                        assert(lea->GetScale() == 1);
-                        assert(lea->Offset() == 0);
-                        GetEmitter()->emitIns_R_R_R(INS_ldr, emitSize, targetReg, lea->Base()->GetRegNum(),
-                                                    lea->Index()->GetRegNum());
-                    }
-                    else
-                    {
-                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
-                    }
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     break;
 
                 case 2:
@@ -728,6 +714,52 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            {
+                assert(isRMW);
+                unsigned fieldIdx = 0;
+                op2Reg            = intrin.op2->GetRegNum();
+                op3Reg            = intrin.op3->GetRegNum();
+                assert(intrin.op1->OperIsFieldList());
+
+                GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op1Reg                       = firstField->GetRegNum();
+
+                regNumber targetFieldReg = REG_NA;
+                regNumber op1FieldReg    = REG_NA;
+
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    GenTree* fieldNode = use.GetNode();
+
+                    targetFieldReg = node->GetRegByIndex(fieldIdx);
+                    op1FieldReg    = fieldNode->GetRegNum();
+
+                    if (targetFieldReg != op1FieldReg)
+                    {
+                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(fieldNode), targetFieldReg, op1FieldReg,
+                                                  /* canSkip */ true);
+                    }
+                    fieldIdx++;
+                }
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex);
+                }
+
+                break;
+            }
             case NI_AdvSimd_Arm64_LoadPairVector128:
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector64:

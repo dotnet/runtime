@@ -41,17 +41,12 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, host: RunHost.None)]
-        public void MonoAOTCross_WorksWithNoTrimming(BuildArgs buildArgs, string id)
+        public void AOTNotSupportedWithNoTrimming(BuildArgs buildArgs, string id)
         {
-            // stop once `mono-aot-cross` part of the build is done
-            string target = @"<Target Name=""StopAfterWasmAOT"" AfterTargets=""_WasmAotCompileApp"">
-                <Error Text=""Stopping after AOT"" Condition=""'$(WasmBuildingForNestedPublish)' == 'true'"" />
-            </Target>";
-
             string projectName = $"mono_aot_cross_{buildArgs.Config}_{buildArgs.AOT}";
 
-            buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:PublishTrimmed=false -v:n" };
-            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>", insertAtEnd: target);
+            buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:PublishTrimmed=false" };
+            buildArgs = ExpandBuildArgs(buildArgs);
 
             (_, string output) = BuildProject(
                                     buildArgs,
@@ -61,7 +56,7 @@ namespace Wasm.Build.Tests
                                         DotnetWasmFromRuntimePack: false,
                                         ExpectSuccess: false));
 
-            Assert.Contains("Stopping after AOT", output);
+            Assert.Contains("AOT is not supported without IL trimming", output);
         }
 
         [Theory]

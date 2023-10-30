@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 
@@ -48,6 +49,13 @@ namespace ILLink.Shared.TrimAnalysis
 			if (Location == null)
 				return;
 
+			Diagnostics.Add (CreateDiagnostic (id, actualValue, expectedAnnotationsValue, args));
+		}
+
+		private Diagnostic CreateDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
+		{
+			Debug.Assert (Location != null);
+
 			if (actualValue is NullableValueWithDynamicallyAccessedMembers nv)
 				actualValue = nv.UnderlyingTypeValue;
 
@@ -79,7 +87,7 @@ namespace ILLink.Shared.TrimAnalysis
 				sourceLocation = new Location[] { symbolLocation };
 			}
 
-			Diagnostics.Add (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, sourceLocation, DAMArgument?.ToImmutableDictionary (), args));
+			return Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, sourceLocation, DAMArgument?.ToImmutableDictionary (), args);
 		}
 	}
 }
