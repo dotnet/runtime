@@ -3,7 +3,6 @@
 
 
 using System;
-using Xunit;
 
 
 /************************************************************************************************************
@@ -368,8 +367,7 @@ namespace DefaultNamespace
 
     public class Test
     {
-        [Fact]
-        public static void TestEntryPoint()
+        public static int Main()
         {
             TestLibrary.Logging.WriteLine("Building Graph with 800 vertices...");
             Graph MyGraph = new Graph(800);  // graph with 800 nodes
@@ -388,6 +386,7 @@ namespace DefaultNamespace
 
             TestLibrary.Logging.WriteLine("Done");
             TestLibrary.Logging.WriteLine("Test Passed");
+            return 100;
         }
     }
 }

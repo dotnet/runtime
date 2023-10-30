@@ -7,11 +7,9 @@
 
 
 using System;
-using Xunit;
 public class Test
 {
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         int loop = 0;
         byte[] junk;

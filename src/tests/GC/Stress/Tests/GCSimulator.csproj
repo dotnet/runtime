@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-
-    <!-- These tests need explicit Main as they use command-line parameters to pass test characteristics. -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>    
-
+    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>

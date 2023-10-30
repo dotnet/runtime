@@ -4,12 +4,10 @@
 // Regression Test for Bug# 145842(Possible GC hole with byrefs into the large heap)
 
 using System;
-using Xunit;
-public class LargePinned
+internal class LargePinned
 {
     [System.Security.SecuritySafeCritical]
-    [Fact]
-    unsafe public static void TestEntryPoint()
+    unsafe public static int Main()
     {
         for (int i = 0; i < 25; i++)
         {
@@ -26,5 +24,6 @@ public class LargePinned
             TestLibrary.Logging.WriteLine("End of Loop: {0} \n", i);
         }
         TestLibrary.Logging.WriteLine("Test Passed\n");
+        return 100;
     }
 }

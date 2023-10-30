@@ -10,7 +10,6 @@
 
 using System;
 using System.Threading;
-using Xunit;
 
 internal class MyThread
 {
@@ -38,12 +37,11 @@ internal class MyThread
     }
 }
 
-public class B115557
+internal class B115557
 {
     private static int s_allocPerThreadMB = 120;
 
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         //check if total allocation size is not too much for x86
         //Allocate at most 1700MB on x86 to avoid the risk of getting OOM.
@@ -80,5 +78,6 @@ public class B115557
         }
 
         Console.WriteLine("PASSED");
+        return 100;
     }
 }

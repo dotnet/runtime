@@ -8,7 +8,6 @@
 
 
 using System;
-using Xunit;
 
 namespace LargeObjectTest
 {
@@ -49,8 +48,7 @@ namespace LargeObjectTest
     {
         public static int ExitCode = 1;
 
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             int size = 1;
             int loop = 1;

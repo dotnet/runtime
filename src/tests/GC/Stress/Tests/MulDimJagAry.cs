@@ -3,7 +3,6 @@
 
 
 using System;
-using Xunit;
 
 
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -19,10 +18,9 @@ namespace DefaultNamespace
     /*************************************************************/
 
 
-    public class MulDimJagAry
+    internal class MulDimJagAry
     {
-        [Fact]
-        public static void TestEntryPoint()
+        public static int Main()
         {
             int iDim1 = 100;
             int iDim2 = 100;
@@ -133,6 +131,9 @@ namespace DefaultNamespace
                 //    Console.WriteLine( "HeapSize after GC: "+ GC.GetTotalMemory(false) );
                 //}
             }
+
+
+            return 100;
         }
 
         public void SetThreeDimJagAry(Object[][][] oJag, int iDim1, int iDim2)

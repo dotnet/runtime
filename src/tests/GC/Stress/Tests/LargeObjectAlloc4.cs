@@ -6,11 +6,9 @@
 // fail after a few loops.
 
 using System;
-using Xunit;
 public class Test
 {
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         Int32 basesize;
         Int32[] largeobjarr;
