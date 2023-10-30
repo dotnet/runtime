@@ -378,9 +378,9 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>b4ed6a3093cfd3c8d353214ce97aaa7d24cf2df1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23528.2">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23530.1">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>2ead8441f1cc70ea93c9ce73dbb982e3736517cf</Sha>
+      <Sha>d2c0ee3b304fd04ab9c0128c5a8347edb72aeb1f</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23525.5">
