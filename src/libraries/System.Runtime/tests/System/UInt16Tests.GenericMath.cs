@@ -13,6 +13,15 @@ namespace System.Tests
         // IAdditionOperators
         //
 
+        private static ushort NaNConversionOverflowValue()
+        {
+            if(System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.RiscV64)
+            {
+                return (ushort)0xFFFF;
+            }
+            return (ushort)0x0000;
+        }
+
         [Fact]
         public static void op_AdditionTest()
         {
@@ -1571,7 +1580,7 @@ namespace System.Tests
             Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateSaturating<double>(double.MaxValue));
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateSaturating<double>(double.MinValue));
 
-            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateSaturating<double>(double.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<ushort>.CreateSaturating<double>(double.NaN));
         }
 
         [Fact]
@@ -1677,7 +1686,7 @@ namespace System.Tests
             Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateSaturating<NFloat>(NFloat.MaxValue));
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateSaturating<NFloat>(NFloat.MinValue));
 
-            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateSaturating<NFloat>(NFloat.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<ushort>.CreateSaturating<NFloat>(NFloat.NaN));
         }
 
         [Fact]
@@ -1711,7 +1720,7 @@ namespace System.Tests
             Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateSaturating<float>(float.MaxValue));
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateSaturating<float>(float.MinValue));
 
-            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateSaturating<float>(float.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<ushort>.CreateSaturating<float>(float.NaN));
         }
 
         [Fact]
@@ -1829,7 +1838,7 @@ namespace System.Tests
             Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateTruncating<double>(double.MaxValue));
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<double>(double.MinValue));
 
-            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<double>(double.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<ushort>.CreateTruncating<double>(double.NaN));
         }
 
         [Fact]
@@ -1850,7 +1859,7 @@ namespace System.Tests
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<Half>(Half.NegativeInfinity));
 
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<Half>(Half.MinValue));
-            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<Half>(Half.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<ushort>.CreateTruncating<Half>(Half.NaN));
         }
 
         [Fact]
@@ -1935,7 +1944,7 @@ namespace System.Tests
             Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateTruncating<NFloat>(NFloat.MaxValue));
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<NFloat>(NFloat.MinValue));
 
-            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<NFloat>(NFloat.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<ushort>.CreateTruncating<NFloat>(NFloat.NaN));
         }
 
         [Fact]
@@ -1969,7 +1978,7 @@ namespace System.Tests
             Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateTruncating<float>(float.MaxValue));
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<float>(float.MinValue));
 
-            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<float>(float.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<ushort>.CreateTruncating<float>(float.NaN));
         }
 
         [Fact]

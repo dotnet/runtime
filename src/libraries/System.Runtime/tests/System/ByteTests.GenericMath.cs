@@ -13,6 +13,15 @@ namespace System.Tests
         // IAdditionOperators
         //
 
+        private static byte NaNConversionOverflowValue()
+        {
+            if(System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.RiscV64)
+            {
+                return (byte)0xFF;
+            }
+            return (byte)0x00;
+        }
+
         [Fact]
         public static void op_AdditionTest()
         {
@@ -1571,7 +1580,7 @@ namespace System.Tests
             Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateSaturating<double>(double.MaxValue));
             Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<double>(double.MinValue));
                                      
-            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<double>(double.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<byte>.CreateSaturating<double>(double.NaN));
         }
 
         [Fact]
@@ -1595,7 +1604,7 @@ namespace System.Tests
             Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateSaturating<Half>(Half.MaxValue));
             Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<Half>(Half.MinValue));
 
-            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<Half>(Half.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<byte>.CreateSaturating<Half>(Half.NaN));
         }
 
         [Fact]
@@ -1680,7 +1689,7 @@ namespace System.Tests
             Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateSaturating<NFloat>(NFloat.MaxValue));
             Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<NFloat>(NFloat.MinValue));
 
-            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<NFloat>(NFloat.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<byte>.CreateSaturating<NFloat>(NFloat.NaN));
         }
 
         [Fact]
@@ -1714,7 +1723,7 @@ namespace System.Tests
             Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateSaturating<float>(float.MaxValue));
             Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<float>(float.MinValue));
 
-            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<float>(float.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<byte>.CreateSaturating<float>(float.NaN));
         }
 
         [Fact]
@@ -1831,7 +1840,7 @@ namespace System.Tests
             Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateTruncating<double>(double.MaxValue));
             Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<double>(double.MinValue));
 
-            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<double>(double.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<byte>.CreateTruncating<double>(double.NaN));
         }
 
         [Fact]
@@ -1855,7 +1864,7 @@ namespace System.Tests
             Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateTruncating<Half>(Half.MaxValue));
             Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<Half>(Half.MinValue));
 
-            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<Half>(Half.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<byte>.CreateTruncating<Half>(Half.NaN));
         }
 
         [Fact]
@@ -1940,7 +1949,7 @@ namespace System.Tests
             Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateTruncating<NFloat>(NFloat.MaxValue));
             Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<NFloat>(NFloat.MinValue));
 
-            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<NFloat>(NFloat.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<byte>.CreateTruncating<NFloat>(NFloat.NaN));
         }
 
         [Fact]
@@ -1974,7 +1983,7 @@ namespace System.Tests
             Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateTruncating<float>(float.MaxValue));
             Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<float>(float.MinValue));
 
-            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<float>(float.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<byte>.CreateTruncating<float>(float.NaN));
         }
 
         [Fact]

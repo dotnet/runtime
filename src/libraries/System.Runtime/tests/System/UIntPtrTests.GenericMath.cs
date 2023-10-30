@@ -13,6 +13,15 @@ namespace System.Tests
         // IAdditionOperators
         //
 
+        private static nuint NaNConversionOverflowValue()
+        {
+            if(System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.RiscV64)
+            {
+                return nuint.MaxValue;
+            }
+            return nuint.MinValue;
+        }
+
         [Fact]
         public static void op_AdditionTest()
         {
@@ -2220,7 +2229,7 @@ namespace System.Tests
             Assert.Equal(nuint.MaxValue, NumberBaseHelper<nuint>.CreateSaturating<double>(double.MaxValue));
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<double>(double.MinValue));
 
-            Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<double>(double.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<nuint>.CreateSaturating<double>(double.NaN));
         }
 
         [Fact]
@@ -2241,7 +2250,7 @@ namespace System.Tests
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<Half>(Half.NegativeInfinity));
 
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<Half>(Half.MinValue));
-            Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<Half>(Half.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<nuint>.CreateSaturating<Half>(Half.NaN));
         }
 
         [Fact]
@@ -2348,7 +2357,7 @@ namespace System.Tests
             Assert.Equal(nuint.MaxValue, NumberBaseHelper<nuint>.CreateSaturating<NFloat>(NFloat.MaxValue));
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<NFloat>(NFloat.MinValue));
 
-            Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<NFloat>(NFloat.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<nuint>.CreateSaturating<NFloat>(NFloat.NaN));
         }
 
         [Fact]
@@ -2393,7 +2402,7 @@ namespace System.Tests
             Assert.Equal(nuint.MaxValue, NumberBaseHelper<nuint>.CreateSaturating<float>(float.MaxValue));
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<float>(float.MinValue));
 
-            Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateSaturating<float>(float.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<nuint>.CreateSaturating<float>(float.NaN));
         }
 
         [Fact]
@@ -2532,7 +2541,7 @@ namespace System.Tests
             Assert.Equal(nuint.MaxValue, NumberBaseHelper<nuint>.CreateTruncating<double>(double.MaxValue));
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<double>(double.MinValue));
 
-            Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<double>(double.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<nuint>.CreateTruncating<double>(double.NaN));
         }
 
         [Fact]
@@ -2553,7 +2562,7 @@ namespace System.Tests
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<Half>(Half.NegativeInfinity));
 
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<Half>(Half.MinValue));
-            Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<Half>(Half.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<nuint>.CreateTruncating<Half>(Half.NaN));
         }
 
         [Fact]
@@ -2682,7 +2691,7 @@ namespace System.Tests
             Assert.Equal(nuint.MaxValue, NumberBaseHelper<nuint>.CreateTruncating<NFloat>(NFloat.MaxValue));
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<NFloat>(NFloat.MinValue));
 
-            Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<NFloat>(NFloat.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<nuint>.CreateTruncating<NFloat>(NFloat.NaN));
         }
 
         [Fact]
@@ -2738,7 +2747,7 @@ namespace System.Tests
             Assert.Equal(nuint.MaxValue, NumberBaseHelper<nuint>.CreateTruncating<float>(float.MaxValue));
             Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<float>(float.MinValue));
 
-            Assert.Equal(nuint.MinValue, NumberBaseHelper<nuint>.CreateTruncating<float>(float.NaN));
+            Assert.Equal(NaNConversionOverflowValue(), NumberBaseHelper<nuint>.CreateTruncating<float>(float.NaN));
         }
 
         [Fact]
