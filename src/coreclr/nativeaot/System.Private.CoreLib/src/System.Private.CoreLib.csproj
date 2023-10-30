@@ -3,6 +3,8 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
     <NoWarn>$(NoWarn);AD0001</NoWarn>
+    <!-- CA2252: Opt in to preview features before using them (Lock) -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
 
   <ItemGroup>
@@ -230,10 +232,9 @@
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Text\StringBuilder.NativeAot.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
-    <Compile Include="System\Threading\Lock.cs" />
+    <Compile Include="System\Threading\Lock.NativeAot.cs" />
     <Compile Include="System\Threading\Condition.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
-    <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\Monitor.NativeAot.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
@@ -303,9 +304,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
-      <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
