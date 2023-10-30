@@ -440,10 +440,12 @@ namespace System.Globalization
                     Interop.Globalization.InitOrdinalCasingPageNative(pageNumber, pTable);
                 }
                 else
-#endif
                 {
                     Interop.Globalization.InitOrdinalCasingPage(pageNumber, pTable);
                 }
+#else
+                Interop.Globalization.InitOrdinalCasingPage(pageNumber, pTable);
+#endif
             }
             Volatile.Write(ref s_casingTable[pageNumber], casingTable);
             return casingTable;
