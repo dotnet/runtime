@@ -18,31 +18,31 @@
 #if !defined(LOCAL_BUILD)
 #define U_DISABLE_RENAMING 1
 #endif
-#include <unicode/utypes.h>
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
-// #include <unicode/ucurr.h>
-// #include <unicode/ucal.h>
-// #include <unicode/uchar.h>
-// #include <unicode/ucol.h>
-// #include <unicode/udat.h>
-// #include <unicode/udata.h>
-// #include <unicode/udatpg.h>
-// #include <unicode/uenum.h>
-// #include <unicode/uidna.h>
-// #include <unicode/uldnames.h>
-//  #include <unicode/ulocdata.h>
-//  #include <unicode/uloc.h>
-// #include <unicode/unorm2.h>
-// #include <unicode/unum.h>
-// #include <unicode/ures.h>
-// #include <unicode/usearch.h>
-// #include <unicode/utf16.h>
-//#include <unicode/utypes.h>
-// #include <unicode/urename.h>
-// #include <unicode/ustring.h>
-
+#include <unicode/utypes.h>
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#include <unicode/ucurr.h>
+#include <unicode/ucal.h>
+#include <unicode/uchar.h>
+#include <unicode/ucol.h>
+#include <unicode/udat.h>
+#include <unicode/udata.h>
+#include <unicode/udatpg.h>
+#include <unicode/uenum.h>
+#include <unicode/uidna.h>
+#include <unicode/uldnames.h>
+#include <unicode/ulocdata.h>
+#include <unicode/uloc.h>
+#include <unicode/unorm2.h>
+#include <unicode/unum.h>
+#include <unicode/ures.h>
+#include <unicode/usearch.h>
+#include <unicode/utf16.h>
+#include <unicode/urename.h>
+#include <unicode/ustring.h>
+#endif
 #endif
 
 #elif defined(TARGET_WINDOWS)

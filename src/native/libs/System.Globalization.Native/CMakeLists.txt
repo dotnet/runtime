@@ -57,15 +57,19 @@ endif()
 include(configure.cmake)
 
 set(NATIVEGLOBALIZATION_SOURCES
-    #pal_calendarData.c
-    #pal_casing.c
-    #pal_collation.c
     pal_idna.c
-    #pal_locale.c
-    #pal_localeNumberData.c
-    #pal_localeStringData.c
-    #pal_normalization.c
 )
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    set(NATIVEGLOBALIZATION_SOURCES
+        pal_calendarData.c
+        pal_casing.c
+        pal_collation.c
+        pal_locale.c
+        pal_localeNumberData.c
+        pal_localeStringData.c
+        pal_normalization.c
+    )
+endif()
 
 #if (DEFINED CMAKE_ICU_DIR)
 #    include_directories(${CMAKE_ICU_DIR}/include)
@@ -110,9 +114,9 @@ if (CLR_CMAKE_TARGET_APPLE)
 endif()
 
 # time zone names are filtered out of icu data for the browser and associated functionality is disabled
-#if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
-#    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
-#endif()
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS) 
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
+endif()
 
 if (MSVC)
     set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
