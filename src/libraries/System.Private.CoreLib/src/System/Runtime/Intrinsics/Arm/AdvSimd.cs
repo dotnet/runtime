@@ -9270,7 +9270,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3, Vector64<short> Value4) LoadVector64x4AndUnzip(short* address) => LoadVector64x4AndUnzip(address);
 
         /// <summary>
-        ///   A64: LD1 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4h }, [Xn]
+        ///   A64: LD1 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]
         /// </summary>
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3, Vector64<ushort> Value4) LoadVector64x4AndUnzip(ushort* address) => LoadVector64x4AndUnzip(address);
 
