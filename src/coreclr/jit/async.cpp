@@ -482,16 +482,14 @@ void Async2Transformation::Transform(
 
     // Fill in 'Resume'
     GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned resumeOffset =
-        TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationResumeFldHnd);
-    GenTree* resumeStubAddr = CreateResumptionStubAddrTree();
-    GenTree* storeResume    = StoreAtOffset(newContinuation, resumeOffset, resumeStubAddr);
+    unsigned resumeOffset    = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationResumeFldHnd);
+    GenTree* resumeStubAddr  = CreateResumptionStubAddrTree();
+    GenTree* storeResume     = StoreAtOffset(newContinuation, resumeOffset, resumeStubAddr);
     LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResume));
 
     // Fill in 'state'
-    newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned stateOffset =
-        TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
+    newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    unsigned stateOffset  = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
     GenTree* stateNumNode = m_comp->gtNewIconNode((ssize_t)stateNum, TYP_I_IMPL);
     GenTree* store        = StoreAtOffset(newContinuation, stateOffset, stateNumNode);
     LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
@@ -501,10 +499,9 @@ void Async2Transformation::Transform(
     {
         unsigned objectArrLclNum = GetGCDataArrayVar();
 
-        newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-        unsigned gcDataOffset =
-            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
-        GenTree* gcDataInd             = LoadFromOffset(newContinuation, gcDataOffset, TYP_REF);
+        newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        unsigned gcDataOffset = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
+        GenTree* gcDataInd    = LoadFromOffset(newContinuation, gcDataOffset, TYP_REF);
         GenTree* storeAllocedObjectArr = m_comp->gtNewStoreLclVarNode(objectArrLclNum, gcDataInd);
         LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedObjectArr));
 
@@ -584,9 +581,8 @@ void Async2Transformation::Transform(
     {
         unsigned byteArrLclNum = GetDataArrayVar();
 
-        GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-        unsigned dataOffset =
-            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
+        GenTree* newContinuation     = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        unsigned dataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
         GenTree* dataOffsetNode      = m_comp->gtNewIconNode((ssize_t)dataOffset, TYP_I_IMPL);
         GenTree* dataAddr            = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, dataOffsetNode);
         GenTree* dataInd             = m_comp->gtNewIndir(TYP_REF, dataAddr, GTF_IND_NONFAULTING);
@@ -676,9 +672,8 @@ void Async2Transformation::Transform(
     {
         unsigned byteArrLclNum = GetDataArrayVar();
 
-        GenTree* newContinuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned dataOffset =
-            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
+        GenTree* newContinuation     = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned dataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
         GenTree* dataOffsetNode      = m_comp->gtNewIconNode((ssize_t)dataOffset, TYP_I_IMPL);
         GenTree* dataAddr            = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, dataOffsetNode);
         GenTree* dataInd             = m_comp->gtNewIndir(TYP_REF, dataAddr, GTF_IND_NONFAULTING);
@@ -732,12 +727,11 @@ void Async2Transformation::Transform(
     {
         unsigned objectArrLclNum = GetGCDataArrayVar();
 
-        newContinuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned gcDataOffset =
-            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
-        GenTree* gcDataOffsetNode      = m_comp->gtNewIconNode((ssize_t)gcDataOffset, TYP_I_IMPL);
-        GenTree* gcDataAddr            = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, gcDataOffsetNode);
-        GenTree* gcDataInd             = m_comp->gtNewIndir(TYP_REF, gcDataAddr, GTF_IND_NONFAULTING);
+        newContinuation           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned gcDataOffset     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
+        GenTree* gcDataOffsetNode = m_comp->gtNewIconNode((ssize_t)gcDataOffset, TYP_I_IMPL);
+        GenTree* gcDataAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, gcDataOffsetNode);
+        GenTree* gcDataInd        = m_comp->gtNewIndir(TYP_REF, gcDataAddr, GTF_IND_NONFAULTING);
         GenTree* storeAllocedObjectArr = m_comp->gtNewStoreLclVarNode(objectArrLclNum, gcDataInd);
         LIR::AsRange(resumeBB).InsertAtEnd(newContinuation, gcDataOffsetNode, gcDataAddr, gcDataInd,
                                            storeAllocedObjectArr);
@@ -1063,9 +1057,8 @@ void Async2Transformation::CreateResumptionSwitch()
         m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
         m_comp->fgAddRefPred(m_resumptionBBs[1], condBB);
 
-        continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned stateOffset =
-            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
+        continuationArg          = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned stateOffset     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
         GenTree* stateOffsetNode = m_comp->gtNewIconNode((ssize_t)stateOffset, TYP_I_IMPL);
         GenTree* stateAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, continuationArg, stateOffsetNode);
         GenTree* stateInd        = m_comp->gtNewIndir(TYP_INT, stateAddr, GTF_IND_NONFAULTING);
@@ -1086,9 +1079,8 @@ void Async2Transformation::CreateResumptionSwitch()
 
         m_comp->fgAddRefPred(switchBB, newEntryBB);
 
-        continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned stateOffset =
-            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
+        continuationArg          = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned stateOffset     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
         GenTree* stateOffsetNode = m_comp->gtNewIconNode((ssize_t)stateOffset, TYP_I_IMPL);
         GenTree* stateAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, continuationArg, stateOffsetNode);
         GenTree* stateInd        = m_comp->gtNewIndir(TYP_INT, stateAddr, GTF_IND_NONFAULTING);
@@ -1127,9 +1119,8 @@ void Async2Transformation::CreateResumptionSwitch()
         m_comp->fgAddRefPred(checkILOffsetBB->GetJumpDest(), checkILOffsetBB);
 
         // We need to dispatch to the OSR version if the IL offset is non-negative.
-        continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfData =
-            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
+        continuationArg           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfData     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
         GenTree* dataArr          = LoadFromOffset(continuationArg, offsetOfData, TYP_REF);
         unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Array__data;
         GenTree* ilOffset         = LoadFromOffset(dataArr, offsetOfIlOffset, TYP_INT);
@@ -1168,9 +1159,8 @@ void Async2Transformation::CreateResumptionSwitch()
         m_comp->fgAddRefPred(checkILOffsetBB->Next(), checkILOffsetBB);
         m_comp->fgAddRefPred(checkILOffsetBB->GetJumpDest(), checkILOffsetBB);
 
-        continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfData =
-            TARGET_POINTER_SIZE + m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
+        continuationArg           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfData     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
         GenTree* dataArr          = LoadFromOffset(continuationArg, offsetOfData, TYP_REF);
         unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Array__data;
         GenTree* ilOffset         = LoadFromOffset(dataArr, offsetOfIlOffset, TYP_INT);

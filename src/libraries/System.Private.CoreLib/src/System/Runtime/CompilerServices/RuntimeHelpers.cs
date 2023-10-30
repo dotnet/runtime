@@ -133,9 +133,9 @@ namespace System.Runtime.CompilerServices
             if (RuntimeAsyncViaJitGeneratedStateMachines)
             {
                 ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-                object? sentinelContinuation = state.SentinelContinuation;
+                Continuation? sentinelContinuation = state.SentinelContinuation;
                 if (sentinelContinuation == null)
-                    state.SentinelContinuation = sentinelContinuation = default(Continuation);
+                    state.SentinelContinuation = sentinelContinuation = new Continuation();
 
                 state.Notifier = awaiter;
                 SuspendAsync2(sentinelContinuation);
@@ -173,9 +173,9 @@ namespace System.Runtime.CompilerServices
             if (RuntimeAsyncViaJitGeneratedStateMachines)
             {
                 ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-                object? sentinelContinuation = state.SentinelContinuation;
+                Continuation? sentinelContinuation = state.SentinelContinuation;
                 if (sentinelContinuation == null)
-                    state.SentinelContinuation = sentinelContinuation = default(Continuation);
+                    state.SentinelContinuation = sentinelContinuation = new Continuation();
 
                 state.Notifier = awaiter;
                 SuspendAsync2(sentinelContinuation);

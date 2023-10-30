@@ -382,16 +382,16 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static object AllocContinuation(object prevContinuation, nuint numGCRefs, nuint dataSize)
+        private static Continuation AllocContinuation(Continuation prevContinuation, nuint numGCRefs, nuint dataSize)
         {
-            object newContinuation = new Continuation { Data = new byte[dataSize], GCData = new object[numGCRefs] };
-            Unsafe.Unbox<Continuation>(prevContinuation).Next = newContinuation;
+            Continuation newContinuation = new Continuation { Data = new byte[dataSize], GCData = new object[numGCRefs] };
+            prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
         private struct RuntimeAsyncAwaitState
         {
-            public object? SentinelContinuation;
+            public Continuation? SentinelContinuation;
             public INotifyCompletion? Notifier;
         }
 
@@ -399,13 +399,12 @@ namespace System.Runtime.CompilerServices
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
         [Intrinsic]
-        private static void SuspendAsync2(object continuation) => throw new UnreachableException();
+        private static void SuspendAsync2(Continuation continuation) => throw new UnreachableException();
 
-        private static Task<T> FinalizeTaskReturningThunk<T>(object boxedContinuation)
+        private static Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)
         {
             TaskCompletionSource<T> tcs = new();
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            ref Continuation continuation = ref Unsafe.Unbox<Continuation>(boxedContinuation);
             object[] gcData = new object[2];
             gcData[1] = tcs;
             continuation.Next = new Continuation
@@ -414,14 +413,13 @@ namespace System.Runtime.CompilerServices
                 GCData = gcData,
             };
 
-            object headContinuation = Unsafe.Unbox<Continuation>(state.SentinelContinuation!).Next!;
+            Continuation headContinuation = state.SentinelContinuation!.Next!;
             state.Notifier!.OnCompleted(() => DispatchContinuations(headContinuation));
             return tcs.Task;
         }
 
-        private static object? ResumeTaskCompletionSource<T>(object boxedContinuation, Exception? exception)
+        private static Continuation? ResumeTaskCompletionSource<T>(Continuation continuation, Exception? exception)
         {
-            ref Continuation continuation = ref Unsafe.Unbox<Continuation>(boxedContinuation);
             var tcs = (TaskCompletionSource<T>)continuation.GCData![1];
             if (exception == null)
             {
@@ -435,16 +433,17 @@ namespace System.Runtime.CompilerServices
             return null;
         }
 
-        private static unsafe void DispatchContinuations(object? boxedContinuation)
+        private static unsafe void DispatchContinuations(Continuation? continuation)
         {
+            Debug.Assert(continuation != null);
+
             Exception? exToPropagate = null;
             do
             {
-                ref Continuation continuation = ref Unsafe.Unbox<Continuation>(boxedContinuation!);
-                object? newContinuation = null;
+                Continuation? newContinuation = null;
                 try
                 {
-                    newContinuation = continuation.Resume(boxedContinuation!, exToPropagate);
+                    newContinuation = continuation.Resume(continuation, exToPropagate);
                 }
                 catch (Exception ex)
                 {
@@ -453,16 +452,15 @@ namespace System.Runtime.CompilerServices
 
                 if (newContinuation != null)
                 {
-                    Unsafe.Unbox<Continuation>(newContinuation).Next = continuation.Next;
-
+                    newContinuation.Next = continuation.Next;
                     ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-                    object headContinuation = Unsafe.Unbox<Continuation>(state.SentinelContinuation!).Next!;
+                    Continuation headContinuation = state.SentinelContinuation!.Next!;
                     state.Notifier!.OnCompleted(() => DispatchContinuations(headContinuation));
                     return;
                 }
 
-                boxedContinuation = continuation.Next;
-            } while (boxedContinuation != null);
+                continuation = continuation.Next;
+            } while (continuation != null);
         }
     }
 
@@ -746,10 +744,10 @@ namespace System.Runtime.CompilerServices
         public IntPtr ArgBuffer;
     }
 
-    internal unsafe struct Continuation
+    internal sealed unsafe class Continuation
     {
-        public object? Next;
-        public delegate*<object, Exception?, object?> Resume;
+        public Continuation? Next;
+        public delegate*<Continuation, Exception?, Continuation?> Resume;
         public uint State;
         public byte[]? Data;
         public object[]? GCData;

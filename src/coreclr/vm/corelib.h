@@ -685,7 +685,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgB
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_CONTINUATION,     AllocContinuation, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      FINALIZE_TASK_RETURNING_THUNK, FinalizeTaskReturningThunk, GM_Obj_RetTaskOfT)
+DEFINE_METHOD(RUNTIME_HELPERS,      FINALIZE_TASK_RETURNING_THUNK, FinalizeTaskReturningThunk, GM_Continuation_RetTaskOfT)
 
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_OR_CREATE_RESUMPTION_DELEGATE, GetOrCreateResumptionDelegate, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_1, UnsafeAwaitAwaiterFromRuntimeAsync, GM_T_RetVoid)
@@ -988,7 +988,7 @@ DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     Validate
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          ASYNC2_CALL_CONTINUATION,           Async2CallContinuation,         SM_RetObj)
+DEFINE_METHOD(STUBHELPERS,          ASYNC2_CALL_CONTINUATION,           Async2CallContinuation,         SM_RetContinuation)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
 

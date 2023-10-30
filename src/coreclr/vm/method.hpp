@@ -2617,6 +2617,12 @@ public:
         return m_pszMethodName;
     }
 
+    void SetMethodName(PTR_CUTF8 name)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        m_pszMethodName = name;
+    }
+
     // Based on the current flags, compute the equivalent as COR metadata.
     WORD GetAttrs() const
     {

@@ -14389,7 +14389,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
         pCode->EmitSTLOC(resultLoc);
     }
 
-    DWORD newContinuationLoc = pCode->NewLocal(ELEMENT_TYPE_OBJECT);
+    DWORD newContinuationLoc = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__CONTINUATION)));
     pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC2_CALL_CONTINUATION, 0, 1);
     pCode->EmitSTLOC(newContinuationLoc);
 
@@ -14401,11 +14401,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
 
         // Load 'next' of current continuation
         pCode->EmitLDARG(0);
-        pCode->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
         pCode->EmitLDFLD(FIELD__CONTINUATION__NEXT);
 
         // Load 'gcdata' of next continuation
-        pCode->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
         pCode->EmitLDFLD(FIELD__CONTINUATION__GCDATA);
 
         // Now we have the GC array. At the first index is the result.
@@ -14434,12 +14432,33 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
             &emptyCtx,
             &sl);
 
+    const char* optimizationTierName = nullptr;
+    switch (ncv.GetOptimizationTier())
+    {
+    case NativeCodeVersion::OptimizationTier0: optimizationTierName = "Tier0"; break;
+    case NativeCodeVersion::OptimizationTier1: optimizationTierName = "Tier1"; break;
+    case NativeCodeVersion::OptimizationTier1OSR: optimizationTierName = "Tier1OSR"; break;
+    case NativeCodeVersion::OptimizationTierOptimized: optimizationTierName = "Optimized"; break;
+    case NativeCodeVersion::OptimizationTier0Instrumented: optimizationTierName = "Tier0Instrumented"; break;
+    case NativeCodeVersion::OptimizationTier1Instrumented: optimizationTierName = "Tier1Instrumented"; break;
+    default: optimizationTierName = "UnknownTier"; break;
+    }
+
+    char name[256];
+    int numWritten = sprintf_s(name, "IL_STUB_AsyncResume_%s_%s", m_pMethodBeingCompiled->GetName(), optimizationTierName);
+    if (numWritten != -1)
+    {
+        AllocMemTracker pamTracker;
+        void* allocedMem = pamTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numWritten + 1)));
+        memcpy(allocedMem, name, (size_t)(numWritten + 1));
+        result->AsDynamicMethodDesc()->SetMethodName((LPCUTF8)allocedMem);
+        pamTracker.SuppressRelease();
+    }
+
 #ifdef _DEBUG
-    LOG((LF_STUBS, LL_INFO1000, "ASYNC: Resumption stub created\n"));
+    LOG((LF_STUBS, LL_INFO1000, "ASYNC: Resumption stub %s created\n", name));
     sl.LogILStub(CORJIT_FLAGS());
 #endif
-
-    result->DoPrestub(NULL);
 
     return CORINFO_METHOD_HANDLE(result);
 }

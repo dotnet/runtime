@@ -1624,7 +1624,7 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
     DWORD cbTargetSig;
     PCCOR_SIGNATURE pTargetSig = (PCCOR_SIGNATURE)targetSig.GetSignature(&cbTargetSig);
 
-    unsigned boxedContinuationLcl = pCode->NewLocal(ELEMENT_TYPE_OBJECT);
+    unsigned continuationLocal = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__CONTINUATION)));
 
     TypeHandle thTaskRet = thunkMsig.GetRetTypeHandleThrowing();
     LocalDesc returnLocalDesc(thTaskRet);
@@ -1672,7 +1672,7 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
         if (logicalResultLocal != UINT_MAX)
             pCode->EmitSTLOC(logicalResultLocal);
         pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC2_CALL_CONTINUATION, 0, 1);
-        pCode->EmitSTLOC(boxedContinuationLcl);
+        pCode->EmitSTLOC(continuationLocal);
         pCode->EmitLEAVE(pNoExceptionLabel);
         pCode->EndTryBlock();
     }
@@ -1688,7 +1688,7 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
     }
 
     pCode->EmitLabel(pNoExceptionLabel);
-    pCode->EmitLDLOC(boxedContinuationLcl);
+    pCode->EmitLDLOC(continuationLocal);
     pCode->EmitBRTRUE(pSuspendedLabel);
     if (logicalResultLocal != UINT_MAX)
     {
@@ -1711,7 +1711,7 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
 
     MethodDesc* md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
     md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
-    pCode->EmitLDLOC(boxedContinuationLcl);
+    pCode->EmitLDLOC(continuationLocal);
     pCode->EmitCALL(pCode->GetToken(md), 1, 1);
     pCode->EmitRET();
 }
