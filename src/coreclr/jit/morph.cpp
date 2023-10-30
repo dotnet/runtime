@@ -5894,12 +5894,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         }
     }
 
-    if (!fgCheckStmtAfterTailCall())
-    {
-        failTailCall("Unexpected statements after the tail call");
-        return nullptr;
-    }
-
     const char* failReason      = nullptr;
     bool        canFastTailCall = fgCanFastTailCall(call, &failReason);
 
@@ -15365,108 +15359,6 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
     }
 
 #endif // FEATURE_IMPLICIT_BYREFS
-}
-
-//------------------------------------------------------------------------
-// fgCheckStmtAfterTailCall: check that statements after the tail call stmt
-// candidate are in one of expected forms, that are desctibed below.
-//
-// Return Value:
-//    'true' if stmts are in the expected form, else 'false'.
-//
-bool Compiler::fgCheckStmtAfterTailCall()
-{
-
-    // For void calls, we would have created a GT_CALL in the stmt list.
-    // For non-void calls, we would have created a GT_RETURN(GT_CAST(GT_CALL)).
-    // For calls returning structs, we would have a void call, followed by a void return.
-    // For debuggable code, it would be an assignment of the call to a temp
-    // We want to get rid of any of this extra trees, and just leave
-    // the call.
-    Statement* callStmt = fgMorphStmt;
-
-    Statement* nextMorphStmt = callStmt->GetNextStmt();
-
-    // Check that the rest stmts in the block are in one of the following pattern:
-    //  1) ret(void)
-    //  2) ret(cast*(callResultLclVar))
-    //  3) lclVar = callResultLclVar, the actual ret(lclVar) in another block
-    //  4) nop
-    if (nextMorphStmt != nullptr)
-    {
-        GenTree* callExpr = callStmt->GetRootNode();
-        if (!callExpr->OperIs(GT_STORE_LCL_VAR))
-        {
-            // The next stmt can be GT_RETURN(TYP_VOID) or GT_RETURN(lclVar),
-            // where lclVar was return buffer in the call for structs or simd.
-            Statement* retStmt = nextMorphStmt;
-            GenTree*   retExpr = retStmt->GetRootNode();
-            noway_assert(retExpr->gtOper == GT_RETURN);
-
-            nextMorphStmt = retStmt->GetNextStmt();
-        }
-        else
-        {
-            noway_assert(callExpr->OperIs(GT_STORE_LCL_VAR));
-            unsigned callResultLclNumber = callExpr->AsLclVar()->GetLclNum();
-
-#if FEATURE_TAILCALL_OPT_SHARED_RETURN
-
-            // We can have a chain of assignments from the call result to
-            // various inline return spill temps. These are ok as long
-            // as the last one ultimately provides the return value or is ignored.
-            //
-            // And if we're returning a small type we may see a cast
-            // on the source side.
-            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR, GT_NOP)))
-            {
-                if (nextMorphStmt->GetRootNode()->OperIs(GT_NOP))
-                {
-                    nextMorphStmt = nextMorphStmt->GetNextStmt();
-                    continue;
-                }
-                Statement* moveStmt = nextMorphStmt;
-                GenTree*   moveExpr = nextMorphStmt->GetRootNode();
-
-                // Tunnel through any casts on the source side.
-                GenTree* moveSource = moveExpr->AsLclVar()->Data();
-                while (moveSource->OperIs(GT_CAST))
-                {
-                    noway_assert(!moveSource->gtOverflow());
-                    moveSource = moveSource->gtGetOp1();
-                }
-                noway_assert(moveSource->OperIsLocal());
-
-                // Verify we're just passing the value from one local to another
-                // along the chain.
-                const unsigned srcLclNum = moveSource->AsLclVarCommon()->GetLclNum();
-                noway_assert(srcLclNum == callResultLclNumber);
-                const unsigned dstLclNum = moveExpr->AsLclVar()->GetLclNum();
-                callResultLclNumber      = dstLclNum;
-
-                nextMorphStmt = moveStmt->GetNextStmt();
-            }
-            if (nextMorphStmt != nullptr)
-#endif
-            {
-                Statement* retStmt = nextMorphStmt;
-                GenTree*   retExpr = nextMorphStmt->GetRootNode();
-                noway_assert(retExpr->gtOper == GT_RETURN);
-
-                GenTree* treeWithLcl = retExpr->gtGetOp1();
-                while (treeWithLcl->gtOper == GT_CAST)
-                {
-                    noway_assert(!treeWithLcl->gtOverflow());
-                    treeWithLcl = treeWithLcl->gtGetOp1();
-                }
-
-                noway_assert(callResultLclNumber == treeWithLcl->AsLclVarCommon()->GetLclNum());
-
-                nextMorphStmt = retStmt->GetNextStmt();
-            }
-        }
-    }
-    return nextMorphStmt == nullptr;
 }
 
 //------------------------------------------------------------------------
