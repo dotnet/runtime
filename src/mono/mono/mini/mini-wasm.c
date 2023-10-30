@@ -557,9 +557,6 @@ mono_init_native_crash_info (void)
 
 #endif
 
-// this points to System.Threading.TimerQueue.TimerHandler C# method
-static void *timer_handler;
-
 #ifdef HOST_BROWSER
 
 void
@@ -583,6 +580,9 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	return FALSE;
 }
 
+// this points to System.Threading.TimerQueue.TimerHandler C# method
+static void *timer_handler;
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_execute_timer (void)
 {
@@ -595,10 +595,6 @@ mono_wasm_execute_timer (void)
 	cb ();
 }
 
-
-#endif
-
-#ifdef HOST_BROWSER
 #ifdef DISABLE_THREADS
 void
 mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
