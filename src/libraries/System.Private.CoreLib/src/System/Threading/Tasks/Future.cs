@@ -22,14 +22,39 @@ namespace System.Threading.Tasks
     internal struct RuntimeTaskState<TResult>
     {
         private RuntimeHelpers.AsyncDataFrame dataFrame;
+        // Store current ExecutionContext and SynchronizationContext as "previousXxx".
+        // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
+        // so that they won't "leak" out of the first await.
+        public ExecutionContext? _previousExecutionCtx;
+        public SynchronizationContext? _previousSyncCtx;
+        public Thread _thread;
 
         public void Push()
         {
-            dataFrame = new RuntimeHelpers.AsyncDataFrame(()=> new RuntimeHelpers.RuntimeAsyncMaintainedData<TResult>());
+            dataFrame = new RuntimeHelpers.AsyncDataFrame(()=> new RuntimeHelpers.RuntimeAsyncMaintainedData());
             RuntimeHelpers.PushAsyncData(ref dataFrame);
+            _thread = Thread.CurrentThread;
+            _previousExecutionCtx = _thread._executionContext;
+            _previousSyncCtx = _thread._synchronizationContext;
         }
 
-        public void Pop() { RuntimeHelpers.PopAsyncData(ref dataFrame); }
+        public void Pop()
+        {
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (_previousSyncCtx != _thread._synchronizationContext)
+            {
+                // Restore changed SynchronizationContext back to previous
+                _thread._synchronizationContext = _previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecutionCtx = _thread._executionContext;
+            if (_previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(_thread, _previousExecutionCtx, currentExecutionCtx);
+            }
+            RuntimeHelpers.PopAsyncData(ref dataFrame);
+        }
+
         public Task<TResult> FromResult(TResult result)
         {
             if (dataFrame._maintainedData == null || (dataFrame._maintainedData._suspendActive == 0))
@@ -38,6 +63,144 @@ namespace System.Threading.Tasks
         }
 
         public Task<TResult> FromException(Exception e) { return Task.FromException<TResult>(e); }
+    }
+    // Used to implement Runtime implemented Task suspension handling
+    internal struct RuntimeTaskState
+    {
+        private RuntimeHelpers.AsyncDataFrame dataFrame;
+        // Store current ExecutionContext and SynchronizationContext as "previousXxx".
+        // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
+        // so that they won't "leak" out of the first await.
+        public ExecutionContext? _previousExecutionCtx;
+        public SynchronizationContext? _previousSyncCtx;
+        public Thread _thread;
+
+        public void Push()
+        {
+            dataFrame = new RuntimeHelpers.AsyncDataFrame(()=> new RuntimeHelpers.RuntimeAsyncMaintainedData());
+            RuntimeHelpers.PushAsyncData(ref dataFrame);
+            _thread = Thread.CurrentThread;
+            _previousExecutionCtx = _thread._executionContext;
+            _previousSyncCtx = _thread._synchronizationContext;
+        }
+
+        public void Pop()
+        {
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (_previousSyncCtx != _thread._synchronizationContext)
+            {
+                // Restore changed SynchronizationContext back to previous
+                _thread._synchronizationContext = _previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecutionCtx = _thread._executionContext;
+            if (_previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(_thread, _previousExecutionCtx, currentExecutionCtx);
+            }
+            RuntimeHelpers.PopAsyncData(ref dataFrame);
+        }
+
+        public Task FromResult()
+        {
+            if (dataFrame._maintainedData == null || (dataFrame._maintainedData._suspendActive == 0))
+                return Task.CompletedTask;
+            return dataFrame._maintainedData.GetTask();
+        }
+
+        public Task FromException(Exception e) { return Task.FromException(e); }
+    }
+    // Used to implement Runtime implemented Task suspension handling
+    internal struct RuntimeValueTaskState<TResult>
+    {
+        private RuntimeHelpers.AsyncDataFrame dataFrame;
+        // Store current ExecutionContext and SynchronizationContext as "previousXxx".
+        // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
+        // so that they won't "leak" out of the first await.
+        public ExecutionContext? _previousExecutionCtx;
+        public SynchronizationContext? _previousSyncCtx;
+        public Thread _thread;
+
+        public void Push()
+        {
+            dataFrame = new RuntimeHelpers.AsyncDataFrame(()=> new RuntimeHelpers.RuntimeAsyncMaintainedData());
+            RuntimeHelpers.PushAsyncData(ref dataFrame);
+            _thread = Thread.CurrentThread;
+            _previousExecutionCtx = _thread._executionContext;
+            _previousSyncCtx = _thread._synchronizationContext;
+        }
+
+        public void Pop()
+        {
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (_previousSyncCtx != _thread._synchronizationContext)
+            {
+                // Restore changed SynchronizationContext back to previous
+                _thread._synchronizationContext = _previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecutionCtx = _thread._executionContext;
+            if (_previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(_thread, _previousExecutionCtx, currentExecutionCtx);
+            }
+            RuntimeHelpers.PopAsyncData(ref dataFrame);
+        }
+
+        public ValueTask<TResult> FromResult(TResult result)
+        {
+            if (dataFrame._maintainedData == null || (dataFrame._maintainedData._suspendActive == 0))
+                return ValueTask.FromResult<TResult>(result);
+            return new ValueTask<TResult>((Task<TResult>)dataFrame._maintainedData.GetTask());
+        }
+
+        public ValueTask<TResult> FromException(Exception e) { return ValueTask.FromException<TResult>(e); }
+    }
+    // Used to implement Runtime implemented Task suspension handling
+    internal struct RuntimeValueTaskState
+    {
+        private RuntimeHelpers.AsyncDataFrame dataFrame;
+        // Store current ExecutionContext and SynchronizationContext as "previousXxx".
+        // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
+        // so that they won't "leak" out of the first await.
+        public ExecutionContext? _previousExecutionCtx;
+        public SynchronizationContext? _previousSyncCtx;
+        public Thread _thread;
+
+        public void Push()
+        {
+            dataFrame = new RuntimeHelpers.AsyncDataFrame(()=> new RuntimeHelpers.RuntimeAsyncMaintainedData());
+            RuntimeHelpers.PushAsyncData(ref dataFrame);
+            _thread = Thread.CurrentThread;
+            _previousExecutionCtx = _thread._executionContext;
+            _previousSyncCtx = _thread._synchronizationContext;
+        }
+
+        public void Pop()
+        {
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (_previousSyncCtx != _thread._synchronizationContext)
+            {
+                // Restore changed SynchronizationContext back to previous
+                _thread._synchronizationContext = _previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecutionCtx = _thread._executionContext;
+            if (_previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(_thread, _previousExecutionCtx, currentExecutionCtx);
+            }
+            RuntimeHelpers.PopAsyncData(ref dataFrame);
+        }
+
+        public ValueTask FromResult()
+        {
+            if (dataFrame._maintainedData == null || (dataFrame._maintainedData._suspendActive == 0))
+                return ValueTask.CompletedTask;
+            return new ValueTask(dataFrame._maintainedData.GetTask());
+        }
+
+        public ValueTask FromException(Exception e) { return ValueTask.FromException(e); }
     }
 #pragma warning restore CA1822
 #endif

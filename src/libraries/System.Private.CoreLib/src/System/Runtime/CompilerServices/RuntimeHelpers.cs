@@ -146,14 +146,13 @@ namespace System.Runtime.CompilerServices
                 StackCrawlMark stackMark = StackCrawlMark.LookForMe;
 
                 // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
-                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
-                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+                // RuntimeTaskSuspender.DoSetupAndCapture() works like a POSIX fork call in that calls to it will return a
+                // true for the initial call to DoSetupAndCapture, but once the thread is resumed,
                 // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
-                if (resumption != null)
+                if (RuntimeHelpers.DoSetupAndCapture(ref stackMark))
                 {
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
-                    // and return from GetOrCreateResumptionDelegate with a null return value.
+                    // and return from DoSetupAndCapture with a false return value
                     ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
                     RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
                     maintainedData._awaiter = awaiter;
@@ -186,14 +185,13 @@ namespace System.Runtime.CompilerServices
                 StackCrawlMark stackMark = StackCrawlMark.LookForMe;
 
                 // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
-                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
-                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
-                // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
-                if (resumption != null)
+                // RuntimeTaskSuspender.DoSetupAndCapture() works like a POSIX fork call in that calls to it will return a
+                // true for the initial call to DoSetupAndCapture, but once the thread is resumed,
+                // it will resume with a return value of false.
+                if (RuntimeHelpers.DoSetupAndCapture(ref stackMark))
                 {
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
-                    // and return from GetOrCreateResumptionDelegate with a null return value.
+                    // and return from DoSetupAndCapture with a false return value
                     ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
                     RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
                     maintainedData._awaiter = awaiter;
@@ -235,9 +233,8 @@ namespace System.Runtime.CompilerServices
             public TaskletReturnType _returnType;
         }
 
-        internal abstract unsafe class RuntimeAsyncMaintainedData
+        internal class RuntimeAsyncMaintainedData
         {
-            public Action? _resumption;
             public Exception? _exception;
             public INotifyCompletion? _awaiter;
             public int _suspendActive;
@@ -245,37 +242,20 @@ namespace System.Runtime.CompilerServices
             public bool _completed;
             public byte _dummy;
 
-            public ExecutionContext? _executionCtx;
-            public SynchronizationContext? _syncCtx;
-
-
-            public Tasklet* _nextTasklet;
-            public Tasklet* _oldTaskletNext;
+            public unsafe Tasklet* _nextTasklet;
+            public unsafe Tasklet* _oldTaskletNext;
 
             public RuntimeAsyncReturnValue _retValue;
             public virtual ref byte GetReturnPointer() { return ref _dummy; }
 
             public Task? _task;
-            public abstract Task GetTask();
-        }
 
-
-        // These are all implemented by the same assembly helper that will setup the tasklet in its new home on the stack
-        // and then tail-call into it. We will need a different entrypoint name for each type of register based return that can happen
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object ResumeTaskletReferenceReturn(Tasklet* pTasklet, ref RuntimeAsyncReturnValue retValue);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr ResumeTaskletIntegerRegisterReturn(Tasklet* pTasklet, ref RuntimeAsyncReturnValue retValue);
-
-        internal sealed class RuntimeAsyncMaintainedData<T> : RuntimeAsyncMaintainedData, ICriticalNotifyCompletion
-        {
-            public RuntimeAsyncMaintainedData()
+            public virtual Task GetTask()
             {
-                _task = CompletionTask();
-                _resumption = ResumptionFunc;
+                return CompletionTaskReturnVoid();
             }
 
-            public unsafe void ResumptionFunc()
+            public unsafe bool ResumptionFunc()
             {
                 // Suspension has finished and we are resuming
                 _suspendActive = 0;
@@ -285,139 +265,143 @@ namespace System.Runtime.CompilerServices
 
                 int collectiveStackAllocsPerformed = 0;
 
+                AsyncDataFrame dataFrame = new AsyncDataFrame(this);
+                PushAsyncData(ref dataFrame);
                 try
                 {
-                    AsyncDataFrame dataFrame = new AsyncDataFrame(this);
-                    PushAsyncData(ref dataFrame);
-                    try
+                    while (_nextTasklet != null)
                     {
-                        // PushAsyncData will fill in the value of _previousExecutionCtx and _previousSyncCtx
-                        if (_syncCtx != dataFrame._previousSyncCtx)
+                        Tasklet* pCurTasklet = _nextTasklet;
+                        int maxStackNeeded = pCurTasklet->GetMaxStackNeeded();
+                        _nextTasklet = pCurTasklet->pTaskletNextInStack;
+                        if (maxStackNeeded > collectiveStackAllocsPerformed)
                         {
-                            // TODO: Possibly we should marshal to the right sync context? I dunno. We'll figure this out
-                            dataFrame._currentThread._synchronizationContext = _syncCtx;
-                        }
-                        if (_executionCtx != dataFrame._previousExecutionCtx)
-                        {
-                            ExecutionContext.RestoreChangedContextToThread(dataFrame._currentThread, _executionCtx, dataFrame._previousExecutionCtx);
-                        }
-
-                        while (_nextTasklet != null)
-                        {
-                            Tasklet* pCurTasklet = _nextTasklet;
-                            int maxStackNeeded = pCurTasklet->GetMaxStackNeeded();
-                            _nextTasklet = pCurTasklet->pTaskletNextInStack;
-                            if (maxStackNeeded > collectiveStackAllocsPerformed)
-                            {
 #pragma warning disable CA2014
-                                // This won't stack overflow unless MaxStackNeeded is actually too high, as the extra allocation is controlled by collectiveStackAllocsPerformed
-                                // TODO This is doing terrible things with the ABI, so we may need to be more careful here
-                                int stackToAlloc = maxStackNeeded - collectiveStackAllocsPerformed;
-                                byte* pStackAlloc = stackalloc byte[stackToAlloc];
-                                collectiveStackAllocsPerformed += stackToAlloc;
+                            // This won't stack overflow unless MaxStackNeeded is actually too high, as the extra allocation is controlled by collectiveStackAllocsPerformed
+                            // TODO This is doing terrible things with the ABI, so we may need to be more careful here
+                            int stackToAlloc = maxStackNeeded - collectiveStackAllocsPerformed;
+                            byte* pStackAlloc = stackalloc byte[stackToAlloc];
+                            collectiveStackAllocsPerformed += stackToAlloc;
 #pragma warning restore CA2014
-                                // The optimizer does nothing with variable sized StackAlloc KeepStackAllocAlive(pStackAlloc);
-                            }
+                            // The optimizer does nothing with variable sized StackAlloc KeepStackAllocAlive(pStackAlloc);
+                        }
 
-                            try
+                        try
+                        {
+                            switch (pCurTasklet->taskletReturnType)
                             {
-                                switch (pCurTasklet->taskletReturnType)
-                                {
-                                    case TaskletReturnType.ObjectReference:
-                                        _retValue = new RuntimeAsyncReturnValue(ResumeTaskletReferenceReturn(pCurTasklet, ref _retValue));
-                                        break;
-                                    case TaskletReturnType.Integer:
-                                        _retValue = new RuntimeAsyncReturnValue(ResumeTaskletIntegerRegisterReturn(pCurTasklet, ref _retValue));
-                                        break;
-                                    case TaskletReturnType.ByReference:
-                                        throw new NotImplementedException(); // This will be awkward (but not impossible) to implement. Hold off for now
-                                }
-                            }
-                            finally
-                            {
-                                DeleteTasklet(pCurTasklet);
-                            }
-
-                            if (_suspendActive != 0)
-                            {
-                                // TODO: we should capture the sync and execution contexts at this point
-                                break;
+                                case TaskletReturnType.ObjectReference:
+                                    _retValue = new RuntimeAsyncReturnValue(ResumeTaskletReferenceReturn(pCurTasklet, ref _retValue));
+                                    break;
+                                case TaskletReturnType.Integer:
+                                    _retValue = new RuntimeAsyncReturnValue(ResumeTaskletIntegerRegisterReturn(pCurTasklet, ref _retValue));
+                                    break;
+                                case TaskletReturnType.ByReference:
+                                    throw new NotImplementedException(); // This will be awkward (but not impossible) to implement. Hold off for now
                             }
                         }
-                    }
-                    finally
-                    {
-                        PopAsyncData(ref dataFrame);
+                        finally
+                        {
+                            DeleteTasklet(pCurTasklet);
+                        }
+
+                        if (_suspendActive != 0)
+                        {
+                            // TODO: we should capture the sync and execution contexts at this point
+                            break;
+                        }
                     }
                 }
-                catch (Exception e)
+                finally
                 {
-                    SetException(e);
+                    PopAsyncData(ref dataFrame);
                 }
 
-                if (_suspendActive != 0)
-                {
-                    // We suspended again. Just register to return to this function, and return
-                    _awaiter!.OnCompleted(_resumption!);
-                    return;
-                }
-                // We are actually done. Set the final result
-                SetResultDone();
+                return _suspendActive!= 0;
             }
 
-            private Action? _taskResumer;
+            protected sealed class TempAwaitable : ICriticalNotifyCompletion
+            {
+                public INotifyCompletion? _awaiter;
+
+                public bool IsCompleted => false;
+
+                public void OnCompleted(Action action)
+                {
+                    _awaiter!.OnCompleted(action);
+                }
+
+                public TempAwaitable GetAwaiter() { return this; }
+
+                public void UnsafeOnCompleted(Action action)
+                {
+                    if (_awaiter is ICriticalNotifyCompletion criticalNotification)
+                    {
+                        criticalNotification.UnsafeOnCompleted(action);
+                    }
+                    else
+                    {
+                        _awaiter!.OnCompleted(action);
+                    }
+                }
+
+                public void GetResult() {}
+            }
+
+            private async Task CompletionTaskReturnVoid()
+            {
+                TempAwaitable awaitableObject = new TempAwaitable();
+                bool keepProcessing = true;
+                while (keepProcessing)
+                {
+                    awaitableObject._awaiter = _awaiter!;
+                    await awaitableObject;
+                    keepProcessing = ResumptionFunc();
+                }
+            }
+        }
+
+        // These are all implemented by the same assembly helper that will setup the tasklet in its new home on the stack
+        // and then tail-call into it. We will need a different entrypoint name for each type of register based return that can happen
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe object ResumeTaskletReferenceReturn(Tasklet* pTasklet, ref RuntimeAsyncReturnValue retValue);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr ResumeTaskletIntegerRegisterReturn(Tasklet* pTasklet, ref RuntimeAsyncReturnValue retValue);
+
+        internal sealed class RuntimeAsyncMaintainedData<T> : RuntimeAsyncMaintainedData
+        {
             private T? _returnData;
             public override ref byte GetReturnPointer()
             {
                 return ref Unsafe.As<T, byte>(ref _returnData!);
             }
 
-            public RuntimeAsyncMaintainedData<T> GetAwaiter()
-            {
-                return this;
-            }
-
-            public bool IsCompleted => _completed;
-
             public override Task GetTask()
             {
-                _awaiter!.OnCompleted(_resumption!);
-                return _task!;
+                return CompletionTask();
             }
 
-            public void SetException(Exception exception)
+            private async Task<T?> CompletionTask()
             {
-                _exception = exception;
-                _completed = true;
-                _taskResumer!();
-            }
+                TempAwaitable awaitableObject = new TempAwaitable();
+                bool keepProcessing = true;
+                while (keepProcessing)
+                {
+                    awaitableObject._awaiter = _awaiter!;
+                    await awaitableObject;
+                    keepProcessing = ResumptionFunc();
+                }
 
-            public void SetResultDone()
-            {
                 switch (_retValue._returnType)
                 {
                     case TaskletReturnType.Integer:
-                        _returnData = Unsafe.As<IntPtr, T>(ref _retValue._ptr);
-                        Thread.MemoryBarrier();
-                        break;
+                        return Unsafe.As<IntPtr, T>(ref _retValue._ptr);
                     case TaskletReturnType.ObjectReference:
-                        _returnData = Unsafe.As<object, T>(ref _retValue!._obj!)!;
-                        break;
+                        return Unsafe.As<object, T>(ref _retValue!._obj!)!;
                     default:
                         // Other possibiilities not yet implemented
                         throw new NotImplementedException();
                 }
-                _completed = true;
-                _taskResumer!();
-            }
-
-            public void OnCompleted(Action resumer) { throw new NotSupportedException(); }
-            public void UnsafeOnCompleted(Action resumer) { _taskResumer = resumer; }
-            public T? GetResult() { if (_exception != null) throw _exception; return _returnData; }
-
-            private async Task<T?> CompletionTask()
-            {
-                return await this;
             }
         }
 
@@ -443,13 +427,6 @@ namespace System.Runtime.CompilerServices
             public StackCrawlMark _crawlMark;
             public void* _next;
             public Func<RuntimeAsyncMaintainedData>? _createRuntimeMaintainedData;
-            public Thread _currentThread = Thread.CurrentThread;
-
-            // Store current ExecutionContext and SynchronizationContext as "previousXxx".
-            // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
-            // so that they won't "leak" out of the first await.
-            public ExecutionContext? _previousExecutionCtx;
-            public SynchronizationContext? _previousSyncCtx;
         }
 
         internal enum TaskletReturnType
@@ -481,28 +458,12 @@ namespace System.Runtime.CompilerServices
         internal static unsafe void PushAsyncData(ref AsyncDataFrame asyncData)
         {
             asyncData._next = t_asyncData;
-            asyncData._previousExecutionCtx = asyncData._currentThread._executionContext;
-            asyncData._previousSyncCtx = asyncData._currentThread._synchronizationContext;
-
             t_asyncData = Unsafe.AsPointer(ref asyncData);
         }
 
         internal static unsafe void PopAsyncData(ref AsyncDataFrame asyncData)
         {
-            t_asyncData = Unsafe.AsRef<AsyncDataFrame>(t_asyncData)._next;
-
-            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
-            if (asyncData._previousSyncCtx != asyncData._currentThread._synchronizationContext)
-            {
-                // Restore changed SynchronizationContext back to previous
-                asyncData._currentThread._synchronizationContext = asyncData._previousSyncCtx;
-            }
-
-            ExecutionContext? currentExecutionCtx = asyncData._currentThread._executionContext;
-            if (asyncData._previousExecutionCtx != currentExecutionCtx)
-            {
-                ExecutionContext.RestoreChangedContextToThread(asyncData._currentThread, asyncData._previousExecutionCtx, currentExecutionCtx);
-            }
+            t_asyncData = asyncData._next;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -534,7 +495,7 @@ namespace System.Runtime.CompilerServices
         internal static extern unsafe void UnwindToFunctionWithAsyncFrame(Tasklet* topTasklet, nint framesToUnwind);
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        private static unsafe Action? GetOrCreateResumptionDelegate(ref StackCrawlMark stackMark)
+        private static unsafe bool DoSetupAndCapture(ref StackCrawlMark stackMark)
         {
             ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
 
@@ -554,11 +515,7 @@ namespace System.Runtime.CompilerServices
 
             maintainedData._suspendActive = framesCaptured;
 
-            maintainedData._executionCtx = asyncFrame._currentThread._executionContext;
-            maintainedData._syncCtx = asyncFrame._currentThread._synchronizationContext;
-
-
-            return maintainedData._resumption;
+            return true;
         }
 #endif
     }

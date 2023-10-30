@@ -1458,7 +1458,8 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     }
 
     ULONG offsetOfAsyncDetailsUnused;
-    AsyncTaskMethod asyncType = ClassifyAsyncMethod(GetSigPointer(), GetModule(), &offsetOfAsyncDetailsUnused);
+    bool isValueTypeUnused;
+    AsyncTaskMethod asyncType = ClassifyAsyncMethod(GetSigPointer(), GetModule(), &offsetOfAsyncDetailsUnused, &isValueTypeUnused);
     MethodDesc *pAsyncOtherVariant = this->GetAsyncOtherVariant();
     MetaSig msig(this);
 
@@ -1471,7 +1472,7 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         pAsyncOtherVariant,
         (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
 
-    if (asyncType == AsyncTaskMethod::TaskReturningMethod)
+    if (IsAsyncTaskMethodTaskReturningMethod(asyncType))
     {
         if (!g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines())
         {
@@ -1484,7 +1485,7 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     }
     else
     {
-        _ASSERTE(asyncType == AsyncTaskMethod::Async2Method);
+        _ASSERTE(IsAsyncTaskMethodAsync2Method(asyncType));
         EmitAsync2MethodThunk(pAsyncOtherVariant, msig, &sl);
     }
 
@@ -1530,15 +1531,87 @@ void MethodDesc::EmitUnwindingBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVari
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
 
     TypeHandle thTaskRet = msig.GetRetTypeHandleThrowing();
-    TypeHandle thLogicalRetType = thTaskRet.GetMethodTable()->GetInstantiation()[0];
-    MethodTable* pMTRuntimeTaskStateOpen = CoreLibBinder::GetClass(CLASS__RUNTIME_TASK_STATE_1);
-    MethodTable* pMTRuntimeTaskState = ClassLoader::LoadGenericInstantiationThrowing(pMTRuntimeTaskStateOpen->GetModule(), pMTRuntimeTaskStateOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
+    bool isGeneric = thTaskRet.GetMethodTable()->HasInstantiation();
+
+    TypeHandle thLogicalRetType;
+    if (isGeneric)
+        thLogicalRetType = thTaskRet.GetMethodTable()->GetInstantiation()[0];
+    else
+        thLogicalRetType = TypeHandle(CoreLibBinder::GetClass(CLASS__VOID));
+
+    bool isValueTask = thTaskRet.GetMethodTable()->IsValueType();
+
+    BinderClassID runtimeTaskStateClassId;
+    BinderMethodID runtimeTaskStatePush;
+    BinderMethodID runtimeTaskStatePop;
+    BinderMethodID runtimeTaskStateFromResult;
+    BinderMethodID runtimeTaskStateFromException;
+
+    if (isValueTask)
+    {
+        if (isGeneric)
+        {
+            runtimeTaskStateClassId = CLASS__RUNTIME_VALUETASK_STATE_1;
+            runtimeTaskStatePush = METHOD__RUNTIME_VALUETASK_STATE_1__PUSH;
+            runtimeTaskStatePop = METHOD__RUNTIME_VALUETASK_STATE_1__POP;
+            runtimeTaskStateFromResult = METHOD__RUNTIME_VALUETASK_STATE_1__FROM_RESULT;
+            runtimeTaskStateFromException = METHOD__RUNTIME_VALUETASK_STATE_1__FROM_EXCEPTION;
+        }
+        else
+        {
+            runtimeTaskStateClassId = CLASS__RUNTIME_VALUETASK_STATE;
+            runtimeTaskStatePush = METHOD__RUNTIME_VALUETASK_STATE__PUSH;
+            runtimeTaskStatePop = METHOD__RUNTIME_VALUETASK_STATE__POP;
+            runtimeTaskStateFromResult = METHOD__RUNTIME_VALUETASK_STATE__FROM_RESULT;
+            runtimeTaskStateFromException = METHOD__RUNTIME_VALUETASK_STATE__FROM_EXCEPTION;
+        }
+    }
+    else
+    {
+        if (isGeneric)
+        {
+            runtimeTaskStateClassId = CLASS__RUNTIME_TASK_STATE_1;
+            runtimeTaskStatePush = METHOD__RUNTIME_TASK_STATE_1__PUSH;
+            runtimeTaskStatePop = METHOD__RUNTIME_TASK_STATE_1__POP;
+            runtimeTaskStateFromResult = METHOD__RUNTIME_TASK_STATE_1__FROM_RESULT;
+            runtimeTaskStateFromException = METHOD__RUNTIME_TASK_STATE_1__FROM_EXCEPTION;
+        }
+        else
+        {
+            runtimeTaskStateClassId = CLASS__RUNTIME_TASK_STATE;
+            runtimeTaskStatePush = METHOD__RUNTIME_TASK_STATE__PUSH;
+            runtimeTaskStatePop = METHOD__RUNTIME_TASK_STATE__POP;
+            runtimeTaskStateFromResult = METHOD__RUNTIME_TASK_STATE__FROM_RESULT;
+            runtimeTaskStateFromException = METHOD__RUNTIME_TASK_STATE__FROM_EXCEPTION;
+        }
+    }
+
+    MethodTable* pMTRuntimeTaskStateOpen = CoreLibBinder::GetClass(runtimeTaskStateClassId);
+    MethodTable* pMTRuntimeTaskState;
+    
+    if (isGeneric)
+    {
+        pMTRuntimeTaskState = ClassLoader::LoadGenericInstantiationThrowing(pMTRuntimeTaskStateOpen->GetModule(), pMTRuntimeTaskStateOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
+    }
+    else
+    {
+        pMTRuntimeTaskState = pMTRuntimeTaskStateOpen;
+    }
+
 
     LocalDesc rtsLocalDesc(pMTRuntimeTaskState);
     DWORD rtsLocal = pCode->NewLocal(rtsLocalDesc);
 
     LocalDesc resultLocalDesc(thLogicalRetType);
-    DWORD resultLocal = pCode->NewLocal(resultLocalDesc);
+    DWORD resultLocal;
+    if (isGeneric)
+    {
+        resultLocal = pCode->NewLocal(resultLocalDesc);
+    }
+    else
+    {
+        resultLocal = UINT32_MAX;
+    }
 
     LocalDesc exceptionLocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION));
     DWORD exceptionLocal = pCode->NewLocal(exceptionLocalDesc);
@@ -1551,14 +1624,21 @@ void MethodDesc::EmitUnwindingBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVari
 
     pCode->EmitLDLOCA(rtsLocal);
     pCode->EmitINITOBJ(pCode->GetToken(pMTRuntimeTaskState));
-    pCode->EmitLDLOCA(resultLocal);
-    pCode->EmitINITOBJ(pCode->GetToken(thLogicalRetType));
+    if (isGeneric)
+    {
+        pCode->EmitLDLOCA(resultLocal);
+        pCode->EmitINITOBJ(pCode->GetToken(thLogicalRetType));
+    }
     pCode->EmitLDLOCA(exceptionLocal);
     pCode->EmitINITOBJ(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
     pCode->EmitLDLOCA(returnLocal);
     pCode->EmitINITOBJ(pCode->GetToken(thTaskRet));
     pCode->EmitLDLOCA(rtsLocal);
-    pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__PUSH))), 1, 0);
+    if (isGeneric)
+        pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(runtimeTaskStatePush))), 1, 0);
+    else
+        pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(runtimeTaskStatePush)), 1, 0);
+
     {
         pCode->BeginTryBlock();
         pCode->EmitNOP("Separate try blocks");
@@ -1576,8 +1656,11 @@ void MethodDesc::EmitUnwindingBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVari
             {
                 pCode->EmitLDARG(localArg++);
             }
-            pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, 1);
-            pCode->EmitSTLOC(resultLocal);
+            pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, isGeneric ? 1 : 0);
+            if (isGeneric)
+            {
+                pCode->EmitSTLOC(resultLocal);
+            }
             pCode->EmitLEAVE(pNoExceptionLabel);
             pCode->EndTryBlock();
         }
@@ -1587,15 +1670,26 @@ void MethodDesc::EmitUnwindingBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVari
             pCode->EmitSTLOC(exceptionLocal);
             pCode->EmitLDLOCA(rtsLocal);
             pCode->EmitLDLOC(exceptionLocal);
-            pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__FROM_EXCEPTION))), 2, 1);
+            if (isGeneric)
+                pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(runtimeTaskStateFromException))), 2, 1);
+            else
+                pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(runtimeTaskStateFromException)), 2, 1);
+
             pCode->EmitSTLOC(returnLocal);
             pCode->EmitLEAVE(pReturnResultLabel);
             pCode->EndCatchBlock();
         }
         pCode->EmitLabel(pNoExceptionLabel);
         pCode->EmitLDLOCA(rtsLocal);
-        pCode->EmitLDLOC(resultLocal);
-        pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__FROM_RESULT))), 2, 1);
+        if (isGeneric)
+        {
+            pCode->EmitLDLOC(resultLocal);
+            pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(runtimeTaskStateFromResult))), 2, 1);
+        }
+        else
+        {
+            pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(runtimeTaskStateFromResult)), 1, 1);
+        }
         pCode->EmitSTLOC(returnLocal);
         pCode->EmitLEAVE(pReturnResultLabel);
         pCode->EndTryBlock();
@@ -1604,7 +1698,10 @@ void MethodDesc::EmitUnwindingBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVari
     {
         pCode->BeginFinallyBlock();
         pCode->EmitLDLOCA(rtsLocal);
-        pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__POP))), 1, 0);
+        if (isGeneric)
+            pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(runtimeTaskStatePop))), 1, 0);
+        else
+            pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(runtimeTaskStatePop)), 1, 0);
         pCode->EmitENDFINALLY();
         pCode->EndFinallyBlock();
     }

@@ -2748,9 +2748,9 @@ bool IsTypeDefOrRefAByRefStruct(Module* pModule, mdToken tk)
     return false;
 }
 
-AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails);
+AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails, bool *isValueTask);
 
-AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails)
+AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
 {
     PCCOR_SIGNATURE initialSig = sig.GetPtr();
     uint32_t data;
@@ -2763,12 +2763,19 @@ AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offs
 
     // Return argument count
     IfFailThrow(sig.GetData(&data));
-    return ClassifyAsyncMethodCore(sig, pModule, initialSig, offsetOfAsyncDetails);
+    return ClassifyAsyncMethodCore(sig, pModule, initialSig, offsetOfAsyncDetails, isValueTask);
 }
 
-AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails)
+AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails, bool *pIsValueTask)
 {
     uint32_t data;
+    bool dummy = false;
+    if (pIsValueTask == NULL)
+    {
+        pIsValueTask = &dummy;
+    }
+
+    *pIsValueTask = false;
 
     // Now we should be parsing the return type
 
@@ -2791,57 +2798,72 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
         GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
         IfFailThrow(sig.GetByte(&elemTypeByte)); // Don't use GetElemType as it skips custom modifiers
         elemType = (CorElementType)elemTypeByte;
-        if (strcmp(name, "Task`1") == 0 && strcmp(_namespace, "System.Threading.Tasks") == 0 && IsTypeDefOrRefImplementedInSystemModule(pModule, tk) && (elemTypeCmod == ELEMENT_TYPE_CMOD_OPT))
+        if (strcmp(_namespace, "System.Threading.Tasks") == 0 && IsTypeDefOrRefImplementedInSystemModule(pModule, tk) && (elemTypeCmod == ELEMENT_TYPE_CMOD_OPT))
         {
-            // This must have been the last CMOD before the element type, and the element type MUST be one which can be expressed structurally as a generic parameter
-            switch (elemType)
+            if ((strcmp(name, "Task`1") == 0) || (strcmp(name, "ValueTask`1") == 0))
             {
-                case ELEMENT_TYPE_VOID:
-                case ELEMENT_TYPE_CLASS:
-                case ELEMENT_TYPE_VALUETYPE:
-                case ELEMENT_TYPE_STRING:
-                case ELEMENT_TYPE_OBJECT:
-                case ELEMENT_TYPE_I:
-                case ELEMENT_TYPE_U:
-                case ELEMENT_TYPE_I1:
-                case ELEMENT_TYPE_U1:
-                case ELEMENT_TYPE_I2:
-                case ELEMENT_TYPE_U2:
-                case ELEMENT_TYPE_I4:
-                case ELEMENT_TYPE_U4:
-                case ELEMENT_TYPE_I8:
-                case ELEMENT_TYPE_U8:
-                case ELEMENT_TYPE_R4:
-                case ELEMENT_TYPE_R8:
-                case ELEMENT_TYPE_BOOLEAN:
-                case ELEMENT_TYPE_CHAR:
-                case ELEMENT_TYPE_ARRAY:
-                case ELEMENT_TYPE_SZARRAY:
-                case ELEMENT_TYPE_VAR:
-                case ELEMENT_TYPE_MVAR:
-                    return AsyncTaskMethod::Async2Method;
-                case ELEMENT_TYPE_TYPEDBYREF:
-                    return AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask;
-                case ELEMENT_TYPE_GENERICINST:
-                    IfFailThrow(sig.GetElemType(&elemType));
-                    if (elemType == ELEMENT_TYPE_CLASS)
-                    {
+                *pIsValueTask = name[0] == 'V';
+                // This must have been the last CMOD before the element type, and the element type MUST be one which can be expressed structurally as a generic parameter
+                switch (elemType)
+                {
+                    case ELEMENT_TYPE_CLASS:
+                    case ELEMENT_TYPE_VALUETYPE:
+                    case ELEMENT_TYPE_STRING:
+                    case ELEMENT_TYPE_OBJECT:
+                    case ELEMENT_TYPE_I:
+                    case ELEMENT_TYPE_U:
+                    case ELEMENT_TYPE_I1:
+                    case ELEMENT_TYPE_U1:
+                    case ELEMENT_TYPE_I2:
+                    case ELEMENT_TYPE_U2:
+                    case ELEMENT_TYPE_I4:
+                    case ELEMENT_TYPE_U4:
+                    case ELEMENT_TYPE_I8:
+                    case ELEMENT_TYPE_U8:
+                    case ELEMENT_TYPE_R4:
+                    case ELEMENT_TYPE_R8:
+                    case ELEMENT_TYPE_BOOLEAN:
+                    case ELEMENT_TYPE_CHAR:
+                    case ELEMENT_TYPE_ARRAY:
+                    case ELEMENT_TYPE_SZARRAY:
+                    case ELEMENT_TYPE_VAR:
+                    case ELEMENT_TYPE_MVAR:
                         return AsyncTaskMethod::Async2Method;
-                    }
-                    else
-                    {
-                        IfFailThrow(sig.GetToken(&tk));
-                        if (IsTypeDefOrRefAByRefStruct(pModule, tk))
-                        {
-                            return AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask;
-                        }
-                        else
+                    case ELEMENT_TYPE_TYPEDBYREF:
+                        return AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask;
+                    case ELEMENT_TYPE_GENERICINST:
+                        IfFailThrow(sig.GetElemType(&elemType));
+                        if (elemType == ELEMENT_TYPE_CLASS)
                         {
                             return AsyncTaskMethod::Async2Method;
                         }
-                    }
-                default:
+                        else
+                        {
+                            IfFailThrow(sig.GetToken(&tk));
+                            if (IsTypeDefOrRefAByRefStruct(pModule, tk))
+                            {
+                                return AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask;
+                            }
+                            else
+                            {
+                                return AsyncTaskMethod::Async2Method;
+                            }
+                        }
+                    default:
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+            else if ((strcmp(name, "Task") == 0) || (strcmp(name, "ValueTask") == 0))
+            {
+                *pIsValueTask = name[0] == 'V';
+                if (elemType == ELEMENT_TYPE_VOID)
+                {
+                    return AsyncTaskMethod::Async2MethodNonGeneric;
+                }
+                else
+                {
                     ThrowHR(COR_E_BADIMAGEFORMAT);
+                }
             }
         }
 
@@ -2862,13 +2884,27 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
         {
             // This might be System.Threading.Tasks.Task`1
             GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-            if (strcmp(name, "Task`1") == 0 && strcmp(_namespace, "System.Threading.Tasks") == 0)
+            if (((strcmp(name, "Task`1") == 0) || (strcmp(name, "ValueTask`1") == 0)) && strcmp(_namespace, "System.Threading.Tasks") == 0)
             {
+                *pIsValueTask = name[0] == 'V';
                 if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
                     return AsyncTaskMethod::TaskReturningMethod;
             }
         }
     }
+    else if ((elemType == ELEMENT_TYPE_CLASS) || (elemType == ELEMENT_TYPE_VALUETYPE))
+    {
+        IfFailThrow(sig.GetToken(&tk));
+        // This might be System.Threading.Tasks.Task or ValueTask
+        GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
+        if (((strcmp(name, "Task") == 0) || (strcmp(name, "ValueTask") == 0)) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+        {
+            *pIsValueTask = name[0] == 'V';
+            if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                return AsyncTaskMethod::TaskNonGenericReturningMethod;
+        }
+    }
+
     return AsyncTaskMethod::NormalMethod;
 }
 
@@ -3004,9 +3040,10 @@ MethodTableBuilder::EnumerateClassMethods()
 
         SigParser sig(pMemberSignature, cMemberSignature);
         ULONG offsetOfAsyncDetails = 0;
+        bool isAsyncValueType = false;
         AsyncTaskMethod asyncMethodType;
         
-        asyncMethodType = IsDelegate() ? AsyncTaskMethod::NormalMethod : ClassifyAsyncMethod(sig, GetModule(), &offsetOfAsyncDetails);
+        asyncMethodType = IsDelegate() ? AsyncTaskMethod::NormalMethod : ClassifyAsyncMethod(sig, GetModule(), &offsetOfAsyncDetails, &isAsyncValueType);
 
         bool hasGenericMethodArgsComputed;
         bool hasGenericMethodArgs = this->GetModule()->m_pMethodIsGenericMap->IsGeneric(tok, &hasGenericMethodArgsComputed);
@@ -3559,7 +3596,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     type,
                     implType);
 
-                if ((asyncMethodType == AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask) || (asyncMethodType == AsyncTaskMethod::Async2Method))
+                if (IsAsyncTaskMethodAsync2Method(asyncMethodType))
                 {
                     pNewMethod->SetIsAsync2Method();
                 }
@@ -3585,6 +3622,28 @@ MethodTableBuilder::EnumerateClassMethods()
                     thunkType = AsyncMethodType::TaskToAsync;
                     originalPrefixSize = 1;
                     newPrefixSize = 2;
+                    originalSuffixSize = 0;
+                    newSuffixSize = 1;
+                }
+                else if (asyncMethodType == AsyncTaskMethod::Async2MethodNonGeneric)
+                {
+                    cAsyncThunkMemberSignature -= 1;
+                    originalTokenOffsetFromAsyncDetailsOffset = 1;
+                    newTokenOffsetFromAsyncDetailsOffset = 1;
+                    thunkType = AsyncMethodType::TaskToAsync;
+                    originalPrefixSize = 1;
+                    newPrefixSize = 1;
+                    originalSuffixSize = 1;
+                    newSuffixSize = 0;
+                }
+                else if (asyncMethodType == AsyncTaskMethod::TaskNonGenericReturningMethod)
+                {
+                    cAsyncThunkMemberSignature += 1;
+                    originalTokenOffsetFromAsyncDetailsOffset = 1;
+                    newTokenOffsetFromAsyncDetailsOffset = 1;
+                    thunkType = AsyncMethodType::AsyncToTask;
+                    originalPrefixSize = 1;
+                    newPrefixSize = 1;
                     originalSuffixSize = 0;
                     newSuffixSize = 1;
                 }
@@ -3614,20 +3673,38 @@ MethodTableBuilder::EnumerateClassMethods()
                 _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
                 memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
 
+                BYTE elemTypeClassOrValuetype = isAsyncValueType ? (BYTE)ELEMENT_TYPE_VALUETYPE : (BYTE)ELEMENT_TYPE_CLASS;
+
                 if (asyncMethodType == AsyncTaskMethod::Async2Method)
                 {
                     // Incoming sig will look something like ... E_T_CMOD_OPT <TokenOfTask> E_T_I4 ....
-                    // And needs to be translated to E_T_GENERICINST E_T_CLASS <TokenOfTask> 1 E_T_I4
-
+                    // And needs to be translated to E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1 E_T_I4
                     // Replace the ELEMENT_TYPE_CMOD with ELEMENT_TYPE_GENERICINST, and then add a 1 after the token which refers to Task<T>
 
                     pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_GENERICINST;
-                    pNewMemberSignature[offsetOfAsyncDetails + 1] = ELEMENT_TYPE_CLASS;
+                    pNewMemberSignature[offsetOfAsyncDetails + 1] = elemTypeClassOrValuetype;
                     pNewMemberSignature[newRemainingSigOffset - 1] = 1;
+                }
+                else if (asyncMethodType == AsyncTaskMethod::Async2MethodNonGeneric)
+                {
+                    // Incoming sig will look like ...   E_T_CMOD_OPT <TokenOfTask> E_T_VOID
+                    // which needs to be translated to E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+
+                    // Replace the ELEMENT_TYPE_CMOD with ELEMENT_TYPE_CLASS/VALUETYPE
+                    pNewMemberSignature[offsetOfAsyncDetails] = elemTypeClassOrValuetype;
+                }
+                else if (asyncMethodType == AsyncTaskMethod::TaskNonGenericReturningMethod)
+                {
+                    // Incoming sig will look like ... E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+                    // and needs to be translated to E_T_CMOD_OPT <TokenOfTask> E_T_VOID
+
+                    // Replace the E_T_CLASS/E_T_VALUETYPE with ELEMENT_TYPE_CMOD_OPT, and then add the E_T_VOID
+                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_OPT;
+                    pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
                 }
                 else
                 {
-                    // Incoming sig will look something like ... E_T_GENERICINST E_T_CLASS <TokenOfTask> 1 E_T_I4 ....
+                    // Incoming sig will look something like ... E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1 E_T_I4 ....
                     // And needs to be translated to E_T_CMOD_OPT <TokenOfTask> E_T_I4
 
                     // Replace the ELEMENT_TYPE_GENERICINST with ELEMENT_TYPE_CMOD_OPT, and then remove the 1 which specifies the generic arg count for Task<T>
@@ -7491,6 +7568,21 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
                 pUnboxedMD->SetHasNonVtableSlot();
+
+                // By settings HasNonVTableSlot, the following chunks of data have been shifted around.
+                // This is an example of the fragility noted in the memcpy comment above
+                if (pUnboxedMD->HasNativeCodeSlot())
+                {
+                    *pUnboxedMD->GetAddrOfNativeCodeSlot() = *pMD->GetAddrOfNativeCodeSlot();
+                }
+                if (pUnboxedMD->HasMethodImplSlot())
+                {
+                    *pUnboxedMD->GetMethodImpl() = *pMD->GetMethodImpl();
+                }
+                if (pUnboxedMD->HasAsyncMethodData())
+                {
+                    *pUnboxedMD->GetAddrOfAsyncMethodData() = *pMD->GetAddrOfAsyncMethodData();
+                }
             }
 
             //////////////////////////////////////////////////////////

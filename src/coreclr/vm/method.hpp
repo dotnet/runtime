@@ -195,10 +195,27 @@ enum class AsyncVariantLookup
 enum class AsyncTaskMethod
 {
     TaskReturningMethod,
+    TaskNonGenericReturningMethod,
     Async2Method,
     Async2MethodThatCannotBeImplementedByTask,
+    Async2MethodNonGeneric,
     NormalMethod
 };
+
+inline bool IsAsyncTaskMethodNormal(AsyncTaskMethod input)
+{
+    return input == AsyncTaskMethod::NormalMethod;
+}
+
+inline bool IsAsyncTaskMethodAsync2Method(AsyncTaskMethod input)
+{
+    return (input == AsyncTaskMethod::Async2Method) || (input == AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask) || (input == AsyncTaskMethod::Async2MethodNonGeneric);
+}
+
+inline bool IsAsyncTaskMethodTaskReturningMethod(AsyncTaskMethod input)
+{
+    return (input == AsyncTaskMethod::TaskReturningMethod) || (input == AsyncTaskMethod::TaskNonGenericReturningMethod);
+}
 
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
@@ -3691,7 +3708,7 @@ ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(Method
 void InitReadyToRunStandaloneMethodMetadata();
 #endif // FEATURE_READYTORUN
 
-AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails);
+AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *pIsValueType);
 
 #include "method.inl"
 
