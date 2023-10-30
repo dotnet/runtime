@@ -264,7 +264,7 @@ struct alloc_context : gc_alloc_context
         int low_16_bits = alloc_count & 0xffff;
         // When we overflow we don't start from 0 because we would't want to go through the init logic again
         // in balance_heaps.
-        low_16_bits = (low_16_bits == 0xffff) ? 16 : ++low_16_bits;
+        low_16_bits = (low_16_bits == 0xffff) ? 16 : (low_16_bits + 1);
 
         alloc_count = (high_16_bits << 16) | low_16_bits;
     }
