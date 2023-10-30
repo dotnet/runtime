@@ -67,6 +67,7 @@ extends:
             - osx_x64
             - windows_x64
           jobParameters:
+            testGroup: innerloop
             buildArgs: -s clr+libs+libs.tests
                        -c $(_BuildConfig)
                        /p:TestReadyToRun=true
