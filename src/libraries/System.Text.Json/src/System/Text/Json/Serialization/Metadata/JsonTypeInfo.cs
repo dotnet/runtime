@@ -992,9 +992,10 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
 
-        internal ref struct PropertyHierarchyResolutionState(JsonSerializerOptions options)
+        internal ref struct PropertyHierarchyResolutionState
         {
-            public Dictionary<string, (JsonPropertyInfo, int index)> AddedProperties = new(options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            public PropertyHierarchyResolutionState() { }
+            public Dictionary<string, (JsonPropertyInfo, int index)> AddedProperties = new();
             public Dictionary<string, JsonPropertyInfo>? IgnoredProperties;
             public bool IsPropertyOrderSpecified;
         }
