@@ -71,7 +71,6 @@ extends:
                        -c $(_BuildConfig)
                        /p:TestReadyToRun=true
                        /p:RunSmokeTestsOnly=true
-                       /p:UseLocalAppHostPack=true
             nameSuffix: TestReadyToRun_Libraries
             timeoutInMinutes: 120
             postBuildSteps:
