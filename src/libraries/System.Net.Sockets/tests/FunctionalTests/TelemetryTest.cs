@@ -193,7 +193,7 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
-            if (UsesSync && PlatformDetection.IsLinux)
+            if (connectMethod == "Sync" && PlatformDetection.IsLinux)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
                 return;
