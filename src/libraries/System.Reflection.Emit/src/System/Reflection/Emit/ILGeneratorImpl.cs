@@ -71,10 +71,10 @@ namespace System.Reflection.Emit
             _maxStackSize = Math.Max(_maxStackSize, _currentStack);
         }
 
-        private void UpdateStackSize(OpCode opCode, int stackchange)
+        private void UpdateStackSize(OpCode opCode, int stackChange)
         {
             _currentStack += opCode.EvaluationStackDelta;
-            _currentStack += stackchange;
+            _currentStack += stackChange;
             _maxStackSize = Math.Max(_maxStackSize, _currentStack);
         }
 
@@ -229,19 +229,19 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
             }
 
-            int stackchange = 0;
-            // Push the return value if there is one.
-            stackchange++;
+            int stackChange = 0;
+            // Push the return value
+            stackChange++;
             // Pop the parameters.
-            stackchange -= con.GetParameters().Length;
+            stackChange -= con.GetParameters().Length;
             // Pop the this parameter if the constructor is non-static and the
             // instruction is not newobj.
             if (!con.IsStatic && !opcode.Equals(OpCodes.Newobj))
             {
-                stackchange--;
+                stackChange--;
             }
 
-            UpdateStackSize(opcode, stackchange);
+            UpdateStackSize(opcode, stackChange);
             _il.OpCode((ILOpCode)opcode.Value);
             _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
                 (con, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
@@ -362,38 +362,38 @@ namespace System.Reflection.Emit
 
         private static int GetStackChange(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
-            int stackchange = 0;
+            int stackChange = 0;
 
             // Push the return value if there is one.
             if (methodInfo.ReturnType != typeof(void))
             {
-                stackchange++;
+                stackChange++;
             }
 
             // Pop the parameters.
             if (methodInfo is MethodBuilderImpl builder)
             {
-                stackchange -= builder.ParameterCount;
+                stackChange -= builder.ParameterCount;
             }
             else
             {
-                stackchange -= methodInfo.GetParameters().Length;
+                stackChange -= methodInfo.GetParameters().Length;
             }
 
             // Pop the this parameter if the method is non-static and the
             // instruction is not newobj.
             if (!methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
             {
-                stackchange--;
+                stackChange--;
             }
 
             // Pop the optional parameters off the stack.
             if (optionalParameterTypes != null)
             {
-                stackchange -= optionalParameterTypes.Length;
+                stackChange -= optionalParameterTypes.Length;
             }
 
-            return stackchange;
+            return stackChange;
         }
 
         public override void EmitCalli(OpCode opcode, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes) => throw new NotImplementedException();
