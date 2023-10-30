@@ -169,6 +169,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
+        public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
+        {
+            try
+            {
+                return (T)Enum.Parse(typeof(T), value, ignoreCase: true);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(T)}'.", exception);
+            }
+        }
+
         public static int ParseInt(string value, Func<string?> getPath)
         {
             try
@@ -214,22 +226,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             catch (Exception exception)
             {
                 throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(decimal)}'.", exception);
-            }
-        }
-
-        public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
-        {
-            try
-            {
-                #if NETFRAMEWORK || NETSTANDARD2_0
-                    return (T)Enum.Parse(typeof(T), value, ignoreCase: true);
-                #else
-                    return Enum.Parse<T>(value, ignoreCase: true);
-                #endif
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(T)}'.", exception);
             }
         }
 
