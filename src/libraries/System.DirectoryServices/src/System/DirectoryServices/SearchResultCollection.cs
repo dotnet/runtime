@@ -403,8 +403,8 @@ namespace System.DirectoryServices
 
             private int GetLastError(ref int errorCode)
             {
-                Span<char> errorBuffer = Span<char>.Empty;
-                Span<char> nameBuffer = Span<char>.Empty;
+                char[] errorBuffer = Array.Empty<char>();
+                char[] nameBuffer = Array.Empty<char>();
                 errorCode = Interop.Errors.ERROR_SUCCESS;
                 return Interop.Activeds.ADsGetLastError(out errorCode, errorBuffer, errorBuffer.Length, nameBuffer, nameBuffer.Length);
             }

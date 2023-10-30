@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -56,17 +57,19 @@ namespace System.DirectoryServices
         internal static Exception CreateFormattedComException(COMException e)
         {
             // get extended error information
-            const int ErrorBufferLength = 256;
-            Span<char> errorBuffer = stackalloc char[ErrorBufferLength];
-
-            Span<char> nameBuffer = Span<char>.Empty;
+            char[] errorBuffer = ArrayPool<char>.Shared.Rent(256);
+            char[] nameBuffer = Array.Empty<char>();
             int error = 0;
+
             Interop.Activeds.ADsGetLastError(out error, errorBuffer, errorBuffer.Length, nameBuffer, nameBuffer.Length);
 
-            if (error != 0)
-                return new DirectoryServicesCOMException(new string(errorBuffer), error, e);
-            else
-                return e;
+            Exception exception = (error != 0)
+                ? new DirectoryServicesCOMException(new string(errorBuffer), error, e)
+                : e;
+
+            ArrayPool<char>.Shared.Return(errorBuffer);
+
+            return exception;
         }
     }
 }
