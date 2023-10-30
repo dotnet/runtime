@@ -863,7 +863,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 Location? typeLocation = typeToGenerate.Location;
                 List<PropertyGenerationSpec> properties = new();
-                PropertyHierarchyResolutionState state = new(options);
+                PropertyHierarchyResolutionState state = new();
                 hasExtensionDataProperty = false;
 
                 // Walk the type hierarchy starting from the current type up to the base type(s)
@@ -970,10 +970,11 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private ref struct PropertyHierarchyResolutionState(SourceGenerationOptionsSpec? options)
+            private ref struct PropertyHierarchyResolutionState
             {
+                public PropertyHierarchyResolutionState() { }
                 public readonly List<int> Properties = new();
-                public Dictionary<string, (PropertyGenerationSpec, ISymbol, int index)> AddedProperties = new(options?.PropertyNameCaseInsensitive == true ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+                public Dictionary<string, (PropertyGenerationSpec, ISymbol, int index)> AddedProperties = new();
                 public Dictionary<string, ISymbol>? IgnoredMembers;
                 public bool IsPropertyOrderSpecified;
                 public bool HasInvalidConfigurationForFastPath;
