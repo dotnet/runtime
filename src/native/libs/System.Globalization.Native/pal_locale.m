@@ -810,10 +810,10 @@ int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
     @autoreleasepool
     {
         NSString *localeIdentifier = [NSString stringWithFormat:@"%s", localeName];
-        NSString *desiredLocaleIdentifier = [localeIdentifier stringByReplacingOccurrencesOfString:@"-" withString:@"_"];
+        NSString *localeIdentifierByRegionDesignator = [localeIdentifier stringByReplacingOccurrencesOfString:@"-" withString:@"_"];
         NSArray<NSString *> *availableLocales = [NSLocale availableLocaleIdentifiers];
 
-        if ([availableLocales containsObject:desiredLocaleIdentifier])
+        if ([availableLocales containsObject:localeIdentifier] || [availableLocales containsObject:localeIdentifierByRegionDesignator])
         {
             return true;
         }

@@ -130,6 +130,7 @@ namespace System.Globalization
                 }
             }
             else
+#endif
             {
                 // Get the locale name from ICU
                 if (!GetLocaleName(realNameBuffer, out _sWindowsName))
@@ -137,13 +138,6 @@ namespace System.Globalization
                     return false;
                 }
             }
-#else
-            // Get the locale name from ICU
-            if (!GetLocaleName(realNameBuffer, out _sWindowsName))
-            {
-                return false; // fail
-            }
-#endif
 
             Debug.Assert(_sWindowsName != null);
 
@@ -187,18 +181,21 @@ namespace System.Globalization
                 windowsName = Interop.Globalization.GetDefaultLocaleNameNative();
                 return windowsName != null && windowsName.Length > 0;
             }
+            else
 #endif
-            // Get the default (system) locale name from ICU
-            char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
-            if (!Interop.Globalization.GetDefaultLocaleName(buffer, ICU_ULOC_FULLNAME_CAPACITY))
-            {
-                windowsName = null;
-                return false; // fail
-            }
+           {
+                // Get the default (system) locale name from ICU
+                char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
+                if (!Interop.Globalization.GetDefaultLocaleName(buffer, ICU_ULOC_FULLNAME_CAPACITY))
+                {
+                    windowsName = null;
+                    return false; // fail
+                }
 
-            // Success - use the locale name returned which may be different than realNameBuffer (casing)
-            windowsName = new string(buffer); // the name passed to subsequent ICU calls
-            return true;
+                // Success - use the locale name returned which may be different than realNameBuffer (casing)
+                windowsName = new string(buffer); // the name passed to subsequent ICU calls
+                return true;
+           }
         }
 
         private string IcuGetLocaleInfo(LocaleStringData type, string? uiCultureName = null)
@@ -318,8 +315,11 @@ namespace System.Globalization
             {
                 return Interop.Globalization.IsPredefinedLocaleNative(name);
             }
+            else
+            {
 #endif
-            return Interop.Globalization.IsPredefinedLocale(name);
+                return Interop.Globalization.IsPredefinedLocale(name);
+            }
         }
 
         private static string ConvertIcuTimeFormatString(ReadOnlySpan<char> icuFormatString)
