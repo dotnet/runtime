@@ -360,6 +360,8 @@ namespace System.Drawing
                 // font family not found in private fonts also
                 if (fontFamily == null)
                     fontFamily = FontFamily.GenericSansSerif;
+
+                collection.Dispose();
             }
 
             return new Font(fontFamily, size, style, unit, charSet, vertical);

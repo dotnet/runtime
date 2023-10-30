@@ -728,13 +728,8 @@ namespace System.Data.Odbc
                                     localReader.GetSchemaTable();
                                 }
                             }
-                            else if (retcode == ODBC32.RetCode.NO_DATA)
+                            else if (retcode != ODBC32.RetCode.NO_DATA)
                             {
-                                // do nothing
-                            }
-                            else
-                            {
-                                // any other returncode indicates an error
                                 _connection!.HandleError(stmt, retcode);
                             }
                         }

@@ -565,9 +565,6 @@ namespace System.Data.ProviderBase
                 _totalObjects = _objectList.Count;
             }
 
-            if (removed)
-            {
-            }
             obj.Dispose();
         }
 

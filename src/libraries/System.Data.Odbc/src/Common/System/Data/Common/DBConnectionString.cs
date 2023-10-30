@@ -308,12 +308,7 @@ namespace System.Data.Common
                         // Combined - Component == null
                         Debug.Assert(!combinedSet._restrictionValues.Except(componentSet._restrictionValues).Any(), "Combined set allows values not allowed by component set");
                     }
-                    else if (combinedSet._behavior == KeyRestrictionBehavior.PreventUsage)
-                    {
-                        // Component==Allow, Combined==PreventUsage
-                        // Preventions override allows, so there is nothing to check here
-                    }
-                    else
+                    else if (combinedSet._behavior != KeyRestrictionBehavior.PreventUsage)
                     {
                         Debug.Fail($"Unknown behavior for combined set: {combinedSet._behavior}");
                     }

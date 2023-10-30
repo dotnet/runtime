@@ -74,10 +74,14 @@ namespace System.Drawing
             {
                 if (defDpiX == 0)
                 {
-                    Bitmap bmp = new Bitmap(1, 1);
-                    Graphics g = Graphics.FromImage(bmp);
-                    defDpiX = g.DpiX;
-                    defDpiY = g.DpiY;
+                    using (Bitmap bmp = new Bitmap(1, 1))
+                    {
+                        using (Graphics g = Graphics.FromImage(bmp))
+                        {
+                            defDpiX = g.DpiX;
+                            defDpiY = g.DpiY;
+                        }
+                    }
                 }
                 return defDpiX;
             }
