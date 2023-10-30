@@ -192,6 +192,16 @@ struct Agnostic_CORINFO_EE_INFO
     DWORD osType;
 };
 
+struct Agnostic_CORINFO_ASYNC2_INFO
+{
+    DWORDLONG continuationClsHnd;
+    DWORDLONG continuationNextFldHnd;
+    DWORDLONG continuationResumeFldHnd;
+    DWORDLONG continuationStateFldHnd;
+    DWORDLONG continuationDataFldHnd;
+    DWORDLONG continuationGCDataFldHnd;
+};
+
 struct Agnostic_GetOSRInfo
 {
     DWORD index;

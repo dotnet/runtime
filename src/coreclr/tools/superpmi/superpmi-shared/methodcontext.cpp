@@ -4319,6 +4319,41 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     }
 }
 
+void MethodContext::recGetAsync2Info(const CORINFO_ASYNC2_INFO* pAsync2Info)
+{
+    if (GetAsync2Info == nullptr)
+        GetAsync2Info = new LightWeightMap<DWORD, Agnostic_CORINFO_ASYNC2_INFO>();
+
+    Agnostic_CORINFO_ASYNC2_INFO value;
+    value.continuationClsHnd = CastHandle(pAsync2Info->continuationClsHnd);
+    value.continuationNextFldHnd = CastHandle(pAsync2Info->continuationNextFldHnd);
+    value.continuationResumeFldHnd = CastHandle(pAsync2Info->continuationResumeFldHnd);
+    value.continuationStateFldHnd = CastHandle(pAsync2Info->continuationStateFldHnd);
+    value.continuationDataFldHnd = CastHandle(pAsync2Info->continuationDataFldHnd);
+    value.continuationGCDataFldHnd = CastHandle(pAsync2Info->continuationGCDataFldHnd);
+
+    GetAsync2Info->Add(0, value);
+    DEBUG_REC(dmpGetAsync2Info(0, value));
+}
+void MethodContext::dmpGetAsync2Info(DWORD key, const Agnostic_CORINFO_ASYNC2_INFO& value)
+{
+    printf("GetAsync2Info key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeFldHnd-%016" PRIX64
+           " contStateFldHnd-%016" PRIX64 " contDataFldHnd-%016" PRIX64 " contGCDataFldHnd-%016" PRIX64,
+        key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeFldHnd,
+        value.continuationStateFldHnd, value.continuationDataFldHnd, value.continuationGCDataFldHnd);
+}
+void MethodContext::repGetAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut)
+{
+    Agnostic_CORINFO_ASYNC2_INFO value = LookupByKeyOrMissNoMessage(GetAsync2Info, 0);
+    pAsync2InfoOut->continuationClsHnd = (CORINFO_CLASS_HANDLE)value.continuationClsHnd;
+    pAsync2InfoOut->continuationNextFldHnd = (CORINFO_FIELD_HANDLE)value.continuationNextFldHnd;
+    pAsync2InfoOut->continuationResumeFldHnd = (CORINFO_FIELD_HANDLE)value.continuationResumeFldHnd;
+    pAsync2InfoOut->continuationStateFldHnd = (CORINFO_FIELD_HANDLE)value.continuationStateFldHnd;
+    pAsync2InfoOut->continuationDataFldHnd = (CORINFO_FIELD_HANDLE)value.continuationDataFldHnd;
+    pAsync2InfoOut->continuationGCDataFldHnd = (CORINFO_FIELD_HANDLE)value.continuationGCDataFldHnd;
+    DEBUG_REP(dmpGetAsync2Info(0, value));
+}
+
 void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
 {
     if (GetGSCookie == nullptr)
@@ -6663,6 +6698,25 @@ bool MethodContext::repGetTailCallHelpers(
     pResult->hCallTarget = (CORINFO_METHOD_HANDLE)value.hCallTarget;
     pResult->hDispatcher = (CORINFO_METHOD_HANDLE)value.hDispatcher;
     return true;
+}
+
+
+void MethodContext::recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd)
+{
+    if (GetAsyncResumptionStub == nullptr)
+        GetAsyncResumptionStub = new LightWeightMap<DWORD, DWORDLONG>();
+
+    GetAsyncResumptionStub->Add(0, CastHandle(hnd));
+    DEBUG_REC(dmpGetAsyncResumptionStub(CastHandle(hnd)));
+}
+void MethodContext::dmpGetAsyncResumptionStub(DWORD key, DWORDLONG hnd)
+{
+    printf("GetAsyncResumptionStub key-%u, value-%016" PRIX64, key, hnd);
+}
+CORINFO_METHOD_HANDLE MethodContext::repGetAsyncResumptionStub()
+{
+    DWORDLONG hnd = LookupByKeyOrMissNoMessage(GetAsyncResumptionStub, 0);
+    return (CORINFO_METHOD_HANDLE)hnd;
 }
 
 void MethodContext::recUpdateEntryPointForTailCall(

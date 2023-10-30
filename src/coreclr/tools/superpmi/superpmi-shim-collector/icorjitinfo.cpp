@@ -1308,7 +1308,9 @@ void interceptor_ICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 
 void interceptor_ICJI::getAsync2Info(CORINFO_ASYNC2_INFO* pAsync2Info)
 {
-    // TODO
+    mc->cr->AddCall("getAsync2Info");
+    original_ICorJitInfo->getAsync2Info(pAsync2Info);
+    mc->recGetAsync2Info(pAsync2Info);
 }
 
 // Returns name of the JIT timer log
@@ -1730,8 +1732,10 @@ bool interceptor_ICJI::getTailCallHelpers(
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
 {
-    // TODO
-    return NULL;
+    mc->cr->AddCall("getAsyncResumptionStub");
+    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub();
+    mc->recGetAsyncResumptionStub(stub);
+    return stub;
 }
 
 void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
