@@ -34,9 +34,11 @@ namespace ILLink.RoslynAnalyzer
 
 		public override void Initialize (AnalysisContext context)
 		{
+			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
 			if (!System.Diagnostics.Debugger.IsAttached)
 				context.EnableConcurrentExecution ();
-			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
 			context.RegisterCompilationStartAction (context => {
 				var compilation = context.Compilation;
 				if (!IsAnalyzerEnabled (context.Options))

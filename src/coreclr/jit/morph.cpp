@@ -5439,24 +5439,27 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         calleeArgStackSize = roundUp(calleeArgStackSize, arg.AbiInfo.ByteAlignment);
         calleeArgStackSize += arg.AbiInfo.GetStackByteSize();
-#ifdef TARGET_ARM
+
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
         if (arg.AbiInfo.IsSplit())
         {
-            reportFastTailCallDecision("Argument splitting in callee is not supported on ARM32");
+            reportFastTailCallDecision("Argument splitting in callee is not supported on " TARGET_READABLE_NAME);
             return false;
         }
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
     }
 
     calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     if (compHasSplitParam)
     {
-        reportFastTailCallDecision("Argument splitting in caller is not supported on ARM32");
+        reportFastTailCallDecision("Argument splitting in caller is not supported on " TARGET_READABLE_NAME);
         return false;
     }
+#endif // TARGET_ARM || TARGET_RISCV64
 
+#ifdef TARGET_ARM
     if (compIsProfilerHookNeeded())
     {
         reportFastTailCallDecision("Profiler is not supported on ARM32");

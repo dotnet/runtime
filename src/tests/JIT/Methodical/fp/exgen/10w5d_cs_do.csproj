@@ -3,6 +3,7 @@
     <!-- Needed for JIT/superpmi/superpmicollect.csproj which depends on the
          individual test .cmd file -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

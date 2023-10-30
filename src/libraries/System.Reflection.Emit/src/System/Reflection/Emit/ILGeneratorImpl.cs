@@ -17,6 +17,7 @@ namespace System.Reflection.Emit
         private bool _hasDynamicStackAllocation;
         private int _maxStackSize;
         private int _currentStack;
+        private List<LocalBuilder> _locals = new();
         private Dictionary<Label, LabelHandle> _labelTable = new(2);
 
         internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
@@ -28,9 +29,9 @@ namespace System.Reflection.Emit
         }
 
         internal int GetMaxStackSize() => _maxStackSize;
-
         internal InstructionEncoder Instructions => _il;
         internal bool HasDynamicStackAllocation => _hasDynamicStackAllocation;
+        internal List<LocalBuilder> Locals => _locals;
 
         public override int ILOffset => _il.Offset;
 
@@ -40,7 +41,19 @@ namespace System.Reflection.Emit
         public override void BeginFaultBlock() => throw new NotImplementedException();
         public override void BeginFinallyBlock() => throw new NotImplementedException();
         public override void BeginScope() => throw new NotImplementedException();
-        public override LocalBuilder DeclareLocal(Type localType, bool pinned) => throw new NotImplementedException();
+
+        public override LocalBuilder DeclareLocal(Type localType, bool pinned)
+        {
+            if (_methodBuilder is not MethodBuilderImpl methodBuilder)
+                throw new NotSupportedException();
+
+            ArgumentNullException.ThrowIfNull(localType);
+
+            LocalBuilder local = new LocalBuilderImpl(_locals.Count, localType, methodBuilder, pinned);
+            _locals.Add(local);
+
+            return local;
+        }
 
         public override Label DefineLabel()
         {
@@ -228,7 +241,34 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void Emit(OpCode opcode, LocalBuilder local) => throw new NotImplementedException();
+        public override void Emit(OpCode opcode, LocalBuilder local)
+        {
+            ArgumentNullException.ThrowIfNull(local);
+
+            if (local is not LocalBuilderImpl localBuilder || localBuilder.GetMethodBuilder() != _methodBuilder)
+            {
+                throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
+            }
+
+            int tempVal = local.LocalIndex;
+            string name = opcode.Name!;
+
+            if (name.StartsWith("ldloca"))
+            {
+                _il.LoadLocalAddress(tempVal);
+            }
+            else if (name.StartsWith("ldloc"))
+            {
+                _il.LoadLocal(tempVal);
+            }
+            else if (name.StartsWith("stloc"))
+            {
+                _il.StoreLocal(tempVal);
+            }
+
+            UpdateStackSize(opcode);
+        }
+
         public override void Emit(OpCode opcode, SignatureHelper signature) => throw new NotImplementedException();
         public override void Emit(OpCode opcode, FieldInfo field) => throw new NotImplementedException();
         public override void Emit(OpCode opcode, MethodInfo meth) => throw new NotImplementedException();

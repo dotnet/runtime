@@ -1137,19 +1137,7 @@ namespace System.Numerics
             AssertValid();
             other.AssertValid();
 
-            if (_sign != other._sign)
-                return false;
-            if (_bits == other._bits)
-                // _sign == other._sign && _bits == null && other._bits == null
-                return true;
-
-            if (_bits == null || other._bits == null)
-                return false;
-            int cu = _bits.Length;
-            if (cu != other._bits.Length)
-                return false;
-            int cuDiff = GetDiffLength(_bits, other._bits, cu);
-            return cuDiff == 0;
+            return _sign == other._sign && _bits.AsSpan().SequenceEqual(other._bits);
         }
 
         public int CompareTo(long other)

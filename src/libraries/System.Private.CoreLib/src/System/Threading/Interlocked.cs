@@ -54,6 +54,7 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static uint Exchange(ref uint location1, uint value) =>
@@ -64,6 +65,7 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static ulong Exchange(ref ulong location1, ulong value) =>
@@ -92,6 +94,7 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
         {
@@ -109,6 +112,7 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UIntPtr Exchange(ref UIntPtr location1, UIntPtr value)
@@ -128,6 +132,7 @@ namespace System.Threading
         /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static uint CompareExchange(ref uint location1, uint value, uint comparand) =>
@@ -139,6 +144,7 @@ namespace System.Threading
         /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) =>
@@ -170,6 +176,7 @@ namespace System.Threading
         /// <param name="comparand">The <see cref="IntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
         {
@@ -188,6 +195,7 @@ namespace System.Threading
         /// <param name="comparand">The <see cref="UIntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UIntPtr CompareExchange(ref UIntPtr location1, UIntPtr value, UIntPtr comparand)
