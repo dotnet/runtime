@@ -183,7 +183,7 @@ namespace System.Globalization
             }
             else
 #endif
-           {
+            {
                 // Get the default (system) locale name from ICU
                 char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
                 if (!Interop.Globalization.GetDefaultLocaleName(buffer, ICU_ULOC_FULLNAME_CAPACITY))
@@ -195,7 +195,7 @@ namespace System.Globalization
                 // Success - use the locale name returned which may be different than realNameBuffer (casing)
                 windowsName = new string(buffer); // the name passed to subsequent ICU calls
                 return true;
-           }
+            }
         }
 
         private string IcuGetLocaleInfo(LocaleStringData type, string? uiCultureName = null)
