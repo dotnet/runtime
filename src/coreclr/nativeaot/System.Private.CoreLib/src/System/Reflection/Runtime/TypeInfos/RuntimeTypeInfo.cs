@@ -439,15 +439,15 @@ namespace System.Reflection.Runtime.TypeInfos
             for (int i = 0; i < typeArguments.Length; i++)
             {
                 Type typeArgument = typeArguments[i];
-                if (typeArgument is RuntimeType) // TODO: !!!!
+                if (typeArgument == null)
+                    throw new ArgumentNullException();
+
+                if (typeArgument is RuntimeType typeArgumentAsRuntimeType)
                 {
-                    runtimeTypeArguments[i] = typeArgument.ToRuntimeTypeInfo();
+                    runtimeTypeArguments[i] = typeArgumentAsRuntimeType.GetRuntimeTypeInfo();
                 }
                 else
                 {
-                    if (typeArgument == null)
-                        throw new ArgumentNullException();
-
                     if (typeArgument.IsSignatureType)
                     {
                         foundSignatureType = true;
@@ -587,13 +587,19 @@ namespace System.Reflection.Runtime.TypeInfos
         private RuntimeType _type;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RuntimeType ToType() => _type ?? CreateType();
+        public RuntimeType ToType() => _type ?? InitializeType();
 
-        private RuntimeType CreateType()
+        private RuntimeType InitializeType()
         {
             RuntimeTypeHandle runtimeTypeHandle = InternalTypeHandleIfAvailable;
-            RuntimeType type = runtimeTypeHandle.IsNull ? new RuntimeType(this) : (RuntimeType)Type.GetTypeFromHandle(runtimeTypeHandle)!;
-            Interlocked.CompareExchange(ref _type, type, null);
+            if (runtimeTypeHandle.IsNull)
+            {
+                Interlocked.CompareExchange(ref _type, new RuntimeType(this), null);
+            }
+            else
+            {
+                _type = (RuntimeType)Type.GetTypeFromHandle(runtimeTypeHandle)!;
+            }
             return _type;
         }
 
