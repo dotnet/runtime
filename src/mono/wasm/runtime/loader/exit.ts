@@ -157,7 +157,7 @@ async function flush_node_streams() {
         const stdoutFlushed = flushStream(process.stdout);
         let timeoutId;
         const timeout = new Promise(resolve => {
-            timeoutId = setTimeout(() => resolve("timeout"), 1000)
+            timeoutId = setTimeout(() => resolve("timeout"), 1000);
         });
         await Promise.race([Promise.all([stdoutFlushed, stderrFlushed]), timeout]);
         clearTimeout(timeoutId);
