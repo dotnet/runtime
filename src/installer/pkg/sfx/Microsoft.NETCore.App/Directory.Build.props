@@ -144,6 +144,7 @@
     <PlatformManifestFileEntry Include="libstandalonegc-disabled.a " IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-enabled.a " IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
     <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
     <PlatformManifestFileEntry Include="System.Private.TypeLoader.dll" />

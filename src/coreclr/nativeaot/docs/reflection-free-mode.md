@@ -62,6 +62,14 @@ To enable this mode, add following item to an `ItemGroup` in your project file:
   </ItemGroup>
 ```
 
+To achieve similar result for when querying for ``Assembly`` (will instead give the ExecutingAssembly):
+
+```xml
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="Switch.System.Reflection.Disabled.DoNotThrowForAssembly" Value="true" />
+  </ItemGroup>
+```
+
 And here for CustomAttributes (will return an empty array):
 
 ```xml

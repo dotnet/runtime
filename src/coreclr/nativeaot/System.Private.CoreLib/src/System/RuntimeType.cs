@@ -38,6 +38,7 @@ namespace System
         private static bool IsReflectionDisabled => false;
 
         private static bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
         private static bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -807,7 +808,16 @@ namespace System
 
         public override string? FullName => GetRuntimeTypeInfo().FullName;
 
-        public override Assembly Assembly => GetRuntimeTypeInfo().Assembly;
+        public override Assembly Assembly
+        {
+            get
+            {
+                if (IsReflectionDisabled && DoNotThrowForAssembly)
+                    return Assembly.GetExecutingAssembly();
+
+                return GetRuntimeTypeInfo().Assembly;
+            }
+        }
 
         public override Module Module => GetRuntimeTypeInfo().Module;
 
