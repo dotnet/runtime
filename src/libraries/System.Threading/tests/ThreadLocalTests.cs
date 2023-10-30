@@ -274,7 +274,7 @@ namespace System.Threading.Tests
                             }
                         }
                     }
-                    Assert.True(false, message);
+                    Assert.Fail(message);
                 }
                 for (int i = 0; i < 1000; i++)
                 {

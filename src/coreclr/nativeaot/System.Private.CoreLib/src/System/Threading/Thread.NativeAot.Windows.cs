@@ -251,7 +251,7 @@ namespace System.Threading
 
             if (this != CurrentThread)
             {
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
                     if (HasStarted())
                         throw new ThreadStateException();

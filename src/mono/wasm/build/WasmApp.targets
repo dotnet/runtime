@@ -154,7 +154,6 @@
     <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">false</WasmStripILAfterAOT>
 
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
-    <BlazorCacheBootResources Condition="'$(BlazorCacheBootResources)' == ''">true</BlazorCacheBootResources>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1624,11 +1624,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(intrin.op2 != nullptr);
                 assert(intrin.op3 != nullptr);
                 assert(isRMW);
-                srcCount += BuildOperandUses(intrin.op2);
+                if (!intrin.op2->isContainedIntOrIImmed())
+                {
+                    srcCount += BuildOperandUses(intrin.op2);
+                }
 
                 assert(intrinsicTree->OperIsMemoryLoadOrStore());
                 srcCount += BuildAddrUses(intrin.op3);
                 FALLTHROUGH;
+            case NI_AdvSimd_LoadVector64x2AndUnzip:
+            case NI_AdvSimd_LoadVector64x3AndUnzip:
+            case NI_AdvSimd_LoadVector64x4AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
             case NI_AdvSimd_LoadVector64x2:
             case NI_AdvSimd_LoadVector64x3:
             case NI_AdvSimd_LoadVector64x4:

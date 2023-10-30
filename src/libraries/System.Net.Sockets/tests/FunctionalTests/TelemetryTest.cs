@@ -187,6 +187,7 @@ namespace System.Net.Sockets.Tests
             }, connectMethod, useDnsEndPoint.ToString()).Dispose();
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Same as Connect.ConnectGetsCanceledByDispose")]

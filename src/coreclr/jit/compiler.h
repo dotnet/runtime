@@ -3221,8 +3221,6 @@ public:
     bool fgSafeBasicBlockCreation;
 #endif
 
-    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
-
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3732,12 +3730,12 @@ public:
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler* impInlineRoot();
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     unsigned __int64 getInlineCycleCount()
     {
         return m_compCycles;
     }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     bool fgNoStructPromotion;      // Set to TRUE to turn off struct promotion for this method.
     bool fgNoStructParamPromotion; // Set to TRUE to turn off struct promotion for parameters this method.
@@ -3783,14 +3781,16 @@ private:
     {
         PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
         PREFIX_TAILCALL_IMPLICIT =
-            0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
-        PREFIX_TAILCALL_STRESS =
-            0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
-        PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
-        PREFIX_VOLATILE    = 0x00001000,
-        PREFIX_UNALIGNED   = 0x00010000,
-        PREFIX_CONSTRAINED = 0x00100000,
-        PREFIX_READONLY    = 0x01000000
+            0x00000002, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+        PREFIX_TAILCALL    = PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT,
+        PREFIX_VOLATILE    = 0x00000004,
+        PREFIX_UNALIGNED   = 0x00000008,
+        PREFIX_CONSTRAINED = 0x00000010,
+        PREFIX_READONLY    = 0x00000020,
+
+#ifdef DEBUG
+        PREFIX_TAILCALL_STRESS = 0x00000040, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+#endif
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -4582,7 +4582,6 @@ public:
         }
     }
 
-    BasicBlock* fgNewBasicBlock(BBjumpKinds jumpKind);
     bool fgEnsureFirstBBisScratch();
     bool fgFirstBBisScratch();
     bool fgBBisScratch(BasicBlock* block);
@@ -4590,31 +4589,34 @@ public:
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
 
-    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
+    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
+    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects = false);
+    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
 
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
                                 BasicBlock* nearBlk,
+                                BasicBlock* jumpDest    = nullptr,
                                 bool        putInFilter = false,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 BasicBlock* srcBlk,
+                                BasicBlock* jumpDest    = nullptr,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind);
+    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
 
     BasicBlock* fgNewBBinRegionWorker(BBjumpKinds jumpKind,
                                       BasicBlock* afterBlk,
                                       unsigned    xcptnIndex,
-                                      bool        putInTryRegion);
+                                      bool        putInTryRegion,
+                                      BasicBlock* jumpDest = nullptr);
 
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
@@ -4697,6 +4699,8 @@ public:
 
     bool fgGlobalMorph; // indicates if we are during the global morphing phase
                         // since fgMorphTree can be called from several places
+
+    bool fgGlobalMorphDone;
 
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
@@ -4889,10 +4893,6 @@ public:
     void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
-
-    // Do "simple lowering."  This functionality is (conceptually) part of "general"
-    // lowering that is distributed between fgMorph and the lowering phase of LSRA.
-    PhaseStatus fgSimpleLowering();
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
@@ -5662,7 +5662,7 @@ public:
     void fgDebugCheckLoopTable();
     void fgDebugCheckSsa();
 
-    void fgDebugCheckFlags(GenTree* tree);
+    void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
@@ -5712,6 +5712,10 @@ public:
                                 fgWalkPostFn* visitor,
                                 void*         pCallBackData = nullptr,
                                 bool          computeStack  = false);
+
+#ifdef DEBUG
+    void fgInvalidateBBLookup();
+#endif // DEBUG
 
     /**************************************************************************
      *                          PROTECTED
@@ -5975,7 +5979,6 @@ private:
     bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
 
 #endif
-    bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
     bool fgCanTailCallViaJitHelper(GenTreeCall* call);
     void fgMorphTailCallViaJitHelper(GenTreeCall* call);
@@ -6119,12 +6122,11 @@ private:
     static unsigned acdHelper(SpecialCodeKind codeKind);
 
     AddCodeDsc* fgAddCodeList;
-    bool        fgAddCodeModf;
+    bool        fgRngChkThrowAdded;
     AddCodeDsc* fgExcptnTargetCache[SCK_COUNT];
 
-    BasicBlock* fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind);
-
-    BasicBlock* fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, SpecialCodeKind kind);
+    void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
+    PhaseStatus fgCreateThrowHelperBlocks();
 
 public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);
@@ -6137,8 +6139,6 @@ public:
     }
 
 private:
-    bool fgIsCodeAdded();
-
     bool fgIsThrowHlpBlk(BasicBlock* block);
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -7120,6 +7120,7 @@ public:
 #define OMF_HAS_STATIC_INIT                    0x00008000 // Method has static initializations we might want to partially inline
 #define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
+#define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
 
     // clang-format on
 
@@ -7188,6 +7189,16 @@ public:
     void setMethodHasSpecialIntrinsics()
     {
         optMethodFlags |= OMF_HAS_SPECIAL_INTRINSICS;
+    }
+
+    bool doesMethodHaveRecursiveTailcall()
+    {
+        return (optMethodFlags & OMF_HAS_RECURSIVE_TAILCALL) != 0;
+    }
+
+    void setMethodHasRecursiveTailcall()
+    {
+        optMethodFlags |= OMF_HAS_RECURSIVE_TAILCALL;
     }
 
     void pickGDV(GenTreeCall*           call,
@@ -9363,7 +9374,6 @@ public:
     bool compFloatingPointUsed;        // Does the method use TYP_FLOAT or TYP_DOUBLE
     bool compTailCallUsed;             // Does the method do a tailcall
     bool compTailPrefixSeen;           // Does the method IL have tail. prefix
-    bool compMayConvertTailCallToLoop; // Does the method have a recursive tail call that we may convert to a loop?
     bool compLocallocSeen;             // Does the method IL have localloc opcode
     bool compLocallocUsed;             // Does the method use localloc.
     bool compLocallocOptimized;        // Does the method have an optimized localloc
@@ -10033,12 +10043,12 @@ public:
 
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
         // Method hash is logically const, but computed
         // on first demand.
         mutable unsigned compMethodHashPrivate;
         unsigned         compMethodHash() const;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
         // things for pseudorandom nop insertion
@@ -10341,7 +10351,7 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     bool compHasSplitParam;
 #endif
 
@@ -10802,14 +10812,14 @@ public:
 private:
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // These variables are associated with maintaining SQM data about compile time.
     unsigned __int64 m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
                                                   // in the current compilation.
     unsigned __int64 m_compCycles;                // Net cycle count for current compilation
     DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
                                           // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG) || defined(INLINE_DATA)
+#endif                                    // defined(DEBUG)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause

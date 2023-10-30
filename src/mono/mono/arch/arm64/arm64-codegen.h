@@ -486,18 +486,19 @@ MONO_RESTORE_WARNING
 #define arm_neon_ldrq_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b10 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
 #define arm_neon_ldrq_lit_fixup(p, target) *((guint32*)p) = (*((guint32*)p) & 0xff00001f) | (arm_get_disp19 ((p), (target)) << 5)
 
+#define ARM_MAX_ARITH_IMM (0xfff)
+
 /* Arithmetic (immediate) */
 static G_GNUC_UNUSED inline guint32
 arm_encode_arith_imm (int imm, guint32 *shift)
 {
 	// FIXME:
-	g_assert ((imm >= 0) && (imm < 0xfff));
+	g_assert ((imm >= 0) && (imm < ARM_MAX_ARITH_IMM));
 	*shift = 0;
 	return (guint32)imm;
 }
-
 // FIXME:
-#define arm_is_arith_imm(imm)  (((imm) >= 0) && ((imm) < 0xfff))
+#define arm_is_arith_imm(imm)  (((imm) >= 0) && ((imm) < ARM_MAX_ARITH_IMM))
 
 #define arm_format_alu_imm(p, sf, op, S, rd, rn, imm) do { \
 	guint32 _imm12, _shift; \
@@ -522,18 +523,19 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 /* Logical (immediate) */
 
 // FIXME: imm
+
+#define arm_format_and(p, sf, opc, rd, rn, n, immr, imms) arm_emit ((p), 0b00010010000000000000000000000000 | ((sf) << 31) | ((opc) << 29) | ((n) << 22) | ((immr) << 16) | ((imms) << 10) | ((rn) << 5) | ((rd) << 0))
+
+#define arm_andw_imm(p, rd, rn, immr, imms) arm_format_and ((p), 0b0, 0b00, (rd), (rn), 0b0, (immr), (imms))
+#define arm_andx_imm(p, rd, rn, n, immr, imms) arm_format_and ((p), 0b1, 0b00, (rd), (rn), (n), (immr), (imms))
+#define arm_andsw_imm(p, rd, rn, immr, imms) arm_format_and ((p), 0b0, 0b11, (rd), (rn), 0b0, (immr), (imms))
+#define arm_andsx_imm(p, rd, rn, n, immr, imms) arm_format_and ((p), 0b1, 0b11, (rd), (rn), (n), (immr), (imms))
+#define arm_eorw_imm(p, rd, rn, immr, imms) arm_format_and ((p), 0b0, 0b10, (rd), (rn), 0b0, (immr), (imms))
+#define arm_eorx_imm(p, rd, rn, n, immr, imms) arm_format_and ((p), 0b1, 0b10, (rd), (rn), (n), (immr), (imms))
+#define arm_orrw_imm(p, rd, rn, immr, imms) arm_format_and ((p), 0b0, 0b01, (rd), (rn), 0b0, (immr), (imms))
+#define arm_orrx_imm(p, rd, rn, n, immr, imms) arm_format_and ((p), 0b1, 0b01, (rd), (rn), (n), (immr), (imms))
+
 #if 0
-#define arm_format_and(p, sf, opc, rd, rn, imm) arm_emit ((p), ((sf) << 31) | ((opc) << 29) | (0x24 << 23) | ((0) << 22) | ((imm) << 10) | ((rn) << 5) | ((rd) << 0))
-
-#define arm_andx_imm(p, rd, rn, imm) arm_format_and ((p), 0x1, 0x0, (rd), (rn), (imm))
-#define arm_andw_imm(p, rd, rn, imm) arm_format_and ((p), 0x0, 0x0, (rd), (rn), (imm))
-#define arm_andsx_imm(p, rd, rn, imm) arm_format_and ((p), 0x1, 0x3, (rd), (rn), (imm))
-#define arm_andsw_imm(p, rd, rn, imm) arm_format_and ((p), 0x0, 0x3, (rd), (rn), (imm))
-#define arm_eorx_imm(p, rd, rn, imm) arm_format_and ((p), 0x1, 0x2, (rd), (rn), (imm))
-#define arm_eorw_imm(p, rd, rn, imm) arm_format_and ((p), 0x0, 0x2, (rd), (rn), (imm))
-#define arm_orrx_imm(p, rd, rn, imm) arm_format_and ((p), 0x1, 0x1, (rd), (rn), (imm))
-#define arm_orrw_imm(p, rd, rn, imm) arm_format_and ((p), 0x0, 0x1, (rd), (rn), (imm))
-
 #define arm_tstx_imm(p, rn, imm) arm_andsx_imm ((p), ARMREG_RZR, (rn), (imm))
 #define arm_tstw_imm(p, rn, imm) arm_andsw_imm ((p), ARMREG_RZR, (rn), (imm))
 #endif
@@ -1054,7 +1056,12 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define TYPE_F32 0
 #define TYPE_F64 1
 
-/* NEON :: move SIMD register*/
+/* NEON :: paired loads/stores */
+#define arm_neon_ldp_stp(p, opc, l, rt1, rt2, rn, imm7) arm_emit ((p), 0b00101101000000000000000000000000 | (opc) << 30 | (l) << 22 | (imm7) << 15 | (rt2) << 10 | (rn) << 5 | (rt1))
+#define arm_neon_stp_16b(p, rt1, rt2, rn, imm) arm_neon_ldp_stp ((p), 0b10, 0b0, (rt1), (rt2), (rn), arm_encode_imm7 (imm, 16))
+#define arm_neon_ldp_16b(p, rt1, rt2, rn, imm) arm_neon_ldp_stp ((p), 0b10, 0b1, (rt1), (rt2), (rn), arm_encode_imm7 (imm, 16))
+
+/* NEON :: move SIMD register */
 #define arm_neon_mov(p, rd, rn) arm_neon_orr ((p), VREG_FULL, (rd), (rn), (rn))
 #define arm_neon_mov_8b(p, rd, rn) arm_neon_orr ((p), VREG_LOW, (rd), (rn), (rn))
 

@@ -1,6 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>$(MSBuildProjectDirectory)\..\src\Resources\Strings.resx</StringResourcesPath>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
@@ -11,8 +12,6 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs"
-             Link="System\PasteArguments.cs" />
     <Compile Include="$(CommonPath)System\IO\StringParser.cs"
              Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
@@ -45,8 +44,6 @@
     <Compile Include="ProcessStartInfoTests.Windows.cs" />
     <Compile Include="ProcessTests.Windows.cs" />
     <Compile Include="ProcessThreadTests.Windows.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Windows.cs"
-             Link="System\PasteArguments.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
          Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibrary.cs"
@@ -60,8 +57,6 @@
     <Compile Include="Interop.Unix.cs" />
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs"
-             Link="System\PasteArguments.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs"

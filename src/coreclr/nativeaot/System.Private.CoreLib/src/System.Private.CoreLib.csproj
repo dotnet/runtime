@@ -3,6 +3,8 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
     <NoWarn>$(NoWarn);AD0001</NoWarn>
+    <!-- CA2252: Opt in to preview features before using them (Lock) -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
 
   <ItemGroup>
@@ -144,7 +146,6 @@
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="System\Reflection\Emit\DynamicILInfo.cs" />
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
-    <Compile Include="System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="System\Reflection\EnumInfo.cs" />
@@ -231,10 +232,9 @@
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Text\StringBuilder.NativeAot.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
-    <Compile Include="System\Threading\Lock.cs" />
+    <Compile Include="System\Threading\Lock.NativeAot.cs" />
     <Compile Include="System\Threading\Condition.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
-    <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\Monitor.NativeAot.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
@@ -257,8 +257,8 @@
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Variant.cs">
-      <Link>System\Runtime\InteropServices\Variant.cs</Link>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
+      <Link>System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs">
       <Link>Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs</Link>
@@ -304,9 +304,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
-      <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

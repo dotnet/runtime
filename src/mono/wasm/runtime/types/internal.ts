@@ -109,7 +109,6 @@ export type LoaderHelpers = {
     assertAfterExit: boolean;
 
     exitCode: number | undefined;
-    exitReason: any | undefined;
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];

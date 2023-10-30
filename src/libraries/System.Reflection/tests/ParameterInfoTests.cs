@@ -432,7 +432,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find MyAttribute");
+            Assert.Fail("Expected to find MyAttribute");
         }
 
         public static IEnumerable<object[]> s_CustomAttributesTestData

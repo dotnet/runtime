@@ -101,7 +101,7 @@ endif(CLR_CMAKE_HOST_OSX)
         createdump_static
         corguids
         dbgutil
-        dl
+        ${CMAKE_DL_LIBS}
     )
 
 endif(CLR_CMAKE_HOST_WIN32)
