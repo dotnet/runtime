@@ -27,7 +27,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int TRUST_TYPE_MIT = 0x00000003;
         private const string PasswordCharacterSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+=[{]};:>|./?";
 
-        internal static bool GetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, Interop.Advapi32.TRUST_ATTRIBUTE attribute, bool isForest)
+        internal static unsafe bool GetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, Interop.Advapi32.TRUST_ATTRIBUTE attribute, bool isForest)
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
@@ -70,8 +70,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     Debug.Assert(buffer != (IntPtr)0);
 
-                    Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
-                    Marshal.PtrToStructure(buffer, domainInfo);
+                    Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = *(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX*)buffer;
 
                     // validate this is the trust that the user refers to
                     ValidateTrustAttribute(domainInfo, isForest, sourceName, targetName);
@@ -123,7 +122,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void SetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, Interop.Advapi32.TRUST_ATTRIBUTE attribute, bool status, bool isForest)
+        internal static unsafe void SetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, Interop.Advapi32.TRUST_ATTRIBUTE attribute, bool status, bool isForest)
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
@@ -167,8 +166,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     Debug.Assert(buffer != (IntPtr)0);
 
                     // get the managed structure representation
-                    Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
-                    Marshal.PtrToStructure(buffer, domainInfo);
+                    Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = *(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX*)buffer;
 
                     // validate this is the trust that the user refers to
                     ValidateTrustAttribute(domainInfo, isForest, sourceName, targetName);
@@ -252,7 +250,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void DeleteTrust(DirectoryContext sourceContext, string? sourceName, string? targetName, bool isForest)
+        internal static unsafe void DeleteTrust(DirectoryContext sourceContext, string? sourceName, string? targetName, bool isForest)
         {
             SafeLsaPolicyHandle? policyHandle = null;
             bool impersonated = false;
@@ -297,8 +295,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     try
                     {
-                        Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
-                        Marshal.PtrToStructure(buffer, domainInfo);
+
+                        Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = *(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX*)buffer;
 
                         // validate this is the trust that the user refers to
                         ValidateTrustAttribute(domainInfo, isForest, sourceName, targetName);
@@ -835,7 +833,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        private static void ValidateTrust(SafeLsaPolicyHandle handle, global::Interop.UNICODE_STRING trustedDomainName, string? sourceName, string? targetName, bool isForest, int direction, string serverName)
+        private static unsafe void ValidateTrust(SafeLsaPolicyHandle handle, global::Interop.UNICODE_STRING trustedDomainName, string? sourceName, string? targetName, bool isForest, int direction, string serverName)
         {
             IntPtr buffer = (IntPtr)0;
 
@@ -860,8 +858,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
-                Marshal.PtrToStructure(buffer, domainInfo);
+
+                Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = *(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX*)buffer;
 
                 // validate this is the trust that the user refers to
                 ValidateTrustAttribute(domainInfo, isForest, sourceName, targetName);
