@@ -20,7 +20,7 @@ namespace TestStackOverflow
             Process testProcess = new Process();
             testProcess.StartInfo.FileName = Environment.ProcessPath;
             testProcess.StartInfo.Arguments = testArgs;
-            testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0")
+            testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
             return testProcess;
         }
 
