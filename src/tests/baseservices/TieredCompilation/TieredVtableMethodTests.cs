@@ -7,6 +7,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using Xunit;
 
 public static class TieredVtableMethodTests
 {
@@ -15,7 +16,8 @@ public static class TieredVtableMethodTests
     private static StringBuilder s_expectedCallSequence = new StringBuilder();
     private static StringBuilder s_actualCallSequence = new StringBuilder();
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100, Fail = 101;
 
