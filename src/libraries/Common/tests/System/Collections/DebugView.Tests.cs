@@ -12,16 +12,11 @@ namespace System.Collections.Tests
 {
     public class DebugView_Tests
     {
-        public static IEnumerable<object[]> TestDebuggerAttributes_DictionaryInputs()
+        private static IEnumerable<object[]> TestDebuggerAttributes_GenericDictionaries()
         {
             yield return new object[] { new Dictionary<int, string>(), new KeyValuePair<string, string>[0] };
-            yield return new object[] { new ReadOnlyDictionary<int,string>(new Dictionary<int, string>()), new KeyValuePair<string, string>[0] };
+            yield return new object[] { new ReadOnlyDictionary<int, string>(new Dictionary<int, string>()), new KeyValuePair<string, string>[0] };
             yield return new object[] { new SortedDictionary<string, int>(), new KeyValuePair<string, string>[0] };
-            yield return new object[] { new Hashtable(), new KeyValuePair<string, string>[0] };
-            yield return new object[] { Hashtable.Synchronized(new Hashtable()), new KeyValuePair<string, string>[0] };
-            yield return new object[] { new SortedList(), new KeyValuePair<string, string>[0] };
-            yield return new object[] { SortedList.Synchronized(new SortedList()), new KeyValuePair<string, string>[0] };
-            yield return new object[] { new Exception().Data, new KeyValuePair<string, string>[0] };
 
             yield return new object[] { new Dictionary<int, string>{{1, "One"}, {2, "Two"}},
                 new KeyValuePair<string, string>[]
@@ -44,6 +39,15 @@ namespace System.Collections.Tests
                     new ("[\"Two\"]", "2"),
                 }
             };
+        }
+
+        private static IEnumerable<object[]> TestDebuggerAttributes_NonGenericDictionaries()
+        {
+            yield return new object[] { new Hashtable(), new KeyValuePair<string, string>[0] };
+            yield return new object[] { Hashtable.Synchronized(new Hashtable()), new KeyValuePair<string, string>[0] };
+            yield return new object[] { new SortedList(), new KeyValuePair<string, string>[0] };
+            yield return new object[] { SortedList.Synchronized(new SortedList()), new KeyValuePair<string, string>[0] };
+
             yield return new object[] { new Hashtable { { "a", 1 }, { "b", "B" } },
                 new KeyValuePair<string, string>[]
                 {
@@ -72,6 +76,8 @@ namespace System.Collections.Tests
                     new ("[\"b\"]", "\"B\""),
                 }
             };
+#if !NETFRAMEWORK // ListDictionaryInternal in .Net Framework is not annotated with debugger attributes.
+            yield return new object[] { new Exception().Data, new KeyValuePair<string, string>[0] };
             yield return new object[] { new Exception { Data = { { "a", 1 }, { "b", "B" } } }.Data,
                 new KeyValuePair<string, string>[]
                 {
@@ -79,9 +85,10 @@ namespace System.Collections.Tests
                     new ("[\"b\"]", "\"B\""),
                 }
             };
+#endif
         }
 
-        public static IEnumerable<object[]> TestDebuggerAttributes_ListInputs()
+        private static IEnumerable<object[]> TestDebuggerAttributes_ListInputs()
         {
             yield return new object[] { new LinkedList<object>() };
             yield return new object[] { new List<int>() };
@@ -125,15 +132,38 @@ namespace System.Collections.Tests
             yield return new object[] { new SortedList<float, long> { { 1f, 1L }, { 2f, 2L } }.Values };
         }
 
-        public static IEnumerable<object[]> TestDebuggerAttributes_Inputs()
+        public static IEnumerable<object[]> TestDebuggerAttributes_InputsPresentedAsDictionary()
         {
-            return TestDebuggerAttributes_DictionaryInputs()
+#if !NETFRAMEWORK
+            return TestDebuggerAttributes_NonGenericDictionaries()
+                .Concat(TestDebuggerAttributes_GenericDictionaries());
+#else
+            // In .Net Framework only non-generic dictionaries are displayed in a dictionary format by the debugger.
+            return TestDebuggerAttributes_NonGenericDictionaries();
+#endif
+        }
+        
+        public static IEnumerable<object[]> TestDebuggerAttributes_InputsPresentedAsList()
+        {
+#if !NETFRAMEWORK
+            return TestDebuggerAttributes_ListInputs();
+#else
+            // In .Net Framework generic dictionaries are displayed in a list format by the debugger.
+            return TestDebuggerAttributes_GenericDictionaries()
                 .Select(t => new[] { t[0] })
                 .Concat(TestDebuggerAttributes_ListInputs());
+#endif
+        }
+
+        public static IEnumerable<object[]> TestDebuggerAttributes_Inputs()
+        {
+            return TestDebuggerAttributes_InputsPresentedAsDictionary()
+                .Select(t => new[] { t[0] })
+                .Concat(TestDebuggerAttributes_InputsPresentedAsList());
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        [MemberData(nameof(TestDebuggerAttributes_DictionaryInputs))]
+        [MemberData(nameof(TestDebuggerAttributes_InputsPresentedAsDictionary))]
         public static void TestDebuggerAttributes_Dictionary(IDictionary obj, KeyValuePair<string, string>[] expected)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(obj);
@@ -149,7 +179,7 @@ namespace System.Collections.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        [MemberData(nameof(TestDebuggerAttributes_ListInputs))]
+        [MemberData(nameof(TestDebuggerAttributes_InputsPresentedAsList))]
         public static void TestDebuggerAttributes_List(object obj)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(obj);
