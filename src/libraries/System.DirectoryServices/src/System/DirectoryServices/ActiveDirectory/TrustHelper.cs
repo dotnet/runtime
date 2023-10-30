@@ -295,7 +295,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     try
                     {
-
                         Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = *(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX*)buffer;
 
                         // validate this is the trust that the user refers to
@@ -858,7 +857,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-
                 Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = *(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX*)buffer;
 
                 // validate this is the trust that the user refers to
