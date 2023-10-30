@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { delay } from "./assets";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_debug, mono_log_error, mono_log_info_no_prefix, mono_log_warn, teardown_proxy_console } from "./logging";
 
@@ -150,14 +149,18 @@ async function flush_node_streams() {
         const process = await import(/* webpackIgnore: true */"process");
         const flushStream = (stream: any) => {
             return new Promise<void>((resolve, reject) => {
-                stream.on("error", (error: any) => reject(error));
-                stream.write("", function () { resolve(); });
+                stream.on("error", reject);
+                stream.end("", "UFT8", resolve);
             });
         };
         const stderrFlushed = flushStream(process.stderr);
         const stdoutFlushed = flushStream(process.stdout);
-        const timeout = delay(1000);
+        let timeoutId;
+        const timeout = new Promise(resolve => {
+            timeoutId = setTimeout(() => resolve("timeout"), 1000)
+        });
         await Promise.race([Promise.all([stdoutFlushed, stderrFlushed]), timeout]);
+        clearTimeout(timeoutId);
     } catch (err) {
         mono_log_error(`flushing std* streams failed: ${err}`);
     }
