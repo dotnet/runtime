@@ -30,6 +30,8 @@
     <Compile Include="System\Runtime\InteropServices\ComRegisterFunctionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComSourceInterfacesAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComVariantMarshallerTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComVariantTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComVisibleAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CurrencyWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultCharSetAttributeTests.cs" />

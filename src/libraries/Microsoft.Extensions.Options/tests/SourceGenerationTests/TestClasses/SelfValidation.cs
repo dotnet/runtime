@@ -15,11 +15,31 @@ namespace SelfValidation
         [Required]
         public string P1 { get; set; } = string.Empty;
 
+        [Required]
+        [ValidateObjectMembers]
+        public SecondModel P2 { get; set; }
+
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (P1.Length < 5)
             {
                 return new[] { new ValidationResult("P1 is not long enough") };
+            }
+
+            return Array.Empty<ValidationResult>();
+        }
+    }
+
+    public class SecondModel : IValidatableObject
+    {
+        [Required]
+        public string P3 { get; set; } = string.Empty;
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (P3.Length < 5)
+            {
+                return new[] { new ValidationResult("P3 is not long enough") };
             }
 
             return Array.Empty<ValidationResult>();

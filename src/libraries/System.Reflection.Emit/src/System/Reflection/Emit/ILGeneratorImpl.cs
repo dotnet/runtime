@@ -1,10 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -17,6 +16,9 @@ namespace System.Reflection.Emit
         private readonly InstructionEncoder _il;
         private bool _hasDynamicStackAllocation;
         private int _maxStackSize;
+        private int _currentStack;
+        private List<LocalBuilder> _locals = new();
+        private Dictionary<Label, LabelHandle> _labelTable = new(2);
 
         internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
         {
@@ -27,9 +29,9 @@ namespace System.Reflection.Emit
         }
 
         internal int GetMaxStackSize() => _maxStackSize;
-
         internal InstructionEncoder Instructions => _il;
         internal bool HasDynamicStackAllocation => _hasDynamicStackAllocation;
+        internal List<LocalBuilder> Locals => _locals;
 
         public override int ILOffset => _il.Offset;
 
@@ -39,43 +41,67 @@ namespace System.Reflection.Emit
         public override void BeginFaultBlock() => throw new NotImplementedException();
         public override void BeginFinallyBlock() => throw new NotImplementedException();
         public override void BeginScope() => throw new NotImplementedException();
-        public override LocalBuilder DeclareLocal(Type localType, bool pinned) => throw new NotImplementedException();
-        public override Label DefineLabel() => throw new NotImplementedException();
 
-        public override void Emit(OpCode opcode)
+        public override LocalBuilder DeclareLocal(Type localType, bool pinned)
+        {
+            if (_methodBuilder is not MethodBuilderImpl methodBuilder)
+                throw new NotSupportedException();
+
+            ArgumentNullException.ThrowIfNull(localType);
+
+            LocalBuilder local = new LocalBuilderImpl(_locals.Count, localType, methodBuilder, pinned);
+            _locals.Add(local);
+
+            return local;
+        }
+
+        public override Label DefineLabel()
+        {
+            LabelHandle metadataLabel = _il.DefineLabel();
+            Label emitLabel = CreateLabel(metadataLabel.Id);
+            _labelTable.Add(emitLabel, metadataLabel);
+            return emitLabel;
+        }
+        private void UpdateStackSize(OpCode opCode)
+        {
+            _currentStack += opCode.EvaluationStackDelta;
+            _maxStackSize = Math.Max(_maxStackSize, _currentStack);
+        }
+
+        public void EmitOpcode(OpCode opcode)
         {
             if (opcode == OpCodes.Localloc)
             {
                 _hasDynamicStackAllocation = true;
             }
-            _il.OpCode((ILOpCode)opcode.Value);
 
-            // TODO: for now only count the Opcodes emitted, in order to calculate it correctly we might need to make internal Opcode APIs public
-            // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit/Opcode.cs#L48
-            _maxStackSize++;
+            _il.OpCode((ILOpCode)opcode.Value);
+            UpdateStackSize(opcode);
         }
+
+        public override void Emit(OpCode opcode) => EmitOpcode(opcode);
 
         public override void Emit(OpCode opcode, byte arg)
         {
-            _il.OpCode((ILOpCode)opcode.Value);
+            EmitOpcode(opcode);
             _builder.WriteByte(arg);
         }
 
         public override void Emit(OpCode opcode, double arg)
         {
-            _il.OpCode((ILOpCode)opcode.Value);
+            EmitOpcode(opcode);
             _builder.WriteDouble(arg);
         }
 
         public override void Emit(OpCode opcode, float arg)
         {
-            _il.OpCode((ILOpCode)opcode.Value);
+            EmitOpcode(opcode);
             _builder.WriteSingle(arg);
         }
 
         public override void Emit(OpCode opcode, short arg)
         {
-            _il.OpCode((ILOpCode)opcode.Value);
+            EmitOpcode(opcode);
             _builder.WriteInt16(arg);
         }
 
@@ -86,26 +112,25 @@ namespace System.Reflection.Emit
             {
                 if (arg >= -1 && arg <= 8)
                 {
-                    _il.OpCode(arg switch
+                    EmitOpcode(arg switch
                     {
-                        -1 => ILOpCode.Ldc_i4_m1,
-                        0 => ILOpCode.Ldc_i4_0,
-                        1 => ILOpCode.Ldc_i4_1,
-                        2 => ILOpCode.Ldc_i4_2,
-                        3 => ILOpCode.Ldc_i4_3,
-                        4 => ILOpCode.Ldc_i4_4,
-                        5 => ILOpCode.Ldc_i4_5,
-                        6 => ILOpCode.Ldc_i4_6,
-                        7 => ILOpCode.Ldc_i4_7,
-                        _ => ILOpCode.Ldc_i4_8,
+                        -1 => OpCodes.Ldc_I4_M1,
+                        0 => OpCodes.Ldc_I4_0,
+                        1 => OpCodes.Ldc_I4_1,
+                        2 => OpCodes.Ldc_I4_2,
+                        3 => OpCodes.Ldc_I4_3,
+                        4 => OpCodes.Ldc_I4_4,
+                        5 => OpCodes.Ldc_I4_5,
+                        6 => OpCodes.Ldc_I4_6,
+                        7 => OpCodes.Ldc_I4_7,
+                        _ => OpCodes.Ldc_I4_8
                     });
                     return;
                 }
 
                 if (arg >= -128 && arg <= 127)
                 {
-                    _il.OpCode(ILOpCode.Ldc_i4_s);
-                    _builder.WriteSByte((sbyte)arg) ;
+                    Emit(OpCodes.Ldc_I4_S, (sbyte)arg);
                     return;
                 }
             }
@@ -113,27 +138,25 @@ namespace System.Reflection.Emit
             {
                 if ((uint)arg <= 3)
                 {
-                    _il.OpCode(arg switch
+                    EmitOpcode(arg switch
                     {
-                        0 => ILOpCode.Ldarg_0,
-                        1 => ILOpCode.Ldarg_1,
-                        2 => ILOpCode.Ldarg_2,
-                        _ => ILOpCode.Ldarg_3,
+                        0 => OpCodes.Ldarg_0,
+                        1 => OpCodes.Ldarg_1,
+                        2 => OpCodes.Ldarg_2,
+                        _ => OpCodes.Ldarg_3,
                     });
                     return;
                 }
 
                 if ((uint)arg <= byte.MaxValue)
                 {
-                    _il.OpCode(ILOpCode.Ldarg_s);
-                    _builder.WriteByte((byte)arg);
+                    Emit(OpCodes.Ldarg_S, (byte)arg);
                     return;
                 }
 
                 if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
                 {
-                    _il.OpCode(ILOpCode.Ldarg);
-                    _builder.WriteInt16((short)arg);
+                    Emit(OpCodes.Ldarg, (short)arg);
                     return;
                 }
             }
@@ -141,15 +164,13 @@ namespace System.Reflection.Emit
             {
                 if ((uint)arg <= byte.MaxValue)
                 {
-                    _il.OpCode(ILOpCode.Ldarga_s);
-                    _builder.WriteByte((byte)arg);
+                    Emit(OpCodes.Ldarga_S, (byte)arg);
                     return;
                 }
 
                 if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
                 {
-                    _il.OpCode(ILOpCode.Ldarga);
-                    _builder.WriteInt16((short)arg);
+                    Emit(OpCodes.Ldarga, (short)arg);
                     return;
                 }
             }
@@ -157,27 +178,25 @@ namespace System.Reflection.Emit
             {
                 if ((uint)arg <= byte.MaxValue)
                 {
-                    _il.OpCode(ILOpCode.Starg_s);
-                    _builder.WriteByte((byte)arg);
+                    Emit(OpCodes.Starg_S, (byte)arg);
                     return;
                 }
 
                 if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
                 {
-                    _il.OpCode(ILOpCode.Starg);
-                    _builder.WriteInt16((short)arg);
+                    Emit(OpCodes.Starg, (short)arg);
                     return;
                 }
             }
 
             // For everything else, put the opcode followed by the arg onto the stream of instructions.
-            _il.OpCode((ILOpCode)opcode.Value);
+            EmitOpcode(opcode);
             _builder.WriteInt32(arg);
         }
 
         public override void Emit(OpCode opcode, long arg)
         {
-            _il.OpCode((ILOpCode)opcode.Value);
+            EmitOpcode(opcode);
             _il.CodeBuilder.WriteInt64(arg);
         }
 
@@ -187,14 +206,69 @@ namespace System.Reflection.Emit
             // represented by str.
             ModuleBuilder modBuilder = (ModuleBuilder)_methodBuilder.Module;
             int tempVal = modBuilder.GetStringMetadataToken(str);
-            _il.OpCode((ILOpCode)opcode.Value);
+            EmitOpcode(opcode);
             _il.Token(tempVal);
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con) => throw new NotImplementedException();
-        public override void Emit(OpCode opcode, Label label) => throw new NotImplementedException();
-        public override void Emit(OpCode opcode, Label[] labels) => throw new NotImplementedException();
-        public override void Emit(OpCode opcode, LocalBuilder local) => throw new NotImplementedException();
+
+        public override void Emit(OpCode opcode, Label label)
+        {
+            if (_labelTable.TryGetValue(label, out LabelHandle labelHandle))
+            {
+                _il.Branch((ILOpCode)opcode.Value, labelHandle);
+                UpdateStackSize(opcode);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_InvalidLabel);
+            }
+        }
+
+        public override void Emit(OpCode opcode, Label[] labels)
+        {
+            if (!opcode.Equals(OpCodes.Switch))
+            {
+                throw new ArgumentException(SR.Argument_MustBeSwitchOpCode, nameof(opcode));
+            }
+
+            SwitchInstructionEncoder switchEncoder = _il.Switch(labels.Length);
+            UpdateStackSize(opcode);
+
+            foreach (Label label in labels)
+            {
+                switchEncoder.Branch(_labelTable[label]);
+            }
+        }
+
+        public override void Emit(OpCode opcode, LocalBuilder local)
+        {
+            ArgumentNullException.ThrowIfNull(local);
+
+            if (local is not LocalBuilderImpl localBuilder || localBuilder.GetMethodBuilder() != _methodBuilder)
+            {
+                throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
+            }
+
+            int tempVal = local.LocalIndex;
+            string name = opcode.Name!;
+
+            if (name.StartsWith("ldloca"))
+            {
+                _il.LoadLocalAddress(tempVal);
+            }
+            else if (name.StartsWith("ldloc"))
+            {
+                _il.LoadLocal(tempVal);
+            }
+            else if (name.StartsWith("stloc"))
+            {
+                _il.StoreLocal(tempVal);
+            }
+
+            UpdateStackSize(opcode);
+        }
+
         public override void Emit(OpCode opcode, SignatureHelper signature) => throw new NotImplementedException();
         public override void Emit(OpCode opcode, FieldInfo field) => throw new NotImplementedException();
         public override void Emit(OpCode opcode, MethodInfo meth) => throw new NotImplementedException();
@@ -204,7 +278,19 @@ namespace System.Reflection.Emit
         public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
         public override void EndExceptionBlock() => throw new NotImplementedException();
         public override void EndScope() => throw new NotImplementedException();
-        public override void MarkLabel(Label loc) => throw new NotImplementedException();
+
+        public override void MarkLabel(Label loc)
+        {
+            if (_labelTable.TryGetValue(loc, out LabelHandle labelHandle))
+            {
+                _il.MarkLabel(labelHandle);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_InvalidLabel);
+            }
+        }
+
         public override void UsingNamespace(string usingNamespace) => throw new NotImplementedException();
     }
 }
