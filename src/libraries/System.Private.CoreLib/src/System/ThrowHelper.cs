@@ -46,6 +46,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System
 {
@@ -452,6 +453,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOutOfMemoryException_LockEnter_WaiterCountOverflow()
+        {
+            throw new OutOfMemoryException(SR.Lock_Enter_WaiterCountOverflow_OutOfMemoryException);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
             throw new ArgumentException(SR.Argument_IncompatibleArrayType);
@@ -611,6 +618,12 @@ namespace System
         internal static void ThrowFormatIndexOutOfRange()
         {
             throw new FormatException(SR.Format_IndexOutOfRange);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowSynchronizationLockException_LockExit()
+        {
+            throw new SynchronizationLockException(SR.Lock_Exit_SynchronizationLockException);
         }
 
         internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)

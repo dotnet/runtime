@@ -1,15 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Threading;
-
-namespace Microsoft.Internal
+namespace System.Threading
 {
-    internal sealed class Lock : IDisposable
+    internal sealed class ReadWriteLock : IDisposable
     {
         private readonly ReaderWriterLockSlim _thisLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private int _isDisposed;
+
         public void EnterReadLock()
         {
             _thisLock.EnterReadLock();

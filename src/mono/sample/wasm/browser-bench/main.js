@@ -7,6 +7,7 @@ import { dotnet, exit } from './_framework/dotnet.js'
 
 let runBenchmark;
 let setTasks;
+let setExclusions;
 let getFullJsonResults;
 let legacyExportTargetInt;
 let jsExportTargetInt;
@@ -68,6 +69,7 @@ class MainApp {
         _jiterpreter_dump_stats = INTERNAL.jiterpreter_dump_stats.bind(INTERNAL);
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
+        setExclusions = exports.Sample.Test.SetExclusions;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
 
         legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
@@ -96,6 +98,10 @@ class MainApp {
         let tasks = url.searchParams.getAll('task');
         if (tasks != '') {
             setTasks(tasks.join(','));
+        }
+        let exclusions = url.searchParams.getAll('exclusions');
+        if (exclusions != '') {
+            setExclusions(exclusions.join(','));
         }
 
         const r = await fetch("/bootstrap.flag", {
