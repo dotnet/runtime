@@ -4747,7 +4747,7 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
+void Thread::HijackThread(ReturnKind returnKind, bool hasAsyncRet, ExecutionState *esb)
 {
     CONTRACTL {
         NOTHROW;
@@ -4791,7 +4791,7 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
         return;
     }
 
-    SetHijackReturnKind(returnKind);
+    SetHijackReturnKind(returnKind, hasAsyncRet);
 
     if (m_State & TS_Hijacked)
         UnhijackThread();
@@ -5110,10 +5110,32 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pReturnKind)
+static bool IsSpecialCaseAsyncRet(MethodDesc* pMD)
+{
+    // TODO: What's the right way to do this through CoreLibBinder without
+    // causing loading to happen? Also, can we just mark them as async2 in SPC,
+    // or force them to be fully interruptible?
+    LPCUTF8 name = pMD->GetName();
+    return strcmp(name, "UnsafeAwaitAwaiterFromRuntimeAsync") == 0 || strcmp(name, "AwaitAwaiterFromRuntimeAsync") == 0;
+}
+
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pReturnKind, bool* hasAsyncRet)
 {
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken, pReturnKind);
+    if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken, pReturnKind))
+        return false;
+
+    // TODO: Expand return kind to include this?
+    *hasAsyncRet = false;
+
+    if (!g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines())
+        return true;
+
+    MethodDesc* pMD = pCodeInfo->GetMethodDesc();
+    *hasAsyncRet = pMD->IsAsync2Method() ||
+        (pMD->IsIntrinsic() && IsSpecialCaseAsyncRet(pMD));
+
+    return true;
 }
 
 #ifndef TARGET_UNIX
@@ -5514,10 +5536,11 @@ BOOL Thread::HandledJITCase()
             EECodeInfo codeInfo(ip);
 
             ReturnKind returnKind;
+            bool hasAsyncRet;
 
-            if (GetReturnAddressHijackInfo(&codeInfo, &returnKind))
+            if (GetReturnAddressHijackInfo(&codeInfo, &returnKind, &hasAsyncRet))
             {
-                HijackThread(returnKind, &esb);
+                HijackThread(returnKind, hasAsyncRet, &esb);
             }
         }
     }
@@ -5965,8 +5988,9 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
             return;
 
         ReturnKind returnKind;
+        bool hasAsyncRet;
 
-        if (!GetReturnAddressHijackInfo(&codeInfo, &returnKind))
+        if (!GetReturnAddressHijackInfo(&codeInfo, &returnKind, &hasAsyncRet))
         {
             return;
         }
@@ -5980,7 +6004,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        pThread->HijackThread(returnKind, &executionState);
+        pThread->HijackThread(returnKind, hasAsyncRet, &executionState);
     }
 }
 

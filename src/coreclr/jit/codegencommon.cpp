@@ -7710,7 +7710,7 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     assert(op->TypeIs(TYP_REF));
 
     regNumber reg = genConsumeReg(op);
-    inst_Mov_Extend(TYP_REF, /* srcInReg */ true, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+    inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
 
     ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
     unsigned       numRetRegs  = retTypeDesc.GetReturnRegCount();

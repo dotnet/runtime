@@ -6172,6 +6172,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     }
 #endif // DEBUG
 
+    bool                  hasAsyncRet = call->IsAsync2() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0);
     CORINFO_METHOD_HANDLE methHnd;
     GenTree*              target = getCallTarget(call, &methHnd);
     if (target != nullptr)
@@ -6208,6 +6209,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                                        argSizeForEmitter,
                                        retSize
                                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                       hasAsyncRet,
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
@@ -6237,6 +6239,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                             X86_ARG(argSizeForEmitter),
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            hasAsyncRet,
                             di,
                             REG_NA,
                             call->IsFastTailCall());
@@ -6259,6 +6262,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                                  X86_ARG(argSizeForEmitter),
                                  retSize
                                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                 hasAsyncRet,
                                  di,
                                  call->IsFastTailCall());
                 // clang-format on
@@ -6285,6 +6289,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        hasAsyncRet,
                         di,
                         target->GetRegNum(),
                         call->IsFastTailCall());
@@ -6312,6 +6317,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 0,
                 retSize
                 MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                hasAsyncRet,
                 gcInfo.gcVarPtrSetCur,
                 gcInfo.gcRegGCrefSetCur,
                 gcInfo.gcRegByrefSetCur,
@@ -6332,6 +6338,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        hasAsyncRet,
                         di,
                         REG_NA,
                         call->IsFastTailCall());
@@ -6372,6 +6379,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         X86_ARG(argSizeForEmitter),
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        hasAsyncRet,
                         di,
                         REG_NA,
                         call->IsFastTailCall());
@@ -9036,6 +9044,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                argSize,
                                retSize
                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),
+                               /* hasAsyncRet */ false,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
@@ -10335,6 +10344,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        0,                                                      // argSize
                                        EA_UNKNOWN                                              // retSize
                                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),        // secondRetSize
+                                       /* hasAsyncRet */ false,
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,

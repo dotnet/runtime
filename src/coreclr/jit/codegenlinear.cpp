@@ -2287,6 +2287,7 @@ void CodeGen::genEmitCall(int                   callType,
                           X86_ARG(int argSize),
                           emitAttr              retSize
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                          bool                  hasAsyncRet,
                           const DebugInfo& di,
                           regNumber             base,
                           bool                  isJump)
@@ -2306,6 +2307,7 @@ void CodeGen::genEmitCall(int                   callType,
                                argSize,
                                retSize
                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                               hasAsyncRet,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
@@ -2325,6 +2327,7 @@ void CodeGen::genEmitCallIndir(int                   callType,
                                X86_ARG(int argSize),
                                emitAttr              retSize
                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool                  hasAsyncRet,
                                const DebugInfo&      di,
                                bool                  isJump)
 {
@@ -2347,6 +2350,7 @@ void CodeGen::genEmitCallIndir(int                   callType,
                                argSize,
                                retSize
                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                               hasAsyncRet,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,

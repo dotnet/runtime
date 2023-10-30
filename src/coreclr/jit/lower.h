@@ -155,6 +155,7 @@ private:
     void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void LowerRetStruct(GenTreeUnOp* ret);
     void LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
+    void LowerAsyncContinuation(GenTree* asyncCont);
     void LowerReturnSuspend(GenTree* retSuspend);
     void LowerCallStruct(GenTreeCall* call);
     void LowerStoreSingleRegCallStruct(GenTreeBlk* store);

@@ -524,10 +524,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerRet(node->AsUnOp());
             break;
 
-        case GT_RETURN_SUSPEND:
-            LowerReturnSuspend(node);
-            break;
-
         case GT_RETURNTRAP:
             ContainCheckReturnTrap(node->AsOp());
             break;
@@ -689,6 +685,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
             return LowerArrLength(node->AsArrCommon());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            LowerAsyncContinuation(node);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            LowerReturnSuspend(node);
             break;
 
         default:
@@ -4678,6 +4682,34 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             ret->gtOp1       = bitcast;
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
+        }
+    }
+}
+
+void Lowering::LowerAsyncContinuation(GenTree* asyncCont)
+{
+    assert(asyncCont->OperIs(GT_ASYNC_CONTINUATION));
+
+    // When the ASYNC_CONTINUATION was created as a result of
+    // StubHelpers.Async2CallContinuation() the previous call hasn't been
+    // marked as an async call. We need to do that to get the right GC
+    // reporting behavior for the returned async continuation.
+    GenTree* node = asyncCont;
+    while (true)
+    {
+        node = node->gtPrev;
+        noway_assert((node != nullptr) && "Ran out of nodes while looking for call before async continuation");
+
+        if (node->IsCall())
+        {
+            if (!node->AsCall()->IsAsync2())
+            {
+                JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
+                        Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
+                node->AsCall()->gtIsAsyncCall = true;
+            }
+
+            break;
         }
     }
 }

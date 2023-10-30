@@ -548,6 +548,11 @@ struct HijackArgs
         ULONG64 ReturnValue[2];
     };
 #endif // !FEATURE_MULTIREG_RETURN
+    union
+    {
+        ULONG64 Rcx;
+        ULONG64 AsyncRet;
+    };
     CalleeSavedRegisters Regs;
 #ifdef TARGET_WINDOWS
     ULONG64 Rsp;

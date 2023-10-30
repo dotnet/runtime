@@ -1991,8 +1991,19 @@ protected:
         {
             _idcSecondRetRegGCType = gctype;
         }
+#endif
+
+        bool hasAsyncContinuationRet() const
+        {
+            return _hasAsyncContinuationRet;
+        }
+        void hasAsyncContinuationRet(bool value)
+        {
+            _hasAsyncContinuationRet = value;
+        }
 
     private:
+#if MULTIREG_HAS_SECOND_GC_RET
         // This member stores the GC-ness of the second register in a 2 register returned struct on System V.
         // It is added to the call struct since it is not needed by the base instrDesc struct, which keeps GC-ness
         // of the first register for the instCall nodes.
@@ -2002,6 +2013,7 @@ protected:
         // The base struct's member keeping the GC-ness of the first return register is _idGCref.
         GCtype _idcSecondRetRegGCType : 2; // ... GC type for the second return register.
 #endif                                     // MULTIREG_HAS_SECOND_GC_RET
+        bool _hasAsyncContinuationRet : 1;
     };
 
     // TODO-Cleanup: Uses of stack-allocated instrDescs should be refactored to be unnecessary.

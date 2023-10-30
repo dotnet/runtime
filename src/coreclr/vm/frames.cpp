@@ -1191,7 +1191,8 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ReturnKind returnKind = m_Thread->GetHijackReturnKind();
+    bool hasAsyncRet;
+    ReturnKind returnKind = m_Thread->GetHijackReturnKind(&hasAsyncRet);
     _ASSERTE(IsValidReturnKind(returnKind));
 
     int regNo = 0;
@@ -1231,6 +1232,15 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
         regNo++;
     } while (moreRegisters);
+
+    if (hasAsyncRet)
+    {
+        PTR_PTR_Object objPtr = dac_cast<PTR_PTR_Object>(&m_Args->AsyncRet);
+        LOG((LF_GC, INFO3, "Hijack Frame Promoting Async Continuation Return" FMT_ADDR "to",
+            DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
+        (*fn)(objPtr, sc, CHECK_APP_DOMAIN);
+        LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
+    }
 }
 
 #endif // FEATURE_HIJACK

@@ -3540,6 +3540,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 #endif // DEBUG
+
+    bool                  hasAsyncRet = call->IsAsync2() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0);
     CORINFO_METHOD_HANDLE methHnd;
     GenTree*              target = getCallTarget(call, &methHnd);
 
@@ -3568,6 +3570,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     nullptr, // addr
                     retSize
                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    hasAsyncRet,
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall());
@@ -3616,6 +3619,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                         nullptr, // addr
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        hasAsyncRet,
                         di,
                         targetAddrReg,
                         call->IsFastTailCall());
@@ -3664,6 +3668,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                             INDEBUG_LDISASM_COMMA(sigInfo)
                             NULL,
                             retSize,
+                            hasAsyncRet,
                             di,
                             tmpReg,
                             call->IsFastTailCall());
@@ -3679,6 +3684,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                             addr,
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            hasAsyncRet,
                             di,
                             REG_NA,
                             call->IsFastTailCall());
@@ -5637,6 +5643,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if defined(TARGET_ARM64)
                                        EA_UNKNOWN, // secondRetSize
 #endif
+                                       false,      // hasAsyncRet
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
