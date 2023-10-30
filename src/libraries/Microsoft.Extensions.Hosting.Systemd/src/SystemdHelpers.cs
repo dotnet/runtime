@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// </summary>
     public static partial class SystemdHelpers
     {
-        private static bool? _isSystemdService;
+        private static readonly bool _isSystemdService = GetIsSystemdService();
 
         /// <summary>
         /// Check if the current process is hosted as a systemd Service.
@@ -24,13 +24,16 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// <returns>
         /// <see langword="true" /> if the current process is hosted as a systemd Service; otherwise, <see langword="false" />.
         /// </returns>
-        public static bool IsSystemdService()
-            => _isSystemdService ??= GetIsSystemdService();
+        public static bool IsSystemdService() => _isSystemdService;
 
         private static bool GetIsSystemdService()
         {
             // No point in testing anything unless it's Unix
+#if NETCOREAPP
+            if (OperatingSystem.IsLinux())
+#else
             if (Environment.OSVersion.Platform != PlatformID.Unix)
+#endif
             {
                 return false;
             }
