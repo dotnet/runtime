@@ -521,6 +521,58 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        private static async ValueTask<T> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
+        {
+            object[] gcData = new object[1];
+            continuation.Next = new Continuation
+            {
+                Resume = null,
+                GCData = gcData,
+            };
+
+            AwaitableProxy awaitableProxy = new AwaitableProxy();
+
+            Exception? ex = null;
+            while (true)
+            {
+                Continuation headContinuation = GetHeadContinuation(awaitableProxy);
+                await awaitableProxy;
+                Continuation? finalResult = DispatchContinuations(headContinuation, ref ex);
+                if (finalResult != null)
+                {
+                    if (ex != null)
+                        throw ex;
+                    return (T)continuation.GCData![0];
+                }
+            }
+        }
+
+        private static async ValueTask FinalizeValueTaskReturningThunk(Continuation continuation)
+        {
+            object[] gcData = new object[1];
+            continuation.Next = new Continuation
+            {
+                Resume = null,
+                GCData = gcData,
+            };
+
+            AwaitableProxy awaitableProxy = new AwaitableProxy();
+
+            Exception? ex = null;
+            while (true)
+            {
+                Continuation headContinuation = GetHeadContinuation(awaitableProxy);
+                await awaitableProxy;
+                Continuation? finalResult = DispatchContinuations(headContinuation, ref ex);
+                if (finalResult != null)
+                {
+                    if (ex != null)
+                        throw ex;
+                    return;
+                }
+            }
+        }
+
         // Return a continuation object if that is the one which has the final result of the Task, in this case exceptionResult MAY be set to an exception, which is the real output of the series of continuations
         // OR
         // return NULL to indicate that this isn't yet done.
