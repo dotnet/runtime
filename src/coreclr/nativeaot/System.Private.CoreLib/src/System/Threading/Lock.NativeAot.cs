@@ -104,8 +104,8 @@ namespace System.Threading
         {
             // initialize essentials
             // this is safe to do as these do not need to take locks
-            s_maxSpinCount = DefaultMaxSpinCount;
-            s_minSpinCount = DefaultMinSpinCount;
+            s_maxSpinCount = DefaultMaxSpinCount << SpinCountScaleShift;
+            s_minSpinCount = DefaultMinSpinCount << SpinCountScaleShift;
 
             // we can now use the slow path of the lock.
             Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Usable);
@@ -132,8 +132,8 @@ namespace System.Threading
                 s_processorCount = RuntimeImports.RhGetProcessCpuCount();
                 if (s_processorCount > 1)
                 {
-                    s_minSpinCount = (short)(DetermineMinSpinCount());
-                    s_maxSpinCount = (short)(DetermineMaxSpinCount());
+                    s_minSpinCount = (short)(DetermineMinSpinCount() << SpinCountScaleShift);
+                    s_maxSpinCount = (short)(DetermineMaxSpinCount() << SpinCountScaleShift);
                 }
                 else
                 {

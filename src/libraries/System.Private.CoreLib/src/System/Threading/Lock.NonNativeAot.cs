@@ -8,8 +8,8 @@ namespace System.Threading
 {
     public sealed partial class Lock
     {
-        private static readonly short s_maxSpinCount = DetermineMaxSpinCount();
-        private static readonly short s_minSpinCount = DetermineMinSpinCount();
+        private static readonly short s_maxSpinCount = (short)(IsSingleProcessor ? 0 :DetermineMaxSpinCount() << SpinCountScaleShift);
+        private static readonly short s_minSpinCount = (short)(IsSingleProcessor ? 0 :DetermineMinSpinCount() << SpinCountScaleShift);
 
         private static void LazyInit() { }
         private static bool StaticsInitComplete() => true;

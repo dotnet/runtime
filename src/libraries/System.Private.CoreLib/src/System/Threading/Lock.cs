@@ -20,10 +20,14 @@ namespace System.Threading
     public sealed partial class Lock
     {
         private const short SpinCountNotInitialized = short.MinValue;
-        private const short SpinningDisabled = 0;
 
         private const short DefaultMaxSpinCount = 22;
         private const short DefaultMinSpinCount = 1;
+
+        // While spinning is parameterized in terms of iterations,
+        // the internal tuning operates with spin count at a finer scale.
+        // One iteration is mapped to 64 spin count units.
+        private const short SpinCountScaleShift = 6;
 
         private static long s_contentionCount;
 
@@ -395,7 +399,7 @@ namespace System.Threading
             if (_spinCount == SpinCountNotInitialized)
             {
                 LazyInit();
-                _spinCount = IsSingleProcessor ? SpinningDisabled : s_minSpinCount;
+                _spinCount = s_minSpinCount;
             }
 
             bool hasWaited = false;
@@ -413,7 +417,7 @@ namespace System.Threading
                 var oldOwner = _owningThreadId;
                 uint ownerChanged = 0;
 
-                int localSpinLimit = _spinCount;
+                int iterationLimit = _spinCount >> SpinCountScaleShift;
                 // inner loop where we try acquiring the lock or registering as a waiter
                 while (true)
                 {
@@ -457,7 +461,8 @@ namespace System.Threading
                                     _spinCount = (short)(spinLimit - 1);
                                 }
                             }
-                            else if (spinLimit < s_maxSpinCount && iteration >= spinLimit)
+                            else if (spinLimit < s_maxSpinCount &&
+                                iteration >= (spinLimit >> SpinCountScaleShift))
                             {
                                 // we used all of allowed iterations, but the lock does not look very contested,
                                 // we can allow a bit more spinning.
@@ -482,7 +487,7 @@ namespace System.Threading
                         oldOwner = newOwner;
                     }
 
-                    if (iteration < localSpinLimit)
+                    if (iteration < iterationLimit)
                     {
                         iteration++;
 
@@ -708,7 +713,7 @@ namespace System.Threading
             while (true)
             {
                 uint oldState = _state;
-                if ((int)oldState >= (int)WaiterCountIncrement) // false is WaiterWoken is set
+                if ((int)oldState >= (int)WaiterCountIncrement) // false if WaiterWoken is set
                 {
                     // there are waiters, and nobody has woken one.
                     uint newState = oldState | WaiterWoken;
@@ -780,18 +785,30 @@ namespace System.Threading
 
         // Lock starts with MinSpinCount and may self-adjust up to the MaxSpinCount
         // Setting MaxSpinCount <= MinSpinCount will effectively disable adaptive spin adjustment
-        private static short DetermineMaxSpinCount() =>
-            AppContextConfigHelper.GetInt16Config(
+        private static short DetermineMaxSpinCount()
+        {
+            var count = AppContextConfigHelper.GetInt16Config(
                 "System.Threading.Lock.MaxSpinCount",
                 "DOTNET_Lock_MaxSpinCount",
                 DefaultMaxSpinCount,
                 allowNegative: false);
 
-        private static short DetermineMinSpinCount() =>
-            AppContextConfigHelper.GetInt16Config(
+            return count >= short.MaxValue >> SpinCountScaleShift ?
+                DefaultMaxSpinCount :
+                count;
+        }
+
+        private static short DetermineMinSpinCount()
+        {
+            var count = AppContextConfigHelper.GetInt16Config(
                 "System.Threading.Lock.MinSpinCount",
                 "DOTNET_Lock_MinSpinCount",
                 DefaultMinSpinCount,
                 allowNegative: false);
+
+            return count >= short.MaxValue >> SpinCountScaleShift ?
+                DefaultMaxSpinCount :
+                count;
+        }
     }
 }
