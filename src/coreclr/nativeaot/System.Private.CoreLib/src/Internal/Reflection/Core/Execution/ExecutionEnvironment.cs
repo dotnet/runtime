@@ -77,6 +77,9 @@ namespace Internal.Reflection.Core.Execution
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
         public abstract void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags);
         public abstract IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker);
+        public abstract MethodInfo GetDelegateMethod(Delegate del);
+        public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
+        public abstract IntPtr GetStaticClassConstructionContext(RuntimeTypeHandle typeHandle);
 
         public abstract AssemblyBinder AssemblyBinder { get; }
         public abstract Exception CreateMissingMetadataException(Type pertainant);

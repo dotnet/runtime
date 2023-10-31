@@ -8,12 +8,14 @@ using System.Reflection;
 using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
+using Internal.Runtime.TypeLoader;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Execution.FieldAccessors;
 using Internal.Reflection.Execution.MethodInvokers;
 using Internal.Reflection.Execution.PayForPlayExperience;
+using Internal.Reflection.Extensions.NonPortable;
 
 namespace Internal.Reflection.Execution
 {
@@ -37,7 +39,7 @@ namespace Internal.Reflection.Execution
                     goto notFound;
                 }
 
-                MethodBase methodBase = RuntimeAugments.Callbacks.GetMethodBaseFromStartAddressIfAvailable(classRtMethodHandle);
+                MethodBase methodBase = ReflectionExecution.GetMethodBaseFromStartAddressIfAvailable(classRtMethodHandle);
                 if (methodBase == null)
                 {
                     goto notFound;
@@ -104,6 +106,21 @@ namespace Internal.Reflection.Execution
         public override IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker)
         {
             return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk;
+        }
+
+        public override MethodInfo GetDelegateMethod(Delegate del)
+        {
+            return DelegateMethodInfoRetriever.GetDelegateMethodInfo(del);
+        }
+
+        public override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        {
+            return ReflectionExecution.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
+        }
+
+        public override IntPtr GetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
+        {
+            return TypeLoaderEnvironment.GetStaticClassConstructionContext(typeHandle);
         }
 
         // Obtain it lazily to avoid using RuntimeAugments.Callbacks before it is initialized

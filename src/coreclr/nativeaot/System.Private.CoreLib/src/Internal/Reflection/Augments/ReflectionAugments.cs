@@ -105,6 +105,14 @@ namespace Internal.Reflection.Augments
             }
         }
 
+        internal static bool IsInitialized
+        {
+            get
+            {
+                return s_reflectionCoreCallbacks != null;
+            }
+        }
+
         private static ReflectionCoreCallbacks s_reflectionCoreCallbacks;
     }
 
@@ -156,5 +164,13 @@ namespace Internal.Reflection.Augments
         public abstract EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create);
 
         public abstract DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type);
+
+        public abstract MethodInfo GetDelegateMethod(Delegate del);
+
+        public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
+
+        public abstract Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle);
+
+        public abstract void RunClassConstructor(RuntimeTypeHandle typeHandle);
     }
 }

@@ -9,7 +9,6 @@
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\SR.cs" />
     <Compile Include="Internal\Reflection\ReflectionCoreCallbacksImplementation.cs" />
-    <Compile Include="Internal\Reflection\ReflectionExecutionDomainCallbacksImplementation.cs" />
     <Compile Include="Internal\Reflection\RuntimeAssemblyInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
   </ItemGroup>

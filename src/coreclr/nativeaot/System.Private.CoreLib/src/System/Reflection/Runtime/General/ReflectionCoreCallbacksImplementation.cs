@@ -21,6 +21,7 @@ using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Runtime.General
 {
@@ -438,6 +439,30 @@ namespace System.Reflection.Runtime.General
             info = new DynamicInvokeInfo(invokeMethod, invokeThunk);
             runtimeType.GenericCache = info;
             return info;
+        }
+
+        public sealed override MethodInfo GetDelegateMethod(Delegate del)
+        {
+            return ReflectionCoreExecution.ExecutionEnvironment.GetDelegateMethod(del);
+        }
+
+        public sealed override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        {
+            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
+        }
+
+        public sealed override Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return Type.GetTypeFromHandle(typeHandle).Assembly;
+        }
+
+        public sealed override void RunClassConstructor(RuntimeTypeHandle typeHandle)
+        {
+            IntPtr pStaticClassConstructionContext = ReflectionCoreExecution.ExecutionEnvironment.GetStaticClassConstructionContext(typeHandle);
+            if (pStaticClassConstructionContext != IntPtr.Zero)
+            {
+                RuntimeAugments.EnsureClassConstructorRun(pStaticClassConstructionContext);
+            }
         }
     }
 }

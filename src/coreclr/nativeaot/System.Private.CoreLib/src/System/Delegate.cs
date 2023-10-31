@@ -286,7 +286,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return RuntimeAugments.Callbacks.GetDelegateMethod(this);
+            return ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

@@ -45,12 +45,6 @@ namespace Internal.Runtime.Augments
         // One-time initialization.
         //==============================================================================================
         [CLSCompliant(false)]
-        public static void Initialize(ReflectionExecutionDomainCallbacks callbacks)
-        {
-            s_reflectionExecutionDomainCallbacks = callbacks;
-        }
-
-        [CLSCompliant(false)]
         public static void InitializeLookups(TypeLoaderCallbacks callbacks)
         {
             s_typeLoaderCallbacks = callbacks;
@@ -703,25 +697,6 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
         // Internals
         //==============================================================================================
-        [CLSCompliant(false)]
-        public static ReflectionExecutionDomainCallbacks CallbacksIfAvailable
-        {
-            get
-            {
-                return s_reflectionExecutionDomainCallbacks;
-            }
-        }
-
-        [CLSCompliant(false)]
-        public static ReflectionExecutionDomainCallbacks Callbacks
-        {
-            get
-            {
-                ReflectionExecutionDomainCallbacks callbacks = s_reflectionExecutionDomainCallbacks;
-                Debug.Assert(callbacks != null);
-                return callbacks;
-            }
-        }
 
         internal static TypeLoaderCallbacks TypeLoaderCallbacksIfAvailable
         {
@@ -762,7 +737,6 @@ namespace Internal.Runtime.Augments
             return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
-        private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
 
         public static object CreateThunksHeap(IntPtr commonStubAddress)

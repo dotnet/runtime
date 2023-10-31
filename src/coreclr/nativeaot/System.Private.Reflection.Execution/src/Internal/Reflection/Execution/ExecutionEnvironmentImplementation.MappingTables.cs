@@ -859,7 +859,7 @@ namespace Internal.Reflection.Execution
                             }
                         }
 
-                        IntPtr cctorContext = TryGetStaticClassConstructionContext(declaringTypeHandle);
+                        IntPtr cctorContext = TypeLoaderEnvironment.GetStaticClassConstructionContext(declaringTypeHandle);
 
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                             (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, fieldAccessMetadata.Flags, fieldTypeHandle) :
@@ -932,15 +932,6 @@ namespace Internal.Reflection.Execution
         public sealed override bool TryGetFieldFromHandleAndType(RuntimeFieldHandle runtimeFieldHandle, RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
             return TryGetFieldFromHandle(runtimeFieldHandle, out _, out fieldHandle);
-        }
-
-        /// <summary>
-        /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
-        /// </summary>
-        /// <param name="typeHandle">MethodTable of the type to look up</param>
-        internal static unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
-        {
-            return TypeLoaderEnvironment.TryGetStaticClassConstructionContext(typeHandle);
         }
 
         private struct MethodParametersInfo

@@ -46,14 +46,7 @@ namespace System.Runtime.CompilerServices
             if (type.IsNull)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            IntPtr pStaticClassConstructionContext = RuntimeAugments.Callbacks.TryGetStaticClassConstructionContext(type);
-            if (pStaticClassConstructionContext == IntPtr.Zero)
-                return;
-
-            unsafe
-            {
-                ClassConstructorRunner.EnsureClassConstructorRun((StaticClassConstructionContext*)pStaticClassConstructionContext);
-            }
+            ReflectionAugments.ReflectionCoreCallbacks.RunClassConstructor(type);
         }
 
         public static void RunModuleConstructor(ModuleHandle module)
