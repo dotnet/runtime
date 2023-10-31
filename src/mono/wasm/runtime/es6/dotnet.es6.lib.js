@@ -66,7 +66,7 @@ function setup(linkerSetup) {
 
 const DotnetSupportLib = {
     $DOTNET: { setup },
-    icudt68_dat: function () { throw new Error('dummy link symbol') },
+    icudt73_dat: function () { throw new Error('dummy link symbol') },
 };
 
 function createWasmImportStubsFrom(collection) {
