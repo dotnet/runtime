@@ -49,7 +49,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return GenericParameterHandle.GetHashCode();
         }

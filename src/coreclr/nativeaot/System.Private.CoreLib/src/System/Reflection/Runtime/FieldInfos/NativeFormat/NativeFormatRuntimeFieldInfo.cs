@@ -89,7 +89,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         public sealed override string ToString()
         {
-            return FieldRuntimeType.FormatTypeNameForReflection() + " " + this.Name;
+            return FieldRuntimeType.ToType().FormatTypeNameForReflection() + " " + this.Name;
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
@@ -162,7 +162,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         protected sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
 
-        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType, _reader, FieldTypeHandle);
+        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType.ToType(), _reader, FieldTypeHandle);
 
         private Handle FieldTypeHandle => _field.Signature.GetFieldSignature(_reader).Type;
 
