@@ -11,7 +11,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.Netapi32, EntryPoint = "DsGetDcNextW")]
         internal static partial int DsGetDcNext(
             IntPtr getDcContextHandle,
-            ref IntPtr sockAddressCount,
+            out IntPtr sockAddressCount,
             out IntPtr sockAddresses,
             out IntPtr dnsHostName);
     }

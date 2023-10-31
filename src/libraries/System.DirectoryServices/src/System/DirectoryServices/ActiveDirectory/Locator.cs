@@ -132,10 +132,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
             int optionFlags = 0;
             IntPtr retGetDcContext = IntPtr.Zero;
-            IntPtr dcDnsHostNamePtr = IntPtr.Zero;
-            int sockAddressCount = 0;
-            IntPtr sockAddressCountPtr = new IntPtr(sockAddressCount);
+            IntPtr sockAddressCountPtr = IntPtr.Zero;
             IntPtr sockAddressList = IntPtr.Zero;
+            IntPtr dcDnsHostNamePtr = IntPtr.Zero;
             string? dcDnsHostName = null;
             int result = 0;
 
@@ -144,7 +143,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    result = Interop.Netapi32.DsGetDcNext(retGetDcContext, ref sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
+                    result = Interop.Netapi32.DsGetDcNext(retGetDcContext, out sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
 
                     if (result != 0 && result != Interop.Errors.ERROR_FILEMARK_DETECTED && result != Interop.Errors.DNS_ERROR_RCODE_NAME_ERROR && result != Interop.Errors.ERROR_NO_MORE_ITEMS)
                     {
@@ -175,7 +174,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                         }
 
-                        result = Interop.Netapi32.DsGetDcNext(retGetDcContext, ref sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
+                        result = Interop.Netapi32.DsGetDcNext(retGetDcContext, out sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
                         if (result != 0 && result != Interop.Errors.ERROR_FILEMARK_DETECTED && result != Interop.Errors.DNS_ERROR_RCODE_NAME_ERROR && result != Interop.Errors.ERROR_NO_MORE_ITEMS)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(result);
