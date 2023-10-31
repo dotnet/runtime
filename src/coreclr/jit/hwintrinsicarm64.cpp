@@ -1819,6 +1819,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 op2 = gtConvertTableOpToFieldList(op2, fieldCount);
             }
+            else
+            {
+                // While storing from a single vector, both Vector128 and Vector64 API calls are in AdvSimd class.
+                // Thus, we get simdSize as 8 for both of the calls. We re-calculate that simd size for such API calls.
+                getBaseJitTypeAndSizeOfSIMDType(argClass, &simdSize);
+            }
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
