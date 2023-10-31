@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -10,6 +9,8 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
+
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
@@ -19,7 +20,7 @@ namespace System
     internal sealed unsafe class RuntimeType : TypeInfo, ICloneable
     {
         private MethodTable* _pUnderlyingEEType;
-        private RuntimeTypeInfo? _runtimeTypeInfo;
+        private IntPtr _runtimeTypeInfoHandle;
 
         internal RuntimeType(MethodTable* pEEType)
         {
@@ -28,7 +29,13 @@ namespace System
 
         internal RuntimeType(RuntimeTypeInfo runtimeTypeInfo)
         {
-            _runtimeTypeInfo = runtimeTypeInfo;
+            // This needs to be a strong handle to prevent the type from being collected and re-created that would end up leaking the handle.
+            _runtimeTypeInfoHandle = RuntimeImports.RhHandleAlloc(runtimeTypeInfo, GCHandleType.Normal);
+        }
+
+        internal void Free()
+        {
+            RuntimeImports.RhHandleFree(_runtimeTypeInfoHandle);
         }
 
         private static bool IsReflectionDisabled => false;
@@ -39,15 +46,44 @@ namespace System
 
         internal EETypePtr ToEETypePtrMayBeNull() => new EETypePtr(_pUnderlyingEEType);
 
-        internal RuntimeTypeInfo GetRuntimeTypeInfo() => _runtimeTypeInfo ?? CreateRuntimeTypeInfo();
+        internal RuntimeTypeInfo GetRuntimeTypeInfo()
+        {
+            IntPtr handle = _runtimeTypeInfoHandle;
+            if (handle != default)
+            {
+                object? runtimeTypeInfo = RuntimeImports.RhHandleGet(handle);
+                if (runtimeTypeInfo != null)
+                {
+                    return Unsafe.As<RuntimeTypeInfo>(runtimeTypeInfo);
+                }
+            }
+            return InitializeRuntimeTypeInfoHandle();
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private RuntimeTypeInfo CreateRuntimeTypeInfo()
+        private RuntimeTypeInfo InitializeRuntimeTypeInfoHandle()
         {
             if (IsReflectionDisabled)
                 throw new NotSupportedException(SR.Reflection_Disabled);
 
-            return (_runtimeTypeInfo = ExecutionDomain.GetRuntimeTypeInfo(_pUnderlyingEEType));
+            RuntimeTypeInfo runtimeTypeInfo = ExecutionDomain.GetRuntimeTypeInfo(_pUnderlyingEEType);
+
+            // We assume that the RuntimeTypeInfo unifiers pick a winner when multiple threads
+            // race to create RuntimeTypeInfo.
+
+            IntPtr handle = _runtimeTypeInfoHandle;
+            if (handle == default)
+            {
+                IntPtr tempHandle = RuntimeImports.RhHandleAlloc(runtimeTypeInfo, GCHandleType.Weak);
+                if (Interlocked.CompareExchange(ref _runtimeTypeInfoHandle, tempHandle, default) != default)
+                    RuntimeImports.RhHandleFree(tempHandle);
+            }
+            else
+            {
+                RuntimeImports.RhHandleSet(handle, runtimeTypeInfo);
+            }
+
+            return runtimeTypeInfo;
         }
 
         public override string? GetEnumName(object value)

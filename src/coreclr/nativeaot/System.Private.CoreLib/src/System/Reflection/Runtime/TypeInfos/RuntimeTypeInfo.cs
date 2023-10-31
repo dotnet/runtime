@@ -594,7 +594,9 @@ namespace System.Reflection.Runtime.TypeInfos
             RuntimeTypeHandle runtimeTypeHandle = InternalTypeHandleIfAvailable;
             if (runtimeTypeHandle.IsNull)
             {
-                Interlocked.CompareExchange(ref _type, new RuntimeType(this), null);
+                RuntimeType type = new RuntimeType(this);
+                if (Interlocked.CompareExchange(ref _type, type, null) != null)
+                    type.Free();
             }
             else
             {
