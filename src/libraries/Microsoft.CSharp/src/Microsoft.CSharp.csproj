@@ -167,25 +167,19 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\PredefinedType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenFacts.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenKind.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
-             Link="Common\System\Collections\HashHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Collections\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(EnableComBinder)'=='true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"
-             Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs"
-             Link="Common\System\Runtime\InteropServices\ComEventsSink.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs"
-             Link="Common\System\Runtime\InteropServices\ComEventsMethod.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs" Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs" Link="Common\System\Runtime\InteropServices\ComEventsSink.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs" Link="Common\System\Runtime\InteropServices\ComEventsMethod.cs" />
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
         <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
-        <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
+        <Link>Common\System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
     </Compile>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ArgBuilder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\BoolArgBuilder.cs" />
@@ -234,7 +228,7 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\TypeUtils.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\UnknownArgBuilder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VarEnumSelector.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Variant.Extended.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DynamicVariantExtensions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArgBuilder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArray.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantBuilder.cs" />

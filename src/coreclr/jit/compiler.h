@@ -5979,7 +5979,6 @@ private:
     bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
 
 #endif
-    bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
     bool fgCanTailCallViaJitHelper(GenTreeCall* call);
     void fgMorphTailCallViaJitHelper(GenTreeCall* call);
@@ -10352,7 +10351,7 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     bool compHasSplitParam;
 #endif
 

@@ -57,7 +57,7 @@ namespace Internal.Runtime.TypeLoader
         /// <returns></returns>
         public IntPtr GetNativeFormatStringForString(string str)
         {
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 IntPtr result;
                 if (_nativeFormatStrings.TryGetValue(str, out result))

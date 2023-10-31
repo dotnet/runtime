@@ -503,7 +503,7 @@ namespace Wasm.Build.Tests
                                                               "Microsoft.NET.Runtime.WebAssembly.Sdk",
                                                               s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
                                                               "tasks",
-                                                              BuildTestBase.DefaultTargetFramework); // not net472!
+                                                              BuildTestBase.TargetFrameworkForTasks); // not net472!
             if (!Directory.Exists(tasksDir)) {
                 string? tasksDirParent = Path.GetDirectoryName (tasksDir);
                 if (!string.IsNullOrEmpty (tasksDirParent)) {

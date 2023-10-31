@@ -74,7 +74,12 @@ namespace System.Net.Sockets
         private unsafe NativeOverlapped* _pendingOverlappedForCancellation;
 
         private PinState _pinState;
-        private enum PinState : byte { None = 0, MultipleBuffer, SendPackets }
+        private enum PinState : byte
+        {
+            None = 0,
+            MultipleBuffer,
+            SendPackets
+        }
 
         [MemberNotNull(nameof(_preAllocatedOverlapped))]
         private void InitializeInternals()
