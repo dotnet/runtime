@@ -153,6 +153,14 @@ namespace Internal.IL
                     {
                         _dependencies.Add(_factory.NecessaryTypeSymbol(method.OwningType), reason);
                     }
+
+                    if (_canonMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                    {
+                        _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetSyncFromClassHandle")), reason);
+
+                        if (_canonMethod.RequiresInstMethodDescArg())
+                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetClassFromMethodParam")), reason);
+                    }
                 }
                 else
                 {
