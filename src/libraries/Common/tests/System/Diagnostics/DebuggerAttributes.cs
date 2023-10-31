@@ -119,7 +119,7 @@ namespace System.Diagnostics
 
         private static CustomAttributeData FindAttribute(Type type, Type attributeType)
         {
-            for (var t = type; t != null; t = t.BaseType)
+            for (Type t = type; t != null; t = t.BaseType)
             {
                 CustomAttributeData[] attributes = t.GetTypeInfo().CustomAttributes
                     .Where(a => a.AttributeType == attributeType)
@@ -156,7 +156,7 @@ namespace System.Diagnostics
             CustomAttributeNamedArgument namedAttribute = debuggerDisplayAttributeData.NamedArguments.FirstOrDefault(na => na.MemberName == argumentName);
             if (namedAttribute != default)
             {
-                var value = (string?)namedAttribute.TypedValue.Value;
+                string? value = (string?)namedAttribute.TypedValue.Value;
                 if (!string.IsNullOrEmpty(value))
                 {
                     return EvaluateDisplayString(value, obj);

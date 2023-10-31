@@ -239,7 +239,7 @@ namespace System.Collections.ObjectModel.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(dict);
             DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
             PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
-            var itemArray = itemProperty.GetValue(info.Instance) as Array;
+            Array itemArray = (Array)itemProperty.GetValue(info.Instance);
             Assert.Equal(dict.Count, itemArray.Length);
 
             DebuggerAttributes.ValidateDebuggerDisplayReferences(dict.Keys);

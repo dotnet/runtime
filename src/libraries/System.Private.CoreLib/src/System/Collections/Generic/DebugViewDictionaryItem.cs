@@ -9,24 +9,24 @@ namespace System.Collections.Generic
     /// Defines a key/value pair for displaying an item of a dictionary by a debugger.
     /// </summary>
     [DebuggerDisplay("{Value}", Name = "[{Key}]")]
-    internal readonly struct DebugViewDictionaryItem<K, V>
+    internal readonly struct DebugViewDictionaryItem<TKey, TValue>
     {
-        public DebugViewDictionaryItem(K key, V value)
+        public DebugViewDictionaryItem(TKey key, TValue value)
         {
             Key = key;
             Value = value;
         }
 
-        public DebugViewDictionaryItem(KeyValuePair<K, V> keyValue)
+        public DebugViewDictionaryItem(KeyValuePair<TKey, TValue> keyValue)
         {
             Key = keyValue.Key;
             Value = keyValue.Value;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
-        public K Key { get; init; }
+        public TKey Key { get; init; }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
-        public V Value { get; init; }
+        public TValue Value { get; init; }
     }
 }
