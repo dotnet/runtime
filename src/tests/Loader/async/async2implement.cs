@@ -47,7 +47,7 @@ public class Async2Implement
 
     class Derived2a : IBase2
     {
-        public Task<int> M1()
+        public async Task<int> M1()
         {
             await Task.Yield();
             return 22;
