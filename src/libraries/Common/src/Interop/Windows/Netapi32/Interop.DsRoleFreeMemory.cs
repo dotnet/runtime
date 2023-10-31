@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Netapi32
     {
         [LibraryImport(Libraries.Netapi32)]
-        internal static partial int DsRoleFreeMemory(IntPtr buffer);
+        internal static partial void DsRoleFreeMemory(IntPtr buffer);
     }
 }
