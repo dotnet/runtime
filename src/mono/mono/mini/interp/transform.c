@@ -4832,8 +4832,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean generate_enc_seq_points_without_debug_info = FALSE;
 	InterpBasicBlock *exit_bb = NULL;
 
-	mono_interp_pgo_generate_start ();
-
 	original_bb = bb = mono_basic_block_split (method, error, header);
 	goto_if_nok (error, exit);
 	g_assert (bb);
@@ -8260,8 +8258,6 @@ exit_ret:
 	mono_basic_block_free (original_bb);
 	td->dont_inline = g_list_remove (td->dont_inline, method);
 
-	mono_interp_pgo_generate_end ();
-
 	return ret;
 exit:
 	ret = FALSE;
@@ -11135,6 +11131,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	}
 
 retry:
+	mono_interp_pgo_generate_start ();
 	memset (&transform_data, 0, sizeof(transform_data));
 	td = &transform_data;
 
@@ -11339,6 +11336,7 @@ exit:
 		g_array_free (td->line_numbers, TRUE);
 	g_slist_free (td->imethod_items);
 	mono_mempool_destroy (td->mempool);
+	mono_interp_pgo_generate_end ();
 	if (retry_compilation)
 		goto retry;
 }
