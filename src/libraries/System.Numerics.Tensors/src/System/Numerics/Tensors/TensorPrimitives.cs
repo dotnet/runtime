@@ -169,20 +169,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
-        {
-            if (x.IsEmpty)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            return CosineSimilarityCore(x, y);
-        }
+        public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y) =>
+            CosineSimilarityCore(x, y);
 
         /// <summary>Computes the distance between two points, specified as non-empty, equal-length tensors of single-precision floating-point numbers, in Euclidean space.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -314,42 +302,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static int IndexOfMax(ReadOnlySpan<float> x)
-        {
-            int result = -1;
-
-            if (!x.IsEmpty)
-            {
-                result = 0;
-                float max = float.NegativeInfinity;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    float current = x[i];
-
-                    if (current != max)
-                    {
-                        if (float.IsNaN(current))
-                        {
-                            return i;
-                        }
-
-                        if (max < current)
-                        {
-                            result = i;
-                            max = current;
-                        }
-                    }
-                    else if (IsNegative(max) && !IsNegative(current))
-                    {
-                        result = i;
-                        max = current;
-                    }
-                }
-            }
-
-            return result;
-        }
+        public static int IndexOfMax(ReadOnlySpan<float> x) =>
+            IndexOfMinMaxCore<IndexOfMaxOperator>(x);
 
         /// <summary>Searches for the index of the single-precision floating-point number with the largest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -365,46 +319,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static int IndexOfMaxMagnitude(ReadOnlySpan<float> x)
-        {
-            int result = -1;
-
-            if (!x.IsEmpty)
-            {
-                result = 0;
-                float max = float.NegativeInfinity;
-                float maxMag = float.NegativeInfinity;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    float current = x[i];
-                    float currentMag = Math.Abs(current);
-
-                    if (currentMag != maxMag)
-                    {
-                        if (float.IsNaN(currentMag))
-                        {
-                            return i;
-                        }
-
-                        if (maxMag < currentMag)
-                        {
-                            result = i;
-                            max = current;
-                            maxMag = currentMag;
-                        }
-                    }
-                    else if (IsNegative(max) && !IsNegative(current))
-                    {
-                        result = i;
-                        max = current;
-                        maxMag = currentMag;
-                    }
-                }
-            }
-
-            return result;
-        }
+        public static int IndexOfMaxMagnitude(ReadOnlySpan<float> x) =>
+            IndexOfMinMaxCore<IndexOfMaxMagnitudeOperator>(x);
 
         /// <summary>Searches for the index of the smallest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -419,42 +335,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static int IndexOfMin(ReadOnlySpan<float> x)
-        {
-            int result = -1;
-
-            if (!x.IsEmpty)
-            {
-                result = 0;
-                float min = float.PositiveInfinity;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    float current = x[i];
-
-                    if (current != min)
-                    {
-                        if (float.IsNaN(current))
-                        {
-                            return i;
-                        }
-
-                        if (current < min)
-                        {
-                            result = i;
-                            min = current;
-                        }
-                    }
-                    else if (IsNegative(current) && !IsNegative(min))
-                    {
-                        result = i;
-                        min = current;
-                    }
-                }
-            }
-
-            return result;
-        }
+        public static int IndexOfMin(ReadOnlySpan<float> x) =>
+            IndexOfMinMaxCore<IndexOfMinOperator>(x);
 
         /// <summary>Searches for the index of the single-precision floating-point number with the smallest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -470,46 +352,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static int IndexOfMinMagnitude(ReadOnlySpan<float> x)
-        {
-            int result = -1;
-
-            if (!x.IsEmpty)
-            {
-                result = 0;
-                float min = float.PositiveInfinity;
-                float minMag = float.PositiveInfinity;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    float current = x[i];
-                    float currentMag = Math.Abs(current);
-
-                    if (currentMag != minMag)
-                    {
-                        if (float.IsNaN(currentMag))
-                        {
-                            return i;
-                        }
-
-                        if (currentMag < minMag)
-                        {
-                            result = i;
-                            min = current;
-                            minMag = currentMag;
-                        }
-                    }
-                    else if (IsNegative(current) && !IsNegative(min))
-                    {
-                        result = i;
-                        min = current;
-                        minMag = currentMag;
-                    }
-                }
-            }
-
-            return result;
-        }
+        public static int IndexOfMinMagnitude(ReadOnlySpan<float> x) =>
+            IndexOfMinMaxCore<IndexOfMinMagnitudeOperator>(x);
 
         /// <summary>Computes the element-wise natural (base <c>e</c>) logarithm of single-precision floating-point numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>

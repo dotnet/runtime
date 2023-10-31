@@ -24,7 +24,7 @@
 //
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
-    bool blockMayNeedGCPoll = false;
+    bool blockMayNeedGCPoll = (block->bbFlags & BBF_NEEDS_GCPOLL) != 0;
     for (Statement* const stmt : block->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
@@ -86,9 +86,19 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
-        if (opts.OptimizationDisabled() ? ((block->bbFlags & BBF_HAS_SUPPRESSGC_CALL) == 0) : !blockNeedsGCPoll(block))
+        if (opts.OptimizationDisabled())
         {
-            continue;
+            if ((block->bbFlags & (BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL)) == 0)
+            {
+                continue;
+            }
+        }
+        else
+        {
+            if (!blockNeedsGCPoll(block))
+            {
+                continue;
+            }
         }
 
         result = PhaseStatus::MODIFIED_EVERYTHING;
@@ -189,7 +199,14 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         createdPollBlocks = false;
 
         Statement* newStmt = nullptr;
-        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_NONE))
+
+        if ((block->bbFlags & BBF_NEEDS_GCPOLL) != 0)
+        {
+            // This is a block that ends in a tail call; gc probe early.
+            //
+            newStmt = fgNewStmtAtBeg(block, call);
+        }
+        else if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_NONE))
         {
             // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE we don't need to insert it before the condition.
             // Just append it.
@@ -312,7 +329,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             {
                 stmt = stmt->GetNextStmt();
             }
-            fgRemoveStmt(top, stmt);
+            fgUnlinkStmt(top, stmt);
             fgInsertStmtAtEnd(bottom, stmt);
         }
 
@@ -797,7 +814,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
              (helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
-        result->SetExpTLSFieldAccess();
     }
     else
     {
@@ -2969,7 +2985,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = bbNewBasicBlock(BBJ_NONE);
+    BasicBlock* newHead = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
     newHead->bbFlags |= BBF_INTERNAL;
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
@@ -3521,9 +3537,15 @@ const char* sckName(SpecialCodeKind codeKind)
 //
 void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 {
+    // Record that the code will call a THROW_HELPER
+    // so on Windows Amd64 we can allocate the 4 outgoing
+    // arg slots on the stack frame if there are no other calls.
+    //
+    compUsesThrowHelper = true;
+
     if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
     {
-        // FailFast will still use a thrwo helper, even in debuggable modes.
+        // FailFast will still use a common throw helper, even in debuggable modes.
         //
         return;
     }
@@ -3531,11 +3553,6 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     JITDUMP(FMT_BB " requires throw helper block for %s\n", srcBlk->bbNum, sckName(kind));
 
     unsigned const refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk);
-
-    // Record that the code will call a THROW_HELPER
-    // so on Windows Amd64 we can allocate the 4 outgoing
-    // arg slots on the stack frame if there are no other calls.
-    compUsesThrowHelper = true;
 
     // Look for an existing entry that matches what we're looking for
     //

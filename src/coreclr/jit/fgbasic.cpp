@@ -77,8 +77,10 @@ void Compiler::fgInit()
     genReturnLocal = BAD_VAR_NUM;
 
     /* We haven't reached the global morphing phase */
-    fgGlobalMorph = false;
-    fgModified    = false;
+    fgGlobalMorph     = false;
+    fgGlobalMorphDone = false;
+
+    fgModified = false;
 
 #ifdef DEBUG
     fgSafeBasicBlockCreation = true;
@@ -219,7 +221,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
     assert(fgFirstBBScratch == nullptr);
 
-    BasicBlock* block = bbNewBasicBlock(BBJ_NONE);
+    BasicBlock* block = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
 
     if (fgFirstBB != nullptr)
     {
@@ -799,6 +801,17 @@ BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
     assert(block->hasHndIndex());
     return ehGetDsc(block->getHndIndex())->ebdHndBeg;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// fgInvalidateBBLookup: In non-Release builds, set fgBBs to a dummy value.
+// After calling this, fgInitBBLookup must be called before using fgBBs again.
+//
+void Compiler::fgInvalidateBBLookup()
+{
+    fgBBs = (BasicBlock**)0xCDCD;
+}
+#endif // DEBUG
 
 /*****************************************************************************
  *
@@ -3476,18 +3489,18 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         switch (jmpKind)
         {
             case BBJ_SWITCH:
-                curBBdesc = bbNewBasicBlock(swtDsc);
+                curBBdesc = BasicBlock::bbNewBasicBlock(this, swtDsc);
                 break;
 
             case BBJ_COND:
             case BBJ_ALWAYS:
             case BBJ_LEAVE:
                 noway_assert(jmpAddr != DUMMY_INIT(BAD_IL_OFFSET));
-                curBBdesc = bbNewBasicBlock(jmpKind, jmpAddr);
+                curBBdesc = BasicBlock::bbNewBasicBlock(this, jmpKind, jmpAddr);
                 break;
 
             default:
-                curBBdesc = bbNewBasicBlock(jmpKind);
+                curBBdesc = BasicBlock::bbNewBasicBlock(this, jmpKind);
                 break;
         }
 
@@ -4731,7 +4744,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     if (!curr->KindIs(BBJ_SWITCH))
     {
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = bbNewBasicBlock(curr->GetJumpKind(), curr->GetJumpDest());
+        newBlock         = BasicBlock::bbNewBasicBlock(this, curr->GetJumpKind(), curr->GetJumpDest());
         newBlock->bbRefs = 0;
 
         for (BasicBlock* const succ : curr->Succs(this))
@@ -4747,7 +4760,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     else
     {
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = bbNewBasicBlock(curr->GetJumpSwt());
+        newBlock         = BasicBlock::bbNewBasicBlock(this, curr->GetJumpSwt());
         newBlock->bbRefs = 0;
 
         // In the case of a switch statement there's more complicated logic in order to wire up the predecessor lists
@@ -5616,8 +5629,11 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
         {
             // If bSrc is an unconditional branch to the next block
             // then change it to a BBJ_NONE block
+            // (It's possible for bSrc's jump destination to not be set yet,
+            // so check with BasicBlock::HasJump before calling BasicBlock::JumpsToNext)
             //
-            if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) && bSrc->JumpsToNext())
+            if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) && bSrc->HasJump() &&
+                bSrc->JumpsToNext())
             {
                 bSrc->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
                 JITDUMP("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
@@ -6224,7 +6240,7 @@ BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind,
 {
     // Create a new BasicBlock and chain it in
 
-    BasicBlock* newBlk = bbNewBasicBlock(jumpKind, jumpDest);
+    BasicBlock* newBlk = BasicBlock::bbNewBasicBlock(this, jumpKind, jumpDest);
     newBlk->bbFlags |= BBF_INTERNAL;
 
     fgInsertBBbefore(block, newBlk);
@@ -6266,7 +6282,7 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind,
 {
     // Create a new BasicBlock and chain it in
 
-    BasicBlock* newBlk = bbNewBasicBlock(jumpKind, jumpDest);
+    BasicBlock* newBlk = BasicBlock::bbNewBasicBlock(this, jumpKind, jumpDest);
     newBlk->bbFlags |= BBF_INTERNAL;
 
     fgInsertBBafter(block, newBlk);
