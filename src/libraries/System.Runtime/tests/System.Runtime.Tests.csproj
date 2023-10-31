@@ -14,7 +14,6 @@
 
     <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
     <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
-    <UseLocalAppHostPack Condition="'$(TestReadyToRun)' == 'true'">true</UseLocalAppHostPack>
   </PropertyGroup>
 
   <!--
@@ -331,26 +330,6 @@
 
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
-  </ItemGroup>
-
-  <!--
-      These tests are currently incompatible with TestReadyToRun.
-      We have a tracking issue herehttps://github.com/dotnet/runtime/issues/94189
-  -->
-  <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
-    <Compile Remove="System\Type\TypeTests.Get.cs" />
-    <Compile Remove="System\Runtime\JitInfoTests.cs" />
-    <Compile Remove="System\EnumTests.cs" />
-  </ItemGroup>
-
-  <!--
-      Timezone tests are not working on Linux on CI when TestReadyToRun is enabled.
-      It might be something missing with the machines. We have a tracking issue here:
-      https://github.com/dotnet/runtime/issues/94190
-  -->
-  <ItemGroup Condition="'$(TargetOS)' == 'linux' and '$(TestReadyToRun)' == 'true'">
-    <Compile Remove="System\TimeZoneInfoTests.cs" />
-    <Compile Remove="$(CommonTestPath)System\TimeProviderTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

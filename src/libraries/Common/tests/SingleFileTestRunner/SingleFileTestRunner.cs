@@ -30,6 +30,21 @@ public class SingleFileTestRunner : XunitTestFramework
         // The current RemoteExecutor implementation is not compatible with the SingleFileTestRunner.
         Environment.SetEnvironmentVariable("DOTNET_REMOTEEXECUTOR_SUPPORTED", "0");
 
+        // GH dotnet/runtime Issue #85417/PR #91229: We have some tests that are
+        // currently incompatible with the option -p:TestReadyToRun=true. In order
+        // to exclude them in the test runs, we need to somehow know we are in
+        // TestReadyToRun mode since we do want to run them otherwise.
+        //
+        // So, to achieve this, we set a constant in eng/testing/tests.singlefile.targets,
+        // which we use in the following preprocessor directive. In the case that it
+        // is defined, we set an environment variable that we consume later to implement
+        // PlatformDetection.IsReadyToRunCompiled. This last value is used for the
+        // [ActiveIssue] annotations designed to exclude tests from running.
+
+#if TEST_READY_TO_RUN_COMPILED
+        Environment.SetEnvironmentVariable("TEST_READY_TO_RUN_MODE" ,"1");
+#endif
+
         var diagnosticSink = new ConsoleDiagnosticMessageSink();
         var testsFinished = new TaskCompletionSource();
         var testSink = new TestMessageSink();
