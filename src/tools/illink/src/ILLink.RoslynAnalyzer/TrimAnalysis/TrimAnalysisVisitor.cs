@@ -33,13 +33,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		const int MaxTrackedArrayValues = 32;
 
 		public TrimAnalysisVisitor (
+			Compilation compilation,
 			LocalStateLattice<MultiValue, ValueSetLattice<SingleValue>> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			TrimAnalysisPatternStore trimAnalysisPatterns,
 			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState
-		) : base (lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
+		) : base (compilation, lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
 		{
 			_multiValueLattice = lattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;

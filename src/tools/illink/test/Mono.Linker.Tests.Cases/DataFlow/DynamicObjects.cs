@@ -25,9 +25,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class InvocationOnDynamicType
 		{
-			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
-			[ExpectedWarning ("IL2026", "Invoking members on dynamic types is not trimming-compatible.", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember")]
 			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
 			static void DynamicArgument ()
 			{
@@ -46,16 +44,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
-			[ExpectedWarning ("IL2026", "Invoking members on dynamic types is not trimming-compatible.", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember")]
 			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
 			static void MethodWithDynamicParameter (dynamic arg)
 			{
 				arg.MethodWithDynamicParameter (arg);
 			}
 
-			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeConstructor", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeConstructor")]
 			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
 			// TODO: analyzer hole!
 			static void ObjectCreationDynamicArgument ()
@@ -81,16 +77,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class DynamicMemberReference
 		{
-			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
-			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.GetMember", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.GetMember")]
 			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
 			static void Read (dynamic d)
 			{
 				var x = d.Member;
 			}
 
-			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
-			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.SetMember", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.SetMember")]
 			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
 			static void Write (dynamic d)
 			{
@@ -106,16 +100,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class DynamicIndexerAccess
 		{
-			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
-			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.GetIndex", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.GetIndex")]
 			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
 			static void Read (dynamic d)
 			{
 				var x = d[0];
 			}
 
-			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
-			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.SetIndex", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.SetIndex")]
 			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
 			static void Write (dynamic d)
 			{
@@ -134,7 +126,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode("message")]
 			class ClassWithRequires
 			{
-				// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
 				[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
 				public static void MethodWithDynamicArg (dynamic arg)
 				{
@@ -151,7 +142,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class InvocationOnDynamicTypeInMethodWithRUCDoesNotWarnTwoTimes ()
 		{
-			// Analyzer hole: https://github.com/dotnet/runtime/issues/94057
 			[RequiresUnreferencedCode ("We should only see the warning related to this annotation, and none about the dynamic type.")]
 			[RequiresDynamicCode ("We should only see the warning related to this annotation, and none about the dynamic type.")]
 			static void MethodWithRequires ()
