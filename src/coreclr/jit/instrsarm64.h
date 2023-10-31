@@ -509,8 +509,8 @@ INST3(smull,       "smull",        LNG,    IF_EN3H,   0x1B207C00,  0x0E20C000,  
                                    //  smull   Vd,Vn,Vm             DV_3A  0000111000100000 1100000000000000   0E20 C000   Vd,Vn,Vm   (vector)
                                    //  smull   Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 1010H0nnnnnddddd   0F00 A000   Vd,Vn,Vm[] (vector by element)
 
-INST3(umull,       "umull",        LNG,    IF_EN3H,   0x1BA07C00,  0x2E20C000,  0x2F00A000)
-                                   //  umull   Rd,Rn,Rm             DR_3A  X0011011101mmmmm 011111nnnnnddddd   1BA0 7C00
+INST3(umull,       "umull",        LNG,    IF_EN3H,   0x9BA07C00,  0x2E20C000,  0x2F00A000)
+                                   //  umull   Rd,Rn,Rm             DR_3A  10011011101mmmmm 011111nnnnnddddd   9BA0 7C00
                                    //  umull   Vd,Vn,Vm             DV_3A  00101110XX1mmmmm 110000nnnnnddddd   2E20 C000   Vd,Vn,Vm   (vector)
                                    //  umull   Vd,Vn,Vm[]           DV_3AI 00101111XXLMmmmm 1010H0nnnnnddddd   2F00 A000   Vd,Vn,Vm[] (vector by element)
 
@@ -1578,8 +1578,8 @@ INST1(sxtb,        "sxtb",         0,      IF_DR_2H,  0x13001C00)
 INST1(sxth,        "sxth",         0,      IF_DR_2H,  0x13003C00)
                                    //  sxth    Rd,Rn                DR_2H  X00100110X000000 001111nnnnnddddd   1300 3C00
 
-INST1(sxtw,        "sxtw",         0,      IF_DR_2H,  0x13407C00)
-                                   //  sxtw    Rd,Rn                DR_2H  X001001101000000 011111nnnnnddddd   1340 7C00
+INST1(sxtw,        "sxtw",         0,      IF_DR_2H,  0x13007C00)
+                                   //  sxtw    Rd,Rn                DR_2H  X00100110X000000 011111nnnnnddddd   1300 7C00
 
 INST1(uxtb,        "uxtb",         0,      IF_DR_2H,  0x53001C00)
                                    //  uxtb    Rd,Rn                DR_2H  0101001100000000 000111nnnnnddddd   5300 1C00
