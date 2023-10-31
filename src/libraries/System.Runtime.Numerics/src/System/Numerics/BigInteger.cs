@@ -352,17 +352,18 @@ namespace System.Numerics
             }
             else
             {
-                int wholeDwordCount = Math.DivRem(byteCount, 4, out int unalignedBytes);
-                uint[] val = new uint[wholeDwordCount + (unalignedBytes == 0 ? 0 : 1)];
+                int wholeUInt32Count = Math.DivRem(byteCount, 4, out int unalignedBytes);
+                uint[] val = new uint[wholeUInt32Count + (unalignedBytes == 0 ? 0 : 1)];
 
-                // Copy all dwords, except don't do the last one if it's not a full four bytes.
-                // The dwords are stored in 'least significant first' order.
+                // Copy the bytes to the uint array, apart from those which represent the
+                // most significant uint if it's not a full four bytes.
+                // The uints are stored in 'least significant first' order.
                 if (isBigEndian)
                 {
                     // The bytes parameter is in big-endian byte order.
                     // We need to read the uints out in reverse.
 
-                    Span<byte> uintBytes = MemoryMarshal.AsBytes(val.AsSpan(0, wholeDwordCount));
+                    Span<byte> uintBytes = MemoryMarshal.AsBytes(val.AsSpan(0, wholeUInt32Count));
 
                     // We need to slice off the remainder from the beginning.
                     value.Slice(unalignedBytes).CopyTo(uintBytes);
@@ -374,22 +375,22 @@ namespace System.Numerics
                     // The bytes parameter is in little-endian byte order.
                     // We can just copy the bytes directly into the uint array.
 
-                    value.Slice(0, wholeDwordCount * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val));
+                    value.Slice(0, wholeUInt32Count * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val));
                 }
 
                 // In both of the above cases on big-endian architecture, we need to perform
                 // an endianness swap on the resulting uints.
                 if (!BitConverter.IsLittleEndian)
                 {
-                    BinaryPrimitives.ReverseEndianness(val.AsSpan(0, wholeDwordCount), val);
+                    BinaryPrimitives.ReverseEndianness(val.AsSpan(0, wholeUInt32Count), val);
                 }
 
-                // Copy the last dword specially if it's not aligned
+                // Copy the last uint specially if it's not aligned
                 if (unalignedBytes != 0)
                 {
                     if (isNegative)
                     {
-                        val[wholeDwordCount] = 0xffffffff;
+                        val[wholeUInt32Count] = 0xffffffff;
                     }
 
                     if (isBigEndian)
@@ -397,7 +398,7 @@ namespace System.Numerics
                         for (int curByte = 0; curByte < unalignedBytes; curByte++)
                         {
                             byte curByteValue = value[curByte];
-                            val[wholeDwordCount] = (val[wholeDwordCount] << 8) | curByteValue;
+                            val[wholeUInt32Count] = (val[wholeUInt32Count] << 8) | curByteValue;
                         }
                     }
                     else
@@ -405,7 +406,7 @@ namespace System.Numerics
                         for (int curByte = byteCount - 1; curByte >= byteCount - unalignedBytes; curByte--)
                         {
                             byte curByteValue = value[curByte];
-                            val[wholeDwordCount] = (val[wholeDwordCount] << 8) | curByteValue;
+                            val[wholeUInt32Count] = (val[wholeUInt32Count] << 8) | curByteValue;
                         }
                     }
                 }
