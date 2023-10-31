@@ -2684,6 +2684,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             AggregateType type1 = argType1 as AggregateType;
             AggregateType type2 = argType2 as AggregateType;
 
+            if (type1 == null)
+                throw new Exception("invalid cast argType1 as AggregateType");
+
             AggregateType typeEnum = type1.IsEnumType ? type1 : type2;
 
             Debug.Assert(type1 == typeEnum || type1 == typeEnum.UnderlyingEnumType);

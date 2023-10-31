@@ -22,7 +22,17 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
-            => SymbolTable.PopulateSymbolTableWithName(Name, null, arguments[0].Info.IsStaticType ? arguments[0].Value as Type : arguments[0].Type);
+        {
+            var value = arguments[0].Value as Type;
+            if (arguments[0].Info.IsStaticType)
+            {
+                if (value == null)
+                    throw new Exception("invalid cast arguments[0].Value to Type");
+                SymbolTable.PopulateSymbolTableWithName(Name, null, value);
+            }
+            else
+                SymbolTable.PopulateSymbolTableWithName(Name, null, arguments[0].Type);
+        }
 
         public bool IsBinderThatCanHaveRefReceiver => false;
 
