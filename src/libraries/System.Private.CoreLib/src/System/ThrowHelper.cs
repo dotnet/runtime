@@ -255,6 +255,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_Arg_CannotBeNaN(ExceptionArgument argument)
+        {
+            throw new ArgumentException(SR.Arg_CannotBeNaN, GetArgumentName(argument));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw
@@ -1018,6 +1024,10 @@ namespace System
                     return "overlapped";
                 case ExceptionArgument.minimumBytes:
                     return "minimumBytes";
+                case ExceptionArgument.divisor:
+                    return "divisor";
+                case ExceptionArgument.factor:
+                    return "factor";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1307,6 +1317,8 @@ namespace System
         anyOf,
         overlapped,
         minimumBytes,
+        divisor,
+        factor,
     }
 
     //

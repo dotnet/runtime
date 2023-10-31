@@ -325,6 +325,10 @@ namespace System
             {
                 ThrowHelper.ThrowOverflowException_TimeSpanTooLong();
             }
+            if (ticks == MaxTicks)
+            {
+                return MaxValue;
+            }
             return new TimeSpan((long)ticks);
         }
 
@@ -387,7 +391,7 @@ namespace System
         #region ParseAndFormat
         private static void ValidateStyles(TimeSpanStyles style)
         {
-            if ((style != TimeSpanStyles.None) && (style != TimeSpanStyles.AssumeNegative))
+            if (style is not TimeSpanStyles.None and not TimeSpanStyles.AssumeNegative)
             {
                 ThrowHelper.ThrowArgumentException_InvalidTimeSpanStyles();
             }
@@ -468,7 +472,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<char> input, IFormatProvider? formatProvider, out TimeSpan result) => TimeSpanParse.TryParse(input, formatProvider, out result);
         public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] string? format, IFormatProvider? formatProvider, out TimeSpan result)
         {
-            if ((input is null) || (format is null))
+            if (input is null || format is null)
             {
                 result = default;
                 return false;
@@ -495,7 +499,7 @@ namespace System
         {
             ValidateStyles(styles);
 
-            if ((input is null) || (format is null))
+            if (input is null || format is null)
             {
                 result = default;
                 return false;
@@ -550,8 +554,9 @@ namespace System
         public static TimeSpan operator -(TimeSpan t1, TimeSpan t2)
         {
             long result = t1._ticks - t2._ticks;
+            long t1Sign = t1._ticks >> 63;
 
-            if (((t1._ticks >> 63) != (t2._ticks >> 63)) && ((t1._ticks >> 63) != (result >> 63)))
+            if ((t1Sign != (t2._ticks >> 63)) && (t1Sign != (result >> 63)))
             {
                 // Overflow if signs of operands was different and result's sign was opposite.
                 // >> 63 gives the sign bit (either 64 1's or 64 0's).
@@ -565,8 +570,9 @@ namespace System
         public static TimeSpan operator +(TimeSpan t1, TimeSpan t2)
         {
             long result = t1._ticks + t2._ticks;
+            long t1Sign = t1._ticks >> 63;
 
-            if (((t1._ticks >> 63) == (t2._ticks >> 63)) && ((t1._ticks >> 63) != (result >> 63)))
+            if ((t1Sign == (t2._ticks >> 63)) && (t1Sign != (result >> 63)))
             {
                 // Overflow if signs of operands was identical and result's sign was opposite.
                 // >> 63 gives the sign bit (either 64 1's or 64 0's).
@@ -580,7 +586,7 @@ namespace System
         {
             if (double.IsNaN(factor))
             {
-                ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN();
+                ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN(ExceptionArgument.factor);
             }
 
             // Rounding to the nearest tick is as close to the result we would have with unlimited
@@ -597,7 +603,7 @@ namespace System
         {
             if (double.IsNaN(divisor))
             {
-                ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN();
+                ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN(ExceptionArgument.divisor);
             }
 
             double ticks = Math.Round(timeSpan.Ticks / divisor);
