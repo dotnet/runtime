@@ -189,12 +189,6 @@ namespace System.Reflection.Runtime.Assemblies
         public abstract override int GetHashCode();
 
         /// <summary>
-        /// Ensures a module is loaded and that its module constructor is executed. If the module is fully
-        /// loaded and its constructor already ran, we do not run it again.
-        /// </summary>
-        internal abstract void RunModuleConstructor();
-
-        /// <summary>
         /// Perform a lookup for a type based on a name. Overriders are expected to
         /// have a non-cached implementation, as the result is expected to be cached by
         /// callers of this method. Should be implemented by every format specific

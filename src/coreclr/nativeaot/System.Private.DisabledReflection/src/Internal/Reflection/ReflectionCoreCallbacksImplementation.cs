@@ -45,6 +45,5 @@ namespace Internal.Reflection
         public override Assembly Load(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override Assembly Load(string assemblyPath) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset) => throw new NotSupportedException(SR.Reflection_Disabled);
-        public override void RunModuleConstructor(Module module) => throw new NotSupportedException(SR.Reflection_Disabled);
     }
 }

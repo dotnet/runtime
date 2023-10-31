@@ -61,7 +61,7 @@ namespace System.Runtime.CompilerServices
             if (module.AssociatedModule == null)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            ReflectionAugments.ReflectionCoreCallbacks.RunModuleConstructor(module.AssociatedModule);
+            // Nothing to do for the native AOT. All module cctors execute eagerly.
         }
 
         public static object GetObjectValue(object? obj)

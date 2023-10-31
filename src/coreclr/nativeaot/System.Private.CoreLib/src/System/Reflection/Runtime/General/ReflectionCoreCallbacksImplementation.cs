@@ -348,12 +348,6 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        public sealed override void RunModuleConstructor(Module module)
-        {
-            RuntimeAssemblyInfo assembly = (RuntimeAssemblyInfo)module.Assembly;
-            assembly.RunModuleConstructor();
-        }
-
         public sealed override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset)
         {
             ArgumentNullException.ThrowIfNull(target);

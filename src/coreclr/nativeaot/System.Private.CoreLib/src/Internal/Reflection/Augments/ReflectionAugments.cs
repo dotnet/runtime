@@ -149,8 +149,6 @@ namespace Internal.Reflection.Augments
 
         public abstract IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
 
-        public abstract void RunModuleConstructor(Module module);
-
         public abstract void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset);
 
         public abstract Assembly[] GetLoadedAssemblies();
