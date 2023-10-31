@@ -128,81 +128,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public string? name;
     }
 
-    /*typedef struct _DnsRecord {
-        struct _DnsRecord * pNext;
-        LPTSTR              pName;
-        WORD                wType;
-        WORD                wDataLength; // Not referenced for DNS record
-        //types defined above.
-        union {
-            DWORD               DW;      // flags as DWORD
-            DNS_RECORD_FLAGS    S;       // flags as structure
-        } Flags;
-
-        DWORD               dwTtl;
-        DWORD               dwReserved;
-
-        // Record Data
-        union {
-            DNS_A_DATA      A;
-            DNS_SOA_DATA    SOA, Soa;
-            DNS_PTR_DATA    PTR, Ptr,
-                            NS, Ns,
-                            CNAME, Cname,
-                            MB, Mb,
-                            MD, Md,
-                            MF, Mf,
-                            MG, Mg,
-                            MR, Mr;
-            DNS_MINFO_DATA  MINFO, Minfo,
-                            RP, Rp;
-            DNS_MX_DATA     MX, Mx,
-                            AFSDB, Afsdb,
-                            RT, Rt;
-            DNS_TXT_DATA    HINFO, Hinfo,
-                            ISDN, Isdn,
-                            TXT, Txt,
-                            X25;
-            DNS_NULL_DATA   Null;
-            DNS_WKS_DATA    WKS, Wks;
-            DNS_AAAA_DATA   AAAA;
-            DNS_KEY_DATA    KEY, Key;
-            DNS_SIG_DATA    SIG, Sig;
-            DNS_ATMA_DATA   ATMA, Atma;
-            DNS_NXT_DATA    NXT, Nxt;
-            DNS_SRV_DATA    SRV, Srv;
-            DNS_TKEY_DATA   TKEY, Tkey;
-            DNS_TSIG_DATA   TSIG, Tsig;
-            DNS_WINS_DATA   WINS, Wins;
-            DNS_WINSR_DATA  WINSR, WinsR, NBSTAT, Nbstat;
-        } Data;
-    }DNS_RECORD, *PDNS_RECORD;*/
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal sealed class DnsRecord
-    {
-        public IntPtr next;
-        public string? name;
-        public short type;
-        public short dataLength;
-        public int flags;
-        public int ttl;
-        public int reserved;
-        public DnsSrvData data = null!;
-    }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal sealed class PartialDnsRecord
-    {
-        public IntPtr next;
-        public string? name;
-        public short type;
-        public short dataLength;
-        public int flags;
-        public int ttl;
-        public int reserved;
-        public IntPtr data;
-    }
-
     /*typedef struct {
         LPTSTR      pNameTarget;
         WORD        wPriority;
@@ -284,9 +209,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal const int DsDomainControllerInfoLevel2 = 2;
         internal const int DsDomainControllerInfoLevel3 = 3;
-
-        internal const int DnsSrvData = 33;
-        internal const int DnsQueryBypassCache = 8;
 
         internal const int NegGetCallerName = 1;
     }
