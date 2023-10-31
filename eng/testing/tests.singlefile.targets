@@ -19,6 +19,7 @@
   <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>false</PublishSingleFile>
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
