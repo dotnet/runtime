@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "pal_icushim_internal.h"
 #include "pal_casing.h"
 
