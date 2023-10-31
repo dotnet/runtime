@@ -41,7 +41,13 @@ namespace System.Net.Quic
         internal QuicConnectionOptions() { }
         public long DefaultCloseErrorCode { get { throw null; } set { } }
         public long DefaultStreamErrorCode { get { throw null; } set { } }
+        public System.TimeSpan HandshakeTimeout { get { throw null; } set { } }
         public System.TimeSpan IdleTimeout { get { throw null; } set { } }
+        public int InitialConnectionWindowSize { get { throw null; } set { } }
+        public int InitialLocallyInitiatedBidirectionalStreamReceiveWindowSize { get { throw null; } set { } }
+        public int InitialRemotelyInitiatedBidirectionalStreamReceiveWindowSize { get { throw null; } set { } }
+        public int InitialUnidirectionalStreamReceiveWindowSize { get { throw null; } set { } }
+        public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
         public int MaxInboundBidirectionalStreams { get { throw null; } set { } }
         public int MaxInboundUnidirectionalStreams { get { throw null; } set { } }
     }
@@ -64,8 +70,8 @@ namespace System.Net.Quic
     {
         public QuicException(System.Net.Quic.QuicError error, long? applicationErrorCode, string message) { }
         public long? ApplicationErrorCode { get { throw null; } }
-        public long? TransportErrorCode { get { throw null; } }
         public System.Net.Quic.QuicError QuicError { get { throw null; } }
+        public long? TransportErrorCode { get { throw null; } }
     }
     public sealed partial class QuicListener : System.IAsyncDisposable
     {

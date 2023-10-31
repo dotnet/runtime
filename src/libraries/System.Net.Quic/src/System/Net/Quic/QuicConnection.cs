@@ -523,7 +523,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return QUIC_STATUS_SUCCESS;
         }
 
-        data.Flags |= QUIC_STREAM_OPEN_FLAGS.DELAY_FC_UPDATES;
+        data.Flags |= QUIC_STREAM_OPEN_FLAGS.DELAY_ID_FC_UPDATES;
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)

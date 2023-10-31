@@ -55,6 +55,42 @@ public abstract class QuicConnectionOptions
     public long DefaultCloseErrorCode { get; set; } = -1;
 
     /// <summary>
+    /// The interval at which keep alive packets are sent on the connection.
+    /// Default <see cref="TimeSpan.Zero"/> means underlying implementation default interval.
+    /// </summary>
+    public TimeSpan KeepAliveInterval { get; set; } = TimeSpan.Zero;
+
+    /// <summary>
+    /// The initial flow-control window size for the connection.
+    /// Default 0 to leave the window size to the implementation.
+    /// </summary>
+    public int InitialConnectionWindowSize { get; set; } = 0;
+
+    /// <summary>
+    /// The initial flow-control window size for locally initiated bidirectional streams.
+    /// Default 0 to leave the window size to the implementation.
+    /// </summary>
+    public int InitialLocallyInitiatedBidirectionalStreamReceiveWindowSize { get; set; } = 0;
+
+    /// <summary>
+    /// The initial flow-control window size for remotely initiated bidirectional streams.
+    /// Default 0 to leave the window size to the implementation.
+    /// </summary>
+    public int InitialRemotelyInitiatedBidirectionalStreamReceiveWindowSize { get; set; } = 0;
+
+    /// <summary>
+    /// The initial flow-control window size for (remotely initiated) unidirectional streams.
+    /// Default 0 to leave the window size to the implementation.
+    /// </summary>
+    public int InitialUnidirectionalStreamReceiveWindowSize { get; set; } = 0;
+
+    /// <summary>
+    /// The initial flow-control window size for (remotely initiated) unidirectional streams.
+    /// Default 0 to leave the window size to the implementation.
+    /// </summary>
+    public TimeSpan HandshakeTimeout { get; set; } = TimeSpan.Zero;
+
+    /// <summary>
     /// Validates the options and potentially sets platform specific defaults.
     /// </summary>
     /// <param name="argumentName">Name of the from the caller.</param>

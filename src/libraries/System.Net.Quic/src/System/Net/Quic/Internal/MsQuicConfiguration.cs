@@ -117,14 +117,48 @@ internal static class MsQuicConfiguration
 #pragma warning restore SYSLIB0040
 
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+
         settings.IsSet.PeerUnidiStreamCount = 1;
         settings.PeerUnidiStreamCount = (ushort)options.MaxInboundUnidirectionalStreams;
+
         settings.IsSet.PeerBidiStreamCount = 1;
         settings.PeerBidiStreamCount = (ushort)options.MaxInboundBidirectionalStreams;
+
         if (options.IdleTimeout != TimeSpan.Zero)
         {
             settings.IsSet.IdleTimeoutMs = 1;
             settings.IdleTimeoutMs = options.IdleTimeout != Timeout.InfiniteTimeSpan ? (ulong)options.IdleTimeout.TotalMilliseconds : 0;
+        }
+
+        if (options.KeepAliveInterval != TimeSpan.Zero)
+        {
+            settings.IsSet.KeepAliveIntervalMs = 1;
+            settings.KeepAliveIntervalMs = (uint)options.KeepAliveInterval.TotalMilliseconds;
+        }
+
+        if (options.InitialConnectionWindowSize > 0)
+        {
+            settings.IsSet.ConnFlowControlWindow = 1;
+            settings.ConnFlowControlWindow = (uint)options.InitialConnectionWindowSize;
+        }
+
+        // todo: these values need all to be powers of 2
+        if (options.InitialLocallyInitiatedBidirectionalStreamReceiveWindowSize > 0)
+        {
+            settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
+            settings.StreamRecvWindowBidiLocalDefault = (uint)options.InitialLocallyInitiatedBidirectionalStreamReceiveWindowSize;
+        }
+
+        if (options.InitialRemotelyInitiatedBidirectionalStreamReceiveWindowSize > 0)
+        {
+            settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
+            settings.StreamRecvWindowBidiRemoteDefault = (uint)options.InitialRemotelyInitiatedBidirectionalStreamReceiveWindowSize;
+        }
+
+        if (options.InitialUnidirectionalStreamReceiveWindowSize > 0)
+        {
+            settings.IsSet.StreamRecvWindowUnidiDefault = 1;
+            settings.StreamRecvWindowUnidiDefault = (uint)options.InitialUnidirectionalStreamReceiveWindowSize;
         }
 
         QUIC_HANDLE* handle;

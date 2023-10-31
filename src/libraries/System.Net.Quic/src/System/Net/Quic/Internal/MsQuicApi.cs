@@ -18,6 +18,7 @@ internal sealed unsafe partial class MsQuicApi
 {
     private static readonly Version s_minWindowsVersion = new Version(10, 0, 20145, 1000);
 
+    // TODO: update after https://github.com/microsoft/msquic/pull/3948 is released
     private static readonly Version s_minMsQuicVersion = new Version(2, 2, 2);
 
     private static readonly delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> MsQuicOpenVersion;
@@ -154,7 +155,7 @@ internal sealed unsafe partial class MsQuicApi
 
             if (version < s_minMsQuicVersion)
             {
-                NotSupportedReason =  $"Incompatible MsQuic library version '{version}', expecting higher than '{s_minMsQuicVersion}'.";
+                NotSupportedReason = $"Incompatible MsQuic library version '{version}', expecting higher than '{s_minMsQuicVersion}'.";
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, NotSupportedReason);
@@ -178,7 +179,7 @@ internal sealed unsafe partial class MsQuicApi
                 // Implies windows platform, check TLS1.3 availability
                 if (!IsWindowsVersionSupported())
                 {
-                    NotSupportedReason =  $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {s_minWindowsVersion}.";
+                    NotSupportedReason = $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {s_minWindowsVersion}.";
                     if (NetEventSource.Log.IsEnabled())
                     {
                         NetEventSource.Info(null, NotSupportedReason);
