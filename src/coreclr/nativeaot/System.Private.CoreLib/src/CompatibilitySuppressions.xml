@@ -930,14 +930,6 @@
     <Target>T:System.Threading.Condition</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Threading.Lock</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Threading.LockHolder</Target>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.ModuleHandle.#ctor(System.Reflection.Module)</Target>
   </Suppression>

@@ -4352,8 +4352,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // callBlock will call the finally handler
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step, HBtab->ebdHndBeg);
 
-                // Jump target should be set to block as a dummy value
-                assert(step->HasJumpTo(&BasicBlock::bbTempJumpDest));
+                // step's jump target shouldn't be set yet
+                assert(!step->HasJump());
 
                 // the previous call to a finally returns to this call (to the next finally in the chain)
                 step->SetJumpDest(callBlock);
@@ -4388,7 +4388,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             }
 
             // Note: we don't know the jump target yet
-            step = fgNewBBafter(BBJ_ALWAYS, callBlock, true DEBUG_ARG(&BasicBlock::bbTempJumpDest));
+            step = fgNewBBafter(BBJ_ALWAYS, callBlock, true);
             /* The new block will inherit this block's weight */
             step->inheritWeight(block);
             step->bbFlags |= BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS;
@@ -4452,8 +4452,8 @@ void Compiler::impImportLeave(BasicBlock* block)
         BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step, leaveTarget);
         finalStep->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
 
-        // Jump target should be set to block as a dummy value
-        assert(step->HasJumpTo(&BasicBlock::bbTempJumpDest));
+        // step's jump target shouldn't be set yet
+        assert(!step->HasJump());
 
         step->SetJumpDest(finalStep);
         fgAddRefPred(finalStep, step);
@@ -4595,11 +4595,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                 /* Create a new catch exit block in the catch region for the existing step block to jump to in this
                  * scope */
                 // Note: we don't know the jump target yet
-                BasicBlock* exitBlock =
-                    fgNewBBinRegion(BBJ_EHCATCHRET, 0, XTnum + 1, step DEBUG_ARG(&BasicBlock::bbTempJumpDest));
+                BasicBlock* exitBlock = fgNewBBinRegion(BBJ_EHCATCHRET, 0, XTnum + 1, step);
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
-                assert((step == block) || step->HasJumpTo(&BasicBlock::bbTempJumpDest));
+                assert((step == block) || !step->HasJump());
                 if (step == block)
                 {
                     fgRemoveRefPred(step->GetJumpDest(), step);
@@ -4716,7 +4715,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // stack walks.)
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
-                assert((step == block) || step->HasJumpTo(&BasicBlock::bbTempJumpDest));
+                assert((step == block) || !step->HasJump());
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 if (step->KindIs(BBJ_EHCATCHRET))
@@ -4724,8 +4723,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     // Need to create another step block in the 'try' region that will actually branch to the
                     // call-to-finally thunk.
                     // Note: we don't know the jump target yet
-                    BasicBlock* step2 =
-                        fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step DEBUG_ARG(&BasicBlock::bbTempJumpDest));
+                    BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     if (step == block)
                     {
                         fgRemoveRefPred(step->GetJumpDest(), step);
@@ -4760,7 +4758,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif // !FEATURE_EH_CALLFINALLY_THUNKS
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
-                assert((step == block) || step->HasJumpTo(&BasicBlock::bbTempJumpDest));
+                assert((step == block) || !step->HasJump());
 
                 // callBlock will call the finally handler
                 callBlock =
@@ -4797,7 +4795,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             }
 
             // Note: we don't know the jump target yet
-            step     = fgNewBBafter(BBJ_ALWAYS, callBlock, true DEBUG_ARG(&BasicBlock::bbTempJumpDest));
+            step     = fgNewBBafter(BBJ_ALWAYS, callBlock, true);
             stepType = ST_FinallyReturn;
 
             /* The new block will inherit this block's weight */
@@ -4861,7 +4859,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             if ((stepType == ST_FinallyReturn) || (stepType == ST_Catch))
             {
                 assert(step);
-                assert((step == block) || step->HasJumpTo(&BasicBlock::bbTempJumpDest));
+                assert((step == block) || !step->HasJump());
 
                 if (stepType == ST_FinallyReturn)
                 {
@@ -4875,8 +4873,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 /* Create a new exit block in the try region for the existing step block to jump to in this scope */
                 // Note: we don't know the jump target yet
-                BasicBlock* catchStep =
-                    fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step DEBUG_ARG(&BasicBlock::bbTempJumpDest));
+                BasicBlock* catchStep = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
 
                 if (step == block)
                 {
@@ -4938,7 +4935,7 @@ void Compiler::impImportLeave(BasicBlock* block)
     }
     else
     {
-        assert((step == block) || step->HasJumpTo(&BasicBlock::bbTempJumpDest));
+        assert((step == block) || !step->HasJump());
 
         if (step == block)
         {
@@ -5013,7 +5010,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // will be treated as pair and handled correctly.
     if (block->KindIs(BBJ_CALLFINALLY))
     {
-        BasicBlock* dupBlock = bbNewBasicBlock(block->GetJumpKind(), block->GetJumpDest());
+        BasicBlock* dupBlock = BasicBlock::bbNewBasicBlock(this, block->GetJumpKind(), block->GetJumpDest());
         dupBlock->bbFlags    = block->bbFlags;
         fgAddRefPred(dupBlock->GetJumpDest(), dupBlock);
         dupBlock->copyEHRegion(block);
@@ -8685,67 +8682,65 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We rule out inlinees with explicit tail calls in fgMakeBasicBlocks.
                     assert((prefixFlags & PREFIX_TAILCALL_EXPLICIT) == 0);
                 }
-                else
+#ifdef DEBUG
+                else if (compTailCallStress())
                 {
-                    if (compTailCallStress())
+                    // Have we created a new BB after the "call" instruction in fgMakeBasicBlocks()?
+                    // Tail call stress only recognizes call+ret patterns and forces them to be
+                    // explicit tail prefixed calls.  Also fgMakeBasicBlocks() under tail call stress
+                    // doesn't import 'ret' opcode following the call into the basic block containing
+                    // the call instead imports it to a new basic block.  Note that fgMakeBasicBlocks()
+                    // is already checking that there is an opcode following call and hence it is
+                    // safe here to read next opcode without bounds check.
+                    newBBcreatedForTailcallStress =
+                        impOpcodeIsCallOpcode(opcode) && // Current opcode is a CALL, (not a CEE_NEWOBJ). So, don't
+                                                         // make it jump to RET.
+                        (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET; // Next opcode is a CEE_RET
+
+                    bool hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT);
+                    if (newBBcreatedForTailcallStress && !hasTailPrefix)
                     {
-                        // Have we created a new BB after the "call" instruction in fgMakeBasicBlocks()?
-                        // Tail call stress only recognizes call+ret patterns and forces them to be
-                        // explicit tail prefixed calls.  Also fgMakeBasicBlocks() under tail call stress
-                        // doesn't import 'ret' opcode following the call into the basic block containing
-                        // the call instead imports it to a new basic block.  Note that fgMakeBasicBlocks()
-                        // is already checking that there is an opcode following call and hence it is
-                        // safe here to read next opcode without bounds check.
-                        newBBcreatedForTailcallStress =
-                            impOpcodeIsCallOpcode(opcode) && // Current opcode is a CALL, (not a CEE_NEWOBJ). So, don't
-                                                             // make it jump to RET.
-                            (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET; // Next opcode is a CEE_RET
+                        // Do a more detailed evaluation of legality
+                        const bool passedConstraintCheck =
+                            verCheckTailCallConstraint(opcode, &resolvedToken,
+                                                       constraintCall ? &constrainedResolvedToken : nullptr);
 
-                        bool hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT);
-                        if (newBBcreatedForTailcallStress && !hasTailPrefix)
+                        // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
+                        // patchpoints.
+                        //
+                        const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                                        (JitConfig.TC_OnStackReplacement() > 0) &&
+                                                        compCanHavePatchpoints();
+                        if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
                         {
-                            // Do a more detailed evaluation of legality
-                            const bool passedConstraintCheck =
-                                verCheckTailCallConstraint(opcode, &resolvedToken,
-                                                           constraintCall ? &constrainedResolvedToken : nullptr);
-
-                            // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
-                            // patchpoints.
-                            //
-                            const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                                            (JitConfig.TC_OnStackReplacement() > 0) &&
-                                                            compCanHavePatchpoints();
-                            if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
+                            // Now check with the runtime
+                            CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
+                            bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
+                                             (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
+                            CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
+                            if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
+                                                              hasTailPrefix)) // Is it legal to do tailcall?
                             {
-                                // Now check with the runtime
-                                CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
-                                bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
-                                                 (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
-                                CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
-                                if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
-                                                                  hasTailPrefix)) // Is it legal to do tailcall?
-                                {
-                                    // Stress the tailcall.
-                                    JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
-                                    prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
-                                    prefixFlags |= PREFIX_TAILCALL_STRESS;
-                                }
-                                else
-                                {
-                                    // Runtime disallows this tail call
-                                    JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
-                                    passedStressModeValidation = false;
-                                }
+                                // Stress the tailcall.
+                                JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
+                                prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
                             }
                             else
                             {
-                                // Constraints disallow this tail call
-                                JITDUMP(" (Tailcall stress: constraint check failed)");
+                                // Runtime disallows this tail call
+                                JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
                                 passedStressModeValidation = false;
                             }
                         }
+                        else
+                        {
+                            // Constraints disallow this tail call
+                            JITDUMP(" (Tailcall stress: constraint check failed)");
+                            passedStressModeValidation = false;
+                        }
                     }
                 }
+#endif
 
                 // This is split up to avoid goto flow warnings.
                 bool isRecursive;

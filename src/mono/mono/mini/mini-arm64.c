@@ -509,24 +509,39 @@ emit_imm (guint8 *code, int dreg, int imm)
 static guint8*
 emit_imm64 (guint8 *code, int dreg, guint64 imm)
 {
-	if (imm == 0) {
-		arm_movzx (code, dreg, 0, 0);
-	} else {
-		gboolean is_inited = FALSE;
+	// Determine if there is more advantage to using movn or movz for initialization.
+	int num0 = 0, num1 = 0;
+	for (int idx = 0; idx < 64; idx+=16) {
+		int w = (imm >> idx) & 0xffff;
+		if (w == 0)
+			num0++;
+		else if (w == 0xffff)
+			num1++;
+	}
 
-		for (int idx = 0; idx < 64; idx += 16) {
-			int w = (imm >> idx) & 0xffff;
+	gboolean is_negated = num1 > num0;
+	gboolean is_inited = FALSE;
 
-			if (w) {
-				if (is_inited) {
-					arm_movkx (code, dreg, w, idx);
-				} else {
-					arm_movzx (code, dreg, w, idx);
-					is_inited = TRUE;
-				}
-			}
+	for (int idx = 0; idx < 64; idx+=16) {
+		int w = (imm >> idx) & 0xffff;
+		if (!is_inited && is_negated && w != 0xffff) {
+			arm_movnx (code, dreg, (~w) & 0xffff, idx);
+			is_inited = TRUE;
+		} else if (!is_inited && !is_negated && w != 0x0) {
+			arm_movzx (code, dreg, w, idx);
+			is_inited = TRUE;
+		} else if (is_inited && ((is_negated && w != 0xffff) || (!is_negated && w != 0x0))) {
+			arm_movkx (code, dreg, w, idx);
 		}
 	}
+
+	if (!is_inited) {
+		if (is_negated)
+			arm_movnx (code, dreg, 0, 0);
+		else	
+			arm_movzx (code, dreg, 0, 0);
+	}
+
 	return code;
 }
 
@@ -2295,6 +2310,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		switch (t->type) {
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_I8:
@@ -2391,6 +2407,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		*(gpointer*)ret = (gpointer)res;
 		break;
 	case MONO_TYPE_I1:

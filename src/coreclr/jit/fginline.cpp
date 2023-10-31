@@ -747,7 +747,7 @@ PhaseStatus Compiler::fgInline()
         for (Statement* const stmt : block->Statements())
         {
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
             // candidate stage. So scan the tree looking for those early failures.
@@ -1062,7 +1062,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // fgFindNonInlineCandidate: tree walk helper to ensure that a tree node
