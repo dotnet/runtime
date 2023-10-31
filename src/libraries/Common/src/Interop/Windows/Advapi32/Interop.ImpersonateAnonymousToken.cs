@@ -9,6 +9,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
-        internal static partial int ImpersonateAnonymousToken(IntPtr token);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool ImpersonateAnonymousToken(IntPtr token);
     }
 }

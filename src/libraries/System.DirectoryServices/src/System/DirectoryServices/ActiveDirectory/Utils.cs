@@ -992,8 +992,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                int result = Interop.Advapi32.ImpersonateAnonymousToken(hThread);
-                if (result == 0)
+                bool success = Interop.Advapi32.ImpersonateAnonymousToken(hThread);
+                if (!success)
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
             finally
