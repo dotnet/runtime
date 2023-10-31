@@ -39,7 +39,9 @@ namespace System.Collections.Concurrent
     /// away as an <see cref="System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
     /// </remarks>
     /// <typeparam name="T">Specifies the type of elements in the collection.</typeparam>
-    [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
     [DebuggerTypeProxy(typeof(BlockingCollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}, Type = {_collection}")]
     public class BlockingCollection<T> : IEnumerable<T>, ICollection, IDisposable, IReadOnlyCollection<T>
@@ -1742,7 +1744,9 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>Returns a snapshot of the underlying collection's elements.</summary>
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public T[] Items
         {

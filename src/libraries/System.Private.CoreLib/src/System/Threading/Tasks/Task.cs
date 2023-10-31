@@ -4663,7 +4663,9 @@ namespace System.Threading.Tasks
         /// At least one of the <see cref="Task"/> instances was canceled -or- an exception was thrown during
         /// the execution of at least one of the <see cref="Task"/> instances.
         /// </exception>
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(params Task[] tasks)
         {
@@ -4706,7 +4708,9 @@ namespace System.Threading.Tasks
         /// infinite time-out -or- timeout is greater than
         /// <see cref="int.MaxValue"/>.
         /// </exception>
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
@@ -4745,7 +4749,9 @@ namespace System.Threading.Tasks
         /// <paramref name="millisecondsTimeout"/> is a negative number other than -1, which represents an
         /// infinite time-out.
         /// </exception>
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
@@ -4774,7 +4780,9 @@ namespace System.Threading.Tasks
         /// <exception cref="OperationCanceledException">
         /// The <paramref name="cancellationToken"/> was canceled.
         /// </exception>
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
@@ -4815,14 +4823,18 @@ namespace System.Threading.Tasks
         /// <exception cref="OperationCanceledException">
         /// The <paramref name="cancellationToken"/> was canceled.
         /// </exception>
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
             WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
 
         // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
         // to be able to see the method on the stack and inspect arguments).
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         private static bool WaitAllCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             if (tasks == null)
@@ -4961,7 +4973,9 @@ namespace System.Threading.Tasks
         /// <param name="millisecondsTimeout">The timeout.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if all of the tasks completed; otherwise, false.</returns>
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         private static bool WaitAllBlockingCore(List<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");

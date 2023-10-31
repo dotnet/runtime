@@ -7,7 +7,9 @@
 #if !BUILDING_CORELIB_REFERENCE
 namespace System.Collections.Concurrent
 {
+#if !FEATURE_WASM_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
     public partial class BlockingCollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IDisposable
     {
         public BlockingCollection() { }

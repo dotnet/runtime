@@ -74,7 +74,9 @@ namespace System.Threading
             return (uint)_writerSeqNum > (uint)seqNum;
         }
 
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void AcquireReaderLock(int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
@@ -274,7 +276,9 @@ namespace System.Threading
             ++threadLocalLockEntry._readerLevel;
         }
 
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void AcquireReaderLock(TimeSpan timeout) => AcquireReaderLock(ToTimeoutMilliseconds(timeout));
 
         public void AcquireWriterLock(int millisecondsTimeout)
@@ -662,7 +666,9 @@ namespace System.Threading
             }
         }
 
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public LockCookie UpgradeToWriterLock(int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
@@ -739,7 +745,9 @@ namespace System.Threading
             }
         }
 
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public LockCookie UpgradeToWriterLock(TimeSpan timeout) => UpgradeToWriterLock(ToTimeoutMilliseconds(timeout));
 
         public void DowngradeFromWriterLock(ref LockCookie lockCookie)
@@ -907,7 +915,9 @@ namespace System.Threading
             return lockCookie;
         }
 
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void RestoreLock(ref LockCookie lockCookie)
         {
             // Validate cookie
@@ -973,7 +983,9 @@ namespace System.Threading
         /// <summary>
         /// Helper function that restores the lock to the original state indicated by parameters
         /// </summary>
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         private void RecoverLock(ref LockCookie lockCookie, LockCookieFlags flags)
         {
             // Contrary to the legacy code, this method does not use a finite timeout for recovering the previous lock state, as

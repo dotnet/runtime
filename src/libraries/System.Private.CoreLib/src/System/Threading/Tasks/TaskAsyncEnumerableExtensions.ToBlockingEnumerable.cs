@@ -23,7 +23,9 @@ namespace System.Threading.Tasks
         /// unless the returned <see cref="IEnumerable{T}"/> is enumerated by calling its <see cref="IEnumerable{T}.GetEnumerator"/> method.
         /// Async enumeration does not happen in the background; each MoveNext call will invoke the underlying <see cref="IAsyncEnumerator{T}.MoveNextAsync"/> exactly once.
         /// </remarks>
+#if !FEATURE_WASM_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public static IEnumerable<T> ToBlockingEnumerable<T>(this IAsyncEnumerable<T> source, CancellationToken cancellationToken = default)
         {
             IAsyncEnumerator<T> enumerator = source.GetAsyncEnumerator(cancellationToken);
@@ -76,7 +78,9 @@ namespace System.Threading.Tasks
                 _onCompleted = Set;
             }
 
+#if !FEATURE_WASM_THREADS
             [UnsupportedOSPlatform("browser")]
+#endif
             public void Wait<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
             {
                 awaiter.UnsafeOnCompleted(_onCompleted);
