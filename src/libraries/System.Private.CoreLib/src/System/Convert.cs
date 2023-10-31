@@ -2960,18 +2960,13 @@ namespace System
         /// </summary>
         /// <param name="source">The string to convert.</param>
         /// <param name="destination">
-        /// The span in which to write the converted 8-bit unsigned integers. When this method returns false,
+        /// The span in which to write the converted 8-bit unsigned integers. When this method returns value different than <see cref="OperationStatus.Done"/>,
         /// either the span remains unmodified or contains an incomplete conversion of <paramref name="source"/>,
         /// up to the last valid character.
         /// </param>
-        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
-        /// <param name="charsConsumed">When this method returns, contains the number of bytes that were consumed in <paramref name="source"/>.</param>
-        /// <returns>true if the conversion was successful; otherwise, false.</returns>
-        /// <remarks> The return value can be as follows:
-        /// - <see cref="System.Buffers.OperationStatus.Done" />: <paramref name="source" /> was successfully and completely converted into <paramref name="destination" />.
-        /// - <see cref="System.Buffers.OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="destination" /> to decompress <paramref name="source" />.
-        /// - <see cref="System.Buffers.OperationStatus.NeedMoreData" />: The converting action is partially done. At least one (or any odd) more byte is required to complete the converting task. This method should be called again with more input to convert.
-        /// - <see cref="System.Buffers.OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be converted.</remarks>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of characters that were consumed from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         /// <exception cref="ArgumentNullException">Passed string <paramref name="source"/> is null.</exception>
         public static OperationStatus FromHexString(string source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
         {
@@ -2985,18 +2980,13 @@ namespace System
         /// </summary>
         /// <param name="source">The span to convert.</param>
         /// <param name="destination">
-        /// The span in which to write the converted 8-bit unsigned integers. When this method returns false,
+        /// The span in which to write the converted 8-bit unsigned integers. When this method returns value different than <see cref="OperationStatus.Done"/>,
         /// either the span remains unmodified or contains an incomplete conversion of <paramref name="source"/>,
         /// up to the last valid character.
         /// </param>
-        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
-        /// <param name="charsConsumed">When this method returns, contains the number of chars that were consumed from <paramref name="source"/>.</param>
-        /// <returns>One of the enumeration values that indicates the status of the decompression operation.</returns>
-        /// <remarks> The return value can be as follows:
-        /// - <see cref="System.Buffers.OperationStatus.Done" />: <paramref name="source" /> was successfully and completely converted into <paramref name="destination" />.
-        /// - <see cref="System.Buffers.OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="destination" /> to decompress <paramref name="source" />.
-        /// - <see cref="System.Buffers.OperationStatus.NeedMoreData" />: The converting action is partially done. At least one (or any odd) more byte is required to complete the converting task. This method should be called again with more input to convert.
-        /// - <see cref="System.Buffers.OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be converted.</remarks>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of characters that were consumed from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         public static OperationStatus FromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
         {
             (int quotient, int remainder) = Math.DivRem(source.Length, 2);
@@ -3006,25 +2996,22 @@ namespace System
                 charsConsumed = 0;
                 bytesWritten = 0;
 
-                if (remainder == 1)
-                    return OperationStatus.NeedMoreData;
-                else
-                    return OperationStatus.Done;
+                return remainder == 1 ? OperationStatus.NeedMoreData : OperationStatus.Done;
             }
 
-            var successResult = OperationStatus.Done;
+            var result = OperationStatus.Done;
 
             if (destination.Length < quotient)
             {
                 source = source.Slice(0, destination.Length * 2);
                 quotient = destination.Length;
-                successResult = OperationStatus.DestinationTooSmall;
+                result = OperationStatus.DestinationTooSmall;
             }
             else if (remainder == 1)
             {
                 source = source.Slice(0, source.Length - 1);
                 destination = destination.Slice(0, destination.Length - 1);
-                successResult = OperationStatus.NeedMoreData;
+                result = OperationStatus.NeedMoreData;
             }
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))
@@ -3035,7 +3022,7 @@ namespace System
 
             bytesWritten = quotient;
             charsConsumed = source.Length;
-            return successResult;
+            return result;
         }
 
         /// <summary>
@@ -3100,29 +3087,20 @@ namespace System
         /// <returns>true if the conversion was successful; otherwise, false.</returns>
         public static bool TryToHexString(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
         {
-            int length = source.Length;
-
-            if (length > int.MaxValue / 2)
-                goto FalseResult;
-
-            if (length == 0)
+            if (source.Length == 0)
             {
                 charsWritten = 0;
                 return true;
             }
-
-            int requiredCharCount = length * 2;
-
-            if (destination.Length < requiredCharCount)
-                goto FalseResult;
+            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length  * 2)
+            {
+                charsWritten = 0;
+                return false;
+            }
 
             HexConverter.EncodeToUtf16(source, destination);
-            charsWritten = requiredCharCount;
+            charsWritten = source.Length  * 2;
             return true;
-
-        FalseResult:
-            charsWritten = 0;
-            return false;
         }
     }  // class Convert
 }  // namespace

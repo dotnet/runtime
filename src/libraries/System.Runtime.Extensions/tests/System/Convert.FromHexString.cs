@@ -38,12 +38,11 @@ namespace System.Tests
             byte[] fromResult = Convert.FromHexString(actual);
             Assert.Equal(expected, fromResult);
 
-            Span<byte> tryResult = stackalloc byte[actual.Length / 2];
+            Span<byte> tryResult = new byte[actual.Length / 2];
             Assert.Equal(OperationStatus.Done, Convert.FromHexString(actual, tryResult, out int consumed, out int written));
             Assert.Equal(fromResult.Length, written);
             Assert.Equal(actual.Length, consumed);
             AssertExtensions.SequenceEqual(expected, tryResult);
-
         }
 
         [Fact]
