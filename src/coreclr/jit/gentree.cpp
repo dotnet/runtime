@@ -24465,58 +24465,72 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
     GenTree*       tmp       = nullptr;
 
 #if defined(TARGET_XARCH)
-    assert(!varTypeIsByte(simdBaseType) && !varTypeIsLong(simdBaseType));
-    assert(simdSize != 64);
 
-    // HorizontalAdd combines pairs so we need log2(vectorLength) passes to sum all elements together.
-    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-    int      haddCount    = genLog2(vectorLength);
-
-    if (simdSize == 32)
+    if (simdSize == 64)
     {
-        // Minus 1 because for the last pass we split the vector to low / high and add them together.
-        haddCount -= 1;
+        assert(IsBaselineVector512IsaSupportedDebugOnly());
+        GenTree* op1Dup     = fgMakeMultiUse(&op1);
+        GenTree* op1Lower32 = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
+        GenTree* op1Upper32 = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
+        simdSize            = simdSize / 2;
+        op1Lower32          = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1Lower32, op1Upper32, simdBaseJitType, simdSize);
+        GenTree* op1Dup32   = fgMakeMultiUse(&op1Lower32);
+        GenTree* op1Lower16 = gtNewSimdGetUpperNode(TYP_SIMD16, op1Lower32, simdBaseJitType, simdSize);
+        GenTree* op1Upper16 = gtNewSimdGetLowerNode(TYP_SIMD16, op1Dup32, simdBaseJitType, simdSize);
+        simdSize            = simdSize / 2;
+        op1                 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lower16, op1Upper16, simdBaseJitType, simdSize);
+    }
+    else if (simdSize == 32)
+    {
+        GenTree* op1Dup     = fgMakeMultiUse(&op1);
+        GenTree* op1Lower16 = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
+        GenTree* op1Upper16 = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
+        simdSize            = simdSize / 2;
+        op1                 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lower16, op1Upper16, simdBaseJitType, simdSize);
+    }
 
-        if (varTypeIsFloating(simdBaseType))
+    assert(simdSize == 16);
+    if (varTypeIsFloating(simdBaseType))
+    {
+        GenTree* op1Dup = nullptr;
+        if (simdBaseType == TYP_FLOAT)
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-            intrinsic = NI_AVX_HorizontalAdd;
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE));
+            intrinsic = NI_SSE_Shuffle;
+            op1Dup    = fgMakeMultiUse(&op1);
+            op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Dup, gtNewIconNode(177), intrinsic, simdBaseJitType, 16);
+            op1Dup = fgMakeMultiUse(&op1Dup);
+            op1    = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseJitType, simdSize);
         }
         else
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-            intrinsic = NI_AVX2_HorizontalAdd;
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+            intrinsic = NI_SSE2_Shuffle;
         }
-    }
-    else if (varTypeIsFloating(simdBaseType))
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSE3));
-        intrinsic = NI_SSE3_HorizontalAdd;
-    }
-    else
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSSE3));
-        intrinsic = NI_SSSE3_HorizontalAdd;
+        op1Dup = fgMakeMultiUse(&op1);
+        op1    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Dup, gtNewIconNode(3), intrinsic, simdBaseJitType, 16);
+        op1Dup = fgMakeMultiUse(&op1Dup);
+        op1    = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseJitType, simdSize);
+        return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, 16);
     }
 
-    for (int i = 0; i < haddCount; i++)
+    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+    int      shiftCount   = genLog2(vectorLength);
+    int      typeSize     = genTypeSize(simdBaseType);
+    int      shiftVal     = (typeSize * vectorLength) / 2;
+
+    GenTree* opShifted = nullptr;
+    while (shiftVal >= typeSize)
     {
-        tmp = fgMakeMultiUse(&op1);
-        op1 = gtNewSimdHWIntrinsicNode(simdType, op1, tmp, intrinsic, simdBaseJitType, simdSize);
-    }
-
-    if (simdSize == 32)
-    {
-        intrinsic = (simdBaseType == TYP_FLOAT) ? NI_SSE_Add : NI_SSE2_Add;
-
-        tmp = fgMakeMultiUse(&op1);
-        op1 = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
-
-        tmp = gtNewSimdGetLowerNode(TYP_SIMD16, tmp, simdBaseJitType, simdSize);
-        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, tmp, intrinsic, simdBaseJitType, 16);
+        tmp       = fgMakeMultiUse(&op1);
+        opShifted = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(shiftVal, TYP_INT),
+                                             NI_SSE2_ShiftRightLogical128BitLane, simdBaseJitType, simdSize);
+        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, opShifted, tmp, simdBaseJitType, simdSize);
+        shiftVal = shiftVal / 2;
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, 16);
+
 #elif defined(TARGET_ARM64)
     switch (simdBaseType)
     {
