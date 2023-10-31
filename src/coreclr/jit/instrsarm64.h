@@ -504,8 +504,8 @@ INST3(mul,         "mul",          0,      IF_EN3H,   0x1B007C00,  0x0E209C00,  
                                    //  mul     Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100111nnnnnddddd   0E20 9C00   Vd,Vn,Vm   (vector)
                                    //  mul     Vd,Vn,Vm[]           DV_3AI 0Q001111XXLMmmmm 1000H0nnnnnddddd   0F00 8000   Vd,Vn,Vm[] (vector by element)
 
-INST3(smull,       "smull",        LNG,    IF_EN3H,   0x1B207C00,  0x0E20C000,  0x0F00A000)
-                                   //  smull   Rd,Rn,Rm             DR_3A  X0011011001mmmmm 011111nnnnnddddd   1B20 7C00
+INST3(smull,       "smull",        LNG,    IF_EN3H,   0x9B207C00,  0x0E20C000,  0x0F00A000)
+                                   //  smull   Rd,Rn,Rm             DR_3A  10011011001mmmmm 011111nnnnnddddd   9B20 7C00
                                    //  smull   Vd,Vn,Vm             DV_3A  0000111000100000 1100000000000000   0E20 C000   Vd,Vn,Vm   (vector)
                                    //  smull   Vd,Vn,Vm[]           DV_3AI 00001111XXLMmmmm 1010H0nnnnnddddd   0F00 A000   Vd,Vn,Vm[] (vector by element)
 
