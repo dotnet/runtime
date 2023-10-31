@@ -41,7 +41,7 @@ namespace System.Reflection
         internal static uint GetAssemblyCount()
         {
             if (s_assemblyCount == 0)
-                s_assemblyCount = (uint)Internal.Reflection.Core.Execution.ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder.GetLoadedAssemblies().Count;
+                s_assemblyCount = (uint)Internal.Reflection.Core.Execution.ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder.GetLoadedAssemblies().Count;
             return s_assemblyCount;
         }
 

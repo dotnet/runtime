@@ -89,19 +89,6 @@ namespace Internal.DeveloperExperience
             ilOffset = StackFrame.OFFSET_UNKNOWN;
         }
 
-        /// <summary>
-        /// Makes reasonable effort to get the MethodBase reflection info. Returns null if it can't.
-        /// </summary>
-        public virtual void TryGetMethodBase(IntPtr methodStartAddress, out MethodBase method)
-        {
-            ReflectionExecutionDomainCallbacks reflectionCallbacks = RuntimeAugments.CallbacksIfAvailable;
-            method = null;
-            if (reflectionCallbacks != null)
-            {
-                method = reflectionCallbacks.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
-            }
-        }
-
         public static DeveloperExperience Default
         {
             get

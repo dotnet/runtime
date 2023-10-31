@@ -25,9 +25,7 @@ namespace System.Collections.Concurrent
     // The key must be of a type that implements IEquatable<K>. The unifier calls IEquality<K>.Equals()
     // and Object.GetHashCode() on the keys.
     //
-    // The value must be a reference type that implements IKeyedItem<K>. The unifier invokes the
-    // IKeyedItem<K>.PrepareKey() method (outside the lock) on any value returned by the factory. This gives the value
-    // a chance to do any lazy evaluation of the keys while it's safe to do so.
+    // The value must be a reference type that implements IKeyedItem<K>.
     //
     // Deadlock risks:
     //    - Keys may be tested for equality and asked to compute their hashcode while the unifier
@@ -35,8 +33,6 @@ namespace System.Collections.Concurrent
     //      reentrancy in to the table.
     //
     //    - Values may get their IKeyedItem<K>.Key property called while the unifier holds its lock.
-    //      Values that need to do lazy evaluation to compute their keys should do that in the PrepareKey()
-    //      method which the unifier promises to call outside the lock prior to entering the value into the table.
     //
     //    - The Factory method will never be called inside the unifier lock. If two threads race to
     //      enter a value for the same key, the Factory() may get invoked twice for the same key - one
@@ -149,10 +145,6 @@ namespace System.Collections.Concurrent
                 // "null entries" that have to be special-cased for everyone.
                 return null;
             }
-
-            // While still outside the lock, invoke the value's PrepareKey method to give the chance to do any lazy evaluation
-            // it needs to produce the key quickly and in a deadlock-free manner once we're inside the lock.
-            value.PrepareKey();
 
             using (_lock.EnterScope())
             {
