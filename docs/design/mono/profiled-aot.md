@@ -15,6 +15,18 @@ Events collected by EventPipe-based diagnostic tooling are emitted with a [`.net
 
 Profiles [ingested by the Mono AOT Compiler](https://github.com/dotnet/runtime/blob/6b67caaedfbfeaf7707478e50ccc9e8bc929e591/src/tasks/AotCompilerTask/MonoAOTCompiler.cs#L174) are generated through .NET runtime's [`dotnet-pgo` tool](https://github.com/dotnet/runtime/blob/main/docs/design/features/dotnet-pgo.md). As such, profiles passed to the Mono AOT Compiler are expected to adhere to the [`.mibc` file format](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/dotnet-pgo/dotnet-pgo-experiment.md#mibc-file-format). The Mono AOT Compiler [reads `.mibc` profiles](https://github.com/dotnet/runtime/blob/c59aef7622c9a2499abb1b7d262ed0c90f4b0c7f/src/mono/mono/mini/aot-compiler.c#L14085-L14162) to determine [which methods to AOT](https://github.com/dotnet/runtime/blob/6b67caaedfbfeaf7707478e50ccc9e8bc929e591/src/mono/mono/mini/aot-compiler.c#L13818-L13880) when compiling CIL assemblies.
 
+## Mono Profiled AOT Compilation
+
+The Mono AOT Compiler can [directly ingest `.mibc` profiles](https://github.com/dotnet/runtime/pull/70194) to AOT compile methods contained within the profile. As the Mono AOT Compiler already had logic to AOT compile profile methods (from the legacy mono profiler), resolving [`MonoMethod`s](https://github.com/dotnet/runtime/blob/18cb172309570de25a2df8660ec2a6e3d0db610b/src/mono/mono/metadata/class-internals.h#L67) from the `.mibc` profile and [adding them for compilation](https://github.com/dotnet/runtime/blob/18cb172309570de25a2df8660ec2a6e3d0db610b/src/mono/mono/mini/aot-compiler.c#L13842-L13846) was sufficient.
+
+As the [`.mibc` profile](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/dotnet-pgo/dotnet-pgo-experiment.md#mibc-file-format) is a Portable Executable (PE) file, the Mono AOT Compiler leverages several mono methods to resolve the profile data as `MonoMethod`s by:
+
+1. Opening the `.mibc` profile as a `MonoImage` to load the `AssemblyDictionary` as a `MonoMethod`.
+2. Iterating through the `AssemblyDictionary`'s IL instructions to discover tokens corresponding to `mibcGroupMethod`s within the profile.
+3. Resolving each `mibcGroupMethod` discovered as a `MonoMethod`.
+4. Iterating through the `mibcGroupmethod`'s IL instructions to discover tokens corresponding to method/type tokens within the `mibcGroupMethod`.
+5. Resolving `MethodRef` and `MethodSpec` tokens as `MonoMethod`s corresponding to the actual method to be profile AOT'd, and inserting them into the profile methods hash table.
+
 # Example Workflows
 
 ## Android -- Running through the [Android Profiled AOT Functional Test](https://github.com/dotnet/runtime/tree/main/src/tests/FunctionalTests/Android/Device_Emulator/AOT_PROFILED)
