@@ -3,12 +3,10 @@
 
 using System;
 using System.Reflection;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
-using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 #if ECMA_METADATA_SUPPORT
