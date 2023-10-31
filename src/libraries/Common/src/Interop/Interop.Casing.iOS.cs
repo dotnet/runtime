@@ -12,8 +12,5 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_ChangeCaseInvariantNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static unsafe partial int ChangeCaseInvariantNative(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, [MarshalAs(UnmanagedType.Bool)] bool bToUpper);
-
-        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitOrdinalCasingPageNative", StringMarshalling = StringMarshalling.Utf16)]
-        internal static unsafe partial void InitOrdinalCasingPageNative(int pageNumber, char* pTarget);
     }
 }
