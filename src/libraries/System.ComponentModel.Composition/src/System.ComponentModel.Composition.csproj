@@ -41,8 +41,8 @@ System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices</Packa
     <Compile Include="Microsoft\Internal\ContractServices.cs" />
     <Compile Include="Microsoft\Internal\GenerationServices.cs" />
     <Compile Include="Microsoft\Internal\LazyServices.cs" />
-    <Compile Include="Microsoft\Internal\Lock.cs" />
     <Compile Include="Microsoft\Internal\Lock.Reader.cs" />
+    <Compile Include="Microsoft\Internal\Lock.ReaderWriter.cs" />
     <Compile Include="Microsoft\Internal\Lock.Writer.cs" />
     <Compile Include="Microsoft\Internal\StringComparers.cs" />
     <Compile Include="Microsoft\Internal\ReflectionServices.cs" />
