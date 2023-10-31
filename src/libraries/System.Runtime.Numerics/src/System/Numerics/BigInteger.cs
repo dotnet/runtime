@@ -1299,7 +1299,12 @@ namespace System.Numerics
         }
 
         /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, bool, bool, ref int)"/> for multiple purposes.</summary>
-        private enum GetBytesMode { AllocateArray, Count, Span }
+        private enum GetBytesMode
+        {
+            AllocateArray,
+            Count,
+            Span
+        }
 
         /// <summary>Shared logic for <see cref="ToByteArray(bool, bool)"/>, <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>, and <see cref="GetByteCount"/>.</summary>
         /// <param name="mode">Which entry point is being used.</param>
