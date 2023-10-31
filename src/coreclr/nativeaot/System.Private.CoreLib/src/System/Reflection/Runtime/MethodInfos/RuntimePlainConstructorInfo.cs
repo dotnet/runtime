@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _common.DeclaringType;
+                return _common.DeclaringType.ToType();
             }
         }
 

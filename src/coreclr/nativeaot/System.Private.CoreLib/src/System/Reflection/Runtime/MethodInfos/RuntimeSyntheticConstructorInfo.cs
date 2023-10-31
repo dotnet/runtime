@@ -56,7 +56,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _declaringType;
+                return _declaringType.ToType();
             }
         }
 
@@ -158,7 +158,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected sealed override MethodBaseInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType, _runtimeParameterTypes, _options, _action);
+        protected sealed override MethodBaseInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType.ToType(), _runtimeParameterTypes.ToTypeArray(), _options, _action);
 
         private volatile RuntimeParameterInfo[] _lazyParameters;
 
