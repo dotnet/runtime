@@ -128,7 +128,14 @@ export function mono_exit(exit_code: number, reason?: any): void {
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (runtimeHelpers.runtimeReady && runtimeHelpers.mono_wasm_exit) {
         runtimeHelpers.runtimeReady = false;
-        runtimeHelpers.mono_wasm_exit(exit_code);
+        try {
+            runtimeHelpers.mono_wasm_exit(exit_code);
+        }
+        catch (err) {
+            if (runtimeHelpers.ExitStatus && !(err instanceof runtimeHelpers.ExitStatus)) {
+                mono_log_warn("mono_wasm_exit failed", err);
+            }
+        }
     }
     // just in case mono_wasm_exit didn't exit or throw
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
@@ -150,7 +157,7 @@ async function flush_node_streams() {
         const flushStream = (stream: any) => {
             return new Promise<void>((resolve, reject) => {
                 stream.on("error", reject);
-                stream.end("", "UFT8", resolve);
+                stream.end("", "utf8", resolve);
             });
         };
         const stderrFlushed = flushStream(process.stderr);

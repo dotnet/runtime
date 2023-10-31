@@ -1188,7 +1188,7 @@ mono_wasm_exit (int exit_code)
 	mono_jit_cleanup (root_domain);
 	fflush (stdout);
 	fflush (stderr);
-	exit (exit_code);
+	emscripten_force_exit (exit_code);
 }
 
 EMSCRIPTEN_KEEPALIVE int
