@@ -780,6 +780,11 @@ else()
   message(FATAL_ERROR "Unknown host")
 endif()
 
+# Ensure we aren't using deprecated ICU functions
+if(STATIC_ICU)
+  set(ICU_FLAGS "-DHAVE_UCOL_CLONE ${ICU_FLAGS}")
+endif()
+
 ######################################
 # GC CHECKS
 ######################################
