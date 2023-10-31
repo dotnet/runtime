@@ -103,7 +103,9 @@
         Include="
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
-          $(CoreCLRSharedFrameworkPdbDir)*.dwarf" IsNative="true" />
+          $(CoreCLRSharedFrameworkPdbDir)*.dwarf;
+          $(CoreCLRSharedFrameworkPdbDir)*.dSYM"
+          IsNative="true" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb')"
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
@@ -113,7 +115,8 @@
         Include="
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
-          $(CoreCLRSharedFrameworkPdbDir)*.dwarf" />
+          $(CoreCLRSharedFrameworkPdbDir)*.dwarf;
+          $(CoreCLRSharedFrameworkPdbDir)*.dSYM" />
 
       <CoreCLRCrossTargetFiles>
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
@@ -188,6 +191,7 @@
         $(LibrariesNativeArtifactsPath)*.so;
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
+        $(LibrariesNativeArtifactsPath)*.dSYM;
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />

@@ -52,8 +52,8 @@
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <!-- Use .dwarf files instead of .dsym files since our symbol exporting may not safely handle folders. -->
-    <NativeSymbolExt Condition="'$(_IsApplePlatform)' == 'true'">.dwarf</NativeSymbolExt>
-    <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
+    <!-- <NativeSymbolExt Condition="'$(_IsApplePlatform)' == 'true'">.dwarf</NativeSymbolExt> -->
+    <!-- <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions> -->
   </PropertyGroup>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">

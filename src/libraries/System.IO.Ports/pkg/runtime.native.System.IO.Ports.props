@@ -22,8 +22,14 @@
   </ItemGroup>
 
   <Target Name="AddRuntimeSpecificNativeSymbolToPackage">
+    <ItemGroup Condition="'$(SymbolsSuffix)'!='.dSYM'">
+      <TfmSpecificDebugSymbolsFiles Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(SymbolsSuffix)'=='.dSYM'">
+      <TfmSpecificDebugSymbolsFiles Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)/**" />
+    </ItemGroup>
     <ItemGroup>
-      <TfmSpecificDebugSymbolsFile Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)"
+      <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificDebugSymbolsFiles)"
                                    TargetPath="/runtimes/$(OutputRID)/native"
                                    TargetFramework="$(TargetFramework)" />
     </ItemGroup>

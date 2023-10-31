@@ -18,7 +18,8 @@
         <LibPrefix>lib</LibPrefix>
         <LibSuffix>.dylib</LibSuffix>
         <StaticLibSuffix>.a</StaticLibSuffix>
-        <SymbolsSuffix>.dwarf</SymbolsSuffix>
+        <!-- <SymbolsSuffix>.dwarf</SymbolsSuffix> -->
+        <SymbolsSuffix>.dSYM</SymbolsSuffix>
       </PropertyGroup>
     </When>
     <Otherwise>

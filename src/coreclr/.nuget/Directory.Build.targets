@@ -47,7 +47,8 @@
       <NonWindowsNativeFile Include="@(NativeWithSymbolFile)"
                             Exclude="@(WindowsNativeFile)" />
 
-      <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolsSuffix)')" />
+      <NonWindowsSymbolFile Condition="'$(SymbolsSuffix)'=='.dSYM'" Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolsSuffix)/**')" />
+      <NonWindowsSymbolFile Condition="'$(SymbolsSuffix)'!='.dSYM'" Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolsSuffix)')" />
 
       <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
       <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)') AND '$(SkipPackagingXplatSymbols)'!='true'" />
