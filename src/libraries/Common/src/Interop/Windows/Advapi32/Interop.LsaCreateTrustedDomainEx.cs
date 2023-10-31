@@ -44,6 +44,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.Advapi32)]
-        internal static partial uint LsaCreateTrustedDomainEx(SafeLsaPolicyHandle handle, in TRUSTED_DOMAIN_INFORMATION_EX domainEx, in TRUSTED_DOMAIN_AUTH_INFORMATION authInfo, int classInfo, out IntPtr domainHandle);
+        internal static partial uint LsaCreateTrustedDomainEx(SafeLsaPolicyHandle handle, in TRUSTED_DOMAIN_INFORMATION_EX domainEx, in TRUSTED_DOMAIN_AUTH_INFORMATION authInfo, int desiredAccess, out IntPtr domainHandle);
     }
 }
