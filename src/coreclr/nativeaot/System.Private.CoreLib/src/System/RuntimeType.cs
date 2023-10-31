@@ -31,15 +31,15 @@ namespace System
             _runtimeTypeInfo = runtimeTypeInfo;
         }
 
-        internal EETypePtr ToEETypePtrMayBeNull() => new EETypePtr(_pUnderlyingEEType);
-
-        internal RuntimeTypeInfo GetRuntimeTypeInfo() => _runtimeTypeInfo ?? CreateRuntimeTypeInfo();
-
         private static bool IsReflectionDisabled => false;
 
         private static bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
         private static bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
         private static bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
+
+        internal EETypePtr ToEETypePtrMayBeNull() => new EETypePtr(_pUnderlyingEEType);
+
+        internal RuntimeTypeInfo GetRuntimeTypeInfo() => _runtimeTypeInfo ?? CreateRuntimeTypeInfo();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private RuntimeTypeInfo CreateRuntimeTypeInfo()
