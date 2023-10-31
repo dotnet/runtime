@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netapi32
     {
-        [LibraryImport(Libraries.Netapi32, EntryPoint = "I_NetLogonControl2", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Netapi32, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int I_NetLogonControl2(string serverName, int FunctionCode, int QueryLevel, IntPtr data, out IntPtr buffer);
     }
 }
