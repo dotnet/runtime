@@ -566,7 +566,7 @@ namespace System
         {
             long result = t1._ticks + t2._ticks;
 
-            if (((t1._ticks >> 63) != (t2._ticks >> 63)) && ((t1._ticks >> 63) != (result >> 63)))
+            if (((t1._ticks >> 63) == (t2._ticks >> 63)) && ((t1._ticks >> 63) != (result >> 63)))
             {
                 // Overflow if signs of operands was identical and result's sign was opposite.
                 // >> 63 gives the sign bit (either 64 1's or 64 0's).
