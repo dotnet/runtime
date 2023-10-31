@@ -3,8 +3,9 @@
 
 using System;
 using System.Security;
+using Xunit;
 
-class TestClass {
+public class TestClass {
 
         static int iExitCode;
     
@@ -157,7 +158,8 @@ class TestClass {
 		}
 	}
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		int retVal = 100;
 		String str = "Done";

@@ -2985,7 +2985,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = bbNewBasicBlock(BBJ_NONE);
+    BasicBlock* newHead = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
     newHead->bbFlags |= BBF_INTERNAL;
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
@@ -3537,9 +3537,15 @@ const char* sckName(SpecialCodeKind codeKind)
 //
 void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 {
+    // Record that the code will call a THROW_HELPER
+    // so on Windows Amd64 we can allocate the 4 outgoing
+    // arg slots on the stack frame if there are no other calls.
+    //
+    compUsesThrowHelper = true;
+
     if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
     {
-        // FailFast will still use a thrwo helper, even in debuggable modes.
+        // FailFast will still use a common throw helper, even in debuggable modes.
         //
         return;
     }
@@ -3547,11 +3553,6 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     JITDUMP(FMT_BB " requires throw helper block for %s\n", srcBlk->bbNum, sckName(kind));
 
     unsigned const refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk);
-
-    // Record that the code will call a THROW_HELPER
-    // so on Windows Amd64 we can allocate the 4 outgoing
-    // arg slots on the stack frame if there are no other calls.
-    compUsesThrowHelper = true;
 
     // Look for an existing entry that matches what we're looking for
     //

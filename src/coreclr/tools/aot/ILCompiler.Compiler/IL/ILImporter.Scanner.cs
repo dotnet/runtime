@@ -1071,8 +1071,7 @@ namespace Internal.IL
 
         private void ImportLoadString(int token)
         {
-            // If we care, this can include allocating the frozen string node.
-            _dependencies.Add(_factory.SerializedStringObject(""), "ldstr");
+            _dependencies.Add(_factory.SerializedStringObject((string)_methodIL.GetObject(token)), "ldstr");
         }
 
         private void ImportBox(int token)

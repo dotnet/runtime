@@ -14,7 +14,8 @@ namespace Internal.Runtime.CompilerHelpers
         private static void MonitorEnter(object obj, ref bool lockTaken)
         {
             // Inlined Monitor.Enter with a few tweaks
-            int resultOrIndex = ObjectHeader.Acquire(obj);
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            int resultOrIndex = ObjectHeader.Acquire(obj, currentThreadID);
             if (resultOrIndex < 0)
             {
                 lockTaken = true;
@@ -25,7 +26,7 @@ namespace Internal.Runtime.CompilerHelpers
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            Monitor.TryAcquireSlow(lck, obj, Timeout.Infinite);
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID, obj);
             lockTaken = true;
         }
         private static void MonitorExit(object obj, ref bool lockTaken)
@@ -42,7 +43,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             // Inlined Monitor.Enter with a few tweaks
             object obj = GetStaticLockObject(pMT);
-            int resultOrIndex = ObjectHeader.Acquire(obj);
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            int resultOrIndex = ObjectHeader.Acquire(obj, currentThreadID);
             if (resultOrIndex < 0)
             {
                 lockTaken = true;
@@ -53,7 +55,7 @@ namespace Internal.Runtime.CompilerHelpers
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            Monitor.TryAcquireSlow(lck, obj, Timeout.Infinite);
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID, obj);
             lockTaken = true;
         }
         private static unsafe void MonitorExitStatic(MethodTable* pMT, ref bool lockTaken)

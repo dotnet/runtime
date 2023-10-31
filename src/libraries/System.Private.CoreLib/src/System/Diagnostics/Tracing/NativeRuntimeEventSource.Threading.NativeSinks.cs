@@ -83,6 +83,12 @@ namespace System.Diagnostics.Tracing
             LogContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID);
         }
 
+#pragma warning disable CA2252 // Opt in to preview features before using them (Lock)
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void ContentionLockCreated(Lock lockObj) => ContentionLockCreated(lockObj.LockIdForEvents, lockObj.ObjectIdForEvents);
+#pragma warning restore CA2252
+
         [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
         private void ContentionStart(
             ContentionFlagsMap ContentionFlags,
@@ -94,6 +100,18 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
             LogContentionStart(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID);
         }
+
+#pragma warning disable CA2252 // Opt in to preview features before using them (Lock)
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void ContentionStart(Lock lockObj) =>
+            ContentionStart(
+                ContentionFlagsMap.Managed,
+                DefaultClrInstanceId,
+                lockObj.LockIdForEvents,
+                lockObj.ObjectIdForEvents,
+                lockObj.OwningThreadId);
+#pragma warning restore CA2252
 
         [Event(91, Level = EventLevel.Informational, Message = Messages.ContentionStop, Task = Tasks.Contention, Opcode = EventOpcode.Stop, Version = 1, Keywords = Keywords.ContentionKeyword)]
         private void ContentionStop(ContentionFlagsMap ContentionFlags, ushort ClrInstanceID, double DurationNs)
