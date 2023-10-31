@@ -90,6 +90,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidTimeSpanStyles()
+        {
+            throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, "styles");
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_OverlapAlignmentMismatch()
         {
             throw new ArgumentException(SR.Argument_OverlapAlignmentMismatch);
@@ -225,9 +231,21 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException_NegateTwosCompNum()
+        {
+            throw new OverflowException(SR.Overflow_NegateTwosCompNum);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowOverflowException_TimeSpanTooLong()
         {
             throw new OverflowException(SR.Overflow_TimeSpanTooLong);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowOverflowException_TimeSpanDuration()
+        {
+            throw new OverflowException(SR.Overflow_Duration);
         }
 
         [DoesNotReturn]
