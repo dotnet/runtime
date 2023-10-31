@@ -46,6 +46,7 @@ namespace System
 
         internal EETypePtr ToEETypePtrMayBeNull() => new EETypePtr(_pUnderlyingEEType);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal RuntimeTypeInfo GetRuntimeTypeInfo()
         {
             IntPtr handle = _runtimeTypeInfoHandle;
