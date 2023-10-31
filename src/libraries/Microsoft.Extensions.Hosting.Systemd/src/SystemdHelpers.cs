@@ -29,11 +29,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         private static bool GetIsSystemdService()
         {
             // No point in testing anything unless it's Unix
-#if NETCOREAPP
-            if (OperatingSystem.IsLinux())
-#else
             if (Environment.OSVersion.Platform != PlatformID.Unix)
-#endif
             {
                 return false;
             }
