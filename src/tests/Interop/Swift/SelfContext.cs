@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Swift;
 using Xunit;
 
 public class SelfContextTests
@@ -15,8 +16,8 @@ public class SelfContextTests
     [Fact]
     public static int TestEntryPoint()
     {
-        SwiftSelf selfHandle = new SwiftSelf();
-        selfHandle.Value = getInstance();
+        IntPtr handle = getInstance();
+        SwiftSelf selfHandle = new SwiftSelf(handle);
 
         if (selfHandle.Value != IntPtr.Zero) {
             Console.WriteLine($"Self instance: 0x{selfHandle.Value:X16}");

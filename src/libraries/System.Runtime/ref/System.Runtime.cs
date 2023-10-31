@@ -13505,26 +13505,6 @@ namespace System.Runtime.InteropServices
         Explicit = 2,
         Auto = 3,
     }
-
-    public struct SwiftSelf
-    {
-        public IntPtr Value { get; set; }
-
-        public SwiftSelf(IntPtr value)
-        {
-            Value = value;
-        }
-    }
-
-    public readonly struct SwiftError
-    {
-        public IntPtr Value { get; }
-
-        public SwiftError(IntPtr value)
-        {
-            Value = value;
-        }
-    }
     public readonly partial struct OSPlatform : System.IEquatable<System.Runtime.InteropServices.OSPlatform>
     {
         private readonly object _dummy;
@@ -13824,6 +13804,24 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { }
             public static ref T GetPinnableReference(System.Span<T> managed) { throw null; }
         }
+    }
+}
+namespace System.Runtime.InteropServices.Swift
+{
+    public readonly struct SwiftSelf
+    {
+        public SwiftSelf(IntPtr value) { }
+        public IntPtr Value { get; }
+    }
+    public readonly struct SwiftError
+    {
+        public SwiftError(IntPtr value) { }
+        public IntPtr Value { get; }
+    }
+    public readonly struct SwiftAsyncContext
+    {
+        public SwiftAsyncContext(IntPtr value) { }
+        public IntPtr Value { get; }
     }
 }
 namespace System.Runtime.Remoting

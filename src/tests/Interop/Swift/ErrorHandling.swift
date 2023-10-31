@@ -1,21 +1,27 @@
 import Foundation
 
 public enum MyError: Error {
-    case runtimeError(String)
+    case runtimeError(message: String, info: String)
 }
 
-public func someFuncThatMightThrow (dummy: UnsafeRawPointer, willThrow: Bool) throws -> Int {
-    if willThrow { throw MyError.runtimeError ("Catch me if you can!"); }
+public func someFuncThatMightThrow (willThrow: Bool, dummy: UnsafeRawPointer) throws -> Int {
+    if willThrow { throw MyError.runtimeError (message: "Catch me if you can!", info: "abcd abcd"); }
     else { return 42; }
 }
 
 public func handleError(from pointer: UnsafePointer<MyError>) {
-    let errorInstance = pointer.pointee
+    let pointerValue = UInt(bitPattern: pointer)
+    let offsetPointerValue = pointerValue + 0x48
+    let offsetPointer = UnsafeRawPointer(bitPattern: offsetPointerValue)
     
-    switch errorInstance {
-    case .runtimeError(let message):
-        print (message);
-    default:
-        print ("Unhandled error!")
+    if let offsetErrorPointer = offsetPointer?.assumingMemoryBound(to: MyError.self) {
+        let errorInstance = offsetErrorPointer.pointee
+        switch errorInstance {
+        case .runtimeError(let message, _):
+            print(message)
+        }
+    } else {
+        print("Pointer does not point to MyError.")
     }
+    
 }

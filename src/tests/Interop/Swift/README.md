@@ -218,7 +218,7 @@ deinit {
 
 Build the runtime:
 ```sh
-./build.sh mono+libs+clr.hosts
+./build.sh mono+libs+clr.hosts /p:ApiCompatGenerateSuppressionFile=true /p:KeepNativeSymbols=true
 ```
 Build the coreroot:
 ```sh
