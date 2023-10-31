@@ -2978,7 +2978,9 @@ mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype)
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_OTHER);
 
 #ifdef ENABLE_WIP_METHOD_NOLLVM_SELF_INIT
-	get_marshal_cb ()->emit_method_init_nollvm (mb);
+	if (subtype == AOT_INIT_METHOD) {
+		get_marshal_cb ()->emit_method_init_nollvm (mb);
+	}
 #endif
 
 	// Just stub out the method with a "CEE_RET"

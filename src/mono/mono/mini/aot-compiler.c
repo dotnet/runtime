@@ -7104,7 +7104,14 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	if (acfg->global_symbols && acfg->need_no_dead_strip)
 		fprintf (acfg->fp, "	.no_dead_strip %s\n", cfg->asm_symbol);
 
-	emit_label (acfg, cfg->asm_symbol);
+	if (method->wrapper_type == MONO_WRAPPER_OTHER && mono_marshal_get_wrapper_info (method)->subtype == WRAPPER_SUBTYPE_AOT_INIT) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		const char *init_name = mono_marshal_get_aot_init_wrapper_name (info->d.aot_init.subtype);
+		char *symbol = g_strdup_printf ("%s%s_%s", acfg->user_symbol_prefix, acfg->global_prefix, init_name);
+		emit_label (acfg, symbol);
+	} else {
+		emit_label (acfg, cfg->asm_symbol);
+	}
 
 	if (acfg->aot_opts.write_symbols && !acfg->global_symbols && !acfg->llvm) {
 		/*
