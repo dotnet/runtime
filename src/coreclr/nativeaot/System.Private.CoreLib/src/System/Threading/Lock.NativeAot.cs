@@ -178,6 +178,7 @@ namespace System.Threading
 
                 // Also initialize some types that are used later to prevent potential class construction cycles
                 NativeRuntimeEventSource.Log.IsEnabled();
+                using (new Monitor.DebugBlockingScope(null, Monitor.DebugBlockingItemType.MonitorCriticalSection, 0, out _)) { }
             }
             catch
             {
