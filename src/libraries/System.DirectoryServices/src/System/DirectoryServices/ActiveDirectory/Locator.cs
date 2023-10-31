@@ -166,6 +166,11 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             finally
                             {
+                                if (sockAddressList != IntPtr.Zero)
+                                {
+                                    Marshal.FreeHGlobal(sockAddressList);
+                                }
+
                                 // what to do with the error?
                                 if (dcDnsHostNamePtr != IntPtr.Zero)
                                 {
