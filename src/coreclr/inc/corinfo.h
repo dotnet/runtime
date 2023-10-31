@@ -455,6 +455,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_THROW,             // Throw an exception object
     CORINFO_HELP_RETHROW,           // Rethrow the currently active exception
+    CORINFO_HELP_THROWEXACT,        // Throw an exception object, preserving stack trace
     CORINFO_HELP_USER_BREAKPOINT,   // For a user program to break to the debugger
     CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
     CORINFO_HELP_OVERFLOW,          // throw an overflow exception
@@ -1824,6 +1825,20 @@ struct CORINFO_EE_INFO
     CORINFO_OS  osType;
 };
 
+enum CorInfoContinuationFlags
+{
+    // Whether or not the continuation expects the result to be boxed and
+    // placed in the GCData array at index 0. Not set if the callee is void.
+    // TODO: In the future, for value types without any GC refs in them, we can
+    // place them at the beginning of the Data array instead to avoid a box.
+    CORINFO_CONTINUATION_RESULT_IN_GCDATA = 1,
+    // If this bit is set the continuation resumes inside a try block and thus
+    // if an exception is being propagated, needs to be resumed. The exception
+    // should be placed at index 0 or 1 depending on whether the continuation
+    // also expects a result.
+    CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
+};
+
 struct CORINFO_ASYNC2_INFO
 {
     // Class handle for System.Runtime.CompilerServices.Continuation
@@ -1834,6 +1849,8 @@ struct CORINFO_ASYNC2_INFO
     CORINFO_FIELD_HANDLE continuationResumeFldHnd;
     // 'State' field
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
+    // 'Flags' field
+    CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
     // 'Data' field
     CORINFO_FIELD_HANDLE continuationDataFldHnd;
     // 'GCData' field

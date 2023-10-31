@@ -10053,6 +10053,7 @@ void CEEInfo::getAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut)
     pAsync2InfoOut->continuationNextFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__NEXT));
     pAsync2InfoOut->continuationResumeFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__RESUME));
     pAsync2InfoOut->continuationStateFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__STATE));
+    pAsync2InfoOut->continuationFlagsFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__FLAGS));
     pAsync2InfoOut->continuationDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__DATA));
     pAsync2InfoOut->continuationGCDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__GCDATA));
 }
@@ -14215,10 +14216,9 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc)
 {
     SigBuilder sigBuilder;
     sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    sigBuilder.AppendData(2); // 2 arguments
+    sigBuilder.AppendData(1); // 1 argument
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // return type
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // exception
 
     return AllocateSignature(alloc, sigBuilder);
 }

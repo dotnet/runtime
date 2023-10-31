@@ -4329,6 +4329,7 @@ void MethodContext::recGetAsync2Info(const CORINFO_ASYNC2_INFO* pAsync2Info)
     value.continuationNextFldHnd = CastHandle(pAsync2Info->continuationNextFldHnd);
     value.continuationResumeFldHnd = CastHandle(pAsync2Info->continuationResumeFldHnd);
     value.continuationStateFldHnd = CastHandle(pAsync2Info->continuationStateFldHnd);
+    value.continuationFlagsFldHnd = CastHandle(pAsync2Info->continuationFlagsFldHnd);
     value.continuationDataFldHnd = CastHandle(pAsync2Info->continuationDataFldHnd);
     value.continuationGCDataFldHnd = CastHandle(pAsync2Info->continuationGCDataFldHnd);
 
@@ -4338,9 +4339,10 @@ void MethodContext::recGetAsync2Info(const CORINFO_ASYNC2_INFO* pAsync2Info)
 void MethodContext::dmpGetAsync2Info(DWORD key, const Agnostic_CORINFO_ASYNC2_INFO& value)
 {
     printf("GetAsync2Info key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeFldHnd-%016" PRIX64
-           " contStateFldHnd-%016" PRIX64 " contDataFldHnd-%016" PRIX64 " contGCDataFldHnd-%016" PRIX64,
+           " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64 " contDataFldHnd-%016" PRIX64 " contGCDataFldHnd-%016" PRIX64,
         key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeFldHnd,
-        value.continuationStateFldHnd, value.continuationDataFldHnd, value.continuationGCDataFldHnd);
+        value.continuationStateFldHnd, value.continuationFlagsFldHnd, value.continuationDataFldHnd,
+        value.continuationGCDataFldHnd);
 }
 void MethodContext::repGetAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut)
 {
@@ -4349,6 +4351,7 @@ void MethodContext::repGetAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut)
     pAsync2InfoOut->continuationNextFldHnd = (CORINFO_FIELD_HANDLE)value.continuationNextFldHnd;
     pAsync2InfoOut->continuationResumeFldHnd = (CORINFO_FIELD_HANDLE)value.continuationResumeFldHnd;
     pAsync2InfoOut->continuationStateFldHnd = (CORINFO_FIELD_HANDLE)value.continuationStateFldHnd;
+    pAsync2InfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_HANDLE)value.continuationFlagsFldHnd;
     pAsync2InfoOut->continuationDataFldHnd = (CORINFO_FIELD_HANDLE)value.continuationDataFldHnd;
     pAsync2InfoOut->continuationGCDataFldHnd = (CORINFO_FIELD_HANDLE)value.continuationGCDataFldHnd;
     DEBUG_REP(dmpGetAsync2Info(0, value));

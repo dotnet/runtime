@@ -4367,6 +4367,40 @@ HCIMPL0(void, IL_Rethrow)
 }
 HCIMPLEND
 
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+    OBJECTREF oref = ObjectToOBJECTREF(obj);
+
+#if defined(_DEBUG) && defined(TARGET_X86)
+    __helperframe.InsureInit(false, NULL);
+    g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
+#endif // defined(_DEBUG) && defined(TARGET_X86)
+
+    GetThread()->GetExceptionState()->SetRaisingForeignException();
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        DispatchManagedException(oref);
+        UNREACHABLE();
+    }
+#endif
+
+    RaiseTheExceptionInternalOnly(oref, FALSE);
+
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
 /*********************************************************************/
 HCIMPL0(void, JIT_RngChkFail)
 {

@@ -379,6 +379,10 @@ void Async2Transformation::Transform(
     if (call->gtReturnType != TYP_VOID)
         gcRefsCount++;
 
+    unsigned exceptionGCDataIndex = UINT_MAX;
+    if (block->hasTryIndex())
+        exceptionGCDataIndex = gcRefsCount++;
+
     // For OSR, we store the patchpoint information at the beginning of the data
     // (null in the tier0 version):
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
@@ -457,8 +461,10 @@ void Async2Transformation::Transform(
         m_lastSuspensionBB = m_comp->fgLastBBInMainFunction();
     }
 
-    BasicBlock* retBB = m_comp->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, true);
+    BasicBlock* retBB = m_comp->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
     retBB->bbSetRunRarely();
+    retBB->clearTryIndex();
+    retBB->clearHndIndex();
     m_lastSuspensionBB = retBB;
 
     block->SetJumpKindAndTarget(BBJ_COND, retBB DEBUGARG(m_comp));
@@ -491,8 +497,21 @@ void Async2Transformation::Transform(
     newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned stateOffset  = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
     GenTree* stateNumNode = m_comp->gtNewIconNode((ssize_t)stateNum, TYP_I_IMPL);
-    GenTree* store        = StoreAtOffset(newContinuation, stateOffset, stateNumNode);
-    LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+    GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode);
+    LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
+
+    // Fill in 'flags'
+    unsigned continuationFlags = 0;
+    if (call->gtReturnType != TYP_VOID)
+        continuationFlags |= CORINFO_CONTINUATION_RESULT_IN_GCDATA;
+    if (block->hasTryIndex())
+        continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+
+    newContinuation      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationFlagsFldHnd);
+    GenTree* flagsNode   = m_comp->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
+    GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode);
+    LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeFlags));
 
     // Fill in GC pointers
     if (gcRefsCount > 0)
@@ -664,6 +683,8 @@ void Async2Transformation::Transform(
 
     BasicBlock* resumeBB = m_comp->fgNewBBafter(BBJ_ALWAYS, prevResumptionBB, true, remainder);
     resumeBB->bbSetRunRarely();
+    resumeBB->clearTryIndex();
+    resumeBB->clearHndIndex();
     resumeBB->bbFlags |= BBF_ASYNC_RESUMPTION;
 
     m_comp->fgAddRefPred(remainder, resumeBB);
@@ -790,6 +811,45 @@ void Async2Transformation::Transform(
             }
         }
 
+        BasicBlock* storeResultBB = resumeBB;
+        if (exceptionGCDataIndex != UINT_MAX)
+        {
+            BasicBlock* rethrowExceptionBB = m_comp->fgNewBBinRegion(BBJ_THROW, block, /* jumpDest */ nullptr,
+                                                                     /* runRarely */ true, /* insertAtEnd */ true);
+            resumeBB->SetJumpKindAndTarget(BBJ_COND, rethrowExceptionBB DEBUGARG(m_comp));
+            m_comp->fgAddRefPred(rethrowExceptionBB, resumeBB);
+            m_comp->fgRemoveRefPred(remainder, resumeBB);
+
+            storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true, remainder);
+            m_comp->fgAddRefPred(remainder, storeResultBB);
+            m_comp->fgAddRefPred(storeResultBB, resumeBB);
+
+            // Check if we have an exception.
+            unsigned exceptionLclNum = GetExceptionVar();
+            GenTree* objectArr       = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
+            unsigned exceptionOffset = OFFSETOF__CORINFO_Array__data + exceptionGCDataIndex * TARGET_POINTER_SIZE;
+            GenTree* exceptionInd    = LoadFromOffset(objectArr, exceptionOffset, TYP_REF);
+            GenTree* storeException  = m_comp->gtNewStoreLclVarNode(exceptionLclNum, exceptionInd);
+            LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeException));
+
+            GenTree* exception = m_comp->gtNewLclVarNode(exceptionLclNum, TYP_REF);
+            GenTree* null      = m_comp->gtNewNull();
+            GenTree* neNull    = m_comp->gtNewOperNode(GT_NE, TYP_INT, exception, null);
+            GenTree* jtrue     = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+            LIR::AsRange(resumeBB).InsertAtEnd(exception, null, neNull, jtrue);
+
+            exception                     = m_comp->gtNewLclVarNode(exceptionLclNum, TYP_REF);
+            GenTreeCall* rethrowException = m_comp->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
+
+            m_comp->compCurBB = rethrowExceptionBB;
+            m_comp->fgMorphTree(rethrowException);
+
+            LIR::AsRange(rethrowExceptionBB).InsertAtEnd(LIR::SeqTree(m_comp, rethrowException));
+
+            storeResultBB->bbFlags |= BBF_ASYNC_RESUMPTION;
+            JITDUMP("Added " FMT_BB " to rethrow exception at suspension point\n", rethrowExceptionBB->bbNum);
+        }
+
         // Copy call return value.
         if (storeResultNode != nullptr)
         {
@@ -808,18 +868,19 @@ void Async2Transformation::Transform(
                     GenTree* boxDataAddr   = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBox, boxDataOffset);
                     GenTree* boxData =
                         m_comp->gtNewBlkIndir(storeResultNode->GetLayout(m_comp), boxDataAddr, GTF_IND_NONFAULTING);
+                    GenTree* storeResult;
                     if (storeResultNode->OperIs(GT_STORE_LCL_VAR))
                     {
-                        store = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), boxData);
+                        storeResult = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), boxData);
                     }
                     else
                     {
-                        store = m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), TYP_STRUCT,
-                                                             storeResultNode->GetLayout(m_comp),
-                                                             storeResultNode->GetLclOffs(), boxData);
+                        storeResult = m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), TYP_STRUCT,
+                                                                   storeResultNode->GetLayout(m_comp),
+                                                                   storeResultNode->GetLclOffs(), boxData);
                     }
 
-                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
                 }
                 else
                 {
@@ -862,17 +923,18 @@ void Async2Transformation::Transform(
                     value = LoadFromOffset(resultBox, TARGET_POINTER_SIZE, call->gtReturnType);
                 }
 
+                GenTree* storeResult;
                 if (storeResultNode->OperIs(GT_STORE_LCL_VAR))
                 {
-                    store = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), value);
+                    storeResult = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), value);
                 }
                 else
                 {
-                    store = m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), storeResultNode->TypeGet(),
-                                                         storeResultNode->GetLclOffs(), value);
+                    storeResult = m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), storeResultNode->TypeGet(),
+                                                               storeResultNode->GetLclOffs(), value);
                 }
 
-                LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+                LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
             }
         }
     }
@@ -927,11 +989,22 @@ unsigned Async2Transformation::GetResultBoxVar()
 {
     if (m_resultBoxVar == BAD_VAR_NUM)
     {
-        m_resultBoxVar                             = m_comp->lvaGrabTemp(false DEBUGARG("object for result box"));
+        m_resultBoxVar = m_comp->lvaGrabTemp(false DEBUGARG("object for resuming result box"));
         m_comp->lvaGetDesc(m_resultBoxVar)->lvType = TYP_REF;
     }
 
     return m_resultBoxVar;
+}
+
+unsigned Async2Transformation::GetExceptionVar()
+{
+    if (m_exceptionVar == BAD_VAR_NUM)
+    {
+        m_exceptionVar = m_comp->lvaGrabTemp(false DEBUGARG("object for resuming exception"));
+        m_comp->lvaGetDesc(m_exceptionVar)->lvType = TYP_REF;
+    }
+
+    return m_exceptionVar;
 }
 
 GenTree* Async2Transformation::CreateResumptionStubAddrTree()
@@ -1108,7 +1181,10 @@ void Async2Transformation::CreateResumptionSwitch()
     if (m_comp->doesMethodHavePatchpoints())
     {
         // If we have patchpoints then first check if we need to resume in the OSR version.
-        BasicBlock* callHelperBB = m_comp->fgNewBBafter(BBJ_THROW, m_comp->fgLastBBInMainFunction(), true);
+        BasicBlock* callHelperBB = m_comp->fgNewBBafter(BBJ_THROW, m_comp->fgLastBBInMainFunction(), false);
+        callHelperBB->bbSetRunRarely();
+        callHelperBB->clearTryIndex();
+        callHelperBB->clearHndIndex();
 
         BasicBlock* checkILOffsetBB = m_comp->fgNewBBbefore(BBJ_COND, newEntryBB->GetJumpDest(), true, callHelperBB);
         m_comp->fgRemoveRefPred(newEntryBB->GetJumpDest(), newEntryBB);

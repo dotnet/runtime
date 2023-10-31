@@ -198,6 +198,7 @@ struct Agnostic_CORINFO_ASYNC2_INFO
     DWORDLONG continuationNextFldHnd;
     DWORDLONG continuationResumeFldHnd;
     DWORDLONG continuationStateFldHnd;
+    DWORDLONG continuationFlagsFldHnd;
     DWORDLONG continuationDataFldHnd;
     DWORDLONG continuationGCDataFldHnd;
 };

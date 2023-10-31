@@ -29,6 +29,7 @@ class Async2Transformation
     unsigned                      m_dataArrayVar            = BAD_VAR_NUM;
     unsigned                      m_gcDataArrayVar          = BAD_VAR_NUM;
     unsigned                      m_resultBoxVar            = BAD_VAR_NUM;
+    unsigned                      m_exceptionVar            = BAD_VAR_NUM;
     BasicBlock*                   m_lastSuspensionBB        = nullptr;
 
     void LiftLIREdges(BasicBlock*                    block,
@@ -48,6 +49,7 @@ class Async2Transformation
     unsigned GetDataArrayVar();
     unsigned GetGCDataArrayVar();
     unsigned GetResultBoxVar();
+    unsigned GetExceptionVar();
 
     GenTree* CreateResumptionStubAddrTree();
     GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup);

@@ -803,6 +803,7 @@ DEFINE_CLASS(CONTINUATION,              CompilerServices,   Continuation)
 DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
 DEFINE_FIELD(CONTINUATION,              RESUME,             Resume)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
+DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
 DEFINE_FIELD(CONTINUATION,              DATA,               Data)
 DEFINE_FIELD(CONTINUATION,              GCDATA,             GCData)
 

@@ -97,6 +97,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_THROW,             // Throw an exception object
         CORINFO_HELP_RETHROW,           // Rethrow the currently active exception
+        CORINFO_HELP_THROWEXACT,        // Throw an exception object, preserving stack trace
         CORINFO_HELP_USER_BREAKPOINT,   // For a user program to break to the debugger
         CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
         CORINFO_HELP_OVERFLOW,          // throw an overflow exception

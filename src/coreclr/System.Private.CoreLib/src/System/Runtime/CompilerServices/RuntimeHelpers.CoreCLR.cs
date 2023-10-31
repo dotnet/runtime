@@ -471,21 +471,19 @@ namespace System.Runtime.CompilerServices
 
         private static async Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)
         {
-            object[] gcData = new object[1];
             continuation.Next = new Continuation
             {
-                Resume = null,
-                GCData = gcData,
+                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
+                GCData = new object[1],
             };
 
             AwaitableProxy awaitableProxy = new AwaitableProxy();
 
-            Exception? ex = null;
             while (true)
             {
                 Continuation headContinuation = GetHeadContinuation(awaitableProxy);
                 await awaitableProxy;
-                Continuation? finalResult = DispatchContinuations(headContinuation, ref ex);
+                Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
                 {
                     if (ex != null)
@@ -497,21 +495,18 @@ namespace System.Runtime.CompilerServices
 
         private static async Task FinalizeTaskReturningThunk(Continuation continuation)
         {
-            object[] gcData = new object[1];
             continuation.Next = new Continuation
             {
-                Resume = null,
-                GCData = gcData,
+                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
             };
 
             AwaitableProxy awaitableProxy = new AwaitableProxy();
 
-            Exception? ex = null;
             while (true)
             {
                 Continuation headContinuation = GetHeadContinuation(awaitableProxy);
                 await awaitableProxy;
-                Continuation? finalResult = DispatchContinuations(headContinuation, ref ex);
+                Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
                 {
                     if (ex != null)
@@ -523,21 +518,19 @@ namespace System.Runtime.CompilerServices
 
         private static async ValueTask<T> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
         {
-            object[] gcData = new object[1];
             continuation.Next = new Continuation
             {
-                Resume = null,
-                GCData = gcData,
+                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
+                GCData = new object[1],
             };
 
             AwaitableProxy awaitableProxy = new AwaitableProxy();
 
-            Exception? ex = null;
             while (true)
             {
                 Continuation headContinuation = GetHeadContinuation(awaitableProxy);
                 await awaitableProxy;
-                Continuation? finalResult = DispatchContinuations(headContinuation, ref ex);
+                Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
                 {
                     if (ex != null)
@@ -549,21 +542,15 @@ namespace System.Runtime.CompilerServices
 
         private static async ValueTask FinalizeValueTaskReturningThunk(Continuation continuation)
         {
-            object[] gcData = new object[1];
-            continuation.Next = new Continuation
-            {
-                Resume = null,
-                GCData = gcData,
-            };
+            continuation.Next = new Continuation();
 
             AwaitableProxy awaitableProxy = new AwaitableProxy();
 
-            Exception? ex = null;
             while (true)
             {
                 Continuation headContinuation = GetHeadContinuation(awaitableProxy);
                 await awaitableProxy;
-                Continuation? finalResult = DispatchContinuations(headContinuation, ref ex);
+                Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
                 {
                     if (ex != null)
@@ -573,30 +560,34 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        // Return a continuation object if that is the one which has the final result of the Task, in this case exceptionResult MAY be set to an exception, which is the real output of the series of continuations
+        // Return a continuation object if that is the one which has the final
+        // result of the Task, in this case exceptionResult MAY be set to an
+        // exception, which is the real output of the series of continuations
         // OR
         // return NULL to indicate that this isn't yet done.
-        private static unsafe Continuation? DispatchContinuations(Continuation? continuation, ref Exception? exceptionResult)
+        private static unsafe Continuation? DispatchContinuations(Continuation? continuation, out Exception? exceptionResult)
         {
             Debug.Assert(continuation != null);
 
             exceptionResult = null;
-            Exception? exToPropagate = null;
-            do
+            while (true)
             {
-                Continuation? newContinuation = null;
+                Continuation? newContinuation;
                 try
                 {
-                    if (continuation.Resume == null)
-                    {
-                        exceptionResult = exToPropagate;
-                        return continuation; // Return the result containing Continuation
-                    }
-                    newContinuation = continuation.Resume(continuation, exToPropagate);
+                    newContinuation = continuation.Resume(continuation);
                 }
                 catch (Exception ex)
                 {
-                    exToPropagate = ex;
+                    continuation = UnwindToPossibleHandler(continuation);
+                    if (continuation.Resume == null)
+                    {
+                        exceptionResult = ex;
+                        return continuation;
+                    }
+
+                    continuation.GCData![(continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0 ? 1 : 0] = ex;
+                    continue;
                 }
 
                 if (newContinuation != null)
@@ -607,7 +598,23 @@ namespace System.Runtime.CompilerServices
 
                 continuation = continuation.Next;
                 Debug.Assert(continuation != null);
-            } while (true);
+
+                if (continuation.Resume == null)
+                {
+                    return continuation; // Return the result containing Continuation
+                }
+            }
+        }
+
+        private static Continuation UnwindToPossibleHandler(Continuation continuation)
+        {
+            while (true)
+            {
+                Debug.Assert(continuation.Next != null);
+                continuation = continuation.Next;
+                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+                    return continuation;
+            }
         }
     }
 
@@ -891,11 +898,28 @@ namespace System.Runtime.CompilerServices
         public IntPtr ArgBuffer;
     }
 
+    [Flags]
+    internal enum CorInfoContinuationFlags
+    {
+        // Whether or not the continuation expects the result to be boxed and
+        // placed in the GCData array at index 0. Not set if the callee is void.
+        // TODO: In the future, for value types without any GC refs in them, we can
+        // place them at the beginning of the Data array instead to avoid a box.
+        CORINFO_CONTINUATION_RESULT_IN_GCDATA = 1,
+        // If this bit is set the continuation resumes inside a try block and thus
+        // if an exception is being propagated, needs to be resumed. The exception
+        // should be placed at index 0 or 1 depending on whether the continuation
+        // also expects a result.
+        CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
+    }
+
+
     internal sealed unsafe class Continuation
     {
         public Continuation? Next;
-        public delegate*<Continuation, Exception?, Continuation?> Resume;
+        public delegate*<Continuation, Continuation?> Resume;
         public uint State;
+        public CorInfoContinuationFlags Flags;
         public byte[]? Data;
         public object[]? GCData;
     }
