@@ -1724,6 +1724,9 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
     unsigned continuationLocal = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__CONTINUATION)));
 
     TypeHandle thTaskRet = thunkMsig.GetRetTypeHandleThrowing();
+
+    bool isValueTask = thTaskRet.GetMethodTable()->IsValueType();
+
     LocalDesc returnLocalDesc(thTaskRet);
     DWORD returnLocal = pCode->NewLocal(returnLocalDesc);
 
@@ -1738,50 +1741,84 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
     LocalDesc exceptionLocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION));
     DWORD exceptionLocal = pCode->NewLocal(exceptionLocalDesc);
 
+    LocalDesc executionAndSyncBlockStoreLocalDesc(CoreLibBinder::GetClass(CLASS__EXECUTIONANDSYNCBLOCKSTORE));
+    DWORD executionAndSyncBlockStoreLocal = pCode->NewLocal(executionAndSyncBlockStoreLocalDesc);
+
     ILCodeLabel* pNoExceptionLabel = pCode->NewCodeLabel();
     ILCodeLabel* pReturnResultLabel = pCode->NewCodeLabel();
     ILCodeLabel* pSuspendedLabel = pCode->NewCodeLabel();
 
+    pCode->EmitLDLOCA(executionAndSyncBlockStoreLocal);
+    pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__EXECUTIONANDSYNCBLOCKSTORE__PUSH)), 1, 0);
+
     {
         pCode->BeginTryBlock();
-
-        DWORD localArg = 0;
-        if (asyncMsig.HasThis())
+        pCode->EmitNOP("Separate try blocks");
         {
-            pCode->EmitLDARG(localArg++);
+            pCode->BeginTryBlock();
+
+            DWORD localArg = 0;
+            if (asyncMsig.HasThis())
+            {
+                pCode->EmitLDARG(localArg++);
+            }
+            if ((asyncMsig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+            {
+                _ASSERTE(!"Cannot handle generic context");
+            }
+            _ASSERTE((asyncMsig.GetCallingConventionInfo() & CORINFO_CALLCONV_ASYNCCALL) != 0);
+
+            pCode->EmitLDNULL(); // Async continuation; not resuming
+
+            for (UINT iArg = 0; iArg < asyncMsig.NumFixedArgs(); iArg++)
+            {
+                pCode->EmitLDARG(localArg++);
+            }
+
+            // TODO: This and instantiating stubs can directly load the target from the precode slot
+            pCode->EmitLDC(pAsyncOtherVariant->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+            pCode->EmitCALLI(pCode->GetSigToken(pTargetSig, cbTargetSig), localArg + 2, logicalResultLocal != UINT_MAX ? 1 : 0);
+            if (logicalResultLocal != UINT_MAX)
+                pCode->EmitSTLOC(logicalResultLocal);
+            pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC2_CALL_CONTINUATION, 0, 1);
+            pCode->EmitSTLOC(continuationLocal);
+            pCode->EmitLEAVE(pNoExceptionLabel);
+            pCode->EndTryBlock();
         }
-        if ((asyncMsig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+        // Catch
         {
-            _ASSERTE(!"Cannot handle generic context");
+            pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
+            MethodDesc* fromExceptionMD;
+            if (logicalResultLocal != UINT_MAX)
+            {
+                MethodDesc *md;
+                if (isValueTask)
+                    md = CoreLibBinder::GetMethod(METHOD__VALUETASK__FROM_EXCEPTION_1);
+                else
+                    md = CoreLibBinder::GetMethod(METHOD__TASK__FROM_EXCEPTION_1);
+                fromExceptionMD = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+            }
+            else
+            {
+                if (isValueTask)
+                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__VALUETASK__FROM_EXCEPTION);
+                else
+                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__TASK__FROM_EXCEPTION);
+            }
+            pCode->EmitCALL(pCode->GetToken(fromExceptionMD), 1, 1);
+            pCode->EmitSTLOC(returnLocal);
+            pCode->EmitLEAVE(pReturnResultLabel);
+            pCode->EndCatchBlock();
         }
-        _ASSERTE((asyncMsig.GetCallingConventionInfo() & CORINFO_CALLCONV_ASYNCCALL) != 0);
-
-        pCode->EmitLDNULL(); // Async continuation; not resuming
-
-        for (UINT iArg = 0; iArg < asyncMsig.NumFixedArgs(); iArg++)
-        {
-            pCode->EmitLDARG(localArg++);
-        }
-
-        // TODO: This and instantiating stubs can directly load the target from the precode slot
-        pCode->EmitLDC(pAsyncOtherVariant->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
-        pCode->EmitCALLI(pCode->GetSigToken(pTargetSig, cbTargetSig), localArg + 2, logicalResultLocal != UINT_MAX ? 1 : 0);
-        if (logicalResultLocal != UINT_MAX)
-            pCode->EmitSTLOC(logicalResultLocal);
-        pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC2_CALL_CONTINUATION, 0, 1);
-        pCode->EmitSTLOC(continuationLocal);
-        pCode->EmitLEAVE(pNoExceptionLabel);
         pCode->EndTryBlock();
     }
-    // Catch
+    //
     {
-        pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
-        MethodDesc* md = CoreLibBinder::GetMethod(METHOD__TASK__FROM_EXCEPTION_T);
-        md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
-        pCode->EmitCALL(pCode->GetToken(md), 1, 1);
-        pCode->EmitSTLOC(returnLocal);
-        pCode->EmitLEAVE(pReturnResultLabel);
-        pCode->EndCatchBlock();
+        pCode->BeginFinallyBlock();
+        pCode->EmitLDLOCA(executionAndSyncBlockStoreLocal);
+        pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__EXECUTIONANDSYNCBLOCKSTORE__POP)), 1, 0);
+        pCode->EmitENDFINALLY();
+        pCode->EndFinallyBlock();
     }
 
     pCode->EmitLabel(pNoExceptionLabel);
@@ -1790,13 +1827,20 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
     if (logicalResultLocal != UINT_MAX)
     {
         pCode->EmitLDLOC(logicalResultLocal);
-        MethodDesc* md = CoreLibBinder::GetMethod(METHOD__TASK__FROM_RESULT_T);
+        MethodDesc* md;
+        if (isValueTask)
+            md = CoreLibBinder::GetMethod(METHOD__VALUETASK__FROM_RESULT_T);
+        else
+            md = CoreLibBinder::GetMethod(METHOD__TASK__FROM_RESULT_T);
         md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
         pCode->EmitCALL(pCode->GetToken(md), 1, 1);
     }
     else
     {
-        pCode->EmitCALL(METHOD__TASK__GET_COMPLETED_TASK, 0, 1);
+        if (isValueTask)
+            pCode->EmitCALL(METHOD__VALUETASK__GET_COMPLETED_TASK, 0, 1);
+        else
+            pCode->EmitCALL(METHOD__TASK__GET_COMPLETED_TASK, 0, 1);
     }
 
     pCode->EmitSTLOC(returnLocal);
@@ -1806,10 +1850,25 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
 
     pCode->EmitLabel(pSuspendedLabel);
 
-    MethodDesc* md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
-    md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+    MethodDesc* finalizeTaskReturningThunkMD;
+    if (logicalResultLocal != UINT_MAX)
+    {
+        MethodDesc* md;
+        if (isValueTask)
+            md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_VALUETASK_RETURNING_THUNK_1);
+        else
+            md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_TASK_RETURNING_THUNK_1);
+        finalizeTaskReturningThunkMD = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+    }
+    else
+    {
+        if (isValueTask)
+            finalizeTaskReturningThunkMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_VALUETASK_RETURNING_THUNK);
+        else
+            finalizeTaskReturningThunkMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
+    }
     pCode->EmitLDLOC(continuationLocal);
-    pCode->EmitCALL(pCode->GetToken(md), 1, 1);
+    pCode->EmitCALL(pCode->GetToken(finalizeTaskReturningThunkMD), 1, 1);
     pCode->EmitRET();
 }
 

@@ -13,6 +13,39 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
+    internal struct ExecutionAndSyncBlockStore
+    {
+        // Store current ExecutionContext and SynchronizationContext as "previousXxx".
+        // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
+        // so that they won't "leak" out of the first await.
+        public ExecutionContext? _previousExecutionCtx;
+        public SynchronizationContext? _previousSyncCtx;
+        public Thread _thread;
+
+        public void Push()
+        {
+            _thread = Thread.CurrentThread;
+            _previousExecutionCtx = _thread._executionContext;
+            _previousSyncCtx = _thread._synchronizationContext;
+        }
+
+        public void Pop()
+        {
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (_previousSyncCtx != _thread._synchronizationContext)
+            {
+                // Restore changed SynchronizationContext back to previous
+                _thread._synchronizationContext = _previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecutionCtx = _thread._executionContext;
+            if (_previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(_thread, _previousExecutionCtx, currentExecutionCtx);
+            }
+        }
+    }
+
     public static partial class RuntimeHelpers
     {
         [Intrinsic]
@@ -401,48 +434,112 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         private static void SuspendAsync2(Continuation continuation) => throw new UnreachableException();
 
-        private static Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)
+        private sealed class AwaitableProxy : ICriticalNotifyCompletion
         {
-            TaskCompletionSource<T> tcs = new();
+            public INotifyCompletion? _notifier;
+
+            public bool IsCompleted => false;
+
+            public void OnCompleted(Action action)
+            {
+                _notifier!.OnCompleted(action);
+            }
+
+            public AwaitableProxy GetAwaiter() { return this; }
+
+            public void UnsafeOnCompleted(Action action)
+            {
+                if (_notifier is ICriticalNotifyCompletion criticalNotification)
+                {
+                    criticalNotification.UnsafeOnCompleted(action);
+                }
+                else
+                {
+                    _notifier!.OnCompleted(action);
+                }
+            }
+
+            public void GetResult() {}
+        }
+
+        private static Continuation GetHeadContinuation(AwaitableProxy awaitableProxy)
+        {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            object[] gcData = new object[2];
-            gcData[1] = tcs;
+            awaitableProxy._notifier = state.Notifier;
+            return state.SentinelContinuation!.Next!;
+        }
+
+        private static async Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)
+        {
+            object[] gcData = new object[1];
             continuation.Next = new Continuation
             {
-                Resume = &ResumeTaskCompletionSource<T>,
+                Resume = null,
                 GCData = gcData,
             };
 
-            Continuation headContinuation = state.SentinelContinuation!.Next!;
-            state.Notifier!.OnCompleted(() => DispatchContinuations(headContinuation));
-            return tcs.Task;
+            AwaitableProxy awaitableProxy = new AwaitableProxy();
+
+            Exception? ex = null;
+            while (true)
+            {
+                Continuation headContinuation = GetHeadContinuation(awaitableProxy);
+                await awaitableProxy;
+                Continuation? finalResult = DispatchContinuations(headContinuation, ref ex);
+                if (finalResult != null)
+                {
+                    if (ex != null)
+                        throw ex;
+                    return (T)continuation.GCData![0];
+                }
+            }
         }
 
-        private static Continuation? ResumeTaskCompletionSource<T>(Continuation continuation, Exception? exception)
+        private static async Task FinalizeTaskReturningThunk(Continuation continuation)
         {
-            var tcs = (TaskCompletionSource<T>)continuation.GCData![1];
-            if (exception == null)
+            object[] gcData = new object[1];
+            continuation.Next = new Continuation
             {
-                tcs.SetResult((T)continuation.GCData![0]);
-            }
-            else
-            {
-                tcs.SetException(exception);
-            }
+                Resume = null,
+                GCData = gcData,
+            };
 
-            return null;
+            AwaitableProxy awaitableProxy = new AwaitableProxy();
+
+            Exception? ex = null;
+            while (true)
+            {
+                Continuation headContinuation = GetHeadContinuation(awaitableProxy);
+                await awaitableProxy;
+                Continuation? finalResult = DispatchContinuations(headContinuation, ref ex);
+                if (finalResult != null)
+                {
+                    if (ex != null)
+                        throw ex;
+                    return;
+                }
+            }
         }
 
-        private static unsafe void DispatchContinuations(Continuation? continuation)
+        // Return a continuation object if that is the one which has the final result of the Task, in this case exceptionResult MAY be set to an exception, which is the real output of the series of continuations
+        // OR
+        // return NULL to indicate that this isn't yet done.
+        private static unsafe Continuation? DispatchContinuations(Continuation? continuation, ref Exception? exceptionResult)
         {
             Debug.Assert(continuation != null);
 
+            exceptionResult = null;
             Exception? exToPropagate = null;
             do
             {
                 Continuation? newContinuation = null;
                 try
                 {
+                    if (continuation.Resume == null)
+                    {
+                        exceptionResult = exToPropagate;
+                        return continuation; // Return the result containing Continuation
+                    }
                     newContinuation = continuation.Resume(continuation, exToPropagate);
                 }
                 catch (Exception ex)
@@ -453,14 +550,12 @@ namespace System.Runtime.CompilerServices
                 if (newContinuation != null)
                 {
                     newContinuation.Next = continuation.Next;
-                    ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-                    Continuation headContinuation = state.SentinelContinuation!.Next!;
-                    state.Notifier!.OnCompleted(() => DispatchContinuations(headContinuation));
-                    return;
+                    return null;
                 }
 
                 continuation = continuation.Next;
-            } while (continuation != null);
+                Debug.Assert(continuation != null);
+            } while (true);
         }
     }
 
