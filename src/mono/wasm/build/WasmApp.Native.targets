@@ -3,7 +3,6 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CreateResponseFile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" /> 
 
   <PropertyGroup>
@@ -356,7 +355,7 @@
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
 
-    <CreateResponseFile EmccCFlags="@(_EmccCFlags)" FilePath="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccCompileRsp)" />
     </ItemGroup>
