@@ -490,7 +490,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (ex != null)
                         throw ex;
-                    return (T)continuation.GCData![0];
+                    return (T)finalResult.GCData![0];
                 }
             }
         }
@@ -542,7 +542,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (ex != null)
                         throw ex;
-                    return (T)continuation.GCData![0];
+                    return (T)finalResult.GCData![0];
                 }
             }
         }
