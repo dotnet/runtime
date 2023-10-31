@@ -9,6 +9,7 @@
     <Import_RootNamespace />
   </PropertyGroup>
   <PropertyGroup>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <Nullable>enable</Nullable>
     <IsOSXLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsOSXLike>
     <IsiOSLike Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsiOSLike>
