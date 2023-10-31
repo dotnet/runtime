@@ -205,8 +205,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DS_CANONICAL_NAME = 7;
         internal const int DS_NAME_ERROR_NO_SYNTACTICAL_MAPPING = 6;
 
-        internal const int STATUS_QUOTA_EXCEEDED = unchecked((int)0xC0000044);
-
         internal const int DsDomainControllerInfoLevel2 = 2;
         internal const int DsDomainControllerInfoLevel3 = 3;
 
