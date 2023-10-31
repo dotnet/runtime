@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -10,57 +12,57 @@ using Xunit;
 
 namespace TestStackOverflow
 {
-    public class Program: IDisposable
+    public class Program : IDisposable
     {
         const string TestNameEnvVar = "STACKOVERFLOWTESTER_TESTNAME";
         const string TestArgsEnvVar = "STACKOVERFLOWTESTER_TESTARGS";
+        const string EnableMiniDumpEnvVar = "DOTNET_DbgEnableMiniDump";
 
-        public Program() {
-            string? testName = Environment.GetEnviromentVariable(TestNameEnvVar);
-            string[]? testArgs = Environment.GetEnviromentVariable(TestArgsEnvVar)?.Split(' ');
+        static bool s_checkedEnv = false;
+        public Program()
+        {
+            // Called before every non-static [Fact]
+            if (s_checkedEnv)
+            {
+                return;
+            }
+            // Use the environment variable to determine if we should trigger a stack overflow
+            string? testName = Environment.GetEnvironmentVariable(TestNameEnvVar);
+            string? testArgs = Environment.GetEnvironmentVariable(TestArgsEnvVar);
+            Console.WriteLine(testName);
             if (testName != null)
             {
-                switch(testName)
+                switch (testName)
                 {
-                    "stackoverflow":
+                    case "stackoverflow":
                         Assert.NotNull(testArgs);
-                        StackOverflow.Run(testArgs);
+                        StackOverflow.Run(testArgs.Split(' '));
                         break;
-                    "stackoverflow3":
+                    case "stackoverflow3":
                         StackOverflow3.Run();
                         break;
                 }
-                throw new InvalidOperationException($"Invalid test. Test {testName} with arguments '{testArgs.Join(' ')}' should have thrown an exception.");
+                throw new InvalidOperationException($"Invalid test. Test {testName} with arguments '{testArgs}' should have thrown an exception.");
             }
+            s_checkedEnv = true;
         }
 
-        public void Dispose() {}
+        public void Dispose() { }
 
-        const string ThisProjectName = "stackoverflowtester";
-
-        static Process GetNativeAotProcess(string testName, string testArgs)
+        [UnconditionalSuppressMessage("SingleFile", "IL3000", Justification = "We want an empty string for location if the test is running as single file")]
+        static bool TestStackOverflow(string testName, string testArgs, out string[] stderrLines, out bool checkStackFrame)
         {
-            Process testProcess = new Process();
-            return testProcess;
-        }
-
-        static bool TestStackOverflow(string testName, string testArgs, out List<string> stderrLines, out bool checkStackFrame)
-        {
-            Console.WriteLine($"Running with args: {testName} {testArgs}");
-            testArgs = $"{testName} {testArgs}";
             List<string> lines = new List<string>();
 
             Process testProcess = new Process();
-            testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
-            testProcess.StartInfo.Environment.Add(TestNameEnvVar, testName);
-            testProcess.StartInfo.Environment.Add(, testArgs);
-            // Always use whatever runner started this test
+            // Always use whatever runner started this test, or the exe if we're running single file / NativeAOT
             testProcess.StartInfo.FileName = Environment.ProcessPath;
-            if (!TestLibrary.Utilities.IsNativeAot)
-            {
-                testProcess.StartInfo.Arguments = $"{typeof(Program).Assembly.Location}";
-            }
-
+            // We want this assembly in CoreCLR and empty string for single file / NativeAOT
+            testProcess.StartInfo.Arguments = typeof(Program).Assembly.Location;
+            testProcess.StartInfo.Environment.Add(EnableMiniDumpEnvVar, "0");
+            // Set the environment so the subprocess will trigger a stack overflow
+            testProcess.StartInfo.Environment.Add(TestNameEnvVar, testName);
+            testProcess.StartInfo.Environment.Add(TestArgsEnvVar, testArgs);
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
             testProcess.ErrorDataReceived += (sender, line) =>
@@ -77,7 +79,8 @@ namespace TestStackOverflow
             testProcess.WaitForExit();
             testProcess.CancelErrorRead();
 
-            stderrLines = lines;
+            stderrLines = lines.ToArray();
+
             // NativeAOT doesn't provide a stack trace on stack overflow
             checkStackFrame = !TestLibrary.Utilities.IsNativeAot;
 
@@ -117,141 +120,104 @@ namespace TestStackOverflow
             {
                 return true;
             }
-            else
+
+            throw new Exception($"Missing \"{expectedMessage}\" at the first line of stderr");
+        }
+
+        public static void AssertStackFramePresent(string stackFrame, ReadOnlySpan<string> lines)
+        {
+            foreach(var line in lines)
             {
-                throw new Exception($"Missing \"{expectedMessage}\" at the first line");
+                if (line.EndsWith(stackFrame))
+                    return;
             }
+            throw new Exception($"Missing \"{stackFrame}\" from stack trace");
         }
 
         [Fact]
-        public static void TestStackOverflowSmallFrameMainThread()
+        public void TestStackOverflowSmallFrameMainThread()
         {
-            TestStackOverflow("stackoverflow", "smallframe main", out List<string> lines);
+            TestStackOverflow("stackoverflow", "smallframe main", out string[] lines, out bool checkStackFrame);
 
-            if (!lines[lines.Count - 1].EndsWith(".Main(System.String[])"))
+            if (!checkStackFrame)
+            {
+                return;
+            }
+
+            AssertStackFramePresent(".Main()", lines[(lines.Length-1)..]);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.Run(System.String[])", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.Test(Boolean)", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionB()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionC()", lines);
+        }
+
+        [Fact]
+        public void TestStackOverflowLargeFrameMainThread()
+        {
+            TestStackOverflow("stackoverflow", "largeframe main", out string[] lines, out bool checkStackFrame);
+
+            if (!checkStackFrame)
+            {
+                return;
+            }
+
+            if (!lines[lines.Length - 1].EndsWith(".Main()"))
             {
                 throw new Exception("Missing \"Main\" method frame at the last line");
             }
-
-            if (!lines.Exists(elem => elem.EndsWith("TestStackOverflow.Program.Test(Boolean)")))
-            {
-                throw new Exception("Missing \"Test\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionA()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionA\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionB()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionB\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionC()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionC\" method frame");
-            }
+            AssertStackFramePresent(".Main()", lines[(lines.Length-1)..]);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.Run(System.String[])", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.Test(Boolean)", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionA2()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionB2()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionC2()", lines);
         }
 
         [Fact]
-        public static void TestStackOverflowLargeFrameMainThread()
+        public void TestStackOverflowSmallFrameSecondaryThread()
         {
-            TestStackOverflow("stackoverflow", "largeframe main", out List<string> lines);
+            TestStackOverflow("stackoverflow", "smallframe secondary", out string[] lines, out bool checkStackFrame);
 
-            if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow.Program.Main(System.String[])"))
+            if (!checkStackFrame)
             {
-                throw new Exception("Missing \"Main\" method frame at the last line");
+                return;
             }
 
-            if (!lines.Exists(elem => elem.EndsWith("TestStackOverflow.Program.Test(Boolean)")))
-            {
-                throw new Exception("Missing \"Test\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionA2()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionA2\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionB2()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionB2\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionC2()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionC2\" method frame");
-            }
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.Test(Boolean)", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionA()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionB()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionC()", lines);
         }
 
         [Fact]
-        public static void TestStackOverflowSmallFrameSecondaryThread()
+        public void TestStackOverflowLargeFrameSecondaryThread()
         {
-            TestStackOverflow("stackoverflow", "smallframe secondary", out List<string> lines);
+            TestStackOverflow("stackoverflow", "largeframe secondary", out string[] lines, out bool checkStackFrame);
 
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
+            if (!checkStackFrame)
             {
-                throw new Exception("Missing \"TestStackOverflow.Program.Test\" method frame");
+                return;
             }
 
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionA()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionA\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionB()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionB\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionC()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionC\" method frame");
-            }
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.Test(Boolean)", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionA2()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionB2()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionC2()", lines);
         }
 
         [Fact]
-        public static void TestStackOverflowLargeFrameSecondaryThread()
+        public void TestStackOverflow3()
         {
-            TestStackOverflow("stackoverflow", "largeframe secondary", out List<string> lines);
+            TestStackOverflow("stackoverflow3", "", out string[] lines, out bool checkStackFrame);
 
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
+            if (!checkStackFrame)
             {
-                throw new Exception("Missing \"TestStackOverflow.Program.Test\" method frame");
+                return;
             }
 
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionA2()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionA2\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("TestStackOverflow.Program.InfiniteRecursionB2()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionB2\" method frame");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("TestStackOverflow.Program.InfiniteRecursionC2()")))
-            {
-                throw new Exception("Missing \"InfiniteRecursionC2\" method frame");
-            }
-        }
-
-        [Fact]
-        public static void TestStackOverflow3()
-        {
-            TestStackOverflow("stackoverflow3", "", out List<string> lines);
-
-            if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow3.Program.Main()"))
-            {
-                throw new Exception("Missing \"Main\" method frame at the last line");
-            }
-
-            if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow3.Program.Execute(System.String)")))
-            {
-                throw new Exception("Missing \"Execute\" method frame");
-            }
-
+            AssertStackFramePresent(".Main()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow3.Run()", lines);
+            AssertStackFramePresent("at TestStackOverflow.StackOverflow3.Execute(System.String)", lines);
         }
     }
 }
