@@ -138,7 +138,6 @@ namespace System.Globalization
                     return false;
                 }
             }
-#endif
 
             Debug.Assert(_sWindowsName != null);
 

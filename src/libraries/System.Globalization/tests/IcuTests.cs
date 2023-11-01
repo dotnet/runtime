@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
         private static bool IsIcuCompatiblePlatform => !PlatformDetection.IsHybridGlobalizationOnOSX && PlatformDetection.IsNotWindows ||
                                                        ((PlatformDetection.IsWindowsServer2019 || PlatformDetection.IsWindows10Version1903OrGreater) &&
                                                         // Server core doesn't have icu.dll on SysWOW64
-                                                        !(PlatformDetection.IsWindowsServerCore && PlatformDetection.IsX86Process)));
+                                                        !(PlatformDetection.IsWindowsServerCore && PlatformDetection.IsX86Process));
 
         [ConditionalFact(nameof(IsIcuCompatiblePlatform))]
         public static void IcuShouldBeUsedByDefault()

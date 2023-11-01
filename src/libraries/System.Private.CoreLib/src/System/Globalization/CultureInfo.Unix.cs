@@ -13,22 +13,7 @@ namespace System.Globalization
                 return CultureInfo.InvariantCulture;
 
             CultureInfo cultureInfo;
-            string? localeName;
-            bool result = false;
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            if (GlobalizationMode.Hybrid)
-            {
-               localeName = Interop.Globalization.GetDefaultLocaleNameNative();
-               result = localeName != null;
-            }
-            else
-            {
-                result = CultureData.GetDefaultLocaleName(out localeName);
-            }
-#else
-            result = CultureData.GetDefaultLocaleName(out localeName);
-#endif
-            if (result)
+            if (CultureData.GetDefaultLocaleName(out string? localeName))
             {
                 Debug.Assert(localeName != null);
                 cultureInfo = GetCultureByName(localeName);

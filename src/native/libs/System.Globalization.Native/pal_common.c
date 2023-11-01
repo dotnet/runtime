@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "pal_icushim_internal.h"
 #include "pal_casing.h"
+#include <unicode/uchar.h>
 
 void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarget)
 {

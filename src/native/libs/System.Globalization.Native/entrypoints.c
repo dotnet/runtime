@@ -46,7 +46,6 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_IanaIdToWindowsId)
     DllImportEntry(GlobalizationNative_IndexOf)
     DllImportEntry(GlobalizationNative_InitICUFunctions)
-    DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
     DllImportEntry(GlobalizationNative_IsNormalized)
     DllImportEntry(GlobalizationNative_IsPredefinedLocale)
     DllImportEntry(GlobalizationNative_LastIndexOf)
