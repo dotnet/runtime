@@ -26,7 +26,7 @@ namespace Internal.Runtime.CompilerHelpers
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            lck.TryEnterSlow(Timeout.Infinite, currentThreadID, obj);
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
             lockTaken = true;
         }
         private static void MonitorExit(object obj, ref bool lockTaken)
@@ -55,7 +55,7 @@ namespace Internal.Runtime.CompilerHelpers
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            lck.TryEnterSlow(Timeout.Infinite, currentThreadID, obj);
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
             lockTaken = true;
         }
         private static unsafe void MonitorExitStatic(MethodTable* pMT, ref bool lockTaken)

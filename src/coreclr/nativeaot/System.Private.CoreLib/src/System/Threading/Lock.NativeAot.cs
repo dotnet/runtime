@@ -54,12 +54,8 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ThreadId TryEnterSlow(int timeoutMs, ThreadId currentThreadId) =>
-            TryEnterSlow(timeoutMs, currentThreadId, this);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryEnterSlow(int timeoutMs, int currentManagedThreadId, object associatedObject) =>
-            TryEnterSlow(timeoutMs, new ThreadId((uint)currentManagedThreadId), associatedObject).IsInitialized;
+        internal bool TryEnterSlow(int timeoutMs, int currentManagedThreadId) =>
+            TryEnterSlow(timeoutMs, new ThreadId((uint)currentManagedThreadId)).IsInitialized;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool GetIsHeldByCurrentThread(int currentManagedThreadId)
@@ -178,7 +174,6 @@ namespace System.Threading
 
                 // Also initialize some types that are used later to prevent potential class construction cycles
                 NativeRuntimeEventSource.Log.IsEnabled();
-                using (new Monitor.DebugBlockingScope(null, Monitor.DebugBlockingItemType.MonitorCriticalSection, 0, out _)) { }
             }
             catch
             {
