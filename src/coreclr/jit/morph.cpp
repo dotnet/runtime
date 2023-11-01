@@ -13619,13 +13619,12 @@ void Compiler::fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt)
     }
 }
 
-/*****************************************************************************
- *
- *  Morph the statements of the given block.
- *  This function should be called just once for a block. Use fgMorphBlockStmt()
- *  for reentrant calls.
- */
-
+//------------------------------------------------------------------------
+// fgMorphStmts: Morph all statements in a block
+//
+// Arguments:
+//    block - block in question
+//
 void Compiler::fgMorphStmts(BasicBlock* block)
 {
     fgRemoveRestOfBlock = false;
@@ -13809,36 +13808,65 @@ void Compiler::fgMorphStmts(BasicBlock* block)
     fgRemoveRestOfBlock = false;
 }
 
-/*****************************************************************************
- *
- *  Morph the blocks of the method.
- *  Returns true if the basic block list is modified.
- *  This function should be called just once.
- */
-
-void Compiler::fgMorphBlocks()
+//------------------------------------------------------------------------
+// fgMorphBlock: Morph a basic block
+//
+// Arguments:
+//    block - block in question
+//
+void Compiler::fgMorphBlock(BasicBlock* block)
 {
-#ifdef DEBUG
-    if (verbose)
+    JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
+
+    if (optLocalAssertionProp)
     {
-        printf("\n*************** In fgMorphBlocks()\n");
+        // Clear out any currently recorded assertion candidates
+        // before processing each basic block,
+        // also we must  handle QMARK-COLON specially
+        //
+        optAssertionReset(0);
     }
-#endif
 
-    /* Since fgMorphTree can be called after various optimizations to re-arrange
-     * the nodes we need a global flag to signal if we are during the one-pass
-     * global morphing */
+    // Make the current basic block address available globally.
+    compCurBB = block;
 
+    // Process all statement trees in the basic block.
+    fgMorphStmts(block);
+
+    // Do we need to merge the result of this block into a single return block?
+    if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+    {
+        if ((genReturnBB != nullptr) && (genReturnBB != block))
+        {
+            fgMergeBlockReturn(block);
+        }
+    }
+
+    compCurBB = nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgMorphBlocks: Morph all blocks in the method
+//
+// Returns:
+//   Suitable phase status.
+//
+// Note:
+//   Morph almost always changes IR, so we don't actually bother to
+//   track if it made any changees.
+//
+PhaseStatus Compiler::fgMorphBlocks()
+{
+    // This is the one and only global morph phase
+    //
     fgGlobalMorph = true;
 
-    //
     // Local assertion prop is enabled if we are optimized
     //
     optLocalAssertionProp = opts.OptimizationEnabled();
 
     if (optLocalAssertionProp)
     {
-        //
         // Initialize for local assertion prop
         //
         optAssertionInit(true);
@@ -13862,53 +13890,16 @@ void Compiler::fgMorphBlocks()
         fgEnsureFirstBBisScratch();
     }
 
-    /*-------------------------------------------------------------------------
-     * Process all basic blocks in the function
-     */
-
-    BasicBlock* block = fgFirstBB;
-    noway_assert(block);
-
-    do
+    // Morph all blocks.
+    //
+    // Note morph can add blocks downstream from the current block,
+    // and alter (but not null out) the current block's bbNext;
+    // this iterator ensures they all get visited.
+    //
+    for (BasicBlock* block : Blocks())
     {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nMorphing " FMT_BB " of '%s'\n", block->bbNum, info.compFullName);
-        }
-#endif
-
-        if (optLocalAssertionProp)
-        {
-            //
-            // Clear out any currently recorded assertion candidates
-            // before processing each basic block,
-            // also we must  handle QMARK-COLON specially
-            //
-            optAssertionReset(0);
-        }
-
-        // Make the current basic block address available globally.
-        compCurBB = block;
-
-        // Process all statement trees in the basic block.
-        fgMorphStmts(block);
-
-        // Do we need to merge the result of this block into a single return block?
-        if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
-        {
-            if ((genReturnBB != nullptr) && (genReturnBB != block))
-            {
-                fgMergeBlockReturn(block);
-            }
-        }
-
-        block = block->Next();
-    } while (block != nullptr);
-
-    // We are done with the global morphing phase
-    fgGlobalMorph = false;
-    compCurBB     = nullptr;
+        fgMorphBlock(block);
+    }
 
     // Under OSR, we no longer need to specially protect the original method entry
     //
@@ -13924,12 +13915,12 @@ void Compiler::fgMorphBlocks()
         fgEntryBB = nullptr;
     }
 
-#ifdef DEBUG
-    if (verboseTrees)
-    {
-        fgDispBasicBlocks(true);
-    }
-#endif
+    // We are done with the global morphing phase
+    //
+    fgGlobalMorph = false;
+    compCurBB     = nullptr;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------

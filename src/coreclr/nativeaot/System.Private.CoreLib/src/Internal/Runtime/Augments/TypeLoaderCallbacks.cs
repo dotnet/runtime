@@ -14,6 +14,7 @@ namespace Internal.Runtime.Augments
     [CLSCompliant(false)]
     public abstract class TypeLoaderCallbacks
     {
+        public abstract bool TryGetOwningTypeForMethodDictionary(IntPtr dictionary, out RuntimeTypeHandle owningType);
         public abstract TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader);
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
         public abstract IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle handle, int index);

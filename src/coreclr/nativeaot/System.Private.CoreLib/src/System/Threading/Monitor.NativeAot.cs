@@ -50,7 +50,7 @@ namespace System.Threading
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            lck.TryEnterSlow(Timeout.Infinite, currentThreadID, obj);
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,7 +82,7 @@ namespace System.Threading
             if (currentThreadID != 0 && lck.TryEnterOneShot(currentThreadID))
                 return true;
 
-            return lck.TryEnterSlow(0, currentThreadID, obj);
+            return lck.TryEnterSlow(0, currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -114,7 +114,7 @@ namespace System.Threading
             if (millisecondsTimeout == 0 && currentThreadID != 0 && lck.TryEnterOneShot(currentThreadID))
                 return true;
 
-            return lck.TryEnterSlow(millisecondsTimeout, currentThreadID, obj);
+            return lck.TryEnterSlow(millisecondsTimeout, currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -146,12 +146,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            Condition condition = GetCondition(obj);
-
-            using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorEvent, millisecondsTimeout, out _))
-            {
-                return condition.Wait(millisecondsTimeout);
-            }
+            return GetCondition(obj).Wait(millisecondsTimeout);
         }
 
         public static void Pulse(object obj)
@@ -166,62 +161,6 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(obj);
 
             GetCondition(obj).SignalAll();
-        }
-
-        #endregion
-
-        #region Debugger support
-
-        // The debugger binds to the fields below by name. Do not change any names or types without
-        // updating the debugger!
-
-        // The head of the list of DebugBlockingItem stack objects used by the debugger to implement
-        // ICorDebugThread4::GetBlockingObjects. Usually the list either is empty or contains a single
-        // item. However, a wait on an STA thread may reenter via the message pump and cause the thread
-        // to be blocked on a second object.
-        [ThreadStatic]
-        private static IntPtr t_firstBlockingItem;
-
-        // Different ways a thread can be blocked that the debugger will expose.
-        // Do not change or add members without updating the debugger code.
-        internal enum DebugBlockingItemType
-        {
-            MonitorCriticalSection = 0,
-            MonitorEvent = 1
-        }
-
-        // Represents an item a thread is blocked on. This structure is allocated on the stack and accessed by the debugger.
-        internal struct DebugBlockingItem
-        {
-            // The object the thread is waiting on
-            public object _object;
-
-            // Indicates how the thread is blocked on the item
-            public DebugBlockingItemType _blockingType;
-
-            // Blocking timeout in milliseconds or Timeout.Infinite for no timeout
-            public int _timeout;
-
-            // Next pointer in the linked list of DebugBlockingItem records
-            public IntPtr _next;
-        }
-
-        internal unsafe struct DebugBlockingScope : IDisposable
-        {
-            public DebugBlockingScope(object obj, DebugBlockingItemType blockingType, int timeout, out DebugBlockingItem blockingItem)
-            {
-                blockingItem._object = obj;
-                blockingItem._blockingType = blockingType;
-                blockingItem._timeout = timeout;
-                blockingItem._next = t_firstBlockingItem;
-
-                t_firstBlockingItem = (IntPtr)Unsafe.AsPointer(ref blockingItem);
-            }
-
-            public void Dispose()
-            {
-                t_firstBlockingItem = Unsafe.Read<DebugBlockingItem>((void*)t_firstBlockingItem)._next;
-            }
         }
 
         #endregion

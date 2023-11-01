@@ -90,6 +90,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidTimeSpanStyles()
+        {
+            throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, "styles");
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_OverlapAlignmentMismatch()
         {
             throw new ArgumentException(SR.Argument_OverlapAlignmentMismatch);
@@ -225,15 +231,33 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException_NegateTwosCompNum()
+        {
+            throw new OverflowException(SR.Overflow_NegateTwosCompNum);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowOverflowException_TimeSpanTooLong()
         {
             throw new OverflowException(SR.Overflow_TimeSpanTooLong);
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException_TimeSpanDuration()
+        {
+            throw new OverflowException(SR.Overflow_Duration);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_Arg_CannotBeNaN()
         {
             throw new ArgumentException(SR.Arg_CannotBeNaN);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_Arg_CannotBeNaN(ExceptionArgument argument)
+        {
+            throw new ArgumentException(SR.Arg_CannotBeNaN, GetArgumentName(argument));
         }
 
         [DoesNotReturn]
@@ -1000,6 +1024,10 @@ namespace System
                     return "overlapped";
                 case ExceptionArgument.minimumBytes:
                     return "minimumBytes";
+                case ExceptionArgument.divisor:
+                    return "divisor";
+                case ExceptionArgument.factor:
+                    return "factor";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1289,6 +1317,8 @@ namespace System
         anyOf,
         overlapped,
         minimumBytes,
+        divisor,
+        factor,
     }
 
     //
