@@ -582,7 +582,7 @@ namespace System.Collections
             CopyEntries(array, arrayIndex);
         }
 
-        internal virtual DebugViewDictionaryItem<object, object?>[] ToKeyValuePairsArray()
+        internal virtual DebugViewDictionaryItem<object, object?>[] ToDebugViewDictionaryItemArray()
         {
             var array = new DebugViewDictionaryItem<object, object?>[_count];
             int index = 0;
@@ -1382,9 +1382,9 @@ namespace System.Collections
                 // call OnDeserialization on our parent table.
             }
 
-            internal override DebugViewDictionaryItem<object, object?>[] ToKeyValuePairsArray()
+            internal override DebugViewDictionaryItem<object, object?>[] ToDebugViewDictionaryItemArray()
             {
-                return _table.ToKeyValuePairsArray();
+                return _table.ToDebugViewDictionaryItemArray();
             }
         }
 
@@ -1506,7 +1506,7 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public DebugViewDictionaryItem<object, object?>[] Items => _hashtable.ToKeyValuePairsArray();
+            public DebugViewDictionaryItem<object, object?>[] Items => _hashtable.ToDebugViewDictionaryItemArray();
         }
     }
 }

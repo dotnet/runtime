@@ -24,9 +24,9 @@ namespace System.Collections.Generic
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
-        public TKey Key { get; init; }
+        public TKey Key { get; }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
-        public TValue Value { get; init; }
+        public TValue Value { get; }
     }
 }
