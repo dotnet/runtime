@@ -18,7 +18,7 @@ namespace System.Threading
         private const short MaxPossibleThreadCount = short.MaxValue;
 
 #if TARGET_BROWSER
-        private const short DefaultMaxWorkerThreadCount = 16;
+        private const short DefaultMaxWorkerThreadCount = 10;
 #elif TARGET_64BIT
         private const short DefaultMaxWorkerThreadCount = MaxPossibleThreadCount;
 #elif TARGET_32BIT
