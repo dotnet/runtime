@@ -51,7 +51,7 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
    * libclang sees the platform header, not the clang one.
    */
 #  define MONO_USE_EMULATED_ATOMIC 1
-#elif defined(_MSC_VER) || defined(HOST_WIN32)
+#elif defined(HOST_WIN32)
   /*
    * we need two things to switch to C11 atomics on Windows:
    *
@@ -61,7 +61,11 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
    * stdatomic.h)
    *
    */
-#  define MONO_USE_WIN32_ATOMIC 1
+#  if defined(_MSC_VER)
+#    define MONO_USE_WIN32_ATOMIC 1
+#  else
+#    error FIXME: Implement atomics for MinGW and/or clang
+#  endif
 #elif defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS)
 #  define MONO_USE_C11_ATOMIC 1
 #elif defined(HOST_ANDROID)
@@ -89,7 +93,7 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #if defined(MONO_USE_C11_ATOMIC)
 
-#include<stdatomic.h>
+#include <stdatomic.h>
 
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
@@ -305,11 +309,12 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <intrin.h>
 
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
-	return InterlockedCompareExchange ((LONG volatile *)dest, (LONG)exch, (LONG)comp);
+	return _InterlockedCompareExchange ((LONG volatile *)dest, (LONG)exch, (LONG)comp);
 }
 
 static inline gint64
@@ -363,7 +368,7 @@ mono_atomic_dec_i64 (volatile gint64 *dest)
 static inline gint32
 mono_atomic_xchg_i32 (volatile gint32 *dest, gint32 exch)
 {
-	return InterlockedExchange ((LONG volatile *)dest, (LONG)exch);
+	return _InterlockedExchange ((LONG volatile *)dest, (LONG)exch);
 }
 
 static inline gint64
@@ -387,7 +392,7 @@ mono_atomic_fetch_add_i32 (volatile gint32 *dest, gint32 add)
 static inline gint64
 mono_atomic_fetch_add_i64 (volatile gint64 *dest, gint64 add)
 {
-	return InterlockedExchangeAdd64 ((LONG64 volatile *)dest, (LONG)add);
+	return InterlockedExchangeAdd64 ((LONG64 volatile *)dest, (LONG64)add);
 }
 
 static inline gint8
@@ -441,29 +446,19 @@ mono_atomic_load_ptr (volatile gpointer *src)
 static inline void
 mono_atomic_store_i8 (volatile gint8 *dst, gint8 val)
 {
-#if (_MSC_VER >= 1600)
 	_InterlockedExchange8 ((CHAR volatile *)dst, (CHAR)val);
-#else
-	*dst = val;
-	mono_memory_barrier ();
-#endif
 }
 
 static inline void
 mono_atomic_store_i16 (volatile gint16 *dst, gint16 val)
 {
-#if (_MSC_VER >= 1600)
-	InterlockedExchange16 ((SHORT volatile *)dst, (SHORT)val);
-#else
-	*dst = val;
-	mono_memory_barrier ();
-#endif
+	_InterlockedExchange16 ((SHORT volatile *)dst, (SHORT)val);
 }
 
 static inline void
 mono_atomic_store_i32 (volatile gint32 *dst, gint32 val)
 {
-	InterlockedExchange ((LONG volatile *)dst, (LONG)val);
+	_InterlockedExchange ((LONG volatile *)dst, (LONG)val);
 }
 
 static inline void
