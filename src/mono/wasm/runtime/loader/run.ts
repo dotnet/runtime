@@ -173,6 +173,19 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withInterpreterPgo(value: boolean, autoSaveDelay?: number): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                interpreterPgo: value,
+                interpreterPgoSaveDelay: autoSaveDelay
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withConfig(config: MonoConfig): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, config);

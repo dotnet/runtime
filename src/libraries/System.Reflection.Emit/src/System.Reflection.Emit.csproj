@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Reflection\Emit\TypeNameBuilder.cs" Link="System\Reflection\Emit\TypeNameBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeWrapper.cs" />
@@ -20,10 +23,12 @@
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="System\Reflection\Emit\TypeBuilderImpl.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
+
 </Project>

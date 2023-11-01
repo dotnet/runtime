@@ -22,6 +22,7 @@ import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { checkMemorySnapshotSize, getMemorySnapshot, storeMemorySnapshot } from "./snapshot";
+import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
 import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
 
 // threads
@@ -254,6 +255,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         // load runtime and apply environment settings (if necessary)
         await mono_wasm_before_memory_snapshot();
+
+        if (runtimeHelpers.config.interpreterPgo) {
+            await interp_pgo_load_data();
+        }
 
         if (runtimeHelpers.config.exitAfterSnapshot) {
             const reason = runtimeHelpers.ExitStatus
@@ -555,7 +560,21 @@ async function mono_wasm_before_memory_snapshot() {
         runtimeHelpers.storeMemorySnapshotPending = false;
     }
 
+    if (runtimeHelpers.config.interpreterPgo)
+        setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
+
     endMeasure(mark, MeasuredBlock.memorySnapshot);
+}
+
+async function maybeSaveInterpPgoTable () {
+    // If the application exited abnormally, don't save the table. It probably doesn't contain useful data,
+    //  and saving would overwrite any existing table from a previous successful run.
+    // We treat exiting with a code of 0 as equivalent to if the app is still running - it's perfectly fine
+    //  to save the table once main has returned, since the table can still make future runs faster.
+    if ((loaderHelpers.exitCode !== undefined) && (loaderHelpers.exitCode !== 0))
+        return;
+
+    await interp_pgo_save_data();
 }
 
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
