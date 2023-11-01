@@ -726,6 +726,11 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.MonitorExitStatic;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetSyncFromClassHandle"));
+                case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetClassFromMethodParam"));
+
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;

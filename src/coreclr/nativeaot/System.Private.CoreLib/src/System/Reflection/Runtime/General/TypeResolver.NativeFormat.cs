@@ -169,15 +169,13 @@ namespace System.Reflection.Runtime.General
         //
         // Main routine to resolve a typeReference.
         //
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Resolves type references within metadata. We ensure metadata is consistent.")]
         private static RuntimeTypeInfo? TryResolveTypeReference(this TypeReferenceHandle typeReferenceHandle, MetadataReader reader, ref Exception? exception)
         {
             TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
             string name = typeReference.TypeName.GetString(reader);
             Handle parent = typeReference.ParentNamespaceOrType;
             HandleType parentType = parent.HandleType;
-            TypeInfo? outerTypeInfo = null;
+            RuntimeTypeInfo? outerTypeInfo = null;
 
             // Check if this is a reference to a nested type.
 
@@ -201,7 +199,7 @@ namespace System.Reflection.Runtime.General
                     exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly);
                     return null;
                 }
-                return resolvedType.CastToRuntimeTypeInfo();
+                return resolvedType.ToRuntimeTypeInfo();
             }
 
 
@@ -223,13 +221,13 @@ namespace System.Reflection.Runtime.General
                 exception = RuntimeAssemblyInfo.TryGetRuntimeAssembly(assemblyName, out runtimeAssembly);
                 if (exception != null)
                     return null;
-                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false);
+                Type runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false);
                 if (runtimeType == null)
                 {
                     exception = Helpers.CreateTypeLoadException(fullName, assemblyName.FullName);
                     return null;
                 }
-                return runtimeType;
+                return runtimeType.ToRuntimeTypeInfo();
             }
 
             throw new BadImageFormatException(); // Expected TypeReference parent to be typeRef, typeDef or namespaceRef.

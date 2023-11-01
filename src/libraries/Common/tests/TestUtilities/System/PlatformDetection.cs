@@ -122,6 +122,7 @@ namespace System
 
         public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+        public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
@@ -374,8 +375,8 @@ namespace System
         public static bool IsNotHybridGlobalizationOnOSX => !IsHybridGlobalizationOnOSX;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
         public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
-        public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser && IsNotHybridGlobalizationOnOSX;
-        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !(IsIcuGlobalization || IsHybridGlobalizationOnOSX);
+        public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalization;
+        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
         public static bool IsSubstAvailable
         {

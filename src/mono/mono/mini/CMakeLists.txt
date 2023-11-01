@@ -58,6 +58,7 @@ if(HAVE_SYS_ICU)
 
   set(icu_shim_sources_base
       pal_idna.c
+      pal_common.c
       entrypoints.c
       ${pal_icushim_sources_base})
 

@@ -377,7 +377,6 @@
     <Compile Include="Compiler\Dataflow\HandleCallAction.cs" />
     <Compile Include="Compiler\Dataflow\HoistedLocalKey.cs" />
     <Compile Include="Compiler\Dataflow\InterproceduralState.cs" />
-    <Compile Include="Compiler\Dataflow\IValueWithStaticType.cs" />
     <Compile Include="Compiler\Dataflow\LocalVariableReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\MethodParameterValue.cs" />

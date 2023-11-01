@@ -9,7 +9,6 @@ namespace System.Globalization
     {
         private const int LOC_FULLNAME_CAPACITY = 157;           // max size of locale name
 
-
         internal static string GetLocaleNameNative(string localeName)
         {
             return Interop.Globalization.GetLocaleNameNative(localeName);
