@@ -555,6 +555,12 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
+    GTF_HW_ER_MASK              = 0x30000000, // Bits used by handle types below 
+    GTF_HW_ER_TOEVEN            = 0x00000000, // GT_HWINTRINSIC -- embedded rounding mode: ToEven (Default).
+    GTF_HW_ER_TONEGATIVEINFINITY = 0x10000000, // GT_HWINTRINSIC -- embedded rounding mode: ToNegativeInfinity.
+    GTF_HW_ER_TOPOSITIVEINFINITY = 0x20000000, // GT_HWINTRINSIC -- embedded rounding mode: ToPositiveInfinity.
+    GTF_HW_ER_TOZERO            = 0x30000000, // GT_HWINTRINSIC -- embedded rounding mode: ToZero.
+
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -2223,6 +2229,34 @@ public:
     {
         return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    void SetEmbRoundingMode(uint8_t mode)
+    {
+        assert(gtOper == GT_HWINTRINSIC);
+        switch (mode)
+        {
+            case 0x09:
+                gtFlags |= GTF_HW_ER_TONEGATIVEINFINITY;
+                break;
+            case 0x0A:
+                gtFlags |= GTF_HW_ER_TOPOSITIVEINFINITY;
+                break;
+            case 0x0B:
+                gtFlags |= GTF_HW_ER_TOZERO;
+                break;            
+            default:
+                break;
+        }
+    }
+
+    uint8_t GetEmbRoundingMode()
+    {
+        assert(gtOper == GT_HWINTRINSIC);
+        return (uint8_t)((gtFlags & GTF_HW_ER_MASK) >> 28);
+    }
+
+#endif // FEATURE_HW_INTRINSICS
 
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
@@ -6282,6 +6316,7 @@ public:
 };
 
 #ifdef FEATURE_HW_INTRINSICS
+
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
     GenTreeHWIntrinsic(var_types              type,
@@ -6331,6 +6366,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;
+
 
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.

@@ -733,6 +733,33 @@ void CodeGen::genHWIntrinsic_R_R_RM(
     }
 
     bool isRMW = node->isRMWHWIntrinsic(compiler);
+
+    if(node->GetEmbRoundingMode() != 0)
+    {
+        // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
+        OperandDesc op2Desc = genOperandDesc(op2);
+        assert(op2Desc.GetKind() == OperandKind::Reg);
+        regNumber op2Reg = op2Desc.GetReg();
+
+        if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
+        {
+            // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW instruction.
+            //
+            // For non-commutative instructions, we should have ensured that op2 was marked
+            // delay free in order to prevent it from getting assigned the same register
+            // as target. However, for commutative instructions, we can just swap the operands
+            // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+            op2Reg = op1Reg;
+            op1Reg = targetReg;
+        }
+
+        uint8_t mode = node->GetEmbRoundingMode();
+        insOpts instOptions = (insOpts)(mode);
+        GetEmitter()->emitIns_SIMD_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
+        return;
+    }
+
     inst_RV_RV_TT(ins, attr, targetReg, op1Reg, op2, isRMW);
 }
 

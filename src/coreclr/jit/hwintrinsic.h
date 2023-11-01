@@ -203,6 +203,9 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic is an embedded broadcast compatiable intrinsic
     HW_Flag_EmbBroadcastCompatible = 0x8000000,
+
+    // The intrinsic is an embedded rounding compatiable intrinsic
+    HW_Flag_EmbRoundingCompatible = 0x10000000
 #endif // TARGET_XARCH
 };
 
