@@ -1798,13 +1798,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
             var_types               argType  = TYP_UNKNOWN;
             CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            op3                 = impPopStack().val;
-            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2                 = impPopStack().val;
-            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+            argType                = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3                    = impPopStack().val;
+            argType                = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2                    = impPopStack().val;
+            unsigned fieldCount    = info.compCompHnd->getClassNumInstanceFields(argClass);
+            int      immLowerBound = 0;
+            int      immUpperBound = 0;
 
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, &immLowerBound, &immUpperBound);
+            op3 = addRangeCheckForHWIntrinsic(op3, immLowerBound, immUpperBound);
 
             if (op2->TypeGet() == TYP_STRUCT)
             {
