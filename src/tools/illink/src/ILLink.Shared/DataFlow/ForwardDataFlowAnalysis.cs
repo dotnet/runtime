@@ -279,27 +279,7 @@ namespace ILLink.Shared.DataFlow
 					foreach (var predecessor in cfg.GetPredecessors (block)) {
 						TValue predecessorState = cfgState.Get (predecessor).Current;
 
-						// Propagate state through all finally blocks.
-						foreach (var exitedFinally in predecessor.FinallyRegions) {
-							TValue oldFinallyInputState = cfgState.GetFinallyInputState (exitedFinally);
-							TValue finallyInputState = lattice.Meet (oldFinallyInputState, predecessorState);
-
-							cfgState.SetFinallyInputState (exitedFinally, finallyInputState);
-
-							// Note: the current approach here is inefficient for long chains of finally regions because
-							// the states will not converge until we have visited each block along the chain
-							// and propagated the new states along this path.
-							if (!changed && !finallyInputState.Equals (oldFinallyInputState))
-								changed = true;
-
-							TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
-							Debug.Assert (cfg.GetConditionalSuccessor (lastFinallyBlock) == null);
-							IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? finallyExit = cfg.GetFallThroughSuccessor (lastFinallyBlock);
-							Debug.Assert (finallyExit != null);
-							if (finallyExit == null)
-								continue;
-							predecessorState = cfgState.Get (finallyExit.Value).Current;
-						}
+						FlowStateThroughExitedFinallys (predecessor, ref predecessorState);
 
 						currentState = lattice.Meet (currentState, predecessorState);
 					}
@@ -334,23 +314,7 @@ namespace ILLink.Shared.DataFlow
 							var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState (predecessor, out TValue predecessorState);
 							Debug.Assert (isPredecessorInFinally);
 
-							// Propagate state through all finally blocks.
-							foreach (var exitedFinally in predecessor.FinallyRegions) {
-								TValue oldFinallyInputState = cfgState.GetFinallyInputState (exitedFinally);
-								TValue finallyInputState = lattice.Meet (oldFinallyInputState, predecessorState);
-
-								cfgState.SetFinallyInputState (exitedFinally, finallyInputState);
-								if (!changed && !finallyInputState.Equals (oldFinallyInputState))
-									changed = true;
-
-								TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
-								Debug.Assert (cfg.GetConditionalSuccessor (lastFinallyBlock) == null);
-								IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? finallyExit = cfg.GetFallThroughSuccessor (lastFinallyBlock);
-								Debug.Assert (finallyExit != null);
-								if (finallyExit == null)
-									continue;
-								predecessorState = cfgState.Get (finallyExit.Value).Current;
-							}
+							FlowStateThroughExitedFinallys (predecessor, ref predecessorState);
 
 							exceptionFinallyState = lattice.Meet (exceptionFinallyState.Value, predecessorState);
 						}
@@ -436,6 +400,32 @@ namespace ILLink.Shared.DataFlow
 					}
 
 					TraceBlockOutput (state.Current, exceptionState?.Value, exceptionFinallyState);
+				}
+			}
+
+			void FlowStateThroughExitedFinallys (
+				IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor,
+				ref TValue predecessorState)
+			{
+				foreach (var exitedFinally in predecessor.FinallyRegions) {
+					TValue oldFinallyInputState = cfgState.GetFinallyInputState (exitedFinally);
+					TValue finallyInputState = lattice.Meet (oldFinallyInputState, predecessorState);
+
+					cfgState.SetFinallyInputState (exitedFinally, finallyInputState);
+
+					// Note: the current approach here is inefficient for long chains of finally regions because
+					// the states will not converge until we have visited each block along the chain
+					// and propagated the new states along this path.
+					if (!changed && !finallyInputState.Equals (oldFinallyInputState))
+						changed = true;
+
+					TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
+					Debug.Assert (cfg.GetConditionalSuccessor (lastFinallyBlock) == null);
+					IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? finallyExit = cfg.GetFallThroughSuccessor (lastFinallyBlock);
+					Debug.Assert (finallyExit != null);
+					if (finallyExit == null)
+						continue;
+					predecessorState = cfgState.Get (finallyExit.Value).Current;
 				}
 			}
 		}
