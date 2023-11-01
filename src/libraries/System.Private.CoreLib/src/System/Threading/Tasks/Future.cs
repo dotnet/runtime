@@ -31,7 +31,7 @@ namespace System.Threading.Tasks
 
         public void Push()
         {
-            dataFrame = new RuntimeHelpers.AsyncDataFrame(()=> new RuntimeHelpers.RuntimeAsyncMaintainedData());
+            dataFrame = new RuntimeHelpers.AsyncDataFrame(() => new RuntimeHelpers.RuntimeAsyncMaintainedData<TResult>());
             RuntimeHelpers.PushAsyncData(ref dataFrame);
             _thread = Thread.CurrentThread;
             _previousExecutionCtx = _thread._executionContext;
@@ -123,7 +123,7 @@ namespace System.Threading.Tasks
 
         public void Push()
         {
-            dataFrame = new RuntimeHelpers.AsyncDataFrame(()=> new RuntimeHelpers.RuntimeAsyncMaintainedData());
+            dataFrame = new RuntimeHelpers.AsyncDataFrame(()=> new RuntimeHelpers.RuntimeAsyncMaintainedData<TResult>());
             RuntimeHelpers.PushAsyncData(ref dataFrame);
             _thread = Thread.CurrentThread;
             _previousExecutionCtx = _thread._executionContext;
