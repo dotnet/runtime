@@ -565,7 +565,8 @@ protected:
     {
 #define IF_DEF(en, op1, op2) IF_##en,
 #include "emitfmts.h"
-
+#define IF_DEF(en, op1, op2) IF_##en,
+#include "emitfmtsarm64_sve.h"
         IF_COUNT
     };
 
@@ -628,8 +629,8 @@ protected:
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 1024);
         instruction _idIns : 10;
+        static_assert_no_msg(INS_count <= 1024);
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
@@ -648,8 +649,8 @@ protected:
 #elif defined(TARGET_RISCV64)
         unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #else
-        static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
+        static_assert_no_msg(IF_COUNT <= 256);
 #endif
 
     public:
