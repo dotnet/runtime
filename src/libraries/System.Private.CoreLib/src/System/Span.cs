@@ -38,6 +38,7 @@ namespace System
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span(T[]? array)
         {
@@ -65,6 +66,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;Length).
         /// </exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span(T[]? array, int start, int length)
         {
@@ -104,6 +106,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is negative.
         /// </exception>
+        [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe Span(void* pointer, int length)
@@ -119,6 +122,7 @@ namespace System
 
         /// <summary>Creates a new <see cref="Span{T}"/> of length 1 around the specified reference.</summary>
         /// <param name="reference">A reference to data.</param>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span(ref T reference)
         {
@@ -128,6 +132,7 @@ namespace System
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateSpan.
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Span(ref T reference, int length)
         {
@@ -210,6 +215,7 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
         /// </summary>
+        [NonVersionable]
         public static implicit operator Span<T>(T[]? array) => new Span<T>(array);
 
         /// <summary>
@@ -269,6 +275,7 @@ namespace System
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns null reference.
         /// It can be used for pinning and is required to support the use of span within a fixed statement.
         /// </summary>
+        [NonVersionable]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ref T GetPinnableReference()
         {
@@ -371,6 +378,7 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
+        [NonVersionable]
         public static implicit operator ReadOnlySpan<T>(Span<T> span) =>
             new ReadOnlySpan<T>(ref span._reference, span._length);
 
@@ -394,6 +402,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
         /// </exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> Slice(int start)
         {
@@ -411,6 +420,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;Length).
         /// </exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> Slice(int start, int length)
         {

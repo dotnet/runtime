@@ -37,6 +37,7 @@ namespace System
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan(T[]? array)
         {
@@ -61,6 +62,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;Length).
         /// </exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan(T[]? array, int start, int length)
         {
@@ -98,6 +100,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is negative.
         /// </exception>
+        [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe ReadOnlySpan(void* pointer, int length)
@@ -113,6 +116,7 @@ namespace System
 
         /// <summary>Creates a new <see cref="ReadOnlySpan{T}"/> of length 1 around the specified reference.</summary>
         /// <param name="reference">A reference to data.</param>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan(ref readonly T reference)
         {
@@ -122,6 +126,7 @@ namespace System
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateReadOnlySpan.
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan(ref T reference, int length)
         {
@@ -204,6 +209,7 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
+        [NonVersionable]
         public static implicit operator ReadOnlySpan<T>(T[]? array) => new ReadOnlySpan<T>(array);
 
         /// <summary>
@@ -263,6 +269,7 @@ namespace System
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns null reference.
         /// It can be used for pinning and is required to support the use of span within a fixed statement.
         /// </summary>
+        [NonVersionable]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ref readonly T GetPinnableReference()
         {
@@ -345,6 +352,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
         /// </exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan<T> Slice(int start)
         {
@@ -362,6 +370,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;Length).
         /// </exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan<T> Slice(int start, int length)
         {

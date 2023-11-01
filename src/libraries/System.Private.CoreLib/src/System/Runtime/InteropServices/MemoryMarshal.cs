@@ -28,6 +28,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="OverflowException">
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Span<byte> AsBytes<T>(Span<T> span)
             where T : struct
@@ -51,6 +52,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="OverflowException">
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ReadOnlySpan<byte> AsBytes<T>(ReadOnlySpan<T> span)
             where T : struct
@@ -79,12 +81,14 @@ namespace System.Runtime.InteropServices
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
         /// </summary>
+        [NonVersionable]
         public static ref T GetReference<T>(Span<T> span) => ref span._reference;
 
         /// <summary>
         /// Returns a reference to the 0th element of the ReadOnlySpan. If the ReadOnlySpan is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
         /// </summary>
+        [NonVersionable]
         public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._reference;
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
@@ -226,6 +230,7 @@ namespace System.Runtime.InteropServices
         /// Even though the ref is annotated as scoped, it will be stored into the returned span, and the lifetime
         /// of the returned span will not be validated for safety, even by span-aware languages.
         /// </remarks>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> CreateSpan<T>(scoped ref T reference, int length) =>
             new Span<T>(ref Unsafe.AsRef(in reference), length);
@@ -243,6 +248,7 @@ namespace System.Runtime.InteropServices
         /// Even though the ref is annotated as scoped, it will be stored into the returned span, and the lifetime
         /// of the returned span will not be validated for safety, even by span-aware languages.
         /// </remarks>
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) =>
             new ReadOnlySpan<T>(ref Unsafe.AsRef(in reference), length);
