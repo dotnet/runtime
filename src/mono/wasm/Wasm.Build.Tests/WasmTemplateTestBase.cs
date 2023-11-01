@@ -137,4 +137,16 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         else
             projectProvider.AssertBundle(buildArgs, buildProjectOptions);
     }
+
+    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
+
+    protected void UpdateBrowserMainJs(Func<string, string> transform, string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    {
+        string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
+        string mainJsContent = File.ReadAllText(mainJsPath);
+
+        mainJsContent = transform(mainJsContent);
+
+        File.WriteAllText(mainJsPath, mainJsContent);
+    }
 }
