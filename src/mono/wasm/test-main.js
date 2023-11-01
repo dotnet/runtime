@@ -325,6 +325,7 @@ async function dry_run(runArgs) {
             logExitCode: false,
             virtualWorkingDirectory: undefined,
             pthreadPoolSize: 0,
+            interopCleanupOnExit: false,
             // this just means to not continue startup after the snapshot is taken.
             // If there was previously a matching snapshot, it will be used.
             exitAfterSnapshot: true
@@ -346,10 +347,14 @@ async function run() {
         console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
         if (ENVIRONMENT_IS_WEB && runArgs.memorySnapshot) {
+            if (globalThis.isSecureContext) {
             const dryOk = await dry_run(runArgs);
             if (!dryOk) {
                 mono_exit(1, "Failed during dry run");
                 return;
+            }
+            } else {
+                console.log("Skipping dry run as the context is not secure and the snapshot would be not trusted.");
             }
         }
 
