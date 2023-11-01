@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>System.Resources</RootNamespace>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn);CA1510</NoWarn>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Resources\__FastResourceComparer.cs" />
     <Compile Include="System\Resources\IResourceWriter.cs" />
@@ -14,8 +17,10 @@
     <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs"
              Link="System\Resources\ResourceTypeCode.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
+
 </Project>

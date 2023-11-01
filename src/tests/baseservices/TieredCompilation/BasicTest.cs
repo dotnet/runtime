@@ -4,18 +4,16 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public static class BasicTest
 {
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
-        const int Pass = 100;
-
         PromoteToTier1(Foo, () => FooWithLoop(2));
         Foo();
         FooWithLoop(2);
-
-        return Pass;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

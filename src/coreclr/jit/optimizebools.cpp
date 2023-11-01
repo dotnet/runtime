@@ -533,6 +533,96 @@ bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cns
 }
 
 //------------------------------------------------------------------------------
+// FoldRangeTests: Given two compare nodes (cmp1 && cmp2) where cmp1 is X >= 0
+//    and cmp2 is X < NN (NeverNegative), try to fold the range test into a single
+//    X u< NN (unsigned) compare node.
+//
+// Arguments:
+//    compiler       - compiler instance
+//    cmp1           - first compare node
+//    cmp1IsReversed - true if cmp1 is in fact reversed
+//    cmp2           - second compare node
+//    cmp2IsReversed - true if cmp2 is in fact reversed
+//
+// Returns:
+//    true if cmp1 now represents the folded range check and cmp2 can be removed.
+//
+bool FoldNeverNegativeRangeTest(
+    Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+{
+    GenTree*       var1Node;
+    GenTreeIntCon* cns1Node;
+    genTreeOps     cmp1Op;
+
+    // First cmp has to be "X >= 0" (or "0 <= X")
+    // TODO: handle "X < NN && X >= 0" (where the 2nd comparison is the lower bound)
+    // It seems to be a rare case, so we don't handle it for now.
+    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
+    {
+        return false;
+    }
+
+    // Now, reverse the comparison if necessary depending on cmp1IsReversed and cmp2IsReversed
+    // so we'll get a canonical form of "X >= 0 && X </<= NN"
+    cmp1Op            = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
+    genTreeOps cmp2Op = cmp2IsReversed ? GenTree::ReverseRelop(cmp2->OperGet()) : cmp2->OperGet();
+
+    if ((cmp1Op != GT_GE) || (!cns1Node->IsIntegralConst(0)))
+    {
+        // Lower bound check has to be "X >= 0".
+        // We already re-ordered the comparison so that the constant is always on the right side.
+        return false;
+    }
+
+    // Upper bound check has to be "X relop NN" or "NN relop X" (NN = NeverNegative)
+    // We allow var1Node to be a GT_COMMA node, so we need to call gtEffectiveVal() to get the actual variable
+    // since it's guaranteed to be evaluated first.
+    GenTree* upperBound;
+    if (cmp2->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+        GenTree::Compare(var1Node->gtEffectiveVal(), cmp2->gtGetOp1()))
+    {
+        // "X relop NN"
+        upperBound = cmp2->gtGetOp2();
+    }
+    else if (cmp2->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+             GenTree::Compare(var1Node->gtEffectiveVal(), cmp2->gtGetOp2()))
+    {
+        // "NN relop X"
+        upperBound = cmp2->gtGetOp1();
+        // Normalize to "X relop NN"
+        cmp2Op = GenTree::SwapRelop(cmp2Op);
+    }
+    else
+    {
+        return false;
+    }
+
+    // Check that our upper bound is known to be never negative (e.g. GT_ARR_LENGTH or Span.Length, etc.)
+    if (!upperBound->IsNeverNegative(comp) || !upperBound->TypeIs(var1Node->TypeGet()))
+    {
+        return false;
+    }
+
+    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
+        return false;
+    }
+
+    if ((cmp2Op != GT_LT) && (cmp2Op != GT_LE))
+    {
+        // Upper bound check has to be "X < NN" or "X <= NN" (normalized form).
+        return false;
+    }
+
+    cmp1->gtOp1 = var1Node;
+    cmp1->gtOp2 = upperBound;
+    cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(cmp2Op) : cmp2Op);
+    cmp1->SetUnsigned();
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // FoldRangeTests: Given two compare nodes (cmp1 && cmp2) that represent a range check,
 //    fold them into a single compare node if possible, e.g.:
 //      1) "X >= 10 && X <= 100" -> "(X - 10) u<= 90"
@@ -560,12 +650,11 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
     genTreeOps     cmp2Op;
 
     // Make sure both conditions are constant range checks, e.g. "X > CNS"
-    // TODO: support more cases, e.g. "X >= 0 && X < array.Length" -> "(uint)X < array.Length"
-    // Basically, we can use GenTree::IsNeverNegative() for it.
     if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
         !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
     {
-        return false;
+        // Give FoldNeverNegativeRangeTest a try if both conditions are not constant range checks.
+        return FoldNeverNegativeRangeTest(comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
     }
 
     // Reverse the comparisons if necessary so we'll get a canonical form "cond1 == true && cond2 == true" -> InRange.

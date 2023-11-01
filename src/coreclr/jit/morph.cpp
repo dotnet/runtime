@@ -5439,24 +5439,27 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         calleeArgStackSize = roundUp(calleeArgStackSize, arg.AbiInfo.ByteAlignment);
         calleeArgStackSize += arg.AbiInfo.GetStackByteSize();
-#ifdef TARGET_ARM
+
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
         if (arg.AbiInfo.IsSplit())
         {
-            reportFastTailCallDecision("Argument splitting in callee is not supported on ARM32");
+            reportFastTailCallDecision("Argument splitting in callee is not supported on " TARGET_READABLE_NAME);
             return false;
         }
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
     }
 
     calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     if (compHasSplitParam)
     {
-        reportFastTailCallDecision("Argument splitting in caller is not supported on ARM32");
+        reportFastTailCallDecision("Argument splitting in caller is not supported on " TARGET_READABLE_NAME);
         return false;
     }
+#endif // TARGET_ARM || TARGET_RISCV64
 
+#ifdef TARGET_ARM
     if (compIsProfilerHookNeeded())
     {
         reportFastTailCallDecision("Profiler is not supported on ARM32");
@@ -5889,12 +5892,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             // but doesn't prevent tail call optimization so we need to
             // look at the rest of parameters.
         }
-    }
-
-    if (!fgCheckStmtAfterTailCall())
-    {
-        failTailCall("Unexpected statements after the tail call");
-        return nullptr;
     }
 
     const char* failReason      = nullptr;
@@ -13622,13 +13619,12 @@ void Compiler::fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt)
     }
 }
 
-/*****************************************************************************
- *
- *  Morph the statements of the given block.
- *  This function should be called just once for a block. Use fgMorphBlockStmt()
- *  for reentrant calls.
- */
-
+//------------------------------------------------------------------------
+// fgMorphStmts: Morph all statements in a block
+//
+// Arguments:
+//    block - block in question
+//
 void Compiler::fgMorphStmts(BasicBlock* block)
 {
     fgRemoveRestOfBlock = false;
@@ -13812,36 +13808,65 @@ void Compiler::fgMorphStmts(BasicBlock* block)
     fgRemoveRestOfBlock = false;
 }
 
-/*****************************************************************************
- *
- *  Morph the blocks of the method.
- *  Returns true if the basic block list is modified.
- *  This function should be called just once.
- */
-
-void Compiler::fgMorphBlocks()
+//------------------------------------------------------------------------
+// fgMorphBlock: Morph a basic block
+//
+// Arguments:
+//    block - block in question
+//
+void Compiler::fgMorphBlock(BasicBlock* block)
 {
-#ifdef DEBUG
-    if (verbose)
+    JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
+
+    if (optLocalAssertionProp)
     {
-        printf("\n*************** In fgMorphBlocks()\n");
+        // Clear out any currently recorded assertion candidates
+        // before processing each basic block,
+        // also we must  handle QMARK-COLON specially
+        //
+        optAssertionReset(0);
     }
-#endif
 
-    /* Since fgMorphTree can be called after various optimizations to re-arrange
-     * the nodes we need a global flag to signal if we are during the one-pass
-     * global morphing */
+    // Make the current basic block address available globally.
+    compCurBB = block;
 
+    // Process all statement trees in the basic block.
+    fgMorphStmts(block);
+
+    // Do we need to merge the result of this block into a single return block?
+    if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+    {
+        if ((genReturnBB != nullptr) && (genReturnBB != block))
+        {
+            fgMergeBlockReturn(block);
+        }
+    }
+
+    compCurBB = nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgMorphBlocks: Morph all blocks in the method
+//
+// Returns:
+//   Suitable phase status.
+//
+// Note:
+//   Morph almost always changes IR, so we don't actually bother to
+//   track if it made any changees.
+//
+PhaseStatus Compiler::fgMorphBlocks()
+{
+    // This is the one and only global morph phase
+    //
     fgGlobalMorph = true;
 
-    //
     // Local assertion prop is enabled if we are optimized
     //
     optLocalAssertionProp = opts.OptimizationEnabled();
 
     if (optLocalAssertionProp)
     {
-        //
         // Initialize for local assertion prop
         //
         optAssertionInit(true);
@@ -13865,53 +13890,16 @@ void Compiler::fgMorphBlocks()
         fgEnsureFirstBBisScratch();
     }
 
-    /*-------------------------------------------------------------------------
-     * Process all basic blocks in the function
-     */
-
-    BasicBlock* block = fgFirstBB;
-    noway_assert(block);
-
-    do
+    // Morph all blocks.
+    //
+    // Note morph can add blocks downstream from the current block,
+    // and alter (but not null out) the current block's bbNext;
+    // this iterator ensures they all get visited.
+    //
+    for (BasicBlock* block : Blocks())
     {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nMorphing " FMT_BB " of '%s'\n", block->bbNum, info.compFullName);
-        }
-#endif
-
-        if (optLocalAssertionProp)
-        {
-            //
-            // Clear out any currently recorded assertion candidates
-            // before processing each basic block,
-            // also we must  handle QMARK-COLON specially
-            //
-            optAssertionReset(0);
-        }
-
-        // Make the current basic block address available globally.
-        compCurBB = block;
-
-        // Process all statement trees in the basic block.
-        fgMorphStmts(block);
-
-        // Do we need to merge the result of this block into a single return block?
-        if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
-        {
-            if ((genReturnBB != nullptr) && (genReturnBB != block))
-            {
-                fgMergeBlockReturn(block);
-            }
-        }
-
-        block = block->Next();
-    } while (block != nullptr);
-
-    // We are done with the global morphing phase
-    fgGlobalMorph = false;
-    compCurBB     = nullptr;
+        fgMorphBlock(block);
+    }
 
     // Under OSR, we no longer need to specially protect the original method entry
     //
@@ -13927,12 +13915,12 @@ void Compiler::fgMorphBlocks()
         fgEntryBB = nullptr;
     }
 
-#ifdef DEBUG
-    if (verboseTrees)
-    {
-        fgDispBasicBlocks(true);
-    }
-#endif
+    // We are done with the global morphing phase
+    //
+    fgGlobalMorph = false;
+    compCurBB     = nullptr;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
@@ -15362,108 +15350,6 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
     }
 
 #endif // FEATURE_IMPLICIT_BYREFS
-}
-
-//------------------------------------------------------------------------
-// fgCheckStmtAfterTailCall: check that statements after the tail call stmt
-// candidate are in one of expected forms, that are desctibed below.
-//
-// Return Value:
-//    'true' if stmts are in the expected form, else 'false'.
-//
-bool Compiler::fgCheckStmtAfterTailCall()
-{
-
-    // For void calls, we would have created a GT_CALL in the stmt list.
-    // For non-void calls, we would have created a GT_RETURN(GT_CAST(GT_CALL)).
-    // For calls returning structs, we would have a void call, followed by a void return.
-    // For debuggable code, it would be an assignment of the call to a temp
-    // We want to get rid of any of this extra trees, and just leave
-    // the call.
-    Statement* callStmt = fgMorphStmt;
-
-    Statement* nextMorphStmt = callStmt->GetNextStmt();
-
-    // Check that the rest stmts in the block are in one of the following pattern:
-    //  1) ret(void)
-    //  2) ret(cast*(callResultLclVar))
-    //  3) lclVar = callResultLclVar, the actual ret(lclVar) in another block
-    //  4) nop
-    if (nextMorphStmt != nullptr)
-    {
-        GenTree* callExpr = callStmt->GetRootNode();
-        if (!callExpr->OperIs(GT_STORE_LCL_VAR))
-        {
-            // The next stmt can be GT_RETURN(TYP_VOID) or GT_RETURN(lclVar),
-            // where lclVar was return buffer in the call for structs or simd.
-            Statement* retStmt = nextMorphStmt;
-            GenTree*   retExpr = retStmt->GetRootNode();
-            noway_assert(retExpr->gtOper == GT_RETURN);
-
-            nextMorphStmt = retStmt->GetNextStmt();
-        }
-        else
-        {
-            noway_assert(callExpr->OperIs(GT_STORE_LCL_VAR));
-            unsigned callResultLclNumber = callExpr->AsLclVar()->GetLclNum();
-
-#if FEATURE_TAILCALL_OPT_SHARED_RETURN
-
-            // We can have a chain of assignments from the call result to
-            // various inline return spill temps. These are ok as long
-            // as the last one ultimately provides the return value or is ignored.
-            //
-            // And if we're returning a small type we may see a cast
-            // on the source side.
-            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR, GT_NOP)))
-            {
-                if (nextMorphStmt->GetRootNode()->OperIs(GT_NOP))
-                {
-                    nextMorphStmt = nextMorphStmt->GetNextStmt();
-                    continue;
-                }
-                Statement* moveStmt = nextMorphStmt;
-                GenTree*   moveExpr = nextMorphStmt->GetRootNode();
-
-                // Tunnel through any casts on the source side.
-                GenTree* moveSource = moveExpr->AsLclVar()->Data();
-                while (moveSource->OperIs(GT_CAST))
-                {
-                    noway_assert(!moveSource->gtOverflow());
-                    moveSource = moveSource->gtGetOp1();
-                }
-                noway_assert(moveSource->OperIsLocal());
-
-                // Verify we're just passing the value from one local to another
-                // along the chain.
-                const unsigned srcLclNum = moveSource->AsLclVarCommon()->GetLclNum();
-                noway_assert(srcLclNum == callResultLclNumber);
-                const unsigned dstLclNum = moveExpr->AsLclVar()->GetLclNum();
-                callResultLclNumber      = dstLclNum;
-
-                nextMorphStmt = moveStmt->GetNextStmt();
-            }
-            if (nextMorphStmt != nullptr)
-#endif
-            {
-                Statement* retStmt = nextMorphStmt;
-                GenTree*   retExpr = nextMorphStmt->GetRootNode();
-                noway_assert(retExpr->gtOper == GT_RETURN);
-
-                GenTree* treeWithLcl = retExpr->gtGetOp1();
-                while (treeWithLcl->gtOper == GT_CAST)
-                {
-                    noway_assert(!treeWithLcl->gtOverflow());
-                    treeWithLcl = treeWithLcl->gtGetOp1();
-                }
-
-                noway_assert(callResultLclNumber == treeWithLcl->AsLclVarCommon()->GetLclNum());
-
-                nextMorphStmt = retStmt->GetNextStmt();
-            }
-        }
-    }
-    return nextMorphStmt == nullptr;
 }
 
 //------------------------------------------------------------------------

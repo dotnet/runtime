@@ -23,6 +23,7 @@ namespace System.Dynamic
     /// If a method is not overridden then the <see cref="DynamicObject"/> does not directly support
     /// that behavior and the call site will determine how the binding should be performed.
     /// </summary>
+    [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
     public class DynamicObject : IDynamicMetaObjectProvider
     {
         /// <summary>
@@ -205,6 +206,7 @@ namespace System.Dynamic
 
         #region MetaDynamic
 
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         private sealed class MetaDynamic : DynamicMetaObject
         {
             internal MetaDynamic(Expression expression, DynamicObject value)
@@ -855,6 +857,7 @@ namespace System.Dynamic
             // is only used by DynamicObject.GetMember--it is not expected to
             // (and cannot) implement binding semantics. It is just so the DO
             // can use the Name and IgnoreCase properties.
+            [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
             private sealed class GetBinderAdapter : GetMemberBinder
             {
                 internal GetBinderAdapter(InvokeMemberBinder binder)
