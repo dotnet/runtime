@@ -42,6 +42,7 @@ namespace ILLink.Shared.DataFlow
 		where TRegion : IRegion<TRegion>
 	{
 
+		// Represents an edge in the control flow graph, from a source to a destination basic block.
 		public readonly struct ControlFlowBranch : IEquatable<ControlFlowBranch>
 		{
 			public readonly TBlock Source;

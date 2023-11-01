@@ -48,7 +48,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 
 		// The initial value of the local dataflow is the empty local state (no tracked assignments),
-		// with a feature context that must be specified by the derived class.
+		// with an initial context that must be specified by the derived class.
 		protected LocalDataFlowAnalysis (OperationBlockAnalysisContext context, IOperation operationBlock, TContext initialContext)
 			: base (GetLatticeAndEntryValue (initialContext, out var entryValue), entryValue)
 		{

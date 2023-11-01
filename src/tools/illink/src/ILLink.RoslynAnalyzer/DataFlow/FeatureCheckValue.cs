@@ -7,9 +7,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 {
 	// Represents the feature conditions checked in a conditional expression,
 	// such as
-	//     Debug.Assert (RuntimeFeatures.IsDynamicCodeSupport)
+	//     Debug.Assert (RuntimeFeatures.IsDynamicCodeSupported)
 	// or
 	//     if (!RuntimeFeatures.IsDynamicCodeSupported)
+	// For now, this is only designed to track the built-in "features"/"capabilities"
+	// like RuntimeFeatures.IsDynamicCodeSupported, where a true return value
+	// indicates that a feature/capability is available.
 	public record struct FeatureCheckValue : INegate<FeatureCheckValue>
 	{
 		public ValueSet<string> EnabledFeatures;

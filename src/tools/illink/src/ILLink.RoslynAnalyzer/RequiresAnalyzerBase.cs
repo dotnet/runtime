@@ -300,6 +300,13 @@ namespace ILLink.RoslynAnalyzer
 		/// <returns>True if the requirements to run the analyzer are met; otherwise, returns false</returns>
 		internal abstract bool IsAnalyzerEnabled (AnalyzerOptions options);
 
+		// Check whether a given property serves as a check for the "feature" or "capability" associated with the attribute
+		// understood by this analyzer. For now, this is only designed to support checks like
+		// RuntimeFeatures.IsDynamicCodeSupported, where a true return value indicates that the feature is supported.
+		// This doesn't support more general cases such as:
+		// - false return value indicating that a feature is supported
+		// - feature settings supplied by the project
+		// - custom feature checks defined in library code
 		internal virtual bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) => false;
 
 		internal bool CheckAndCreateRequiresDiagnostic (

@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
-	public class FeatureSwitchDataFlow
+	public class FeatureCheckDataFlow
 	{
 		public static void Main ()
 		{
