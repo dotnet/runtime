@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Debug.Assert(displayString.Length > 0);
             if (char.IsLower(displayString[0]))
             {
-                displayString = char.ToUpper(displayString[0]) + displayString.Substring(1);
+                displayString = char.ToUpperInvariant(displayString[0]) + displayString.Substring(1);
             }
 
             if (displayString.Contains("."))
