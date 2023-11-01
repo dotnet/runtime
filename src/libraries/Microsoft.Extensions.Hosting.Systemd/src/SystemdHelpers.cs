@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// <summary>
     /// Helper methods for systemd Services.
     /// </summary>
-    public static partial class SystemdHelpers
+    public static class SystemdHelpers
     {
         private static readonly bool _isSystemdService = GetIsSystemdService();
 
