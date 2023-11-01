@@ -4797,8 +4797,9 @@ public:
 
     FoldResult fgFoldConditional(BasicBlock* block);
 
+    PhaseStatus fgMorphBlocks();
+    void fgMorphBlock(BasicBlock* block);
     void fgMorphStmts(BasicBlock* block);
-    void fgMorphBlocks();
 
     void fgMergeBlockReturn(BasicBlock* block);
 
@@ -5979,7 +5980,6 @@ private:
     bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
 
 #endif
-    bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
     bool fgCanTailCallViaJitHelper(GenTreeCall* call);
     void fgMorphTailCallViaJitHelper(GenTreeCall* call);

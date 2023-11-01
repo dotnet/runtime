@@ -1041,7 +1041,7 @@ namespace ILCompiler.Dataflow
                         HandleStoreField(method, offset, fieldValue, DereferenceValue(method, offset, source, locals, ref ipState));
                         break;
                     case IValueWithStaticType valueWithStaticType:
-                        if (valueWithStaticType.StaticType is not null && FlowAnnotations.IsTypeInterestingForDataflow(valueWithStaticType.StaticType))
+                        if (valueWithStaticType.StaticType is not null && FlowAnnotations.IsTypeInterestingForDataflow(valueWithStaticType.StaticType.Value.Type))
                             throw new InvalidOperationException(MessageContainer.CreateErrorMessage(
                                 $"Unhandled StoreReference call. Unhandled attempt to store a value in {value} of type {value.GetType()}.",
                                 (int)DiagnosticId.LinkerUnexpectedError,

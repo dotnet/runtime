@@ -40,17 +40,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        private static RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
-        {
-            if (RuntimeAugments.IsGenericType(typeHandle))
-            {
-                return RuntimeAugments.GetGenericInstantiation(typeHandle, out typeArgumentsHandles);
-            }
-
-            typeArgumentsHandles = null;
-            return typeHandle;
-        }
-
         private static RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
@@ -254,7 +243,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override MethodBaseInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            MethodBase methodInfo = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBase methodInfo = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
             // Validate constraints first. This is potentially useless work if the method already exists, but it prevents bad
             // inputs to reach the type loader (we don't have support to e.g. represent pointer types within the type loader)
@@ -870,7 +859,7 @@ namespace Internal.Reflection.Execution
                             }
                         }
 
-                        IntPtr cctorContext = TryGetStaticClassConstructionContext(declaringTypeHandle);
+                        IntPtr cctorContext = TypeLoaderEnvironment.GetStaticClassConstructionContext(declaringTypeHandle);
 
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                             (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, fieldAccessMetadata.Flags, fieldTypeHandle) :
@@ -943,15 +932,6 @@ namespace Internal.Reflection.Execution
         public sealed override bool TryGetFieldFromHandleAndType(RuntimeFieldHandle runtimeFieldHandle, RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
             return TryGetFieldFromHandle(runtimeFieldHandle, out _, out fieldHandle);
-        }
-
-        /// <summary>
-        /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
-        /// </summary>
-        /// <param name="typeHandle">MethodTable of the type to look up</param>
-        internal static unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
-        {
-            return TypeLoaderEnvironment.TryGetStaticClassConstructionContext(typeHandle);
         }
 
         private struct MethodParametersInfo

@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Collections\CaseInsensitiveComparer.cs" />
     <Compile Include="System\Collections\CaseInsensitiveHashCodeProvider.cs" />
@@ -16,8 +19,10 @@
     <Compile Include="$(CoreLibSharedDir)System\Collections\KeyValuePairs.cs"
              Link="Common\System\Collections\KeyValuePairs.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+
 </Project>

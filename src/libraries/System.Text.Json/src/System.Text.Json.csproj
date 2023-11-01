@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -6,6 +7,7 @@
     <SkipIntellisenseNoWarnCS1591>true</SkipIntellisenseNoWarnCS1591>
     <NoWarn>$(NoWarn);CS8969</NoWarn>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides high-performance and low-allocating types that serialize objects to JavaScript Object Notation (JSON) text and deserialize JSON text to objects, with UTF-8 support built-in. Also provides types to read and write JSON text encoded as UTF-8, and to create an in-memory document object model (DOM), that is read-only, for random access of the JSON elements within a structured view of the data.
 
@@ -414,4 +416,5 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
     <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
   </ItemGroup>
+
 </Project>
