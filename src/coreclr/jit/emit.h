@@ -777,7 +777,8 @@ protected:
         opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
         insOpts  _idInsOpt : 6;    // options for instructions
         unsigned _idLclVar : 1;    // access a local on stack
-        unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
+        unsigned _idLclVarPair : 1; // carries information for 2 GC lcl vars.
+        unsigned _testPad : 3;     // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
@@ -821,7 +822,7 @@ protected:
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
-#define ID_EXTRA_BITFIELD_BITS (18)
+#define ID_EXTRA_BITFIELD_BITS (21)
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
