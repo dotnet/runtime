@@ -20,11 +20,11 @@ function setup(linkerSetup) {
     const pthreadReplacements = {};
     const dotnet_replacements = {
         fetch: globalThis.fetch,
+        ENVIRONMENT_IS_WORKER,
         require,
         updateMemoryViews,
         pthreadReplacements,
         scriptDirectory,
-        noExitRuntime
     };
     // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
     #if USE_PTHREADS
@@ -35,12 +35,22 @@ function setup(linkerSetup) {
     const ENVIRONMENT_IS_PTHREAD = false;
     #endif
 
+    ENVIRONMENT_IS_WORKER = dotnet_replacements.ENVIRONMENT_IS_WORKER;
+    Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
+    updateMemoryViews = dotnet_replacements.updateMemoryViews;
+    fetch = dotnet_replacements.fetch;
+    require = dotnet_replacements.require;
+    _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
+    #if USE_PTHREADS
+    PThread.loadWasmModuleToWorker = pthreadReplacements.loadWasmModuleToWorker;
+    PThread.threadInitTLS = pthreadReplacements.threadInitTLS;
+    PThread.allocateUnusedWorker = pthreadReplacements.allocateUnusedWorker;
+    #endif
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
         quit_, ExitStatus,
         ...linkerSetup
     });
-    Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
 
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
@@ -51,17 +61,6 @@ function setup(linkerSetup) {
         Module.__dotnet_runtime.configureEmscriptenStartup(Module);
         #if USE_PTHREADS
     }
-    #endif
-
-    updateMemoryViews = dotnet_replacements.updateMemoryViews;
-    noExitRuntime = dotnet_replacements.noExitRuntime;
-    fetch = dotnet_replacements.fetch;
-    require = dotnet_replacements.require;
-    _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
-    #if USE_PTHREADS
-    PThread.loadWasmModuleToWorker = pthreadReplacements.loadWasmModuleToWorker;
-    PThread.threadInitTLS = pthreadReplacements.threadInitTLS;
-    PThread.allocateUnusedWorker = pthreadReplacements.allocateUnusedWorker;
     #endif
 }
 

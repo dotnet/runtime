@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-static unsafe class UnsafeAccessorsTests
+public static unsafe class UnsafeAccessorsTests
 {
     const string PrivateStatic = nameof(PrivateStatic);
     const string Private = nameof(Private);
@@ -43,7 +43,7 @@ static unsafe class UnsafeAccessorsTests
         private void _mvv() {}
 
         // The "init" is important to have here - custom modifier test.
-        // The signature of set_Prop is 
+        // The signature of set_Prop is
         // instance void modreq([System.Runtime]System.Runtime.CompilerServices.IsExternalInit) set_Prop ( string 'value')
         private string Prop { get; init; }
 
@@ -83,6 +83,33 @@ static unsafe class UnsafeAccessorsTests
         private string _m(string s, ref string sr, in string si) => s;
 
         public string GetFieldValue() => _f;
+    }
+
+    class UserDataGenericClass<T>
+    {
+        public const string StaticGenericFieldName = nameof(_GF);
+        public const string GenericFieldName = nameof(_gf);
+        public const string StaticGenericMethodName = nameof(_GM);
+        public const string GenericMethodName = nameof(_gm);
+
+        public const string StaticFieldName = nameof(_F);
+        public const string FieldName = nameof(_f);
+        public const string StaticMethodName = nameof(_M);
+        public const string MethodName = nameof(_m);
+
+        private static T _GF;
+        private T _gf;
+
+        private static string _F = PrivateStatic;
+        private string _f;
+
+        public UserDataGenericClass() { _f = Private; }
+
+        private static string _GM(T s, ref T sr, in T si) => typeof(T).ToString();
+        private string _gm(T s, ref T sr, in T si) => typeof(T).ToString();
+
+        private static string _M(string s, ref string sr, in string si) => s;
+        private string _m(string s, ref string sr, in string si) => s;
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
@@ -189,6 +216,23 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/92633")]
+    public static void Verify_AccessStaticFieldGenericClass()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldGenericClass)}");
+
+        Assert.Equal(PrivateStatic, GetPrivateStaticFieldInt((UserDataGenericClass<int>)null));
+
+        Assert.Equal(PrivateStatic, GetPrivateStaticFieldString((UserDataGenericClass<string>)null));
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataGenericClass<int>.StaticFieldName)]
+        extern static ref string GetPrivateStaticFieldInt(UserDataGenericClass<int> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataGenericClass<string>.StaticFieldName)]
+        extern static ref string GetPrivateStaticFieldString(UserDataGenericClass<string> d);
+    }
+
+    [Fact]
     public static void Verify_AccessStaticFieldValue()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldValue)}");
@@ -213,6 +257,23 @@ static unsafe class UnsafeAccessorsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static ref string GetPrivateField(ref UserDataValue d);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/92633")]
+    public static void Verify_AccessFieldGenericClass()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessFieldGenericClass)}");
+
+        Assert.Equal(Private, GetPrivateFieldInt(new UserDataGenericClass<int>()));
+
+        Assert.Equal(Private, GetPrivateFieldString(new UserDataGenericClass<string>()));
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataGenericClass<int>.FieldName)]
+        extern static ref string GetPrivateFieldInt(UserDataGenericClass<int> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataGenericClass<string>.FieldName)]
+        extern static ref string GetPrivateFieldString(UserDataGenericClass<string> d);
     }
 
     [Fact]

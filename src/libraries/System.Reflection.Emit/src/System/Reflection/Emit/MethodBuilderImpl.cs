@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
@@ -20,10 +21,13 @@ namespace System.Reflection.Emit
         private MethodAttributes _attributes;
         private MethodImplAttributes _methodImplFlags;
         private GenericTypeParameterBuilderImpl[]? _typeParameters;
+        private ILGeneratorImpl? _ilGenerator;
+        private bool _initLocals;
 
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal ParameterBuilderImpl[]? _parameters;
+        internal MethodDefinitionHandle _handle;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
@@ -46,7 +50,12 @@ namespace System.Reflection.Emit
             }
 
             _methodImplFlags = MethodImplAttributes.IL;
+            _initLocals = true;
         }
+
+        internal int ParameterCount => _parameterTypes == null? 0 : _parameterTypes.Length;
+
+        internal ILGeneratorImpl? ILGeneratorImpl => _ilGenerator;
 
         internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
             _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions), GetGenericArguments().Length, !IsStatic);
@@ -68,7 +77,14 @@ namespace System.Reflection.Emit
 
             return convention;
         }
-        protected override bool InitLocalsCore { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        protected override bool InitLocalsCore
+        {
+            get { ThrowIfGeneric(); return _initLocals; }
+            set { ThrowIfGeneric(); _initLocals = value; }
+        }
+
+        private void ThrowIfGeneric() { if (IsGenericMethod && !IsGenericMethodDefinition) throw new InvalidOperationException(); }
+
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
             if (_typeParameters != null)
@@ -98,7 +114,28 @@ namespace System.Reflection.Emit
             return parameter;
         }
 
-        protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
+        protected override ILGenerator GetILGeneratorCore(int size)
+        {
+            if (IsGenericMethod && !IsGenericMethodDefinition)
+            {
+                throw new InvalidOperationException();
+            }
+
+            if ((_methodImplFlags & MethodImplAttributes.CodeTypeMask) != MethodImplAttributes.IL ||
+                (_methodImplFlags & MethodImplAttributes.Unmanaged) != 0 ||
+                (_attributes & MethodAttributes.PinvokeImpl) != 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
+            }
+
+            if ((_attributes & MethodAttributes.Abstract) != 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
+            }
+
+            return _ilGenerator ??= new ILGeneratorImpl(this, size);
+        }
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             // Handle pseudo custom attributes
@@ -167,7 +204,7 @@ namespace System.Reflection.Emit
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;
         public override bool IsSecurityTransparent => false;
-        public override int MetadataToken { get => throw new NotImplementedException(); }
+        public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override Type? ReflectedType { get => throw new NotImplementedException(); }
         public override ParameterInfo ReturnParameter { get => throw new NotImplementedException(); }
@@ -190,8 +227,7 @@ namespace System.Reflection.Emit
         public override MethodImplAttributes GetMethodImplementationFlags()
             => _methodImplFlags;
 
-        public override ParameterInfo[] GetParameters()
-            => throw new NotImplementedException();
+        public override ParameterInfo[] GetParameters() => throw new NotImplementedException();
 
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
              => throw new NotSupportedException(SR.NotSupported_DynamicModule);
@@ -199,8 +235,8 @@ namespace System.Reflection.Emit
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
-        [RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override MethodInfo MakeGenericMethod(params System.Type[] typeArguments)
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
             => throw new NotImplementedException();
     }
 }

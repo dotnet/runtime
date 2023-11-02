@@ -279,7 +279,7 @@
 #elif defined(TARGET_LOONGARCH64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
 #elif defined(TARGET_RISCV64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5641
+#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5064
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -707,28 +707,6 @@ inline size_t unsigned_abs(__int64 x)
 }
 #endif // __APPLE__
 #endif // TARGET_64BIT
-
-/*****************************************************************************/
-
-#define HISTOGRAM_MAX_SIZE_COUNT 64
-
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-
-class Histogram
-{
-public:
-    Histogram(const unsigned* const sizeTable);
-
-    void dump(FILE* output);
-    void record(unsigned size);
-
-private:
-    unsigned              m_sizeCount;
-    const unsigned* const m_sizeTable;
-    unsigned              m_counts[HISTOGRAM_MAX_SIZE_COUNT];
-};
-
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /*****************************************************************************/
 

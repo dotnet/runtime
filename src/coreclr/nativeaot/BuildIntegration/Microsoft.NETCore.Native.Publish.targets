@@ -93,7 +93,10 @@
     <!-- replace apphost with binary we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" DestinationFolder="$(PublishDir)" />
+  </Target>
 
+  <Target Name="_CopyAotSymbols" AfterTargets="Publish"
+          Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
     <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb" />
 

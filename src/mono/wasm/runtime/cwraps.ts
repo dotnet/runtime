@@ -118,7 +118,6 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_adjust_abort_count", "number", ["number", "number"]],
     [true, "mono_jiterp_register_jit_call_thunk", "void", ["number", "number"]],
     [true, "mono_jiterp_type_get_raw_value_size", "number", ["number"]],
-    [true, "mono_jiterp_update_jit_call_dispatcher", "void", ["number"]],
     [true, "mono_jiterp_get_signature_has_this", "number", ["number"]],
     [true, "mono_jiterp_get_signature_return_type", "number", ["number"]],
     [true, "mono_jiterp_get_signature_param_count", "number", ["number"]],
@@ -147,9 +146,13 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_tlqueue_next", "number", ["number"]],
     [true, "mono_jiterp_tlqueue_add", "number", ["number", "number"]],
     [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
+    [true, "mono_jiterp_begin_catch", "void", ["number"]],
+    [true, "mono_jiterp_end_catch", "void", []],
+    [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
+    [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
 
     ...diagnostics_cwraps,
-    ...legacy_interop_cwraps
+    ...legacy_interop_cwraps,
 ];
 
 export interface t_LegacyCwraps {
@@ -259,7 +262,6 @@ export interface t_Cwraps {
     mono_jiterp_get_options_version(): number;
     mono_jiterp_adjust_abort_count(opcode: number, delta: number): number;
     mono_jiterp_register_jit_call_thunk(cinfo: number, func: number): void;
-    mono_jiterp_update_jit_call_dispatcher(fn: number): void;
     mono_jiterp_get_signature_has_this(sig: VoidPtr): number;
     mono_jiterp_get_signature_return_type(sig: VoidPtr): MonoType;
     mono_jiterp_get_signature_param_count(sig: VoidPtr): number;
@@ -291,6 +293,10 @@ export interface t_Cwraps {
     // returns new size of queue after add
     mono_jiterp_tlqueue_add(queue: number, value: VoidPtr): number;
     mono_jiterp_tlqueue_clear(queue: number): void;
+    mono_jiterp_begin_catch(ptr: number): void;
+    mono_jiterp_end_catch(): void;
+    mono_interp_pgo_load_table(buffer: VoidPtr, bufferSize: number): number;
+    mono_interp_pgo_save_table(buffer: VoidPtr, bufferSize: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

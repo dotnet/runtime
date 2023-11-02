@@ -158,7 +158,7 @@ namespace System.Diagnostics.Tests
                 results.Add(sw.ElapsedMilliseconds);
             }
 
-            Assert.True(false, $"All {AllowedTries} fell outside of {WindowFactor} window of {SleepTime} sleep time: {string.Join(", ", results)}");
+            Assert.Fail($"All {AllowedTries} fell outside of {WindowFactor} window of {SleepTime} sleep time: {string.Join(", ", results)}");
         }
 
         private static void Sleep(int milliseconds)

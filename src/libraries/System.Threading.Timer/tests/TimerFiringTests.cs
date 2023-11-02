@@ -17,7 +17,6 @@ namespace System.Threading.Tests
         internal const int MaxPositiveTimeoutInMs = 30000;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Timer_Fires_After_DueTime_Ellapses()
         {
             AutoResetEvent are = new AutoResetEvent(false);
@@ -32,7 +31,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Timer_Fires_AndPassesStateThroughCallback()
         {
             AutoResetEvent are = new AutoResetEvent(false);
@@ -49,7 +47,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Timer_Fires_AndPassesNullStateThroughCallback()
         {
             AutoResetEvent are = new AutoResetEvent(false);
@@ -125,7 +122,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Timer_CanDisposeSelfInCallback()
         {
             Timer t = null;
@@ -153,7 +149,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void NonRepeatingTimer_ThatHasAlreadyFired_CanChangeAndFireAgain()
         {
             AutoResetEvent are = new AutoResetEvent(false);
@@ -168,7 +163,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void MultpleTimers_PeriodicTimerIsntBlockedByBlockedCallback()
         {
             int callbacks = 2;
@@ -189,7 +183,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void ManyTimers_EachTimerDoesFire()
         {
             int maxTimers = 10000;
@@ -207,7 +200,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Timer_Constructor_CallbackOnly_Change()
         {
             var e = new ManualResetEvent(false);
@@ -225,7 +217,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Timer_Dispose_WaitHandle()
         {
             int tickCount = 0;
@@ -355,7 +346,7 @@ namespace System.Threading.Tests
                             sb.Append($"Expected: {result.Key}, Actuals: {string.Join(", ", result.Select(k => k.Value))}");
                         }
 
-                        Assert.True(false, sb.ToString());
+                        Assert.Fail(sb.ToString());
                     }
                 }
                 catch (XunitException) when (tries < 3)
@@ -371,7 +362,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TimersCreatedConcurrentlyOnDifferentThreadsAllFire()
         {
             int processorCount = Environment.ProcessorCount;

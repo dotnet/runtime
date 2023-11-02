@@ -1,7 +1,7 @@
 # Pull Request Guide
 
 ## Contributing Rules
-All contributions to dotnet/runtime repo are made via pull requests (PRs) rather than through direct commits. The pull requests are reviewed and merged by the repository maintainers after a review and approval from at least one area maintainer.
+All contributions to dotnet/runtime repo are made via [pull requests (PRs) from forks of the repo](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) rather than through direct commits or PRs from branches in the dotnet/runtime repo. The pull requests are reviewed and merged by the repository maintainers after a review and approval from at least one area maintainer.
 
 To merge pull requests, you must have write permissions in the repository. If you are a member of the .NET team or have an official partnership you can request access [here](https://repos.opensource.microsoft.com/dotnet/teams/dotnet-corefx/join/).
 

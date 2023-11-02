@@ -78,6 +78,23 @@ namespace ILLink.Shared.TrimAnalysis
 			return returnDamt;
 		}
 
+		public static DynamicallyAccessedMemberTypes GetTypeAnnotation(ITypeSymbol type)
+		{
+			var typeAnnotation = type.GetDynamicallyAccessedMemberTypes ();
+
+			ITypeSymbol? baseType = type.BaseType;
+			while (baseType != null) {
+				typeAnnotation |= baseType.GetDynamicallyAccessedMemberTypes ();
+				baseType = baseType.BaseType;
+			}
+
+			foreach (var interfaceType in type.AllInterfaces) {
+				typeAnnotation |= interfaceType.GetDynamicallyAccessedMemberTypes ();
+			}
+
+			return typeAnnotation;
+		}
+
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 
 		// TODO: This is relatively expensive on the analyzer since it doesn't cache the annotation information

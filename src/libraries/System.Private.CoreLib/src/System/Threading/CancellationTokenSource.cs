@@ -249,7 +249,7 @@ namespace System.Threading
         /// <remarks>
         /// <para>
         /// The associated <see cref="CancellationToken" /> will be notified of the cancellation and will transition to a state where
-        /// <see cref="CancellationToken.IsCancellationRequested"/> returns true. Any callbacks or cancelable operationsregistered
+        /// <see cref="CancellationToken.IsCancellationRequested"/> returns true. Any callbacks or cancelable operations registered
         /// with the <see cref="CancellationToken"/>  will be executed.
         /// </para>
         /// <para>

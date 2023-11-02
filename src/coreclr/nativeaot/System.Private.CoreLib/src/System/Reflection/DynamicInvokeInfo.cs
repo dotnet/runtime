@@ -61,7 +61,7 @@ namespace System.Reflection
 
             // _isValueTypeInstanceMethod = method.DeclaringType?.IsValueType ?? false;
 
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
 
             _argumentCount = parameters.Length;
 
@@ -81,7 +81,7 @@ namespace System.Reflection
                     }
                     Debug.Assert(!argumentType.IsByRef);
 
-                    EETypePtr eeArgumentType = argumentType.GetEEType();
+                    EETypePtr eeArgumentType = argumentType.TypeHandle.ToEETypePtr();
 
                     if (eeArgumentType.IsValueType)
                     {
@@ -127,7 +127,7 @@ namespace System.Reflection
                 }
                 Debug.Assert(!returnType.IsByRef);
 
-                EETypePtr eeReturnType = returnType.GetEEType();
+                EETypePtr eeReturnType = returnType.TypeHandle.ToEETypePtr();
 
                 if (eeReturnType.IsValueType)
                 {
@@ -579,7 +579,7 @@ namespace System.Reflection
 
         private unsafe object? GetCoercedDefaultValue(int index, in ArgumentInfo argumentInfo)
         {
-            object? defaultValue = Method.GetParametersNoCopy()[index].DefaultValue;
+            object? defaultValue = Method.GetParametersAsSpan()[index].DefaultValue;
             if (defaultValue == DBNull.Value)
                 throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
 
@@ -769,13 +769,11 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
-                    {
-                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
-                    }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 
@@ -806,13 +804,11 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
-                    {
-                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
-                    }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 

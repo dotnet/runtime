@@ -532,6 +532,16 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 return next;
             }
         }
+
+        if (binOp->OperIs(GT_SUB))
+        {
+            // Attempt to optimize for umsubl/smsubl.
+            GenTree* next = TryLowerAddSubToMulLongOp(binOp);
+            if (next != nullptr)
+            {
+                return next;
+            }
+        }
 #endif
     }
 
@@ -1600,11 +1610,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     for (N = 1; N < argCnt - 1; N++)
     {
         opN = node->Op(N + 1);
-        idx = comp->gtNewIconNode(N);
-        BlockRange().InsertBefore(opN, idx);
 
+        // Place the insert as early as possible to avoid creating a lot of long lifetimes.
+        GenTree* insertionPoint = LIR::LastNode(tmp1, opN);
+        idx                     = comp->gtNewIconNode(N);
         tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
-        BlockRange().InsertAfter(opN, tmp1);
+        BlockRange().InsertAfter(insertionPoint, idx, tmp1);
         LowerNode(tmp1);
     }
 
@@ -2750,6 +2761,188 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         }
     }
 }
+
+//----------------------------------------------------------------------------------------------
+// TryLowerAddSubToCombinedMulOp: Attempt to convert ADD and SUB nodes to a combined multiply
+// and add/sub operation. Conversion can only happen if the operands to the
+// operation meet the following criteria:
+// - One op is a MUL_LONG containing two integer operands, and the other is a long.
+//
+// Arguments:
+//     op - The ADD or SUB node to attempt an optimisation on.
+//
+// Returns:
+//     A pointer to the next node to evaluate. On no operation, returns nullptr.
+//
+GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
+{
+    assert(op->OperIs(GT_ADD, GT_SUB));
+
+    if (!comp->opts.OptimizationEnabled())
+        return nullptr;
+
+    if (!JitConfig.EnableHWIntrinsic())
+        return nullptr;
+
+    if (op->isContained())
+        return nullptr;
+
+    if (!varTypeIsIntegral(op))
+        return nullptr;
+
+    if ((op->gtFlags & GTF_SET_FLAGS) != 0)
+        return nullptr;
+
+    if (op->gtOverflow())
+        return nullptr;
+
+    GenTree* op1 = op->gtGetOp1();
+    GenTree* op2 = op->gtGetOp2();
+
+    // Select which operation is the MUL_LONG and which is the add value.
+    GenTreeOp* mul;
+    GenTree*   addVal;
+    if (op1->OperIs(GT_MUL_LONG))
+    {
+        // For subtractions, the multiply must be second, as [u/s]msubl performs:
+        // addValue - (mulValue1 * mulValue2)
+        if (op->OperIs(GT_SUB))
+        {
+            return nullptr;
+        }
+
+        mul    = op1->AsOp();
+        addVal = op2;
+    }
+    else if (op2->OperIs(GT_MUL_LONG))
+    {
+        mul    = op2->AsOp();
+        addVal = op1;
+    }
+    else
+    {
+        // Exit if neither operation are GT_MUL_LONG.
+        return nullptr;
+    }
+
+    // Additional value must be of long size.
+    if (!addVal->TypeIs(TYP_LONG))
+        return nullptr;
+
+    // Mul values must both be integers.
+    if (!genActualTypeIsInt(mul->gtOp1) || !genActualTypeIsInt(mul->gtOp2))
+        return nullptr;
+
+    // The multiply must evaluate to the same thing if moved.
+    if (!IsInvariantInRange(mul, op))
+        return nullptr;
+
+    // Create the new node and replace the original.
+    NamedIntrinsic intrinsicId =
+        op->OperIs(GT_ADD) ? NI_ArmBase_Arm64_MultiplyLongAdd : NI_ArmBase_Arm64_MultiplyLongSub;
+    GenTreeHWIntrinsic* outOp = comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, addVal, intrinsicId);
+    outOp->SetSimdBaseJitType(mul->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG);
+
+    BlockRange().InsertAfter(op, outOp);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(op, &use))
+    {
+        use.ReplaceWith(outOp);
+    }
+    else
+    {
+        outOp->SetUnusedValue();
+    }
+
+    BlockRange().Remove(mul);
+    BlockRange().Remove(op);
+
+#ifdef DEBUG
+    JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLong[Add/Sub]'.\n");
+    JITDUMP(":\n");
+    DISPTREERANGE(BlockRange(), outOp);
+    JITDUMP("\n");
+#endif
+
+    return outOp;
+}
+
+//----------------------------------------------------------------------------------------------
+// TryLowerNegToCombinedMulOp: Attempt to convert NEG nodes to a combined multiply
+// and negate operation. Conversion can only happen if the operands to the
+// operation meet one of the following criteria:
+// - op1 is a MUL_LONG containing two integer operands.
+//
+// Arguments:
+//     op - The NEG node to attempt an optimisation on.
+//
+// Returns:
+//     A pointer to the next node to evaluate. On no operation, returns nullptr.
+//
+GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
+{
+    assert(op->OperIs(GT_NEG));
+
+    if (!comp->opts.OptimizationEnabled())
+        return nullptr;
+
+    if (!JitConfig.EnableHWIntrinsic())
+        return nullptr;
+
+    if (op->isContained())
+        return nullptr;
+
+    if (!varTypeIsIntegral(op))
+        return nullptr;
+
+    if ((op->gtFlags & GTF_SET_FLAGS) != 0)
+        return nullptr;
+
+    GenTree* op1 = op->gtGetOp1();
+
+    // Ensure the negated operand is a MUL_LONG.
+    if (!op1->OperIs(GT_MUL_LONG))
+        return nullptr;
+
+    // Ensure the MUL_LONG contains two integer parameters.
+    GenTreeOp* mul = op1->AsOp();
+    if (!genActualTypeIsInt(mul->gtOp1) || !genActualTypeIsInt(mul->gtOp2))
+        return nullptr;
+
+    // The multiply must evaluate to the same thing if evaluated at 'op'.
+    if (!IsInvariantInRange(mul, op))
+        return nullptr;
+
+    // Able to optimise, create the new node and replace the original.
+    GenTreeHWIntrinsic* outOp =
+        comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, NI_ArmBase_Arm64_MultiplyLongNeg);
+    outOp->SetSimdBaseJitType(mul->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG);
+
+    BlockRange().InsertAfter(op, outOp);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(op, &use))
+    {
+        use.ReplaceWith(outOp);
+    }
+    else
+    {
+        outOp->SetUnusedValue();
+    }
+
+    BlockRange().Remove(mul);
+    BlockRange().Remove(op);
+
+#ifdef DEBUG
+    JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLongNeg'.\n");
+    JITDUMP(":\n");
+    DISPTREERANGE(BlockRange(), outOp);
+    JITDUMP("\n");
+#endif
+
+    return outOp;
+}
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
@@ -2824,6 +3017,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Extract:
             case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op2));

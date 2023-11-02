@@ -14,6 +14,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Xunit;
 
 namespace Tracing.Tests.EventSourceError
 {
@@ -31,7 +32,8 @@ namespace Tracing.Tests.EventSourceError
         private static readonly ulong GC_HeapDump_Keyword = 0x100000UL;
         private static ManualResetEvent _gcStopReceived = new ManualResetEvent(false);
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // This test validates that if an EventSource generates an error
             // during construction it gets emitted over EventPipe

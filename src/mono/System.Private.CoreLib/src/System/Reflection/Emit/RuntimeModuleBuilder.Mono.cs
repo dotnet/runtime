@@ -296,13 +296,13 @@ namespace System.Reflection.Emit
             return eb;
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className)
         {
             return GetType(className, false, false);
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
@@ -347,7 +347,7 @@ namespace System.Reflection.Emit
             return result;
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             ArgumentException.ThrowIfNullOrEmpty(className);

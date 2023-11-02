@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using ILCompiler;
-using ILCompiler.Dataflow;
 using ILLink.Shared.DataFlow;
 using Internal.TypeSystem;
 
@@ -16,7 +15,7 @@ namespace ILLink.Shared.TrimAnalysis
     /// <summary>
     /// A representation of a field. Typically a result of ldfld.
     /// </summary>
-    internal sealed partial record FieldValue : IValueWithStaticType
+    internal sealed partial record FieldValue
     {
         public FieldValue(FieldDesc field, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
@@ -31,8 +30,6 @@ namespace ILLink.Shared.TrimAnalysis
 
         public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
             => new string[] { Field.GetDisplayName() };
-
-        public TypeDesc? StaticType { get; }
 
         public override SingleValue DeepCopy() => this; // This value is immutable
 

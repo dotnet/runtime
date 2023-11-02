@@ -15,6 +15,11 @@ trigger:
 # and should not be triggerable from a PR.
 pr: none
 
+variables:
+# disable CodeQL here, we have a separate pipeline for it
+- name: Codeql.Enabled
+  value: False
+
 schedules:
 - cron: "0 17 * * 0"
   displayName: Sun at 9:00 AM (UTC-8:00)

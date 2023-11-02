@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>exe</OutputType>
+    <!-- Needed for GCStressIncompatible, CrossGenTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Running Crossgen2 under GCStress takes too long -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -19,8 +20,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="FolderA/FolderA.csproj" />
-    <ProjectReference Include="FolderB/FolderB.csproj" />
+    <ProjectReference Include="FolderA/FolderA.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="FolderB/FolderB.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
   </ItemGroup>
 
   <PropertyGroup>
@@ -39,8 +48,8 @@ $(CLRTestBatchPreCommands)
     echo --targetarch:$(TargetArchitecture)>>%__ResponseFile%
     echo --targetos:$(TargetOS)>>%__ResponseFile%
     echo %scriptPath%\multifolder.dll>>%__ResponseFile%
-    echo %scriptPath%\..\FolderA\FolderA\FolderA.dll>>%__ResponseFile%
-    echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
+    echo %scriptPath%\FolderA.dll>>%__ResponseFile%
+    echo %scriptPath%\FolderB.dll>>%__ResponseFile%
 
     REM Suppress GC stand alone mode for the duration of Crossgen2 execution
     set __gcStandaloneModeToRestore=!DOTNET_GCName!
@@ -90,8 +99,8 @@ $(CLRTestBashPreCommands)
     echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
     echo --targetos:$(TargetOS)>>$__ResponseFile
     echo $__OutputDir/multifolder.dll>>$__ResponseFile
-    echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
-    echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
+    echo $__OutputDir/FolderA.dll>>$__ResponseFile
+    echo $__OutputDir/FolderB.dll>>$__ResponseFile
 
     # Suppress some DOTNET variables for the duration of Crossgen2 execution
     export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation

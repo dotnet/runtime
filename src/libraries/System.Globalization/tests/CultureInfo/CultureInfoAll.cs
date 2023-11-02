@@ -635,13 +635,11 @@ namespace System.Globalization.Tests
             yield return new object[] { 0x2009, new [] { "en-jm" }, "en-JM", "eng", "ENJ", "en-JM", "en-JM" };
             yield return new object[] { 0x241a, new [] { "sr-latn-rs" }, "sr-Latn-RS", "srp", "SRM", "sr-Latn-RS", "sr-Latn-RS" };
             yield return new object[] { 0x2809, new [] { "en-bz" }, "en-BZ", "eng", "ENL", "en-BZ", "en-BZ" };
-            yield return new object[] { 0x281a, new [] { "sr-cyrl-rs" }, "sr-Cyrl-RS", "srp", "SRO", "sr-Cyrl-RS", "sr-Cyrl-RS" };
             yield return new object[] { 0x2c09, new [] { "en-tt" }, "en-TT", "eng", "ENT", "en-TT", "en-TT" };
             yield return new object[] { 0x3009, new [] { "en-zw" }, "en-ZW", "eng", "ENW", "en-ZW", "en-ZW" };
             yield return new object[] { 0x3409, new [] { "en-ph" }, "en-PH", "eng", "ENP", "en-PH", "en-PH" };
             yield return new object[] { 0x4009, new [] { "en-in" }, "en-IN", "eng", "ENN", "en-IN", "en-IN" };
             yield return new object[] { 0x4809, new [] { "en-sg" }, "en-SG", "eng", "ENE", "en-SG", "en-SG" };
-            yield return new object[] { 0x6c1a, new [] { "sr-cyrl" }, "sr-Cyrl-RS", "srp", "SRO", "sr-Cyrl", "sr-Cyrl-RS" };
             yield return new object[] { 0x701a, new [] { "sr-latn" }, "sr-Latn-RS", "srp", "SRM", "sr-Latn", "sr-Latn-RS" };
             yield return new object[] { 0x7804, new [] { "zh" }, "zh-CN", "zho", "CHS", "zh", "zh-CN" };
             yield return new object[] { 0x7c04, new [] { "zh-cht", "zh-hant" }, "zh-HK", "zho", "CHT", "zh-Hant", "zh-HK" };
@@ -654,6 +652,11 @@ namespace System.Globalization.Tests
             yield return new object[] { 0x40404, new [] { "zh-tw_radstr", "zh-tw" }, "zh-TW", "zho", "CHT", "zh-Hant-TW", "zh-TW" };
             yield return new object[] { 0x40411, new [] { "ja-jp_radstr", "ja-jp" }, "ja-JP", "jpn", "JPN", "ja-JP", "ja-JP" };
             yield return new object[] { 0x40c04, new [] { "zh-hk_radstr", "zh-hk" }, "zh-HK", "zho", "ZHH", "zh-Hant-HK", "zh-HK" };
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { 0x281a, new [] { "sr-cyrl-rs" }, "sr-Cyrl-RS", "srp", "SRO", "sr-Cyrl-RS", "sr-Cyrl-RS" };
+                yield return new object[] { 0x6c1a, new [] { "sr-cyrl" }, "sr-Cyrl-RS", "srp", "SRO", "sr-Cyrl", "sr-Cyrl-RS" };
+            }
         }
 
         [Theory]
