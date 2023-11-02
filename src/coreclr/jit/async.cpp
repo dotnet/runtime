@@ -637,11 +637,9 @@ void Async2Transformation::Transform(
 
         GenTree* newContinuation     = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
         unsigned dataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
-        GenTree* dataOffsetNode      = m_comp->gtNewIconNode((ssize_t)dataOffset, TYP_I_IMPL);
-        GenTree* dataAddr            = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, dataOffsetNode);
-        GenTree* dataInd             = m_comp->gtNewIndir(TYP_REF, dataAddr, GTF_IND_NONFAULTING);
+        GenTree* dataInd             = LoadFromOffset(newContinuation, dataOffset, TYP_REF);
         GenTree* storeAllocedByteArr = m_comp->gtNewStoreLclVarNode(byteArrLclNum, dataInd);
-        LIR::AsRange(retBB).InsertAtEnd(newContinuation, dataOffsetNode, dataAddr, dataInd, storeAllocedByteArr);
+        LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedByteArr));
 
         if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
         {
@@ -730,11 +728,10 @@ void Async2Transformation::Transform(
 
         GenTree* newContinuation     = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned dataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
-        GenTree* dataOffsetNode      = m_comp->gtNewIconNode((ssize_t)dataOffset, TYP_I_IMPL);
-        GenTree* dataAddr            = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, dataOffsetNode);
-        GenTree* dataInd             = m_comp->gtNewIndir(TYP_REF, dataAddr, GTF_IND_NONFAULTING);
+        GenTree* dataInd             = LoadFromOffset(newContinuation, dataOffset, TYP_REF);
         GenTree* storeAllocedByteArr = m_comp->gtNewStoreLclVarNode(byteArrLclNum, dataInd);
-        LIR::AsRange(resumeBB).InsertAtEnd(newContinuation, dataOffsetNode, dataAddr, dataInd, storeAllocedByteArr);
+
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedByteArr));
 
         // Copy data
         for (LiveLocalInfo& inf : m_liveLocals)
@@ -783,14 +780,11 @@ void Async2Transformation::Transform(
     {
         unsigned objectArrLclNum = GetGCDataArrayVar();
 
-        newContinuation           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned gcDataOffset     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
-        GenTree* gcDataOffsetNode = m_comp->gtNewIconNode((ssize_t)gcDataOffset, TYP_I_IMPL);
-        GenTree* gcDataAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, gcDataOffsetNode);
-        GenTree* gcDataInd        = m_comp->gtNewIndir(TYP_REF, gcDataAddr, GTF_IND_NONFAULTING);
+        newContinuation       = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        unsigned gcDataOffset = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
+        GenTree* gcDataInd    = LoadFromOffset(newContinuation, gcDataOffset, TYP_REF);
         GenTree* storeAllocedObjectArr = m_comp->gtNewStoreLclVarNode(objectArrLclNum, gcDataInd);
-        LIR::AsRange(resumeBB).InsertAtEnd(newContinuation, gcDataOffsetNode, gcDataAddr, gcDataInd,
-                                           storeAllocedObjectArr);
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedObjectArr));
 
         // Copy GC pointers
         for (LiveLocalInfo& inf : m_liveLocals)
@@ -1003,7 +997,10 @@ GenTreeStoreInd* Async2Transformation::StoreAtOffset(GenTree* base, unsigned off
 
 unsigned Async2Transformation::GetDataArrayVar()
 {
-    if (m_dataArrayVar == BAD_VAR_NUM)
+    // Create separate locals unless we have many locals in the method for live
+    // range splitting purposes. This helps LSRA to avoid create additional
+    // callee saves that harm the prolog/epilog.
+    if ((m_dataArrayVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
     {
         m_dataArrayVar                             = m_comp->lvaGrabTemp(false DEBUGARG("byte[] for continuation"));
         m_comp->lvaGetDesc(m_dataArrayVar)->lvType = TYP_REF;
@@ -1014,7 +1011,7 @@ unsigned Async2Transformation::GetDataArrayVar()
 
 unsigned Async2Transformation::GetGCDataArrayVar()
 {
-    if (m_gcDataArrayVar == BAD_VAR_NUM)
+    if ((m_gcDataArrayVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
     {
         m_gcDataArrayVar                             = m_comp->lvaGrabTemp(false DEBUGARG("object[] for continuation"));
         m_comp->lvaGetDesc(m_gcDataArrayVar)->lvType = TYP_REF;
@@ -1025,7 +1022,7 @@ unsigned Async2Transformation::GetGCDataArrayVar()
 
 unsigned Async2Transformation::GetResultBoxVar()
 {
-    if (m_resultBoxVar == BAD_VAR_NUM)
+    if ((m_resultBoxVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
     {
         m_resultBoxVar = m_comp->lvaGrabTemp(false DEBUGARG("object for resuming result box"));
         m_comp->lvaGetDesc(m_resultBoxVar)->lvType = TYP_REF;
@@ -1036,7 +1033,7 @@ unsigned Async2Transformation::GetResultBoxVar()
 
 unsigned Async2Transformation::GetExceptionVar()
 {
-    if (m_exceptionVar == BAD_VAR_NUM)
+    if ((m_exceptionVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
     {
         m_exceptionVar = m_comp->lvaGrabTemp(false DEBUGARG("object for resuming exception"));
         m_comp->lvaGetDesc(m_exceptionVar)->lvType = TYP_REF;
