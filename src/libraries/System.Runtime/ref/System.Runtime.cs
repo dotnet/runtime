@@ -12888,7 +12888,6 @@ namespace System.Runtime.CompilerServices
         public InterpolatedStringHandlerAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct, AllowMultiple = false)]
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class InlineArrayAttribute : System.Attribute
     {
         public InlineArrayAttribute(int length) { }
