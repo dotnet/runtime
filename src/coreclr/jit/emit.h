@@ -629,7 +629,7 @@ protected:
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
         static_assert_no_msg(INS_count <= 1024);
-        instruction _idIns : 10;
+        instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
@@ -647,6 +647,9 @@ protected:
         unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
         unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
+#elif defined(TARGET_ARM64)
+        static_assert_no_msg(IF_COUNT <= 256);
+        insFormat _idInsFmt : 10;
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -722,10 +725,13 @@ protected:
         opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM64)
+        opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6; // options for instructions
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
-        opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+        opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
@@ -774,19 +780,16 @@ protected:
 #endif                                //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
-        opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts  _idInsOpt : 6;    // options for instructions
-        unsigned _idLclVar : 1;    // access a local on stack
+        unsigned _idLclVar : 1;     // access a local on stack
         unsigned _idLclVarPair : 1; // carries information for 2 GC lcl vars.
-        unsigned _testPad : 3;     // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
-            // TODO-LoongArch64: maybe delete on future.
-            opSize _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts    _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
-                                  // accessing a local on stack.
-        unsigned _idLclVar : 1;   // access a local on stack.
+        // TODO-LoongArch64: maybe delete on future.
+        opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
+                                // accessing a local on stack.
+        unsigned _idLclVar : 1; // access a local on stack.
 #endif
 
 #ifdef TARGET_RISCV64
@@ -1133,7 +1136,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_RISCV64)
-        unsigned idCodeSize() const
+        unsigned  idCodeSize() const
         {
             return _idCodeSize;
         }
