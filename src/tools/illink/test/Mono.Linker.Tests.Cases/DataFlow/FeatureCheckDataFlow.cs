@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ILLink.RoslynAnalyzer;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -986,7 +987,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class RequiresAllGeneric<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> {}
 	}
+}
 
+namespace ILLink.RoslynAnalyzer
+{
 	class TestFeatures
 	{
 		public static bool IsUnreferencedCodeSupported => true;

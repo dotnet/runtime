@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 // This is needed due to NativeAOT which doesn't enable nullable globally yet
 #nullable enable
@@ -83,16 +82,6 @@ namespace ILLink.Shared.DataFlow
 					Source.GetHashCode (),
 					Destination?.GetHashCode () ?? typeof (ControlFlowBranch).GetHashCode (),
 					IsConditional.GetHashCode ());
-			}
-		}
-
-		public readonly struct Successor
-		{
-			public readonly TBlock Block;
-			public readonly bool IsConditional;
-			public Successor (TBlock block, bool isConditional)
-			{
-				(Block, IsConditional) = (block, isConditional);
 			}
 		}
 

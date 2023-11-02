@@ -21,7 +21,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		OperationWalker<LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>, TValue>,
 		ITransfer<
 			BlockProxy,
-			LocalContextState<TValue, TContext>,
+			LocalStateAndContext<TValue, TContext>,
 			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>,
 			LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice>,
 			TConditionValue>
@@ -68,7 +68,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			InterproceduralState = interproceduralState;
 		}
 
-		public abstract void ApplyCondition (TConditionValue condition, ref LocalContextState<TValue, TContext> localContextState);
+		public abstract void ApplyCondition (TConditionValue condition, ref LocalStateAndContext<TValue, TContext> localContextState);
 
 		public TConditionValue? Transfer (
 			BlockProxy block,
@@ -88,9 +88,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// BranchValue may represent a value used in a conditional branch to the ConditionalSuccessor.
 				// If so, give the analysis an opportunity to model the checked condition, and return the model
 				// of the condition back to the generic analysis. It will be applied to the state of each outgoing branch.
-				return TryGetConditionValue (branchValueOperation, state, out TConditionValue? conditionValue)
-					? conditionValue
-					: null;
+				return GetConditionValue (branchValueOperation, state);
 			}
 
 			// If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
@@ -113,16 +111,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			// Use the branch value operation as the key for the warning store and the location of the warning.
 			// We don't want the return operation because this might have multiple possible return values in general.
-			HandleReturnValue (branchValue, branchValueOperation, state);
+			var current = state.Current;
+			HandleReturnValue (branchValue, branchValueOperation, in current.Context);
 			return null;
 		}
 
-		public abstract bool TryGetConditionValue (
+		public abstract TConditionValue? GetConditionValue (
 			IOperation branchValueOperation,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
-			[NotNullWhen (true)] out TConditionValue? conditionValue);
+			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state);
 
-		public abstract TValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation, ref TContext context);
+		public abstract TValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation, in TContext context);
 
 		public abstract TValue GetParameterTargetValue (IParameterSymbol parameter);
 
@@ -130,7 +128,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			TValue source,
 			TValue target,
 			IOperation operation,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state);
+			in TContext context);
 
 		public abstract TValue HandleArrayElementRead (TValue arrayValue, TValue indexValue, IOperation operation);
 
@@ -141,7 +139,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public abstract void HandleReturnValue (
 			TValue returnValue,
 			IOperation operation,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state);
+			in TContext context);
 
 		// This is called for any method call, which includes:
 		// - Normal invocation operation
@@ -154,7 +152,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			TValue instance,
 			ImmutableArray<TValue> arguments,
 			IOperation operation,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state);
+			in TContext context);
 
 		public override TValue VisitLocalReference (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
@@ -208,12 +206,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			case IParameterReferenceOperation: {
 					var current = state.Current;
 					TValue targetValue = targetOperation switch {
-						IFieldReferenceOperation fieldRef => GetFieldTargetValue (fieldRef.Field, fieldRef, ref current.Context),
+						IFieldReferenceOperation fieldRef => GetFieldTargetValue (fieldRef.Field, fieldRef, in current.Context),
 						IParameterReferenceOperation parameterRef => GetParameterTargetValue (parameterRef.Parameter),
 						_ => throw new InvalidOperationException ()
 					};
 					TValue value = Visit (operation.Value, state);
-					HandleAssignment (value, targetValue, operation, state);
+					HandleAssignment (value, targetValue, operation, in current.Context);
 					return value;
 				}
 
@@ -663,7 +661,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			if (operation.ReturnedValue != null) {
 				var value = Visit (operation.ReturnedValue, state);
-				HandleReturnValue (value, operation, state);
+				var current = state.Current;
+				HandleReturnValue (value, operation, in current.Context);
 				return value;
 			}
 
@@ -704,23 +703,24 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			IOperation operation,
 			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
-			var value = HandleMethodCall (calledMethod, instance, arguments, operation, state);
+			var value = HandleMethodCall (calledMethod, instance, arguments, operation, state.Current.Context);
 
 			if (calledMethod.TryGetAttribute (nameof (DoesNotReturnAttribute), out var doesNotReturnAttributeData)) {
-				// If it doesn't return, then after the called method we are free to assume that all
-				// features are available. This will have the correct behavior if meeting with another
+				// If it doesn't return, then after the called method we are free to assume that we
+				// are in the Top state. This will have the correct behavior if meeting with another
 				// state in the CFG. For example:
-				//
-				// if (!Feature.IsSupported)
-				//     DoesNotReturn();
-				// UseFeature();
-				//
-				// The feature context at 'UseFeature()' is computed as the meet of the if branch output
-				// (all features enabled), and the fall-through output of the block before the check (feature is enabled)
-				// so that we see the feature enabled at 'UseFeature()'.
-				var current = state.Current;
-				current.Context = LocalContextLattice.ContextLattice.Top;
-				state.Current = current;
+
+				// var x = SomeTrackedValue;
+				// if (SomeCondition)
+				//   DoesNotReturn();
+				// WitnessState(x);
+
+				// The state at 'WitnessState(x)' and 'WitnessContext()' is computed as the meet of:
+				// - the output at the end of the block inside of the if (Top), and
+				// - the fall-through output of the block with the check (x: SomeTrackedValue).
+				// Because Top is the identity of meet, the state from before the if block is preserved,
+				// so 'WitnessState(x)' sees that x has 'SomeTrackedValue' in this case.
+				state.Current = LocalContextLattice.Top;
 				return value;
 			}
 
@@ -759,14 +759,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 				// Get the condition value that is being asserted. If the attribute is DoesNotReturnIf(true),
 				// the condition value needs to be negated so that we can assert the false condition.
-				if (!TryGetConditionValue (argumentOperation, state, out TConditionValue? conditionValue))
+				if (GetConditionValue (argumentOperation, state) is not TConditionValue conditionValue)
 					continue;
 
 				var current = state.Current;
 				ApplyCondition (
 					doesNotReturnIfConditionValue == false
-						? conditionValue.Value
-						: conditionValue.Value.Negate (),
+						? conditionValue
+						: conditionValue.Negate (),
 					ref current);
 				state.Current = current;
 			}

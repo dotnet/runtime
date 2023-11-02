@@ -210,18 +210,18 @@ namespace ILLink.Shared.DataFlow
 		internal static ValueSet<TValue> Intersection (ValueSet<TValue> left, ValueSet<TValue> right)
 		{
 			if (left._values == null)
-				return left;
+				return Empty;
 			if (right._values == null)
-				return right;
+				return Empty;
 
 			if (left._values is not EnumerableValues)
-				return right.Contains ((TValue) left._values) ? left.DeepCopy () : default;
+				return right.Contains ((TValue) left._values) ? left.DeepCopy () : Empty;
 
 			if (right._values is not EnumerableValues)
-				return left.Contains ((TValue) right._values) ? right.DeepCopy () : default;
+				return left.Contains ((TValue) right._values) ? right.DeepCopy () : Empty;
 
 			var values = new EnumerableValues (left.DeepCopy ());
-			values.IntersectWith (right.DeepCopy ());
+			values.IntersectWith (right);
 			return new ValueSet<TValue> (values);
 		}
 

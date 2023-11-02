@@ -18,7 +18,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// The kinds of values tracked are still left as unspecified generic parameters TValue and TLattice.
 	public abstract class LocalDataFlowAnalysis<TValue, TContext, TLattice, TContextLattice, TTransfer, TConditionValue>
 		: ForwardDataFlowAnalysis<
-			LocalContextState<TValue, TContext>,
+			LocalStateAndContext<TValue, TContext>,
 			LocalDataFlowState<TValue, TContext, TLattice, TContextLattice>,
 			LocalContextLattice<TValue, TContext, TLattice, TContextLattice>,
 			BlockProxy,
@@ -40,10 +40,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		static LocalContextLattice<TValue, TContext, TLattice, TContextLattice> GetLatticeAndEntryValue(
 			TContext initialContext,
-			out LocalContextState<TValue, TContext> entryValue)
+			out LocalStateAndContext<TValue, TContext> entryValue)
 		{
 			LocalContextLattice<TValue, TContext, TLattice, TContextLattice> lattice = new (new (new TLattice ()), new TContextLattice ());
-			entryValue = new LocalContextState<TValue, TContext> (default (LocalState<TValue>), initialContext);
+			entryValue = new LocalStateAndContext<TValue, TContext> (default (LocalState<TValue>), initialContext);
 			return lattice;
 		}
 

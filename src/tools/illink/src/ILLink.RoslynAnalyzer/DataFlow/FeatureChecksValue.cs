@@ -13,40 +13,40 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// For now, this is only designed to track the built-in "features"/"capabilities"
 	// like RuntimeFeatures.IsDynamicCodeSupported, where a true return value
 	// indicates that a feature/capability is available.
-	public record struct FeatureCheckValue : INegate<FeatureCheckValue>
+	public record struct FeatureChecksValue : INegate<FeatureChecksValue>
 	{
 		public ValueSet<string> EnabledFeatures;
 		public ValueSet<string> DisabledFeatures;
 
-		public FeatureCheckValue (string enabledFeature)
+		public FeatureChecksValue (string enabledFeature)
 		{
 			EnabledFeatures = new ValueSet<string> (enabledFeature);
 			DisabledFeatures = ValueSet<string>.Empty;
 		}
 
-		private FeatureCheckValue (ValueSet<string> enabled, ValueSet<string> disabled)
+		private FeatureChecksValue (ValueSet<string> enabled, ValueSet<string> disabled)
 		{
 			EnabledFeatures = enabled;
 			DisabledFeatures = disabled;
 		}
 
-		public FeatureCheckValue And (FeatureCheckValue other)
+		public FeatureChecksValue And (FeatureChecksValue other)
 		{
-			return new FeatureCheckValue (
+			return new FeatureChecksValue (
 				ValueSet<string>.Union (EnabledFeatures.DeepCopy (), other.EnabledFeatures.DeepCopy ()),
 				ValueSet<string>.Union (DisabledFeatures.DeepCopy (), other.DisabledFeatures.DeepCopy ()));
 		}
 
-		public FeatureCheckValue Or (FeatureCheckValue other)
+		public FeatureChecksValue Or (FeatureChecksValue other)
 		{
-			return new FeatureCheckValue (
+			return new FeatureChecksValue (
 				ValueSet<string>.Intersection (EnabledFeatures.DeepCopy (), other.EnabledFeatures.DeepCopy ()),
 				ValueSet<string>.Intersection (DisabledFeatures.DeepCopy (), other.DisabledFeatures.DeepCopy ()));
 		}
 
-		public FeatureCheckValue Negate ()
+		public FeatureChecksValue Negate ()
 		{
-			return new FeatureCheckValue (DisabledFeatures.DeepCopy (), EnabledFeatures.DeepCopy ());
+			return new FeatureChecksValue (DisabledFeatures.DeepCopy (), EnabledFeatures.DeepCopy ());
 		}
 	}
 }

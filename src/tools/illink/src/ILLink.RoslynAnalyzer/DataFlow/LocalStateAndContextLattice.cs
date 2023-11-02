@@ -7,27 +7,28 @@ using ILLink.Shared.DataFlow;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
-	public struct LocalContextState<TValue, TContext> : IEquatable<LocalContextState<TValue, TContext>>
+	// A lattice value that holds both a local state, and a context
+	public struct LocalStateAndContext<TValue, TContext> : IEquatable<LocalStateAndContext<TValue, TContext>>
 		where TValue : IEquatable<TValue>
 		where TContext : IEquatable<TContext>
 	{
 		public LocalState<TValue> LocalState;
 		public TContext Context;
 
-		public LocalContextState (LocalState<TValue> localState, TContext context)
+		public LocalStateAndContext (LocalState<TValue> localState, TContext context)
 		{
 			LocalState = localState;
 			Context = context;
 		}
 
-		public bool Equals (LocalContextState<TValue, TContext> other) =>
+		public bool Equals (LocalStateAndContext<TValue, TContext> other) =>
 			LocalState.Equals (other.LocalState) && Context.Equals (other.Context);
 
-		public override bool Equals (object? obj) => obj is LocalContextState<TValue, TContext> other && Equals (other);
+		public override bool Equals (object? obj) => obj is LocalStateAndContext<TValue, TContext> other && Equals (other);
 		public override int GetHashCode () => HashUtils.Combine (LocalState, Context);
 	}
 
-	public readonly struct LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice> : ILattice<LocalContextState<TValue, TContext>>
+	public readonly struct LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice> : ILattice<LocalStateAndContext<TValue, TContext>>
 		where TValue : struct, IEquatable<TValue>
 		where TContext : struct, IEquatable<TContext>
 		where TValueLattice : ILattice<TValue>
@@ -42,11 +43,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			ContextLattice = contextLattice;
 		}
 
-		public LocalContextState<TValue, TContext> Top { get; }
+		public LocalStateAndContext<TValue, TContext> Top { get; }
 
-		public LocalContextState<TValue, TContext> Meet (LocalContextState<TValue, TContext> left, LocalContextState<TValue, TContext> right)
+		public LocalStateAndContext<TValue, TContext> Meet (LocalStateAndContext<TValue, TContext> left, LocalStateAndContext<TValue, TContext> right)
 		{
-			return new LocalContextState<TValue, TContext> {
+			return new LocalStateAndContext<TValue, TContext> {
 				LocalState = LocalStateLattice.Meet (left.LocalState, right.LocalState),
 				Context = ContextLattice.Meet (left.Context, right.Context)
 			};

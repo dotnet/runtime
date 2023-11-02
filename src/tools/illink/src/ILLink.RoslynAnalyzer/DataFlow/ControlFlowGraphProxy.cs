@@ -62,8 +62,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			var finallyRegions = ImmutableArray.CreateBuilder<RegionProxy> ();
 			foreach (var region in branch.FinallyRegions) {
+				Debug.Assert (region != null);
 				if (region == null)
-					throw new InvalidOperationException ();
+					continue;
 				finallyRegions.Add (new RegionProxy (region));
 			}
 

@@ -23,11 +23,6 @@ namespace ILLink.Shared.DataFlow
 
 	// TLattice isn't typically used in the implementation except to provide the "Top" value.
 	// This expresses the conceptual constraint that the transferred values are part of a lattice.
-	public interface INegate<TValue>
-	{
-		TValue Negate ();
-	}
-
 	public interface ITransfer<TOperation, TValue, TState, TLattice, TConditionValue>
 		where TValue : struct, IEquatable<TValue>
 		where TState : class, IDataFlowState<TValue, TLattice>
@@ -42,10 +37,15 @@ namespace ILLink.Shared.DataFlow
 		// The optional return value can be used to model branch conditions.
 		TConditionValue? Transfer (TOperation operation, TState state);
 
-		// Applies a condition value to a dataflow state. This is called in the
+		// Applies a condition value to a dataflow value. This is called in the
 		// outgoing branch of a basic block which returns a TConditionValue
 		// to model the state in the conditional branch where the condition is
 		// assumed to be true.
 		void ApplyCondition (TConditionValue condition, ref TValue value);
+	}
+
+	public interface INegate<TValue>
+	{
+		TValue Negate ();
 	}
 }

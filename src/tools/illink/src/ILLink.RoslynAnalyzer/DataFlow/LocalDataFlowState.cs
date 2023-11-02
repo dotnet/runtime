@@ -7,19 +7,19 @@ using ILLink.Shared.DataFlow;
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
 	public class LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>
-		: IDataFlowState<LocalContextState<TValue, TContext>, LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice>>
+		: IDataFlowState<LocalStateAndContext<TValue, TContext>, LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice>>
 		where TValue : struct, IEquatable<TValue>
 		where TContext : struct, IEquatable<TContext>
 		where TValueLattice : ILattice<TValue>
 		where TContextLattice : ILattice<TContext>
 	{
-		LocalContextState<TValue, TContext> current;
-		public LocalContextState<TValue, TContext> Current {
+		LocalStateAndContext<TValue, TContext> current;
+		public LocalStateAndContext<TValue, TContext> Current {
 			get => current;
 			set => current = value;
 		}
 
-		public Box<LocalContextState<TValue, TContext>>? Exception { get; set; }
+		public Box<LocalStateAndContext<TValue, TContext>>? Exception { get; set; }
 
 		public LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice> Lattice { get; init; }
 

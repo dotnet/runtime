@@ -63,7 +63,9 @@ namespace ILLink.RoslynAnalyzer
 
 		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol)
 		{
-			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("Mono.Linker.Tests.Cases.DataFlow.TestFeatures");
+			// "IsAssemblyFilesSupported" is treated as a requires check for testing purposes only, and
+			// is not officially-supported product behavior.
+			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("ILLink.RoslynAnalyzer.TestFeatures");
 			if (runtimeFeaturesType == null)
 				return false;
 
