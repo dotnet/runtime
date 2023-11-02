@@ -1138,7 +1138,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_RISCV64)
-        unsigned idCodeSize() const
+        unsigned  idCodeSize() const
         {
             return _idCodeSize;
         }

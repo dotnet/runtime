@@ -26,7 +26,6 @@
 #error Unexpected target type
 #endif
 
-
 #ifndef INST1
 #error INST1 must be defined before including this file.
 #endif
@@ -71,7 +70,7 @@
 //     emitInsMayWriteMultipleRegs in emitArm64.cpp.
 
 // clang-format off
-//INST13(invalid,          "INVALID",               0,                       IF_NONE,                          BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE)
+INST13(invalid,          "INVALID",               0,                       IF_NONE,                          BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE,         BAD_CODE)
 
 
 //     enum              name                     info                                              SVE_AU_3A        SVE_BT_1A        SVE_BV_2A        SVE_BV_2A_J      SVE_BW_2A        SVE_CB_2A        SVE_CP_3A        SVE_CQ_3A        SVE_CW_4A        SVE_CZ_4A        SVE_CZ_4A_K      SVE_CZ_4A_L      SVE_EB_1A        
@@ -2856,7 +2855,7 @@ INST1(ldnt1sw,           "ldnt1sw",               0,                       IF_SV
 
 //    enum               name                     info                                              SVE_IY_4A                                    
 INST1(st1q,              "st1q",                  0,                       IF_SVE_IY_4A,            0xE4202000                                   )
-    // ST1Q    {<Zt>.Q }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_IY_4A           11100100001mmmmm 001gggnnnnnttttt     E420 2000   
+    // ST1Q    {<Zt>.Q }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_IY_4A           11100100001mmmmm 001gggnnnnnttttt     E420 2000
 
 // clang-format on
 
