@@ -565,8 +565,10 @@ protected:
     {
 #define IF_DEF(en, op1, op2) IF_##en,
 #include "emitfmts.h"
+#if defined(TARGET_ARM64)
 #define IF_DEF(en, op1, op2) IF_##en,
 #include "emitfmtsarm64_sve.h"
+#endif
         IF_COUNT
     };
 
@@ -629,8 +631,8 @@ protected:
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        instruction _idIns : 10;
-        static_assert_no_msg(INS_count <= 1024);
+        static_assert_no_msg(INS_count <= 2048);
+        instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
@@ -648,9 +650,12 @@ protected:
         unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
         unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
+#elif defined(TARGET_ARM64)
+        static_assert_no_msg(IF_COUNT <= 1024);
+        insFormat _idInsFmt : 10;
 #else
-        insFormat _idInsFmt : 8;
         static_assert_no_msg(IF_COUNT <= 256);
+        insFormat _idInsFmt : 8;
 #endif
 
     public:
@@ -713,7 +718,7 @@ protected:
         // x86:         17 bits
         // amd64:       17 bits
         // arm:         16 bits
-        // arm64:       18 bits
+        // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
 
@@ -724,7 +729,8 @@ protected:
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-/* _idOpSize defined below. */
+        opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6; // options for instructions
 #else
         opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -755,7 +761,7 @@ protected:
         // x86:         38 bits
         // amd64:       38 bits
         // arm:         32 bits
-        // arm64:       32 bits
+        // arm64:       44 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
@@ -775,8 +781,7 @@ protected:
 #endif                                //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
-        opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts  _idInsOpt : 6;    // options for instructions
+
         unsigned _idLclVar : 1;    // access a local on stack
         unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
 #endif
@@ -809,7 +814,7 @@ protected:
         // x86:         47 bits
         // amd64:       47 bits
         // arm:         48 bits
-        // arm64:       50 bits
+        // arm64:       53 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
 
@@ -822,7 +827,7 @@ protected:
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
-#define ID_EXTRA_BITFIELD_BITS (18)
+#define ID_EXTRA_BITFIELD_BITS (21)
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
@@ -864,7 +869,7 @@ protected:
         // x86:         53/49 bits
         // amd64:       54/49 bits
         // arm:         54/50 bits
-        // arm64:       57/52 bits
+        // arm64:       60/55 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -881,7 +886,7 @@ protected:
         // x86:         11/15 bits
         // amd64:       10/15 bits
         // arm:         10/14 bits
-        // arm64:        7/12 bits
+        // arm64:        4/9 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
