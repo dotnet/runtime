@@ -85,8 +85,8 @@ public abstract class QuicConnectionOptions
     public int InitialUnidirectionalStreamReceiveWindowSize { get; set; } = 0;
 
     /// <summary>
-    /// The initial flow-control window size for (remotely initiated) unidirectional streams.
-    /// Default 0 to leave the window size to the implementation.
+    /// The upper bound on time when the handshake must complete. If the handshake does not
+    /// complete in this time, the connection is aborted.
     /// </summary>
     public TimeSpan HandshakeTimeout { get; set; } = TimeSpan.Zero;
 
