@@ -11,7 +11,7 @@ public func someFuncThatMightThrow (willThrow: Bool, dummy: UnsafeRawPointer) th
 
 public func handleError(from pointer: UnsafePointer<MyError>) {
     let pointerValue = UInt(bitPattern: pointer)
-    let offsetPointerValue = pointerValue + 0x48
+    let offsetPointerValue = pointerValue + 0x48 // 0x20 on amd64
     let offsetPointer = UnsafeRawPointer(bitPattern: offsetPointerValue)
     
     if let offsetErrorPointer = offsetPointer?.assumingMemoryBound(to: MyError.self) {
