@@ -3817,6 +3817,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			default_cconv = csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C;
 #endif
 #endif
+			// When using the Swift calling convention, emit MINT_CALLI_NAT opcode to manage context registers.
+			default_cconv = default_cconv && csignature->call_convention != MONO_CALL_SWIFTCALL;
 
 			// FIXME calli receives both the args offset and sometimes another arg for the frame pointer,
 			// therefore some args are in the param area, while the fp is not. We should differentiate for

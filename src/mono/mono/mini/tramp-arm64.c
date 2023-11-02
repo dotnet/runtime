@@ -653,7 +653,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
  *   See tramp-amd64.c for documentation.
  */
 gpointer
-mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
+mono_arch_get_interp_to_native_trampoline (MonoMethodSignature *sig, MonoTrampInfo **info)
 {
 #ifndef DISABLE_INTERPRETER
 	guint8 *start = NULL, *code;
@@ -718,6 +718,12 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < PARAM_REGS + 1; i++)
 		arm_ldrx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (host_mgreg_t));
 
+	/* set all context registers from CallContext */
+	if (sig && sig->call_convention == MONO_CALL_SWIFTCALL) {
+		for (i = 0; i < CTX_REGS; i++)
+			arm_ldrx (code, i + CTX_REGS_OFFSET, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, cregs) + i * sizeof (host_mgreg_t));
+	}
+
 	/* set all floating registers from CallContext  */
 	for (i = 0; i < FP_PARAM_REGS; i++)
 		arm_ldrfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
@@ -734,6 +740,12 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	/* set all general purpose registers to CallContext */
 	for (i = 0; i < PARAM_REGS; i++)
 		arm_strx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (host_mgreg_t));
+
+	/* set all context registers to CallContext */
+	if (sig && sig->call_convention == MONO_CALL_SWIFTCALL) {
+		for (i = 0; i < CTX_REGS; i++)
+			arm_strx (code, i + CTX_REGS_OFFSET, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, cregs) + i * sizeof (host_mgreg_t));
+	}
 
 	/* set all floating registers to CallContext  */
 	for (i = 0; i < FP_PARAM_REGS; i++)

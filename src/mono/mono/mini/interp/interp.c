@@ -1577,6 +1577,17 @@ interp_data_to_frame_arg (MonoInterpFrameHandle frame, MonoMethodSignature *sig,
 		stackval_from_data (sig->params [index - sig->hasthis], STACK_ADD_BYTES (iframe->stack, get_arg_offset (imethod, sig, index)), data, sig->pinvoke && !sig->marshalling_disabled);
 }
 
+static void
+interp_data_to_frame_arg_indirect (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gconstpointer data)
+{
+	InterpFrame *iframe = (InterpFrame*)frame;
+	InterpMethod *imethod = iframe->imethod;
+
+	// Perform an indirect store at index stack location
+	stackval *result = (stackval*) STACK_ADD_BYTES (iframe->stack, get_arg_offset (imethod, sig, index));
+	*(gpointer*)result->data.p = *(gpointer*)data;
+}
+
 static gpointer
 interp_frame_arg_to_storage (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index)
 {
@@ -1590,16 +1601,16 @@ interp_frame_arg_to_storage (MonoInterpFrameHandle frame, MonoMethodSignature *s
 }
 
 static MonoPIFunc
-get_interp_to_native_trampoline (void)
+get_interp_to_native_trampoline (MonoMethodSignature *sig)
 {
 	static MonoPIFunc trampoline = NULL;
 
-	if (!trampoline) {
+	if (!trampoline || sig) {
 		if (mono_ee_features.use_aot_trampolines) {
 			trampoline = (MonoPIFunc) mono_aot_get_trampoline ("interp_to_native_trampoline");
 		} else {
 			MonoTrampInfo *info;
-			trampoline = (MonoPIFunc) mono_arch_get_interp_to_native_trampoline (&info);
+			trampoline = (MonoPIFunc) mono_arch_get_interp_to_native_trampoline (sig, &info);
 			mono_tramp_info_register (info, NULL);
 		}
 		mono_memory_barrier ();
@@ -1610,7 +1621,7 @@ get_interp_to_native_trampoline (void)
 static void
 interp_to_native_trampoline (gpointer addr, gpointer ccontext)
 {
-	get_interp_to_native_trampoline () (addr, ccontext);
+	get_interp_to_native_trampoline (NULL) (addr, ccontext);
 }
 
 /* MONO_NO_OPTIMIZATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
@@ -1654,15 +1665,19 @@ ves_pinvoke_method (
 		*cache = entry_func;
 	}
 #else
+	// The generic trampoline is cached in the static variable 'entry_func'. If a different calling convention is used, 
+	// retrieve the generic trampoline again, as it may contain handling of context registers.
 	static MonoPIFunc entry_func = NULL;
-	if (!entry_func) {
+	unsigned int call_conv = 0;
+	if (!entry_func || sig->call_convention != call_conv) {
+		call_conv = sig->call_convention;
 		MONO_ENTER_GC_UNSAFE;
 #ifdef MONO_ARCH_HAS_NO_PROPER_MONOCTX
 		ERROR_DECL (error);
 		entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ("mono_interp_to_native_trampoline", (gpointer) mono_interp_to_native_trampoline), error);
 		mono_error_assert_ok (error);
 #else
-		entry_func = get_interp_to_native_trampoline ();
+		entry_func = get_interp_to_native_trampoline (sig);
 #endif
 		mono_memory_barrier ();
 		MONO_EXIT_GC_UNSAFE;
@@ -1705,6 +1720,9 @@ ves_pinvoke_method (
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+	if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+		mono_arch_get_native_call_context_error (&ccontext, &frame, sig, call_info);
+	}
 	if (!context->has_resume_state) {
 		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig, call_info);
 	}

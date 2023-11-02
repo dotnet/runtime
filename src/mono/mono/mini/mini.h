@@ -2544,7 +2544,7 @@ void    mono_arch_notify_pending_exc            (MonoThreadInfo *info);
 guint8* mono_arch_get_call_target               (guint8 *code);
 guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, host_mgreg_t *regs, guint8 *code);
 GSList *mono_arch_get_trampolines               (gboolean aot);
-gpointer mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info);
+gpointer mono_arch_get_interp_to_native_trampoline (MonoMethodSignature *sig, MonoTrampInfo **info);
 gpointer mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
@@ -2559,6 +2559,8 @@ void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer
 gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 // After the pinvoke call is done, this moves return value from the ccontext to the InterpFrame.
 void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
+// After the pinvoke call is done, this stores an error context value from the ccontext to the InterpFrame.
+void mono_arch_get_native_call_context_error      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 /* Free the structure returned by mono_arch_get_interp_native_call_info (NULL, sig) */
 void mono_arch_free_interp_native_call_info (gpointer call_info);
 #endif
