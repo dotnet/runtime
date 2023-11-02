@@ -6,6 +6,7 @@
     <!-- Fails in many GCStress jobs. https://github.com/dotnet/runtime/issues/46279 -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="stackoverflowtester.cs" />

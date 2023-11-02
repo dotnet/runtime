@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,57 +12,70 @@ using Xunit;
 
 namespace TestStackOverflow
 {
-    public class Program : IDisposable
+    public class Program
     {
-        const string TestNameEnvVar = "STACKOVERFLOWTESTER_TESTNAME";
-        const string TestArgsEnvVar = "STACKOVERFLOWTESTER_TESTARGS";
         const string EnableMiniDumpEnvVar = "DOTNET_DbgEnableMiniDump";
 
-        static bool s_checkedEnv = false;
-        public Program()
+        public static int Main(string[] args)
         {
-            // Called before every non-static [Fact]
-            if (s_checkedEnv)
+            if (args.Length > 0)
             {
-                return;
-            }
-            // Use the environment variable to determine if we should trigger a stack overflow
-            string? testName = Environment.GetEnvironmentVariable(TestNameEnvVar);
-            string? testArgs = Environment.GetEnvironmentVariable(TestArgsEnvVar);
-            Console.WriteLine(testName);
-            if (testName != null)
-            {
+                string testName = args[0];
+                string[] testArgs = Array.Empty<string>();
                 switch (testName)
                 {
                     case "stackoverflow":
-                        Assert.NotNull(testArgs);
-                        StackOverflow.Run(testArgs.Split(' '));
+                        Assert.True(args.Length >= 2);
+                        testArgs = args[1..].ToArray();
+                        StackOverflow.Run(testArgs);
                         break;
                     case "stackoverflow3":
                         StackOverflow3.Run();
                         break;
+                    default:
+                        throw new InvalidOperationException($"Invalid arguments to 'stackoverflowtester' process. Test '{testName}' does not exist");
                 }
-                throw new InvalidOperationException($"Invalid test. Test {testName} with arguments '{testArgs}' should have thrown an exception.");
+                throw new InvalidOperationException($"Invalid arguments to 'stackoverflowtester' process. Test '{testName}' with arguments '{testArgs}' should have thrown an exception.");
             }
-            s_checkedEnv = true;
-        }
 
-        public void Dispose() { }
+            int exitCode = 101;
+            try
+            {
+                TestStackOverflowSmallFrameMainThread();
+                exitCode++;
+                TestStackOverflowLargeFrameMainThread();
+                exitCode++;
+                TestStackOverflowSmallFrameSecondaryThread();
+                exitCode++;
+                TestStackOverflowLargeFrameSecondaryThread();
+                exitCode++;
+                TestStackOverflow3();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+                return exitCode;
+            }
+
+            return 100;
+        }
 
         [UnconditionalSuppressMessage("SingleFile", "IL3000", Justification = "We want an empty string for location if the test is running as single file")]
         static bool TestStackOverflow(string testName, string testArgs, out string[] stderrLines, out bool checkStackFrame)
         {
             List<string> lines = new List<string>();
 
+            string thisAssemblyPath = typeof(Program).Assembly.Location;
+            // TestLibrary.Utilities.IsNativeAot brings in ~4mb on Linux, so we'll approximate with this for now. https://github.com/dotnet/runtime/issues/94313
+            bool IsNativeAot = string.IsNullOrEmpty(thisAssemblyPath) && !RuntimeFeature.IsDynamicCodeSupported;
+
             Process testProcess = new Process();
             // Always use whatever runner started this test, or the exe if we're running single file / NativeAOT
             testProcess.StartInfo.FileName = Environment.ProcessPath;
-            // We want this assembly in CoreCLR and empty string for single file / NativeAOT
-            testProcess.StartInfo.Arguments = typeof(Program).Assembly.Location;
+            // We want the path to this assembly in CoreCLR and the empty string for single file / NativeAOT
+            testProcess.StartInfo.Arguments = $"{typeof(Program).Assembly.Location} {testName} {testArgs}";
+            Console.WriteLine($"Running {testName} {testArgs}");
             testProcess.StartInfo.Environment.Add(EnableMiniDumpEnvVar, "0");
-            // Set the environment so the subprocess will trigger a stack overflow
-            testProcess.StartInfo.Environment.Add(TestNameEnvVar, testName);
-            testProcess.StartInfo.Environment.Add(TestArgsEnvVar, testArgs);
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
             testProcess.ErrorDataReceived += (sender, line) =>
@@ -82,7 +95,7 @@ namespace TestStackOverflow
             stderrLines = lines.ToArray();
 
             // NativeAOT doesn't provide a stack trace on stack overflow
-            checkStackFrame = !TestLibrary.Utilities.IsNativeAot;
+            checkStackFrame = !IsNativeAot;
 
             int[] expectedExitCodes;
             if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
@@ -107,7 +120,7 @@ namespace TestStackOverflow
             }
 
             string expectedMessage;
-            if (TestLibrary.Utilities.IsNativeAot)
+            if (IsNativeAot)
             {
                 expectedMessage = "Process is terminating due to StackOverflowException.";
             }
@@ -134,8 +147,7 @@ namespace TestStackOverflow
             throw new Exception($"Missing \"{stackFrame}\" from stack trace");
         }
 
-        [Fact]
-        public void TestStackOverflowSmallFrameMainThread()
+        public static void TestStackOverflowSmallFrameMainThread()
         {
             TestStackOverflow("stackoverflow", "smallframe main", out string[] lines, out bool checkStackFrame);
 
@@ -151,8 +163,7 @@ namespace TestStackOverflow
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionC()", lines);
         }
 
-        [Fact]
-        public void TestStackOverflowLargeFrameMainThread()
+        public static void TestStackOverflowLargeFrameMainThread()
         {
             TestStackOverflow("stackoverflow", "largeframe main", out string[] lines, out bool checkStackFrame);
 
@@ -173,8 +184,7 @@ namespace TestStackOverflow
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionC2()", lines);
         }
 
-        [Fact]
-        public void TestStackOverflowSmallFrameSecondaryThread()
+        public static void TestStackOverflowSmallFrameSecondaryThread()
         {
             TestStackOverflow("stackoverflow", "smallframe secondary", out string[] lines, out bool checkStackFrame);
 
@@ -189,8 +199,7 @@ namespace TestStackOverflow
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionC()", lines);
         }
 
-        [Fact]
-        public void TestStackOverflowLargeFrameSecondaryThread()
+        public static void TestStackOverflowLargeFrameSecondaryThread()
         {
             TestStackOverflow("stackoverflow", "largeframe secondary", out string[] lines, out bool checkStackFrame);
 
@@ -205,8 +214,7 @@ namespace TestStackOverflow
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionC2()", lines);
         }
 
-        [Fact]
-        public void TestStackOverflow3()
+        public static void TestStackOverflow3()
         {
             TestStackOverflow("stackoverflow3", "", out string[] lines, out bool checkStackFrame);
 
