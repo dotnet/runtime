@@ -77,6 +77,7 @@
 
     <!-- https://github.com/dotnet/runtime/issues/94225 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->
