@@ -22,7 +22,7 @@ import { stringToMonoStringRoot } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
-import { mono_log_warn } from "./logging";
+import { mono_log_debug } from "./logging";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
@@ -320,7 +320,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
 
     value.then(data => {
         if (!loaderHelpers.is_runtime_running()) {
-            mono_log_warn("This promise can't be propagated to managed code, mono runtime already exited.");
+            mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.");
             return;
         }
         try {
@@ -335,7 +335,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         }
     }).catch(reason => {
         if (!loaderHelpers.is_runtime_running()) {
-            mono_log_warn("This promise can't be propagated to managed code, mono runtime already exited.", reason);
+            mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.", reason);
             return;
         }
         try {
