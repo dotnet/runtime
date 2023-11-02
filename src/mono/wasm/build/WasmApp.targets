@@ -150,7 +150,7 @@
     <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' == 'true'">.wasm</WasmAssemblyExtension>
     <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' != 'true'">.dll</WasmAssemblyExtension>
 
-    <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">false</WasmStripILAfterAOT>
+    <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">true</WasmStripILAfterAOT>
 
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
     <BlazorCacheBootResources Condition="'$(BlazorCacheBootResources)' == ''">true</BlazorCacheBootResources>

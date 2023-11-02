@@ -305,12 +305,38 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private FileCache? _cache;
     private int _numCompiled;
     private int _totalNumAssemblies;
+    private bool _collectTrimmingEligibleMethodsValueFromPreviousBuild;
 
     private readonly Dictionary<string, string> _symbolNameFixups = new();
     private static readonly char[] s_semicolon = new char[]{ ';' };
 
     private bool ProcessAndValidateArguments()
     {
+        string monoAotPropertyValuesFilePath = Path.Combine(IntermediateOutputPath, "monoAotPropertyValues.txt");
+
+        if (File.Exists(monoAotPropertyValuesFilePath))
+        {
+            string? text = File.ReadAllText(monoAotPropertyValuesFilePath);
+            if (!string.IsNullOrEmpty(text))
+            {
+                Dictionary<string, bool>? properties = JsonSerializer.Deserialize<Dictionary<string, bool>>(text);
+                if ((properties != null) && properties.ContainsKey("CollectTrimmingEligibleMethods"))
+                    if (properties.TryGetValue("CollectTrimmingEligibleMethods", out bool value))
+                        _collectTrimmingEligibleMethodsValueFromPreviousBuild = value;
+            }
+            if (_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)
+                File.Delete(monoAotPropertyValuesFilePath);
+        }
+
+        if (!File.Exists(monoAotPropertyValuesFilePath) || ((_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)))
+        {
+            Dictionary<string, bool> monoAotPropertyValuesToSave = new();
+            monoAotPropertyValuesToSave.Add("CollectTrimmingEligibleMethods", CollectTrimmingEligibleMethods);
+            string jsonString = JsonSerializer.Serialize(monoAotPropertyValuesToSave);
+            File.WriteAllText(monoAotPropertyValuesFilePath, jsonString);
+            Log.LogMessage(MessageImportance.High, $"Logged the value of CollectTrimmingEligibleMethods in {monoAotPropertyValuesFilePath}");
+        }
+
         if (!File.Exists(CompilerBinaryPath))
         {
             Log.LogError($"{nameof(CompilerBinaryPath)}='{CompilerBinaryPath}' doesn't exist.");
@@ -490,6 +516,31 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         if (!ProcessAndValidateArguments())
             return false;
+
+        if (_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)
+        {
+            DirectoryInfo di = new DirectoryInfo(IntermediateOutputPath);
+            foreach (FileInfo file in di.GetFiles("*.bc"))
+            {
+                Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
+                file.Delete();
+            }
+            foreach (FileInfo file in di.GetFiles("*.o"))
+            {
+                Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
+                file.Delete();
+            }
+            foreach (DirectoryInfo dir in di.GetDirectories("stripped"))
+            {
+                Log.LogMessage(MessageImportance.High, $"Deleting folder {dir.Name} from previous AOT, because the value of CollectTrimmingEligibleMethods has changed");
+                dir.Delete(true);
+            }
+            foreach (DirectoryInfo dir in di.GetDirectories("tokens"))
+            {
+                Log.LogMessage(MessageImportance.High, $"Deleting folder {dir.Name} from previous AOT, because the value of CollectTrimmingEligibleMethods has changed");
+                dir.Delete(true);
+            }
+        }
 
         IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
         managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);

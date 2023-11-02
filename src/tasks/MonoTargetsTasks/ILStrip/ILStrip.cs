@@ -65,7 +65,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         string trimmedAssemblyFolder = string.Empty;
         if (TrimIndividualMethods)
         {
-            trimmedAssemblyFolder = string.IsNullOrEmpty(IntermediateOutputPath) ? "trimmed" : Path.Combine(IntermediateOutputPath, "trimmed");
+            trimmedAssemblyFolder = string.IsNullOrEmpty(IntermediateOutputPath) ? "stripped" : Path.Combine(IntermediateOutputPath, "stripped");
             if (!Directory.Exists(trimmedAssemblyFolder))
             {
                 Directory.CreateDirectory(trimmedAssemblyFolder);
