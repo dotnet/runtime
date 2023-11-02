@@ -1102,7 +1102,14 @@ namespace System.Threading
         where T : struct
         where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
     {
-        private int _isScheduledForProcessing;
+        private enum QueueProcessingStage
+        {
+            NotScheduled,
+            Determining,
+            Scheduled
+        }
+
+        private int _queueProcessingStage;
         private readonly ConcurrentQueue<T> _workItems = new ConcurrentQueue<T>();
 
         public int Count => _workItems.Count;
@@ -1114,43 +1121,65 @@ namespace System.Threading
         }
 
         public void BatchEnqueue(T workItem) => _workItems.Enqueue(workItem);
-        public void CompleteBatchEnqueue() => ScheduleForProcessing();
-
-        private void ScheduleForProcessing()
+        public void CompleteBatchEnqueue()
         {
-            // Only one thread is requested at a time to avoid over-parallelization. Currently where this type is used, queued
-            // work is expected to be processed at high priority. The implementation could be modified to support different
-            // priorities if necessary.
-            if (Interlocked.CompareExchange(ref _isScheduledForProcessing, 1, 0) == 0)
+            if (Interlocked.Exchange(
+                ref _queueProcessingStage,
+                (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
             {
                 ThreadPool.UnsafeQueueHighPriorityWorkItemInternal(this);
             }
         }
 
+        private void UpdateQueueProcessingStage(bool isQueueEmpty)
+        {
+            if (!isQueueEmpty)
+            {
+                _queueProcessingStage = (int)QueueProcessingStage.Scheduled;
+            }
+            else
+            {
+                int stageBeforeUpdate =
+                    Interlocked.CompareExchange(
+                        ref _queueProcessingStage,
+                        (int)QueueProcessingStage.NotScheduled,
+                        (int)QueueProcessingStage.Determining);
+                Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
+                if (stageBeforeUpdate == (int)QueueProcessingStage.Determining)
+                {
+                    return;
+                }
+            }
+
+            ThreadPool.UnsafeQueueHighPriorityWorkItemInternal(this);
+        }
+
         void IThreadPoolWorkItem.Execute()
         {
-            Debug.Assert(_isScheduledForProcessing != 0);
-
-            // This change needs to be visible to other threads that may enqueue work items before a work item is attempted to
-            // be dequeued by the current thread. In particular, if an enqueuer queues a work item and does not schedule for
-            // processing, and the current thread is the last thread processing work items, the current thread must see the work
-            // item queued by the enqueuer.
-            _isScheduledForProcessing = 0;
-            Interlocked.MemoryBarrier();
-            if (!_workItems.TryDequeue(out T workItem))
+            T workItem;
+            while (true)
             {
-                return;
+                Debug.Assert(_queueProcessingStage == (int)QueueProcessingStage.Scheduled);
+                _queueProcessingStage = (int)QueueProcessingStage.Determining;
+
+                if (_workItems.TryDequeue(out workItem))
+                {
+                    break;
+                }
+
+                int stageBeforeUpdate =
+                    Interlocked.CompareExchange(
+                        ref _queueProcessingStage,
+                        (int)QueueProcessingStage.NotScheduled,
+                        (int)QueueProcessingStage.Determining);
+                Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
+                if (stageBeforeUpdate == (int)QueueProcessingStage.Determining)
+                {
+                    return;
+                }
             }
 
-            if (!_workItems.IsEmpty)
-            {
-                // An work item was successfully dequeued, and there may be more work items to process. Schedule a work item to
-                // parallelize processing of work items, before processing more work items. Following this, it is the responsibility
-                // of the new work item and the poller thread to schedule more work items as necessary. The parallelization may be
-                // necessary here if the user callback as part of handling the work item blocks for some reason that may have a
-                // dependency on other queued work items.
-                ScheduleForProcessing();
-            }
+            UpdateQueueProcessingStage(_workItems.IsEmpty);
 
             ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals!;
             Debug.Assert(tl != null);
