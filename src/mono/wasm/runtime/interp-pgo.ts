@@ -38,7 +38,7 @@ export async function interp_pgo_save_data () {
         // If save_table returned 0 despite not being passed a buffer, that means there is no
         //  table data to save, either because interp_pgo is disabled or no methods were tiered yet
         if (expectedSize <= 0) {
-            mono_log_error("Failed to save interp_pgo table (No data to save)");
+            mono_log_info("Failed to save interp_pgo table (No data to save)");
             return;
         }
 
@@ -64,7 +64,7 @@ export async function interp_pgo_save_data () {
 export async function interp_pgo_load_data () {
     const data = await getInterpPgoTable();
     if (!data) {
-        mono_log_error("Failed to load interp_pgo table (No table found in cache)");
+        mono_log_info("Failed to load interp_pgo table (No table found in cache)");
         return;
     }
 
