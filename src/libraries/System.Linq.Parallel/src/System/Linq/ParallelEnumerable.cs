@@ -64,8 +64,12 @@ namespace System.Linq
 
         // When running in single partition mode, PLINQ operations will occur on a single partition and will not
         // be executed in parallel, but will retain PLINQ semantics (exceptions wrapped as aggregates, etc).
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.SupportedOSPlatformGuard("browser")]
         internal static bool SinglePartitionMode => OperatingSystem.IsBrowser();
+#else
+        internal static bool SinglePartitionMode => false;
+#endif
 
         //-----------------------------------------------------------------------------------
         // Converts any IEnumerable<TSource> into something that can be the target of parallel
