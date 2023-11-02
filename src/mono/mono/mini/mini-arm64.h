@@ -273,10 +273,10 @@ struct CallInfo {
 typedef struct {
 	/* General registers + ARMREG_R8 for indirect returns */
 	host_mgreg_t gregs [PARAM_REGS + 1];
-	/* Context registers in */
-	host_mgreg_t cregs [CTX_REGS];
 	/* Floating registers */
 	double fregs [FP_PARAM_REGS];
+	/* Context registers */
+	host_mgreg_t cregs [CTX_REGS];
 	/* Stack usage, used for passing params on stack */
 	guint32 stack_size;
 	guint8* stack;

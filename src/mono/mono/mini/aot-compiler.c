@@ -8387,7 +8387,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		}
 
 		if (mono_aot_mode_is_interp (&acfg->aot_opts) && mono_is_corlib_image (acfg->image->assembly->image)) {
-			mono_arch_get_interp_to_native_trampoline (NULL, &info);
+			mono_arch_get_interp_to_native_trampoline (&info);
 			emit_trampoline (acfg, info);
 
 #ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE

@@ -203,12 +203,6 @@ stub_data_to_frame_arg (MonoInterpFrameHandle frame, MonoMethodSignature *sig, i
 	g_assert_not_reached ();
 }
 
-static void
-stub_data_to_frame_arg_indirect (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gconstpointer data)
-{
-	g_assert_not_reached ();
-}
-
 static gpointer
 stub_frame_arg_to_storage (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index)
 {

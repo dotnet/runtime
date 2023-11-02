@@ -1924,7 +1924,7 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 		case ArgInFReg:
 		case ArgInFRegR4:
 		case ArgHFA:
-            return &ccontext->fregs [ainfo->reg];
+                        return &ccontext->fregs [ainfo->reg];
 		case ArgOnStack:
 		case ArgOnStackR4:
 		case ArgOnStackR8:
@@ -1934,8 +1934,8 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 			return *(gpointer*)(ccontext->stack + ainfo->offset);
 		case ArgVtypeByRef:
 			return (gpointer) ccontext->gregs [ainfo->reg];
-		default:
-			g_error ("Arg storage type not yet supported");
+                default:
+                        g_error ("Arg storage type not yet supported");
         }
 }
 
@@ -2130,27 +2130,24 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 /**
  * Gets error context from `ccontext` registers by indirectly storing the value onto the stack.
  *
- * The function searches for an argument with the storage type `ArgSwiftError`. If found,
- * it retrieves the value from `ccontext` and indirectly stores it onto the stack of the current frame.
+ * The function searches for an argument with the storage type `ArgSwiftError`.
+ * If found, it retrieves the value from `ccontext`.
  */
-void
-mono_arch_get_native_call_context_error (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
+gpointer
+mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, gpointer call_info, int *arg_index)
 {
-	const MonoEECallbacks *interp_cb;
 	CallInfo *cinfo = (CallInfo*)call_info;
 	ArgInfo *ainfo;
-	gpointer storage;
-
-	interp_cb = mini_get_interp_callbacks ();
 
 	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
 		ainfo = &cinfo->args [i];
 		if (ainfo->storage == ArgSwiftError) {
-			storage = arg_get_storage (ccontext, ainfo);
-			interp_cb->data_to_frame_arg_indirect ((MonoInterpFrameHandle)frame, sig, i, storage);
-			break;
+			*arg_index = i;
+			return arg_get_storage (ccontext, ainfo);
 		}
 	}
+
+	return NULL;
 }
 
 typedef struct {
