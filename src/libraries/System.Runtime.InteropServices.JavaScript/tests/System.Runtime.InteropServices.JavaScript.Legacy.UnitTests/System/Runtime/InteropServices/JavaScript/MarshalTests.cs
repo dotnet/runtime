@@ -743,6 +743,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalSynchronousTask()
         {
             bool success = await MarshalTask("SynchronousTask");
@@ -750,6 +751,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalAsynchronousTask()
         {
             bool success = await MarshalTask("AsynchronousTask");
@@ -757,6 +759,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static Task MarshalSynchronousTaskInt()
         {
             return MarshalTaskReturningInt("SynchronousTaskInt");
