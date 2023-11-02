@@ -810,7 +810,20 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
-            NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+
+            unsigned retbufSpillLcl = BAD_VAR_NUM;
+            if (!destAddr->OperIs(GT_LCL_ADDR))
+            {
+                retbufSpillLcl = lvaGrabTemp(true DEBUGARG("retbuf for async2 call stored to non-lcl"));
+                lvaGetDesc(retbufSpillLcl)->lvType = store->TypeGet();
+                if (store->TypeIs(TYP_STRUCT))
+                {
+                    lvaSetStruct(retbufSpillLcl, store->GetLayout(this), false);
+                }
+                destAddr = gtNewLclVarAddrNode(retbufSpillLcl, TYP_BYREF);
+            }
+
+            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
 #if !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
@@ -891,8 +904,21 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // now returns void, not a struct
             src->gtType = TYP_VOID;
 
-            // return the morphed call node
-            return src;
+            if (retbufSpillLcl != BAD_VAR_NUM)
+            {
+                assert(pAfterStmt == nullptr);
+                impAppendTree(src, curLevel, usedDI);
+
+                store->Data() = gtNewLclVarNode(retbufSpillLcl, genActualType(store));
+                impAppendTree(store, curLevel, usedDI);
+
+                return gtNewNothingNode();
+            }
+            else
+            {
+                // return the morphed call node
+                return src;
+            }
         }
 
 #ifdef UNIX_AMD64_ABI
@@ -914,12 +940,36 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
+
+            unsigned retbufSpillLcl = BAD_VAR_NUM;
+            if (!destAddr->OperIs(GT_LCL_ADDR))
+            {
+                retbufSpillLcl = lvaGrabTemp(true DEBUGARG("retbuf for async2 call stored to non-lcl"));
+                lvaGetDesc(retbufSpillLcl)->lvType = store->TypeGet();
+                if (store->TypeIs(TYP_STRUCT))
+                {
+                    lvaSetStruct(retbufSpillLcl, store->GetLayout(this), false);
+                }
+                destAddr = gtNewLclVarAddrNode(retbufSpillLcl, TYP_BYREF);
+            }
+
             call->gtArgs.InsertAfterThisOrFirst(this,
                                                 NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
             // now returns void, not a struct
             src->gtType  = TYP_VOID;
             call->gtType = TYP_VOID;
+
+            if (retbufSpillLcl != BAD_VAR_NUM)
+            {
+                assert(pAfterStmt == nullptr);
+                impAppendTree(src, curLevel, usedDI);
+
+                store->Data() = gtNewLclVarNode(retbufSpillLcl, genActualType(store));
+                impAppendTree(store, curLevel, usedDI);
+
+                return gtNewNothingNode();
+            }
 
             // We already have appended the write to 'dest' GT_CALL's args
             // So now we just return an empty node (pruning the GT_RET_EXPR)

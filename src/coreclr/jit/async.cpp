@@ -154,11 +154,11 @@ public:
         return !dsc->lvTracked || VarSetOps::IsMember(m_comp, m_comp->compCurLife, dsc->lvVarIndex);
     }
 
-    void GetLiveLocals(jitstd::vector<Async2Transformation::LiveLocalInfo>& liveLocals)
+    void GetLiveLocals(jitstd::vector<Async2Transformation::LiveLocalInfo>& liveLocals, unsigned fullyDefinedRetBufLcl)
     {
         for (unsigned lclNum = 0; lclNum < m_numVars; lclNum++)
         {
-            if (IsLive(lclNum))
+            if ((lclNum != fullyDefinedRetBufLcl) && IsLive(lclNum))
             {
                 liveLocals.push_back(Async2Transformation::LiveLocalInfo(lclNum));
             }
@@ -291,7 +291,27 @@ void Async2Transformation::Transform(
 
     m_liveLocals.clear();
 
-    life.GetLiveLocals(m_liveLocals);
+    unsigned fullyDefinedRetBufLcl = BAD_VAR_NUM;
+    CallArg* retbufArg             = call->gtArgs.GetRetBufferArg();
+    if (retbufArg != nullptr)
+    {
+        GenTree* retbuf = retbufArg->GetNode();
+        if (retbuf->IsLclVarAddr())
+        {
+            LclVarDsc*   dsc       = m_comp->lvaGetDesc(retbuf->AsLclVarCommon());
+            ClassLayout* defLayout = m_comp->typGetObjLayout(call->gtRetClsHnd);
+            if (defLayout->GetSize() == dsc->lvExactSize())
+            {
+                // This call fully defines this retbuf. There is no need to
+                // consider it live across the call since it is going to be
+                // overridden anyway.
+                fullyDefinedRetBufLcl = retbuf->AsLclVarCommon()->GetLclNum();
+                JITDUMP("  V%02u is a fully defined retbuf and will not be considered live\n", fullyDefinedRetBufLcl);
+            }
+        }
+    }
+
+    life.GetLiveLocals(m_liveLocals, fullyDefinedRetBufLcl);
     LiftLIREdges(block, call, defs, m_liveLocals);
 
 #ifdef DEBUG
@@ -419,6 +439,7 @@ void Async2Transformation::Transform(
 
     if (!call->TypeIs(TYP_VOID) && !call->IsUnusedValue())
     {
+        assert(retbufArg == nullptr);
         assert(call->gtNext != nullptr);
         if (!call->gtNext->OperIsLocalStore() || (call->gtNext->Data() != call))
         {
@@ -437,6 +458,20 @@ void Async2Transformation::Transform(
         assert(call->gtNext->OperIsLocalStore() && (call->gtNext->Data() == call));
         storeResultNode = call->gtNext->AsLclVarCommon();
         insertAfter     = call->gtNext;
+    }
+
+    if (retbufArg != nullptr)
+    {
+        assert(call->TypeIs(TYP_VOID));
+
+        // For async2 methods we always expect retbufs to point to locals. We
+        // ensure this in impStoreStruct. TODO-CQ: We can handle common "direct
+        // assignment" cases, e.g. obj.StructVal = Call(), by seeing if there
+        // is a base TYP_REF and keeping that live. This would avoid
+        // introducing copies in the importer on the synchronous path.
+        noway_assert(retbufArg->GetNode()->OperIs(GT_LCL_ADDR));
+
+        storeResultNode = retbufArg->GetNode()->AsLclVarCommon();
     }
 
     GenTree* continuationArg = new (m_comp, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
@@ -857,33 +892,36 @@ void Async2Transformation::Transform(
             GenTree* resultBox = LoadFromOffset(objectArr, OFFSETOF__CORINFO_Array__data, TYP_REF);
 
             LclVarDsc* resultLcl = m_comp->lvaGetDesc(storeResultNode);
-            assert((resultLcl->TypeGet() == TYP_STRUCT) == storeResultNode->TypeIs(TYP_STRUCT));
+            assert((retbufArg != nullptr) ||
+                   (resultLcl->TypeGet() == TYP_STRUCT) == storeResultNode->TypeIs(TYP_STRUCT));
 
             // TODO-TP: We can use liveness to avoid generating a lot of this IR.
-            if (storeResultNode->TypeIs(TYP_STRUCT))
+            if ((retbufArg != nullptr) || storeResultNode->TypeIs(TYP_STRUCT))
             {
                 if (m_comp->lvaGetPromotionType(resultLcl) != Compiler::PROMOTION_TYPE_INDEPENDENT)
                 {
-                    GenTree* boxDataOffset = m_comp->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                    GenTree* boxDataAddr   = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBox, boxDataOffset);
-                    GenTree* boxData =
-                        m_comp->gtNewBlkIndir(storeResultNode->GetLayout(m_comp), boxDataAddr, GTF_IND_NONFAULTING);
-                    GenTree* storeResult;
-                    if (storeResultNode->OperIs(GT_STORE_LCL_VAR))
+                    GenTree*     boxDataOffset = m_comp->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                    GenTree*     boxDataAddr   = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBox, boxDataOffset);
+                    ClassLayout* returnLayout  = m_comp->typGetObjLayout(call->gtRetClsHnd);
+                    GenTree*     boxData       = m_comp->gtNewBlkIndir(returnLayout, boxDataAddr, GTF_IND_NONFAULTING);
+                    GenTree*     storeResult;
+                    if ((storeResultNode->GetLclOffs() == 0) && (returnLayout->GetSize() == resultLcl->lvExactSize()))
                     {
                         storeResult = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), boxData);
                     }
                     else
                     {
-                        storeResult = m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), TYP_STRUCT,
-                                                                   storeResultNode->GetLayout(m_comp),
-                                                                   storeResultNode->GetLclOffs(), boxData);
+                        storeResult =
+                            m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), TYP_STRUCT, returnLayout,
+                                                         storeResultNode->GetLclOffs(), boxData);
                     }
 
                     LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
                 }
                 else
                 {
+                    assert(retbufArg == nullptr); // Locals defined through retbufs are never independently promoted.
+
                     if (resultLcl->lvFieldCnt > 1)
                     {
                         unsigned resultBoxVar   = GetResultBoxVar();
