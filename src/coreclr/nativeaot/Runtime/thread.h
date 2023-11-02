@@ -113,7 +113,7 @@ struct ThreadBuffer
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
 #if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
-    void *                   m_alternateStack;                      // ptr to alternate signal stack
+    void *                  m_alternateStack;                      // ptr to alternate signal stack
 #endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 };
 
