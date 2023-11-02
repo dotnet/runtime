@@ -728,11 +728,13 @@ protected:
         opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM64)
         opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
         insOpts _idInsOpt : 6; // options for instructions
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+/* _idOpSize defined below. */
 #else
-        opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+        opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
