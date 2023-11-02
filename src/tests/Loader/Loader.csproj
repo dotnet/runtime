@@ -1,4 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- There are 3 single-[Fact], 3 MB, consecutive .il tests in this directory.
+         This serves to split them. -->
+    <NumberOfStripesToUseInStress>3</NumberOfStripesToUseInStress>
+  </PropertyGroup>
+
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
     <MergedWrapperProjectReference Remove="$(MSBuildProjectName).csproj" />

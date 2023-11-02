@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <Compile Include="System\Collections\BitArray.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs"
+             Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs"
              Link="Common\System\Collections\Generic\ICollectionDebugView.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs"

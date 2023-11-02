@@ -7472,7 +7472,6 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 //------------------------------------------------------------------------------
 // fgAssignRecursiveCallArgToCallerParam : Assign argument to a recursive call to the corresponding caller parameter.
 //
-//
 // Arguments:
 //    arg  -  argument to assign
 //    late  -  whether to use early or late arg
@@ -13892,13 +13891,70 @@ PhaseStatus Compiler::fgMorphBlocks()
 
     // Morph all blocks.
     //
-    // Note morph can add blocks downstream from the current block,
-    // and alter (but not null out) the current block's bbNext;
-    // this iterator ensures they all get visited.
-    //
-    for (BasicBlock* block : Blocks())
+    if (!optLocalAssertionProp)
     {
-        fgMorphBlock(block);
+        // If we aren't optimizing, we just morph in normal bbNext order.
+        //
+        // Note morph can add blocks downstream from the current block,
+        // and alter (but not null out) the current block's bbNext;
+        // this iterator ensures they all get visited.
+        //
+        for (BasicBlock* block : Blocks())
+        {
+            fgMorphBlock(block);
+        }
+    }
+    else
+    {
+        // We are optimizing. Process in RPO.
+        //
+        fgRenumberBlocks();
+        EnsureBasicBlockEpoch();
+        fgComputeEnterBlocksSet();
+        fgDfsReversePostorder();
+
+        // Disallow general creation of new blocks or edges as it
+        // would invalidate RPO.
+        //
+        // Removal of edges, or altering dup counts, is OK.
+        //
+        INDEBUG(fgSafeBasicBlockCreation = false;);
+        INDEBUG(fgSafeFlowEdgeCreation = false;);
+
+        // Allow edge creation to genReturnBB (target of return merging)
+        // and the scratch block successor (target for tail call to loop).
+        // This will also disallow dataflow into these blocks.
+        //
+        if (genReturnBB != nullptr)
+        {
+            genReturnBB->bbFlags |= BBF_CAN_ADD_PRED;
+        }
+        if (fgFirstBBisScratch())
+        {
+            fgFirstBB->Next()->bbFlags |= BBF_CAN_ADD_PRED;
+        }
+
+        unsigned const bbNumMax = fgBBNumMax;
+        for (unsigned i = 1; i <= bbNumMax; i++)
+        {
+            BasicBlock* const block = fgBBReversePostorder[i];
+            fgMorphBlock(block);
+        }
+
+        // Re-enable block and edge creation, and revoke
+        // special treatment of genReturnBB and the "first" bb
+        //
+        INDEBUG(fgSafeBasicBlockCreation = true;);
+        INDEBUG(fgSafeFlowEdgeCreation = true;);
+
+        if (genReturnBB != nullptr)
+        {
+            genReturnBB->bbFlags &= ~BBF_CAN_ADD_PRED;
+        }
+        if (fgFirstBBisScratch())
+        {
+            fgFirstBB->Next()->bbFlags &= ~BBF_CAN_ADD_PRED;
+        }
     }
 
     // Under OSR, we no longer need to specially protect the original method entry
