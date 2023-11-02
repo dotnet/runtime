@@ -62,8 +62,8 @@ if(HAVE_SYS_ICU)
       entrypoints.c
       ${pal_icushim_sources_base})
 
-if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
-    set(NATIVEGLOBALIZATION_SOURCES
+if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
       pal_calendarData.c
       pal_casing.c
       pal_collation.c
@@ -72,6 +72,7 @@ if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE
       pal_localeStringData.c
       pal_normalization.c
       pal_timeZoneInfo.c
+      ${icu_shim_sources_base}
     )
 endif()
 
