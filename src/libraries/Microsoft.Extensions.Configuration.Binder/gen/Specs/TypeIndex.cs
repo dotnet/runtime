@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 displayString = char.ToUpperInvariant(displayString[0]) + displayString.Substring(1);
             }
 
-            if (displayString.Contains("."))
+            if (displayString.Contains('.'))
             {
                 displayString = displayString.Replace(".", "");
             }
