@@ -1077,6 +1077,22 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		default:
 			g_assert_not_reached ();
 		}
+
+		if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+			MonoType *arg_type = sig->params[i]->data.type;
+			if (arg_type && arg_type->data.klass) {
+				const char *name_space = m_class_get_name_space(arg_type->data.klass);
+				const char *class_name = m_class_get_name(arg_type->data.klass);
+
+				if (name_space && class_name && !strcmp(name_space, "System.Runtime.InteropServices.Swift")) {
+					if (!strcmp(class_name, "SwiftError")) {
+						ainfo->storage = ArgSwiftError;
+					} else if (!strcmp(class_name, "SwiftSelf")) {
+						ainfo->storage = ArgSwiftSelf;
+					}
+				}
+			}
+		}
 	}
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n > 0) && (sig->sentinelpos == sig->param_count)) {
@@ -1108,6 +1124,10 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 	switch (ainfo->storage) {
 		case ArgInIReg:
 			return &ccontext->gregs [ainfo->reg];
+		case ArgSwiftSelf:
+			return &ccontext->cregs [AMD64_R13 - CTX_REGS_OFFSET];
+		case ArgSwiftError:
+			return &ccontext->cregs [AMD64_R12 - CTX_REGS_OFFSET];
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
 			return &ccontext->fregs [ainfo->reg];
@@ -1358,6 +1378,29 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		}
 		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
+}
+
+/**
+ * Gets error context from `ccontext` registers by indirectly storing the value onto the stack.
+ *
+ * The function searches for an argument with the storage type `ArgSwiftError`.
+ * If found, it retrieves the value from `ccontext`.
+ */
+gpointer
+mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, gpointer call_info, int *arg_index)
+{
+	CallInfo *cinfo = (CallInfo*)call_info;
+	ArgInfo *ainfo;
+
+	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
+		ainfo = &cinfo->args [i];
+		if (ainfo->storage == ArgSwiftError) {
+			*arg_index = i;
+			return arg_get_storage (ccontext, ainfo);
+		}
+	}
+
+	return NULL;
 }
 
 /*
@@ -1877,7 +1920,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			 * are volatile across calls.
 			 * FIXME: Optimize this.
 			 */
-			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgValuetypeInReg) || (ainfo->storage == ArgGSharedVtInReg))
+			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgValuetypeInReg) || (ainfo->storage == ArgGSharedVtInReg) || (ainfo->storage == ArgSwiftError))
 				inreg = FALSE;
 
 			ins->opcode = OP_REGOFFSET;
@@ -1887,6 +1930,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			case ArgInFloatSSEReg:
 			case ArgInDoubleSSEReg:
 			case ArgGSharedVtInReg:
+			case ArgSwiftError:
 				if (inreg) {
 					ins->opcode = OP_REGVAR;
 					ins->dreg = ainfo->reg;
@@ -1900,6 +1944,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				ins->inst_offset = ainfo->offset + ARGS_OFFSET;
 				break;
 			case ArgValuetypeInReg:
+			case ArgSwiftSelf:
 				break;
 			case ArgValuetypeAddrInIReg:
 			case ArgValuetypeAddrOnStack: {
@@ -2006,6 +2051,7 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 
 	switch (storage) {
 	case ArgInIReg:
+	case ArgSwiftError:
 		MONO_INST_NEW (cfg, ins, OP_MOVE);
 		ins->dreg = mono_alloc_ireg_copy (cfg, tree->dreg);
 		ins->sreg1 = tree->dreg;
@@ -2295,7 +2341,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		in = call->args [i];
 
-		if (ainfo->storage == ArgInIReg)
+		if (ainfo->storage == ArgInIReg || ainfo->storage == ArgSwiftError)
 			add_outarg_reg (cfg, call, ainfo->storage, ainfo->reg, in);
 	}
 
@@ -2314,6 +2360,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		switch (ainfo->storage) {
 		case ArgInIReg:
+		case ArgSwiftError:
 			/* Already done */
 			break;
 		case ArgInFloatSSEReg:
@@ -2325,7 +2372,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgValuetypeAddrInIReg:
 		case ArgValuetypeAddrOnStack:
 		case ArgGSharedVtInReg:
-		case ArgGSharedVtOnStack: {
+		case ArgGSharedVtOnStack:
+		case ArgSwiftSelf: {
 			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t))
 				/* Already emitted above */
 				break;
@@ -8061,7 +8109,8 @@ MONO_RESTORE_WARNING
 		/* Save volatile arguments to the stack */
 		if (ins->opcode != OP_REGVAR) {
 			switch (ainfo->storage) {
-			case ArgInIReg: {
+			case ArgInIReg:
+			case ArgSwiftError: {
 				guint32 size = 8;
 
 				/* FIXME: I1 etc */
@@ -8095,6 +8144,7 @@ MONO_RESTORE_WARNING
 				amd64_movsd_membase_reg (code, ins->inst_basereg, ins->inst_offset, ainfo->reg);
 				break;
 			case ArgValuetypeInReg:
+			case ArgSwiftSelf:
 				for (quad = 0; quad < 2; quad ++) {
 					switch (ainfo->pair_storage [quad]) {
 					case ArgInIReg:
@@ -8111,6 +8161,10 @@ MONO_RESTORE_WARNING
 					default:
 						g_assert_not_reached ();
 					}
+				}
+
+				if (ainfo->storage == ArgSwiftSelf) {
+					amd64_mov_reg_membase (code, AMD64_R13, ins->inst_basereg, ins->inst_offset, sizeof(gpointer));
 				}
 				break;
 			case ArgValuetypeAddrInIReg:
@@ -8129,6 +8183,7 @@ MONO_RESTORE_WARNING
 			/* Argument allocated to (non-volatile) register */
 			switch (ainfo->storage) {
 			case ArgInIReg:
+			case ArgSwiftError:
 				amd64_mov_reg_reg (code, ins->dreg, ainfo->reg, 8);
 				break;
 			case ArgOnStack:
@@ -8275,6 +8330,20 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	code = realloc_code (cfg, max_epilog_size);
 
+	cinfo = cfg->arch.cinfo;
+	for (int i = 0; i < cinfo->nargs; ++i) {
+		ArgInfo* ainfo = cinfo->args + i;
+		MonoInst* arg = cfg->args [i];
+
+		switch (ainfo->storage) {
+		case ArgSwiftError:
+			amd64_mov_membase_reg (code, arg->dreg, 0, AMD64_R12, 8);
+			break;
+		default:
+			break;
+		}
+	}
+
 	cfg->has_unwind_info_for_epilog = TRUE;
 
 	/* Mark the start of the epilog */
@@ -8311,7 +8380,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = cfg->arch.cinfo;
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		ArgInfo *ainfo = &cinfo->ret;
 		MonoInst *inst = cfg->ret;

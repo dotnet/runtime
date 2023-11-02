@@ -236,6 +236,8 @@ static const AMD64_XMM_Reg_No float_return_regs [] = { AMD64_XMM0 };
 #define FLOAT_PARAM_REGS 8
 #define RETURN_REGS 2
 #define FLOAT_RETURN_REGS 2
+#define CTX_REGS 2
+#define CTX_REGS_OFFSET 12
 
 static const AMD64_Reg_No param_regs [] = {AMD64_RDI, AMD64_RSI, AMD64_RDX,
 					   AMD64_RCX, AMD64_R8,  AMD64_R9};
@@ -297,6 +299,8 @@ typedef enum {
 	ArgGSharedVtOnStack,
 	/* Variable sized gsharedvt argument passed/returned by addr */
 	ArgGsharedvtVariableInReg,
+	ArgSwiftError,
+	ArgSwiftSelf,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
 
@@ -338,6 +342,8 @@ typedef struct {
 	host_mgreg_t gregs [AMD64_NREG];
 	/* Floating registers */
 	double fregs [AMD64_XMM_NREG];
+	/* Context registers */
+	host_mgreg_t cregs [CTX_REGS];
 	/* Stack usage, used for passing params on stack */
 	guint32 stack_size;
 	guint8 *stack;
