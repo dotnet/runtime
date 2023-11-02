@@ -1806,10 +1806,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             int      immLowerBound = 0;
             int      immUpperBound = 0;
 
-            assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
-            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, &immLowerBound, &immUpperBound);
-            op3 = addRangeCheckForHWIntrinsic(op3, immLowerBound, immUpperBound);
-
             if (op2->TypeGet() == TYP_STRUCT)
             {
                 info.compNeedsConsecutiveRegisters = true;
@@ -1830,6 +1826,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 getBaseJitTypeAndSizeOfSIMDType(argClass, &simdSize);
             }
 
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, &immLowerBound, &immUpperBound);
+            op3     = addRangeCheckForHWIntrinsic(op3, immLowerBound, immUpperBound);
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
