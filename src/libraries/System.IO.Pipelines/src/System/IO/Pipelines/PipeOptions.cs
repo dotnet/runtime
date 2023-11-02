@@ -54,17 +54,24 @@ namespace System.IO.Pipelines
             {
                 pauseWriterThreshold = DefaultPauseWriterThreshold;
             }
+            else if (pauseWriterThreshold < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.pauseWriterThreshold);
+            }
 
             if (resumeWriterThreshold == -1)
             {
                 resumeWriterThreshold = DefaultResumeWriterThreshold;
             }
-
-            if (pauseWriterThreshold < 0)
+            else if (resumeWriterThreshold == 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.pauseWriterThreshold);
+                // A resumeWriterThreshold of 0 makes no sense because the writer could never resume if paused.
+                // By setting it to 1, the writer will resume only after all data is consumed.
+                resumeWriterThreshold = 1;
             }
-            else if (resumeWriterThreshold < 0 || resumeWriterThreshold > pauseWriterThreshold)
+
+            // Only validate that the resumeWriterThreshold is not too large if the writer could actually pause.
+            if (resumeWriterThreshold < 0 || (pauseWriterThreshold > 0 && resumeWriterThreshold > pauseWriterThreshold))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.resumeWriterThreshold);
             }
