@@ -337,6 +337,31 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             Log.LogMessage(MessageImportance.High, $"Logged the value of CollectTrimmingEligibleMethods in {monoAotPropertyValuesFilePath}");
         }
 
+        if (_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)
+        {
+            DirectoryInfo di = new DirectoryInfo(IntermediateOutputPath);
+            foreach (FileInfo file in di.GetFiles("*.bc"))
+            {
+                Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
+                file.Delete();
+            }
+            foreach (FileInfo file in di.GetFiles("*.o"))
+            {
+                Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
+                file.Delete();
+            }
+            foreach (DirectoryInfo dir in di.GetDirectories("stripped"))
+            {
+                Log.LogMessage(MessageImportance.High, $"Deleting folder {dir.Name} from previous AOT, because the value of CollectTrimmingEligibleMethods has changed");
+                dir.Delete(true);
+            }
+            foreach (DirectoryInfo dir in di.GetDirectories("tokens"))
+            {
+                Log.LogMessage(MessageImportance.High, $"Deleting folder {dir.Name} from previous AOT, because the value of CollectTrimmingEligibleMethods has changed");
+                dir.Delete(true);
+            }
+        }
+
         if (!File.Exists(CompilerBinaryPath))
         {
             Log.LogError($"{nameof(CompilerBinaryPath)}='{CompilerBinaryPath}' doesn't exist.");
@@ -516,31 +541,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         if (!ProcessAndValidateArguments())
             return false;
-
-        if (_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)
-        {
-            DirectoryInfo di = new DirectoryInfo(IntermediateOutputPath);
-            foreach (FileInfo file in di.GetFiles("*.bc"))
-            {
-                Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
-                file.Delete();
-            }
-            foreach (FileInfo file in di.GetFiles("*.o"))
-            {
-                Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
-                file.Delete();
-            }
-            foreach (DirectoryInfo dir in di.GetDirectories("stripped"))
-            {
-                Log.LogMessage(MessageImportance.High, $"Deleting folder {dir.Name} from previous AOT, because the value of CollectTrimmingEligibleMethods has changed");
-                dir.Delete(true);
-            }
-            foreach (DirectoryInfo dir in di.GetDirectories("tokens"))
-            {
-                Log.LogMessage(MessageImportance.High, $"Deleting folder {dir.Name} from previous AOT, because the value of CollectTrimmingEligibleMethods has changed");
-                dir.Delete(true);
-            }
-        }
 
         IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
         managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);
