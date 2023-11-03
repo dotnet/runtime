@@ -4787,6 +4787,30 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_RETURN:
             return optAssertionProp_Return(assertions, tree->AsUnOp(), stmt);
 
+        case GT_MOD:
+        case GT_DIV:
+        {
+            // Convert MOD/DIV to UMOD/UDIV if both operands are known to be non-negative.
+            // For now, we're mainly interested in "X op CNS" pattern (where CNS > 0).
+            const GenTree* op1 = tree->gtGetOp1();
+            const GenTree* op2 = tree->gtGetOp2();
+            if (!optLocalAssertionProp && !BitVecOps::IsEmpty(apTraits, assertions) && op2->IsNeverNegative(this))
+            {
+                const ValueNum lclVN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+                for (AssertionIndex index = 1; index <= optAssertionCount; index++)
+                {
+                    AssertionDsc* curAssertion = optGetAssertion(index);
+                    if (BitVecOps::IsMember(apTraits, assertions, index - 1) &&
+                        curAssertion->IsNeverNegative(this, lclVN))
+                    {
+                        tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+                        break;
+                    }
+                }
+            }
+            return nullptr;
+        }
+
         case GT_BLK:
         case GT_IND:
         case GT_STOREIND:
