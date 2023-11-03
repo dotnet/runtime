@@ -317,7 +317,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // One optimized (combined) cast here
-                    tree = gtNewCastNode(TYP_FLOAT, innerOper, false, TYP_FLOAT);
+                    tree = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
                     return fgMorphTree(tree);
                 }
             }
