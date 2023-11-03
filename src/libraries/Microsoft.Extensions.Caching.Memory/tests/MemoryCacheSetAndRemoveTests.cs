@@ -799,14 +799,15 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cacheKey = "test";
             var cache = CreateCache();
-            var expiry = TimeSpan.FromSeconds(2);
+            var expiry = 1000;
             var cacheEntryOptions = new MemoryCacheEntryOptions()
             {
-                AbsoluteExpirationRelativeToNow = expiry
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(expiry)
             };            
             var value = cache.GetOrCreate<string>(cacheKey, _ => cacheKey, cacheEntryOptions);
-            Assert.NotNull(value);
-            Thread.Sleep(expiry);
+            Assert.Equal(cacheKey, value);
+            Assert.True(cache.TryGetValue(cacheKey, out _));
+            Thread.Sleep(expiry * 2);
             Assert.False(cache.TryGetValue(cacheKey, out _));
         }
 
@@ -815,14 +816,15 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cacheKey = "test";
             var cache = CreateCache();
-            var expiry = TimeSpan.FromSeconds(2);
+            var expiry = 1000;
             var cacheEntryOptions = new MemoryCacheEntryOptions()
             {
-                AbsoluteExpirationRelativeToNow = expiry
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(expiry)
             };            
             var value = await cache.GetOrCreateAsync<string>(cacheKey, _ => Task.FromResult(cacheKey), cacheEntryOptions);
-            Assert.NotNull(value);
-            await Task.Delay(expiry);
+            Assert.Equal(cacheKey, value);
+            Assert.True(cache.TryGetValue(cacheKey, out _));
+            await Task.Delay(expiry * 2);
             Assert.False(cache.TryGetValue(cacheKey, out _));
         }
 
