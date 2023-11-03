@@ -207,14 +207,14 @@ build_native()
 
     local exit_code
     if [[ "$__StaticAnalyzer" == 1 ]]; then
-        # pushd "$intermediatesDir"
+        pushd "$intermediatesDir"
 
         buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
         echo "Executing $buildTool $target -j $__NumProc"
         "$buildTool" $target -j "$__NumProc"
         exit_code="$?"
 
-        # popd
+        popd
     else
         cmake_command=cmake
         if [[ "$build_arch" == "wasm" && "$__TargetOS" == "browser" ]]; then
@@ -225,13 +225,13 @@ build_native()
         else
             # For non-wasm Unix scenarios, we may have to use an old version of CMake that doesn't support
             # multiple targets. Instead, directly invoke the build tool to build multiple targets in one invocation.
-            # pushd "$intermediatesDir"
+            pushd "$intermediatesDir"
 
             echo "Executing $buildTool $target -j $__NumProc"
             "$buildTool" $target -j "$__NumProc"
             exit_code="$?"
 
-            # popd
+            popd
         fi
     fi
 
