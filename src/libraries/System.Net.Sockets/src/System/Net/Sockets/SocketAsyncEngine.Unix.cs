@@ -238,6 +238,7 @@ namespace System.Net.Sockets
             {
                 Debug.Assert(_eventQueueProcessingStage == (int)EventQueueProcessingStage.Scheduled);
                 _eventQueueProcessingStage = (int)EventQueueProcessingStage.Determining;
+                Interlocked.MemoryBarrier();
 
                 if (eventQueue.TryDequeue(out ev))
                 {
