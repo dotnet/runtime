@@ -183,12 +183,10 @@ namespace System.Threading
             ObjPulseAll(obj);
         }
 
-#pragma warning disable CA2252 // Opt in to preview features before using them (Lock)
         /// <summary>
         /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
         /// </summary>
         public static long LockContentionCount => GetLockContentionCount() + Lock.ContentionCount;
-#pragma warning restore CA2252
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
         private static partial long GetLockContentionCount();
