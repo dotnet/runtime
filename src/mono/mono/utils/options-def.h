@@ -62,6 +62,14 @@ DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints 
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
 
 #if HOST_BROWSER
+DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", TRUE, "Record interpreter tiering information for automatic PGO")
+#else
+DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", FALSE, "Record interpreter tiering information for automatic PGO")
+#endif
+DEFINE_BOOL(interp_pgo_logging, "interp-pgo-logging", FALSE, "Log messages when interpreter PGO optimizes a method or updates its table")
+DEFINE_BOOL(interp_codegen_timing, "interp-codegen-timing", FALSE, "Measure time spent generating interpreter code and log it periodically")
+
+#if HOST_BROWSER
 
 // jiterpreter AOT optimizations aren't thread safe yet
 #ifdef DISABLE_THREADS

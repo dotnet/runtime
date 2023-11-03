@@ -6,7 +6,6 @@
     <PackageDescription>Provides abstractions for reading `.deps` files. When a .NET application is compiled, the SDK generates a JSON manifest file (`&lt;ApplicationName&gt;.deps.json`) that contains information about application dependencies. You can use `Microsoft.Extensions.DependencyModel` to read information from this manifest at run time. This is useful when you want to dynamically compile code (for example, using Roslyn Emit API) referencing the same dependencies as your main application.
 
 By default, the dependency manifest contains information about the application's target framework and runtime dependencies. Set the PreserveCompilationContext project property to `true` to additionally include information about reference assemblies used during compilation.</PackageDescription>
-    <!-- The public API in this library isn't yet documented: https://github.com/dotnet/runtime/issues/43872. -->
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 

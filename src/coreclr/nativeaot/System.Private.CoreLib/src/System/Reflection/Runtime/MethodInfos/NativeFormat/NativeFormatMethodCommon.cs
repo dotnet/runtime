@@ -224,7 +224,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
         public RuntimeParameterInfo[] GetRuntimeParameters(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter)
         {
             MetadataReader reader = _reader;
-            TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
+            TypeContext typeContext = contextMethod.DeclaringType.ToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
             MethodSignature methodSignature = this.MethodSignature;
             Handle[] typeSignatures = new Handle[methodSignature.Parameters.Count + 1];

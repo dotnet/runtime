@@ -187,13 +187,18 @@ namespace System.Net.Sockets.Tests
             }, connectMethod, useDnsEndPoint.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Same as Connect.ConnectGetsCanceledByDispose")]
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
+            if (connectMethod == "Sync" && PlatformDetection.IsLinux)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
+                return;
+            }
+
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);

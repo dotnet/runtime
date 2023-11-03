@@ -617,7 +617,12 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool IsConfigured => _configurationState == ConfigurationState.Configured;
         internal bool IsConfigurationStarted => _configurationState is not ConfigurationState.NotConfigured;
         private volatile ConfigurationState _configurationState;
-        private enum ConfigurationState : byte { NotConfigured = 0, Configuring = 1, Configured = 2 };
+        private enum ConfigurationState : byte
+        {
+            NotConfigured = 0,
+            Configuring = 1,
+            Configured = 2
+        };
 
         private ExceptionDispatchInfo? _cachedConfigureError;
 

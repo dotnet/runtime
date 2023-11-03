@@ -352,67 +352,61 @@ namespace System.Numerics
             }
             else
             {
-                int unalignedBytes = byteCount % 4;
-                int dwordCount = byteCount / 4 + (unalignedBytes == 0 ? 0 : 1);
-                uint[] val = new uint[dwordCount];
-                int byteCountMinus1 = byteCount - 1;
+                int wholeUInt32Count = Math.DivRem(byteCount, 4, out int unalignedBytes);
+                uint[] val = new uint[wholeUInt32Count + (unalignedBytes == 0 ? 0 : 1)];
 
-                // Copy all dwords, except don't do the last one if it's not a full four bytes
-                int curDword, curByte;
-
+                // Copy the bytes to the uint array, apart from those which represent the
+                // most significant uint if it's not a full four bytes.
+                // The uints are stored in 'least significant first' order.
                 if (isBigEndian)
                 {
-                    curByte = byteCount - sizeof(int);
-                    for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
-                    {
-                        for (int byteInDword = 0; byteInDword < 4; byteInDword++)
-                        {
-                            byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
-                            curByte++;
-                        }
+                    // The bytes parameter is in big-endian byte order.
+                    // We need to read the uints out in reverse.
 
-                        curByte -= 8;
-                    }
+                    Span<byte> uintBytes = MemoryMarshal.AsBytes(val.AsSpan(0, wholeUInt32Count));
+
+                    // We need to slice off the remainder from the beginning.
+                    value.Slice(unalignedBytes).CopyTo(uintBytes);
+
+                    uintBytes.Reverse();
                 }
                 else
                 {
-                    curByte = sizeof(int) - 1;
-                    for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
-                    {
-                        for (int byteInDword = 0; byteInDword < 4; byteInDword++)
-                        {
-                            byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
-                            curByte--;
-                        }
+                    // The bytes parameter is in little-endian byte order.
+                    // We can just copy the bytes directly into the uint array.
 
-                        curByte += 8;
-                    }
+                    value.Slice(0, wholeUInt32Count * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val));
                 }
 
-                // Copy the last dword specially if it's not aligned
+                // In both of the above cases on big-endian architecture, we need to perform
+                // an endianness swap on the resulting uints.
+                if (!BitConverter.IsLittleEndian)
+                {
+                    BinaryPrimitives.ReverseEndianness(val.AsSpan(0, wholeUInt32Count), val);
+                }
+
+                // Copy the last uint specially if it's not aligned
                 if (unalignedBytes != 0)
                 {
                     if (isNegative)
                     {
-                        val[dwordCount - 1] = 0xffffffff;
+                        val[wholeUInt32Count] = 0xffffffff;
                     }
 
                     if (isBigEndian)
                     {
-                        for (curByte = 0; curByte < unalignedBytes; curByte++)
+                        for (int curByte = 0; curByte < unalignedBytes; curByte++)
                         {
                             byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
+                            val[wholeUInt32Count] = (val[wholeUInt32Count] << 8) | curByteValue;
                         }
                     }
                     else
                     {
-                        for (curByte = byteCountMinus1; curByte >= byteCount - unalignedBytes; curByte--)
+                        for (int curByte = byteCount - 1; curByte >= byteCount - unalignedBytes; curByte--)
                         {
                             byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
+                            val[wholeUInt32Count] = (val[wholeUInt32Count] << 8) | curByteValue;
                         }
                     }
                 }
@@ -1299,7 +1293,12 @@ namespace System.Numerics
         }
 
         /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, bool, bool, ref int)"/> for multiple purposes.</summary>
-        private enum GetBytesMode { AllocateArray, Count, Span }
+        private enum GetBytesMode
+        {
+            AllocateArray,
+            Count,
+            Span
+        }
 
         /// <summary>Shared logic for <see cref="ToByteArray(bool, bool)"/>, <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>, and <see cref="GetByteCount"/>.</summary>
         /// <param name="mode">Which entry point is being used.</param>
