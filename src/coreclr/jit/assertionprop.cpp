@@ -4379,12 +4379,11 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
         // Find live assertions related to lclNum
         //
         unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
-        ASSERT_TP      apDependent = GetAssertionDep(lclNum);
-        BitVecOps::IntersectionD(apTraits, apDependent, apLocal);
+        ASSERT_TP      apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
 
         // Scan those looking for a suitable assertion
         //
-        BitVecOps::Iter iter(apTraits, assertions);
+        BitVecOps::Iter iter(apTraits, apDependent);
         unsigned        index = 0;
         while (iter.NextElem(&index))
         {

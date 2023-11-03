@@ -13780,10 +13780,78 @@ void Compiler::fgMorphBlock(BasicBlock* block)
 
     if (optLocalAssertionProp)
     {
-        // For now, each block starts with an empty table, and no available assertions
+        // Determine if this block can leverage assertions from its pred blocks.
         //
-        optAssertionReset(0);
-        apLocal = BitVecOps::MakeEmpty(apTraits);
+        // Some blocks are ineligible.
+        //
+        bool canUsePredAssertions = ((block->bbFlags & BBF_CAN_ADD_PRED) == 0) && !bbIsHandlerBeg(block);
+
+#ifdef DEBUG
+        // Optionally suppress via config
+        //
+        if (JitConfig.JitDoCrossBlockLocalAssertionProp() == 0)
+        {
+            canUsePredAssertions = false;
+        }
+#endif
+
+        // Validate all preds have valid info
+        //
+        if (canUsePredAssertions)
+        {
+            bool hasPred = false;
+
+            for (BasicBlock* const pred : block->PredBlocks())
+            {
+                // A higher postorder number means the block appears earlier in
+                // the postorder. Use this to detect if a pred's assertion info is available.
+                //
+                if (pred->bbPostorderNum > block->bbPostorderNum)
+                {
+                    // Yes, available. If this is the first pred, copy.
+                    // If this is a subsequent pred, intersect.
+                    //
+                    if (!hasPred)
+                    {
+                        apLocal = BitVecOps::MakeCopy(apTraits, pred->bbAssertionOut);
+                        hasPred = true;
+                    }
+                    else
+                    {
+                        BitVecOps::IntersectionD(apTraits, apLocal, pred->bbAssertionOut);
+                    }
+
+                    continue;
+                }
+
+                // No, not available.
+                //
+                JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum, pred->bbNum);
+                canUsePredAssertions = false;
+            }
+
+            // If there were no preds, there are no asserions in.
+            //
+            if (!hasPred)
+            {
+                JITDUMP(FMT_BB " has no preds, so no assertions in\n", block->bbNum);
+                canUsePredAssertions = false;
+            }
+
+            if (canUsePredAssertions)
+            {
+                JITDUMPEXEC(optDumpAssertionIndices("Assertions in: ", apLocal));
+            }
+        }
+        else
+        {
+            JITDUMP(FMT_BB " ineligible for cross-block; clearing assertions in\n", block->bbNum);
+        }
+
+        if (!canUsePredAssertions)
+        {
+            apLocal = BitVecOps::MakeEmpty(apTraits);
+        }
     }
 
     // Make the current basic block address available globally.
@@ -13799,6 +13867,11 @@ void Compiler::fgMorphBlock(BasicBlock* block)
         {
             fgMergeBlockReturn(block);
         }
+    }
+
+    if (optLocalAssertionProp && (block->NumSucc() > 0))
+    {
+        block->bbAssertionOut = BitVecOps::MakeCopy(apTraits, apLocal);
     }
 
     compCurBB = nullptr;

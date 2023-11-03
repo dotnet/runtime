@@ -445,6 +445,9 @@ CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range
 
 #if defined(OPT_CONFIG)
 CONFIG_INTEGER(JitDoAssertionProp, W("JitDoAssertionProp"), 1) // Perform assertion propagation optimization
+CONFIG_INTEGER(JitDoCrossBlockLocalAssertionProp, W("JitDoCrossBlockLocalAssertionProp"), 1) // Perform local assertion
+                                                                                             // propagation optimization
+                                                                                             // cross-block
 CONFIG_INTEGER(JitDoCopyProp, W("JitDoCopyProp"), 1)   // Perform copy propagation on variables that appear redundant
 CONFIG_INTEGER(JitDoEarlyProp, W("JitDoEarlyProp"), 1) // Perform Early Value Propagation
 CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop hoisting on loop invariant values
