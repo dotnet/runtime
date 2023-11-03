@@ -506,6 +506,42 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
             }
 
+            private bool ConvertTo(ITypeSymbol source, ITypeSymbol dest)
+            {
+                var conversion = _typeSymbols.Compilation.ClassifyConversion(source, dest);
+                return conversion.IsReference && conversion.IsImplicit;
+            }
+
+            private bool IsUnsupportedType(ITypeSymbol type)
+            {
+                if (SymbolEqualityComparer.Default.Equals(_typeSymbols.IntPtr, type)  ||
+                    SymbolEqualityComparer.Default.Equals(_typeSymbols.UIntPtr, type) ||
+                    SymbolEqualityComparer.Default.Equals(_typeSymbols.SerializationInfo, type) ||
+                    ConvertTo(type, _typeSymbols.MemberInfo) ||
+                    ConvertTo(type, _typeSymbols.Delegate))
+                {
+                    return true;
+                }
+
+                if (type is IArrayTypeSymbol arrayTypeSymbol)
+                {
+                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType);
+                }
+
+                if (type is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericType)
+                {
+                    foreach (var typeArguments in namedTypeSymbol.TypeArguments)
+                    {
+                        if (IsUnsupportedType(typeArguments))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
@@ -580,7 +616,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ImmutableArray<ISymbol> members = current.GetMembers();
                     foreach (ISymbol member in members)
                     {
-                        if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
+                        if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property && !IsUnsupportedType(property.Type))
                         {
                             string propertyName = property.Name;
                             TypeRef propertyTypeRef = EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);

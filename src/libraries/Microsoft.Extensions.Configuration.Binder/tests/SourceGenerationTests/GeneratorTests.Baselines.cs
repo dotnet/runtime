@@ -925,7 +925,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string source = """
                 using System.Collections.Generic;
                 using Microsoft.Extensions.Configuration;
-                
+
                 public class Program
                 {
                 	public static void Main()
@@ -964,6 +964,152 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
 
             Assert.Equal(2, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+        }
+
+        [Fact]
+        public async Task UnsupportedTypes()
+        {
+            string source = """
+                using System;
+                using System.Collections.Generic;
+                using System.Reflection;
+                using System.Runtime.Serialization;
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.DependencyInjection;
+
+                public class Program
+                {
+                	public static void Main()
+                	{
+                		ConfigurationBuilder configurationBuilder = new();
+                		IConfiguration configuration = configurationBuilder.Build();
+
+                        // var ws = config.GetSection("MySection");
+                        var w = new Options();
+                        configuration.Bind(w);
+                        configuration.Get<Options>(_ => { });
+                	}
+                }
+
+                public class Options
+                {
+                    public string? Name { get; set; }
+                    public int Age { get; set; }
+                    public List<string> List { get; set; }
+                    public string[] Array { get; set; }
+
+                    public Action<string> SkipProp1 { get; set; }
+                    public Container<Action<string>> SkipProp2 { get; set; }
+                    public Container<Dictionary<string, Action<string>>> SkipProp3 { get; set; }
+
+                    public Func<int> SkipProp4 { get; set; }
+                    public Container<Func<int>> SkipProp5 { get; set; }
+                    public Container<Dictionary<string, Func<string>>> SkipProp6 { get; set; }
+
+                    public myMethodDelegate SkipProp7 { get; set; }
+                    public Container<myMethodDelegate> SkipProp8 { get; set; }
+                    public Container<Dictionary<string, myMethodDelegate>> SkipProp9 { get; set; }
+
+                    public IntPtr SkipProp10 { get; set; }
+                    public Container<IntPtr> SkipProp11 { get; set; }
+                    public Container<Dictionary<string, IntPtr>> SkipProp12 { get; set; }
+
+                    public UIntPtr SkipProp13 { get; set; }
+                    public Container<UIntPtr> SkipProp14 { get; set; }
+                    public Container<Dictionary<string, UIntPtr>> SkipProp15 { get; set; }
+
+                    public SerializationInfo SkipProp16 { get; set; }
+                    public Container<SerializationInfo> SkipProp17 { get; set; }
+                    public Container<Dictionary<string, SerializationInfo>> SkipProp18 { get; set; }
+
+                    public MethodInfo SkipProp19 { get; set; }
+                    public Container<MethodInfo> SkipProp20 { get; set; }
+                    public Container<Dictionary<string, MethodInfo>> SkipProp21 { get; set; }
+
+                    public ConstructorInfo SkipProp22 { get; set; }
+                    public Container<ConstructorInfo> SkipProp23 { get; set; }
+                    public Container<Dictionary<string, ConstructorInfo>> SkipProp24 { get; set; }
+
+                    public string[,] SkipProp25 { get; set; }
+                    public Container<string[,]> SkipProp26 { get; set; }
+                    public Container<Dictionary<string, string[,]>> SkipProp27 { get; set; }
+
+                    public Func<string>[] SkipProp28 { get; set; }
+                    public Action<string>[] SkipProp29 { get; set; }
+                    public myMethodDelegate[] SkipProp30 { get; set; }
+                    public MethodInfo[] SkipProp31 { get; set; }
+                    public ConstructorInfo[] SkipProp32 { get; set; }
+                    public SerializationInfo[] SkipProp33 { get; set; }
+                    public IntPtr[] SkipProp34 { get; set; }
+                    public UIntPtr[] SkipProp35 { get; set; }
+
+                    //
+                    // Repeat the above properties, but with a nullability annotation.
+                    //
+
+                    public Action<string>? SkipProp36 { get; set; }
+                    public Container<Action<string>?> SkipProp37 { get; set; }
+                    public Container<Dictionary<string, Action<string>?>> SkipProp38 { get; set; }
+
+                    public Func<int>? SkipProp39 { get; set; }
+                    public Container<Func<int>?> SkipProp40 { get; set; }
+                    public Container<Dictionary<string, Func<string>?>> SkipProp41 { get; set; }
+
+                    public myMethodDelegate? SkipProp42 { get; set; }
+                    public Container<myMethodDelegate?> SkipProp43 { get; set; }
+                    public Container<Dictionary<string, myMethodDelegate?>> SkipProp44 { get; set; }
+
+                    public IntPtr? SkipProp45 { get; set; }
+                    public Container<IntPtr?> SkipProp46 { get; set; }
+                    public Container<Dictionary<string, IntPtr?>> SkipProp47 { get; set; }
+
+                    public UIntPtr? SkipProp48 { get; set; }
+                    public Container<UIntPtr?> SkipProp49 { get; set; }
+                    public Container<Dictionary<string, UIntPtr?>> SkipProp50 { get; set; }
+
+                    public SerializationInfo? SkipProp51 { get; set; }
+                    public Container<SerializationInfo?> SkipProp52 { get; set; }
+                    public Container<Dictionary<string, SerializationInfo?>> SkipProp53 { get; set; }
+
+                    public MethodInfo? SkipProp54 { get; set; }
+                    public Container<MethodInfo?> SkipProp55 { get; set; }
+                    public Container<Dictionary<string, MethodInfo?>> SkipProp56 { get; set; }
+
+                    public ConstructorInfo? SkipProp57 { get; set; }
+                    public Container<ConstructorInfo?> SkipProp58 { get; set; }
+                    public Container<Dictionary<string, ConstructorInfo?>> SkipProp59 { get; set; }
+
+                    public string[,]? SkipProp60 { get; set; }
+                    public Container<string[,]?> SkipProp61 { get; set; }
+                    public Container<Dictionary<string, string[,]?>> SkipProp62 { get; set; }
+
+                    public Func<string>?[] SkipProp63 { get; set; }
+                    public Action<string>?[] SkipProp64 { get; set; }
+                    public myMethodDelegate?[] SkipProp65 { get; set; }
+                    public MethodInfo?[] SkipProp66 { get; set; }
+                    public ConstructorInfo?[] SkipProp67 { get; set; }
+                    public SerializationInfo?[] SkipProp68 { get; set; }
+                    public IntPtr?[] SkipProp69 { get; set; }
+                    public UIntPtr?[] SkipProp70 { get; set; }
+
+                    public delegate string myMethodDelegate( int myInt );
+                }
+
+                public class Container<T>
+                {
+                    public Container() {}
+                    public T? Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await VerifyAgainstBaselineUsingFile(
+                "UnsupportedTypes.generated.txt",
+                source);
+
+            Assert.Empty(result.Diagnostics);
+            Assert.True(result.GeneratedSource.HasValue);
+            System.IO.File.WriteAllText(@$"c:\temp\out{DateTime.UtcNow.Hour}-{DateTime.UtcNow.Second}.txt", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain(result.GeneratedSource.Value.SourceText.ToString(), "SkipProp");
         }
     }
 }
