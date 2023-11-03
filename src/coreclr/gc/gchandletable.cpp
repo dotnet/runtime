@@ -36,7 +36,12 @@ HHANDLETABLE GCHandleStore::GetTable()
         s_numTableSlots = getNumberOfSlots();
     }
 
+    if (s_numTableSlots == 1)
+        return _underlyingBucket.pTable[0];
+
     gc_alloc_context* ctx = GetCurrentThreadAllocContext();
+    if (!ctx)
+        return _underlyingBucket.pTable[0];
 
     // high 16-bits are for the handle info.
     int handleInfo = (uint32_t)(ctx->alloc_count) >> 16;

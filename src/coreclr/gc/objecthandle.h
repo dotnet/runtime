@@ -73,7 +73,7 @@ uint32_t     CompareExchangeVariableHandleType(OBJECTHANDLE handle, uint32_t old
 int GetCurrentThreadHomeHeapNumber();
 gc_alloc_context* GetCurrentThreadAllocContext();
 
-// helper for getting the total number of processors
+// helper for getting the total number of handle table slots we can allocate in
 int getNumberOfSlots();
 
 /*
