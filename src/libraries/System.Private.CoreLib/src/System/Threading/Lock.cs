@@ -343,19 +343,29 @@ namespace System.Threading
             _recursionCount--;
         }
 
-        private static unsafe void ExponentialBackoff(uint iteration)
+        // we use this to de-synchronize threads if interlocked operations fail
+        // we will pick a random number in exponentially expanding range and spin that many times
+        private unsafe void CollisionBackoff(int collisions)
         {
-            if (iteration > 0)
-            {
-                // no need for much randomness here, we will just hash the stack address + iteration.
-                uint rand = ((uint)&iteration + iteration) * 2654435769u;
-                // set the highmost bit to ensure minimum number of spins is exponentialy increasing
-                // that is in case some stack location results in a sequence of very low spin counts
-                // it basically gurantees that we spin at least 1, 2, 4, 8, 16, times, and so on
-                rand |= (1u << 31);
-                uint spins = rand >> (byte)(32 - Math.Min(iteration, MaxExponentialBackoffBits));
-                Thread.SpinWait((int)spins);
-            }
+            Debug.Assert(collisions > 0);
+
+            // no need for much randomness here, we will just hash the stack address + _wakeWatchDog.
+            uint rand = ((uint)&collisions + (uint)_wakeWatchDog) * 2654435769u;
+            uint spins = rand >> (byte)(32 - Math.Min(collisions, MaxExponentialBackoffBits));
+            Thread.SpinWait((int)spins);
+        }
+
+        // same idea as in CollisionBackoff, but with guaranteed minimum wait
+        private unsafe void IterationBackoff(int iteration)
+        {
+            Debug.Assert(iteration > 0 && iteration < MaxExponentialBackoffBits);
+
+            uint rand = ((uint)&iteration + (uint)_wakeWatchDog) * 2654435769u;
+            // set the highmost bit to ensure minimum number of spins is exponentialy increasing
+            // it basically gurantees that we spin at least 1, 2, 4, 8, 16, times, and so on
+            rand |= (1u << 31);
+            uint spins = rand >> (byte)(32 - iteration);
+            Thread.SpinWait((int)spins);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -407,11 +417,11 @@ namespace System.Threading
             // we will retry after waking up
             while (true)
             {
-                uint iteration = 1;
+                int iteration = 1;
 
                 // We will count when we failed to change the state of the lock and increase pauses
                 // so that bursts of activity are better tolerated. This should not happen often.
-                uint collisions = 0;
+                int collisions = 0;
 
                 // We will track the changes of ownership while we are trying to acquire the lock.
                 var oldOwner = _owningThreadId;
@@ -466,6 +476,9 @@ namespace System.Threading
                             {
                                 // we used all of allowed iterations, but the lock does not look very contested,
                                 // we can allow a bit more spinning.
+                                //
+                                // NB: if we acquired the lock while registering a waiter, and owner did not change it still counts.
+                                //     (however iteration does not grow beyond the iterationLimit)
                                 _spinCount = (short)(spinLimit + 1);
                             }
 
@@ -474,8 +487,6 @@ namespace System.Threading
 
                             return true;
                         }
-
-                        collisions++;
                     }
 
                     var newOwner = _owningThreadId;
@@ -489,14 +500,13 @@ namespace System.Threading
 
                     if (iteration < iterationLimit)
                     {
-                        iteration++;
-
                         // We failed to acquire the lock and want to retry after a pause.
                         // Ideally we will retry right when the lock becomes free, but we cannot know when that will happen.
                         // We will use a pause that doubles up on every iteration. It will not be more than 2x worse
                         // than the ideal guess, while minimizing the number of retries.
-                        // We will allow pauses up to 64~128 spinwaits, or more if there are collisions.
-                        ExponentialBackoff(Math.Min(iteration, 6) + collisions);
+                        // We will allow pauses up to 64~128 spinwaits.
+                        IterationBackoff(Math.Min(iteration, 6));
+                        iteration++;
                         continue;
                     }
                     else if (!canAcquire)
@@ -517,11 +527,9 @@ namespace System.Threading
 
                         if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
                             break;
-
-                        collisions++;
                     }
 
-                    ExponentialBackoff(collisions);
+                    CollisionBackoff(++collisions);
                 }
 
                 //
@@ -566,7 +574,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void UnregisterWaiter(long contentionTrackingStartedTicks)
         {
-            uint iteration = 0;
+            int collisions = 0;
             while (true)
             {
                 uint oldState = _state;
@@ -588,7 +596,7 @@ namespace System.Threading
                     return;
                 }
 
-                ExponentialBackoff(iteration++);
+                CollisionBackoff(++collisions);
             }
         }
 
@@ -709,7 +717,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void AwakeWaiterIfNeeded()
         {
-            uint iteration = 0;
+            int collisions = 0;
             while (true)
             {
                 uint oldState = _state;
@@ -742,7 +750,7 @@ namespace System.Threading
                     return;
                 }
 
-                ExponentialBackoff(iteration++);
+                CollisionBackoff(++collisions);
             }
         }
 
