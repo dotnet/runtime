@@ -198,7 +198,6 @@ namespace System.Net.Sockets.Tests
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
                 return;
             }
-
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);
