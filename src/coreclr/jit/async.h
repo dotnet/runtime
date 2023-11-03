@@ -28,7 +28,7 @@ class Async2Transformation
     unsigned                      m_newContinuationVar      = BAD_VAR_NUM;
     unsigned                      m_dataArrayVar            = BAD_VAR_NUM;
     unsigned                      m_gcDataArrayVar          = BAD_VAR_NUM;
-    unsigned                      m_resultBoxVar            = BAD_VAR_NUM;
+    unsigned                      m_resultBaseVar           = BAD_VAR_NUM;
     unsigned                      m_exceptionVar            = BAD_VAR_NUM;
     BasicBlock*                   m_lastSuspensionBB        = nullptr;
 
@@ -43,12 +43,15 @@ class Async2Transformation
                    class AsyncLiveness&      life,
                    BasicBlock**              remainder);
 
-    GenTreeIndir* LoadFromOffset(GenTree* base, unsigned offset, var_types type);
+    GenTreeIndir* LoadFromOffset(GenTree*     base,
+                                 unsigned     offset,
+                                 var_types    type,
+                                 GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
     GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value);
 
     unsigned GetDataArrayVar();
     unsigned GetGCDataArrayVar();
-    unsigned GetResultBoxVar();
+    unsigned GetResultBaseVar();
     unsigned GetExceptionVar();
 
     GenTree* CreateResumptionStubAddrTree();

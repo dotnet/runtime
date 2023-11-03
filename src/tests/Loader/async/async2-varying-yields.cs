@@ -24,19 +24,17 @@ public class Async2VaryingYields
 
     public static async Task AsyncEntry()
     {
-        string[] args = Environment.GetCommandLineArgs();
-        if (args.Length < 3)
-        {
-            Console.WriteLine("Use: corerun.exe <path to varying-yields.dll> <depth> <suspend frequency> [--use-direct-yield]");
-            return;
-        }
-
         if (!GCSettings.IsServerGC)
             Console.WriteLine("*** Warning: Server GC is disabled, set DOTNET_gcServer=1 ***");
 
-        int depth = int.Parse(args[1]);
-        // Yield on average every X calls.
-        int yieldFrequency = int.Parse(args[2]);
+        string[] args = Environment.GetCommandLineArgs();
+        int depth = args.Length > 1 ? int.Parse(args[1]) : 0;
+        Console.WriteLine("Using depth = {0}", depth);
+
+        // Yield on average every X iterations.
+        int yieldFrequency = args.Length > 2 ? int.Parse(args[2]) : 1;
+        Console.WriteLine("Using yield frequency = {0}", yieldFrequency);
+
         Benchmark warmupBm = new Benchmark(0.0001);
         warmupBm.Warmup = true;
         for (int i = 0; i < 4; i++)

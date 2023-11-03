@@ -32,7 +32,6 @@ public class Async2SimpleEH
         }
         catch (IntegerException ex)
         {
-            System.Console.WriteLine(ex);
             return ex.Value;
         }
     }

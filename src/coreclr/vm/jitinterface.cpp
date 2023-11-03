@@ -14383,40 +14383,91 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     pCode->EmitCALLI(pCode->GetSigToken(calliSig.GetRawSig(), calliSig.GetRawSigLen()), numArgs, msig.IsReturnTypeVoid() ? 0 : 1);
 
     DWORD resultLoc = UINT_MAX;
+    TypeHandle resultTypeHnd;
     if (!msig.IsReturnTypeVoid())
     {
-        resultLoc = pCode->NewLocal(LocalDesc(msig.GetRetTypeHandleThrowing()));
+        resultTypeHnd = msig.GetRetTypeHandleThrowing();
+        resultLoc = pCode->NewLocal(LocalDesc(resultTypeHnd));
         pCode->EmitSTLOC(resultLoc);
     }
 
-    DWORD newContinuationLoc = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__CONTINUATION)));
+    TypeHandle continuationTypeHnd = CoreLibBinder::GetClass(CLASS__CONTINUATION);
+    DWORD newContinuationLoc = pCode->NewLocal(LocalDesc(continuationTypeHnd));
     pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC2_CALL_CONTINUATION, 0, 1);
     pCode->EmitSTLOC(newContinuationLoc);
 
     if (!msig.IsReturnTypeVoid())
     {
-        ILCodeLabel* noResult = pCode->NewCodeLabel();
+        ILCodeLabel* doneResult = pCode->NewCodeLabel();
         pCode->EmitLDLOC(newContinuationLoc);
-        pCode->EmitBRTRUE(noResult);
+        pCode->EmitBRTRUE(doneResult);
 
         // Load 'next' of current continuation
         pCode->EmitLDARG(0);
         pCode->EmitLDFLD(FIELD__CONTINUATION__NEXT);
 
-        // Load 'gcdata' of next continuation
-        pCode->EmitLDFLD(FIELD__CONTINUATION__GCDATA);
+        // Result is placed in GCData[0] if it has GC references (potentially boxing it).
+        bool isOrContainsGCPointers = false;
+        if (CorTypeInfo::IsObjRef(resultTypeHnd.GetInternalCorElementType()) || (resultTypeHnd.IsValueType() && resultTypeHnd.AsMethodTable()->ContainsPointers()))
+        {
+            // Load 'gcdata' of next continuation
+            pCode->EmitLDFLD(FIELD__CONTINUATION__GCDATA);
 
-        // Now we have the GC array. At the first index is the result.
-        pCode->EmitLDC(0);
+            // Now we have the GC array. At the first index is the result.
+            pCode->EmitLDC(0);
 
-        // Box the result.
-        pCode->EmitLDLOC(resultLoc);
-        pCode->EmitBOX(pCode->GetToken(msig.GetRetTypeHandleThrowing()));
+            // Box the result.
+            pCode->EmitLDLOC(resultLoc);
+            pCode->EmitBOX(pCode->GetToken(resultTypeHnd));
 
-        // Finally store it.
-        pCode->EmitSTELEM_REF();
+            // Finally store it.
+            pCode->EmitSTELEM_REF();
+        }
+        else
+        {
+            // Otherwise it goes into Data, either at offset 0 or 4 depending
+            // on CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA.
+            ILCodeLabel* hasOsrILOffset = pCode->NewCodeLabel();
 
-        pCode->EmitLabel(noResult);
+            unsigned nextContinuationLcl = pCode->NewLocal(LocalDesc(continuationTypeHnd));
+            pCode->EmitSTLOC(nextContinuationLcl);
+
+            // Load 'flags' of next continuation
+            pCode->EmitLDLOC(nextContinuationLcl);
+            pCode->EmitLDFLD(FIELD__CONTINUATION__FLAGS);
+            pCode->EmitLDC(CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA);
+            pCode->EmitAND();
+            pCode->EmitBRTRUE(hasOsrILOffset);
+
+            // Load 'data' of next continuation
+            pCode->EmitLDLOC(nextContinuationLcl);
+            pCode->EmitLDFLD(FIELD__CONTINUATION__DATA);
+            // Load address of array at index 0
+            pCode->EmitLDC(0);
+            pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__BYTE)));
+
+            // Store at index 0.
+            pCode->EmitLDLOC(resultLoc);
+            pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
+
+            pCode->EmitBR(doneResult);
+
+            pCode->EmitLabel(hasOsrILOffset);
+
+            // Load 'data' of next continuation
+            pCode->EmitLDLOC(nextContinuationLcl);
+            pCode->EmitLDFLD(FIELD__CONTINUATION__DATA);
+            // Load address of array at index 4
+            pCode->EmitLDC(4);
+            pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__BYTE)));
+
+            // Store at index 4.
+            pCode->EmitLDLOC(resultLoc);
+            pCode->EmitUNALIGNED(1);
+            pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
+        }
+
+        pCode->EmitLabel(doneResult);
     }
 
     pCode->EmitLDLOC(newContinuationLoc);

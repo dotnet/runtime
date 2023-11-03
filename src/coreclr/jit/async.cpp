@@ -393,20 +393,49 @@ void Async2Transformation::Transform(
     unsigned dataSize    = 0;
     unsigned gcRefsCount = 0;
 
-    // Result value is currently always stored boxed in the continuation as it
-    // needs to be written by the resumption stub and by the asynchronous
-    // callbacks. If we specialized the continuation type we could avoid this.
-    if (call->gtReturnType != TYP_VOID)
+    // For OSR, we store the transition IL offset at the beginning of the data
+    // (-1 in the tier0 version):
+    if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
+    {
+        dataSize += sizeof(int);
+    }
+
+    ClassLayout* returnStructLayout = nullptr;
+    unsigned     returnSize         = 0;
+    bool         returnInGCData     = false;
+    if (call->gtReturnType == TYP_STRUCT)
+    {
+        returnStructLayout = m_comp->typGetObjLayout(call->gtRetClsHnd);
+        returnSize         = returnStructLayout->GetSize();
+        returnInGCData     = returnStructLayout->HasGCPtr();
+    }
+    else
+    {
+        returnSize     = genTypeSize(call->gtReturnType);
+        returnInGCData = varTypeIsGC(call->gtReturnType);
+    }
+
+    assert((returnSize > 0) == (call->gtReturnType != TYP_VOID));
+
+    // The return value is always stored:
+    // 1. At index 0 in GCData if it is a TYP_REF or a struct with GC references
+    // 2. At index 0 in Data, for non OSR methods without GC ref returns
+    // 3. At index 4 in Data for OSR methods without GC ref returns. The
+    // continuation flags indicates this scenario with a flag.
+    unsigned returnValDataOffset = UINT_MAX;
+    if (returnInGCData)
+    {
         gcRefsCount++;
+    }
+    else if (returnSize > 0)
+    {
+        returnValDataOffset = dataSize;
+        dataSize += returnSize;
+    }
 
     unsigned exceptionGCDataIndex = UINT_MAX;
     if (block->hasTryIndex())
         exceptionGCDataIndex = gcRefsCount++;
-
-    // For OSR, we store the patchpoint information at the beginning of the data
-    // (null in the tier0 version):
-    if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
-        dataSize += sizeof(int);
 
     for (LiveLocalInfo& inf : m_liveLocals)
     {
@@ -537,10 +566,12 @@ void Async2Transformation::Transform(
 
     // Fill in 'flags'
     unsigned continuationFlags = 0;
-    if (call->gtReturnType != TYP_VOID)
+    if (returnInGCData)
         continuationFlags |= CORINFO_CONTINUATION_RESULT_IN_GCDATA;
     if (block->hasTryIndex())
         continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+    if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
+        continuationFlags |= CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA;
 
     newContinuation      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationFlagsFldHnd);
@@ -722,14 +753,15 @@ void Async2Transformation::Transform(
 
     m_comp->fgAddRefPred(remainder, resumeBB);
 
+    unsigned resumeByteArrLclNum = BAD_VAR_NUM;
     if (dataSize > 0)
     {
-        unsigned byteArrLclNum = GetDataArrayVar();
+        resumeByteArrLclNum = GetDataArrayVar();
 
         GenTree* newContinuation     = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned dataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
         GenTree* dataInd             = LoadFromOffset(newContinuation, dataOffset, TYP_REF);
-        GenTree* storeAllocedByteArr = m_comp->gtNewStoreLclVarNode(byteArrLclNum, dataInd);
+        GenTree* storeAllocedByteArr = m_comp->gtNewStoreLclVarNode(resumeByteArrLclNum, dataInd);
 
         LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedByteArr));
 
@@ -743,7 +775,7 @@ void Async2Transformation::Transform(
 
             LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
 
-            GenTree* byteArr = m_comp->gtNewLclvNode(byteArrLclNum, TYP_REF);
+            GenTree* byteArr = m_comp->gtNewLclvNode(resumeByteArrLclNum, TYP_REF);
             unsigned offset  = OFFSETOF__CORINFO_Array__data + inf.DataOffset;
             GenTree* cns     = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
             GenTree* addr    = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, byteArr, cns);
@@ -776,14 +808,15 @@ void Async2Transformation::Transform(
         }
     }
 
+    unsigned resumeObjectArrLclNum = BAD_VAR_NUM;
     if (gcRefsCount > 0)
     {
-        unsigned objectArrLclNum = GetGCDataArrayVar();
+        resumeObjectArrLclNum = GetGCDataArrayVar();
 
         newContinuation       = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned gcDataOffset = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
         GenTree* gcDataInd    = LoadFromOffset(newContinuation, gcDataOffset, TYP_REF);
-        GenTree* storeAllocedObjectArr = m_comp->gtNewStoreLclVarNode(objectArrLclNum, gcDataInd);
+        GenTree* storeAllocedObjectArr = m_comp->gtNewStoreLclVarNode(resumeObjectArrLclNum, gcDataInd);
         LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedObjectArr));
 
         // Copy GC pointers
@@ -797,7 +830,7 @@ void Async2Transformation::Transform(
             LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
             if (dsc->TypeGet() == TYP_REF)
             {
-                GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
+                GenTree* objectArr = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
                 unsigned offset    = OFFSETOF__CORINFO_Array__data + (inf.GCDataIndex * TARGET_POINTER_SIZE);
                 GenTree* value     = LoadFromOffset(objectArr, offset, TYP_REF);
                 GenTree* store     = m_comp->gtNewStoreLclVarNode(inf.LclNum, value);
@@ -818,7 +851,7 @@ void Async2Transformation::Transform(
                         continue;
                     }
 
-                    GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
+                    GenTree* objectArr = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
                     unsigned offset    = OFFSETOF__CORINFO_Array__data + ((inf.GCDataIndex + i) * TARGET_POINTER_SIZE);
                     GenTree* value     = LoadFromOffset(objectArr, offset, TYP_REF);
                     GenTree* store;
@@ -855,7 +888,7 @@ void Async2Transformation::Transform(
 
             // Check if we have an exception.
             unsigned exceptionLclNum = GetExceptionVar();
-            GenTree* objectArr       = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
+            GenTree* objectArr       = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
             unsigned exceptionOffset = OFFSETOF__CORINFO_Array__data + exceptionGCDataIndex * TARGET_POINTER_SIZE;
             GenTree* exceptionInd    = LoadFromOffset(objectArr, exceptionOffset, TYP_REF);
             GenTree* storeException  = m_comp->gtNewStoreLclVarNode(exceptionLclNum, exceptionInd);
@@ -878,96 +911,113 @@ void Async2Transformation::Transform(
             storeResultBB->bbFlags |= BBF_ASYNC_RESUMPTION;
             JITDUMP("Added " FMT_BB " to rethrow exception at suspension point\n", rethrowExceptionBB->bbNum);
         }
+    }
 
-        // Copy call return value.
-        if (storeResultNode != nullptr)
+    // Copy call return value.
+    if (storeResultNode != nullptr)
+    {
+        GenTree*     resultBase;
+        unsigned     resultOffset;
+        GenTreeFlags resultIndirFlags = GTF_IND_NONFAULTING;
+        if (returnInGCData)
         {
-            GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
-            GenTree* resultBox = LoadFromOffset(objectArr, OFFSETOF__CORINFO_Array__data, TYP_REF);
+            assert(resumeObjectArrLclNum != BAD_VAR_NUM);
+            resultBase = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
 
-            LclVarDsc* resultLcl = m_comp->lvaGetDesc(storeResultNode);
-            assert((retbufArg != nullptr) ||
-                   (resultLcl->TypeGet() == TYP_STRUCT) == storeResultNode->TypeIs(TYP_STRUCT));
-
-            // TODO-TP: We can use liveness to avoid generating a lot of this IR.
-            if ((retbufArg != nullptr) || storeResultNode->TypeIs(TYP_STRUCT))
+            if (call->gtReturnType == TYP_STRUCT)
             {
-                if (m_comp->lvaGetPromotionType(resultLcl) != Compiler::PROMOTION_TYPE_INDEPENDENT)
-                {
-                    GenTree*     boxDataOffset = m_comp->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                    GenTree*     boxDataAddr   = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBox, boxDataOffset);
-                    ClassLayout* returnLayout  = m_comp->typGetObjLayout(call->gtRetClsHnd);
-                    GenTree*     boxData       = m_comp->gtNewBlkIndir(returnLayout, boxDataAddr, GTF_IND_NONFAULTING);
-                    GenTree*     storeResult;
-                    if ((storeResultNode->GetLclOffs() == 0) && (returnLayout->GetSize() == resultLcl->lvExactSize()))
-                    {
-                        storeResult = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), boxData);
-                    }
-                    else
-                    {
-                        storeResult =
-                            m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), TYP_STRUCT, returnLayout,
-                                                         storeResultNode->GetLclOffs(), boxData);
-                    }
-
-                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
-                }
-                else
-                {
-                    assert(retbufArg == nullptr); // Locals defined through retbufs are never independently promoted.
-
-                    if (resultLcl->lvFieldCnt > 1)
-                    {
-                        unsigned resultBoxVar   = GetResultBoxVar();
-                        GenTree* storeResultBox = m_comp->gtNewStoreLclVarNode(resultBoxVar, resultBox);
-                        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResultBox));
-
-                        resultBox = m_comp->gtNewLclVarNode(resultBoxVar, TYP_REF);
-                    }
-
-                    assert(storeResultNode->OperIs(GT_STORE_LCL_VAR));
-                    for (unsigned i = 0; i < resultLcl->lvFieldCnt; i++)
-                    {
-                        unsigned   fieldLclNum = resultLcl->lvFieldLclStart + i;
-                        LclVarDsc* fieldDsc    = m_comp->lvaGetDesc(fieldLclNum);
-
-                        unsigned fldOffset = TARGET_POINTER_SIZE + fieldDsc->lvFldOffset;
-                        GenTree* value     = LoadFromOffset(resultBox, fldOffset, fieldDsc->TypeGet());
-                        GenTree* store     = m_comp->gtNewStoreLclVarNode(fieldLclNum, value);
-                        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
-
-                        if (i + 1 != resultLcl->lvFieldCnt)
-                        {
-                            resultBox = m_comp->gtCloneExpr(resultBox);
-                        }
-                    }
-                }
+                // Boxed struct.
+                resultBase   = LoadFromOffset(resultBase, OFFSETOF__CORINFO_Array__data, TYP_REF);
+                resultOffset = TARGET_POINTER_SIZE; // Offset of data inside box
             }
             else
             {
-                GenTree* value;
-                if (call->gtReturnType == TYP_REF)
-                {
-                    value = resultBox;
-                }
-                else
-                {
-                    value = LoadFromOffset(resultBox, TARGET_POINTER_SIZE, call->gtReturnType);
-                }
+                assert(call->gtReturnType == TYP_REF);
+                resultOffset = OFFSETOF__CORINFO_Array__data;
+            }
+        }
+        else
+        {
+            assert(resumeByteArrLclNum != BAD_VAR_NUM);
+            resultBase   = m_comp->gtNewLclvNode(resumeByteArrLclNum, TYP_REF);
+            resultOffset = OFFSETOF__CORINFO_Array__data + returnValDataOffset;
+            if (returnValDataOffset != 0)
+                resultIndirFlags = GTF_IND_UNALIGNED;
+        }
 
+        LclVarDsc* resultLcl = m_comp->lvaGetDesc(storeResultNode);
+        assert((resultLcl->TypeGet() == TYP_STRUCT) == (call->gtReturnType == TYP_STRUCT));
+
+        // TODO-TP: We can use liveness to avoid generating a lot of this IR.
+        if (call->gtReturnType == TYP_STRUCT)
+        {
+            if (m_comp->lvaGetPromotionType(resultLcl) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+            {
+                GenTree* resultOffsetNode = m_comp->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
+                GenTree* resultAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBase, resultOffsetNode);
+                GenTree* resultData       = m_comp->gtNewBlkIndir(returnStructLayout, resultAddr, resultIndirFlags);
                 GenTree* storeResult;
-                if (storeResultNode->OperIs(GT_STORE_LCL_VAR))
+                if ((storeResultNode->GetLclOffs() == 0) &&
+                    ClassLayout::AreCompatible(resultLcl->GetLayout(), returnStructLayout))
                 {
-                    storeResult = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), value);
+                    storeResult = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), resultData);
                 }
                 else
                 {
-                    storeResult = m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), storeResultNode->TypeGet(),
-                                                               storeResultNode->GetLclOffs(), value);
+                    storeResult =
+                        m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), TYP_STRUCT, returnStructLayout,
+                                                     storeResultNode->GetLclOffs(), resultData);
                 }
 
                 LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
             }
+            else
+            {
+                assert(retbufArg == nullptr); // Locals defined through retbufs are never independently promoted.
+
+                if ((resultLcl->lvFieldCnt > 1) && !resultBase->OperIsLocal())
+                {
+                    unsigned resultBaseVar   = GetResultBaseVar();
+                    GenTree* storeResultBase = m_comp->gtNewStoreLclVarNode(resultBaseVar, resultBase);
+                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResultBase));
+
+                    resultBase = m_comp->gtNewLclVarNode(resultBaseVar, TYP_REF);
+                }
+
+                assert(storeResultNode->OperIs(GT_STORE_LCL_VAR));
+                for (unsigned i = 0; i < resultLcl->lvFieldCnt; i++)
+                {
+                    unsigned   fieldLclNum = resultLcl->lvFieldLclStart + i;
+                    LclVarDsc* fieldDsc    = m_comp->lvaGetDesc(fieldLclNum);
+
+                    unsigned fldOffset = resultOffset + fieldDsc->lvFldOffset;
+                    GenTree* value     = LoadFromOffset(resultBase, fldOffset, fieldDsc->TypeGet(), resultIndirFlags);
+                    GenTree* store     = m_comp->gtNewStoreLclVarNode(fieldLclNum, value);
+                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+
+                    if (i + 1 != resultLcl->lvFieldCnt)
+                    {
+                        resultBase = m_comp->gtCloneExpr(resultBase);
+                    }
+                }
+            }
+        }
+        else
+        {
+            GenTree* value = LoadFromOffset(resultBase, resultOffset, call->gtReturnType, resultIndirFlags);
+
+            GenTree* storeResult;
+            if (storeResultNode->OperIs(GT_STORE_LCL_VAR))
+            {
+                storeResult = m_comp->gtNewStoreLclVarNode(storeResultNode->GetLclNum(), value);
+            }
+            else
+            {
+                storeResult = m_comp->gtNewStoreLclFldNode(storeResultNode->GetLclNum(), storeResultNode->TypeGet(),
+                                                           storeResultNode->GetLclOffs(), value);
+            }
+
+            LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
         }
     }
 
@@ -975,13 +1025,16 @@ void Async2Transformation::Transform(
     JITDUMP("  Created resumption BB " FMT_BB "\n", resumeBB->bbNum);
 }
 
-GenTreeIndir* Async2Transformation::LoadFromOffset(GenTree* base, unsigned offset, var_types type)
+GenTreeIndir* Async2Transformation::LoadFromOffset(GenTree*     base,
+                                                   unsigned     offset,
+                                                   var_types    type,
+                                                   GenTreeFlags indirFlags)
 {
     assert(base->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL));
     GenTree*      cns      = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
     var_types     addrType = base->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
     GenTree*      addr     = m_comp->gtNewOperNode(GT_ADD, addrType, base, cns);
-    GenTreeIndir* load     = m_comp->gtNewIndir(type, addr, GTF_IND_NONFAULTING);
+    GenTreeIndir* load     = m_comp->gtNewIndir(type, addr, indirFlags);
     return load;
 }
 
@@ -1020,15 +1073,15 @@ unsigned Async2Transformation::GetGCDataArrayVar()
     return m_gcDataArrayVar;
 }
 
-unsigned Async2Transformation::GetResultBoxVar()
+unsigned Async2Transformation::GetResultBaseVar()
 {
-    if ((m_resultBoxVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
+    if ((m_resultBaseVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
     {
-        m_resultBoxVar = m_comp->lvaGrabTemp(false DEBUGARG("object for resuming result box"));
-        m_comp->lvaGetDesc(m_resultBoxVar)->lvType = TYP_REF;
+        m_resultBaseVar = m_comp->lvaGrabTemp(false DEBUGARG("object for resuming result base"));
+        m_comp->lvaGetDesc(m_resultBaseVar)->lvType = TYP_REF;
     }
 
-    return m_resultBoxVar;
+    return m_resultBaseVar;
 }
 
 unsigned Async2Transformation::GetExceptionVar()

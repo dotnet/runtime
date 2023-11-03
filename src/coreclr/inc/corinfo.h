@@ -1837,6 +1837,9 @@ enum CorInfoContinuationFlags
     // should be placed at index 0 or 1 depending on whether the continuation
     // also expects a result.
     CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
+    // If this bit is set the continuation has an OSR IL offset saved in the
+    // beginning of 'Data'.
+    CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
 };
 
 struct CORINFO_ASYNC2_INFO

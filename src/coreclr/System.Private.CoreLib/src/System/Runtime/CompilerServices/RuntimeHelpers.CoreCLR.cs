@@ -471,11 +471,23 @@ namespace System.Runtime.CompilerServices
 
         private static async Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)
         {
-            continuation.Next = new Continuation
+            Continuation finalContinuation = new Continuation();
+
+            // Note that the exact location the return value is placed is tied
+            // into getAsyncResumptionStub in the VM, so do not change this
+            // without also changing that code (and the JIT).
+            if (IsReferenceOrContainsReferences<T>())
             {
-                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
-                GCData = new object[1],
-            };
+                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+                finalContinuation.GCData = new object[1];
+            }
+            else
+            {
+                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+                finalContinuation.Data = new byte[Unsafe.SizeOf<T>()];
+            }
+
+            continuation.Next = finalContinuation;
 
             AwaitableProxy awaitableProxy = new AwaitableProxy();
 
@@ -486,19 +498,29 @@ namespace System.Runtime.CompilerServices
                 Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
                 {
+                    Debug.Assert(finalResult == finalContinuation);
                     if (ex != null)
                         throw ex;
-                    return (T)finalResult.GCData![0];
+
+                    if (IsReferenceOrContainsReferences<T>())
+                    {
+                        return (T)finalResult.GCData![0];
+                    }
+                    else
+                    {
+                        return Unsafe.As<byte, T>(ref finalResult.Data![0]);
+                    }
                 }
             }
         }
 
         private static async Task FinalizeTaskReturningThunk(Continuation continuation)
         {
-            continuation.Next = new Continuation
+            Continuation finalContinuation = new Continuation
             {
                 Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
             };
+            continuation.Next = finalContinuation;
 
             AwaitableProxy awaitableProxy = new AwaitableProxy();
 
@@ -509,6 +531,7 @@ namespace System.Runtime.CompilerServices
                 Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
                 {
+                    Debug.Assert(finalResult == finalContinuation);
                     if (ex != null)
                         throw ex;
                     return;
@@ -518,11 +541,23 @@ namespace System.Runtime.CompilerServices
 
         private static async ValueTask<T> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
         {
-            continuation.Next = new Continuation
+            Continuation finalContinuation = new Continuation();
+
+            // Note that the exact location the return value is placed is tied
+            // into getAsyncResumptionStub in the VM, so do not change this
+            // without also changing that code (and the JIT).
+            if (IsReferenceOrContainsReferences<T>())
             {
-                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
-                GCData = new object[1],
-            };
+                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+                finalContinuation.GCData = new object[1];
+            }
+            else
+            {
+                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+                finalContinuation.Data = new byte[Unsafe.SizeOf<T>()];
+            }
+
+            continuation.Next = finalContinuation;
 
             AwaitableProxy awaitableProxy = new AwaitableProxy();
 
@@ -533,16 +568,29 @@ namespace System.Runtime.CompilerServices
                 Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
                 {
+                    Debug.Assert(finalResult == finalContinuation);
                     if (ex != null)
                         throw ex;
-                    return (T)finalResult.GCData![0];
+
+                    if (IsReferenceOrContainsReferences<T>())
+                    {
+                        return (T)finalResult.GCData![0];
+                    }
+                    else
+                    {
+                        return Unsafe.As<byte, T>(ref finalResult.Data![0]);
+                    }
                 }
             }
         }
 
         private static async ValueTask FinalizeValueTaskReturningThunk(Continuation continuation)
         {
-            continuation.Next = new Continuation();
+            Continuation finalContinuation = new Continuation
+            {
+                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
+            };
+            continuation.Next = finalContinuation;
 
             AwaitableProxy awaitableProxy = new AwaitableProxy();
 
@@ -553,6 +601,7 @@ namespace System.Runtime.CompilerServices
                 Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
                 {
+                    Debug.Assert(finalResult == finalContinuation);
                     if (ex != null)
                         throw ex;
                     return;
@@ -911,6 +960,9 @@ namespace System.Runtime.CompilerServices
         // should be placed at index 0 or 1 depending on whether the continuation
         // also expects a result.
         CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
+        // If this bit is set the continuation has an OSR IL offset saved in the
+        // beginning of 'Data'.
+        CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
     }
 
 
@@ -920,6 +972,28 @@ namespace System.Runtime.CompilerServices
         public delegate*<Continuation, Continuation?> Resume;
         public uint State;
         public CorInfoContinuationFlags Flags;
+
+        // Data and GCData contain the state of the continuation.
+        // Note: The JIT is ultimately responsible for laying out these arrays.
+        // However, other parts of the system depend on the layout to
+        // know where to locate or place various pieces of data:
+        //
+        // 1. Resumption stubs need to know where to place the return value
+        // inside the next continuation. If the return value has GC references
+        // then it is boxed and placed at GCData[0]; otherwise, it is placed
+        // inside Data at offset 0 if
+        // CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA is NOT set and otherwise
+        // at offset 4.
+        //
+        // 2. Likewise, Finalize[Value]TaskReturningThunk needs to know from
+        // where to extract the return value.
+        //
+        // 3. The dispatcher needs to know where to place the exception inside
+        // the next continuation with a handler. Continuations with handlers
+        // have CORINFO_CONTINUATION_NEEDS_EXCEPTION set. The exception is
+        // placed at GCData[0] if CORINFO_CONTINUATION_RESULT_IN_GCDATA is NOT
+        // set, and otherwise at GCData[1].
+        //
         public byte[]? Data;
         public object[]? GCData;
     }
