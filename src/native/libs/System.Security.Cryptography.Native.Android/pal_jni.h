@@ -98,6 +98,7 @@ extern jmethodID g_SSLParametersSetServerNames;
 // com/android/org/conscrypt/OpenSSLEngineImpl
 extern jclass    g_ConscryptOpenSSLEngineImplClass;
 extern jfieldID  g_ConscryptOpenSSLEngineImplSslParametersField;
+extern jfieldID  g_ConscryptOpenSSLEngineImplHandshakeSessionField;
 
 // com/android/org/conscrypt/SSLParametersImpl
 extern jclass    g_ConscryptSSLParametersImplClass;
@@ -590,6 +591,7 @@ bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException) ARGS_N
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
+jfieldID GetOptionalField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 JNIEnv* GetJNIEnv(void);
 
 int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;
