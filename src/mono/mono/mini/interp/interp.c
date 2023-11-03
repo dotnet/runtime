@@ -87,6 +87,8 @@
 #endif
 #include <mono/metadata/icall-decl.h>
 
+#include "interp-pgo.h"
+
 #ifdef HOST_BROWSER
 #include "jiterpreter.h"
 #include <emscripten.h>
@@ -513,6 +515,9 @@ mono_interp_get_imethod (MonoMethod *method)
 		imethod->param_types = (MonoType**)m_method_alloc0 (method, sizeof (MonoType*) * sig->param_count);
 	for (i = 0; i < sig->param_count; ++i)
 		imethod->param_types [i] = mini_get_underlying_type (sig->params [i]);
+
+	if (!imethod->optimized && mono_interp_pgo_should_tier_method (method))
+		imethod->optimized = TRUE;
 
 	jit_mm_lock (jit_mm);
 	InterpMethod *old_imethod;

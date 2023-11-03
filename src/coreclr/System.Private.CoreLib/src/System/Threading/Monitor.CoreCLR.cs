@@ -186,7 +186,7 @@ namespace System.Threading
         /// <summary>
         /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
         /// </summary>
-        public static long LockContentionCount => GetLockContentionCount();
+        public static long LockContentionCount => GetLockContentionCount() + Lock.ContentionCount;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
         private static partial long GetLockContentionCount();

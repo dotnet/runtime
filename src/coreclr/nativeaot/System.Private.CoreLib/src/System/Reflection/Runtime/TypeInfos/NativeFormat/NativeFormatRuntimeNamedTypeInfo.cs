@@ -111,7 +111,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         public sealed override Type GetGenericTypeDefinition()
         {
             if (_typeDefinition.GenericParameters.GetEnumerator().MoveNext())
-                return this;
+                return this.ToType();
             return base.GetGenericTypeDefinition();
         }
 
@@ -152,18 +152,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
-        {
-            TypeAttributes attr = _typeDefinition.Flags;
-            return attr;
-        }
+        public sealed override TypeAttributes Attributes => _typeDefinition.Flags;
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return _typeDefinitionHandle.GetHashCode();
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {
