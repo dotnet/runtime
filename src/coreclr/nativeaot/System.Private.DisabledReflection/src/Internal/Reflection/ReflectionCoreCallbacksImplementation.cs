@@ -21,6 +21,8 @@ namespace Internal.Reflection
 
         public override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
             => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override MethodInfo GetDelegateMethod(Delegate del)
+            => throw new NotSupportedException(SR.Reflection_Disabled);
         public override object ActivatorCreateInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type, bool nonPublic) => throw new NotSupportedException(SR.Reflection_Disabled);
@@ -45,6 +47,8 @@ namespace Internal.Reflection
         public override Assembly Load(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override Assembly Load(string assemblyPath) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset) => throw new NotSupportedException(SR.Reflection_Disabled);
-        public override void RunModuleConstructor(Module module) => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle) => new RuntimeAssemblyInfo(typeHandle);
+        public override void RunClassConstructor(RuntimeTypeHandle typeHandle) => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress) => null;
     }
 }

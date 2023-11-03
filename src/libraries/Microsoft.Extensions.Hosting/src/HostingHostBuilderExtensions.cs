@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureLogging(this IHostBuilder hostBuilder, Action<ILoggingBuilder> configureLogging)
         {
-            return hostBuilder.ConfigureServices((context, collection) => collection.AddLogging(builder => configureLogging(builder)));
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddLogging(configureLogging));
         }
 
         /// <summary>
@@ -406,7 +406,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<IMetricsBuilder> configureMetrics)
         {
-            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(builder => configureMetrics(builder)));
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(configureMetrics));
         }
 
         /// <summary>

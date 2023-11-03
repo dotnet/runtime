@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
@@ -8,6 +9,7 @@
     <!-- Suppress SYSLIB0004: 'RuntimeHelpers.PrepareConstrainedRegions()' is obsolete to avoid ifdefs. -->
     <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes for OLEDB.
 

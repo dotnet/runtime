@@ -3215,10 +3215,11 @@ public:
 //=========================================================================
 // BasicBlock functions
 #ifdef DEBUG
-    // This is a debug flag we will use to assert when creating block during codegen
-    // as this interferes with procedure splitting. If you know what you're doing, set
-    // it to true before creating the block. (DEBUG only)
+    // When false, assert when creating a new basic block.
     bool fgSafeBasicBlockCreation;
+
+    // When false, assert when creating a new flow edge
+    bool fgSafeFlowEdgeCreation;
 #endif
 
     /*
@@ -4797,8 +4798,9 @@ public:
 
     FoldResult fgFoldConditional(BasicBlock* block);
 
+    PhaseStatus fgMorphBlocks();
+    void fgMorphBlock(BasicBlock* block);
     void fgMorphStmts(BasicBlock* block);
-    void fgMorphBlocks();
 
     void fgMergeBlockReturn(BasicBlock* block);
 
@@ -5979,7 +5981,6 @@ private:
     bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
 
 #endif
-    bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
     bool fgCanTailCallViaJitHelper(GenTreeCall* call);
     void fgMorphTailCallViaJitHelper(GenTreeCall* call);

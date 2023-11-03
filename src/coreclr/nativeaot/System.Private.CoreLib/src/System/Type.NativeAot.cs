@@ -49,11 +49,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT, ref UnsafeGCHandle handle)
         {
-            // Note: this is bypassing the "fast" unifier cache (based on a simple IntPtr
-            // identity of MethodTable pointers). There is another unifier behind that cache
-            // that ensures this code is race-free.
-            Type result = RuntimeTypeUnifier.GetRuntimeTypeBypassCache(new EETypePtr(pMT));
-            UnsafeGCHandle tempHandle = UnsafeGCHandle.Alloc(result);
+            UnsafeGCHandle tempHandle = UnsafeGCHandle.Alloc(new RuntimeType(pMT));
 
             // We don't want to leak a handle if there's a race
             if (Interlocked.CompareExchange(ref Unsafe.As<UnsafeGCHandle, IntPtr>(ref handle), Unsafe.As<UnsafeGCHandle, IntPtr>(ref tempHandle), default) != default)
@@ -62,25 +58,6 @@ namespace System
             }
 
             return Unsafe.As<RuntimeType>(handle.Target);
-        }
-
-        internal EETypePtr GetEEType()
-        {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            Debug.Assert(!typeHandle.IsNull);
-            return typeHandle.ToEETypePtr();
-        }
-
-        internal bool TryGetEEType(out EETypePtr eeType)
-        {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            if (typeHandle.IsNull)
-            {
-                eeType = default(EETypePtr);
-                return false;
-            }
-            eeType = typeHandle.ToEETypePtr();
-            return true;
         }
 
         //

@@ -60,6 +60,7 @@ if(HAVE_SYS_ICU)
       pal_calendarData.c
       pal_casing.c
       pal_collation.c
+      pal_common.c
       pal_idna.c
       pal_locale.c
       pal_localeNumberData.c
@@ -299,7 +300,8 @@ set(interp_sources
     interp/transform.c
     interp/tiering.h
     interp/tiering.c
-    interp/jiterpreter.c)
+    interp/jiterpreter.c
+    interp/interp-pgo.c)
 set(interp_simd_sources
     interp/interp-simd.c)
 set(interp_stub_sources

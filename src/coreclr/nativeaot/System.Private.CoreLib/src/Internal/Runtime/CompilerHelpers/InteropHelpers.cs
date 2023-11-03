@@ -15,8 +15,7 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -300,7 +299,7 @@ namespace Internal.Runtime.CompilerHelpers
                 dllImportSearchPath = pCell->DllImportSearchPathAndCookie & ~InteropDataConstants.HasDllImportSearchPath;
             }
 
-            Assembly callingAssembly = RuntimeAugments.Callbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
+            Assembly callingAssembly = ReflectionAugments.ReflectionCoreCallbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
 
             // First check if there's a NativeLibrary callback and call it to attempt the resolution
             IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);

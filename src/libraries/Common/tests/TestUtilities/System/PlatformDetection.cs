@@ -122,6 +122,7 @@ namespace System
 
         public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+        public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
@@ -365,12 +366,16 @@ namespace System
         public static Version ICUVersion => m_icuVersion.Value;
 
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
+        public static bool IsHybridGlobalization => m_isHybrid.Value;
         public static bool IsHybridGlobalizationOnBrowser => m_isHybrid.Value && IsBrowser;
         public static bool IsHybridGlobalizationOnOSX => m_isHybrid.Value && (IsOSX || IsMacCatalyst || IsiOS || IstvOS);
         public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
+        public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
+        public static bool IsNotHybridGlobalizationOnOSX => !IsHybridGlobalizationOnOSX;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
         public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
+        public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalization;
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
         public static bool IsSubstAvailable
