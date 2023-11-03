@@ -2165,7 +2165,7 @@ void ParseDefaultStackSize(LPCWSTR valueStr)
     {
         LPWSTR end;
         errno = 0;
-        unsigned long value = wcstoul(valueStr, &end, 16); // Base 16 without a prefix
+        unsigned long value = u16_strtoul(valueStr, &end, 16); // Base 16 without a prefix
 
         if ((errno == ERANGE)     // Parsed value doesn't fit in an unsigned long
             || (valueStr == end)  // No characters parsed
@@ -7284,11 +7284,11 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             //
             // Without unwind_and_continue_handler below, the exception will fly up the stack to
             // this point, where it will be rethrown and thus leak out.
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
             EX_RETHROW;
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
     EX_END_CATCH(SwallowAllExceptions);
@@ -8206,7 +8206,7 @@ void Thread::InitializeSpecialUserModeApc()
     WRAPPER_NO_CONTRACT;
     static_assert_no_msg(OFFSETOF__APC_CALLBACK_DATA__ContextRecord == offsetof(CLONE_APC_CALLBACK_DATA, ContextRecord));
 
-    HMODULE hKernel32 = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hKernel32 = WszLoadLibrary(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 
     // See if QueueUserAPC2 exists
     QueueUserAPC2Proc pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
@@ -8233,16 +8233,18 @@ void Thread::InitializeSpecialUserModeApc()
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
 #if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
 void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 {
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     DWORD64 ssp = GetSSP(ContextRecord);
+    __asan_handle_no_return();
     ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
 #else
+    __asan_handle_no_return();
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestExecutionArguments />
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Consider enable it for Mono whenever the implementation is ready -->
+    <!-- https://github.com/dotnet/runtime/issues/73167 -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+      $(CLRTestBatchPreCommands)
+      set DOTNET_gcServer=1
+      set DOTNET_GCHeapCount=2
+      ]]></CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands><![CDATA[
+      $(CLRTestBashPreCommands)
+      export DOTNET_gcServer=1
+      export DOTNET_GCHeapCount=2
+      ]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Callback.cs" />
+  </ItemGroup>
+</Project>

@@ -488,35 +488,75 @@ public:
 #endif
 
 //==========================================================================================
-// StressMsg
-//
-// The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally aligned, so we don't waste
-// space on 32-bit platforms
-//
-struct StressMsg {
-    static const size_t formatOffsetBits = 26;
-    union {
-        struct {
-            uint32_t numberOfArgs  : 3;   // at most 7 arguments
-            uint32_t formatOffset  : formatOffsetBits;    // offset of string in mscorwks
-            uint32_t numberOfArgsX : 3;                   // extend number of args in a backward compat way
-        };
-        uint32_t fmtOffsCArgs;            // for optimized access
-    };
-    uint32_t     facility;                // facility used to log the entry
-    unsigned __int64 timeStamp;         // time when mssg was logged
-    void*     args[0];                  // size given by numberOfArgs
+// The order of fields is important.  Ensure that we minimize padding
+// to fit more messages in a chunk.
+struct StressMsg
+{
+private:
+    static const size_t formatOffsetLowBits = 26;
+    static const size_t formatOffsetHighBits = 13;
+
+    // We split the format offset to ensure that we utilize every bit and that
+    // the compiler does not align the format offset to a new 64-bit boundary.
+    uint64_t facility: 32;                           // facility used to log the entry
+    uint64_t numberOfArgs : 6;                       // number of arguments
+    uint64_t formatOffsetLow: formatOffsetLowBits;   // offset of format string in modules
+    uint64_t formatOffsetHigh: formatOffsetHighBits; // offset of format string in modules
+    uint64_t timeStamp: 51;                          // time when msg was logged (100ns ticks since runtime start)
+
+public:
+    void*     args[0];                               // size given by numberOfArgs
+
+    void SetFormatOffset(uint64_t offset)
+    {
+        formatOffsetLow = (uint32_t)(offset & ((1 << formatOffsetLowBits) - 1));
+        formatOffsetHigh = offset >> formatOffsetLowBits;
+    }
+
+    uint64_t GetFormatOffset()
+    {
+        return (formatOffsetHigh << formatOffsetLowBits) | formatOffsetLow;
+    }
+
+    void SetNumberOfArgs(uint32_t num)
+    {
+        numberOfArgs = num;
+    }
+
+    uint32_t GetNumberOfArgs()
+    {
+        return numberOfArgs;
+    }
+
+    void SetFacility(uint32_t fac)
+    {
+        facility = fac;
+    }
+
+    uint32_t GetFacility()
+    {
+        return facility;
+    }
+
+    uint64_t GetTimeStamp()
+    {
+        return timeStamp;
+    }
+
+    void SetTimeStamp(uint64_t time)
+    {
+        timeStamp = time;
+    }
 
     static const size_t maxArgCnt = 63;
-    static const size_t maxOffset = 1 << formatOffsetBits;
+    static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
     static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
 
     friend void PopulateDebugHeaders();
-    friend class ThreadStressLog;
-    friend class StressLog;
 };
+
+static_assert(sizeof(StressMsg) == sizeof(uint64_t) * 2, "StressMsg bitfields aren't aligned correctly");
 
 #ifdef _WIN64
 #define STRESSLOG_CHUNK_SIZE (32 * 1024)
@@ -624,7 +664,7 @@ public:
 
 private:
     FORCEINLINE bool IsReadyForRead()       { return readPtr != NULL; }
-    FORCEINLINE StressMsg* AdvanceRead();
+    FORCEINLINE StressMsg* AdvanceRead(uint32_t cArgs);
     inline StressMsg* AdvReadPastBoundary();
 #endif //!DACCESS_COMPILE
 
@@ -662,9 +702,9 @@ FORCEINLINE bool ThreadStressLog::CompletedDump ()
 //------------------------------------------------------------------------------------------
 // Called when dumping the log (by StressLog::Dump())
 // Updates readPtr to point to next stress messaage to be dumped
-inline StressMsg* ThreadStressLog::AdvanceRead() {
+inline StressMsg* ThreadStressLog::AdvanceRead(uint32_t cArgs) {
     // advance the marker
-    readPtr = (StressMsg*)((char*)readPtr + sizeof(StressMsg) + readPtr->numberOfArgs*sizeof(void*));
+    readPtr = (StressMsg*)((char*)readPtr + sizeof(StressMsg) + cArgs * sizeof(void*));
     // wrap around if we need to
     if (readPtr >= (StressMsg *)curReadChunk->EndPtr ())
     {

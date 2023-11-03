@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" PrivateAssets="all"/>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
   </ItemGroup>
+
 </Project>

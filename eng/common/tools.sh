@@ -112,7 +112,7 @@ function InitializeDotNetCli {
   export DOTNET_MULTILEVEL_LOOKUP=0
 
   # Disable first run since we want to control all package sources
-  export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+  export DOTNET_NOLOGO=1
 
   # Disable telemetry on CI
   if [[ $ci == true ]]; then
@@ -165,7 +165,7 @@ function InitializeDotNetCli {
   Write-PipelinePrependPath -path "$dotnet_root"
 
   Write-PipelineSetVariable -name "DOTNET_MULTILEVEL_LOOKUP" -value "0"
-  Write-PipelineSetVariable -name "DOTNET_SKIP_FIRST_TIME_EXPERIENCE" -value "1"
+  Write-PipelineSetVariable -name "DOTNET_NOLOGO" -value "1"
 
   # return value
   _InitializeDotNetCli="$dotnet_root"
@@ -184,6 +184,35 @@ function InstallDotNetSdk {
 function InstallDotNet {
   local root=$1
   local version=$2
+  local runtime=$4
+
+  local dotnetVersionLabel="'$runtime v$version'"
+  if [[ -n "${4:-}" ]] && [ "$4" != 'sdk' ]; then
+    runtimePath="$root"
+    runtimePath="$runtimePath/shared"
+    case "$runtime" in
+      dotnet)
+        runtimePath="$runtimePath/Microsoft.NETCore.App"
+        ;;
+      aspnetcore)
+        runtimePath="$runtimePath/Microsoft.AspNetCore.App"
+        ;;
+      windowsdesktop)
+        runtimePath="$runtimePath/Microsoft.WindowsDesktop.App"
+        ;;
+      *)
+        ;;
+    esac
+    runtimePath="$runtimePath/$version"
+
+    dotnetVersionLabel="runtime toolset '$runtime/$architecture v$version'"
+
+    if [ -d "$runtimePath" ]; then
+      echo "  Runtime toolset '$runtime/$architecture v$version' already installed."
+      local installSuccess=1
+      return
+    fi
+  fi
 
   GetDotNetInstallScript "$root"
   local install_script=$_GetDotNetInstallScript
@@ -228,17 +257,17 @@ function InstallDotNet {
   for variationName in "${variations[@]}"; do
     local name="$variationName[@]"
     local variation=("${!name}")
-    echo "Attempting to install dotnet from $variationName."
+    echo "  Attempting to install $dotnetVersionLabel from $variationName."
     bash "$install_script" "${variation[@]}" && installSuccess=1
     if [[ "$installSuccess" -eq 1 ]]; then
       break
     fi
 
-    echo "Failed to install dotnet from $variationName."
+    echo "  Failed to install $dotnetVersionLabel from $variationName."
   done
 
   if [[ "$installSuccess" -eq 0 ]]; then
-    Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from any of the specified locations."
+    Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install $dotnetVersionLabel from any of the specified locations."
     ExitWithExitCode 1
   fi
 }

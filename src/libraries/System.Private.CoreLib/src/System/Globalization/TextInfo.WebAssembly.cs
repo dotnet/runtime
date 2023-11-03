@@ -13,17 +13,18 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
 
-            string exceptionMessage;
+            int exception;
+            object ex_result;
             if (HasEmptyCultureName)
             {
-                Interop.JsGlobalization.ChangeCaseInvariant(out exceptionMessage, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
+                Interop.JsGlobalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, toUpper, out exception, out ex_result);
             }
             else
             {
-                Interop.JsGlobalization.ChangeCase(out exceptionMessage, _cultureName, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
+                Interop.JsGlobalization.ChangeCase(_cultureName, src, srcLen, dstBuffer, dstBufferCapacity, toUpper, out exception, out ex_result);
             }
-            if (!string.IsNullOrEmpty(exceptionMessage))
-                throw new Exception(exceptionMessage);
+            if (exception != 0)
+                throw new Exception((string)ex_result);
         }
     }
 }

@@ -431,5 +431,33 @@ namespace System.Text.Json.Serialization.Metadata
                 options,
                 collectionInfo,
                 new IEnumerableConverter<TCollection>());
+
+        /// <summary>
+        /// Creates serialization metadata for <see cref="Memory{T}"/>.
+        /// </summary>
+        /// <typeparam name="TElement">The generic definition of the element type.</typeparam>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+        /// <param name="collectionInfo">Provides serialization metadata about the collection type.</param>
+        /// <returns>Serialization metadata for the given type.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonTypeInfo<Memory<TElement>> CreateMemoryInfo<TElement>(JsonSerializerOptions options, JsonCollectionInfoValues<Memory<TElement>> collectionInfo)
+            => CreateCore(
+                options,
+                collectionInfo,
+                new MemoryConverter<TElement>());
+
+        /// <summary>
+        /// Creates serialization metadata for <see cref="ReadOnlyMemory{T}"/>.
+        /// </summary>
+        /// <typeparam name="TElement">The generic definition of the element type.</typeparam>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+        /// <param name="collectionInfo">Provides serialization metadata about the collection type.</param>
+        /// <returns>Serialization metadata for the given type.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonTypeInfo<ReadOnlyMemory<TElement>> CreateReadOnlyMemoryInfo<TElement>(JsonSerializerOptions options, JsonCollectionInfoValues<ReadOnlyMemory<TElement>> collectionInfo)
+            => CreateCore(
+                options,
+                collectionInfo,
+                new ReadOnlyMemoryConverter<TElement>());
     }
 }

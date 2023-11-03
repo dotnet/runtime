@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 class Gen<T>
 {
@@ -24,7 +25,8 @@ class Gen<T>
 
 public class Test_class_static01
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ret = 100;
 

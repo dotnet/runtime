@@ -596,7 +596,7 @@ namespace System.Runtime.Serialization
             XmlSchemaSet schemas = new XmlSchemaSet();
             schemas.XmlResolver = null;
             InvokeSchemaProviderMethod(type, schemas, out xmlName, out xsdType, out hasRoot);
-            if (xmlName.Name == null || xmlName.Name.Length == 0)
+            if (string.IsNullOrEmpty(xmlName.Name))
                 throw new InvalidDataContractException(SR.Format(SR.InvalidXmlDataContractName, DataContract.GetClrTypeFullName(type)));
         }
 
@@ -620,7 +620,7 @@ namespace System.Runtime.Serialization
                 hasRoot = false;
             }
             string? methodName = provider.MethodName;
-            if (methodName == null || methodName.Length == 0)
+            if (string.IsNullOrEmpty(methodName))
             {
                 if (!provider.IsAny)
                     throw new InvalidDataContractException(SR.Format(SR.InvalidGetSchemaMethod, DataContract.GetClrTypeFullName(clrType)));
@@ -655,7 +655,7 @@ namespace System.Runtime.Serialization
                     {
                         string? typeName = providerXsdType.Name;
                         string? typeNs = null;
-                        if (typeName == null || typeName.Length == 0)
+                        if (string.IsNullOrEmpty(typeName))
                         {
                             DataContract.GetDefaultXmlName(DataContract.GetClrTypeFullName(clrType), out typeName, out typeNs);
                             xmlName = new XmlQualifiedName(typeName, typeNs);
@@ -702,7 +702,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                if (schema.Id == null || schema.Id.Length == 0)
+                if (string.IsNullOrEmpty(schema.Id))
                     throw new InvalidDataContractException(SR.Format(SR.InvalidReturnSchemaOnGetSchemaMethod, DataContract.GetClrTypeFullName(clrType)));
                 AddDefaultTypedDatasetType(schemas, schema, xmlName.Name, xmlName.Namespace);
             }

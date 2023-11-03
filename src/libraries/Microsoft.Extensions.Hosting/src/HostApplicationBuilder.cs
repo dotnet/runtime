@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
@@ -14,14 +15,15 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
-    /// A builder for hosted applications and services which helps manage configuration, logging, lifetime and more.
+    /// Represents a hosted applications and services builder which helps manage configuration, logging, lifetime, and more.
     /// </summary>
-    public sealed class HostApplicationBuilder
+    public sealed class HostApplicationBuilder : IHostApplicationBuilder
     {
         private readonly HostBuilderContext _hostBuilderContext;
         private readonly ServiceCollection _serviceCollection = new();
         private readonly IHostEnvironment _environment;
         private readonly LoggingBuilder _logging;
+        private readonly MetricsBuilder _metrics;
 
         private Func<IServiceProvider> _createServiceProvider;
         private Action<object> _configureContainer = _ => { };
@@ -94,7 +96,7 @@ namespace Microsoft.Extensions.Hosting
                 Configuration.AddEnvironmentVariables(prefix: "DOTNET_");
             }
 
-            Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
+            Initialize(settings, out _hostBuilderContext, out _environment, out _logging, out _metrics);
 
             ServiceProviderOptions? serviceProviderOptions = null;
             if (!settings.DisableDefaults)
@@ -120,7 +122,7 @@ namespace Microsoft.Extensions.Hosting
             settings ??= new HostApplicationBuilderSettings();
             Configuration = settings.Configuration ?? new ConfigurationManager();
 
-            Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
+            Initialize(settings, out _hostBuilderContext, out _environment, out _logging, out _metrics);
 
             _createServiceProvider = () =>
             {
@@ -131,7 +133,7 @@ namespace Microsoft.Extensions.Hosting
             };
         }
 
-        private void Initialize(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out IHostEnvironment environment, out LoggingBuilder logging)
+        private void Initialize(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out IHostEnvironment environment, out LoggingBuilder logging, out MetricsBuilder metrics)
         {
             // Command line args are added even when settings.DisableDefaults == true. If the caller didn't want settings.Args applied,
             // they wouldn't have set them on the settings.
@@ -180,47 +182,34 @@ namespace Microsoft.Extensions.Hosting
                 () => _appServices!);
 
             logging = new LoggingBuilder(Services);
+            metrics = new MetricsBuilder(Services);
         }
 
-        /// <summary>
-        /// Provides information about the hosting environment an application is running in.
-        /// </summary>
+        IDictionary<object, object> IHostApplicationBuilder.Properties => _hostBuilderContext.Properties;
+
+        /// <inheritdoc />
         public IHostEnvironment Environment => _environment;
 
         /// <summary>
-        /// A collection of services for the application to compose. This is useful for adding user provided or framework provided services.
+        /// Gets the set of key/value configuration properties.
         /// </summary>
+        /// <remarks>
+        /// This can be mutated by adding more configuration sources, which will update its current view.
+        /// </remarks>
         public ConfigurationManager Configuration { get; }
 
-        /// <summary>
-        /// A collection of services for the application to compose. This is useful for adding user provided or framework provided services.
-        /// </summary>
+        IConfigurationManager IHostApplicationBuilder.Configuration => Configuration;
+
+        /// <inheritdoc />
         public IServiceCollection Services => _serviceCollection;
 
-        /// <summary>
-        /// A collection of logging providers for the application to compose. This is useful for adding new logging providers.
-        /// </summary>
+        /// <inheritdoc />
         public ILoggingBuilder Logging => _logging;
 
-        /// <summary>
-        /// Registers a <see cref="IServiceProviderFactory{TContainerBuilder}" /> instance to be used to create the <see cref="IServiceProvider" />.
-        /// </summary>
-        /// <param name="factory">The <see cref="IServiceProviderFactory{TContainerBuilder}" />.</param>
-        /// <param name="configure">
-        /// A delegate used to configure the <typeparamref T="TContainerBuilder" />. This can be used to configure services using
-        /// APIS specific to the <see cref="IServiceProviderFactory{TContainerBuilder}" /> implementation.
-        /// </param>
-        /// <typeparam name="TContainerBuilder">The type of builder provided by the <see cref="IServiceProviderFactory{TContainerBuilder}" />.</typeparam>
-        /// <remarks>
-        /// <para>
-        /// <see cref="ConfigureContainer{TContainerBuilder}(IServiceProviderFactory{TContainerBuilder}, Action{TContainerBuilder})"/> is called by <see cref="Build"/>
-        /// and so the delegate provided by <paramref name="configure"/> will run after all other services have been registered.
-        /// </para>
-        /// <para>
-        /// Multiple calls to <see cref="ConfigureContainer{TContainerBuilder}(IServiceProviderFactory{TContainerBuilder}, Action{TContainerBuilder})"/> will replace
-        /// the previously stored <paramref name="factory"/> and <paramref name="configure"/> delegate.
-        /// </para>
-        /// </remarks>
+        /// <inheritdoc />
+        public IMetricsBuilder Metrics => _metrics;
+
+        /// <inheritdoc />
         public void ConfigureContainer<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory, Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull
         {
             _createServiceProvider = () =>
@@ -410,6 +399,11 @@ namespace Microsoft.Extensions.Hosting
             }
 
             public IServiceCollection Services { get; }
+        }
+
+        private sealed class MetricsBuilder(IServiceCollection services) : IMetricsBuilder
+        {
+            public IServiceCollection Services { get; } = services;
         }
     }
 }

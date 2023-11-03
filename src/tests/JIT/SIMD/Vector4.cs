@@ -3,10 +3,11 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector4;
+using Xunit;
 
 namespace VectorTests
 {
-    class Program
+    public class Program
     {
         const float EPS = Single.Epsilon * 5;
 
@@ -15,7 +16,8 @@ namespace VectorTests
             return Math.Abs(a - b) < EPS;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Point a = new Point(1, 2, 3, 4);
             Point b = new Point(2, 2, 1, 1);

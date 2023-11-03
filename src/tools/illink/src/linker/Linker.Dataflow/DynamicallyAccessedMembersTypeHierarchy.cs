@@ -216,7 +216,7 @@ namespace Mono.Linker.Dataflow
 			var baseType = _context.TryResolve (type.BaseType);
 			if (baseType != null) {
 				var baseAnnotation = GetCachedInfoForTypeInHierarchy (baseType);
-				var annotationToApplyToBase = Annotations.GetMissingMemberTypes (annotation, baseAnnotation.annotation);
+				var annotationToApplyToBase = baseAnnotation.applied ? Annotations.GetMissingMemberTypes (annotation, baseAnnotation.annotation) : annotation;
 
 				// Apply any annotations that didn't exist on the base type to the base type.
 				// This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
@@ -234,7 +234,7 @@ namespace Mono.Linker.Dataflow
 						continue;
 
 					var interfaceAnnotation = GetCachedInfoForTypeInHierarchy (interfaceType);
-					if (interfaceAnnotation.annotation.HasFlag (annotationToApplyToInterfaces))
+					if (interfaceAnnotation.applied && interfaceAnnotation.annotation.HasFlag (annotationToApplyToInterfaces))
 						continue;
 
 					// Apply All or Interfaces to the interface type.

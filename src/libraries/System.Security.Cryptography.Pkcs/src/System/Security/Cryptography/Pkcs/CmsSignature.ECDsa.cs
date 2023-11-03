@@ -17,17 +17,22 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.ECDsaWithSha256, new ECDsaCmsSignature(Oids.ECDsaWithSha256, HashAlgorithmName.SHA256));
             lookup.Add(Oids.ECDsaWithSha384, new ECDsaCmsSignature(Oids.ECDsaWithSha384, HashAlgorithmName.SHA384));
             lookup.Add(Oids.ECDsaWithSha512, new ECDsaCmsSignature(Oids.ECDsaWithSha512, HashAlgorithmName.SHA512));
-            lookup.Add(Oids.EcPublicKey, new ECDsaCmsSignature(null, default));
+#if NET8_0_OR_GREATER
+            lookup.Add(Oids.ECDsaWithSha3_256, new ECDsaCmsSignature(Oids.ECDsaWithSha3_256, HashAlgorithmName.SHA3_256));
+            lookup.Add(Oids.ECDsaWithSha3_384, new ECDsaCmsSignature(Oids.ECDsaWithSha3_384, HashAlgorithmName.SHA3_384));
+            lookup.Add(Oids.ECDsaWithSha3_512, new ECDsaCmsSignature(Oids.ECDsaWithSha3_512, HashAlgorithmName.SHA3_512));
+#endif
+            lookup.Add(Oids.EcPublicKey, new ECDsaCmsSignature(null, null));
         }
 
         private sealed partial class ECDsaCmsSignature : CmsSignature
         {
-            private readonly HashAlgorithmName _expectedDigest;
+            private readonly HashAlgorithmName? _expectedDigest;
             private readonly string? _signatureAlgorithm;
 
             internal override RSASignaturePadding? SignaturePadding => null;
 
-            internal ECDsaCmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
+            internal ECDsaCmsSignature(string? signatureAlgorithm, HashAlgorithmName? expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
                 _expectedDigest = expectedDigest;
@@ -51,7 +56,7 @@ namespace System.Security.Cryptography.Pkcs
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
-                if (_expectedDigest != digestAlgorithmName)
+                if (_expectedDigest != null && _expectedDigest != digestAlgorithmName)
                 {
                     throw new CryptographicException(
                         SR.Format(
@@ -131,6 +136,11 @@ namespace System.Security.Cryptography.Pkcs
                     hashAlgorithmName == HashAlgorithmName.SHA256 ? Oids.ECDsaWithSha256 :
                     hashAlgorithmName == HashAlgorithmName.SHA384 ? Oids.ECDsaWithSha384 :
                     hashAlgorithmName == HashAlgorithmName.SHA512 ? Oids.ECDsaWithSha512 :
+#if NET8_0_OR_GREATER
+                    hashAlgorithmName == HashAlgorithmName.SHA3_256 ? Oids.ECDsaWithSha3_256 :
+                    hashAlgorithmName == HashAlgorithmName.SHA3_384 ? Oids.ECDsaWithSha3_384 :
+                    hashAlgorithmName == HashAlgorithmName.SHA3_512 ? Oids.ECDsaWithSha3_512 :
+#endif
                     null;
 
                 if (oidValue == null)

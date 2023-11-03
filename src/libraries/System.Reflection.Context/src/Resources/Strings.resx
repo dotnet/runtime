@@ -108,4 +108,7 @@
   <data name="Argument_ObjectArgumentMismatch" xml:space="preserve">
     <value>Object of type '{0}' cannot be converted to type '{1}'.</value>
   </data>
+  <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'.</value>
+  </data>
 </root>

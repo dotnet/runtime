@@ -15,47 +15,45 @@ namespace System.Runtime.CompilerServices
         MaybeCast = 2
     }
 
-#if NATIVEAOT
-    [EagerStaticClassConstruction]
-#endif
-    internal static unsafe class CastCache
+    internal unsafe struct CastCache
     {
-
-#if CORECLR
-        // In coreclr the table is written to only on the native side. T
-        // This is all we need to implement TryGet.
-        private static int[]? s_table;
-#else
-
-  #if DEBUG
-        private const int INITIAL_CACHE_SIZE = 8;    // MUST BE A POWER OF TWO
-        private const int MAXIMUM_CACHE_SIZE = 512;  // make this lower than release to make it easier to reach this in tests.
-  #else
-        private const int INITIAL_CACHE_SIZE = 128;  // MUST BE A POWER OF TWO
-        private const int MAXIMUM_CACHE_SIZE = 4096; // 4096 * sizeof(CastCacheEntry) is 98304 bytes on 64bit. We will rarely need this much though.
-  #endif // DEBUG
-
         private const int VERSION_NUM_SIZE = 29;
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
+        private const int BUCKET_SIZE = 8;
 
-        // A trivial 2-elements table used for "flushing" the cache. Nothing is ever stored in this table.
-        // It is required that we are able to allocate this.
-        private static int[] s_sentinelTable = CreateCastCache(2, throwOnFail: true)!;
-
-        // when flushing, remember the last size.
-        private static int s_lastFlushSize = INITIAL_CACHE_SIZE;
+        // nothing is ever stored into this, so we can use a static instance.
+        private static int[]? s_sentinelTable;
 
         // The actual storage.
-        // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
-        private static int[] s_table =
-  #if !DEBUG
-            CreateCastCache(INITIAL_CACHE_SIZE) ??
-  #endif
-            s_sentinelTable;
+        private int[] _table;
 
-#endif // CORECLR
+        // when flushing, remember the last size.
+        private int _lastFlushSize;
 
-        private const int BUCKET_SIZE = 8;
+        private int _initialCacheSize;
+        private int _maxCacheSize;
+
+        public CastCache(int initialCacheSize, int maxCacheSize)
+        {
+            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > 1);
+            Debug.Assert(BitOperations.PopCount((uint)maxCacheSize) == 1 && maxCacheSize >= initialCacheSize);
+
+            _initialCacheSize = initialCacheSize;
+            _maxCacheSize = maxCacheSize;
+
+            // A trivial 2-elements table used for "flushing" the cache.
+            // Nothing is ever stored in such a small table and identity of the sentinel is not important.
+            // It is required that we are able to allocate this, we may need this in OOM cases.
+            s_sentinelTable ??= CreateCastCache(2, throwOnFail: true);
+
+            _table =
+#if !DEBUG
+            // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
+            CreateCastCache(_initialCacheSize) ??
+#endif
+            s_sentinelTable!;
+            _lastFlushSize = _initialCacheSize;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct CastCacheEntry
@@ -139,10 +137,17 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static CastResult TryGet(nuint source, nuint target)
+        internal CastResult TryGet(nuint source, nuint target)
         {
             // table is always initialized and is not null.
-            ref int tableData = ref TableData(s_table!);
+            return TryGet(_table!, source, target);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static CastResult TryGet(int[] table, nuint source, nuint target)
+        {
+            // table is always initialized and is not null.
+            ref int tableData = ref TableData(table);
 
             int index = KeyToBucket(ref tableData, source, target);
             for (int i = 0; i < BUCKET_SIZE;)
@@ -152,32 +157,16 @@ namespace System.Runtime.CompilerServices
                 // we must read in this order: version -> [entry parts] -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
                 uint version = Volatile.Read(ref pEntry._version);
-
-#if CORECLR
-                // in CoreCLR we do ordinary reads of the entry parts and
-                // Interlocked.ReadMemoryBarrier() before reading the version
                 nuint entrySource = pEntry._source;
-#else
-                // must read this before reading the version again
-                nuint entrySource = Volatile.Read(ref pEntry._source);
-#endif
-
                 // mask the lower version bit to make it even.
                 // This way we can check if version is odd or changing in just one compare.
                 version &= unchecked((uint)~1);
 
                 if (entrySource == source)
                 {
-
-#if CORECLR
-                    // in CoreCLR we do ordinary reads of the entry parts and
+                    // we do ordinary reads of the entry parts and
                     // Interlocked.ReadMemoryBarrier() before reading the version
                     nuint entryTargetAndResult = pEntry._targetAndResult;
-#else
-                    // must read this before reading the version again
-                    nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
-#endif
-
                     // target never has its lower bit set.
                     // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
                     entryTargetAndResult ^= target;
@@ -189,10 +178,7 @@ namespace System.Runtime.CompilerServices
                         // - use acquires for both _source and _targetAndResults or
                         // - issue a load barrier before reading _version
                         // benchmarks on available hardware (Jan 2020) show that use of a read barrier is cheaper.
-
-#if CORECLR
                         Interlocked.ReadMemoryBarrier();
-#endif
 
                         if (version != pEntry._version)
                         {
@@ -223,10 +209,9 @@ namespace System.Runtime.CompilerServices
         // in CoreClr the cache is only updated in the native code
         //
         // The following helpers must match native implementations in castcache.h and castcache.cpp
-#if !CORECLR
 
         // we generally do not OOM in casts, just return null unless throwOnFail is specified.
-        private static int[]? CreateCastCache(int size, bool throwOnFail = false)
+        private int[]? CreateCastCache(int size, bool throwOnFail = false)
         {
             // size must be positive
             Debug.Assert(size > 1);
@@ -244,7 +229,7 @@ namespace System.Runtime.CompilerServices
 
             if (table == null)
             {
-                size = INITIAL_CACHE_SIZE;
+                size = _initialCacheSize;
                 try
                 {
                     table = new int[(size + 1) * sizeof(CastCacheEntry) / sizeof(int)];
@@ -265,26 +250,26 @@ namespace System.Runtime.CompilerServices
             TableMask(ref tableData) = size - 1;
 
             // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
-            byte shift = (byte)BitOperations.LeadingZeroCount(size - 1);
+            byte shift = (byte)BitOperations.LeadingZeroCount((nuint)(size - 1));
             HashShift(ref tableData) = shift;
 
             return table;
         }
 
-        internal static void TrySet(nuint source, nuint target, bool result)
+        internal void TrySet(nuint source, nuint target, bool result)
         {
             int bucket;
             ref int tableData = ref *(int*)0;
 
             do
             {
-                tableData = ref TableData(s_table);
+                tableData = ref TableData(_table);
                 if (TableMask(ref tableData) == 1)
                 {
                     // 2-element table is used as a sentinel.
                     // we did not allocate a real table yet or have flushed it.
                     // try replacing the table, but do not insert anything.
-                    MaybeReplaceCacheWithLarger(s_lastFlushSize);
+                    MaybeReplaceCacheWithLarger(_lastFlushSize);
                     return;
                 }
 
@@ -352,7 +337,7 @@ namespace System.Runtime.CompilerServices
             } while (TryGrow(ref tableData));
 
             // reread tableData after TryGrow.
-            tableData = ref TableData(s_table);
+            tableData = ref TableData(_table);
 
             if (TableMask(ref tableData) == 1)
             {
@@ -400,19 +385,22 @@ namespace System.Runtime.CompilerServices
             return TableMask(ref tableData) + 1;
         }
 
-        private static void FlushCurrentCache()
+        private void FlushCurrentCache()
         {
-            ref int tableData = ref TableData(s_table);
+            ref int tableData = ref TableData(_table);
             int lastSize = CacheElementCount(ref tableData);
-            if (lastSize < INITIAL_CACHE_SIZE)
-                lastSize = INITIAL_CACHE_SIZE;
+            if (lastSize < _initialCacheSize)
+                lastSize = _initialCacheSize;
 
-            s_lastFlushSize = lastSize;
+            // store the last size to use when creating a new table
+            // it is just a hint, not needed for correctness, so no synchronization
+            // with the writing of the table
+            _lastFlushSize = lastSize;
             // flushing is just replacing the table with a sentinel.
-            s_table = s_sentinelTable;
+            _table = s_sentinelTable!;
         }
 
-        private static bool MaybeReplaceCacheWithLarger(int size)
+        private bool MaybeReplaceCacheWithLarger(int size)
         {
             int[]? newTable = CreateCastCache(size);
             if (newTable == null)
@@ -420,20 +408,19 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            s_table = newTable;
+            _table = newTable;
             return true;
         }
 
-        private static bool TryGrow(ref int tableData)
+        private bool TryGrow(ref int tableData)
         {
             int newSize = CacheElementCount(ref tableData) * 2;
-            if (newSize <= MAXIMUM_CACHE_SIZE)
+            if (newSize <= _maxCacheSize)
             {
                 return MaybeReplaceCacheWithLarger(newSize);
             }
 
             return false;
         }
-#endif   // !CORECLR
     }
 }

@@ -346,7 +346,7 @@ namespace System.Threading.Tests
                             sb.Append($"Expected: {result.Key}, Actuals: {string.Join(", ", result.Select(k => k.Value))}");
                         }
 
-                        Assert.True(false, sb.ToString());
+                        Assert.Fail(sb.ToString());
                     }
                 }
                 catch (XunitException) when (tries < 3)

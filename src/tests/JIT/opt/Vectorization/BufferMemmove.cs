@@ -4,10 +4,12 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-unsafe class BufferMemmoveUnrolling
+public unsafe class BufferMemmoveUnrolling
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         // Carefully test 0..32
         TestMemmove((dst, src) => src.AsSpan(0, 0).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(0)).CopyTo(dst));
@@ -92,8 +94,6 @@ unsafe class BufferMemmoveUnrolling
         TestMemmoveOverlap(
             (dst, src) => new Span<short>((void*)src, 256).CopyTo(new Span<short>((void*)dst, 256)),
             (dst, src) => new Span<short>((void*)src, ToVar(256)).CopyTo(new Span<short>((void*)dst, ToVar(256))));
-
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

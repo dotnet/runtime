@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -1000,6 +1001,49 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, decimal expected)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+
+            decimal result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            if ((style & ~NumberStyles.Number) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(decimal.TryParse(valueUtf8, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, decimal.Parse(valueUtf8));
+                }
+
+                Assert.Equal(expected, decimal.Parse(valueUtf8, provider: provider));
+            }
+
+            Assert.Equal(expected, decimal.Parse(valueUtf8, style, provider));
+
+            Assert.True(decimal.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+                Assert.Throws(exceptionType, () => decimal.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(decimal.TryParse(valueUtf8, style, provider, out decimal result));
+                Assert.Equal(0, result);
+            }
+        }
+
         public static IEnumerable<object[]> Remainder_Valid_TestData()
         {
             decimal NegativeZero = new decimal(0, 0, 0, true, 0);
@@ -1664,7 +1708,7 @@ namespace System.Tests
                         int expected = b1.CompareTo(bigDecimals[j]);
                         int actual = d1.CompareTo(d2);
                         if (expected != actual)
-                            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " CMP " + d2);
+                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " CMP " + d2);
                     }
                 }
             }
@@ -1692,7 +1736,7 @@ namespace System.Tests
                             try
                             {
                                 decimal actual = d1 + d2;
-                                throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " + " + d2);
+                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " + " + d2);
                             }
                             catch (OverflowException) { }
                         }
@@ -1701,7 +1745,7 @@ namespace System.Tests
                             {
                                 decimal actual = d1 + d2;
                                 if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                    throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " + " + d2);
+                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " + " + d2);
                             }
                     }
                 }
@@ -1730,7 +1774,7 @@ namespace System.Tests
                             try
                             {
                                 decimal actual = d1 * d2;
-                                throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " * " + d2);
+                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " * " + d2);
                             }
                             catch (OverflowException) { }
                         }
@@ -1739,7 +1783,7 @@ namespace System.Tests
                             {
                                 decimal actual = d1 * d2;
                                 if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                    throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " * " + d2);
+                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " * " + d2);
                             }
                     }
                 }
@@ -1770,7 +1814,7 @@ namespace System.Tests
                             try
                             {
                                 decimal actual = d1 / d2;
-                                throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " / " + d2);
+                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " / " + d2);
                             }
                             catch (OverflowException) { }
                         }
@@ -1779,7 +1823,7 @@ namespace System.Tests
                             {
                                 decimal actual = d1 / d2;
                                 if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                    throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " / " + d2);
+                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " / " + d2);
                             }
                     }
                 }
@@ -1808,12 +1852,12 @@ namespace System.Tests
                             unsafe
                             {
                                 if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                    throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " % " + d2);
+                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " % " + d2);
                             }
                         }
                         catch (OverflowException actual)
                         {
-                            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " % " + d2);
+                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " % " + d2);
                         }
                     }
                 }
@@ -1832,7 +1876,7 @@ namespace System.Tests
                 unsafe
                 {
                     if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " Floor");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " Floor");
                 }
             }
         }
@@ -1849,7 +1893,7 @@ namespace System.Tests
                 unsafe
                 {
                     if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " Ceiling");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " Ceiling");
                 }
             }
         }
@@ -1866,7 +1910,7 @@ namespace System.Tests
                 unsafe
                 {
                     if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " Truncate");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " Truncate");
                 }
             }
         }
@@ -1884,7 +1928,7 @@ namespace System.Tests
                     try
                     {
                         int actual = decimal.ToInt32(d1);
-                        throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " ToInt32");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " ToInt32");
                     }
                     catch (OverflowException) { }
                 }
@@ -1892,7 +1936,7 @@ namespace System.Tests
                 {
                     int actual = decimal.ToInt32(d1);
                     if (expected != actual)
-                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " ToInt32");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " ToInt32");
                 }
             }
         }
@@ -1910,7 +1954,7 @@ namespace System.Tests
                     try
                     {
                         long actual = decimal.ToOACurrency(d1);
-                        throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " ToOACurrency");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " ToOACurrency");
                     }
                     catch (OverflowException) { }
                 }
@@ -1918,7 +1962,7 @@ namespace System.Tests
                 {
                     long actual = decimal.ToOACurrency(d1);
                     if (expected != actual)
-                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " ToOACurrency");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " ToOACurrency");
                 }
             }
         }
@@ -1939,7 +1983,7 @@ namespace System.Tests
                     unsafe
                     {
                         if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " Round(" + j + ")");
+                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " Round(" + j + ")");
                     }
                 }
             }
@@ -1961,7 +2005,7 @@ namespace System.Tests
                     unsafe
                     {
                         if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " RoundAwayFromZero(" + j + ")");
+                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " RoundAwayFromZero(" + j + ")");
                     }
                 }
             }

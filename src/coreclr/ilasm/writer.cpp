@@ -328,9 +328,9 @@ HRESULT Assembler::CreateExportDirectory()
     unsigned                i, L, ordBase = 0xFFFFFFFF, Ldllname;
     // get the DLL name from output file name
     char*                   pszDllName;
-    Ldllname = (unsigned)wcslen(m_wzOutputFileName)*3+3;
+    Ldllname = (unsigned)u16_strlen(m_wzOutputFileName)*3+3;
     NewArrayHolder<char>    szOutputFileName(new char[Ldllname]);
-    memset(szOutputFileName,0,wcslen(m_wzOutputFileName)*3+3);
+    memset(szOutputFileName,0,u16_strlen(m_wzOutputFileName)*3+3);
     WszWideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
     pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
 #ifdef TARGET_WINDOWS
@@ -766,8 +766,8 @@ HRESULT Assembler::ResolveLocalMemberRefs()
 
                             if(IsMdPrivateScope(pListMD->m_Attr))
                             {
-                                WCHAR* p = wcsstr(wzUniBuf,W("$PST06"));
-                                if(p) *p = 0;
+                                WCHAR* p = (WCHAR*)u16_strstr(wzUniBuf,W("$PST06"));
+                                if(p) *p = W('\0');
                             }
 
                             m_pEmitter->DefineMemberRef(tkMemberDef, wzUniBuf,
@@ -1100,9 +1100,9 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     else
     {
         WCHAR* pwc;
-        if ((pwc = wcsrchr(m_wzOutputFileName, DIRECTORY_SEPARATOR_CHAR_A)) != NULL) pwc++;
+        if ((pwc = (WCHAR*)u16_strrchr(m_wzOutputFileName, DIRECTORY_SEPARATOR_CHAR_A)) != NULL) pwc++;
 #ifdef TARGET_WINDOWS
-        else if ((pwc = wcsrchr(m_wzOutputFileName, ':')) != NULL) pwc++;
+        else if ((pwc = (WCHAR*)u16_strrchr(m_wzOutputFileName, ':')) != NULL) pwc++;
 #endif
         else pwc = m_wzOutputFileName;
 

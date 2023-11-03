@@ -172,7 +172,7 @@ namespace System.Net
             return errorCode;
         }
 
-        internal static int ApplyControlToken(ISSPIInterface secModule, ref SafeDeleteContext? context, in SecurityBuffer inputBuffer)
+        internal static int ApplyControlToken(ISSPIInterface secModule, ref SafeDeleteSslContext? context, in SecurityBuffer inputBuffer)
         {
             int errorCode = secModule.ApplyControlToken(ref context, in inputBuffer);
 

@@ -1066,6 +1066,15 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_array_accessor_wrapper (m);
+			} else if (subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR) {
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
+				if (!m)
+					return FALSE;
+				MonoUnsafeAccessorKind kind = (MonoUnsafeAccessorKind) decode_value (p, &p);
+				uint32_t name_len = decode_value (p, &p);
+				const char *member_name = (const char*)p;
+				p += name_len + 1;
+				ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN) {
 				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
@@ -1269,15 +1278,25 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = wrapper;
 				}
 			} else {
-				/*
-				 * These wrappers are associated with a signature, not with a method.
-				 * Since we can't decode them into methods, they need a target method.
-				 */
-				if (!target)
-					return FALSE;
+				MonoClass *klass;
+				MonoMethod *invoke;
+
 
 				if (wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
 					subtype = (WrapperSubtype)decode_value (p, &p);
+					if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL) {
+						klass = decode_klass_ref (module, p, &p, error);
+						invoke = mono_get_delegate_invoke_internal (klass);
+						ref->method = mono_marshal_get_delegate_invoke_internal(invoke, TRUE, FALSE, NULL);
+						break;
+					}
+
+					/*
+					 * These wrappers are associated with a signature, not with a method.
+					 * Since we can't decode them into methods, they need a target method.
+					 */
+					if (!target)
+						return FALSE;
 					info = mono_marshal_get_wrapper_info (target);
 					if (info) {
 						if (info->subtype != subtype)
@@ -1287,7 +1306,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 							return FALSE;
 					}
 				}
-				if (sig_matches_target (module, target, p, &p))
+				if (target && sig_matches_target (module, target, p, &p))
 					ref->method = target;
 				else
 					return FALSE;
@@ -2250,17 +2269,15 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	if (make_unreadable) {
 #ifndef TARGET_WIN32
-		guint8 *addr;
 		guint8 *page_start, *page_end;
-		int err, len;
+		int err;
 
-		addr = amodule->mem_begin;
-		g_assert (addr);
-		len = amodule->mem_end - amodule->mem_begin;
+		g_assert (amodule->mem_begin);
+		g_assert (amodule->mem_end);
 
 		/* Round down in both directions to avoid modifying data which is not ours */
-		page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
-		page_end = (guint8 *) (((gssize) (addr + len)) & ~ (mono_pagesize () - 1));
+		page_start = (guint8 *) (((gssize) (amodule->mem_begin)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
+		page_end = (guint8 *) (((gssize) (amodule->mem_end)) & ~ (mono_pagesize () - 1));
 		if (page_end > page_start) {
 			err = mono_mprotect (page_start, (page_end - page_start), MONO_MMAP_NONE);
 			g_assert (err == 0);
@@ -2498,6 +2515,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->no_special_static_fields = (flags >> 7) & 0x1;
 	info->is_generic_container = (flags >> 8) & 0x1;
 	info->has_weak_fields = (flags >> 9) & 0x1;
+	info->has_deferred_failure = (flags >> 10) & 0x1;
 
 	if (info->has_cctor) {
 		res = decode_method_ref (module, &ref, buf, &buf, error);
@@ -2638,6 +2656,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 
 	table_size = amodule->class_name_table [0];
 	table = amodule->class_name_table + 1;
+
+	if (table_size == 0)
+		return FALSE;
 
 	if (name_space [0] == '\0')
 		full_name = g_strdup_printf ("%s", name);
@@ -3713,7 +3734,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		/* Unused */
 		int len = mono_jit_info_size (0, 0, 0);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
-		mono_jit_info_init (jinfo, method, code, code_len, 0, 0, 0);
+		mono_jit_info_init (jinfo, method, code, GPTRDIFF_TO_INT (code_len), 0, 0, 0);
 	} else {
 		jinfo = decode_exception_debug_info (amodule, method, ex_info, code, GPTRDIFF_TO_UINT32 (code_len));
 	}
@@ -4083,7 +4104,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
-			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE: {
 				MonoJumpInfo tmp;
 				tmp.type = patch_type;
 				if (!decode_patch (aot_module, mp, &tmp, p, &p))
@@ -6008,7 +6030,7 @@ mono_aot_get_unbox_arbitrary_trampoline (gpointer addr)
 static int
 i32_idx_comparer (const void *key, const void *member)
 {
-	gint32 idx1 = GPOINTER_TO_INT (key);
+	gint32 idx1 = GCONSTPOINTER_TO_INT (key);
 	gint32 idx2 = *(gint32*)member;
 	return idx1 - idx2;
 }
@@ -6016,7 +6038,7 @@ i32_idx_comparer (const void *key, const void *member)
 static int
 ui16_idx_comparer (const void *key, const void *member)
 {
-	int idx1 = GPOINTER_TO_INT (key);
+	int idx1 = GCONSTPOINTER_TO_INT (key);
 	int idx2 = *(guint16*)member;
 	return idx1 - idx2;
 }

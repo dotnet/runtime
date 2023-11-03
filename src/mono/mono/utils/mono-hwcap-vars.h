@@ -17,6 +17,13 @@ MONO_HWCAP_VAR(arm_has_thumb2)
 
 #elif defined (TARGET_ARM64)
 
+MONO_HWCAP_VAR(arm64_has_crc32)
+MONO_HWCAP_VAR(arm64_has_dot)
+MONO_HWCAP_VAR(arm64_has_rdm)
+MONO_HWCAP_VAR(arm64_has_sha1)
+MONO_HWCAP_VAR(arm64_has_sha256)
+MONO_HWCAP_VAR(arm64_has_aes)
+
 // Nothing here yet.
 
 #elif defined (TARGET_POWERPC) || defined (TARGET_POWERPC64)
@@ -56,6 +63,7 @@ MONO_HWCAP_VAR(s390x_has_mie3)
 MONO_HWCAP_VAR(s390x_has_gs)
 MONO_HWCAP_VAR(s390x_has_vef2)
 MONO_HWCAP_VAR(s390x_has_eif)
+MONO_HWCAP_VAR(s390x_has_lsoc2)
 
 #elif defined (TARGET_X86) || defined (TARGET_AMD64)
 

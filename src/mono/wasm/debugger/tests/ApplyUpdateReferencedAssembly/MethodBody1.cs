@@ -38,12 +38,12 @@ namespace ApplyUpdateReferencedAssembly
         public static void StaticMethod4 () {
         }
     }
-
-
-
-
-
-
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
     public class MethodBody5 {
         public static void StaticMethod1 () {
             Console.WriteLine("breakpoint in a line that will not be changed");
@@ -57,4 +57,59 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine("original");
         }
     }
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+    // public class MethodBody9 {
+    //     public static int M1(int a, int b) {
+    //         return a + b;
+    //     }
+        
+    //     public static int test() {
+    //         return M1(1, 2);
+    //     }
+    // }
 }

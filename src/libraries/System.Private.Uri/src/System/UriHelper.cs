@@ -10,6 +10,17 @@ namespace System
 {
     internal static class UriHelper
     {
+        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        {
+#pragma warning disable CS8500 // takes address of managed type
+            return string.Create(span.Length, (IntPtr)(&span), static (buffer, spanPtr) =>
+            {
+                int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
+                Debug.Assert(charsWritten == buffer.Length);
+            });
+#pragma warning restore CS8500
+        }
+
         // http://host/Path/Path/File?Query is the base of
         //      - http://host/Path/Path/File/ ...    (those "File" words may be different in semantic but anyway)
         //      - http://host/Path/Path/#Fragment
@@ -107,7 +118,7 @@ namespace System
             return true;
         }
 
-        internal static string EscapeString(string stringToEscape, bool checkExistingEscaped, IndexOfAnyValues<char> noEscape)
+        internal static string EscapeString(string stringToEscape, bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             ArgumentNullException.ThrowIfNull(stringToEscape);
 
@@ -130,7 +141,7 @@ namespace System
         }
 
         internal static unsafe void EscapeString(ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
-            bool checkExistingEscaped, IndexOfAnyValues<char> noEscape)
+            bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
 
@@ -150,7 +161,7 @@ namespace System
 
         private static void EscapeStringToBuilder(
             ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
-            IndexOfAnyValues<char> noEscape, bool checkExistingEscaped)
+            SearchValues<char> noEscape, bool checkExistingEscaped)
         {
             Debug.Assert(!stringToEscape.IsEmpty && !noEscape.Contains(stringToEscape[0]));
 
@@ -269,7 +280,7 @@ namespace System
                 UnescapeString(pStr, start, end, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
             }
         }
-        internal static unsafe void UnescapeString(ReadOnlySpan<char> input, ref ValueStringBuilder dest,
+        internal static unsafe void UnescapeString(scoped ReadOnlySpan<char> input, scoped ref ValueStringBuilder dest,
            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
         {
             fixed (char* pStr = &MemoryMarshal.GetReference(input))
@@ -485,18 +496,18 @@ namespace System
         }
 
         // true for all ASCII letters and digits, as well as the RFC3986 unreserved marks '-', '_', '.', and '~'
-        public static readonly IndexOfAnyValues<char> Unreserved =
-            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~");
+        public static readonly SearchValues<char> Unreserved =
+            SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~");
 
         // true for all ASCII letters and digits, as well as the RFC3986 reserved characters, unreserved characters, and hash
-        public static readonly IndexOfAnyValues<char> UnreservedReserved =
-            IndexOfAnyValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
+        public static readonly SearchValues<char> UnreservedReserved =
+            SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
-        public static readonly IndexOfAnyValues<char> UnreservedReservedExceptHash =
-            IndexOfAnyValues.Create("!$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
+        public static readonly SearchValues<char> UnreservedReservedExceptHash =
+            SearchValues.Create("!$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
-        public static readonly IndexOfAnyValues<char> UnreservedReservedExceptQuestionMarkHash =
-            IndexOfAnyValues.Create("!$&'()*+,-./0123456789:;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
+        public static readonly SearchValues<char> UnreservedReservedExceptQuestionMarkHash =
+            SearchValues.Create("!$&'()*+,-./0123456789:;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
         //
         // Is this a gen delim char from RFC 3986

@@ -14,7 +14,6 @@
 #if defined (TARGET_MACH)
 
 #include "mono/utils/mono-dl.h"
-#include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
 
 #include <stdlib.h>
@@ -41,17 +40,6 @@ mono_dl_get_so_suffixes (void)
 		"",
 	};
 	return suffixes;
-}
-
-const char*
-mono_dl_get_system_dir (void)
-{
-#ifdef TARGET_IOS
-	/* IOS9 can't load system libraries using relative paths, i.e. 'libc' doesn't work, but '/usr/lib/libc' does. */
-	return "/usr/lib";
-#else
-	return NULL;
-#endif
 }
 
 #else

@@ -45,7 +45,7 @@ namespace System.Diagnostics.Tracing
                 arg3 ??= "";
                 fixed (char* string3Bytes = arg3)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[6];
+                    EventData* descrs = stackalloc EventData[6];
                     descrs[0].DataPointer = (IntPtr)(&arg1);
                     descrs[0].Size = 8;
                     descrs[0].Reserved = 0;
@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tracing
                 arg3 ??= "";
                 fixed (char* string3Bytes = arg3)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
+                    EventData* descrs = stackalloc EventData[3];
                     descrs[0].DataPointer = (IntPtr)(&arg1);
                     descrs[0].Size = 8;
                     descrs[0].Reserved = 0;

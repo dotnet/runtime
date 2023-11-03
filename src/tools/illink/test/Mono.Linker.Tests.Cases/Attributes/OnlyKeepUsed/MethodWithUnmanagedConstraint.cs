@@ -4,7 +4,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[SetupCSharpCompilerToUse ("csc")]
-	[SetupCompileArgument ("/langversion:7.3")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	public class MethodWithUnmanagedConstraint
 	{

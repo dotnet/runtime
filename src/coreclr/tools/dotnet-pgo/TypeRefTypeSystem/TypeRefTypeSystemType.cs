@@ -46,10 +46,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             }
             else
             {
-                if (_isValueType.Value != isValueType)
-                {
-                    throw new Exception($"Same type `{ToString()}` used as both ValueType and non-ValueType");
-                }
+                // Do nothing. We cannot choose a correct choice, and failing is also unhelpful, as dotnet-pgo is supposed
+                // to work with traces from the same app over time where a type may have transformed from class to struct
+                // or vice versa. With this approach, the first assembly on the commandline to push a type to be struct
+                // or class will reliably win.
             }
         }
 

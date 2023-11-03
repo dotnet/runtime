@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Base
 {
@@ -28,7 +29,8 @@ public class F
         return obj.GetValue(3);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Derived d = new Derived();
         int v = TestSealedMethodInlining(d);

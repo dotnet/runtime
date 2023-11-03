@@ -3,7 +3,7 @@
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class ByteArrayConverter : JsonConverter<byte[]>
+    internal sealed class ByteArrayConverter : JsonConverter<byte[]?>
     {
         public override byte[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

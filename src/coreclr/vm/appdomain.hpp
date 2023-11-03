@@ -1066,12 +1066,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
-    OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateVariableHandle(m_handleStore, object, type);
-    }
-
     OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
     {
         WRAPPER_NO_CONTRACT;
@@ -1221,23 +1215,21 @@ public:
 private:
     TypeIDMap m_typeIDMap;
 
-#ifdef HOST_WINDOWS
     // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen.
-    // During execution corresponding thread static data blocks are stored in `t_threadStaticBlocks`
-    // array at the `typeIndex`.
-    TypeIDMap m_threadStaticBlockTypeIDMap;
-
-#endif // HOST_WINDOWS
+    // During execution corresponding thread static data blocks are stored in `t_NonGCThreadStaticBlocks`
+    // and `t_GCThreadStaticBlocks` array at the `typeIndex`.
+    TypeIDMap m_NonGCThreadStaticBlockTypeIDMap;
+    TypeIDMap m_GCThreadStaticBlockTypeIDMap;
 
 public:
 
-#ifdef HOST_WINDOWS
     void InitThreadStaticBlockTypeMap();
 
-    UINT32 GetThreadStaticTypeIndex(PTR_MethodTable pMT);
+    UINT32 GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT);
+    UINT32 GetGCThreadStaticTypeIndex(PTR_MethodTable pMT);
 
-    PTR_MethodTable LookupThreadStaticBlockType(UINT32 id);
-#endif
+    PTR_MethodTable LookupNonGCThreadStaticBlockType(UINT32 id);
+    PTR_MethodTable LookupGCThreadStaticBlockType(UINT32 id);
 
     UINT32 GetTypeID(PTR_MethodTable pMT);
     UINT32 LookupTypeID(PTR_MethodTable pMT);
@@ -1866,7 +1858,7 @@ public:
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 
-    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly, BOOL fAllowFailure = FALSE);
+    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly);
     BOOL RemoveFileFromCache(PEAssembly *pPEAssembly);
 
     BOOL AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly);
@@ -2158,7 +2150,7 @@ public:
     void AddMemoryPressure();
     void RemoveMemoryPressure();
 
-    Assembly *GetRootAssembly()
+    PTR_Assembly GetRootAssembly()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pRootAssembly;
@@ -2278,7 +2270,7 @@ private:
         using key_t = LPCWSTR;
         static const key_t GetKey(_In_ const element_t& e) { return e.Name; }
         static count_t Hash(_In_ key_t key) { return HashString(key); }
-        static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return wcscmp(lhs, rhs) == 0; }
+        static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return u16_strcmp(lhs, rhs) == 0; }
         static bool IsNull(_In_ const element_t& e) { return e.Handle == NULL; }
         static const element_t Null() { return UnmanagedImageCacheEntry(); }
     };
@@ -2396,7 +2388,7 @@ public:
     //****************************************************************************************
     //
     // Global Static to get the one and only system domain
-    static SystemDomain * System()
+    static PTR_SystemDomain System()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -2453,12 +2445,24 @@ public:
     }
     static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
     {
-        WRAPPER_NO_CONTRACT;
-        if (m_FrozenObjectHeapManager == NULL)
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        if (VolatileLoad(&m_FrozenObjectHeapManager) == nullptr)
         {
             LazyInitFrozenObjectsHeap();
         }
-        return m_FrozenObjectHeapManager;
+        return VolatileLoad(&m_FrozenObjectHeapManager);
+    }
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManagerNoThrow()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return VolatileLoad(&m_FrozenObjectHeapManager);
     }
 #endif // DACCESS_COMPILE
 

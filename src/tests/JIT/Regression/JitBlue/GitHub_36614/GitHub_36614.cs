@@ -12,12 +12,11 @@ namespace projs
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Program p = new Program();
             p.NarrowDouble();
             Console.WriteLine("Passed.");
-            return 100;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

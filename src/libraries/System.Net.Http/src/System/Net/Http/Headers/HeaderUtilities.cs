@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -23,8 +24,8 @@ namespace System.Net.Http.Headers
 
         // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
         //      ; token except ( "*" / "'" / "%" )
-        private static readonly IndexOfAnyValues<byte> s_rfc5987AttrBytes =
-            IndexOfAnyValues.Create("!#$&+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
+        private static readonly SearchValues<byte> s_rfc5987AttrBytes =
+            SearchValues.Create("!#$&+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
 
         internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
@@ -139,12 +140,9 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static void CheckValidToken(string value, string parameterName)
+        internal static void CheckValidToken(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
 
             if (HttpRuleParser.GetTokenLength(value, 0) != value.Length)
             {
@@ -152,12 +150,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static void CheckValidComment(string value, string parameterName)
+        internal static void CheckValidComment(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
 
             int length;
             if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
@@ -167,12 +162,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static void CheckValidQuotedString(string value, string parameterName)
+        internal static void CheckValidQuotedString(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
 
             int length;
             if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||

@@ -6,7 +6,7 @@ using System.Numerics;
 
 namespace System
 {
-    // This is a port of the `Dragon4` implementation here: http://www.ryanjuckett.com/programming/printing-floating-point-numbers/part-2/
+    // This is a port of the `Dragon4` implementation here: https://www.ryanjuckett.com/printing-floating-point-numbers-part-2-dragon4/
     // The backing algorithm and the proofs behind it are described in more detail here:  https://www.cs.indiana.edu/~dyb/pubs/FP-Printing-PLDI96.pdf
     internal static partial class Number
     {

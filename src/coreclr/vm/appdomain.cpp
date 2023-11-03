@@ -665,14 +665,13 @@ void BaseDomain::InitVSD()
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }
 
-#ifdef HOST_WINDOWS
 void BaseDomain::InitThreadStaticBlockTypeMap()
 {
     STANDARD_VM_CONTRACT;
 
-    m_threadStaticBlockTypeIDMap.Init();
+    m_NonGCThreadStaticBlockTypeIDMap.Init();
+    m_GCThreadStaticBlockTypeIDMap.Init();
 }
-#endif // HOST_WINDOWS
 
 void BaseDomain::ClearBinderContext()
 {
@@ -957,7 +956,6 @@ void SystemDomain::Attach()
 
     // Initialize stub managers
     PrecodeStubManager::Init();
-    DelegateInvokeStubManager::Init();
     JumpStubStubManager::Init();
     RangeSectionStubManager::Init();
     ILStubManager::Init();
@@ -1141,7 +1139,7 @@ void SystemDomain::Init()
 
     // At this point m_SystemDirectory should already be canonicalized
     m_BaseLibrary.Append(m_SystemDirectory);
-    if (!m_BaseLibrary.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+    if (!m_BaseLibrary.EndsWith(SString{ DIRECTORY_SEPARATOR_CHAR_W }))
     {
         m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
     }
@@ -1382,6 +1380,8 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pWeakReferenceClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
         g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
 
+        g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
@@ -1398,6 +1398,10 @@ void SystemDomain::LoadBaseSystemClasses()
     #ifdef FEATURE_ICASTABLE
         g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
     #endif // FEATURE_ICASTABLE
+
+#ifdef FEATURE_EH_FUNCLETS
+        g_pEHClass = CoreLibBinder::GetClass(CLASS__EH);
+#endif
 
         // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
         // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
@@ -1547,8 +1551,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
         CLASS__MULTICAST_DELEGATE,
-        CLASS__METHOD_INVOKER,
-        CLASS__CONSTRUCTOR_INVOKER,
+        CLASS__METHODBASEINVOKER,
     };
 
     static bool fInited = false;
@@ -1770,10 +1773,8 @@ void AppDomain::Create()
     // allocate a Virtual Call Stub Manager for the default domain
     pDomain->InitVSD();
 
-#ifdef HOST_WINDOWS
     // allocate a thread static block to index map
     pDomain->InitThreadStaticBlockTypeMap();
-#endif
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
@@ -3261,7 +3262,7 @@ PVOID AppDomain::GetFriendlyNameNoSet(bool* isUtf8)
 
 #ifndef DACCESS_COMPILE
 
-BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BOOL fAllowFailure)
+BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly)
 {
     CONTRACTL
     {
@@ -3273,25 +3274,10 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
     }
     CONTRACTL_END;
 
-    {
-        GCX_PREEMP();
-        DomainCacheCrstHolderForGCCoop holder(this);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
 
-        // !!! suppress exceptions
-        if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
-        {
-            // TODO: Disabling the below assertion as currently we experience
-            // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
-            // This causes below assertion to fire and crashes the VS. This issue
-            // is being tracked with Dev10 Bug 658555. Brought back it when this bug
-            // is fixed.
-            // _ASSERTE(FALSE);
-
-            EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
-        }
-    }
-
-    return TRUE;
+    return m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly);
 }
 
 BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly)
@@ -3359,7 +3345,7 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
         return;
     }
 
-    size_t len = (wcslen(libraryName) + 1) * sizeof(WCHAR);
+    size_t len = (u16_strlen(libraryName) + 1) * sizeof(WCHAR);
     AllocMemHolder<WCHAR> copiedName(GetLowFrequencyHeap()->AllocMem(S_SIZE_T(len)));
     memcpy(copiedName, libraryName, len);
 
@@ -3504,10 +3490,10 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
             // The binder does a re-fetch of the
             // original binding spec and therefore will not cause inconsistency here.
             // For the purposes of the resolve event, failure to add to the cache still is a success.
-            AddFileToCache(pPrePolicySpec, result, TRUE /* fAllowFailure */);
+            AddFileToCache(pPrePolicySpec, result);
             if (*ppFailedSpec != pPrePolicySpec)
             {
-                AddFileToCache(pPostPolicySpec, result, TRUE /* fAllowFailure */ );
+                AddFileToCache(pPostPolicySpec, result);
             }
         }
     }
@@ -3568,7 +3554,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     // Failure to add simply means someone else beat us to it. In that case
                     // the FindCachedFile call below (after catch block) will update result
                     // to the cached value.
-                    AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
+                    AddFileToCache(pSpec, result);
                 }
                 else
                 {
@@ -4678,9 +4664,8 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     return pMT;
 }
 
-#ifdef HOST_WINDOWS
 //------------------------------------------------------------------------
-UINT32 BaseDomain::GetThreadStaticTypeIndex(PTR_MethodTable pMT)
+UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
 {
     CONTRACTL {
         THROWS;
@@ -4688,23 +4673,47 @@ UINT32 BaseDomain::GetThreadStaticTypeIndex(PTR_MethodTable pMT)
         PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
-    return m_threadStaticBlockTypeIDMap.GetTypeID(pMT, false);
+    return m_NonGCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
 }
 
 //------------------------------------------------------------------------
-PTR_MethodTable BaseDomain::LookupThreadStaticBlockType(UINT32 id) {
+PTR_MethodTable BaseDomain::LookupNonGCThreadStaticBlockType(UINT32 id) {
         CONTRACTL {
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
         CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
     } CONTRACTL_END;
 
-    PTR_MethodTable pMT = m_threadStaticBlockTypeIDMap.LookupType(id);
+    PTR_MethodTable pMT = m_NonGCThreadStaticBlockTypeIDMap.LookupType(id);
 
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT;
 }
-#endif // HOST_WINDOWS
+//------------------------------------------------------------------------
+UINT32 BaseDomain::GetGCThreadStaticTypeIndex(PTR_MethodTable pMT)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(pMT->GetDomain() == this);
+    } CONTRACTL_END;
+
+    return m_GCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
+}
+
+//------------------------------------------------------------------------
+PTR_MethodTable BaseDomain::LookupGCThreadStaticBlockType(UINT32 id) {
+        CONTRACTL {
+        NOTHROW;
+        WRAPPER(GC_TRIGGERS);
+        CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
+    } CONTRACTL_END;
+
+    PTR_MethodTable pMT = m_GCThreadStaticBlockTypeIDMap.LookupType(id);
+
+    CONSISTENCY_CHECK(CheckPointer(pMT));
+    return pMT;
+}
 
 #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------

@@ -9,8 +9,8 @@ namespace System.Collections.Frozen
     /// <typeparam name="T">The type of the values in the set.</typeparam>
     internal sealed class DefaultFrozenSet<T> : ItemsFrozenSet<T, DefaultFrozenSet<T>.GSW>
     {
-        internal DefaultFrozenSet(HashSet<T> source, bool optimizeForReading)
-            : base(source, optimizeForReading)
+        internal DefaultFrozenSet(HashSet<T> source)
+            : base(source)
         {
         }
 

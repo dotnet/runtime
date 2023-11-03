@@ -4,12 +4,13 @@
 // Optimization of type equality tests
 
 using System;
+using Xunit;
 
 struct Wrap1<T> {}
 
 struct Wrap2<T> {}
 
-class EqualityTests
+public class EqualityTests
 {
     static bool IsInt<T>()
     {
@@ -51,7 +52,8 @@ class EqualityTests
         return (u.GetType() == typeof(Wrap1<T>));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Fully optimized
         bool c1 = IsInt<int>();

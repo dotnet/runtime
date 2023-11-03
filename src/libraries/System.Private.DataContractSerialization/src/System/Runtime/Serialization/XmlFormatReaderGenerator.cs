@@ -462,7 +462,7 @@ namespace System.Runtime.Serialization
                 return memberCount;
             }
 
-            private bool[] GetRequiredMembers(ClassDataContract contract, out int firstRequiredMember)
+            private static bool[] GetRequiredMembers(ClassDataContract contract, out int firstRequiredMember)
             {
                 int memberCount = contract.MemberNames!.Length;
                 bool[] requiredMembers = new bool[memberCount];
@@ -473,7 +473,7 @@ namespace System.Runtime.Serialization
                 return requiredMembers;
             }
 
-            private int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
+            private static int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
             {
                 int memberCount = (contract.BaseClassContract == null) ? 0 : GetRequiredMembers(contract.BaseClassContract, requiredMembers);
                 List<DataMember> members = contract.Members!;

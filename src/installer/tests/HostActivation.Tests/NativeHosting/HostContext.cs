@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public const string Mixed = "mixed";
             public const string NonContextMixedAppHost = "non_context_mixed_apphost";
             public const string NonContextMixedDotnet = "non_context_mixed_dotnet";
+            public const string GetRuntimeDelegateForActiveContext = "get_runtime_delegate_for_active_context";
         }
 
         public class CheckProperties
@@ -235,6 +236,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             CheckPropertiesValidation propertyValidation = new CheckPropertiesValidation(checkProperties, LogPrefix.Config, SharedTestState.ConfigPropertyName, SharedTestState.ConfigPropertyValue);
             propertyValidation.ValidateActiveContext(result, SharedTestState.SecondaryConfigPropertyName);
             propertyValidation.ValidateSecondaryContext(result, SharedTestState.SecondaryConfigPropertyName, SharedTestState.SecondaryConfigPropertyValue);
+        }
+
+        [Fact]
+        public void GetDelegate_ActiveContext()
+        {
+            string newPropertyName = "HOST_TEST_PROPERTY";
+            string[] args =
+            {
+                HostContextArg,
+                Scenario.GetRuntimeDelegateForActiveContext,
+                CheckProperties.None,
+                sharedState.HostFxrPath,
+                sharedState.RuntimeConfigPath,
+                SharedTestState.ConfigPropertyName,
+                newPropertyName
+            };
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                .Execute();
+
+            result.Should().Pass()
+                .And.InitializeContextForConfig(sharedState.RuntimeConfigPath)
+                .And.CreateDelegateMock_COM()
+                .And.CreateDelegateMock_InMemoryAssembly();
+
+            CheckPropertiesValidation propertyValidation = new CheckPropertiesValidation(CheckProperties.None, LogPrefix.Config, SharedTestState.ConfigPropertyName, SharedTestState.ConfigPropertyValue);
+            propertyValidation.ValidateActiveContext(result, newPropertyName);
         }
 
         [Theory]

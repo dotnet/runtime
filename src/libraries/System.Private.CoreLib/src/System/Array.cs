@@ -17,7 +17,7 @@ using Internal.Runtime;
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         // This is the threshold where Introspective sort switches to Insertion sort.
@@ -61,7 +61,7 @@ namespace System
                 // other way around), we can use Buffer.Memmove here.
 
                 T[] newArray = new T[newSize];
-                Buffer.Memmove<T>(
+                Buffer.Memmove(
                     ref MemoryMarshal.GetArrayDataReference(newArray),
                     ref MemoryMarshal.GetArrayDataReference(larray),
                     (uint)Math.Min(newSize, larray.Length));
@@ -204,7 +204,7 @@ namespace System
                 intLengths[i] = ilen;
             }
 
-            return Array.CreateInstance(elementType, intLengths);
+            return CreateInstance(elementType, intLengths);
         }
 
         public static void Copy(Array sourceArray, Array destinationArray, long length)
@@ -307,7 +307,7 @@ namespace System
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
-            return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
+            return InternalGetValue(GetFlattenedIndex(indices));
         }
 
         public object? GetValue(int index)
@@ -323,7 +323,7 @@ namespace System
             if (Rank != 2)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
 
-            return InternalGetValue(GetFlattenedIndex(stackalloc int[] { index1, index2 }));
+            return InternalGetValue(GetFlattenedIndex([index1, index2]));
         }
 
         public object? GetValue(int index1, int index2, int index3)
@@ -331,7 +331,7 @@ namespace System
             if (Rank != 3)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
 
-            return InternalGetValue(GetFlattenedIndex(stackalloc int[] { index1, index2, index3 }));
+            return InternalGetValue(GetFlattenedIndex([index1, index2, index3]));
         }
 
         public void SetValue(object? value, int index)
@@ -347,7 +347,7 @@ namespace System
             if (Rank != 2)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
 
-            InternalSetValue(value, GetFlattenedIndex(stackalloc int[] { index1, index2 }));
+            InternalSetValue(value, GetFlattenedIndex([index1, index2]));
         }
 
         public void SetValue(object? value, int index1, int index2, int index3)
@@ -355,7 +355,7 @@ namespace System
             if (Rank != 3)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
 
-            InternalSetValue(value, GetFlattenedIndex(stackalloc int[] { index1, index2, index3 }));
+            InternalSetValue(value, GetFlattenedIndex([index1, index2, index3]));
         }
 
         public void SetValue(object? value, params int[] indices)
@@ -365,7 +365,7 @@ namespace System
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
-            InternalSetValue(value, GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
+            InternalSetValue(value, GetFlattenedIndex(indices));
         }
 
         public object? GetValue(long index)
@@ -533,17 +533,17 @@ namespace System
 
         bool IList.Contains(object? value)
         {
-            return Array.IndexOf(this, value) >= this.GetLowerBound(0);
+            return IndexOf(this, value) >= this.GetLowerBound(0);
         }
 
         void IList.Clear()
         {
-            Array.Clear(this);
+            Clear(this);
         }
 
         int IList.IndexOf(object? value)
         {
-            return Array.IndexOf(this, value);
+            return IndexOf(this, value);
         }
 
         void IList.Insert(int index, object? value)
@@ -605,7 +605,7 @@ namespace System
                 return false;
             }
 
-            if (object.ReferenceEquals(this, other))
+            if (ReferenceEquals(this, other))
             {
                 return true;
             }
@@ -870,22 +870,22 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            return BinarySearch<T>(array, 0, array.Length, value, null);
+            return BinarySearch(array, 0, array.Length, value, null);
         }
 
-        public static int BinarySearch<T>(T[] array, T value, System.Collections.Generic.IComparer<T>? comparer)
+        public static int BinarySearch<T>(T[] array, T value, IComparer<T>? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            return BinarySearch<T>(array, 0, array.Length, value, comparer);
+            return BinarySearch(array, 0, array.Length, value, comparer);
         }
 
         public static int BinarySearch<T>(T[] array, int index, int length, T value)
         {
-            return BinarySearch<T>(array, index, length, value, null);
+            return BinarySearch(array, index, length, value, null);
         }
 
-        public static int BinarySearch<T>(T[] array, int index, int length, T value, System.Collections.Generic.IComparer<T>? comparer)
+        public static int BinarySearch<T>(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
@@ -932,7 +932,7 @@ namespace System
             if (array != null && array.Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             // Note: Array.Copy throws a RankException and we want a consistent ArgumentException for all the IList CopyTo methods.
-            Array.Copy(this, GetLowerBound(0), array!, index, Length);
+            Copy(this, GetLowerBound(0), array!, index, Length);
         }
 
         public void CopyTo(Array array, long index)
@@ -958,7 +958,7 @@ namespace System
 
         public static bool Exists<T>(T[] array, Predicate<T> match)
         {
-            return Array.FindIndex(array, match) != -1;
+            return FindIndex(array, match) != -1;
         }
 
         public static void Fill<T>(T[] array, T value)
@@ -2015,34 +2015,34 @@ namespace System
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
-            Sort<TKey, TValue>(keys, items, 0, keys.Length, null);
+            Sort(keys, items, 0, keys.Length, null);
         }
 
         public static void Sort<T>(T[] array, int index, int length)
         {
-            Sort<T>(array, index, length, null);
+            Sort(array, index, length, null);
         }
 
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, int index, int length)
         {
-            Sort<TKey, TValue>(keys, items, index, length, null);
+            Sort(keys, items, index, length, null);
         }
 
-        public static void Sort<T>(T[] array, System.Collections.Generic.IComparer<T>? comparer)
+        public static void Sort<T>(T[] array, IComparer<T>? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Sort<T>(array, 0, array.Length, comparer);
+            Sort(array, 0, array.Length, comparer);
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, System.Collections.Generic.IComparer<TKey>? comparer)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, IComparer<TKey>? comparer)
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
-            Sort<TKey, TValue>(keys, items, 0, keys.Length, comparer);
+            Sort(keys, items, 0, keys.Length, comparer);
         }
 
-        public static void Sort<T>(T[] array, int index, int length, System.Collections.Generic.IComparer<T>? comparer)
+        public static void Sort<T>(T[] array, int index, int length, IComparer<T>? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
@@ -2060,7 +2060,7 @@ namespace System
             }
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, int index, int length, System.Collections.Generic.IComparer<TKey>? comparer)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, int index, int length, IComparer<TKey>? comparer)
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
@@ -2075,7 +2075,7 @@ namespace System
             {
                 if (items == null)
                 {
-                    Sort<TKey>(keys, index, length, comparer);
+                    Sort(keys, index, length, comparer);
                     return;
                 }
 
@@ -2207,6 +2207,9 @@ namespace System
                 }
             }
 
+            // IntroSort is recursive; block it from being inlined into itself as
+            // this is currenly not profitable.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private void IntroSort(int lo, int hi, int depthLimit)
             {
                 Debug.Assert(hi >= lo);
@@ -2421,6 +2424,9 @@ namespace System
                 }
             }
 
+            // IntroSort is recursive; block it from being inlined into itself as
+            // this is currenly not profitable.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private void IntroSort(int lo, int hi, int depthLimit)
             {
                 Debug.Assert(hi >= lo);

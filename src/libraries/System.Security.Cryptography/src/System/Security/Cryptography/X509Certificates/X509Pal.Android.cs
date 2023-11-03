@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
-                if (rawData == null || rawData.Length == 0)
+                if (rawData.IsEmpty)
                     throw new CryptographicException();
 
                 X509ContentType contentType = Interop.AndroidCrypto.X509GetContentType(rawData);

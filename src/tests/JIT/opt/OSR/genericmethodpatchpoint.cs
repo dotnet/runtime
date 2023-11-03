@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Patchpoint in generic method
 
-class GenericMethodPatchpoint
+public class GenericMethodPatchpoint
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F<T>(T[] data, int from, int to) where T : class
@@ -19,7 +20,8 @@ class GenericMethodPatchpoint
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string[] a = new string[1000];
         a[111] = "hello, world";

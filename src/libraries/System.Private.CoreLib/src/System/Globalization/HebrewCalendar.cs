@@ -118,8 +118,8 @@ namespace System.Globalization
         private const int MinHebrewYear = HebrewYearOf1AD + FirstGregorianTableYear;   // == 5343
         private const int MaxHebrewYear = HebrewYearOf1AD + LastGregorianTableYear;    // == 5999
 
-        private static ReadOnlySpan<byte> HebrewTable => new byte[] // rely on C# compiler optimization to reference static data
-        {
+        private static ReadOnlySpan<byte> HebrewTable =>
+        [
             7, 3, 17, 3,         // 1583-1584  (Hebrew year: 5343 - 5344)
             0, 4, 11, 2, 21, 6, 1, 3, 13, 2,             // 1585-1589
             25, 4, 5, 3, 16, 2, 27, 6, 9, 1,             // 1590-1594
@@ -253,14 +253,14 @@ namespace System.Globalization
             15, 3, 25, 6, 6, 2, 19, 4, 33, 3,    // 2230
             10, 2, 22, 4, 3, 3, 14, 2, 24, 6,    // 2235
             6, 1    // 2240 (Hebrew year: 6000)
-        };
+        ];
 
         private const int MaxMonthPlusOne = 14;
 
         // The lunar calendar has 6 different variations of month lengths
         // within a year.
-        private static ReadOnlySpan<byte> LunarMonthLen => new byte[] // rely on C# compiler optimization to reference static data
-        {
+        private static ReadOnlySpan<byte> LunarMonthLen =>
+        [
             0, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0,
             0, 30, 29, 29, 29, 30, 29, 30, 29, 30, 29, 30, 29, 0,     // 3 common year variations
             0, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 0,
@@ -268,7 +268,7 @@ namespace System.Globalization
             0, 30, 29, 29, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29,    // 3 leap year variations
             0, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29,
             0, 30, 30, 30, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29
-        };
+        ];
 
         private static readonly DateTime s_calendarMinValue = new DateTime(1583, 1, 1);
 
@@ -583,7 +583,7 @@ namespace System.Globalization
             int d = GetDatePart(time.Ticks, DatePartDay);
 
             y += years;
-            CheckHebrewYearValue(y, Calendar.CurrentEra, nameof(years));
+            CheckHebrewYearValue(y, CurrentEra, nameof(years));
 
             int months = GetMonthsInYear(y, CurrentEra);
             if (m > months)
@@ -598,7 +598,7 @@ namespace System.Globalization
             }
 
             long ticks = ToDateTime(y, m, d, 0, 0, 0, 0).Ticks + (time.Ticks % TicksPerDay);
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
 
@@ -711,7 +711,7 @@ namespace System.Globalization
                 CheckHebrewDayValue(year, month, day, era);
                 return true;
             }
-            else if (IsLeapYear(year, Calendar.CurrentEra))
+            else if (IsLeapYear(year, CurrentEra))
             {
                 // There is an additional day in the 6th month in the leap year (the extra day is the 30th day in the 6th month),
                 // so we should return true for 6/30 if that's in a leap year.

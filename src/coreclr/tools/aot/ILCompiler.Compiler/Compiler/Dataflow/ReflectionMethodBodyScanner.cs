@@ -479,7 +479,7 @@ namespace ILCompiler.Dataflow
                                         && systemTypeValue.RepresentedType.Type.GetParameterlessConstructor() is MethodDesc ctorMethod
                                         && !reflectionMarker.Factory.MetadataManager.IsReflectionBlocked(ctorMethod))
                                     {
-                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod), "Marshal API");
+                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Marshal API");
                                     }
                                 }
                             }
@@ -538,7 +538,7 @@ namespace ILCompiler.Dataflow
                             // In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
                             // currently it won't do.
 
-                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType;
+                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
                                 // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"

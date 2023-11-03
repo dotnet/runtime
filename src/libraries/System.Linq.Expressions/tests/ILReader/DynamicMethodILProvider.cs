@@ -10,13 +10,14 @@ namespace System.Linq.Expressions.Tests
 {
     public sealed class DynamicMethodILProvider : IILProvider
     {
-        private static readonly FieldInfo s_fiLen = typeof(ILGenerator).GetFieldAssert("m_length");
-        private static readonly FieldInfo s_fiStream = typeof(ILGenerator).GetFieldAssert("m_ILStream");
-        private static readonly FieldInfo s_fiExceptions = typeof(ILGenerator).GetFieldAssert("m_exceptions");
-        private static readonly FieldInfo s_fiExceptionCount = typeof(ILGenerator).GetFieldAssert("m_exceptionCount");
-        private static readonly FieldInfo s_fiLocalSignature = typeof(ILGenerator).GetFieldAssert("m_localSignature");
-        private static readonly MethodInfo s_miBakeByteArray = typeof(ILGenerator).GetMethodAssert("BakeByteArray");
-        private static readonly MethodInfo s_miMaxStackSize = typeof(ILGenerator).GetMethodAssert("GetMaxStackSize");
+        private static readonly Type s_runtimeILGenerator = Type.GetType("System.Reflection.Emit.RuntimeILGenerator");
+        private static readonly FieldInfo s_fiLen = s_runtimeILGenerator.GetFieldAssert("m_length");
+        private static readonly FieldInfo s_fiStream = s_runtimeILGenerator.GetFieldAssert("m_ILStream");
+        private static readonly FieldInfo s_fiExceptions = s_runtimeILGenerator.GetFieldAssert("m_exceptions");
+        private static readonly FieldInfo s_fiExceptionCount = s_runtimeILGenerator.GetFieldAssert("m_exceptionCount");
+        private static readonly FieldInfo s_fiLocalSignature = s_runtimeILGenerator.GetFieldAssert("m_localSignature");
+        private static readonly MethodInfo s_miBakeByteArray = s_runtimeILGenerator.GetMethodAssert("BakeByteArray");
+        private static readonly MethodInfo s_miMaxStackSize = s_runtimeILGenerator.GetMethodAssert("GetMaxStackSize");
 
         private readonly DynamicMethod _method;
         private byte[] _byteArray;

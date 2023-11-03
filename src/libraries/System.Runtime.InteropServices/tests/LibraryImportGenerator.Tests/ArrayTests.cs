@@ -1,14 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using SharedTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Text;
-
+using SharedTypes;
 using Xunit;
 
 namespace LibraryImportGenerator.IntegrationTests
@@ -30,7 +28,7 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial void Duplicate([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref int[] values, int numValues);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array")]
-            [return:MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+            [return: MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
             public static partial int[] CreateRange(int start, int end, out int numValues);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
@@ -59,7 +57,7 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial void ReverseStrings_Out([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] strArray, out int numElements, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)] out string[] res);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
-            [return:MarshalAs(UnmanagedType.LPArray, SizeConst = sizeof(long))]
+            [return: MarshalAs(UnmanagedType.LPArray, SizeConst = sizeof(long))]
             public static partial byte[] GetLongBytes(long l);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "append_int_to_array")]
@@ -285,7 +283,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
         private static string[] GetStringArray()
         {
-            return new []
+            return new[]
             {
                 "ABCdef 123$%^",
                 "\uD83C\uDF5C !! \uD83C\uDF5C !!",
@@ -362,11 +360,11 @@ namespace LibraryImportGenerator.IntegrationTests
         [Fact]
         public void DynamicSizedArrayWithConstantComponent()
         {
-            var array = new [] { 1, 5, 79, 165, 32, 3 };
+            var array = new[] { 1, 5, 79, 165, 32, 3 };
             int newValue = 42;
             var newArray = array;
             NativeExportsNE.Arrays.Append(ref newArray, array.Length, newValue);
-            Assert.Equal(array.Concat(new [] { newValue }), newArray);
+            Assert.Equal(array.Concat(new[] { newValue }), newArray);
         }
 
         [Fact]

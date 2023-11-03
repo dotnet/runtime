@@ -24,12 +24,35 @@ namespace Microsoft.Interop
             _nativeType = nativeType;
         }
 
+        public override SyntaxNode? VisitVariableDeclarator(VariableDeclaratorSyntax node)
+        {
+            if (node.Initializer is null)
+            {
+                return base.VisitVariableDeclarator(node);
+            }
+
+            if (node.Identifier.ToString() == _nativeIdentifier)
+            {
+                return node.WithInitializer(
+                    EqualsValueClause(
+                        CastExpression(TypeSyntaxes.System_IntPtr, node.Initializer.Value)));
+            }
+            if (node.Initializer.Value.ToString() == _nativeIdentifier)
+            {
+                return node.WithInitializer(
+                    EqualsValueClause(
+                        CastExpression(_nativeType, node.Initializer.Value)));
+            }
+
+            return base.VisitVariableDeclarator(node);
+        }
+
         public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
         {
             if (node.Left.ToString() == _nativeIdentifier)
             {
                 return node.WithRight(
-                    CastExpression(MarshallerHelpers.SystemIntPtrType, node.Right));
+                    CastExpression(TypeSyntaxes.System_IntPtr, node.Right));
             }
             if (node.Right.ToString() == _nativeIdentifier)
             {

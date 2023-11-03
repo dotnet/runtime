@@ -17,7 +17,7 @@ namespace System
         // IDEOGRAPHIC FULL STOP '\u3002'
         // FULLWIDTH FULL STOP '\uFF0E'
         // HALFWIDTH IDEOGRAPHIC FULL STOP '\uFF61'
-        // Using IndexOfAnyValues isn't beneficial here as it would defer to IndexOfAny(char, char, char, char) anyway
+        // Using SearchValues isn't beneficial here as it would defer to IndexOfAny(char, char, char, char) anyway
         private const string IriDotCharacters = ".\u3002\uFF0E\uFF61";
 
         // The Unicode specification allows certain code points to be normalized not to
@@ -28,22 +28,24 @@ namespace System
         // This means that a host containing Unicode characters can be normalized to contain
         // URI reserved characters, changing the meaning of a URI only when certain properties
         // such as IdnHost are accessed. To be safe, disallow control characters in normalized hosts.
-        private static readonly IndexOfAnyValues<char> s_unsafeForNormalizedHostChars =
-            IndexOfAnyValues.Create(@"\/?@#:[]");
+        private static readonly SearchValues<char> s_unsafeForNormalizedHostChars =
+            SearchValues.Create(@"\/?@#:[]");
 
         // Takes into account the additional legal domain name characters '-' and '_'
         // Note that '_' char is formally invalid but is historically in use, especially on corpnets
-        private static readonly IndexOfAnyValues<char> s_validChars =
-            IndexOfAnyValues.Create("-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz.");
+        private static readonly SearchValues<char> s_validChars =
+            SearchValues.Create("-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz.");
 
-        // For IRI, we're accepting anything non-ascii, so invert the condition to just check for invalid ascii characters
-        private static readonly IndexOfAnyValues<char> s_iriInvalidAsciiChars = IndexOfAnyValues.Create(
+        // For IRI, we're accepting anything non-ascii (except 0x80-0x9F), so invert the condition to search for invalid ascii characters.
+        private static readonly SearchValues<char> s_iriInvalidChars = SearchValues.Create(
             "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F" +
             "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F" +
-            " !\"#$%&'()*+,/:;<=>?@[\\]^`{|}~\u007F");
+            " !\"#$%&'()*+,/:;<=>?@[\\]^`{|}~\u007F" +
+            "\u0080\u0081\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008D\u008E\u008F" +
+            "\u0090\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009D\u009E\u009F");
 
-        private static readonly IndexOfAnyValues<char> s_asciiLetterUpperOrColonChars =
-            IndexOfAnyValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ:");
+        private static readonly SearchValues<char> s_asciiLetterUpperOrColonChars =
+            SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ:");
 
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
@@ -75,28 +77,22 @@ namespace System
             if (index >= 0)
             {
                 // We saw uppercase letters. Avoid allocating both the substring and the lower-cased variant.
-                return string.Create(end - start, (str, start), static (buffer, state) =>
-                {
-                    int newLength = state.str.AsSpan(state.start, buffer.Length).ToLowerInvariant(buffer);
-                    Debug.Assert(newLength == buffer.Length);
-                });
+                return UriHelper.SpanToLowerInvariantString(str.AsSpan(start, end - start));
             }
 
-            string res = str.Substring(start, end - start);
-
-            if (res is Localhost or Loopback)
+            if (str.AsSpan(start, end - start) is Localhost or Loopback)
             {
                 loopback = true;
                 return Localhost;
             }
 
-            return res;
+            return str.Substring(start, end - start);
         }
 
         public static bool IsValid(ReadOnlySpan<char> hostname, bool iri, bool notImplicitFile, out int length)
         {
             int invalidCharOrDelimiterIndex = iri
-                ? hostname.IndexOfAny(s_iriInvalidAsciiChars)
+                ? hostname.IndexOfAny(s_iriInvalidChars)
                 : hostname.IndexOfAnyExcept(s_validChars);
 
             if (invalidCharOrDelimiterIndex >= 0)
@@ -148,13 +144,6 @@ namespace System
                     ReadOnlySpan<char> label = hostname.Slice(0, labelLength);
                     if (!Ascii.IsValid(label))
                     {
-                        // s_iriInvalidAsciiChars confirmed everything in [0, 7F] range.
-                        // Chars in [80, 9F] range are also invalid, check for them now.
-                        if (hostname.IndexOfAnyInRange('\u0080', '\u009F') >= 0)
-                        {
-                            return false;
-                        }
-
                         // Account for the ACE prefix ("xn--")
                         labelLength += 4;
 
@@ -206,7 +195,7 @@ namespace System
             try
             {
                 string asciiForm = s_idnMapping.GetAscii(bidiStrippedHost);
-                if (asciiForm.AsSpan().IndexOfAny(s_unsafeForNormalizedHostChars) >= 0)
+                if (asciiForm.AsSpan().ContainsAny(s_unsafeForNormalizedHostChars))
                 {
                     throw new UriFormatException(SR.net_uri_BadUnicodeHostForIdn);
                 }

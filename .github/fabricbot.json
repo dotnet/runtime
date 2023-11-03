@@ -61,6 +61,15 @@
         },
         {
           "labels": [
+            "area-Codegen-Intrinsics-mono"
+          ],
+          "mentionees": [
+            "SamMonoRT",
+            "fanyang-mono"
+          ]
+        },
+        {
+          "labels": [
             "area-CodeGen-meta-Mono"
           ],
           "mentionees": [
@@ -218,7 +227,7 @@
         },
         {
           "labels": [
-            "area-ILVerification"
+            "area-Tools-ILVerification"
           ],
           "mentionees": [
             "JulieLeeMSFT"
@@ -1029,7 +1038,8 @@
           ],
           "mentionees": [
             "steveisok",
-            "akoeplinger"
+            "akoeplinger",
+            "kotlarmilos"
           ]
         }
       ],
@@ -2131,6 +2141,18 @@
                 }
               },
               {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Interop-coreclr"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Runtime.InteropServices"
+                }
+              },
+              {
                 "name": "labelAdded",
                 "parameters": {
                   "label": "area-AssemblyLoader-coreclr"
@@ -2164,6 +2186,18 @@
                 "name": "labelAdded",
                 "parameters": {
                   "label": "area-Tools-ILLink"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-Interop-coreclr"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-System.Runtime.InteropServices"
                 }
               }
             ]
@@ -2595,7 +2629,7 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "Replace `needs-author-action` label with `needs-further-triage` label when the author comments on an issue",
+      "taskName": "Replace `needs-author-action` label with `needs-further-triage` label when the author comments on an issue that is not still untriaged",
       "actions": [
         {
           "name": "addLabel",
@@ -2635,6 +2669,74 @@
             "name": "hasLabel",
             "parameters": {
               "label": "needs-author-action"
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "untriaged"
+                }
+              }
+            ]
+          },
+          {
+            "name": "isOpen",
+            "parameters": {}
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssueCommentResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "Remove `needs-author-action` label when the author comments on an `untriaged` issue",
+      "actions": [
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "needs-author-action"
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issue_comment"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "created"
+            }
+          },
+          {
+            "name": "isActivitySender",
+            "parameters": {
+              "user": {
+                "type": "author"
+              }
+            }
+          },
+          {
+            "name": "hasLabel",
+            "parameters": {
+              "label": "needs-author-action"
+            }
+          },
+          {
+            "name": "hasLabel",
+            "parameters": {
+              "label": "untriaged"
             }
           },
           {
@@ -4101,6 +4203,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -4242,6 +4415,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -4356,37 +4600,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -4434,37 +4683,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -4512,37 +4766,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -4590,39 +4849,276 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issues"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Adam / David - Issue Triage",
+              "isOrgProject": true
+            }
           },
           {
-            "operator": "not",
+            "operator": "or",
             "operands": [
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "needs-author-action"
+                  "label": "os-android"
                 }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Adam / David - PRs] Moved to Another Area",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Caching"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-FileSystem"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Console"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.Process"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Formats.Asn1"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Formats.Cbor"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.IO"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.IO.Hashing"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Linq.Parallel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Security"
+                    }
+                  }
+                ]
               }
             ]
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Adam / David - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       }
@@ -4976,6 +5472,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -5137,6 +5704,77 @@
                   "columnName": "Done",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -5468,6 +6106,95 @@
                   "projectName": "Area Pod: Adam / David - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Adam / David - PRs] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Adam / David - PRs",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Adam / David - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-android"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
                 }
               }
             ]
@@ -5921,6 +6648,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -6080,6 +6878,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -6194,37 +7063,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -6272,37 +7146,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -6350,37 +7229,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -6428,39 +7312,309 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Buyaa / Steve - Issue Triage] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Buyaa / Steve - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issues"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Buyaa / Steve - Issue Triage",
+              "isOrgProject": true
+            }
           },
           {
-            "operator": "not",
+            "operator": "or",
             "operands": [
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "needs-author-action"
+                  "label": "os-android"
                 }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Buyaa / Steve - PRs] Moved to Another Area",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Buyaa / Steve - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-DependencyInjection"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Hosting"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.CodeDom"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ComponentModel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ComponentModel.Composition"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Composition"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Configuration"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Reflection"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Reflection.Emit"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Reflection.Metadata"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Resources"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Text.RegularExpressions"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.DirectoryServices"
+                    }
+                  }
+                ]
               }
             ]
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Buyaa / Steve - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       }
@@ -6865,6 +8019,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -7044,6 +8269,77 @@
                   "columnName": "Done",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -7411,6 +8707,95 @@
                   "projectName": "Area Pod: Buyaa / Steve - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Buyaa / Steve - PRs] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Buyaa / Steve - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Buyaa / Steve - PRs",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Buyaa / Steve - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-android"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
                 }
               }
             ]
@@ -7818,6 +9203,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -7965,6 +9421,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -8079,37 +9606,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -8157,37 +9689,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -8235,37 +9772,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -8313,39 +9855,287 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issues"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+              "isOrgProject": true
+            }
           },
           {
-            "operator": "not",
+            "operator": "or",
             "operands": [
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "needs-author-action"
+                  "label": "os-android"
                 }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] Moved to Another Area",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-DependencyModel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Infrastructure-libraries"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Microsoft.Win32"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.EventLog"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.PerformanceCounter"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.TraceSource"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Drawing"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Formats.Tar"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.IO.Compression"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Management"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ServiceProcess"
+                    }
+                  }
+                ]
               }
             ]
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Carlos / Viktor - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       }
@@ -8716,6 +10506,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -8883,6 +10744,77 @@
                   "columnName": "Done",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -9226,6 +11158,95 @@
                   "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Carlos / Viktor - PRs",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-android"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
                 }
               }
             ]
@@ -9587,6 +11608,66 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -9722,6 +11803,66 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -9836,37 +11977,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -9914,37 +12060,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -9992,37 +12143,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -10070,39 +12226,259 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issues"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Michael / Tanner - Issue Triage",
+              "isOrgProject": true
+            }
           },
           {
-            "operator": "not",
+            "operator": "or",
             "operands": [
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "needs-author-action"
+                  "label": "os-android"
                 }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Michael / Tanner - PRs] Moved to Another Area",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Michael / Tanner - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Buffers"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Memory"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Numerics"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Numerics.Tensors"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Runtime"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Runtime.CompilerServices"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Runtime.Intrinsics"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Threading.Channels"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Threading.Tasks"
+                    }
+                  }
+                ]
               }
             ]
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Michael / Tanner - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       }
@@ -10439,6 +12815,66 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -10594,6 +13030,66 @@
                   "columnName": "Done",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -10925,15 +13421,98 @@
     "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
-    "subCapability": "IssuesOnlyResponder",
+    "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Moved to Another Area",
+      "taskName": "[Area Pod: Michael / Tanner - PRs] Excluded",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Michael / Tanner - PRs",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-android"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Moved to Another Area",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "isOrgProject": true
           }
         }
@@ -11124,7 +13703,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true
             }
           }
@@ -11139,19 +13718,19 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Needs Triage",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Needs Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -11397,7 +13976,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+                      "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -11406,7 +13985,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
                   "isOrgProject": true,
                   "columnName": "Triaged"
                 }
@@ -11495,19 +14074,19 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Needs Further Triage",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Needs Further Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -11639,7 +14218,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+                      "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -11648,7 +14227,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
@@ -11737,12 +14316,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Triaged",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Triaged",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
           }
@@ -11764,7 +14343,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true
             }
           },
@@ -11806,12 +14385,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Eirik Updated Issue",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Eirik Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Triage: Eirik",
             "isOrgProject": true
           }
@@ -11827,7 +14406,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -11889,12 +14468,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Eirik Commented",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Eirik Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Triage: Eirik",
             "isOrgProject": true
           }
@@ -11910,7 +14489,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -11972,12 +14551,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Krzysztof Updated Issue",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Krzysztof Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Triage: Krzysztof",
             "isOrgProject": true
           }
@@ -11993,7 +14572,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -12055,12 +14634,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Krzysztof Commented",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Krzysztof Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Triage: Krzysztof",
             "isOrgProject": true
           }
@@ -12076,7 +14655,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -12138,178 +14717,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Layomi Updated Issue",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Tarek Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
-            "columnName": "Triage: Layomi",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issues"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "layomia"
-            }
-          },
-          {
-            "operator": "and",
-            "operands": [
-              {
-                "name": "isOpen",
-                "parameters": {}
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isInMilestone",
-                    "parameters": {}
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "needs-author-action"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "api-ready-for-review"
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssueCommentResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Layomi Commented",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
-            "columnName": "Triage: Layomi",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issue_comment"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "layomia"
-            }
-          },
-          {
-            "operator": "and",
-            "operands": [
-              {
-                "name": "isOpen",
-                "parameters": {}
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isInMilestone",
-                    "parameters": {}
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "needs-author-action"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "hasLabel",
-                    "parameters": {
-                      "label": "api-ready-for-review"
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssuesOnlyResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Tarek Updated Issue",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Triage: Tarek",
             "isOrgProject": true
           }
@@ -12325,7 +14738,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -12387,12 +14800,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Tarek Commented",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Tarek Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "columnName": "Triage: Tarek",
             "isOrgProject": true
           }
@@ -12408,7 +14821,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -12470,12 +14883,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Excluded",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - Issue Triage] Excluded",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
             "isOrgProject": true
           }
         }
@@ -12490,7 +14903,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - Issue Triage",
               "isOrgProject": true
             }
           },
@@ -12546,12 +14959,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Moved to Another Area",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - PRs] Moved to Another Area",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "isOrgProject": true
           }
         }
@@ -12742,7 +15155,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
               "isOrgProject": true
             }
           }
@@ -12757,12 +15170,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Closed, Merged, or Moved",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - PRs] Closed, Merged, or Moved",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "columnName": "Done",
             "isOrgProject": true
           }
@@ -12778,7 +15191,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
               "isOrgProject": true
             }
           },
@@ -12788,7 +15201,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -12990,12 +15403,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] New PR Needs Champion",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - PRs] New PR Needs Champion",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -13165,30 +15578,6 @@
                   {
                     "name": "isAssignedToUser",
                     "parameters": {
-                      "user": "layomia"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "layomia"
-                    }
-                  }
-                ]
-              }
-            ],
-            [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isAssignedToUser",
-                    "parameters": {
                       "user": "tarekgh"
                     }
                   }
@@ -13216,7 +15605,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                      "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -13225,7 +15614,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -13314,19 +15703,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Updated PR Needs Champion",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - PRs] Updated PR Needs Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -13477,17 +15866,6 @@
               {
                 "name": "isAssignedToUser",
                 "parameters": {
-                  "user": "layomia"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
                   "user": "tarekgh"
                 }
               }
@@ -13502,7 +15880,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                      "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -13511,7 +15889,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -13600,19 +15978,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Eirik Assigned as Champion",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - PRs] Eirik Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "columnName": "Champion: Eirik",
             "isOrgProject": true
           }
@@ -13761,7 +16139,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                      "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -13770,7 +16148,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -13778,7 +16156,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -13796,19 +16174,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Krzysztof Assigned as Champion",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - PRs] Krzysztof Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "columnName": "Champion: Krzysztof",
             "isOrgProject": true
           }
@@ -13957,7 +16335,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                      "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -13966,7 +16344,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -13974,7 +16352,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -13992,215 +16370,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Layomi Assigned as Champion",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - PRs] Tarek Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
-            "columnName": "Champion: Layomi",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "pull_request",
-      "eventNames": [
-        "pull_request"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-Extensions-Configuration"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-Extensions-Logging"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-Extensions-Options"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-Extensions-Primitives"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Diagnostics.Activity"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Globalization"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Collections"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.ComponentModel.DataAnnotations"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.DateTime"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.IO.Ports"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Linq"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Text.Encoding"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Text.Encodings.Web"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Text.Json"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Xml"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
-                  "user": "layomia"
-                }
-              },
-              {
-                "operator": "and",
-                "operands": [
-                  {
-                    "name": "isAction",
-                    "parameters": {
-                      "action": "opened"
-                    }
-                  },
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "layomia"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isInProject",
-                    "parameters": {
-                      "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
-                      "isOrgProject": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
-                  "columnName": "Needs Champion",
-                  "isOrgProject": true
-                }
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
-                  "columnName": "Done",
-                  "isOrgProject": true
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "PullRequestResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Tarek Assigned as Champion",
-      "actions": [
-        {
-          "name": "removeFromProject",
-          "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
-            "isOrgProject": true
-          }
-        },
-        {
-          "name": "addToProject",
-          "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "columnName": "Champion: Tarek",
             "isOrgProject": true
           }
@@ -14349,7 +16531,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                      "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -14358,7 +16540,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -14366,7 +16548,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -14384,12 +16566,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Excluded",
+      "taskName": "[Area Pod: Eirik / Krzysztof / Tarek - PRs] Excluded",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
             "isOrgProject": true
           }
         }
@@ -14404,7 +16586,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+              "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
               "isOrgProject": true
             }
           },
@@ -14414,7 +16596,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "projectName": "Area Pod: Eirik / Krzysztof / Tarek - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -14658,6 +16840,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -14749,6 +17002,77 @@
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -14865,37 +17189,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -14943,37 +17272,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -15021,37 +17355,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -15099,39 +17438,188 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Eric / Jeff - Issue Triage] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Jeff - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issues"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eric / Jeff - Issue Triage",
+              "isOrgProject": true
+            }
           },
           {
-            "operator": "not",
+            "operator": "or",
             "operands": [
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "needs-author-action"
+                  "label": "os-android"
                 }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Eric / Jeff - PRs] Moved to Another Area",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Jeff - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Meta"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-area-label"
+                    }
+                  }
+                ]
               }
             ]
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eric / Jeff - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       }
@@ -15349,6 +17837,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -15462,6 +18021,77 @@
                   "columnName": "Done",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -15709,6 +18339,95 @@
     "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Eric / Jeff - PRs] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Jeff - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eric / Jeff - PRs",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Jeff - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-android"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
@@ -15897,6 +18616,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -15988,6 +18778,77 @@
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -16104,37 +18965,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -16182,37 +19048,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -16260,37 +19131,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -16338,39 +19214,188 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Libraries Analyzers - Issue Triage] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Libraries Analyzers - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issues"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Libraries Analyzers - Issue Triage",
+              "isOrgProject": true
+            }
           },
           {
-            "operator": "not",
+            "operator": "or",
             "operands": [
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "needs-author-action"
+                  "label": "os-android"
                 }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Libraries Analyzers - PRs] Moved to Another Area",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Libraries Analyzers - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "code-fixer"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "code-analyzer"
+                    }
+                  }
+                ]
               }
             ]
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Libraries Analyzers - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       }
@@ -16588,6 +19613,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -16701,6 +19797,77 @@
                   "columnName": "Done",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -16936,6 +20103,95 @@
                   "projectName": "Area Pod: Libraries Analyzers - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Libraries Analyzers - PRs] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Libraries Analyzers - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Libraries Analyzers - PRs",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Libraries Analyzers - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-android"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
                 }
               }
             ]

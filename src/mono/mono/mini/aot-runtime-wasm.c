@@ -12,7 +12,7 @@
 #include "interp/interp.h"
 #include "aot-runtime.h"
 
-#ifdef TARGET_WASM
+#ifdef HOST_WASM
 
 static char
 type_to_c (MonoType *t)

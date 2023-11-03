@@ -68,67 +68,6 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class {TemplateName}TernaryOpTest__{Method}{RetBaseType}
     {
-        private struct DataTable
-        {
-            private byte[] inArray1;
-            private byte[] inArray2;
-            private byte[] inArray3;
-            private byte[] outArray;
-
-            private GCHandle inHandle1;
-            private GCHandle inHandle2;
-            private GCHandle inHandle3;
-            private GCHandle outHandle;
-
-            private ulong alignment;
-
-            public DataTable({Op1BaseType}[] inArray1, {Op2BaseType}[] inArray2, {Op3BaseType}[] inArray3, {RetBaseType}[] outArray, int alignment)
-            {
-                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
-                int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<{Op3BaseType}>();
-                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
-                if (((alignment != 64) && (alignment != 32) && (alignment != 16)) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)
-                {
-                    throw new ArgumentException("Invalid value of alignment");
-                }
-
-                this.inArray1 = new byte[alignment * 2];
-                this.inArray2 = new byte[alignment * 2];
-                this.inArray3 = new byte[alignment * 2];
-                this.outArray = new byte[alignment * 2];
-
-                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
-                this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
-                this.inHandle3 = GCHandle.Alloc(this.inArray3, GCHandleType.Pinned);
-                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
-
-                this.alignment = (ulong)alignment;
-
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray3Ptr), ref Unsafe.As<{Op3BaseType}, byte>(ref inArray3[0]), (uint)sizeOfinArray3);
-            }
-
-            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
-            public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
-            public void* inArray3Ptr => Align((byte*)(inHandle3.AddrOfPinnedObject().ToPointer()), alignment);
-            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
-
-            public void Dispose()
-            {
-                inHandle1.Free();
-                inHandle2.Free();
-                inHandle3.Free();
-                outHandle.Free();
-            }
-
-            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
-            {
-                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
-            }
-        }
-
         private struct TestStruct
         {
             public {Op1VectorType}<{Op1BaseType}> _fld1;
@@ -173,7 +112,7 @@ namespace JIT.HardwareIntrinsics.X86
         private {Op2VectorType}<{Op2BaseType}> _fld2;
         private {Op3VectorType}<{Op3BaseType}> _fld3;
 
-        private DataTable _dataTable;
+        private SimpleTernaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}, {Op2BaseType}, {Op3BaseType}> _dataTable;
 
         public {TemplateName}TernaryOpTest__{Method}{RetBaseType}()
         {
@@ -189,7 +128,7 @@ namespace JIT.HardwareIntrinsics.X86
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = {NextValueOp3}; }
-            _dataTable = new DataTable(_data1, _data2, _data3, new {RetBaseType}[RetElementCount], LargestVectorSize);
+            _dataTable = new SimpleTernaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}, {Op2BaseType}, {Op3BaseType}>(_data1, _data2, _data3, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => {Isa}.IsSupported;

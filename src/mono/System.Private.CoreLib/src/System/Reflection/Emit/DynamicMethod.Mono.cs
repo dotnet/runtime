@@ -18,7 +18,7 @@ namespace System.Reflection.Emit
         private bool _skipVisibility;
         private bool _restrictedSkipVisibility;
         private bool _initLocals;
-        private ILGenerator? _ilGenerator;
+        private RuntimeILGenerator? _ilGenerator;
         private int _nrefs;
         private object?[]? _refs;
         private IntPtr _referencedBy;
@@ -59,8 +59,12 @@ namespace System.Reflection.Emit
 
         public DynamicILInfo GetDynamicILInfo() => _dynamicILInfo ??= new DynamicILInfo(this);
 
-        public ILGenerator GetILGenerator(int streamSize) =>
-            _ilGenerator ??= new ILGenerator(Module, new DynamicMethodTokenGenerator(this), streamSize);
+        public ILGenerator GetILGenerator(int streamSize) => GetILGeneratorInternal(streamSize);
+
+        internal RuntimeILGenerator GetRuntimeILGenerator() => GetILGeneratorInternal(64);
+
+        private RuntimeILGenerator GetILGeneratorInternal(int streamSize) =>
+            _ilGenerator ??= new RuntimeILGenerator(Module, new DynamicMethodTokenGenerator(this), streamSize);
 
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
@@ -70,14 +74,18 @@ namespace System.Reflection.Emit
             try
             {
                 CreateDynMethod();
-                _method ??= new RuntimeMethodInfo(_mhandle);
-
-                return _method.Invoke(obj, invokeAttr, binder, parameters, culture);
+                return GetRuntimeMethodInfo().Invoke(obj, invokeAttr, binder, parameters, culture);
             }
             catch (MethodAccessException mae)
             {
                 throw new TargetInvocationException(SR.TargetInvocation_MethodCannotBeInvoked, mae);
             }
+        }
+
+        internal RuntimeMethodInfo GetRuntimeMethodInfo()
+        {
+            _method ??= new RuntimeMethodInfo(_mhandle);
+            return _method;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -138,7 +146,7 @@ namespace System.Reflection.Emit
             return _nrefs - 1;
         }
 
-        internal override int GetParametersCount() => GetParametersNoCopy().Length;
+        internal override int GetParametersCount() => GetParametersAsSpan().Length;
 
         private sealed class DynamicMethodTokenGenerator : ITokenGenerator
         {

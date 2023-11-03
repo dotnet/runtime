@@ -47,15 +47,15 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     GenTree* addr = treeNode->Addr();
     genConsumeAddress(addr);
 
+    GenTree*  data    = treeNode->Data();
+    regNumber dataReg = genConsumeReg(data);
+
     if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
     {
         genEmitStoreLclTypeSimd12(treeNode, addr->AsLclFld()->GetLclNum(), addr->AsLclFld()->GetLclOffs());
         genUpdateLife(treeNode);
         return;
     }
-
-    GenTree*  data    = treeNode->Data();
-    regNumber dataReg = genConsumeReg(data);
 
     emitter* emit = GetEmitter();
 
@@ -508,6 +508,47 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
             // We will restore the whole 64 bytes for zmm.
             GetEmitter()->emitIns_R_S(INS_movups, EA_64BYTE, lclVarReg, varNum, 0);
         }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// genSimd12UpperClear: Clears the upper 32-bits of a TYP_SIMD12 vector
+//
+// Arguments:
+//    tgtReg - The target register for which to clear the upper bits
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genSimd12UpperClear(regNumber tgtReg)
+{
+    assert(genIsValidFloatReg(tgtReg));
+
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        // ZMASK:   0b1000 - Preserve element 0, 1, and 2; Zero element 3
+        // COUNT_D: 0b11   - Insert into element 3
+        // COUNT_S: 0b11   - Insert from element 3
+
+        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, tgtReg, static_cast<int8_t>(0xF8));
+    }
+    else
+    {
+        // Preserve element 0, 1, and 2; Zero element 3
+
+        if (zroSimd12Elm3 == NO_FIELD_HANDLE)
+        {
+            simd16_t constValue;
+
+            constValue.u32[0] = 0xFFFFFFFF;
+            constValue.u32[1] = 0xFFFFFFFF;
+            constValue.u32[2] = 0xFFFFFFFF;
+            constValue.u32[3] = 0x00000000;
+
+            zroSimd12Elm3 = GetEmitter()->emitSimd16Const(constValue);
+        }
+
+        GetEmitter()->emitIns_SIMD_R_R_C(INS_andps, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0);
     }
 }
 

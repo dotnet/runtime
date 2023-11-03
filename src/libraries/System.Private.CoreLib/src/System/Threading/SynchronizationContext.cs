@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+
 namespace System.Threading
 {
     public partial class SynchronizationContext
@@ -19,7 +21,8 @@ namespace System.Threading
 
         public virtual void Send(SendOrPostCallback d, object? state) => d(state);
 
-        public virtual void Post(SendOrPostCallback d, object? state) => ThreadPool.QueueUserWorkItem(static s => s.d(s.state), (d, state), preferLocal: false);
+        public virtual void Post(SendOrPostCallback d, object? state)
+            => ThreadPool.QueueUserWorkItem(static s => s.Key(s.Value), new KeyValuePair<SendOrPostCallback, object?>(d, state), preferLocal: false);
 
         /// <summary>
         ///     Optional override for subclasses, for responding to notification that operation is starting.

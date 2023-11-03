@@ -8,7 +8,6 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using Internals = System.Net.Internals;
 
 internal static partial class Interop
 {
@@ -53,20 +52,14 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct IpSocketAddress
+        internal unsafe struct IpSocketAddress
         {
             internal IntPtr address;
             internal int addressLength;
 
             internal IPAddress MarshalIPAddress()
             {
-                // Determine the address family used to create the IPAddress.
-                AddressFamily family = (addressLength > Internals.SocketAddress.IPv4AddressSize)
-                    ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
-                Internals.SocketAddress sockAddress = new Internals.SocketAddress(family, addressLength);
-                Marshal.Copy(address, sockAddress.Buffer, 0, addressLength);
-
-                return sockAddress.GetIPAddress();
+                return IPEndPointExtensions.GetIPAddress(new Span<byte>((void*)address, addressLength));
             }
         }
 
@@ -511,7 +504,7 @@ internal static partial class Interop
             uint* outBufLen);
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetBestInterfaceEx(byte* ipAddress, int* index);
+        internal static unsafe partial uint GetBestInterfaceEx(Span<byte> ipAddress, int* index);
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint GetIfEntry2(ref MibIfRow2 pIfRow);

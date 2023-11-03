@@ -8,20 +8,28 @@ namespace System.IO
 {
     internal static partial class ArchivingUtils
     {
-        private static readonly IndexOfAnyValues<char> s_illegalChars = IndexOfAnyValues.Create(
+        private static readonly SearchValues<char> s_illegalChars = SearchValues.Create(
             "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F" +
             "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F" +
             "\"*:<>?|");
 
-        internal static string SanitizeEntryFilePath(string entryPath)
+        internal static string SanitizeEntryFilePath(string entryPath, bool preserveDriveRoot = false)
         {
+            // When preserveDriveRoot is set, preserve the colon in 'c:\'.
+            int offset = 0;
+            if (preserveDriveRoot && entryPath.Length >= 3 && entryPath[1] == ':' && Path.IsPathFullyQualified(entryPath))
+            {
+                offset = 3;
+            }
+
             // Find the first illegal character in the entry path.
-            int i = entryPath.AsSpan().IndexOfAny(s_illegalChars);
+            int i = entryPath.AsSpan(offset).IndexOfAny(s_illegalChars);
             if (i < 0)
             {
                 // There weren't any characters to sanitize.  Just return the original string.
                 return entryPath;
             }
+            i += offset;
 
             // We found at least one character that needs to be replaced.
             return string.Create(entryPath.Length, (i, entryPath), static (dest, state) =>

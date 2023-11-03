@@ -127,6 +127,10 @@
       <RunScriptCommands Include="@(PostRunScriptCommands)" />
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(RunScriptOutputDirectory)' != ''">
+      <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(RunScriptOutputDirectory)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+    </PropertyGroup>
+
     <GenerateRunScript RunCommands="@(RunScriptCommands)"
                        SetCommands="@(SetScriptCommands)"
                        TemplatePath="$(RunScriptInputPath)"

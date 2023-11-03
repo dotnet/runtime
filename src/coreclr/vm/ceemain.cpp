@@ -170,10 +170,6 @@
 #include "stringarraylist.h"
 #include "stubhelpers.h"
 
-#ifdef FEATURE_STACK_SAMPLING
-#include "stacksampler.h"
-#endif
-
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
@@ -228,13 +224,12 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 
 // g_coreclr_embedded indicates that coreclr is linked directly into the program
 // g_hostpolicy_embedded indicates that the hostpolicy library is linked directly into the executable
-// Note: that it can happen that the hostpolicy is embedded but coreclr isn't (on Windows singlefilehost is built that way)
 #ifdef CORECLR_EMBEDDED
 bool g_coreclr_embedded = true;
 bool g_hostpolicy_embedded = true; // We always embed hostpolicy if coreclr is also embedded
 #else
 bool g_coreclr_embedded = false;
-bool g_hostpolicy_embedded = false; // In this case the value may come from a runtime property and may change
+bool g_hostpolicy_embedded = false;
 #endif
 
 // Remember how the last startup of EE went.
@@ -932,10 +927,6 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
-#ifdef FEATURE_STACK_SAMPLING
-        StackSampler::Init();
-#endif
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
@@ -1242,7 +1233,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
-        PerfMap::Destroy();
+        PerfMap::Disable();
 #endif
 
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
@@ -1994,12 +1985,10 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             sParentCulture = sCulture;
 #endif // !TARGET_UNIX
         }
-        // (LPCWSTR) to restrict the size to null terminated size
-        pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
-        // Disabling for Dev10 for consistency with managed resource lookup (see AppCompat bug notes in ResourceFallbackManager.cs)
-        // Also, this is in the wrong order - put after the parent culture chain.
-        //AddThreadPreferredUILanguages(pCultureNames);
-        pCultureNames->AppendIfNotThere((LPCWSTR)sParentCulture);
+        sCulture.Normalize();
+        sParentCulture.Normalize();
+        pCultureNames->AppendIfNotThere(sCulture);
+        pCultureNames->AppendIfNotThere(sParentCulture);
         pCultureNames->Append(SString::Empty());
     }
     EX_CATCH

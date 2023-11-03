@@ -85,6 +85,11 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             return Accumulator;
         }
 
+        public DateTime GetDateTime() => default(DateTime);
+
         public double AddedFirstProp {get => 0.0; set { Console.WriteLine (value); } }
+
+        public DateTime AddedDateTime;
+
     }
 }

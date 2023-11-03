@@ -22,7 +22,20 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
-        protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description)
+        protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null)
+        {
+        }
+
+        /// <summary>
+        /// Create the metrics observable instrument using the properties meter, name, description, and unit.
+        /// All classes extending ObservableInstrument{T} need to call this constructor when constructing object of the extended class.
+        /// </summary>
+        /// <param name="meter">The meter that created the instrument.</param>
+        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="unit">Optional instrument unit of measurements.</param>
+        /// <param name="description">Optional instrument description.</param>
+        /// <param name="tags">tags to attach to the counter.</param>
+        protected ObservableInstrument(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
             ValidateTypeParameter<T>();
         }

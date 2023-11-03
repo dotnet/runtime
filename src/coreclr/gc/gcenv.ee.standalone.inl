@@ -14,6 +14,9 @@ extern IGCToCLR* g_theGCToCLR;
 // GC version that the current runtime supports
 extern VersionInfo g_runtimeSupportedVersion;
 
+// Does the runtime use the old method table flags
+extern bool g_oldMethodTableFlags;
+
 struct StressLogMsg;
 
 // When we are building the GC in a standalone environment, we
@@ -183,10 +186,10 @@ inline void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     g_theGCToCLR->StompWriteBarrier(args);
 }
 
-inline void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+inline void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->EnableFinalization(foundFinalizers);
+    g_theGCToCLR->EnableFinalization(gcHasWorkForFinalizerThread);
 }
 
 inline void GCToEEInterface::HandleFatalError(unsigned int exitCode)

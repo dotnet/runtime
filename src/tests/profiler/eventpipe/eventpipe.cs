@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -52,7 +53,16 @@ namespace EventPipeTests
 
                 using (EventPipeSession session = ProfilerControlHelpers.AttachEventPipeSessionToSelf(providers))
                 {
-                    TriggerMethod();
+                    using (EventPipeSession session2 = ProfilerControlHelpers.AttachEventPipeSessionToSelf(providers))
+                    {
+                        // Trigger multiple session logic
+                        Console.WriteLine("Session 2 opened");
+                        TriggerMethod();
+
+
+                        var source2 = new EventPipeEventSource(session2.EventStream);
+                        Task.Run(() => source2.Process());
+                    }
 
                     ManualResetEvent allEventsReceivedEvent = new ManualResetEvent(false);
 
@@ -91,18 +101,17 @@ namespace EventPipeTests
                         }
                     };
 
-                    Thread processingThread = new Thread(new ThreadStart(() =>
+                    Task processTask = Task.Run(() =>
                     {
                         source.Process();
-                    }));
-                    processingThread.Start();
+                    });
 
                     // The events are fired in the JITCompilationStarted callback for TriggerMethod,
                     // so by the time we are here, all events should be fired.
                     session.Stop();
 
                     allEventsReceivedEvent.WaitOne(TimeSpan.FromSeconds(90));
-                    processingThread.Join();
+                    processTask.Wait();
                 }
             }
             catch(Exception e)

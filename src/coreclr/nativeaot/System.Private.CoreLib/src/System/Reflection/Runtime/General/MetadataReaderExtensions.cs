@@ -14,7 +14,6 @@ using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
 namespace System.Reflection.Runtime.General
 {
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public static partial class MetadataReaderExtensions
     {

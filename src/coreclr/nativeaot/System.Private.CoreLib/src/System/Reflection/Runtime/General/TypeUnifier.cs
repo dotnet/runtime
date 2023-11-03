@@ -65,12 +65,8 @@ namespace System.Reflection.Runtime.General
             // type would be an open type.
             RuntimeTypeHandle typeHandle = arrayType.InternalTypeHandleIfAvailable;
             if (IsTypeConstructionEagerlyValidated
-                && typeHandle.IsNull() && !elementType.ContainsGenericParameters
-#if FEATURE_COMINTEROP
-                && !(elementType is RuntimeCLSIDTypeInfo)
-#endif
-                )
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType, isMultiDim: false, 1);
+                && typeHandle.IsNull() && !elementType.ContainsGenericParameters)
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(arrayType.ToType());
 
             return arrayType;
         }
@@ -109,91 +105,21 @@ namespace System.Reflection.Runtime.General
                         atLeastOneOpenType = true;
                 }
                 if (!atLeastOneOpenType)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingConstructedGenericTypeException(genericType.GetGenericTypeDefinition(), genericTypeArguments.CloneTypeArray());
+                    throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(genericType.ToType());
             }
 
             return genericType;
         }
 
-        public static RuntimeTypeInfo GetTypeForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)
+        public static RuntimeTypeInfo GetRuntimeTypeInfoForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)
         {
-            Type type = Type.GetTypeFromHandle(typeHandle)!;
-            return type.CastToRuntimeTypeInfo();
-        }
-
-        //======================================================================================================
-        // This next group services the Type.GetTypeFromHandle() path. Since we already have a RuntimeTypeHandle
-        // in that case, we pass it in as an extra argument as an optimization (otherwise, the unifier will
-        // waste cycles looking up the handle again from the mapping tables.)
-        //======================================================================================================
-
-        public static RuntimeTypeInfo GetArrayType(this RuntimeTypeInfo elementType, RuntimeTypeHandle precomputedTypeHandle)
-        {
-            return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: false, rank: 1, precomputedTypeHandle: precomputedTypeHandle);
-        }
-
-        public static RuntimeTypeInfo GetMultiDimArrayType(this RuntimeTypeInfo elementType, int rank, RuntimeTypeHandle precomputedTypeHandle)
-        {
-            return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: true, rank: rank, precomputedTypeHandle: precomputedTypeHandle);
-        }
-
-        public static RuntimeTypeInfo GetPointerType(this RuntimeTypeInfo targetType, RuntimeTypeHandle precomputedTypeHandle)
-        {
-            return RuntimePointerTypeInfo.GetPointerTypeInfo(targetType, precomputedTypeHandle);
-        }
-
-        public static RuntimeTypeInfo GetByRefType(this RuntimeTypeInfo targetType, RuntimeTypeHandle precomputedTypeHandle)
-        {
-            return RuntimeByRefTypeInfo.GetByRefTypeInfo(targetType, precomputedTypeHandle);
-        }
-
-        public static RuntimeTypeInfo GetConstructedGenericType(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments, RuntimeTypeHandle precomputedTypeHandle)
-        {
-            return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle);
+            return Type.GetTypeFromHandle(typeHandle)!.ToRuntimeTypeInfo();
         }
     }
 }
 
 namespace System.Reflection.Runtime.TypeInfos
 {
-    //-----------------------------------------------------------------------------------------------------------
-    // TypeInfos that represent type definitions (i.e. Foo or Foo<>) or constructed generic types (Foo<int>)
-    // that can never be reflection-enabled due to the framework Reflection block.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeBlockedTypeInfo
-    {
-        internal static RuntimeBlockedTypeInfo GetRuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
-        {
-            RuntimeBlockedTypeInfo type;
-            if (isGenericTypeDefinition)
-                type = GenericBlockedTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
-            else
-                type = BlockedTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
-            type.EstablishDebugName();
-            return type;
-        }
-
-        private sealed class BlockedTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeBlockedTypeInfo>
-        {
-            protected sealed override RuntimeBlockedTypeInfo Factory(RuntimeTypeHandleKey key)
-            {
-                return new RuntimeBlockedTypeInfo(key.TypeHandle, isGenericTypeDefinition: false);
-            }
-
-            public static readonly BlockedTypeTable Table = new BlockedTypeTable();
-        }
-
-        private sealed class GenericBlockedTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeBlockedTypeInfo>
-        {
-            protected sealed override RuntimeBlockedTypeInfo Factory(RuntimeTypeHandleKey key)
-            {
-                return new RuntimeBlockedTypeInfo(key.TypeHandle, isGenericTypeDefinition: true);
-            }
-
-            public static readonly GenericBlockedTypeTable Table = new GenericBlockedTypeTable();
-        }
-    }
-
     //-----------------------------------------------------------------------------------------------------------
     // TypeInfos for Sz and multi-dim Array types.
     //-----------------------------------------------------------------------------------------------------------
@@ -400,9 +326,9 @@ namespace System.Reflection.Runtime.TypeInfos
             return GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, precomputedTypeHandle);
         }
 
-        internal static RuntimeFunctionPointerTypeInfo GetFunctionPointerTypeInfo(RuntimeTypeInfo returnType, RuntimeTypeInfo[] parameterTypes, bool isUnmanaged, RuntimeTypeHandle typeHandle)
+        internal static RuntimeFunctionPointerTypeInfo GetFunctionPointerTypeInfo(RuntimeTypeInfo returnType, RuntimeTypeInfo[] parameterTypes, bool isUnmanaged, RuntimeTypeHandle precomputedTypeHandle)
         {
-            UnificationKey key = new UnificationKey(returnType, parameterTypes, isUnmanaged, typeHandle);
+            UnificationKey key = new UnificationKey(returnType, parameterTypes, isUnmanaged, precomputedTypeHandle);
             RuntimeFunctionPointerTypeInfo type = FunctionPointerTypeTable.Table.GetOrAdd(key);
             type.EstablishDebugName();
             return type;
@@ -478,9 +404,6 @@ namespace System.Reflection.Runtime.TypeInfos
             if (genericTypeDefinitionHandle.IsNull())
                 return default(RuntimeTypeHandle);
 
-            if (ReflectionCoreExecution.ExecutionEnvironment.IsReflectionBlocked(genericTypeDefinitionHandle))
-                return default(RuntimeTypeHandle);
-
             int count = genericTypeArguments.Length;
             RuntimeTypeHandle[] genericTypeArgumentHandles = new RuntimeTypeHandle[count];
             for (int i = 0; i < count; i++)
@@ -514,25 +437,4 @@ namespace System.Reflection.Runtime.TypeInfos
             public static readonly ConstructedGenericTypeTable Table = new ConstructedGenericTypeTable();
         }
     }
-
-#if FEATURE_COMINTEROP
-    internal sealed partial class RuntimeCLSIDTypeInfo
-    {
-        public static RuntimeCLSIDTypeInfo GetRuntimeCLSIDTypeInfo(Guid clsid, string server)
-        {
-            UnificationKey key = new UnificationKey(clsid, server);
-            return ClsIdTypeTable.Table.GetOrAdd(key);
-        }
-
-        private sealed class ClsIdTypeTable : ConcurrentUnifierWKeyed<UnificationKey, RuntimeCLSIDTypeInfo>
-        {
-            protected sealed override RuntimeCLSIDTypeInfo Factory(UnificationKey key)
-            {
-                return new RuntimeCLSIDTypeInfo(key.ClsId, key.Server);
-            }
-
-            public static readonly ClsIdTypeTable Table = new ClsIdTypeTable();
-        }
-    }
-#endif
 }

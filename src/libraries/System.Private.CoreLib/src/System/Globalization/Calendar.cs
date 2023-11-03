@@ -24,7 +24,7 @@ namespace System.Globalization
     // For consistency, the first unit in each interval, e.g. the first month, is
     // assigned the value one.
     // The calculation of hour/minute/second is moved to Calendar from GregorianCalendar,
-    // since most of the calendars (or all?) have the same way of calcuating hour/minute/second.
+    // since most of the calendars (or all?) have the same way of calculating hour/minute/second.
 
     public abstract class Calendar : ICloneable
     {

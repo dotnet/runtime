@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class MainApp_Inline
+public class MainApp_Inline
 {
     private int _v;
 
@@ -34,7 +35,8 @@ internal class MainApp_Inline
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine(new MainApp_Inline(800)._v);
         try

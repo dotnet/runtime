@@ -77,7 +77,11 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfo();
 #endif // TARGET_AMD64
 
 #ifdef FEATURE_COMINTEROP
-Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
+// Use a type alias as MSVC has issues parsing the pointer, the calling convention, and the declspec
+// in the same signature.
+// Disable ASAN here as this method uses inline assembly and touches registers that ASAN uses.
+using ThreadPointer = Thread*;
+ThreadPointer DISABLE_ASAN __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
 #endif
 
 
@@ -4558,8 +4562,8 @@ COPY_VALUE_CLASS:
 
                             for (SSIZE_T __i = 0; __i > cnt; __i--)
                             {
-                                HALF_SIZE_T skip =  cur->val_serie[__i].skip;
-                                HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;
+                                HALF_SIZE_T skip =  (cur->val_serie + __i)->skip;
+                                HALF_SIZE_T nptrs = (cur->val_serie + __i)->nptrs;
                                 total += nptrs*sizeof (Object*);
                                 do
                                 {
@@ -4913,7 +4917,7 @@ VOID StubLinkerCPU::EmitDebugBreak()
                                  // global optimizations.
 #pragma warning (disable : 4731)
 #endif  // _MSC_VER
-Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
+ThreadPointer __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 {
 
     WRAPPER_NO_CONTRACT;
@@ -4931,6 +4935,10 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
         UINT numArgStackBytes = pFrame->GetNumCallerStackBytes();
         unsigned frameSize = sizeof(Frame) + sizeof(LPVOID);
         LPBYTE iEsp = ((LPBYTE)pFrame) + ComMethodFrame::GetOffsetOfCalleeSavedRegisters();
+
+        // Let ASAN that we aren't going to return so it can do some cleanup
+        __asan_handle_no_return();
+
         __asm
         {
             mov eax, hr

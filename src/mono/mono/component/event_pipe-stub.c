@@ -186,6 +186,26 @@ event_pipe_stub_write_event_threadpool_io_pack (
 	uint16_t clr_instance_id);
 
 static bool
+event_pipe_stub_write_event_contention_lock_created (
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id);
+
+static bool
+event_pipe_stub_write_event_contention_start (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint64_t lock_owner_thread_id);
+
+static bool
+event_pipe_stub_write_event_contention_stop (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	double duration_ns);
+
+static bool
 event_pipe_stub_signal_session (EventPipeSessionID session_id);
 
 static bool
@@ -228,6 +248,9 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_write_event_threadpool_io_dequeue,
 	&event_pipe_stub_write_event_threadpool_working_thread_count,
 	&event_pipe_stub_write_event_threadpool_io_pack,
+	&event_pipe_stub_write_event_contention_lock_created,
+	&event_pipe_stub_write_event_contention_start,
+	&event_pipe_stub_write_event_contention_stop,
 	&event_pipe_stub_signal_session,
 	&event_pipe_stub_wait_for_session_signal
 };
@@ -484,6 +507,35 @@ event_pipe_stub_write_event_threadpool_io_pack (
 	intptr_t native_overlapped,
 	intptr_t overlapped,
 	uint16_t clr_instance_id)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_write_event_contention_lock_created (
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_write_event_contention_start (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint64_t lock_owner_thread_id)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_write_event_contention_stop (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	double duration_ns)
 {
 	return true;
 }

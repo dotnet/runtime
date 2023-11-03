@@ -5,19 +5,21 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_BinaryRMW
 {
     const int Pass = 100;
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void BinaryRMW(ref int x, int y)
+    internal static void BinaryRMW(ref int x, int y)
     {
         x += y;
         x |= 2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int x = 12;
         BinaryRMW(ref x, 17);

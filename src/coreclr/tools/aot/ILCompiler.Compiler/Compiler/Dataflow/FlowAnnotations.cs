@@ -455,8 +455,6 @@ namespace ILLink.Shared.TrimAnalysis
                                 continue;
                             }
 
-                            // We convert indices from metadata space to IL space here.
-                            // IL space assigns index 0 to the `this` parameter on instance methods.
                             paramAnnotations ??= new DynamicallyAccessedMemberTypes[method.GetParametersCount()];
                             paramAnnotations[parameter.SequenceNumber - 1 + (signature.IsStatic ? 0 : 1)] = pa;
                         }
@@ -643,7 +641,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             private IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(EcmaType typeDef)
             {
-                if (!CompilerGeneratedNames.IsGeneratedType(typeDef.Name))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
                 {
                     return null;
                 }
@@ -1024,6 +1022,10 @@ namespace ILLink.Shared.TrimAnalysis
                 }
                 // All values except for Nullable<T>, including Nullable<> (with no type arguments)
                 return new SystemTypeValue(genericArgumentType);
+            }
+            else if (genericArgument is ArrayType arrayType)
+            {
+                return new SystemTypeValue(arrayType);
             }
             else
             {

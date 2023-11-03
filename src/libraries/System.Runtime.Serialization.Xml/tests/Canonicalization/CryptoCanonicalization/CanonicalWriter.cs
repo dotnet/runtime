@@ -656,7 +656,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
 
         public override void WriteQualifiedName(string localName, string ns)
         {
-            if (localName == null || localName.Length == 0)
+            if (string.IsNullOrEmpty(localName))
             {
                 throw new ArgumentNullException(nameof(localName));
             }
@@ -883,7 +883,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                 ThrowBadStateException("WriteStartElement");
             }
 
-            if (localName == null || localName.Length == 0)
+            if (string.IsNullOrEmpty(localName))
             {
                 throw new ArgumentNullException(nameof(localName));
             }

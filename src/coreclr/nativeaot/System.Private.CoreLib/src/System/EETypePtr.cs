@@ -18,8 +18,8 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 using MethodTable = Internal.Runtime.MethodTable;
+using MethodTableList = Internal.Runtime.MethodTableList;
 using EETypeElementType = Internal.Runtime.EETypeElementType;
-using EETypeRef = Internal.Runtime.EETypeRef;
 using CorElementType = System.Reflection.CorElementType;
 
 namespace System
@@ -111,7 +111,7 @@ namespace System
         {
             get
             {
-                return _value->IsPointerType;
+                return _value->IsPointer;
             }
         }
 
@@ -119,7 +119,7 @@ namespace System
         {
             get
             {
-                return _value->IsFunctionPointerType;
+                return _value->IsFunctionPointer;
             }
         }
 
@@ -127,7 +127,7 @@ namespace System
         {
             get
             {
-                return _value->IsByRefType;
+                return _value->IsByRef;
             }
         }
 
@@ -156,20 +156,11 @@ namespace System
             }
         }
 
-        // WARNING: Never call unless the MethodTable came from an instanced object. Nested enums can be open generics (typeof(Outer<>).NestedEnum)
-        // and this helper has undefined behavior when passed such as a enum.
         internal bool IsEnum
         {
             get
             {
-                // Q: When is an enum type a constructed generic type?
-                // A: When it's nested inside a generic type.
-                if (!(IsDefType))
-                    return false;
-
-                // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
-                // Otherwise check the base type.
-                return (IsGenericTypeDefinition && IsPrimitive) || this.BaseType == EETypePtr.EETypePtrOf<Enum>();
+                return _value->IsEnum;
             }
         }
 
@@ -208,13 +199,25 @@ namespace System
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is an class, a struct, an enum, or an interface,
+        /// that is not generic type definition
+        /// </summary>
+        internal bool IsCanonical
+        {
+            get
+            {
+                return _value->IsCanonical;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
         /// </summary>
         internal bool IsDefType
         {
             get
             {
-                return !_value->IsParameterizedType && !_value->IsFunctionPointerType;
+                return _value->IsDefType;
             }
         }
 
@@ -342,8 +345,8 @@ namespace System
         {
             get
             {
-                ReadOnlySpan<byte> map = new byte[]
-                {
+                ReadOnlySpan<byte> map =
+                [
                     default,
                     (byte)CorElementType.ELEMENT_TYPE_VOID,      // EETypeElementType.Void
                     (byte)CorElementType.ELEMENT_TYPE_BOOLEAN,   // EETypeElementType.Boolean
@@ -377,7 +380,7 @@ namespace System
                     default,
                     default,
                     default
-                };
+                ];
 
                 // Verify last element of the map
                 Debug.Assert((byte)CorElementType.ELEMENT_TYPE_FNPTR == map[(int)EETypeElementType.FunctionPointer]);
@@ -446,10 +449,10 @@ namespace System
 
         public struct GenericArgumentCollection
         {
-            private EETypeRef* _arguments;
+            private MethodTableList _arguments;
             private uint _argumentCount;
 
-            internal GenericArgumentCollection(uint argumentCount, EETypeRef* arguments)
+            internal GenericArgumentCollection(uint argumentCount, MethodTableList arguments)
             {
                 _argumentCount = argumentCount;
                 _arguments = arguments;
@@ -468,7 +471,7 @@ namespace System
                 get
                 {
                     Debug.Assert((uint)index < _argumentCount);
-                    return new EETypePtr(_arguments[index].Value);
+                    return new EETypePtr(_arguments[index]);
                 }
             }
         }

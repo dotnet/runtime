@@ -22,7 +22,7 @@ public abstract class WasmAppBuilderBaseTask : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
-    // files like dotnet.wasm, icudt.dat etc
+    // files like dotnet.native.wasm, icudt.dat etc
     [NotNull]
     [Required]
     public ITaskItem[] NativeAssets { get; set; } = Array.Empty<ITaskItem>();
@@ -152,7 +152,7 @@ public abstract class WasmAppBuilderBaseTask : Task
         AddToRuntimeConfig(wasmHostProperties: wasmHostProperties, runtimeArgsArray: runtimeArgsArray, perHostConfigs: perHostConfigs);
 
         string dstPath = Path.Combine(AppDir!, Path.GetFileName(runtimeConfigPath));
-        using FileStream? fs = File.OpenWrite(dstPath);
+        using FileStream? fs = new FileStream(dstPath, FileMode.Create, FileAccess.Write, FileShare.None);
         using var writer = new Utf8JsonWriter(fs, new JsonWriterOptions { Indented = true });
         rootObject.WriteTo(writer);
         _fileWrites.Add(dstPath);

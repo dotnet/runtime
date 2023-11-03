@@ -138,8 +138,8 @@ namespace Mono.Linker.Dataflow
 				return;
 			}
 
-			if (knownStacks.ContainsKey (newOffset)) {
-				knownStacks[newOffset] = MergeStack (knownStacks[newOffset], newStack);
+			if (knownStacks.TryGetValue (newOffset, out Stack<StackSlot>? value)) {
+				knownStacks[newOffset] = MergeStack (value, newStack);
 			} else {
 				knownStacks.Add (newOffset, new Stack<StackSlot> (newStack.Reverse ()));
 			}
@@ -292,12 +292,12 @@ namespace Mono.Linker.Dataflow
 			foreach (Instruction operation in methodIL.Instructions) {
 				int curBasicBlock = blockIterator.MoveNext (operation);
 
-				if (knownStacks.ContainsKey (operation.Offset)) {
+				if (knownStacks.TryGetValue (operation.Offset, out Stack<StackSlot>? knownValue)) {
 					if (currentStack == null) {
 						// The stack copy constructor reverses the stack
-						currentStack = new Stack<StackSlot> (knownStacks[operation.Offset].Reverse ());
+						currentStack = new Stack<StackSlot> (knownValue.Reverse ());
 					} else {
-						currentStack = MergeStack (currentStack, knownStacks[operation.Offset]);
+						currentStack = MergeStack (currentStack, knownValue);
 					}
 				}
 
@@ -878,7 +878,7 @@ namespace Mono.Linker.Dataflow
 					HandleStoreField (method, fieldValue, operation, DereferenceValue (source, locals, ref ipState));
 					break;
 				case IValueWithStaticType valueWithStaticType:
-					if (valueWithStaticType.StaticType is not null && _context.Annotations.FlowAnnotations.IsTypeInterestingForDataflow (valueWithStaticType.StaticType))
+					if (valueWithStaticType.StaticType is not null && _context.Annotations.FlowAnnotations.IsTypeInterestingForDataflow (valueWithStaticType.StaticType.Value.Type))
 						throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (
 							$"Unhandled StoreReference call. Unhandled attempt to store a value in {value} of type {value.GetType ()}.",
 							(int) DiagnosticId.LinkerUnexpectedError,

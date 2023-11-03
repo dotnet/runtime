@@ -31,7 +31,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {

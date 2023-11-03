@@ -8,6 +8,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="refarg_i2_r.il" />
     <Compile Include="refarg_i2.il" />
   </ItemGroup>
 </Project>

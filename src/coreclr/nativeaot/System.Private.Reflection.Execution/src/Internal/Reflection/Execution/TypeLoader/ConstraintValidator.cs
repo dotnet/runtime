@@ -74,7 +74,7 @@ namespace Internal.Reflection.Execution
             {
                 Type actualArg = typeArguments[i];
 
-                if (actualArg.IsSystemVoid() || (actualArg.HasElementType && !actualArg.IsArray))
+                if (actualArg.IsSystemVoid() || (actualArg.HasElementType && !actualArg.IsArray) || actualArg.IsFunctionPointer)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_NeverValidGenericArgument, actualArg));
                 }

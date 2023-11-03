@@ -825,7 +825,7 @@ namespace System.Security.Cryptography.Xml
             if (_refProcessed[index]) return _refLevelCache[index];
             _refProcessed[index] = true;
             Reference reference = (Reference)references[index]!;
-            if (reference.Uri == null || reference.Uri.Length == 0 || (reference.Uri.Length > 0 && reference.Uri[0] != '#'))
+            if (string.IsNullOrEmpty(reference.Uri) || (reference.Uri.Length > 0 && reference.Uri[0] != '#'))
             {
                 _refLevelCache[index] = 0;
                 return 0;

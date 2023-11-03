@@ -160,7 +160,7 @@ namespace System.Collections.Generic
                 {
                     comparer = Comparer; // obtain default if this is null.
                     Array.Sort<TKey, TValue>(keys, values, comparer);
-                    for (int i = 1; i != keys.Length; ++i)
+                    for (int i = 1; i < keys.Length; ++i)
                     {
                         if (comparer.Compare(keys[i - 1], keys[i]) == 0)
                         {

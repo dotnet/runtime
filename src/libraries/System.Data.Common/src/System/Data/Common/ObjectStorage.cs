@@ -15,7 +15,14 @@ namespace System.Data.Common
 {
     internal sealed class ObjectStorage : DataStorage
     {
-        private enum Families { DATETIME, NUMBER, STRING, BOOLEAN, ARRAY };
+        private enum Families
+        {
+            DATETIME,
+            NUMBER,
+            STRING,
+            BOOLEAN,
+            ARRAY
+        };
 
         private object?[] _values = default!; // Late-initialized
         private readonly bool _implementsIXmlSerializable;
@@ -359,7 +366,7 @@ namespace System.Data.Common
             { // this means type implements IXmlSerializable
                 Type? type = null;
                 string? typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
-                if (typeName == null || typeName.Length == 0)
+                if (string.IsNullOrEmpty(typeName))
                 { // No CDT polumorphism
                     string? xsdTypeName = xmlReader.GetAttribute(Keywords.TYPE, Keywords.XSINS); // this xsd type: Base type polymorphism
                     if (null != xsdTypeName && xsdTypeName.Length > 0)

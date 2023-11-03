@@ -62,8 +62,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                // Compat: returning "true" makes no sense but this is how it's always been.
-                return true;
+                return false;
             }
         }
 

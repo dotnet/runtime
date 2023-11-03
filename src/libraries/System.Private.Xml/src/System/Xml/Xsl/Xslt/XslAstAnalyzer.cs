@@ -262,7 +262,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private void FillModeFlags(Dictionary<QilName, XslFlags> parentModeFlags, Stylesheet sheet)
+        private static void FillModeFlags(Dictionary<QilName, XslFlags> parentModeFlags, Stylesheet sheet)
         {
             // Recursion: Process all imports to calculate ModeFlags for apply-import in this sheet
             foreach (Stylesheet import in sheet.Imports!)

@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, string> ContactsString { get; set; } = new Dictionary<string, string>() { { "Bob", "555-5555" } };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task ExtensionDataDictionaryHandlesPreserveReferences()
         {
             Employee bob = new Employee { Name = "Bob" };

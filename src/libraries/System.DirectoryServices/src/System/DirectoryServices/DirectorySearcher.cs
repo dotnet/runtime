@@ -200,7 +200,7 @@ namespace System.DirectoryServices
             get => _filter;
             set
             {
-                if (value == null || value.Length == 0)
+                if (string.IsNullOrEmpty(value))
                     value = defaultFilter;
                 _filter = value;
             }

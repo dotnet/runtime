@@ -4,12 +4,6 @@
 #include "createdump.h"
 #include <dbgtargetcontext.h>
 
-#if defined(HOST_ARM64)
-// Flag to check if atomics feature is available on
-// the machine
-bool g_arm64_atomics_present = false;
-#endif
-
 DumpDataTarget::DumpDataTarget(CrashInfo& crashInfo) :
     m_ref(1),
     m_crashInfo(crashInfo)
@@ -108,12 +102,12 @@ DumpDataTarget::GetImageBase(
     *baseAddress = 0;
 
     char tempModuleName[MAX_PATH];
-    int length = WideCharToMultiByte(CP_ACP, 0, moduleName, -1, tempModuleName, sizeof(tempModuleName), NULL, NULL);
+    size_t cch = u16_strlen(moduleName) + 1;
+    int length = minipal_convert_utf16_to_utf8((CHAR16_T*)moduleName, cch, tempModuleName, sizeof(tempModuleName), 0);
     if (length > 0)
     {
         *baseAddress = m_crashInfo.GetBaseAddressFromName(tempModuleName);
     }
-
     return *baseAddress != 0 ? S_OK : E_FAIL;
 }
 

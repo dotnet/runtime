@@ -9,12 +9,21 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class HmacSha256Tests : Rfc4231HmacTests
+    public class HmacSha256Tests : Rfc4231HmacTests<HmacSha256Tests.Traits>
     {
+        public sealed class Traits : IHmacTrait
+        {
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => HMACSHA256.HashSizeInBytes;
+        }
+
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA256;
+
         protected override int BlockSize => 64;
         protected override int MacSize => HMACSHA256.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACSHA256();
+        protected override HMAC Create(byte[] key) => new HMACSHA256(key);
         protected override HashAlgorithm CreateHashAlgorithm() => SHA256.Create();
         protected override byte[] HashDataOneShot(byte[] key, byte[] source) =>
             HMACSHA256.HashData(key, source);
@@ -204,6 +213,13 @@ namespace System.Security.Cryptography.Tests
                 0,
                 hexKey: "000102030405060708090A0B0C0D0E0F",
                 output: "07EFF8B326B7798C9CCFCBDBE579489AC785A7995A04618B1A2813C26744777D");
+        }
+
+        [Fact]
+        public void HmacSha256_HashSizes()
+        {
+            Assert.Equal(256, HMACSHA256.HashSizeInBits);
+            Assert.Equal(32, HMACSHA256.HashSizeInBytes);
         }
     }
 }

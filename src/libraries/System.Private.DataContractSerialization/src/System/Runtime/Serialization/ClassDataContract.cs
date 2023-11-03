@@ -853,7 +853,7 @@ namespace System.Runtime.Serialization.DataContracts
                             DataMemberAttribute memberAttribute = (DataMemberAttribute)memberAttributes[0];
                             if (memberAttribute.IsNameSetExplicitly)
                             {
-                                if (memberAttribute.Name == null || memberAttribute.Name.Length == 0)
+                                if (string.IsNullOrEmpty(memberAttribute.Name))
                                     ThrowInvalidDataContractException(SR.Format(SR.InvalidDataMemberName, member.Name, DataContract.GetClrTypeFullName(type)));
                                 memberContract.Name = memberAttribute.Name;
                             }

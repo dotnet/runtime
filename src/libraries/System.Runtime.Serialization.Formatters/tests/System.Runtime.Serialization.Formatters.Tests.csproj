@@ -2,17 +2,7 @@
   <PropertyGroup>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetFrameworkCurrent)</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!--
-      We're testing the BinaryFormatter enablement / disablement switch, so we need to suppress any inherited behavior.
-      The specific combination below accomplishes this. Normal apps should *NOT* set this combination of switches and
-      should instead set the switches documented at:
-      https://learn.microsoft.com/dotnet/core/compatibility/core-libraries/7.0/binaryformatter-apis-produce-errors#recommended-action
-    -->
-    <_ProjectTypeRequiresBinaryFormatter>true</_ProjectTypeRequiresBinaryFormatter>
-    <EnableUnsafeBinaryFormatterSerialization><!-- intentionally left blank --></EnableUnsafeBinaryFormatterSerialization>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />
@@ -72,4 +62,16 @@
     <Reference Include="System.Transactions" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
+
+  <!--
+      We're testing the BinaryFormatter enablement / disablement switch, so we need to suppress any inherited behavior.
+      See https://github.com/dotnet/runtime/issues/87811 for more details.
+      This is a temporary solution and should be reverted back to the original once the necessary changes are made in
+      shared frameworks and SDK.
+    -->
+  <Target Name="RemoveSerializationRuntimeOption" BeforeTargets="GenerateBuildRuntimeConfigurationFiles">
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Remove="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" />
+    </ItemGroup>
+  </Target>
 </Project>

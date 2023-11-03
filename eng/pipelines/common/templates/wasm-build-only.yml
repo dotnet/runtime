@@ -1,46 +1,45 @@
 parameters:
-  alwaysRun: false
+  condition: false
   extraBuildArgs: ''
   isExtraPlatformsBuild: false
   nameSuffix: ''
   platforms: []
+  publishArtifactsForWorkload: false
+  publishWBT: false
 
 jobs:
 
 #
-# Build for Browser/wasm and test it
+# Build for Browser/wasm
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
     variables:
       # map dependencies variables to local variables
-      - name: alwaysRunVar
-        value: ${{ parameters.alwaysRun }}
-      - name: shouldRunOnDefaultPipelines
-        value: $[
-          or(
-            eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
-          ]
+      - name: workloadSubsetArg
+        ${{ if eq(parameters.publishArtifactsForWorkload, true) }}:
+          value: '+mono.wasmworkload'
+        ${{ else }}:
+          value: ''
+      - name: extraBuildArgs
+        ${{ if eq(parameters.publishWBT, true) }}:
+          value: /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+        ${{ else }}:
+          value: ''
+
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: ${{ parameters.nameSuffix }}_BuildOnly
-      buildArgs: -s mono+libs+host -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }}
-      timeoutInMinutes: 240
-      # if !alwaysRun, then:
-      #   if this is runtime-wasm (isWasmOnlyBuild):
-      #     - then run only if it would not have run on default pipelines (based
-      #       on path changes)
-      #     - else run based on path changes
-      condition: >-
-        or(
-          eq(variables['alwaysRunVar'], true),
-          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      buildArgs: -s mono+libs+packs+libs.tests$(workloadSubsetArg) -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }} /p:TestAssemblies=false $(extraBuildArgs)
+      timeoutInMinutes: 120
+      condition: ${{ parameters.condition }}
+      postBuildSteps:
+        - template: /eng/pipelines/common/wasm-post-build-steps.yml
+          parameters:
+            publishArtifactsForWorkload: ${{ parameters.publishArtifactsForWorkload }}
+            publishWBT: ${{ parameters.publishWBT }}

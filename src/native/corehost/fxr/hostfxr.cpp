@@ -21,7 +21,8 @@ namespace
     void trace_hostfxr_entry_point(const pal::char_t *entry_point)
     {
         trace::setup();
-        trace::info(_X("--- Invoked %s [commit hash: %s]"), entry_point, _STRINGIFY(REPO_COMMIT_HASH));
+        if (trace::is_enabled())
+            trace::info(_X("--- Invoked %s [version: %s]"), entry_point, get_host_version_description().c_str());
     }
 }
 
@@ -414,7 +415,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     }
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_dir, _X(""), /*disable_multilevel_lookup*/ true, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_dir, nullptr, /*disable_multilevel_lookup*/ true, &framework_infos);
 
     std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
     std::vector<pal::string_t> framework_versions;
@@ -440,7 +441,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     const hostfxr_dotnet_environment_info environment_info
     {
         sizeof(hostfxr_dotnet_environment_info),
-        _STRINGIFY(HOST_FXR_PKG_VER),
+        _STRINGIFY(HOST_VERSION),
         _STRINGIFY(REPO_COMMIT_HASH),
         environment_sdk_infos.size(),
         (environment_sdk_infos.empty()) ? nullptr : &environment_sdk_infos[0],
@@ -688,13 +689,35 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
 
     *delegate = nullptr;
 
-    host_context_t *context = host_context_t::from_handle(host_context_handle);
-    if (context == nullptr)
-        return StatusCode::InvalidArgFailure;
-
     coreclr_delegate_type delegate_type = hostfxr_delegate_to_coreclr_delegate(type);
     if (delegate_type == coreclr_delegate_type::invalid)
         return StatusCode::InvalidArgFailure;
+
+    const host_context_t *context;
+    if (host_context_handle == nullptr)
+    {
+        context = fx_muxer_t::get_active_host_context();
+        if (context == nullptr)
+        {
+            trace::error(_X("Hosting components context has not been initialized. Cannot get runtime delegate."));
+            return StatusCode::HostInvalidState;
+        }
+    }
+    else
+    {
+        host_context_t *context_from_handle = host_context_t::from_handle(host_context_handle);
+        if (context_from_handle == nullptr)
+            return StatusCode::InvalidArgFailure;
+
+        if (context_from_handle->type != host_context_type::secondary)
+        {
+            int rc = fx_muxer_t::load_runtime(context_from_handle);
+            if (rc != StatusCode::Success)
+                return rc;
+        }
+
+        context = context_from_handle;
+    }
 
     return fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
 }

@@ -63,7 +63,7 @@ namespace System.IO.IsolatedStorage
             using (var isf = GetPresetScope(scope))
             {
                 string root = isf.GetUserRootDirectory();
-                string file = "FileExists_Existence";
+                string file = scope.ToString() + "FileExists_Existence";
                 isf.CreateTestFile(file);
 
                 Assert.True(File.Exists(Path.Combine(root, file)), "exists per file.io where expected");

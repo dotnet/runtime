@@ -15,7 +15,9 @@
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
+    <!-- '/.dockerenv' - is to check if this is running in a codespace -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
+    <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallV8ForTests>
 
     <!-- don't run any wasm build steps -->
     <IsBrowserWasmProject>false</IsBrowserWasmProject>
@@ -33,6 +35,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
+    <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <Compile Include="$(MonoProjectRoot)wasm\debugger\DebuggerTestSuite\BrowserLocator.cs" />
 
     <None Include="$(RepoRoot)\src\mono\wasm\test-main.js" CopyToOutputDirectory="PreserveNewest" />
@@ -41,13 +44,7 @@
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
-    <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''"
-           Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
-
-    <PropertyGroup>
-      <_SdkWithWorkloadForTestingDirName>$([System.IO.Path]::GetDirectoryName($(SdkWithWorkloadForTestingPath)))</_SdkWithWorkloadForTestingDirName>
-      <_SdkWithWorkloadForTestingDirName>$([System.IO.Path]::GetFilename($(_SdkWithWorkloadForTestingDirName)))</_SdkWithWorkloadForTestingDirName>
-    </PropertyGroup>
+    <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''" Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
 
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
@@ -62,6 +59,9 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
 
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export IS_RUNNING_ON_CI=true" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set IS_RUNNING_ON_CI=true" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
     </ItemGroup>
@@ -71,12 +71,18 @@
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
+      <_SdkPathForLocalTesting Condition="'$(TestUsingWorkloads)' == 'true'">$([System.IO.Path]::GetDirectoryName($(SdkWithWorkloadForTestingPath)))</_SdkPathForLocalTesting>
+      <_SdkPathForLocalTesting Condition="'$(TestUsingWorkloads)' != 'true'">$([System.IO.Path]::GetDirectoryName($(SdkWithNoWorkloadForTestingPath)))</_SdkPathForLocalTesting>
+
+      <_SdkPathForLocalTesting>$([System.IO.Path]::GetFilename($(_SdkPathForLocalTesting)))</_SdkPathForLocalTesting>
+    </PropertyGroup>
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkWithWorkloadForTestingDirName)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkWithWorkloadForTestingDirName)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(TestUsingWebcil)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(TestUsingWebcil)" />
@@ -90,14 +96,20 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
 
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
     </ItemGroup>
 
     <ItemGroup>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" />
-      <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' != ''"/>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''"/>
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER9" />
+
+      <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' != ''" />
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
+      <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' != ''" />
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet6)" EnvVarName="RUNTIME_PACK_VER6" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
@@ -120,6 +132,7 @@
 
       <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
       <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
+      <RunScriptCommand Condition="'$(XUnitNamespace)' != ''">$(RunScriptCommand) -namespace $(XUnitNamespace)</RunScriptCommand>
 
       <!-- this allows use of test attributes from dotnet.xunitextensions -->
       <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>

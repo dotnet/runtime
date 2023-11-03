@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices
     /// </code>
     /// </example>
     /// <remarks>
-    /// This attribute is ignored if applied to a method without the <see cref="System.Runtime.InteropServices.DllImportAttribute"/>.
+    /// This attribute is ignored if applied to a method without the <see cref="DllImportAttribute"/>.
     ///
     /// Forgoing this transition can yield benefits when the cost of the transition is more than the execution time
     /// of the unmanaged function. However, avoiding this transition removes some of the guarantees the runtime

@@ -30,7 +30,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Abs<T>(Vector<T> value)
-            where T : struct
         {
             if ((typeof(T) == typeof(byte))
              || (typeof(T) == typeof(ushort))
@@ -61,8 +60,7 @@ namespace System.Numerics
         /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Add<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left + right;
+        public static Vector<T> Add<T>(Vector<T> left, Vector<T> right) => left + right;
 
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
@@ -71,8 +69,7 @@ namespace System.Numerics
         /// <returns>The bitwise-and of <paramref name="left" /> and the ones-complement of <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> AndNot<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left & ~right;
+        public static Vector<T> AndNot<T>(Vector<T> left, Vector<T> right) => left & ~right;
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{U}" />.</summary>
         /// <typeparam name="TFrom">The type of the input vector.</typeparam>
@@ -83,8 +80,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<TTo> As<TFrom, TTo>(this Vector<TFrom> vector)
-            where TFrom : struct
-            where TTo : struct
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TTo>();
@@ -99,8 +94,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<byte> AsVectorByte<T>(Vector<T> value)
-            where T : struct => value.As<T, byte>();
+        public static Vector<byte> AsVectorByte<T>(Vector<T> value) => value.As<T, byte>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Double}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -109,8 +103,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<double> AsVectorDouble<T>(Vector<T> value)
-            where T : struct => value.As<T, double>();
+        public static Vector<double> AsVectorDouble<T>(Vector<T> value) => value.As<T, double>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int16}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -119,8 +112,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<short> AsVectorInt16<T>(Vector<T> value)
-            where T : struct => value.As<T, short>();
+        public static Vector<short> AsVectorInt16<T>(Vector<T> value) => value.As<T, short>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int32}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -129,8 +121,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<int> AsVectorInt32<T>(Vector<T> value)
-            where T : struct => value.As<T, int>();
+        public static Vector<int> AsVectorInt32<T>(Vector<T> value) => value.As<T, int>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int64}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -139,8 +130,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<long> AsVectorInt64<T>(Vector<T> value)
-            where T : struct => value.As<T, long>();
+        public static Vector<long> AsVectorInt64<T>(Vector<T> value) => value.As<T, long>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -149,8 +139,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<nint> AsVectorNInt<T>(Vector<T> value)
-            where T : struct => value.As<T, nint>();
+        public static Vector<nint> AsVectorNInt<T>(Vector<T> value) => value.As<T, nint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UIntPtr}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -160,8 +149,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<nuint> AsVectorNUInt<T>(Vector<T> value)
-            where T : struct => value.As<T, nuint>();
+        public static Vector<nuint> AsVectorNUInt<T>(Vector<T> value) => value.As<T, nuint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{SByte}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -171,8 +159,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<sbyte> AsVectorSByte<T>(Vector<T> value)
-            where T : struct => value.As<T, sbyte>();
+        public static Vector<sbyte> AsVectorSByte<T>(Vector<T> value) => value.As<T, sbyte>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Single}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -181,8 +168,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<float> AsVectorSingle<T>(Vector<T> value)
-            where T : struct => value.As<T, float>();
+        public static Vector<float> AsVectorSingle<T>(Vector<T> value) => value.As<T, float>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt16}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -192,8 +178,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<ushort> AsVectorUInt16<T>(Vector<T> value)
-            where T : struct => value.As<T, ushort>();
+        public static Vector<ushort> AsVectorUInt16<T>(Vector<T> value) => value.As<T, ushort>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt32}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -203,8 +188,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<uint> AsVectorUInt32<T>(Vector<T> value)
-            where T : struct => value.As<T, uint>();
+        public static Vector<uint> AsVectorUInt32<T>(Vector<T> value) => value.As<T, uint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt64}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -214,8 +198,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<ulong> AsVectorUInt64<T>(Vector<T> value)
-            where T : struct => value.As<T, ulong>();
+        public static Vector<ulong> AsVectorUInt64<T>(Vector<T> value) => value.As<T, ulong>();
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
@@ -224,8 +207,7 @@ namespace System.Numerics
         /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> BitwiseAnd<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left & right;
+        public static Vector<T> BitwiseAnd<T>(Vector<T> left, Vector<T> right) => left & right;
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
@@ -234,8 +216,7 @@ namespace System.Numerics
         /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> BitwiseOr<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left | right;
+        public static Vector<T> BitwiseOr<T>(Vector<T> left, Vector<T> right) => left | right;
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="value">The vector that will have its ceiling computed.</param>
@@ -283,8 +264,7 @@ namespace System.Numerics
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> ConditionalSelect<T>(Vector<T> condition, Vector<T> left, Vector<T> right)
-            where T : struct => (left & condition) | (right & ~condition);
+        public static Vector<T> ConditionalSelect<T>(Vector<T> condition, Vector<T> left, Vector<T> right) => (left & condition) | (right & ~condition);
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
@@ -459,8 +439,7 @@ namespace System.Numerics
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Divide<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left / right;
+        public static Vector<T> Divide<T>(Vector<T> left, Vector<T> right) => left / right;
 
         /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -469,8 +448,7 @@ namespace System.Numerics
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Divide<T>(Vector<T> left, T right)
-            where T : struct => left / right;
+        public static Vector<T> Divide<T>(Vector<T> left, T right) => left / right;
 
         /// <summary>Computes the dot product of two vectors.</summary>
         /// <param name="left">The vector that will be dotted with <paramref name="right" />.</param>
@@ -480,9 +458,8 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Dot<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
-            T result = default;
+            T result = default!;
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -501,13 +478,12 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Equals<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             Unsafe.SkipInit(out Vector<T> result);
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                T value = Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                T value = Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
                 result.SetElementUnsafe(index, value);
             }
 
@@ -553,8 +529,7 @@ namespace System.Numerics
         /// <returns><c>true</c> if all elements in <paramref name="left" /> were equal to the corresponding element in <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAll<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left == right;
+        public static bool EqualsAll<T>(Vector<T> left, Vector<T> right) => left == right;
 
         /// <summary>Compares two vectors to determine if any elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -564,7 +539,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsAny<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -625,7 +599,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T GetElement<T>(this Vector<T> vector, int index)
-            where T : struct
         {
             if ((uint)(index) >= (uint)(Vector<T>.Count))
             {
@@ -643,13 +616,12 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> GreaterThan<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             Unsafe.SkipInit(out Vector<T> result);
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                T value = Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                T value = Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
                 result.SetElementUnsafe(index, value);
             }
 
@@ -695,7 +667,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAll<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -716,7 +687,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAny<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -737,13 +707,12 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> GreaterThanOrEqual<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             Unsafe.SkipInit(out Vector<T> result);
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                T value = Scalar<T>.GreaterThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                T value = Scalar<T>.GreaterThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
                 result.SetElementUnsafe(index, value);
             }
 
@@ -790,7 +759,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAll<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -811,7 +779,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAny<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -832,13 +799,12 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LessThan<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             Unsafe.SkipInit(out Vector<T> result);
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                T value = Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                T value = Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
                 result.SetElementUnsafe(index, value);
             }
 
@@ -885,7 +851,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAll<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -906,7 +871,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAny<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -927,13 +891,12 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LessThanOrEqual<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             Unsafe.SkipInit(out Vector<T> result);
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                T value = Scalar<T>.LessThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                T value = Scalar<T>.LessThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
                 result.SetElementUnsafe(index, value);
             }
 
@@ -980,7 +943,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAll<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -1001,7 +963,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAny<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -1014,6 +975,7 @@ namespace System.Numerics
             return false;
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1022,8 +984,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Load<T>(T* source)
-            where T : unmanaged => LoadUnsafe(ref *source);
+        public static Vector<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1034,7 +995,6 @@ namespace System.Numerics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LoadAligned<T>(T* source)
-            where T : unmanaged
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
@@ -1055,8 +1015,8 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> LoadAlignedNonTemporal<T>(T* source)
-            where T : unmanaged => LoadAligned(source);
+        public static Vector<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1065,15 +1025,13 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> LoadUnsafe<T>(ref T source)
-            where T : struct
+        public static Vector<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref source);
-            return Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+            return Unsafe.ReadUnaligned<Vector<T>>(in address);
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         /// <summary>Loads a vector from the given source and element offset.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
@@ -1083,14 +1041,12 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
-            where T : struct
+        public static Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            source = ref Unsafe.Add(ref source, (nint)elementOffset);
-            return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref source));
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+            return Unsafe.ReadUnaligned<Vector<T>>(in address);
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1100,7 +1056,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Max<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             Unsafe.SkipInit(out Vector<T> result);
 
@@ -1121,7 +1076,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Min<T>(Vector<T> left, Vector<T> right)
-            where T : struct
         {
             Unsafe.SkipInit(out Vector<T> result);
 
@@ -1141,8 +1095,7 @@ namespace System.Numerics
         /// <returns>The element-wise product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Multiply<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left * right;
+        public static Vector<T> Multiply<T>(Vector<T> left, Vector<T> right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
@@ -1151,8 +1104,7 @@ namespace System.Numerics
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Multiply<T>(Vector<T> left, T right)
-            where T : struct => left * right;
+        public static Vector<T> Multiply<T>(Vector<T> left, T right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="left">The scalar to multiply with <paramref name="right" />.</param>
@@ -1161,8 +1113,7 @@ namespace System.Numerics
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Multiply<T>(T left, Vector<T> right)
-            where T : struct => left * right;
+        public static Vector<T> Multiply<T>(T left, Vector<T> right) => left * right;
 
         /// <summary>Narrows two <see cref="Vector{Double}"/> instances into one <see cref="Vector{Single}" />.</summary>
         /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
@@ -1349,8 +1300,7 @@ namespace System.Numerics
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Negate<T>(Vector<T> value)
-            where T : struct => -value;
+        public static Vector<T> Negate<T>(Vector<T> value) => -value;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="value">The vector whose ones-complement is to be computed.</param>
@@ -1358,8 +1308,7 @@ namespace System.Numerics
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> OnesComplement<T>(Vector<T> value)
-            where T : struct => ~value;
+        public static Vector<T> OnesComplement<T>(Vector<T> value) => ~value;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -1579,7 +1528,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> SquareRoot<T>(Vector<T> value)
-            where T : struct
         {
             Unsafe.SkipInit(out Vector<T> result);
 
@@ -1592,6 +1540,7 @@ namespace System.Numerics
             return result;
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -1600,8 +1549,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Store<T>(this Vector<T> source, T* destination)
-            where T : unmanaged => source.StoreUnsafe(ref *destination);
+        public static void Store<T>(this Vector<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1612,13 +1560,12 @@ namespace System.Numerics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAligned<T>(this Vector<T> source, T* destination)
-            where T : unmanaged
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (((nuint)destination % Alignment) != 0)
             {
-                throw new AccessViolationException();
+                ThrowHelper.ThrowAccessViolationException();
             }
 
             *(Vector<T>*)destination = source;
@@ -1633,8 +1580,8 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination)
-            where T : unmanaged => source.StoreAligned(destination);
+        public static void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination) => source.StoreAligned(destination);
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1644,14 +1591,12 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe<T>(this Vector<T> source, ref T destination)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             ref byte address = ref Unsafe.As<T, byte>(ref destination);
             Unsafe.WriteUnaligned(ref address, source);
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -1662,13 +1607,11 @@ namespace System.Numerics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe<T>(this Vector<T> source, ref T destination, nuint elementOffset)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
         /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
@@ -1677,17 +1620,16 @@ namespace System.Numerics
         /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Subtract<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left - right;
+        public static Vector<T> Subtract<T>(Vector<T> left, Vector<T> right) => left - right;
 
         /// <summary>
         /// Returns the sum of all elements inside the vector.
         /// </summary>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Sum<T>(Vector<T> value) where T : struct
+        public static T Sum<T>(Vector<T> value)
         {
-            T sum = default;
+            T sum = default!;
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
@@ -1705,7 +1647,6 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToScalar<T>(this Vector<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return vector.GetElementUnsafe(0);
@@ -2062,7 +2003,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> WithElement<T>(this Vector<T> vector, int index, T value)
-            where T : struct
         {
             if ((uint)(index) >= (uint)(Vector<T>.Count))
             {
@@ -2081,12 +2021,10 @@ namespace System.Numerics
         /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Xor<T>(Vector<T> left, Vector<T> right)
-            where T : struct => left ^ right;
+        public static Vector<T> Xor<T>(Vector<T> left, Vector<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector<T> vector, int index)
-            where T : struct
         {
             Debug.Assert((index >= 0) && (index < Vector<T>.Count));
             ref T address = ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector));
@@ -2095,7 +2033,6 @@ namespace System.Numerics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetElementUnsafe<T>(in this Vector<T> vector, int index, T value)
-            where T : struct
         {
             Debug.Assert((index >= 0) && (index < Vector<T>.Count));
             ref T address = ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector));

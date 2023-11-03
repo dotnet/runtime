@@ -84,7 +84,7 @@ namespace System.Xml.Xsl.Runtime
         {
             int hashCode;
             int idx = 0;
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             // Compute hashcode based on first letter of the localName
             hashCode = (1 << ((int)localName[0] & 31));

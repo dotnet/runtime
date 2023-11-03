@@ -1053,16 +1053,14 @@ INST1(ldarb,       "ldarb",        LD,     IF_LS_2A,  0x08DFFC00)
 INST1(ldarh,       "ldarh",        LD,     IF_LS_2A,  0x48DFFC00)
                                    //  ldarh   Rt,[Xn]              LS_2A  0100100011011111 111111nnnnnttttt   48DF FC00
 
-
-INST1(ldapr,        "ldapr",       LD,     IF_LS_2A,  0xB8BFC000)
+INST1(ldapr,       "ldapr",       LD,     IF_LS_2A,  0xB8BFC000)
                                    //  ldapr   Rt,[Xn]              LS_2A  1X11100010111111 110000nnnnnttttt   B8BF C000   Rm Rt Rn ARMv8.3 LRCPC
 
-INST1(ldaprb,       "ldaprb",      LD,     IF_LS_2A,  0x38BFC000)
+INST1(ldaprb,      "ldaprb",      LD,     IF_LS_2A,  0x38BFC000)
                                    //  ldaprb  Rt,[Xn]              LS_2A  0011100010111111 110000nnnnnttttt   38BF C000   Rm Rt Rn ARMv8.3 LRCPC
 
-INST1(ldaprh,       "ldaprh",      LD,     IF_LS_2A,  0x78BFC000)
+INST1(ldaprh,      "ldaprh",      LD,     IF_LS_2A,  0x78BFC000)
                                    //  ldaprh  Rt,[Xn]              LS_2A  0111100010111111 110000nnnnnttttt   78BF C000   Rm Rt Rn ARMv8.3 LRCPC
-
 
 INST1(ldxr,        "ldxr",         LD,     IF_LS_2A,  0x885F7C00)
                                    //  ldxr    Rt,[Xn]              LS_2A  1X00100001011111 011111nnnnnttttt   885F 7C00
@@ -1100,6 +1098,15 @@ INST1(ldursh,      "ldursh",       LD,     IF_LS_2C,  0x78800000)
 INST1(ldursw,      "ldursw",       LD,     IF_LS_2C,  0xB8800000)
                                    //  ldursw  Rt,[Xn+simm9]        LS_2C  10111000100iiiii iiii00nnnnnttttt   B880 0000   [Xn imm(-256..+255)]
 
+INST1(ldapur,      "ldapur",       LD,     IF_LS_2C,  0x99400000)
+                                   //  ldapur  Rt,[Xn+simm9]        LS_2C  1X011001010iiiii iiii00nnnnnttttt   9940 0000   [Xn imm(-256..+255)] ARMv8.4 RCPC2
+
+INST1(ldapurb,     "ldapurb",      LD,     IF_LS_2C,  0x19400000)
+                                   //  ldapurb Rt,[Xn+simm9]        LS_2C  00011001010iiiii iiii00nnnnnttttt   1940 0000   [Xn imm(-256..+255)] ARMv8.4 RCPC2
+
+INST1(ldapurh,     "ldapurh",      LD,     IF_LS_2C,  0x59400000)
+                                   //  ldapurh Rt,[Xn+simm9]        LS_2C  01011001010iiiii iiii00nnnnnttttt   5940 0000   [Xn imm(-256..+255)] ARMv8.4 RCPC2
+
 INST1(stlr,        "stlr",         ST,     IF_LS_2A,  0x889FFC00)
                                    //  stlr    Rt,[Xn]              LS_2A  1X00100010011111 111111nnnnnttttt   889F FC00
 
@@ -1135,6 +1142,15 @@ INST1(sturb,       "sturb",        ST,     IF_LS_2C,  0x38000000)
 
 INST1(sturh,       "sturh",        ST,     IF_LS_2C,  0x78000000)
                                    //  sturh   Rt,[Xn+simm9]        LS_2C  01111000000iiiii iiii00nnnnnttttt   7800 0000   [Xn imm(-256..+255)]
+
+INST1(stlur,       "stlur",        ST,     IF_LS_2C,  0x99000000)
+                                   //  stlur    Rt,[Xn+simm9]        LS_2C  1X011001000iiiii iiii00nnnnnttttt  9900 0000   [Xn imm(-256..+255)] ARMv8.4 RCPC2
+
+INST1(stlurb,      "stlurb",       ST,     IF_LS_2C,  0x19000000)
+                                   //  stlurb   Rt,[Xn+simm9]        LS_2C  00011001000iiiii iiii00nnnnnttttt  1900 0000   [Xn imm(-256..+255)] ARMv8.4 RCPC2
+
+INST1(stlurh,      "stlurh",       ST,     IF_LS_2C,  0x59000000)
+                                   //  stlurh   Rt,[Xn+simm9]        LS_2C  01011001000iiiii iiii00nnnnnttttt  5900 0000   [Xn imm(-256..+255)] ARMv8.4 RCPC2
 
 INST1(casb,        "casb",         LD|ST,  IF_LS_3E,  0x08A07C00)
                                    //  casb    Wm, Wt, [Xn]         LS_3E  00001000101mmmmm 011111nnnnnttttt   08A0 7C00   Rm Rt Rn ARMv8.1 LSE Atomics
@@ -1594,6 +1610,9 @@ INST1(isb,         "isb",          0,      IF_SI_0B,  0xD50330DF)
 
 INST1(dczva,       "dczva",        0,      IF_SR_1A,  0xD50B7420)
                                    //  dc      zva,Rt               SR_1A  1101010100001011 01110100001ttttt   D50B 7420   Rt
+
+INST1(mrs_tpid0,   "mrs",          0,      IF_SR_1A,  0xD53BD040)
+                                   //  mrs     Rt,tpidr_el0         SR_1A  1101010100111011 11010000010ttttt   D53B D040   Rt, tpidr_el0
 
 INST1(umov,        "umov",         0,      IF_DV_2B,  0x0E003C00)
                                    //  umov    Rd,Vn[]              DV_2B  0Q001110000iiiii 001111nnnnnddddd   0E00 3C00   Rd,Vn[]

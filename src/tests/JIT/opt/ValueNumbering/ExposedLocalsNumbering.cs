@@ -5,14 +5,16 @@ using System;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-unsafe class ExposedLocalsNumbering
+public unsafe class ExposedLocalsNumbering
 {
     private static volatile bool s_mutateIndex;
     private static volatile bool s_finished;
     private static int* s_pIndex = (int*)NativeMemory.Alloc(4);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int RetryCount = 100;
         const int UnsafeIndex = 1;

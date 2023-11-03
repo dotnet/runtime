@@ -20,11 +20,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// <param name="name">The name of the table the class is mapped to.</param>
         public TableAttribute(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException(SR.Format(SR.ArgumentIsNullOrWhitespace, nameof(name)), nameof(name));
-            }
-
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
             Name = name;
         }
 
@@ -42,11 +38,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
             get => _schema;
             set
             {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    throw new ArgumentException(SR.Format(SR.ArgumentIsNullOrWhitespace, nameof(value)), nameof(value));
-                }
-
+                ArgumentException.ThrowIfNullOrWhiteSpace(value);
                 _schema = value;
             }
         }

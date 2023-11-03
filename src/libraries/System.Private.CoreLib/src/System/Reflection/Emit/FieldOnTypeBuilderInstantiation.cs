@@ -45,7 +45,7 @@ namespace System.Reflection.Emit
         internal FieldInfo FieldInfo => _field;
 
         #region MemberInfo Overrides
-        public override MemberTypes MemberType => System.Reflection.MemberTypes.Field;
+        public override MemberTypes MemberType => MemberTypes.Field;
         public override string Name => _field.Name;
         public override Type? DeclaringType => _type;
         public override Type? ReflectedType => _type;

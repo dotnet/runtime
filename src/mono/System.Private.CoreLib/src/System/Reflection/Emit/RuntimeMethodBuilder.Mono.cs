@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
         private string name;
         private int table_idx;
         private byte[]? code;
-        private ILGenerator? ilgen;
+        private RuntimeILGenerator? ilgen;
         private RuntimeTypeBuilder type;
         internal ParameterBuilder[]? pinfo;
         private CustomAttributeBuilder[]? cattrs;
@@ -321,7 +321,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
             if (ilgen != null)
                 return ilgen;
-            ilgen = new ILGenerator(type.Module, ((RuntimeModuleBuilder)type.Module).GetTokenGenerator(), size);
+            ilgen = new RuntimeILGenerator(type.Module, ((RuntimeModuleBuilder)type.Module).GetTokenGenerator(), size);
             return ilgen;
         }
 

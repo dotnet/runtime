@@ -14,17 +14,24 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using Xunit;
 
 namespace BenchmarksGame
 {
     public class Mandelbrot_2
     {
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int width = 80;
-            if (args.Length > 0)
-                width = Int32.Parse(args[0]);
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int width = arg ?? 80;
 
             int lineLen = (width - 1) / 8 + 1;
             var bytes = new byte[width * lineLen];

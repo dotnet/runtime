@@ -245,7 +245,7 @@ void CrashInfo::VisitModule(MachOModule& module)
                 TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
             }
         }
-        else if (g_checkForSingleFile)
+        else if (m_appModel == AppModelType::SingleFile)
         {
             uint64_t symbolOffset;
             if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
@@ -288,11 +288,11 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
 
             // Round to page boundary
             start = start & PAGE_MASK;
-            _ASSERTE(start > 0);
+            assert(start > 0);
 
             // Round up to page boundary
             end = (end + (PAGE_SIZE - 1)) & PAGE_MASK;
-            _ASSERTE(end > 0);
+            assert(end > 0);
 
             // Add module memory region if not already on the list
             MemoryRegion newModule(regionFlags, start, end, offset, module.Name());

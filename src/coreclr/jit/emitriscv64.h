@@ -32,7 +32,8 @@ void emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
 #endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
-void emitIns_I_la(emitAttr attr, regNumber reg, ssize_t imm);
+
+void emitLoadImmediate(emitAttr attr, regNumber reg, ssize_t imm);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -81,6 +82,12 @@ bool IsRedundantLdStr(
 /************************************************************************/
 
 public:
+// Returns true if 'value' is a legal signed immediate 13 bit encoding.
+static bool isValidSimm13(ssize_t value)
+{
+    return -(((int)1) << 12) <= value && value < (((int)1) << 12);
+};
+
 // Returns true if 'value' is a legal signed immediate 12 bit encoding.
 static bool isValidSimm12(ssize_t value)
 {
@@ -103,6 +110,12 @@ static bool isValidUimm11(ssize_t value)
 static bool isValidSimm20(ssize_t value)
 {
     return -(((int)1) << 19) <= value && value < (((int)1) << 19);
+};
+
+// Returns true if 'value' is a legal signed immediate 21 bit encoding.
+static bool isValidSimm21(ssize_t value)
+{
+    return -(((int)1) << 20) <= value && value < (((int)1) << 20);
 };
 
 // Returns true if 'value' is a legal signed immediate 32 bit encoding.
@@ -157,6 +170,8 @@ void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm, ins
 
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
+
+void emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip = false);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt = INS_OPTS_NONE);
 

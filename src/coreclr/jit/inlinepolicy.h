@@ -15,8 +15,7 @@
 // ModelPolicy           - policy based on statistical modelling
 // ProfilePolicy         - policy based on statistical modelling and profile feedback
 //
-// These experimental policies are available only in
-// DEBUG or release+INLINE_DATA builds of the jit.
+// These experimental policies are available only in DEBUG builds of the jit.
 //
 // RandomPolicy         - randomized inlining
 // FullPolicy           - inlines everything up to size and depth limits
@@ -57,12 +56,12 @@ public:
     // Handle an observation that must cause inlining to fail.
     void NoteFatal(InlineObservation obs) override;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Record observation for prior failure
     void NotePriorFailure(InlineObservation obs) override;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 protected:
     // Helper methods
@@ -138,14 +137,14 @@ public:
     // Policy estimates
     int CodeSizeEstimate() override;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     void OnDumpXml(FILE* file, unsigned indent = 0) const override;
 
     const char* GetName() const override
     {
         return "DefaultPolicy";
     }
-#endif // (DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 protected:
     // Constants
@@ -216,6 +215,7 @@ public:
         , m_FoldableExprUn(0)
         , m_FoldableBranch(0)
         , m_FoldableSwitch(0)
+        , m_UnrollableMemop(0)
         , m_Switch(0)
         , m_DivByCns(0)
         , m_ReturnsStructByValue(false)
@@ -240,14 +240,14 @@ public:
         return true;
     }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     void OnDumpXml(FILE* file, unsigned indent = 0) const override;
 
     const char* GetName() const override
     {
         return "ExtendedDefaultPolicy";
     }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 protected:
     double   m_ProfileFrequency;
@@ -268,6 +268,7 @@ protected:
     unsigned m_FoldableExprUn;
     unsigned m_FoldableBranch;
     unsigned m_FoldableSwitch;
+    unsigned m_UnrollableMemop;
     unsigned m_Switch;
     unsigned m_DivByCns;
     bool     m_ReturnsStructByValue : 1;
@@ -304,7 +305,7 @@ public:
     // Policy estimates
     int CodeSizeEstimate() override;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Externalize data
     void DumpData(FILE* file) const override;
@@ -316,7 +317,7 @@ public:
         return "DiscretionaryPolicy";
     }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 protected:
     void ComputeOpcodeBin(OPCODE opcode);
@@ -398,7 +399,7 @@ public:
         return true;
     }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Miscellaneous
     const char* GetName() const override
@@ -406,7 +407,7 @@ public:
         return "ModelPolicy";
     }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 };
 
 // ProfilePolicy is an experimental policy that uses the results
@@ -424,7 +425,7 @@ public:
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Miscellaneous
     const char* GetName() const override
@@ -432,10 +433,10 @@ public:
         return "ProfilePolicy";
     }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 };
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 // RandomPolicy implements a policy that inlines at random.
 // It is mostly useful for stress testing.
@@ -462,9 +463,9 @@ private:
     CLRRandom* m_Random;
 };
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 // FullPolicy is an experimental policy that will always inline if
 // possible, subject to externally settable depth and size limits.
@@ -559,6 +560,6 @@ private:
     bool                 m_WasForceInline;
 };
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #endif // _INLINE_POLICY_H_

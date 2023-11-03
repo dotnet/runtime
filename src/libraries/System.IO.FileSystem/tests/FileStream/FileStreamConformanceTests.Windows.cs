@@ -35,7 +35,7 @@ namespace System.IO.Tests
 
         protected override Type UnsupportedConcurrentExceptionType => null;
         protected override bool UsableAfterCanceledReads => false;
-        protected override bool FullyCancelableOperations => false;
+        protected override bool FullyCancelableOperations => OperatingSystem.IsWindows();
         protected override bool BlocksOnZeroByteReads => OperatingSystem.IsWindows();
         protected override bool SupportsConcurrentBidirectionalUse => false;
     }

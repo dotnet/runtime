@@ -75,7 +75,7 @@ namespace System.Buffers.Text
             uint fraction = digit;
             int digitCount = 1;
 
-            while (srcIndex != source.Length)
+            while (srcIndex < source.Length)
             {
                 digit = source[srcIndex] - 48u; // '0'
                 if (digit > 9)

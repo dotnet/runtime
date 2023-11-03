@@ -6,12 +6,22 @@
 
 namespace Microsoft.Extensions.Configuration
 {
+    public readonly partial struct ConfigurationDebugViewContext
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public ConfigurationDebugViewContext(string path, string key, string? value, Microsoft.Extensions.Configuration.IConfigurationProvider configurationProvider) { throw null; }
+        public Microsoft.Extensions.Configuration.IConfigurationProvider ConfigurationProvider { get { throw null; } }
+        public string Key { get { throw null; } }
+        public string Path { get { throw null; } }
+        public string? Value { get { throw null; } }
+    }
     public static partial class ConfigurationExtensions
     {
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder Add<TSource>(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder, System.Action<TSource>? configureSource) where TSource : Microsoft.Extensions.Configuration.IConfigurationSource, new() { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> AsEnumerable(this Microsoft.Extensions.Configuration.IConfiguration configuration) { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> AsEnumerable(this Microsoft.Extensions.Configuration.IConfiguration configuration, bool makePathsRelative) { throw null; }
-        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] this Microsoft.Extensions.Configuration.IConfigurationSection? section) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] this Microsoft.Extensions.Configuration.IConfigurationSection? section) { throw null; }
         public static string? GetConnectionString(this Microsoft.Extensions.Configuration.IConfiguration configuration, string name) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(this Microsoft.Extensions.Configuration.IConfiguration configuration, string key) { throw null; }
     }
@@ -33,15 +43,7 @@ namespace Microsoft.Extensions.Configuration
     public static partial class ConfigurationRootExtensions
     {
         public static string GetDebugView(this Microsoft.Extensions.Configuration.IConfigurationRoot root) { throw null; }
-        public static string GetDebugView(this IConfigurationRoot root, System.Func<ConfigurationDebugViewContext, string>? processValue) { throw null; }
-    }
-    public readonly partial struct ConfigurationDebugViewContext
-    {
-        public ConfigurationDebugViewContext(string path, string key, string? value, IConfigurationProvider configurationProvider) { throw null; }
-        public string Path { get; }
-        public string Key { get; }
-        public string? Value { get; }
-        public IConfigurationProvider ConfigurationProvider { get; }
+        public static string GetDebugView(this Microsoft.Extensions.Configuration.IConfigurationRoot root, System.Func<Microsoft.Extensions.Configuration.ConfigurationDebugViewContext, string>? processValue) { throw null; }
     }
     public partial interface IConfiguration
     {
@@ -56,6 +58,9 @@ namespace Microsoft.Extensions.Configuration
         System.Collections.Generic.IList<Microsoft.Extensions.Configuration.IConfigurationSource> Sources { get; }
         Microsoft.Extensions.Configuration.IConfigurationBuilder Add(Microsoft.Extensions.Configuration.IConfigurationSource source);
         Microsoft.Extensions.Configuration.IConfigurationRoot Build();
+    }
+    public partial interface IConfigurationManager : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationBuilder
+    {
     }
     public partial interface IConfigurationProvider
     {

@@ -281,6 +281,17 @@ namespace System.Security.Cryptography
             Assert.Equal(expected, actual);
         }
 
+        [Theory]
+        [MemberData(nameof(Pbkdf2_OpenSsl_Vectors))]
+        public static void Pbkdf2_OpenSsl(string hashAlgorithm, string password, string salt, int iterations, string expectedHex)
+        {
+            HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
+            byte[] expected = expectedHex.HexToByteArray();
+            byte[] saltBytes = Encoding.UTF8.GetBytes(salt);
+            byte[] actual = Rfc2898DeriveBytes.Pbkdf2(password, saltBytes, iterations, hashAlgorithmName, expected.Length);
+            Assert.Equal(expected, actual);
+        }
+
         [Fact]
         [OuterLoop("Uses a high number of iterations that can take over 20 seconds on some machines")]
         public static void Pbkdf2_Rfc6070_HighIterations()
@@ -291,6 +302,17 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt = "salt"u8;
             byte[] actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA1, expected.Length);
             Assert.Equal(expected, actual);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DoesNotSupportSha3))]
+        [InlineData("SHA3-256")]
+        [InlineData("SHA3-384")]
+        [InlineData("SHA3-512")]
+        public static void UnsupportedPkbdf2Algorithms(string hashAlgorithm)
+        {
+            HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                Rfc2898DeriveBytes.Pbkdf2(s_passwordBytes, s_salt, iterations: 1, hashAlgorithmName, s_extractLength));
         }
 
         public static IEnumerable<object[]> Pbkdf2_PasswordBytes_Compare_Data()
@@ -323,6 +345,30 @@ namespace System.Security.Cryptography
                 yield return new object[] { HashAlgorithmName.SHA384.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
                 yield return new object[] { HashAlgorithmName.SHA512.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
             }
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                // Test around HMAC SHA3_256 block boundary (136)
+                for (int blockBoundary = 135; blockBoundary <= 137; blockBoundary++)
+                {
+                    byte[] password = new byte[blockBoundary];
+                    yield return new object[] { HashAlgorithmName.SHA3_256.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
+                }
+
+                // Test around HMAC SHA3_384 block boundary (104)
+                for (int blockBoundary = 103; blockBoundary <= 105; blockBoundary++)
+                {
+                    byte[] password = new byte[blockBoundary];
+                    yield return new object[] { HashAlgorithmName.SHA3_384.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
+                }
+
+                // Test around HMAC SHA3_512 block boundary (72)
+                for (int blockBoundary = 71; blockBoundary <= 73; blockBoundary++)
+                {
+                    byte[] password = new byte[blockBoundary];
+                    yield return new object[] { HashAlgorithmName.SHA3_512.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
+                }
+            }
         }
 
         public static IEnumerable<object[]> Pbkdf2_PasswordString_Compare_Data()
@@ -352,12 +398,59 @@ namespace System.Security.Cryptography
             yield return new object[] { "pass\0word", "sa\0lt", 4096, "56fa6aa75548099dcc37d7f03425e0c3" };
         }
 
-        private static HashAlgorithmName[] SupportedHashAlgorithms => new []
+        public static IEnumerable<object[]> Pbkdf2_OpenSsl_Vectors()
+        {
+            if (!PlatformDetection.SupportsSha3)
             {
-                HashAlgorithmName.SHA1,
-                HashAlgorithmName.SHA256,
-                HashAlgorithmName.SHA384,
-                HashAlgorithmName.SHA512
+                yield break;
+            }
+
+            // Values come from https://github.com/openssl/openssl/blob/6821acbffda908ec69769ed7f110cfde57d8ca58/test/recipes/30-test_evp_data/evppbe_pbkdf2.txt
+            // hashAlgorithm, password, salt, iterations, expected
+            yield return new object[]
+            {
+                "SHA3-256",
+                "password",
+                "salt",
+                4096,
+                "778b6e237a0f49621549ff70d218d208",
             };
+
+            yield return new object[]
+            {
+                "SHA3-384",
+                "password",
+                "salt",
+                4096,
+                "9a5f1e45e8b83f1b259ba72d11c59087",
+            };
+
+            yield return new object[]
+            {
+                "SHA3-512",
+                "password",
+                "salt",
+                4096,
+                "2bfaf2d5ceb6d10f5e262cd902488cfd",
+            };
+        }
+
+        private static IEnumerable<HashAlgorithmName> SupportedHashAlgorithms
+        {
+            get
+            {
+                yield return HashAlgorithmName.SHA1;
+                yield return HashAlgorithmName.SHA256;
+                yield return HashAlgorithmName.SHA384;
+                yield return HashAlgorithmName.SHA512;
+
+                if (PlatformDetection.SupportsSha3)
+                {
+                    yield return HashAlgorithmName.SHA3_256;
+                    yield return HashAlgorithmName.SHA3_384;
+                    yield return HashAlgorithmName.SHA3_512;
+                }
+            }
+        }
     }
 }

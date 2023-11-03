@@ -289,16 +289,16 @@ namespace System.Security
         }
 
         public static bool IsValidTag([NotNullWhen(true)] string? tag) =>
-            tag != null && tag.AsSpan().IndexOfAny(' ', '<', '>') < 0;
+            tag != null && !tag.AsSpan().ContainsAny(' ', '<', '>');
 
         public static bool IsValidText([NotNullWhen(true)] string? text) =>
-            text != null && text.AsSpan().IndexOfAny('<', '>') < 0;
+            text != null && !text.AsSpan().ContainsAny('<', '>');
 
         public static bool IsValidAttributeName([NotNullWhen(true)] string? name) =>
             IsValidTag(name);
 
         public static bool IsValidAttributeValue([NotNullWhen(true)] string? value) =>
-            value != null && value.AsSpan().IndexOfAny('<', '>', '\"') < 0;
+            value != null && !value.AsSpan().ContainsAny('<', '>', '\"');
 
         private static string GetEscapeSequence(char c)
         {

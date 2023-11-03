@@ -405,7 +405,7 @@ namespace System.Globalization
             {
                 ArgumentNullException.ThrowIfNull(value);
 
-                CultureInfo.VerifyCultureName(value, true);
+                VerifyCultureName(value, true);
 
                 if (s_asyncLocalCurrentUICulture == null)
                 {
@@ -443,7 +443,7 @@ namespace System.Globalization
 
                 if (value != null)
                 {
-                    CultureInfo.VerifyCultureName(value, true);
+                    VerifyCultureName(value, true);
                 }
 
                 s_DefaultThreadCurrentUICulture = value;
@@ -647,7 +647,7 @@ namespace System.Globalization
 
         public override bool Equals([NotNullWhen(true)] object? value)
         {
-            if (object.ReferenceEquals(this, value))
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }

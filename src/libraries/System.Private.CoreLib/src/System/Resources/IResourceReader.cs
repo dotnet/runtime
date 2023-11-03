@@ -1,21 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Abstraction to read streams of resources.
-**
-**
-===========================================================*/
-
 using System.Collections;
 
 namespace System.Resources
 {
+    /// <summary>
+    /// Abstraction to read streams of resources.
+    /// </summary>
     public interface IResourceReader : IEnumerable, IDisposable
     {
         // Interface does not need to be marked with the serializable attribute

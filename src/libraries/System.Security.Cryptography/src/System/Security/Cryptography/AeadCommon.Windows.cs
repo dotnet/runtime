@@ -5,8 +5,6 @@ using Internal.Cryptography;
 using Internal.NativeCrypto;
 using static Interop.BCrypt;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
 {
@@ -21,11 +19,11 @@ namespace System.Security.Cryptography
             Span<byte> tag)
         {
             // bcrypt sometimes misbehaves when given nullptr buffers; ensure non-nullptr
-            fixed (byte* plaintextBytes = &GetNonNullPinnableReference(plaintext))
-            fixed (byte* nonceBytes = &GetNonNullPinnableReference(nonce))
-            fixed (byte* ciphertextBytes = &GetNonNullPinnableReference(ciphertext))
-            fixed (byte* tagBytes = &GetNonNullPinnableReference(tag))
-            fixed (byte* associatedDataBytes = &GetNonNullPinnableReference(associatedData))
+            fixed (byte* plaintextBytes = &Helpers.GetNonNullPinnableReference(plaintext))
+            fixed (byte* nonceBytes = &Helpers.GetNonNullPinnableReference(nonce))
+            fixed (byte* ciphertextBytes = &Helpers.GetNonNullPinnableReference(ciphertext))
+            fixed (byte* tagBytes = &Helpers.GetNonNullPinnableReference(tag))
+            fixed (byte* associatedDataBytes = &Helpers.GetNonNullPinnableReference(associatedData))
             {
                 BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo = BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO.Create();
                 authInfo.pbNonce = nonceBytes;
@@ -66,11 +64,11 @@ namespace System.Security.Cryptography
             bool clearPlaintextOnFailure)
         {
             // bcrypt sometimes misbehaves when given nullptr buffers; ensure non-nullptr
-            fixed (byte* plaintextBytes = &GetNonNullPinnableReference(plaintext))
-            fixed (byte* nonceBytes = &GetNonNullPinnableReference(nonce))
-            fixed (byte* ciphertextBytes = &GetNonNullPinnableReference(ciphertext))
-            fixed (byte* tagBytes = &GetNonNullPinnableReference(tag))
-            fixed (byte* associatedDataBytes = &GetNonNullPinnableReference(associatedData))
+            fixed (byte* plaintextBytes = &Helpers.GetNonNullPinnableReference(plaintext))
+            fixed (byte* nonceBytes = &Helpers.GetNonNullPinnableReference(nonce))
+            fixed (byte* ciphertextBytes = &Helpers.GetNonNullPinnableReference(ciphertext))
+            fixed (byte* tagBytes = &Helpers.GetNonNullPinnableReference(tag))
+            fixed (byte* associatedDataBytes = &Helpers.GetNonNullPinnableReference(associatedData))
             {
                 BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo = BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO.Create();
                 authInfo.pbNonce = nonceBytes;
@@ -110,16 +108,5 @@ namespace System.Security.Cryptography
                 }
             }
         }
-
-        // Implementations below based on internal MemoryMarshal.GetNonNullPinnableReference methods.
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe ref readonly byte GetNonNullPinnableReference(ReadOnlySpan<byte> buffer)
-            => ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe ref byte GetNonNullPinnableReference(Span<byte> buffer)
-            => ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
-#pragma warning restore
     }
 }

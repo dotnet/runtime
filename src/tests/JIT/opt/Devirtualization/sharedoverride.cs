@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class Base
 {
@@ -41,7 +42,8 @@ public class Derived<T> : Base
 
 public class Test_sharedoverride
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var ds = new Derived<string>();
         var dx = new Derived<object>();

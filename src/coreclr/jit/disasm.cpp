@@ -1199,7 +1199,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
     {
         bool fFirst = (pwzBytes == wzBytes);
 
-        cchBytes = wcslen(pwzBytes);
+        cchBytes = u16_strlen(pwzBytes);
 
         if (cchBytes <= cchBytesMax)
         {
@@ -1218,7 +1218,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
 
             else
             {
-                pwzNext = wcsrchr(pwzBytes, W(' '));
+                pwzNext = (WCHAR*)u16_strrchr(pwzBytes, W(' '));
                 assert(pwzNext);
 
                 pwzBytes[cchBytesMax] = ch;
@@ -1478,12 +1478,12 @@ void DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCo
     }
 #else  // !DEBUG
     // NOTE: non-DEBUG builds always use jitstdout currently!
-    disAsmFile = jitstdout;
+    disAsmFile = jitstdout();
 #endif // !DEBUG
 
     if (disAsmFile == nullptr)
     {
-        disAsmFile = jitstdout;
+        disAsmFile = jitstdout();
     }
 
     // As this writes to a common file, this is not reentrant.
@@ -1519,7 +1519,7 @@ void DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCo
     DisasmBuffer(disAsmFile, /* printIt */ true);
     fprintf(disAsmFile, "\n");
 
-    if (disAsmFile != jitstdout)
+    if (disAsmFile != jitstdout())
     {
         fclose(disAsmFile);
     }

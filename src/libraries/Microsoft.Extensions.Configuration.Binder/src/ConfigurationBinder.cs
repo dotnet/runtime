@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration)
-            => configuration.Get<T>(_ => { });
+            => configuration.Get<T>(null);
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(this IConfiguration configuration, Type type)
-            => configuration.Get(type, _ => { });
+            => configuration.Get(type, null);
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -91,11 +91,12 @@ namespace Microsoft.Extensions.Configuration
             Action<BinderOptions>? configureOptions)
         {
             ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(type);
 
             var options = new BinderOptions();
             configureOptions?.Invoke(options);
             var bindingPoint = new BindingPoint();
-            BindInstance(type, bindingPoint, config: configuration, options: options);
+            BindInstance(type, bindingPoint, config: configuration, options: options, isParentCollection: false);
             return bindingPoint.Value;
         }
 
@@ -108,7 +109,10 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, string key, object? instance)
-            => configuration.GetSection(key).Bind(instance);
+        {
+            ThrowHelper.ThrowIfNull(configuration);
+            configuration.GetSection(key).Bind(instance);
+        }
 
         /// <summary>
         /// Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.
@@ -118,7 +122,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, object? instance)
-            => configuration.Bind(instance, _ => { });
+            => configuration.Bind(instance, null);
 
         /// <summary>
         /// Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.
@@ -137,7 +141,7 @@ namespace Microsoft.Extensions.Configuration
                 var options = new BinderOptions();
                 configureOptions?.Invoke(options);
                 var bindingPoint = new BindingPoint(instance, isReadOnly: true);
-                BindInstance(instance.GetType(), bindingPoint, configuration, options);
+                BindInstance(instance.GetType(), bindingPoint, configuration, options, false);
             }
         }
 
@@ -200,6 +204,9 @@ namespace Microsoft.Extensions.Configuration
             Type type, string key,
             object? defaultValue)
         {
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(type);
+
             IConfigurationSection section = configuration.GetSection(key);
             string? value = section.Value;
             if (value != null)
@@ -220,13 +227,16 @@ namespace Microsoft.Extensions.Configuration
                 HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
                     StringComparer.OrdinalIgnoreCase);
 
-                IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
-                List<string> missingPropertyNames = configurationSections
-                    .Where(cs => !propertyNames.Contains(cs.Key))
-                    .Select(mp => $"'{mp.Key}'")
-                    .ToList();
+                List<string>? missingPropertyNames = null;
+                foreach (IConfigurationSection cs in configuration.GetChildren())
+                {
+                    if (!propertyNames.Contains(cs.Key))
+                    {
+                        (missingPropertyNames ??= new()).Add($"'{cs.Key}'");
+                    }
+                }
 
-                if (missingPropertyNames.Count > 0)
+                if (missingPropertyNames != null)
                 {
                     throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
                         nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
@@ -260,7 +270,8 @@ namespace Microsoft.Extensions.Configuration
                 property.PropertyType,
                 propertyBindingPoint,
                 config.GetSection(GetPropertyName(property)),
-                options);
+                options,
+                false);
 
             // For property binding, there are some cases when HasNewValue is not set in BindingPoint while a non-null Value inside that object can be retrieved from the property getter.
             // As example, when binding a property which not having a configuration entry matching this property and the getter can initialize the Value.
@@ -277,12 +288,18 @@ namespace Microsoft.Extensions.Configuration
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             BindingPoint bindingPoint,
             IConfiguration config,
-            BinderOptions options)
+            BinderOptions options,
+            bool isParentCollection)
         {
             // if binding IConfigurationSection, break early
             if (type == typeof(IConfigurationSection))
             {
                 bindingPoint.TrySetValue(config);
+                return;
+            }
+
+            if (config is null)
+            {
                 return;
             }
 
@@ -300,7 +317,7 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            if (config != null && config.GetChildren().Any())
+            if (config.GetChildren().Any())
             {
                 // for arrays and read-only list-like interfaces, we concatenate on to what is already there, if we can
                 if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
@@ -371,13 +388,13 @@ namespace Microsoft.Extensions.Configuration
                         return;
                     }
 
-                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ?  type.GetGenericTypeDefinition() : null;
+                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
 
                     if (interfaceGenericType is not null &&
                         (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
                     {
                         // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
-                        Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                        Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments);
                         bindingPoint.SetValue(Activator.CreateInstance(genericType));
                     }
                     else
@@ -407,6 +424,13 @@ namespace Microsoft.Extensions.Configuration
                     {
                         BindProperties(bindingPoint.Value, config, options);
                     }
+                }
+            }
+            else
+            {
+                if (isParentCollection)
+                {
+                    bindingPoint.TrySetValue(CreateInstance(type, config, options));
                 }
             }
         }
@@ -647,13 +671,14 @@ namespace Microsoft.Extensions.Configuration
                         type: valueType,
                         bindingPoint: valueBindingPoint,
                         config: child,
-                        options: options);
+                        options: options,
+                        true);
                     if (valueBindingPoint.HasNewValue)
                     {
                         indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     if (options.ErrorOnUnknownConfiguration)
                     {
@@ -685,13 +710,14 @@ namespace Microsoft.Extensions.Configuration
                         type: itemType,
                         bindingPoint: itemBindingPoint,
                         config: section,
-                        options: options);
+                        options: options,
+                        true);
                     if (itemBindingPoint.HasNewValue)
                     {
                         addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     if (options.ErrorOnUnknownConfiguration)
                     {
@@ -740,7 +766,8 @@ namespace Microsoft.Extensions.Configuration
                         type: elementType,
                         bindingPoint: itemBindingPoint,
                         config: section,
-                        options: options);
+                        options: options,
+                        isParentCollection: true);
                     if (itemBindingPoint.HasNewValue)
                     {
                         list.Add(itemBindingPoint.Value);
@@ -767,7 +794,7 @@ namespace Microsoft.Extensions.Configuration
         {
             Type elementType = type.GetGenericArguments()[0];
 
-            bool elementTypeIsEnum  = elementType.IsEnum;
+            bool elementTypeIsEnum = elementType.IsEnum;
 
             if (elementType != typeof(string) && !elementTypeIsEnum)
             {
@@ -808,7 +835,8 @@ namespace Microsoft.Extensions.Configuration
                         type: elementType,
                         bindingPoint: itemBindingPoint,
                         config: section,
-                        options: options);
+                        options: options,
+                        true);
                     if (itemBindingPoint.HasNewValue)
                     {
                         arguments[0] = itemBindingPoint.Value;
@@ -995,7 +1023,8 @@ namespace Microsoft.Extensions.Configuration
                 parameter.ParameterType,
                 propertyBindingPoint,
                 config.GetSection(parameterName),
-                options);
+                options,
+                false);
 
             if (propertyBindingPoint.Value is null)
             {

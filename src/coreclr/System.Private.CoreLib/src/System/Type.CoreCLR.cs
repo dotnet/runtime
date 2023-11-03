@@ -5,24 +5,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Security;
 using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System
 {
     public abstract partial class Type : MemberInfo, IReflect
     {
-        public bool IsInterface
-        {
-            get
-            {
-                if (this is RuntimeType rt)
-                    return RuntimeTypeHandle.IsInterface(rt);
-                return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
-            }
-        }
-
         [RequiresUnreferencedCode("The type might be removed")]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, bool throwOnError, bool ignoreCase)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -31,7 +22,7 @@ namespace System
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, bool throwOnError)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -40,7 +31,7 @@ namespace System
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -48,7 +39,7 @@ namespace System
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
@@ -60,7 +51,7 @@ namespace System
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
@@ -74,7 +65,7 @@ namespace System
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,

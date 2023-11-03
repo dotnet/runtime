@@ -8,7 +8,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'rethrowinfinallyinsidecatch' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 
 

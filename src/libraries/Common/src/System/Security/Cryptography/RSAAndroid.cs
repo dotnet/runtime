@@ -306,7 +306,7 @@ namespace System.Security.Cryptography
                 ValidateParameters(ref parameters);
                 ThrowIfDisposed();
 
-                if (parameters.Exponent == null || parameters.Modulus.AsSpan().IndexOfAnyExcept((byte)0) < 0)
+                if (parameters.Exponent == null || !parameters.Modulus.AsSpan().ContainsAnyExcept((byte)0))
                 {
                     throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
                 }

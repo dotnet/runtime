@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'conv_i8_u'
+.assembly ASSEMBLY_NAME
 { }
 .assembly extern xunit.core {}
 .class public auto ansi Test_conv_i8_u extends [mscorlib]System.Object

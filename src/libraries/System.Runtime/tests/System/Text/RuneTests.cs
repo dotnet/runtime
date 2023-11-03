@@ -371,10 +371,10 @@ namespace System.Text.Tests
                 if (UnicodeData.GetUnicodeCategory(rune.Value) != Rune.GetUnicodeCategory(rune))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
-                    throw new AssertActualExpectedException(
+                    throw EqualException.ForMismatchedValues(
                         expected: UnicodeData.GetUnicodeCategory(rune.Value),
                         actual: Rune.GetUnicodeCategory(rune),
-                        userMessage: FormattableString.Invariant($@"Rune.GetUnicodeCategory(U+{rune.Value:X4}) returned wrong value."));
+                        banner: FormattableString.Invariant($@"Rune.GetUnicodeCategory(U+{rune.Value:X4}) returned wrong value."));
                 }
             }
         }

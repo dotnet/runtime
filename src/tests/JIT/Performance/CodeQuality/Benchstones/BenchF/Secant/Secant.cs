@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.BenchF
 {
@@ -107,7 +108,8 @@ public static class Secant
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool result = Bench();
         return (result ? 100 : -1);

@@ -105,7 +105,7 @@ HRESULT CordbMDA::QueryInterface(REFIID riid, void **ppInterface)
 HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     _ASSERTE(pInputString != NULL);
-    ULONG32 len = (ULONG32) wcslen(pInputString) + 1;
+    ULONG32 len = (ULONG32) u16_strlen(pInputString) + 1;
 
     if (cchName == 0)
     {

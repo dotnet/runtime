@@ -23,6 +23,7 @@ typedef enum
 	MintOpMethodToken,
 	MintOpFieldToken,
 	MintOpClassToken,
+	MintOpVTableToken,
 	MintOpTwoShorts,
 	MintOpTwoInts,
 	MintOpShortAndInt,
@@ -41,35 +42,35 @@ typedef enum {
 
 /* SIMD opcodes, grouped by signature */
 
-#define INTERP_SIMD_INTRINSIC_P_P(a,b)
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b)
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c)
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c)
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
 
 #undef INTERP_SIMD_INTRINSIC_P_P
-#define INTERP_SIMD_INTRINSIC_P_P(a,b) a,
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c) a,
 typedef enum {
 #include "interp-simd-intrins.def"
 } MintSIMDOpsPP;
 #undef INTERP_SIMD_INTRINSIC_P_P
-#define INTERP_SIMD_INTRINSIC_P_P(a,b)
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c)
 
 #undef INTERP_SIMD_INTRINSIC_P_PP
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b) a,
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c) a,
 typedef enum {
 #include "interp-simd-intrins.def"
 	INTERP_SIMD_INTRINSIC_P_PP_LAST
 } MintSIMDOpsPPP;
 #undef INTERP_SIMD_INTRINSIC_P_PP
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c)
 
 #undef INTERP_SIMD_INTRINSIC_P_PPP
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b) a,
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c) a,
 typedef enum {
 #include "interp-simd-intrins.def"
 	INTERP_SIMD_INTRINSIC_P_PPP_LAST
 } MintSIMDOpsPPPP;
 #undef INTERP_SIMD_INTRINSIC_P_PPP
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
 
 #if NO_UNALIGNED_ACCESS
 #  if G_BYTE_ORDER == G_LITTLE_ENDIAN
@@ -232,12 +233,30 @@ typedef enum {
 #define MINT_IS_SIMD_CREATE(op) ((op) >= MINT_SIMD_V128_I1_CREATE && (op) <= MINT_SIMD_V128_I8_CREATE)
 
 // TODO Add more
-#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDPTR)
+#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDC_R4 || op == MINT_LDC_R8 || op == MINT_LDPTR || op == MINT_BOX)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2
 
 #define MINT_MOV_PAIRS_MAX 4
+
+typedef enum {
+	MINT_ICALLSIG_V_V = 0,
+	MINT_ICALLSIG_V_P,
+	MINT_ICALLSIG_P_V,
+	MINT_ICALLSIG_P_P,
+	MINT_ICALLSIG_PP_V,
+	MINT_ICALLSIG_PP_P,
+	MINT_ICALLSIG_PPP_V,
+	MINT_ICALLSIG_PPP_P,
+	MINT_ICALLSIG_PPPP_V,
+	MINT_ICALLSIG_PPPP_P,
+	MINT_ICALLSIG_PPPPP_V,
+	MINT_ICALLSIG_PPPPP_P,
+	MINT_ICALLSIG_PPPPPP_V,
+	MINT_ICALLSIG_PPPPPP_P,
+	MINT_ICALLSIG_MAX
+} MintICallSig;
 
 extern unsigned char const mono_interp_oplen[];
 extern int const mono_interp_op_dregs [];

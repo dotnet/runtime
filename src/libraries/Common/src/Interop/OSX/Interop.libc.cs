@@ -44,5 +44,10 @@ internal static partial class Interop
                     handle.DangerousRelease();
             }
         }
+
+        [LibraryImport(Libraries.libc, EntryPoint = "clonefile", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static unsafe partial int clonefile(string src, string dst, int flags);
+
+        internal const int CLONE_ACL = 0x0004;
     }
 }

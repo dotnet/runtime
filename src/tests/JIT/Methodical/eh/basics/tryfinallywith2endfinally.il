@@ -10,7 +10,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'tryfinallywith2endfinally' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 
 .namespace hello_tryfinallywith2endfinally_basics_il

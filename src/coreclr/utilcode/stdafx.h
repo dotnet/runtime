@@ -11,6 +11,7 @@
 
 #include <switches.h>
 #include <crtwrap.h>
+#include <dn-u16.h>
 
 #define IN_WINFIX_CPP
 

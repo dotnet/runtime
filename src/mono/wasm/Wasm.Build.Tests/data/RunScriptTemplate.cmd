@@ -51,10 +51,10 @@ if [%TEST_USING_WORKLOADS%] == [true] (
 ) else (
     set SDK_HAS_WORKLOAD_INSTALLED=false
 )
-if [%TEST_USING_WEBCIL%] == [true] (
-   set USE_WEBCIL_FOR_TESTS=true
-) else (
+if [%TEST_USING_WEBCIL%] == [false] (
    set USE_WEBCIL_FOR_TESTS=false
+) else (
+   set USE_WEBCIL_FOR_TESTS=true
 )
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (

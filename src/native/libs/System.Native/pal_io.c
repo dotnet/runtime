@@ -289,7 +289,7 @@ static int32_t ConvertOpenFlags(int32_t flags)
             return -1;
     }
 
-    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC))
+    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_NOFOLLOW))
     {
         assert_msg(false, "Unknown Open flag", (int)flags);
         return -1;
@@ -307,6 +307,8 @@ static int32_t ConvertOpenFlags(int32_t flags)
         ret |= O_TRUNC;
     if (flags & PAL_O_SYNC)
         ret |= O_SYNC;
+    if (flags & PAL_O_NOFOLLOW)
+        ret |= O_NOFOLLOW;
 
     assert(ret != -1);
     return ret;

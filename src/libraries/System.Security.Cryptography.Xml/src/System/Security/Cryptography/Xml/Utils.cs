@@ -621,9 +621,9 @@ namespace System.Security.Cryptography.Xml
         // Mimic the behavior of the X509IssuerSerial constructor with null and empty checks
         internal static X509IssuerSerial CreateX509IssuerSerial(string? issuerName, string? serialNumber)
         {
-            if (issuerName == null || issuerName.Length == 0)
+            if (string.IsNullOrEmpty(issuerName))
                 throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(issuerName));
-            if (serialNumber == null || serialNumber.Length == 0)
+            if (string.IsNullOrEmpty(serialNumber))
                 throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(serialNumber));
 
             return new X509IssuerSerial()

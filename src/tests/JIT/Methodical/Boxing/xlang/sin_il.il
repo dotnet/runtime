@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib { auto }
-.assembly 'sin_il' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 .assembly extern sinlib_il
 {

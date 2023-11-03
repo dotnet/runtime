@@ -31,8 +31,8 @@ namespace System.Xml
         public const int MaxPrimitiveChars = MaxDateTimeChars;
 
         // Matches IsWhitespace below
-        private static readonly IndexOfAnyValues<char> s_whitespaceChars = IndexOfAnyValues.Create(" \t\r\n");
-        private static readonly IndexOfAnyValues<byte> s_whitespaceBytes = IndexOfAnyValues.Create(" \t\r\n"u8);
+        private static readonly SearchValues<char> s_whitespaceChars = SearchValues.Create(" \t\r\n");
+        private static readonly SearchValues<byte> s_whitespaceBytes = SearchValues.Create(" \t\r\n"u8);
 
         public static bool ToBoolean(string value)
         {
@@ -1085,10 +1085,10 @@ namespace System.Xml
         }
 
         public static bool IsWhitespace(ReadOnlySpan<char> chars) =>
-            chars.IndexOfAnyExcept(s_whitespaceChars) < 0;
+            !chars.ContainsAnyExcept(s_whitespaceChars);
 
         public static bool IsWhitespace(ReadOnlySpan<byte> bytes) =>
-            bytes.IndexOfAnyExcept(s_whitespaceBytes) < 0;
+            !bytes.ContainsAnyExcept(s_whitespaceBytes);
 
         public static bool IsWhitespace(char ch) =>
             ch is <= ' ' and (' ' or '\t' or '\r' or '\n');

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using Xunit;
 
 public class Test
 {
@@ -80,7 +81,8 @@ public class Test
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static unsafe int ShrxRef64bit(ushort* x, int y) => *x >> y;
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         const int PASS = 100;
         const int FAIL = 101;

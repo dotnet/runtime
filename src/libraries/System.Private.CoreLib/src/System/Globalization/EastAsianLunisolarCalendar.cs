@@ -11,8 +11,8 @@ namespace System.Globalization
         private const int nDaysPerMonth = 3;
 
         // # of days so far in the solar year
-        private static ReadOnlySpan<int> DaysToMonth365 => new int[] { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
-        private static ReadOnlySpan<int> DaysToMonth366 => new int[] { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 };
+        private static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+        private static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
 
         public override CalendarAlgorithmType AlgorithmType => CalendarAlgorithmType.LunisolarCalendar;
 
@@ -82,7 +82,7 @@ namespace System.Globalization
                 return MinCalendarYear;
             }
 
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }
@@ -112,7 +112,7 @@ namespace System.Globalization
                 return MaxCalendarYear;
             }
 
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }
@@ -152,7 +152,7 @@ namespace System.Globalization
 
         internal void CheckEraRange(int era)
         {
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }

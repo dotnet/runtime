@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
-    class IntAnd
+    public class IntAnd
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void SideEffect()
@@ -70,7 +71,8 @@ namespace CodeGenTests
             return i & UInt32.MaxValue;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // No CastByte
             if (!Test_UInt32_UInt32_And(0b1000_0000_0000_0000_0000_0000_0000_0000, 0b0000_0000_0000_0000_0000_0000_0000_0001))

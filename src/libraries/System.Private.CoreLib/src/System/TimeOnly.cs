@@ -914,7 +914,7 @@ namespace System
         /// <remarks>The accepted standard formats are 'r', 'R', 'o', 'O', 't' and 'T'. </remarks>
         public string ToString([StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] string? format, IFormatProvider? provider)
         {
-            if (format == null || format.Length == 0)
+            if (string.IsNullOrEmpty(format))
             {
                 format = "t";
             }

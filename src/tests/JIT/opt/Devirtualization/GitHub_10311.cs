@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Xunit;
 
 public class MyCollection<T> : ICollection<T>
 {
@@ -64,9 +65,10 @@ public class MyCollection<T> : ICollection<T>
     }
 }
 
-class Bug
+public class Bug
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int v = 0;
         MyCollection<string> x = new MyCollection<string>("a1", "a2");

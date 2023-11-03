@@ -209,7 +209,7 @@ namespace System.Net.Security
 
             double duration = Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds;
             handshakeDurationCounter?.WriteMetric(duration);
-            _handshakeDurationCounter!.WriteMetric(duration);
+            _handshakeDurationCounter?.WriteMetric(duration);
 
             HandshakeStop(protocol);
         }

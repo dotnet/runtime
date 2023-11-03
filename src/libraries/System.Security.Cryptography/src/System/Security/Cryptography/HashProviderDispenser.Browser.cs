@@ -1,10 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
             switch (hashAlgorithmId)
@@ -38,6 +56,15 @@ namespace System.Security.Cryptography
                 HashProvider provider = CreateHashProvider(hashAlgorithmId);
                 provider.AppendHashData(source);
                 return provider.FinalizeHashAndReset(destination);
+            }
+
+            public static void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                _ = hashAlgorithmId;
+                _ = source;
+                _ = destination;
+                Debug.Fail("Caller should have checked if platform supported XOFs.");
+                throw new UnreachableException();
             }
         }
 

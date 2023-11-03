@@ -52,6 +52,21 @@ namespace System.Security.Cryptography
         /// </summary>
         public static HashAlgorithmName SHA512 { get { return new HashAlgorithmName("SHA512"); } }
 
+        /// <summary>
+        /// Gets a <see cref="HashAlgorithmName" /> representing "SHA3-256"
+        /// </summary>
+        public static HashAlgorithmName SHA3_256 => new HashAlgorithmName("SHA3-256");
+
+        /// <summary>
+        /// Gets a <see cref="HashAlgorithmName" /> representing "SHA3-384"
+        /// </summary>
+        public static HashAlgorithmName SHA3_384 => new HashAlgorithmName("SHA3-384");
+
+        /// <summary>
+        /// Gets a <see cref="HashAlgorithmName" /> representing "SHA3-512"
+        /// </summary>
+        public static HashAlgorithmName SHA3_512 => new HashAlgorithmName("SHA3-512");
+
         private readonly string? _name;
 
         /// <summary>
@@ -141,6 +156,15 @@ namespace System.Security.Cryptography
                     return true;
                 case Oids.Sha512:
                     value = SHA512;
+                    return true;
+                case Oids.Sha3_256:
+                    value = SHA3_256;
+                    return true;
+                case Oids.Sha3_384:
+                    value = SHA3_384;
+                    return true;
+                case Oids.Sha3_512:
+                    value = SHA3_512;
                     return true;
                 default:
                     value = default;

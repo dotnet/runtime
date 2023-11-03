@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             {
                 Assert.Equal(64, des.KeySize);
                 Assert.Equal(64, des.BlockSize);
+                Assert.Equal(8, des.FeedbackSize);
                 Assert.Equal(CipherMode.CBC, des.Mode);
                 Assert.Equal(PaddingMode.PKCS7, des.Padding);
             }

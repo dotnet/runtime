@@ -55,6 +55,7 @@ nativeStringResourceTable_mscorrc
 #PAL_fprintf
 #PAL__wcstoui64
 #PAL_wcstoul
+#PAL_wcstod
 #PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange
 #PAL_VirtualUnwindOutOfProc
 #PAL_wcslen
@@ -127,8 +128,7 @@ nativeStringResourceTable_mscorrc
 #GetTempPathW
 #InitializeCriticalSection
 #LeaveCriticalSection
-#LoadLibraryA
-#LoadLibraryW
+#LoadLibraryExA
 #LoadLibraryExW
 #MapViewOfFile
 #MapViewOfFileEx
@@ -150,7 +150,6 @@ nativeStringResourceTable_mscorrc
 #SetEvent
 #SetFilePointer
 #SetLastError
-#SetErrorMode
 #SetThreadDescription
 #Sleep
 #SleepEx

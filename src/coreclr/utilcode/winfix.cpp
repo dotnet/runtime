@@ -151,7 +151,7 @@ WszCreateProcess(
     BOOL fResult;
     DWORD err;
     {
-        size_t commandLineLength = wcslen(lpCommandLine) + 1;
+        size_t commandLineLength = u16_strlen(lpCommandLine) + 1;
         NewArrayHolder<WCHAR> nonConstCommandLine(new (nothrow) WCHAR[commandLineLength]);
         if (nonConstCommandLine == NULL)
         {

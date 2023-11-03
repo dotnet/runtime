@@ -246,10 +246,6 @@
   <data name="UnterminatedComment" xml:space="preserve">
     <value>Unterminated (?#...) comment.</value>
   </data>
-  <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
-    <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
-    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
-  </data>
   <data name="NotSupported_NonBacktrackingConflictingExpression" xml:space="preserve">
     <value>RegexOptions.NonBacktracking is not supported in conjunction with expressions containing: '{0}'.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>

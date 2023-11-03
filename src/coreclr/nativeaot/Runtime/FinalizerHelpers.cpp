@@ -149,6 +149,17 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
         {
         case WAIT_OBJECT_0:
             // At least one object is ready for finalization.
+            {
+                // Process pending finalizer work items from the GC first.
+                FinalizerWorkItem* pWork = pHeap->GetExtraWorkForFinalization();
+                while (pWork != NULL)
+                {
+                    FinalizerWorkItem* pNext = pWork->next;
+                    pWork->callback(pWork);
+                    pWork = pNext;
+                }
+            }
+            FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
             return TRUE;
 
         case WAIT_OBJECT_0 + 1:
@@ -172,8 +183,9 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
 }
 
 // Indicate that the current round of finalizations is complete.
-EXTERN_C NATIVEAOT_API void __cdecl RhpSignalFinalizationComplete()
+EXTERN_C NATIVEAOT_API void __cdecl RhpSignalFinalizationComplete(uint32_t fcount)
 {
+    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
     g_FinalizerDoneEvent.Set();
 }
 

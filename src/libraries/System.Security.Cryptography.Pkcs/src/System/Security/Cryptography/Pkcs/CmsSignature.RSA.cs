@@ -20,6 +20,11 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.RsaPkcs1Sha256, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha256, HashAlgorithmName.SHA256));
             lookup.Add(Oids.RsaPkcs1Sha384, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha384, HashAlgorithmName.SHA384));
             lookup.Add(Oids.RsaPkcs1Sha512, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha512, HashAlgorithmName.SHA512));
+#if NET8_0_OR_GREATER
+            lookup.Add(Oids.RsaPkcs1Sha3_256, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_256, HashAlgorithmName.SHA3_256));
+            lookup.Add(Oids.RsaPkcs1Sha3_384, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_384, HashAlgorithmName.SHA3_384));
+            lookup.Add(Oids.RsaPkcs1Sha3_512, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_512, HashAlgorithmName.SHA3_512));
+#endif
             lookup.Add(Oids.RsaPss, new RSAPssCmsSignature());
         }
 

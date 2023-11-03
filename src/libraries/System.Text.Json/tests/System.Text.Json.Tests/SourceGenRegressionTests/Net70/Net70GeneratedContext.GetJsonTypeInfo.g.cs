@@ -65,6 +65,11 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests.Net70
                 return this.ClassWithCustomConverter;
             }
         
+            if (type == typeof(global::System.Text.Json.Tests.SourceGenRegressionTests.Net70.MyLinkedList))
+            {
+                return this.MyLinkedList;
+            }
+        
             return null!;
         }
         
@@ -113,6 +118,11 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests.Net70
             if (type == typeof(global::System.Text.Json.Tests.SourceGenRegressionTests.Net70.ClassWithCustomConverter))
             {
                 return Create_ClassWithCustomConverter(options, makeReadOnly: false);
+            }
+        
+            if (type == typeof(global::System.Text.Json.Tests.SourceGenRegressionTests.Net70.MyLinkedList))
+            {
+                return Create_MyLinkedList(options, makeReadOnly: false);
             }
         
             return null;

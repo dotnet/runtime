@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <HybridGlobalization>true</HybridGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\CompareInfo\CompareInfoTestsBase.cs" />
+    <Compile Include="..\System\Globalization\TextInfoTests.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.Compare.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IsPrefix.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.LastIndexOf.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoAll.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoCtor.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedDayNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthGenitiveNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoAMDesignator.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoCalendar.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoCalendarWeekRule.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoData.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoDayNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoFirstDayOfWeek.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoFullDateTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedDayName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedEraName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedMonthName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetDayName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetEra.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetEraName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetMonthName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoLongDatePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoLongTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoMonthDayPattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoMonthGenitiveNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoMonthNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoNativeCalendarName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoPMDesignator.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoReadOnly.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoRFC1123Pattern.cs" /> 
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoShortDatePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoShortestDayNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoShortTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoSortableDateTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoTests.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoUniversalSortableDateTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs" />
+  </ItemGroup>
+</Project>

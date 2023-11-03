@@ -736,7 +736,7 @@ ClrDataAppDomain::GetName(
                     S_OK : S_FALSE;
                 if (nameLen)
                 {
-                    size_t cchName = wcslen((PCWSTR)rawName) + 1;
+                    size_t cchName = u16_strlen((PCWSTR)rawName) + 1;
                     if (FitsIn<ULONG32>(cchName))
                     {
                         *nameLen = (ULONG32) cchName;
@@ -2500,7 +2500,7 @@ ClrDataModule::GetFlags(
         PTR_BaseDomain pBaseDomain = pAssembly->GetDomain();
         if (pBaseDomain->IsAppDomain())
         {
-            AppDomain* pAppDomain = pBaseDomain->AsAppDomain();
+            PTR_AppDomain pAppDomain = pBaseDomain->AsAppDomain();
             if (pAssembly == pAppDomain->GetRootAssembly())
             {
                 (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
@@ -4771,7 +4771,7 @@ ClrDataExceptionState::GetString(
             status = StringCchCopy(str, bufLen, msgStr) == S_OK ? S_OK : S_FALSE;
             if (strLen != NULL)
             {
-                size_t cchName = wcslen(msgStr) + 1;
+                size_t cchName = u16_strlen(msgStr) + 1;
                 if (FitsIn<ULONG32>(cchName))
                 {
                     *strLen = (ULONG32) cchName;
@@ -5225,7 +5225,7 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         }
     }
 
-    if (!m_methodIter.Current()->HasNativeCode())
+    if (!m_methodIter.Current()->HasNativeCodeAnyVersion())
     {
         goto NextMethod;
     }
@@ -5243,7 +5243,7 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
                              CLRDATA_ENUM* handle)
 {
     if (!methodDesc->HasClassOrMethodInstantiation() &&
-        !methodDesc->HasNativeCode())
+        !(methodDesc->HasNativeCodeAnyVersion()))
     {
         *handle = 0;
         return S_FALSE;

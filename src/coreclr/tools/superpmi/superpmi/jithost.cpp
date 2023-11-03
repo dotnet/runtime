@@ -12,7 +12,7 @@
 WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, const WCHAR* key, JitInstance& jitInstance)
 {
     // Prepend prefix to the provided key
-    size_t   keyLen       = wcslen(key);
+    size_t   keyLen       = u16_strlen(key);
     size_t   keyBufferLen = keyLen + prefixLen + 1;
     WCHAR* keyBuffer =
         reinterpret_cast<WCHAR*>(jitInstance.allocateArray(sizeof(WCHAR) * keyBufferLen));
@@ -77,7 +77,7 @@ bool JitHost::convertStringValueToInt(const WCHAR* key, const WCHAR* stringValue
     }
 
     WCHAR*      endPtr;
-    unsigned long longResult = wcstoul(stringValue, &endPtr, 16);
+    unsigned long longResult = u16_strtoul(stringValue, &endPtr, 16);
     bool          succeeded  = (errno != ERANGE) && (endPtr != stringValue) && (longResult <= INT_MAX);
     if (!succeeded)
     {
@@ -117,7 +117,7 @@ int JitHost::getIntConfigValue(const WCHAR* key, int defaultValue)
     if (!valueFound)
     {
         // Look for special case keys.
-        if (wcscmp(key, W("SuperPMIMethodContextNumber")) == 0)
+        if (u16_strcmp(key, W("SuperPMIMethodContextNumber")) == 0)
         {
             result     = jitInstance.mc->index;
             valueFound = true;
@@ -178,7 +178,7 @@ const WCHAR* JitHost::getStringConfigValue(const WCHAR* key)
     if (result != nullptr && needToDup)
     {
         // Now we need to dup it, so you can call freeStringConfigValue() on what we return.
-        size_t   resultLenInChars = wcslen(result) + 1;
+        size_t   resultLenInChars = u16_strlen(result) + 1;
         WCHAR* dupResult = (WCHAR*)jitInstance.allocateLongLivedArray(sizeof(WCHAR) * resultLenInChars);
         wcscpy_s(dupResult, resultLenInChars, result);
         result = dupResult;

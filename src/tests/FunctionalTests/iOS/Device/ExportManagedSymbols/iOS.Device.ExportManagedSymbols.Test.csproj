@@ -1,23 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <MonoForceInterpreter>false</MonoForceInterpreter>
-    <RunAOTCompilation>true</RunAOTCompilation>
-    <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
-    <MainLibraryFileName>iOS.Device.ExportManagedSymbols.Test.dll</MainLibraryFileName>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
-    <MonoEnableLLVM>true</MonoEnableLLVM>
+    <SelfContained>true</SelfContained>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
     <NativeMainSource>$(MSBuildProjectDirectory)/main.m</NativeMainSource>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <MonoEnableLLVM>true</MonoEnableLLVM>
+    <MainLibraryFileName>iOS.Device.ExportManagedSymbols.Test.dll</MainLibraryFileName>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+  </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="Program.cs" />
     <!-- Prevent trimming of the exposed managed method via ILLinker -->
     <TrimmerRootDescriptor Include="$(MSBuildProjectDirectory)/ILLink.Descriptors.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
   </ItemGroup>
 </Project>

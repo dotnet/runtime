@@ -17,6 +17,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task AnnotatedMembersAccessedViaUnsafeAccessor ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task ApplyTypeAnnotations ()
 		{
 			return RunTest ();
@@ -107,9 +113,21 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task ConstructorDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task DynamicDependencyDataflow ()
 		{
 			return RunTest (nameof (DynamicDependencyDataflow));
+		}
+
+		[Fact]
+		public Task DynamicObjects ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]
@@ -132,9 +150,27 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task FileScopedClasses ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task GenericParameterDataFlow ()
 		{
 			return RunTest (nameof (GenericParameterDataFlow));
+		}
+
+		[Fact]
+		public Task InlineArrayDataflow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task InterpolatedStringHandlerDataFlow ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

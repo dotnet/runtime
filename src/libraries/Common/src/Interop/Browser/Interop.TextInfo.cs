@@ -8,8 +8,8 @@ internal static partial class Interop
     internal static unsafe partial class JsGlobalization
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void ChangeCaseInvariant(out string exceptionMessage, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
+        internal static extern unsafe void ChangeCaseInvariant(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void ChangeCase(out string exceptionMessage, in string culture, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
+        internal static extern unsafe void ChangeCase(in string culture, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper, out int exceptionalResult, out object result);
     }
 }

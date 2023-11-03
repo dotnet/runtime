@@ -28,6 +28,11 @@ namespace System.Linq
                 return iterator.Select(selector);
             }
 
+            if (GetEmptyIfEmpty<TSource, TResult>(source) is IEnumerable<TResult> empty)
+            {
+                return empty;
+            }
+
             if (source is IList<TSource> ilist)
             {
                 if (source is TSource[] array)
@@ -178,15 +183,17 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (_state < 1 | _state == _source.Length + 1)
+                TSource[] source = _source;
+                int index = _state - 1;
+                if ((uint)index < (uint)source.Length)
                 {
-                    Dispose();
-                    return false;
+                    _state++;
+                    _current = _selector(source[index]);
+                    return true;
                 }
 
-                int index = _state++ - 1;
-                _current = _selector(_source[index]);
-                return true;
+                Dispose();
+                return false;
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>

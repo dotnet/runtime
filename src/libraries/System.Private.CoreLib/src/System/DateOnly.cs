@@ -159,7 +159,7 @@ namespace System
         public static bool operator !=(DateOnly left, DateOnly right) => left._dayNumber != right._dayNumber;
 
         /// <summary>
-        /// Determines whether one specified DateOnly is later than another specified DateTime.
+        /// Determines whether one specified DateOnly is later than another specified DateOnly.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
@@ -739,7 +739,7 @@ namespace System
         /// <returns>A string representation of value of the current DateOnly object as specified by format and provider.</returns>
         public string ToString([StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] string? format, IFormatProvider? provider)
         {
-            if (format == null || format.Length == 0)
+            if (string.IsNullOrEmpty(format))
             {
                 format = "d";
             }

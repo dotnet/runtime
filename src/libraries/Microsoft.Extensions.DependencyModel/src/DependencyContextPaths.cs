@@ -40,7 +40,13 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal static DependencyContextPaths Create(string? depsFiles, string? sharedRuntime)
         {
-            string[]? files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+#if NETCOREAPP
+            const char separator = ';';
+#else
+            // This method is only executed once at startup. No need to cache the char[].
+            char[] separator = { ';' };
+#endif
+            string[]? files = depsFiles?.Split(separator, StringSplitOptions.RemoveEmptyEntries);
             string? application = files != null && files.Length > 0 ? files[0] : null;
 
             string[]? nonApplicationPaths = files?

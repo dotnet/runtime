@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'fibo' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace BoxTest_fibo_il
 {

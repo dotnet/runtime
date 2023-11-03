@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -15,17 +13,14 @@ namespace Microsoft.Interop
     internal sealed class CustomTypeMarshallingGenerator : IMarshallingGenerator
     {
         private readonly ICustomTypeMarshallingStrategy _nativeTypeMarshaller;
-        private readonly bool _enableByValueContentsMarshalling;
+        private readonly ByValueMarshalKindSupportDescriptor _byValueContentsMarshallingSupport;
+        private readonly bool _isPinned;
 
-        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
+        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, ByValueMarshalKindSupportDescriptor byValueContentsMarshallingSupport, bool isPinned)
         {
             _nativeTypeMarshaller = nativeTypeMarshaller;
-            _enableByValueContentsMarshalling = enableByValueContentsMarshalling;
-        }
-
-        public bool IsSupported(TargetFramework target, Version version)
-        {
-            return target is TargetFramework.Net && version.Major >= 6;
+            _byValueContentsMarshallingSupport = byValueContentsMarshallingSupport;
+            _isPinned = isPinned;
         }
 
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
@@ -53,7 +48,8 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Setup:
                     return _nativeTypeMarshaller.GenerateSetupStatements(info, context);
                 case StubCodeContext.Stage.Marshal:
-                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
+                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional
+                        || (context.Direction == MarshalDirection.UnmanagedToManaged && ShouldGenerateByValueOutMarshalling(info, context)))
                     {
                         return _nativeTypeMarshaller.GenerateMarshalStatements(info, context);
                     }
@@ -84,20 +80,22 @@ namespace Microsoft.Interop
                     break;
                 case StubCodeContext.Stage.Unmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional
-                        || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
+                        || (context.Direction == MarshalDirection.ManagedToUnmanaged && ShouldGenerateByValueOutMarshalling(info, context)))
                     {
                         return _nativeTypeMarshaller.GenerateUnmarshalStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.GuaranteedUnmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional
-                        || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
+                        || (context.Direction == MarshalDirection.ManagedToUnmanaged && ShouldGenerateByValueOutMarshalling(info, context)))
                     {
                         return _nativeTypeMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
                     }
                     break;
-                case StubCodeContext.Stage.Cleanup:
-                    return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
+                case StubCodeContext.Stage.CleanupCallerAllocated:
+                    return _nativeTypeMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(info, context);
+                case StubCodeContext.Stage.CleanupCalleeAllocated:
+                    return _nativeTypeMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(info, context);
                 default:
                     break;
             }
@@ -105,14 +103,23 @@ namespace Microsoft.Interop
             return Array.Empty<StatementSyntax>();
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
+        private bool ShouldGenerateByValueOutMarshalling(TypePositionInfo info, StubCodeContext context)
         {
-            return _enableByValueContentsMarshalling;
+            return
+            info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
+                && _byValueContentsMarshallingSupport.GetSupport(info.ByValueContentsMarshalKind, info, context, out _) != ByValueMarshalKindSupport.NotSupported
+                && !info.IsByRef
+                && !_isPinned;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return _nativeTypeMarshaller.UsesNativeIdentifier(info, context);
+        }
+
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        {
+            return _byValueContentsMarshallingSupport.GetSupport(marshalKind, info, context, out diagnostic);
         }
     }
 }

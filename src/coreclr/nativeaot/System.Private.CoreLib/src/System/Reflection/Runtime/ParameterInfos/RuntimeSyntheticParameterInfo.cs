@@ -81,7 +81,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _parameterType;
+                return _parameterType.ToType();
             }
         }
 

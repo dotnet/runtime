@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "coverlet.console": {
-      "version": "3.1.2",
+      "version": "6.0.0",
       "commands": [
         "coverlet"
       ]
@@ -15,13 +15,13 @@
       ]
     },
     "microsoft.dotnet.xharness.cli": {
-      "version": "1.0.0-prerelease.23228.3",
+      "version": "9.0.0-prerelease.23531.1",
       "commands": [
         "xharness"
       ]
     },
     "microsoft.visualstudio.slngen.tool": {
-      "version": "8.5.17",
+      "version": "10.0.0",
       "commands": [
         "slngen"
       ]

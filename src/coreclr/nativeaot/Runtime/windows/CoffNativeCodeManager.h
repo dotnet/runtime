@@ -9,11 +9,6 @@ struct T_RUNTIME_FUNCTION {
     uint32_t EndAddress;
     uint32_t UnwindInfoAddress;
 };
-#elif defined(TARGET_ARM)
-struct T_RUNTIME_FUNCTION {
-    uint32_t BeginAddress;
-    uint32_t UnwindData;
-};
 #elif defined(TARGET_ARM64)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;

@@ -138,7 +138,6 @@ static void ConvertConfigPropertiesToUnicode(
     LPCWSTR** propertyValuesWRef,
     BundleProbeFn** bundleProbe,
     PInvokeOverrideFn** pinvokeOverride,
-    bool* hostPolicyEmbedded,
     host_runtime_contract** hostContract)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
@@ -159,7 +158,7 @@ static void ConvertConfigPropertiesToUnicode(
             // The function in HOST_RUNTIME_CONTRACT is given priority over this property,
             // so we only set the bundle probe if it has not already been set.
             if (*bundleProbe == nullptr)
-                *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+                *bundleProbe = (BundleProbeFn*)u16_strtoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
         else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_PINVOKE_OVERRIDE) == 0)
         {
@@ -168,17 +167,12 @@ static void ConvertConfigPropertiesToUnicode(
             // The function in HOST_RUNTIME_CONTRACT is given priority over this property,
             // so we only set the p/invoke override if it has not already been set.
             if (*pinvokeOverride == nullptr)
-                *pinvokeOverride = (PInvokeOverrideFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
-        }
-        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_HOSTPOLICY_EMBEDDED) == 0)
-        {
-            // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
-            *hostPolicyEmbedded = (wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
+                *pinvokeOverride = (PInvokeOverrideFn*)u16_strtoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
         else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_RUNTIME_CONTRACT) == 0)
         {
             // Host contract is passed in as the value of HOST_RUNTIME_CONTRACT property (encoded as a string).
-            host_runtime_contract* hostContractLocal = (host_runtime_contract*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            host_runtime_contract* hostContractLocal = (host_runtime_contract*)u16_strtoui64(propertyValuesW[propertyIndex], nullptr, 0);
             *hostContract = hostContractLocal;
 
             // Functions in HOST_RUNTIME_CONTRACT have priority over the individual properties
@@ -252,7 +246,6 @@ int coreclr_initialize(
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
     BundleProbeFn* bundleProbe = nullptr;
-    bool hostPolicyEmbedded = false;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
     host_runtime_contract* hostContract = nullptr;
 
@@ -268,7 +261,6 @@ int coreclr_initialize(
         &propertyValuesW,
         &bundleProbe,
         &pinvokeOverride,
-        &hostPolicyEmbedded,
         &hostContract);
 
 #ifdef TARGET_UNIX
@@ -282,8 +274,6 @@ int coreclr_initialize(
         return hr;
     }
 #endif
-
-    g_hostpolicy_embedded = hostPolicyEmbedded;
 
     if (hostContract != nullptr)
     {

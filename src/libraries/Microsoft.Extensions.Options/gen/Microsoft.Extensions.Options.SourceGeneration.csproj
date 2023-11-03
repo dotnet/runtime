@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Source generators must target netstandard2.0 which doesn't support nullable reference types. In order
+         to enable the nullable reference type compiler checks, we also target NetCoreAppCurrent. -->
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
+    <CLSCompliant>false</CLSCompliant>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <UsingToolXliff>true</UsingToolXliff>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AnalyzerRoslynVersion>4.4</AnalyzerRoslynVersion>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
+    <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);ROSLYN4_4_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_4)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="DiagDescriptors.cs" />
+    <Compile Include="DiagDescriptorsBase.cs" />
+    <Compile Include="Emitter.cs" />
+    <Compile Include="EmitterBase.cs" />
+    <Compile Include="Generator.cs" />
+    <Compile Include="Model\ValidatedMember.cs" />
+    <Compile Include="Model\ValidatedModel.cs" />
+    <Compile Include="Model\ValidationAttributeInfo.cs" />
+    <Compile Include="Model\ValidatorType.cs" />
+    <Compile Include="OptionsSourceGenContext.cs" />
+    <Compile Include="Parser.cs" />
+    <Compile Include="ParserUtilities.cs" />
+    <Compile Include="SymbolHolder.cs" />
+    <Compile Include="SymbolLoader.cs" />
+    <Compile Include="TypeDeclarationSyntaxReceiver.cs" />
+  </ItemGroup>
+
+</Project>

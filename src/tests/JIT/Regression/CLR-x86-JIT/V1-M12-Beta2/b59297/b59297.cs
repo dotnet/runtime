@@ -43,9 +43,8 @@ public class PerfNotIf
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new PerfNotIf();
-        return 100;
     }
 }

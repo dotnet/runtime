@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Net.Security;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
@@ -89,7 +90,7 @@ namespace System.Net
                 {
                     IDisposable? user = _user == null ? null : _user.Identity as IDisposable;
 
-                    // For unsafe connection ntlm auth we dont dispose this identity as yet since its cached
+                    // For unsafe connection ntlm auth we don't dispose this identity as yet since its cached
                     if ((user != null) &&
                         (_user!.Identity!.AuthenticationType != NegotiationInfoClass.NTLM) &&
                         (!_listener!.UnsafeConnectionNtlmAuthentication))

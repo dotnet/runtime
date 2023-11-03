@@ -13,22 +13,22 @@ namespace System.Reflection
         TypeInfo IReflectableType.GetTypeInfo() => this;
         public virtual Type AsType() => this;
 
-        public virtual Type[] GenericTypeParameters => IsGenericTypeDefinition ? GetGenericArguments() : Type.EmptyTypes;
+        public virtual Type[] GenericTypeParameters => IsGenericTypeDefinition ? GetGenericArguments() : EmptyTypes;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public virtual EventInfo? GetDeclaredEvent(string name) => GetEvent(name, TypeInfo.DeclaredOnlyLookup);
+        public virtual EventInfo? GetDeclaredEvent(string name) => GetEvent(name, DeclaredOnlyLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public virtual FieldInfo? GetDeclaredField(string name) => GetField(name, TypeInfo.DeclaredOnlyLookup);
+        public virtual FieldInfo? GetDeclaredField(string name) => GetField(name, DeclaredOnlyLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public virtual MethodInfo? GetDeclaredMethod(string name) => GetMethod(name, TypeInfo.DeclaredOnlyLookup);
+        public virtual MethodInfo? GetDeclaredMethod(string name) => GetMethod(name, DeclaredOnlyLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public virtual TypeInfo? GetDeclaredNestedType(string name) => GetNestedType(name, TypeInfo.DeclaredOnlyLookup)?.GetTypeInfo();
+        public virtual TypeInfo? GetDeclaredNestedType(string name) => GetNestedType(name, DeclaredOnlyLookup)?.GetTypeInfo();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        public virtual PropertyInfo? GetDeclaredProperty(string name) => GetProperty(name, TypeInfo.DeclaredOnlyLookup);
+        public virtual PropertyInfo? GetDeclaredProperty(string name) => GetProperty(name, DeclaredOnlyLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public virtual IEnumerable<MethodInfo> GetDeclaredMethods(string name)
@@ -42,40 +42,40 @@ namespace System.Reflection
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
                 Justification = "The yield return state machine doesn't propagate annotations")]
             static MethodInfo[] GetDeclaredOnlyMethods(
-                Type type) => type.GetMethods(TypeInfo.DeclaredOnlyLookup);
+                Type type) => type.GetMethods(DeclaredOnlyLookup);
         }
 
         public virtual IEnumerable<ConstructorInfo> DeclaredConstructors
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            get => GetConstructors(TypeInfo.DeclaredOnlyLookup);
+            get => GetConstructors(DeclaredOnlyLookup);
         }
 
         public virtual IEnumerable<EventInfo> DeclaredEvents
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-            get => GetEvents(TypeInfo.DeclaredOnlyLookup);
+            get => GetEvents(DeclaredOnlyLookup);
         }
 
         public virtual IEnumerable<FieldInfo> DeclaredFields
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-            get => GetFields(TypeInfo.DeclaredOnlyLookup);
+            get => GetFields(DeclaredOnlyLookup);
         }
 
         public virtual IEnumerable<MemberInfo> DeclaredMembers
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            get => GetMembers(TypeInfo.DeclaredOnlyLookup);
+            get => GetMembers(DeclaredOnlyLookup);
         }
 
         public virtual IEnumerable<MethodInfo> DeclaredMethods
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-            get => GetMethods(TypeInfo.DeclaredOnlyLookup);
+            get => GetMethods(DeclaredOnlyLookup);
         }
 
-        public virtual IEnumerable<System.Reflection.TypeInfo> DeclaredNestedTypes
+        public virtual IEnumerable<TypeInfo> DeclaredNestedTypes
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
             get
@@ -88,14 +88,14 @@ namespace System.Reflection
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
                     Justification = "The yield return state machine doesn't propagate annotations")]
                 static Type[] GetDeclaredOnlyNestedTypes(
-                    Type type) => type.GetNestedTypes(TypeInfo.DeclaredOnlyLookup);
+                    Type type) => type.GetNestedTypes(DeclaredOnlyLookup);
             }
         }
 
         public virtual IEnumerable<PropertyInfo> DeclaredProperties
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-            get => GetProperties(TypeInfo.DeclaredOnlyLookup);
+            get => GetProperties(DeclaredOnlyLookup);
         }
 
         public virtual IEnumerable<Type> ImplementedInterfaces

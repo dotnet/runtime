@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -12,6 +13,7 @@ namespace System.Collections.Immutable
     /// An immutable list implementation.
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
+    [CollectionBuilder(typeof(ImmutableList), nameof(ImmutableList.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IStrongEnumerable<T, ImmutableList<T>.Enumerator>
@@ -231,6 +233,31 @@ namespace System.Collections.Immutable
             ImmutableList<T>.Node result = _root.AddRange(items);
 
             return this.Wrap(result);
+        }
+
+        /// <summary>
+        /// See the <see cref="IImmutableList{T}"/> interface.
+        /// </summary>
+        internal ImmutableList<T> AddRange(ReadOnlySpan<T> items)
+        {
+            if (this.IsEmpty)
+            {
+                if (items.IsEmpty)
+                {
+                    return Empty;
+                }
+
+                return new ImmutableList<T>(Node.NodeTreeFromList(items));
+            }
+            else
+            {
+                if (items.IsEmpty)
+                {
+                    return this;
+                }
+
+                return this.Wrap(_root.AddRange(items));
+            }
         }
 
         /// <summary>

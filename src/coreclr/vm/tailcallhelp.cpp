@@ -136,7 +136,11 @@ void TailCallHelp::CreateTailCallHelperStubs(
     LOG((LF_STUBS, LL_INFO1000, "TAILCALLHELP: Incoming sig %s\n", incSig.GetCString()));
 #endif
 
-    *storeArgsNeedsTarget = pCalleeMD == NULL || pCalleeMD->IsSharedByGenericInstantiations();
+    // GVMs are not strictly "needs target" for the unshared case, but the JIT
+    // is going to resolve the target anyway so we may as well take it in the
+    // stub to avoid computing it in both places.
+    *storeArgsNeedsTarget = pCalleeMD == NULL || pCalleeMD->IsSharedByGenericInstantiations() ||
+        (pCalleeMD->IsVirtual() && !pCalleeMD->IsStatic() && pCalleeMD->HasMethodInstantiation());
 
     // The tailcall helper stubs are always allocated together with the caller.
     // If we ever wish to share these stubs they should be allocated with the

@@ -135,11 +135,17 @@ BOOL DacValidateEEClass(PTR_EEClass pEEClass)
 
 BOOL DacValidateMethodTable(PTR_MethodTable pMT, BOOL &bIsFree)
 {
+    bIsFree = FALSE;
+
+    if ((pMT == NULL) || dac_cast<TADDR>(pMT) == (TADDR)-1)
+    {
+        return FALSE;
+    }
+
     // Verify things are right.
     BOOL retval = FALSE;
     EX_TRY
     {
-        bIsFree = FALSE;
         if (HOST_CDADDR(pMT) == HOST_CDADDR(g_pFreeObjectMethodTable))
         {
             bIsFree = TRUE;
@@ -182,7 +188,7 @@ BadMethodTable: ;
 
 BOOL DacValidateMD(PTR_MethodDesc pMD)
 {
-    if (pMD == NULL)
+    if ((pMD == NULL) || dac_cast<TADDR>(pMD) == (TADDR)-1)
     {
         return FALSE;
     }
@@ -584,7 +590,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
     const WCHAR callerPrefix[] = W("caller.");
     // Include null terminator in prefixLen/regLen because wcscpy_s will fail otherwise
     unsigned int prefixLen = (unsigned int)ARRAY_SIZE(callerPrefix);
-    unsigned int regLen = (unsigned int)wcslen(regs[regNum]) + 1;
+    unsigned int regLen = (unsigned int)u16_strlen(regs[regNum]) + 1;
     unsigned int needed = (callerFrame ? prefixLen - 1 : 0) + regLen;
     if (pNeeded)
         *pNeeded = needed;
@@ -1999,7 +2005,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
     else
     {
         // Turn from bytes to wide characters
-        unsigned int len = (unsigned int)wcslen(pszName);
+        unsigned int len = (unsigned int)u16_strlen(pszName);
 
         if (frameName)
         {
@@ -2642,8 +2648,7 @@ ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, _Inout_u
     // Turn from bytes to wide characters
     if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetPEAssembly()->GetPath().
-            DacGetUnicode(count, location, pNeeded))
+        if (!pAssembly->GetPEAssembly()->GetPath().DacGetUnicode(count, location, pNeeded))
         {
             hr = E_FAIL;
         }
@@ -3249,8 +3254,8 @@ ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int ind
 
 HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
-    unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
-                            HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
+    unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
+                            HNDTYPE_SIZEDREF,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -3287,8 +3292,8 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 
     SOSDacEnter();
 
-    unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
-                            HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
+    unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
+                            HNDTYPE_SIZEDREF,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -3455,7 +3460,7 @@ static HRESULT TraverseLoaderHeapBlock(PTR_LoaderHeapBlock firstBlock, VISITHEAP
         pFunc(addr, size, bCurrentBlock);
 
         block = block->pNext;
-        
+
         // Ensure we only see the first block once and that we aren't looping
         // infinitely.
         if (block == firstBlock)
@@ -3472,7 +3477,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
         return E_INVALIDARG;
 
     SOSDacEnter();
-    
+
     hr = TraverseLoaderHeapBlock(PTR_LoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
 
     SOSDacLeave();
@@ -3572,7 +3577,7 @@ HRESULT ClrDataAccess::GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, C
 // The ordering of these entries must match the order enumerated in GetLoaderAllocatorHeaps.
 // This array isn't fixed, we can reorder/add/remove entries as long as the corresponding
 // code in GetLoaderAllocatorHeaps is updated to match.
-static const char *LoaderAllocatorLoaderHeapNames[] = 
+static const char *LoaderAllocatorLoaderHeapNames[] =
 {
     "LowFrequencyHeap",
     "HighFrequencyHeap",
@@ -3614,7 +3619,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetFixupPrecodeHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetNewStubPrecodeHeap());
-            
+
             VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
             if (pVcsMgr == nullptr)
             {
@@ -3626,7 +3631,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->indcell_heap);
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->cache_entry_heap);
             }
-            
+
             // All of the above are "LoaderHeap" and not the ExplicitControl version.
             for (int j = 0; j < i; j++)
                 pKinds[j] = LoaderHeapKindNormal;
@@ -3641,7 +3646,7 @@ HRESULT
 ClrDataAccess::GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded)
 {
     SOSDacEnter();
-    
+
     const int loaderHeapCount = ARRAY_SIZE(LoaderAllocatorLoaderHeapNames);
     if (pNeeded)
         *pNeeded = loaderHeapCount;
@@ -3667,46 +3672,51 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 
     ZeroMemory(pSyncBlockData,sizeof(DacpSyncBlockData));
     pSyncBlockData->SyncBlockCount = (SyncBlockCache::s_pSyncBlockCache->m_FreeSyncTableIndex) - 1;
-    PTR_SyncTableEntry ste = PTR_SyncTableEntry(dac_cast<TADDR>(g_pSyncTable)+(sizeof(SyncTableEntry) * SBNumber));
-    pSyncBlockData->bFree = ((dac_cast<TADDR>(ste->m_Object.Load())) & 1);
+    pSyncBlockData->bFree = TRUE;
 
-    if (pSyncBlockData->bFree == FALSE)
+    if (pSyncBlockData->SyncBlockCount > 0 && SBNumber <= pSyncBlockData->SyncBlockCount)
     {
-        pSyncBlockData->Object = (CLRDATA_ADDRESS)dac_cast<TADDR>(ste->m_Object.Load());
+        PTR_SyncTableEntry ste = PTR_SyncTableEntry(dac_cast<TADDR>(g_pSyncTable)+(sizeof(SyncTableEntry) * SBNumber));
+        pSyncBlockData->bFree = ((dac_cast<TADDR>(ste->m_Object.Load())) & 1);
 
-        if (ste->m_SyncBlock != NULL)
+        if (pSyncBlockData->bFree == FALSE)
         {
-            SyncBlock *pBlock = PTR_SyncBlock(ste->m_SyncBlock);
-            pSyncBlockData->SyncBlockPointer = HOST_CDADDR(pBlock);
-#ifdef FEATURE_COMINTEROP
-            if (pBlock->m_pInteropInfo)
+            pSyncBlockData->Object = (CLRDATA_ADDRESS)dac_cast<TADDR>(ste->m_Object.Load());
+
+            if (ste->m_SyncBlock != NULL)
             {
-                pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->DacGetRawRCW() != 0) ? SYNCBLOCKDATA_COMFLAGS_RCW : 0;
-                pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetCCW() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CCW : 0;
+                SyncBlock *pBlock = PTR_SyncBlock(ste->m_SyncBlock);
+                pSyncBlockData->SyncBlockPointer = HOST_CDADDR(pBlock);
+#ifdef FEATURE_COMINTEROP
+                if (pBlock->m_pInteropInfo)
+                {
+                    pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->DacGetRawRCW() != 0) ? SYNCBLOCKDATA_COMFLAGS_RCW : 0;
+                    pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetCCW() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CCW : 0;
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-                pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetComClassFactory() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CF : 0;
+                    pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetComClassFactory() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CF : 0;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            }
+                }
 #endif // FEATURE_COMINTEROP
 
-            pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
-            pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
-            pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
-            pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
+                pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
+                pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
+                pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
+                pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 
-            // TODO: Microsoft, implement the wait list
-            pSyncBlockData->AdditionalThreadCount = 0;
+                // TODO: Microsoft, implement the wait list
+                pSyncBlockData->AdditionalThreadCount = 0;
 
-            if (pBlock->m_Link.m_pNext != NULL)
-            {
-                PTR_SLink pLink = pBlock->m_Link.m_pNext;
-                do
+                if (pBlock->m_Link.m_pNext != NULL)
                 {
-                    pSyncBlockData->AdditionalThreadCount++;
-                    pLink = pBlock->m_Link.m_pNext;
+                    PTR_SLink pLink = pBlock->m_Link.m_pNext;
+                    do
+                    {
+                        pSyncBlockData->AdditionalThreadCount++;
+                        pLink = pBlock->m_Link.m_pNext;
+                    }
+                    while ((pLink != NULL) &&
+                        (pSyncBlockData->AdditionalThreadCount < 1000));
                 }
-                while ((pLink != NULL) &&
-                    (pSyncBlockData->AdditionalThreadCount < 1000));
             }
         }
     }

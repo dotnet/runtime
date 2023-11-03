@@ -117,11 +117,38 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="CollectionNotSupported" xml:space="preserve">
+    <value>The collection type is not supported: '{0}'.</value>
+  </data>
+  <data name="CouldNotDetermineTypeInfoMessageFormat" xml:space="preserve">
+    <value>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</value>
+  </data>
+  <data name="CouldNotDetermineTypeInfoTitle" xml:space="preserve">
+    <value>The target type for a binder call could not be determined</value>
+  </data>
+  <data name="DictionaryKeyNotSupported" xml:space="preserve">
+    <value>The dictionary key type is not supported: '{0}'.</value>
+  </data>
+  <data name="ElementTypeNotSupported" xml:space="preserve">
+    <value>The collection element type is not supported: '{0}'.</value>
+  </data>
   <data name="Language VersionIsNotSupportedMessageFormat" xml:space="preserve">
-    <value>The project's language version has to be at least 'C# 11'.</value>
+    <value>The project's language version has to be at least 'C# 12'.</value>
   </data>
   <data name="LanguageVersionIsNotSupportedTitle" xml:space="preserve">
-    <value>Language version is required to be at least C# 11</value>
+    <value>Language version is required to be at least C# 12</value>
+  </data>
+  <data name="MissingPublicInstanceConstructor" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because it is missing a public instance constructor.</value>
+  </data>
+  <data name="MultiDimArraysNotSupported" xml:space="preserve">
+    <value>Multidimensional arrays are not supported: '{0}'.</value>
+  </data>
+  <data name="MultipleParameterizedConstructors" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</value>
+  </data>
+  <data name="NullableUnderlyingTypeNotSupported" xml:space="preserve">
+    <value>Nullable underlying type is not supported: '{0}'.</value>
   </data>
   <data name="PropertyNotSupportedMessageFormat" xml:space="preserve">
     <value>Property '{0}' on type '{1}' is not supported.</value>
@@ -129,10 +156,16 @@
   <data name="PropertyNotSupportedTitle" xml:space="preserve">
     <value>Did not generate binding logic for a property on a type</value>
   </data>
-  <data name="TypeNotSupportedMessageFormat" xml:space="preserve">
-    <value>Type '{0}' is not supported: {1}.</value>
+  <data name="TypeNotSupported" xml:space="preserve">
+    <value>The type is not supported: '{0}'.</value>
   </data>
   <data name="TypeNotSupportedTitle" xml:space="preserve">
     <value>Did not generate binding logic for a type</value>
+  </data>
+  <data name="ValueTypesInvalidForBindMessageFormat" xml:space="preserve">
+    <value>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</value>
+  </data>
+  <data name="ValueTypesInvalidForBindTitle" xml:space="preserve">
+    <value>Value types are invalid inputs to configuration 'Bind' methods</value>
   </data>
 </root>

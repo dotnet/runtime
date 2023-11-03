@@ -1774,6 +1774,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("NEW_ARRAY");
                     break;
 
+                case ReadyToRunHelper.NewMaybeFrozenArray:
+                    builder.Append("NEW_MAYBEFROZEN_ARRAY");
+                    break;
+
+                case ReadyToRunHelper.NewMaybeFrozenObject:
+                    builder.Append("NEW_MAYBEFROZEN_OBJECT");
+                    break;
+
                 case ReadyToRunHelper.CheckCastAny:
                     builder.Append("CHECK_CAST_ANY");
                     break;

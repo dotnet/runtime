@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 namespace VirtFunc
 {
-    internal class CTest1
+    public class CTest1
     {
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Dictionary<object, int> myHT = new Dictionary<object, int>();
 

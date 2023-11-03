@@ -121,7 +121,9 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, 
 #define MONO_ARCH_CODE_ALIGNMENT  (32)
 
 // TODO: remove following def
-#define MONO_ARCH_EMULATE_MUL_DIV           (1)
+#define MONO_ARCH_EMULATE_MUL_OVF           (1)
+#define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS  (1)
+#define MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS (1)
 #define MONO_ARCH_EMULATE_FREM              (1)
 
 #ifdef TARGET_RISCV64
@@ -284,6 +286,9 @@ enum {
 	MONO_R_RISCV_JALR = 10,
 };
 
+void
+mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow, gboolean preserve_ips);
+
 __attribute__ ((warn_unused_result)) guint8 *
 mono_riscv_emit_imm (guint8 *code, int rd, gsize imm);
 
@@ -295,6 +300,9 @@ __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_nop (guint8 *code);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_load (
+    guint8 *code, int rd, int rs1, gint32 imm, int length);
+
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_loadu (
     guint8 *code, int rd, int rs1, gint32 imm, int length);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_fload (

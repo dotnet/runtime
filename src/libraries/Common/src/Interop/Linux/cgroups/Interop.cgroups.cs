@@ -17,7 +17,12 @@ internal static partial class Interop
         // For disambiguation, see https://systemd.io/CGROUP_DELEGATION/#three-different-tree-setups-
 
         /// <summary>The supported versions of cgroup.</summary>
-        internal enum CGroupVersion { None, CGroup1, CGroup2 };
+        internal enum CGroupVersion
+        {
+            None,
+            CGroup1,
+            CGroup2
+        };
 
         /// <summary>Path to cgroup filesystem that tells us which version of cgroup is in use.</summary>
         private const string SysFsCgroupFileSystemPath = "/sys/fs/cgroup";
@@ -29,24 +34,117 @@ internal static partial class Interop
         /// <summary>The version of cgroup that's being used. Mutated by tests only.</summary>
         internal static readonly CGroupVersion s_cgroupVersion = FindCGroupVersion();
 
+        /// <summary>Path to the found cgroup memory hierarchy mount path, or null if it couldn't be found.</summary>
+        internal static readonly string? s_cgroupMemoryHierarchyMountPath = FindCGroupMemoryHierarchyMountPath(s_cgroupVersion);
+
         /// <summary>Path to the found cgroup memory limit path, or null if it couldn't be found.</summary>
-        internal static readonly string? s_cgroupMemoryLimitPath = FindCGroupMemoryLimitPath(s_cgroupVersion);
+        internal static readonly string? s_cgroupMemoryPath = FindCGroupMemoryPath(s_cgroupVersion);
 
         /// <summary>Tries to read the memory limit from the cgroup memory location.</summary>
         /// <param name="limit">The read limit, or 0 if it couldn't be read.</param>
         /// <returns>true if the limit was read successfully; otherwise, false.</returns>
         public static bool TryGetMemoryLimit(out ulong limit)
         {
-            string? path = s_cgroupMemoryLimitPath;
-
-            if (path != null &&
-                TryReadMemoryValueFromFile(path, out limit))
+            if (s_cgroupVersion == CGroupVersion.CGroup1)
             {
-                return true;
+                return TryGetMemoryLimitV1(out limit);
+            }
+            else if (s_cgroupVersion == CGroupVersion.CGroup2)
+            {
+                return TryGetMemoryLimitV2(out limit);
             }
 
             limit = 0;
             return false;
+        }
+
+        /// <summary>Tries to read a field of a specified name from the memory.stat file in the current cgroup (cgroup v1 only).</summary>
+        /// <param name="fieldName">Name of the field to read.</param>
+        /// <param name="val">Value of the field or 0 if the field was not found.</param>
+        /// <returns>true if the field was read successfully; otherwise, false.</returns>
+        internal static bool TryGetMemoryStatField(string fieldName, out ulong val)
+        {
+            string? path = s_cgroupMemoryPath;
+            if (path != null)
+            {
+                try
+                {
+                    // Each field name in the memory.stat is separated by one space from its value
+                    fieldName += ' ';
+                    foreach (string line in File.ReadLines(path + "/memory.stat"))
+                    {
+                        if (line.StartsWith(fieldName))
+                        {
+                            bool foundFieldValue = ulong.TryParse(line.AsSpan(fieldName.Length), out val);
+                            return foundFieldValue;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.Fail($"Failed to read \"{path}/memory.stat\": {e}");
+                }
+            }
+
+            val = 0;
+            return false;
+        }
+
+        /// <summary>Tries to read the memory limit from the cgroup v1 hierarchy.</summary>
+        /// <param name="limit">The read limit, or 0 if it couldn't be read.</param>
+        /// <returns>true if the limit was read successfully; otherwise, false.</returns>
+        internal static bool TryGetMemoryLimitV1(out ulong limit)
+        {
+            string? path = s_cgroupMemoryPath;
+            if (path != null)
+            {
+                if (TryReadMemoryValueFromFile(path + "/memory.use_hierarchy", out ulong useHierarchy) && (useHierarchy != 0))
+                {
+                    return TryGetMemoryStatField("hierarchical_memory_limit", out limit);
+                }
+
+                if (path != null &&
+                    TryReadMemoryValueFromFile(path + "/memory.limit_in_bytes", out limit))
+                {
+                    return true;
+                }
+            }
+
+            limit = 0;
+            return false;
+        }
+
+        /// <summary>Tries to read the memory limit from the cgroup v2 hierarchy.</summary>
+        /// <param name="limit">The read limit, or 0 if it couldn't be read.</param>
+        /// <returns>true if the limit was read successfully; otherwise, false.</returns>
+        internal static bool TryGetMemoryLimitV2(out ulong limit)
+        {
+            bool foundAnyLimit = false;
+            ulong minLimit = ulong.MaxValue;
+            string? currentCGroupMemoryPath = s_cgroupMemoryPath;
+            string? cgroupMemoryHierarchyMountPath = s_cgroupMemoryHierarchyMountPath;
+            if (currentCGroupMemoryPath != null && cgroupMemoryHierarchyMountPath != null)
+            {
+                // Iterate over the directory hierarchy representing the cgroup hierarchy until reaching the
+                // mount directory. The mount directory doesn't contain the memory.max.
+                do
+                {
+                    if (TryReadMemoryValueFromFile(currentCGroupMemoryPath + "/memory.max", out ulong currentLevelLimit))
+                    {
+                        foundAnyLimit = true;
+                        if (currentLevelLimit < minLimit)
+                        {
+                            minLimit = currentLevelLimit;
+                        }
+                    }
+                    currentCGroupMemoryPath = Path.GetDirectoryName(currentCGroupMemoryPath);
+                }
+                while (currentCGroupMemoryPath!.Length != cgroupMemoryHierarchyMountPath.Length);
+            }
+
+            limit = minLimit;
+
+            return foundAnyLimit;
         }
 
         /// <summary>Tries to parse a memory limit from the specified file.</summary>
@@ -108,45 +206,42 @@ internal static partial class Interop
 
         /// <summary>Find the cgroup version in use on the system.</summary>
         /// <returns>The cgroup version.</returns>
-        private static CGroupVersion FindCGroupVersion()
+        private static unsafe CGroupVersion FindCGroupVersion()
         {
-            try
+            CGroupVersion cgroupVersion = CGroupVersion.None;
+            const int MountPointFormatBufferSizeInBytes = 32;
+            byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
+            long numericFormat;
+            int result = Interop.Sys.GetFormatInfoForMountPoint(SysFsCgroupFileSystemPath, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
+            if (result == 0)
             {
-                return new DriveInfo(SysFsCgroupFileSystemPath).DriveFormat switch
+                cgroupVersion = numericFormat switch
                 {
-                    "cgroup2fs" => CGroupVersion.CGroup2,
-                    "tmpfs" => CGroupVersion.CGroup1,
+                    (int)Interop.Sys.UnixFileSystemTypes.cgroup2fs => CGroupVersion.CGroup2,
+                    (int)Interop.Sys.UnixFileSystemTypes.tmpfs => CGroupVersion.CGroup1,
                     _ => CGroupVersion.None,
                 };
             }
-            catch (Exception ex) when (ex is DriveNotFoundException || ex is ArgumentException)
-            {
-                return CGroupVersion.None;
-            }
+
+            return cgroupVersion;
         }
 
-        /// <summary>Find the cgroup memory limit path.</summary>
-        /// <param name="cgroupVersion">The cgroup version currently in use on the system.</param>
-        /// <returns>The limit path if found; otherwise, null.</returns>
-        private static string? FindCGroupMemoryLimitPath(CGroupVersion cgroupVersion)
+        private static string? FindCGroupMemoryHierarchyMountPath(CGroupVersion cgroupVersion)
         {
-            string? cgroupMemoryPath = FindCGroupPath(cgroupVersion, "memory");
-            if (cgroupMemoryPath != null)
+            if (TryFindHierarchyMount(cgroupVersion, "memory", out string? _, out string? hierarchyMount))
             {
-                if (cgroupVersion == CGroupVersion.CGroup1)
-                {
-                    return cgroupMemoryPath + "/memory.limit_in_bytes";
-                }
-
-                if (cgroupVersion == CGroupVersion.CGroup2)
-                {
-                    // 'memory.high' is a soft limit; the process may get throttled
-                    // 'memory.max' is where OOM killer kicks in
-                    return cgroupMemoryPath + "/memory.max";
-                }
+                return hierarchyMount;
             }
 
             return null;
+        }
+
+        /// <summary>Find the cgroup memory.</summary>
+        /// <param name="cgroupVersion">The cgroup version currently in use on the system.</param>
+        /// <returns>The limit path if found; otherwise, null.</returns>
+        private static string? FindCGroupMemoryPath(CGroupVersion cgroupVersion)
+        {
+            return FindCGroupPath(cgroupVersion, "memory");
         }
 
         /// <summary>Find the cgroup path for the specified subsystem.</summary>

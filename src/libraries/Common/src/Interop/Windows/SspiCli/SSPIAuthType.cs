@@ -150,7 +150,7 @@ namespace System.Net
             }
         }
 
-        public int ApplyControlToken(ref SafeDeleteContext? refContext, in SecurityBuffer inputBuffers)
+        public int ApplyControlToken(ref SafeDeleteSslContext? refContext, in SecurityBuffer inputBuffers)
         {
             throw new NotSupportedException();
         }

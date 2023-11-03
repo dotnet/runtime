@@ -27,144 +27,31 @@
 #ifndef _VMEVENTTRACE_H_
 #define _VMEVENTTRACE_H_
 
-#include "eventtracebase.h"
-#include "gcinterface.h"
+#include <CommonTypes.h>
+#include <gcenv.base.h>
+#include <gcinterface.h>
 
 #ifdef FEATURE_EVENT_TRACE
+struct ProfilerWalkHeapContext;
 struct ProfilingScanContext : ScanContext
 {
     BOOL fProfilerPinned;
     void * pvEtwContext;
     void *pHeapId;
 
-    ProfilingScanContext(BOOL fProfilerPinnedParam);
+    ProfilingScanContext(BOOL fProfilerPinnedParam)
+        : ScanContext()
+    {
+        pHeapId = NULL;
+        fProfilerPinned = fProfilerPinnedParam;
+        pvEtwContext = NULL;
+        promotion = true;
+    }
 };
 #endif // defined(FEATURE_EVENT_TRACE)
 
 namespace ETW
 {
-#ifndef FEATURE_NATIVEAOT
-
-    class LoggedTypesFromModule;
-
-    // We keep a hash of these to keep track of:
-    //     * Which types have been logged through ETW (so we can avoid logging dupe Type
-    //         events), and
-    //     * GCSampledObjectAllocation stats to help with "smart sampling" which
-    //         dynamically adjusts sampling rate of objects by type.
-    // See code:LoggedTypesFromModuleTraits
-    struct TypeLoggingInfo
-    {
-    public:
-        TypeLoggingInfo(TypeHandle thParam)
-        {
-            Init(thParam);
-        }
-
-        TypeLoggingInfo()
-        {
-            Init(TypeHandle());
-        }
-
-        void Init(TypeHandle thParam)
-        {
-            th = thParam;
-            dwTickOfCurrentTimeBucket = 0;
-            dwAllocCountInCurrentBucket = 0;
-            flAllocPerMSec = 0;
-
-            dwAllocsToSkipPerSample = 0;
-            dwAllocsSkippedForSample = 0;
-            cbIgnoredSizeForSample = 0;
-        };
-
-        // The type this TypeLoggingInfo represents
-        TypeHandle th;
-
-        // Smart sampling
-
-        // These bucket values remember stats of a particular time slice that are used to
-        // help adjust the sampling rate
-        DWORD dwTickOfCurrentTimeBucket;
-        DWORD dwAllocCountInCurrentBucket;
-        float flAllocPerMSec;
-
-        // The number of data points to ignore before taking a "sample" (i.e., logging a
-        // GCSampledObjectAllocation ETW event for this type)
-        DWORD dwAllocsToSkipPerSample;
-
-        // The current number of data points actually ignored for the current sample
-        DWORD dwAllocsSkippedForSample;
-
-        // The current count of bytes of objects of this type actually allocated (and
-        // ignored) for the current sample
-        SIZE_T cbIgnoredSizeForSample;
-    };
-
-    // Class to wrap all type system logic for ETW
-    class TypeSystemLog
-    {
-    private:
-        static AllLoggedTypes * s_pAllLoggedTypes;
-
-        // See code:ETW::TypeSystemLog::PostRegistrationInit
-        static BOOL s_fHeapAllocEventEnabledOnStartup;
-        static BOOL s_fHeapAllocHighEventEnabledNow;
-        static BOOL s_fHeapAllocLowEventEnabledNow;
-
-        // If DOTNET_UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec is set, then
-        // this is used to determine the event frequency, overriding
-        // s_nDefaultMsBetweenEvents above (regardless of which
-        // GCSampledObjectAllocation*Keyword was used)
-        static int s_nCustomMsBetweenEvents;
-
-    public:
-        // This customizes the type logging behavior in LogTypeAndParametersIfNecessary
-        enum TypeLogBehavior
-        {
-            // Take lock, and consult hash table to see if this is the first time we've
-            // encountered the type, in which case, log it
-            kTypeLogBehaviorTakeLockAndLogIfFirstTime,
-
-            // Caller has already taken lock, so just directly consult hash table to see
-            // if this is the first time we've encountered the type, in which case, log
-            // it
-            kTypeLogBehaviorAssumeLockAndLogIfFirstTime,
-
-            // Don't take lock, don't consult hash table. Just log the type. (This is
-            // used in cases when checking for dupe type logging isn't worth it, such as
-            // when logging the finalization of an object.)
-            kTypeLogBehaviorAlwaysLog,
-
-            // When logging the type for GCSampledObjectAllocation events, we don't need
-            // the lock (as it's already held by the code doing the stats for smart
-            // sampling), and we already know we need to log the type (since we already
-            // looked it up in the hash).  But we would still need to consult the hash
-            // for any type parameters, so kTypeLogBehaviorAlwaysLog isn't appropriate,
-            // and this is used instead.
-            kTypeLogBehaviorAssumeLockAndAlwaysLogTopLevelType,
-        };
-
-        static HRESULT PreRegistrationInit();
-        static void PostRegistrationInit();
-        static BOOL IsHeapAllocEventEnabled();
-        static void SendObjectAllocatedEvent(Object * pObject);
-        static CrstBase * GetHashCrst();
-        static void LogTypeAndParametersIfNecessary(BulkTypeEventLogger * pBulkTypeEventLogger, ULONGLONG thAsAddr, TypeLogBehavior typeLogBehavior);
-        static void OnModuleUnload(Module * pModule);
-        static void OnKeywordsChanged();
-
-    private:
-        static BOOL ShouldLogType(TypeHandle th);
-        static BOOL ShouldLogTypeNoLock(TypeHandle th);
-        static TypeLoggingInfo LookupOrCreateTypeLoggingInfo(TypeHandle th, BOOL * pfCreatedNew, LoggedTypesFromModule ** ppLoggedTypesFromModule = NULL);
-        static BOOL AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule * pLoggedTypesFromModule, const ETW::TypeLoggingInfo * pTypeLoggingInfo);
-        static int GetDefaultMsBetweenEvents();
-        static void OnTypesKeywordTurnedOff();
-    };
-
-#endif // FEATURE_NATIVEAOT
-
     // Class to wrap all GC logic for ETW
     class GCLog
     {
@@ -180,11 +67,7 @@ namespace ETW
         // we'll attach this sequence number to that GC instead of to the WPA-induced GC,
         // but who cares? When parsing ETW logs later on, it's indistinguishable if both
         // GCs really were induced at around the same time.
-#ifdef FEATURE_NATIVEAOT
         static volatile LONGLONG s_l64LastClientSequenceNumber;
-#else // FEATURE_NATIVEAOT
-        static Volatile<LONGLONG> s_l64LastClientSequenceNumber;
-#endif // FEATURE_NATIVEAOT
 
     public:
         typedef union st_GCEventInfo {
@@ -311,22 +194,23 @@ namespace ETW
         static void MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
         static void EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);
         static void WalkStaticsAndCOMForETW();
-#ifndef FEATURE_NATIVEAOT
-        static void SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj);
-#endif // FEATURE_NATIVEAOT
+        static void WalkHeap();
     };
 };
+
+#ifndef FEATURE_EVENT_TRACE
+inline void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
+#endif
 
 #ifndef FEATURE_ETW
 inline BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldTrackMovementForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw() { return FALSE; }
-inline void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
 inline void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext) { }
 inline void ETW::GCLog::BeginMovedReferences(size_t * pProfilingContext) { }
-inline void ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting) { }
-inline void ETW::GCLog::EndMovedReferences(size_t profilingContext) { }
+inline void ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification) { }
+inline void ETW::GCLog::EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification) { }
 inline void ETW::GCLog::WalkStaticsAndCOMForETW() { }
 inline void ETW::GCLog::RootReference(
     LPVOID pvHandle,
@@ -336,8 +220,7 @@ inline void ETW::GCLog::RootReference(
     ProfilingScanContext * profilingScanContext,
     DWORD dwGCFlags,
     DWORD rootFlags) { }
+inline void ETW::GCLog::WalkHeap() { }
 #endif
-
-inline BOOL EventEnabledPinObjectAtGCTime() { return FALSE; }
 
 #endif //_VMEVENTTRACE_H_

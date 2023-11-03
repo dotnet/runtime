@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- always set SelfContained when running to use Mono on desktop -->
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <UsingTask TaskName="MonoAOTCompiler"
@@ -16,7 +18,6 @@
 
     <ItemGroup>
       <AotInputAssemblies Include="$(PublishDir)\*.dll" />
-      <ReferenceAssembliesForPGO Include="$(PublishDir)\*.dll" />
     </ItemGroup>
 
     <MonoAOTCompiler
@@ -25,14 +26,36 @@
       LibraryFormat="$(_AotLibraryFormat)"
       Assemblies="@(AotInputAssemblies)"
       OutputDir="$(PublishDir)"
+      CollectTrimmingEligibleMethods="$(StripILCode)"
+      TrimmingEligibleMethodsOutputDirectory="$(TrimmingEligibleMethodsOutputDirectory)"
       IntermediateOutputPath="$(IntermediateOutputPath)"
       UseAotDataFile="$(UseAotDataFile)"
-      CacheFilePath="$(IntermediateOutputPath)aot_compiler_cache.json"
-      NetTracePath="$(NetTracePath)"
-      PgoBinaryPath="$(PgoBinaryPath)"
-      ReferenceAssembliesForPGO="@(ReferenceAssembliesForPGO)"
-      MibcProfilePath="$(MibcProfilePath)">
+      MibcProfilePath="$(MibcProfilePath)"
+      UseLLVM="$(MonoEnableLLVM)"
+      LLVMPath="$(MonoAotCrossDir)">
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
+  </Target>
+
+  <UsingTask TaskName="ILStrip"
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+
+  <Target Name="StripILCode" Condition="'$(StripILCode)' == 'true'" AfterTargets="AOTCompileApp">
+    <PropertyGroup>
+      <TrimIndividualMethods>true</TrimIndividualMethods>
+    </PropertyGroup>
+
+    <ILStrip
+      TrimIndividualMethods="$(TrimIndividualMethods)"
+      Assemblies="@(BundleAssemblies)">
+      <Output TaskParameter="TrimmedAssemblies" ItemName="TrimmedAssemblies" />
+    </ILStrip>
+
+    <Copy
+        SourceFiles="@(TrimmedAssemblies->Metadata('TrimmedAssemblyFileName'))"
+        DestinationFiles="@(TrimmedAssemblies)"
+        OverwriteReadOnlyFiles="true"
+    />
+    <Delete Files="@(TrimmedAssemblies->Metadata('TrimmedAssemblyFileName'))" />
   </Target>
 </Project>

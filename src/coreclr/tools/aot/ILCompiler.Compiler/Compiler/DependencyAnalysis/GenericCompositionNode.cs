@@ -1,25 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.Text;
 using Internal.TypeSystem;
-
-using Debug = System.Diagnostics.Debug;
-using GenericVariance = Internal.Runtime.GenericVariance;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Describes how a generic type instance is composed - the number of generic arguments, their types,
-    /// and variance information.
+    /// Describes types of arguments of generic type instances.
     /// </summary>
-    public class GenericCompositionNode : DehydratableObjectNode, ISymbolDefinitionNode
+    public class GenericCompositionNode : ObjectNode, ISymbolDefinitionNode
     {
-        private GenericCompositionDetails _details;
+        private Instantiation _details;
 
-        internal GenericCompositionNode(GenericCompositionDetails details)
+        internal GenericCompositionNode(Instantiation details)
         {
             _details = details;
         }
@@ -28,24 +22,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__GenericInstance");
 
-            Debug.Assert(_details.Instantiation[0] != null || _details.Variance != null);
-            if (_details.Instantiation[0] != null)
+            foreach (TypeDesc instArg in _details)
             {
-                for (int i = 0; i < _details.Instantiation.Length; i++)
-                {
-                    sb.Append('_');
-                    sb.Append(nameMangler.GetMangledTypeName(_details.Instantiation[i]));
-                }
-            }
-
-            if (_details.Variance != null)
-            {
-                sb.Append("__Variance__");
-                for (int i = 0; i < _details.Variance.Length; i++)
-                {
-                    sb.Append('_');
-                    sb.Append((checked((byte)_details.Variance[i])).ToStringInvariant());
-                }
+                sb.Append('_');
+                sb.Append(nameMangler.GetMangledTypeName(instArg));
             }
         }
 
@@ -57,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
             if (factory.Target.IsWindows)
                 return ObjectNodeSection.FoldableReadOnlyDataSection;
@@ -69,36 +49,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            bool hasVariance = _details.Variance != null;
-
             var builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
-            builder.RequireInitialPointerAlignment();
+            bool useRelativePointers = factory.Target.SupportsRelativePointers;
+            if (useRelativePointers)
+                builder.RequireInitialAlignment(4);
+            else
+                builder.RequireInitialPointerAlignment();
 
-            builder.EmitShort((short)checked((ushort)_details.Instantiation.Length));
-
-            builder.EmitByte((byte)(hasVariance ? 1 : 0));
-
-            // TODO: general purpose padding
-            builder.EmitByte(0);
-            if (factory.Target.PointerSize == 8)
-                builder.EmitInt(0);
-
-            foreach (var typeArg in _details.Instantiation)
+            foreach (var typeArg in _details)
             {
-                if (typeArg == null)
-                    builder.EmitZeroPointer();
+                if (useRelativePointers)
+                    builder.EmitReloc(factory.NecessaryTypeSymbol(typeArg), RelocType.IMAGE_REL_BASED_RELPTR32);
                 else
-                    builder.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(typeArg));
-            }
-
-            if (hasVariance)
-            {
-                foreach (var argVariance in _details.Variance)
-                    builder.EmitByte(checked((byte)argVariance));
+                    builder.EmitPointerReloc(factory.NecessaryTypeSymbol(typeArg));
             }
 
             return builder.ToObjectData();
@@ -109,136 +76,19 @@ namespace ILCompiler.DependencyAnalysis
         public override int ClassCode => -762680703;
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _details.CompareToImpl(((GenericCompositionNode)other)._details, comparer);
-        }
-    }
-
-    internal struct GenericCompositionDetails : IEquatable<GenericCompositionDetails>
-    {
-        public readonly Instantiation Instantiation;
-
-        public readonly GenericVariance[] Variance;
-
-        public GenericCompositionDetails(TypeDesc genericTypeInstance, bool forceVarianceInfo = false)
-        {
-            if (genericTypeInstance.IsTypeDefinition)
-                Instantiation = new Instantiation(new TypeDesc[genericTypeInstance.Instantiation.Length]);
-            else
-                Instantiation = genericTypeInstance.Instantiation;
-
-            bool emitVarianceInfo = forceVarianceInfo;
-            if (!emitVarianceInfo)
-            {
-                foreach (GenericParameterDesc param in genericTypeInstance.GetTypeDefinition().Instantiation)
-                {
-                    if (param.Variance != Internal.TypeSystem.GenericVariance.None)
-                    {
-                        emitVarianceInfo = true;
-                        break;
-                    }
-                }
-            }
-
-            if (emitVarianceInfo)
-            {
-                Debug.Assert((byte)Internal.TypeSystem.GenericVariance.Contravariant == (byte)GenericVariance.Contravariant);
-                Debug.Assert((byte)Internal.TypeSystem.GenericVariance.Covariant == (byte)GenericVariance.Covariant);
-
-                Variance = new GenericVariance[Instantiation.Length];
-                int i = 0;
-                foreach (GenericParameterDesc param in genericTypeInstance.GetTypeDefinition().Instantiation)
-                {
-                    Variance[i++] = (GenericVariance)param.Variance;
-                }
-            }
-            else
-            {
-                Variance = null;
-            }
-        }
-
-        public GenericCompositionDetails(Instantiation instantiation, GenericVariance[] variance)
-        {
-            Debug.Assert(variance == null || instantiation.Length == variance.Length);
-            Instantiation = instantiation;
-            Variance = variance;
-        }
-
-        public bool Equals(GenericCompositionDetails other)
-        {
-            if (Instantiation.Length != other.Instantiation.Length)
-                return false;
-
-            if ((Variance == null) != (other.Variance == null))
-                return false;
-
-            for (int i = 0; i < Instantiation.Length; i++)
-            {
-                if (Instantiation[i] != other.Instantiation[i])
-                    return false;
-
-                if (Variance != null)
-                {
-                    if (Variance[i] != other.Variance[i])
-                        return false;
-                }
-            }
-
-            return true;
-        }
-
-        public int CompareToImpl(GenericCompositionDetails other, TypeSystemComparer comparer)
-        {
-            var compare = Instantiation.Length.CompareTo(other.Instantiation.Length);
+            var otherComposition = (GenericCompositionNode)other;
+            var compare = _details.Length.CompareTo(otherComposition._details.Length);
             if (compare != 0)
                 return compare;
 
-            if (Variance == null && other.Variance != null)
-                return -1;
-
-            if (Variance != null && other.Variance == null)
-                return 1;
-
-            for (int i = 0; i < Instantiation.Length; i++)
+            for (int i = 0; i < _details.Length; i++)
             {
-                compare = comparer.Compare(Instantiation[i], other.Instantiation[i]);
+                compare = comparer.Compare(_details[i], otherComposition._details[i]);
                 if (compare != 0)
                     return compare;
-
-                if (Variance != null)
-                {
-                    compare = Variance[i].CompareTo(other.Variance[i]);
-                    if (compare != 0)
-                        return compare;
-                }
             }
 
-            Debug.Assert(Equals(other));
             return 0;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is GenericCompositionDetails && Equals((GenericCompositionDetails)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = 13;
-
-            if (Variance != null)
-            {
-                foreach (var element in Variance)
-                {
-                    int value = (int)element * 0x5498341 + 0x832424;
-                    hashCode = hashCode * 31 + value;
-                }
-            }
-
-            // If the element is null, this is a variance-only composition info
-            // for generic definitions.
-            Debug.Assert(Instantiation[0] != null || Variance != null);
-            return Instantiation[0] == null ? hashCode : Instantiation.ComputeGenericInstanceHashCode(hashCode);
         }
     }
 }

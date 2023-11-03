@@ -180,7 +180,11 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl2(
     IUnknown ** ppInstance,
     CLR_DEBUGGING_PROCESS_FLAGS* pFlagsOut)
 {
-    HMODULE hDac = LoadLibraryW(pDacModulePath);
+#ifdef TARGET_WINDOWS
+    HMODULE hDac = WszLoadLibrary(pDacModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+#else
+    HMODULE hDac = WszLoadLibrary(pDacModulePath);
+#endif // !TARGET_WINDOWS
     if (hDac == NULL)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -414,11 +418,11 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
             WCHAR *mutableFilePath = (WCHAR *)filePath;
 
-            size_t pathLen = wcslen(mutableFilePath);
+            size_t pathLen = u16_strlen(mutableFilePath);
 
             const WCHAR *nidll = W(".ni.dll");
             const WCHAR *niexe = W(".ni.exe");
-            const size_t dllLen = wcslen(nidll);  // used for ni.exe as well
+            const size_t dllLen = u16_strlen(nidll);  // used for ni.exe as well
 
             if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
             {
@@ -9617,9 +9621,9 @@ void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
     }
 
-    // Now we know it's safe to call wcslen. The buffer is local, so we know the pages are there.
+    // Now we know it's safe to call u16_strlen. The buffer is local, so we know the pages are there.
     // And we know there's a null capping the max length of the string.
-    SIZE_T dwActualLenWithNull = wcslen(pString) + 1;
+    SIZE_T dwActualLenWithNull = u16_strlen(pString) + 1;
     if (dwActualLenWithNull != dwExpectedLenWithNull)
     {
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
@@ -9723,12 +9727,6 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
 //    The event still needs to be Marshaled before being used. (see code:CordbProcess::MarshalManagedEvent)
 //
 //---------------------------------------------------------------------------------------
-#if defined(_MSC_VER) && defined(TARGET_ARM)
-// This is a temporary workaround for an ARM specific MS C++ compiler bug (internal LKG build 18.1).
-// Branch < if (ptrRemoteManagedEvent == NULL) > was always taken and the function always returned false.
-// TODO: It should be removed once the bug is fixed.
-#pragma optimize("", off)
-#endif
 bool CordbProcess::CopyManagedEventFromTarget(
     const EXCEPTION_RECORD * pRecord,
     DebuggerIPCEvent * pLocalManagedEvent)
@@ -9775,9 +9773,6 @@ bool CordbProcess::CopyManagedEventFromTarget(
 
     return true;
 }
-#if defined(_MSC_VER) && defined(TARGET_ARM)
-#pragma optimize("", on)
-#endif
 
 //---------------------------------------------------------------------------------------
 // EnsureClrInstanceIdSet - Ensure we have a CLR Instance ID to debug

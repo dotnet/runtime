@@ -215,6 +215,7 @@ namespace System.Diagnostics
         public ProcessStartInfo() { }
         public ProcessStartInfo(string fileName) { }
         public ProcessStartInfo(string fileName, string arguments) { }
+        public ProcessStartInfo(string fileName, System.Collections.Generic.IEnumerable<string> arguments) { }
         public System.Collections.ObjectModel.Collection<string> ArgumentList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Arguments { get { throw null; } set { } }

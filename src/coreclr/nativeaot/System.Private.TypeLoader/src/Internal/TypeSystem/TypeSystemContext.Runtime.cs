@@ -197,22 +197,12 @@ namespace Internal.TypeSystem
             {
                 unsafe
                 {
-                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericArgumentCount];
+                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericParameterCount];
                     Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
                         rtth.ToEETypePtr()->GenericVariance : null;
-                    for (int i = 0; i < genericParameters.Length; i++)
-                    {
-                        GenericVariance variance = runtimeVariance == null ? GenericVariance.None : runtimeVariance[i] switch
-                        {
-                            Runtime.GenericVariance.Contravariant => GenericVariance.Contravariant,
-                            Runtime.GenericVariance.Covariant => GenericVariance.Covariant,
-                            Runtime.GenericVariance.NonVariant or Runtime.GenericVariance.ArrayCovariant => GenericVariance.None,
-                            _ => throw new NotImplementedException()
-                        };
-                        genericParameters[i] = genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Type, i, this, variance);
-                    }
+                    ReadOnlySpan<Runtime.GenericVariance> varianceData = new ReadOnlySpan<Runtime.GenericVariance>(runtimeVariance, runtimeVariance == null ? 0 : genericParameters.Length);
 
-                    returnedType = new NoMetadataType(this, rtth, null, new Instantiation(genericParameters), rtth.GetHashCode());
+                    returnedType = new NoMetadataType(this, rtth, genericParameters.Length, varianceData, rtth.GetHashCode());
                 }
             }
             else if (RuntimeAugments.IsGenericType(rtth))
@@ -430,15 +420,6 @@ namespace Internal.TypeSystem
                         {
                             MethodDesc typicalMethod = key._owningType.Context.ResolveRuntimeMethod(key._unboxingStub, (DefType)key._owningType.GetTypeDefinition(), key._methodNameAndSignature, IntPtr.Zero, false);
                             return typicalMethod.Context.GetMethodForInstantiatedType(typicalMethod, (InstantiatedType)key._owningType);
-                        }
-
-                        // Otherwise, just check to see if there is a method discoverable via GetMethods
-                        foreach (MethodDesc potentialMethod in key._owningType.GetMethods())
-                        {
-                            if (CompareKeyToValue(key, potentialMethod))
-                            {
-                                return potentialMethod;
-                            }
                         }
                     }
                     else

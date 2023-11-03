@@ -5,9 +5,6 @@
 // It replaces the C++ bits of the implementation with a faithful C# port.
 
 using System.Collections.Generic;
-using System.Collections;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
 
@@ -20,7 +17,6 @@ namespace System.Reflection.Emit
         private bool _firstInstArg;
         private bool _nestedName;
         private bool _hasAssemblySpec;
-        private bool _useAngleBracketsForGenerics;
         private readonly List<int> _stack = new List<int>();
         private int _stackIdx;
 
@@ -33,10 +29,7 @@ namespace System.Reflection.Emit
             _instNesting++;
             _firstInstArg = true;
 
-            if (_useAngleBracketsForGenerics)
-                Append('<');
-            else
-                Append('[');
+            Append('[');
         }
 
         private void CloseGenericArguments()
@@ -51,10 +44,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                if (_useAngleBracketsForGenerics)
-                    Append('>');
-                else
-                    Append(']');
+                Append(']');
             }
         }
 
@@ -69,10 +59,7 @@ namespace System.Reflection.Emit
 
             _firstInstArg = false;
 
-            if (_useAngleBracketsForGenerics)
-                Append('<');
-            else
-                Append('[');
+            Append('[');
 
             PushOpenGenericArgument();
         }
@@ -83,10 +70,7 @@ namespace System.Reflection.Emit
 
             if (_hasAssemblySpec)
             {
-                if (_useAngleBracketsForGenerics)
-                    Append('>');
-                else
-                    Append(']');
+                Append(']');
             }
 
             PopOpenGenericArgument();
@@ -239,11 +223,6 @@ namespace System.Reflection.Emit
             _hasAssemblySpec = false;
         }
 
-        private void SetUseAngleBracketsForGenerics(bool value)
-        {
-            _useAngleBracketsForGenerics = value;
-        }
-
         private void Append(string pStr)
         {
             int i = pStr.IndexOf('\0');
@@ -316,7 +295,7 @@ namespace System.Reflection.Emit
                 Type enclosingType = nestings[i];
                 string name = enclosingType.Name;
 
-                if (i == nestings.Count - 1 && enclosingType.Namespace != null && enclosingType.Namespace.Length != 0)
+                if (i == nestings.Count - 1 && !string.IsNullOrEmpty(enclosingType.Namespace))
                     name = enclosingType.Namespace + "." + name;
 
                 AddName(name);

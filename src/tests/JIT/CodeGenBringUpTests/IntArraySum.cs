@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_IntArraySum
 {
     const int Pass = 100;
@@ -20,7 +21,8 @@ public class BringUpTest_IntArraySum
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int [] a = new int[5] {1, 2, 3, 4, 5};
         int result = IntArraySum(a, a.Length);

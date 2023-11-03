@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
     <!-- There is a 32 and 64 version of this test to allow it to be compiled for all targets -->
     <CLRTestTargetUnsupported Condition="'$(TargetBits)' != '32'">true</CLRTestTargetUnsupported>

@@ -181,8 +181,7 @@ namespace System.Linq.Parallel.Tests
                     yield return new object[] { element, count };
                     yield return new object[] { (long)element, count };
                     yield return new object[] { (double)element, count };
-                    // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
-                    //yield return new object[] { (decimal)element, count };
+                    yield return new object[] { (decimal)element, count };
                     yield return new object[] { "" + element, count };
                 }
                 yield return new object[] { null, count };

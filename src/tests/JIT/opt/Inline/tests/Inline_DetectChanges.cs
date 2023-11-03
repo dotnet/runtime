@@ -16,6 +16,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -23,7 +24,8 @@ public class Program
     internal static ulong[, ] s_3;
     internal static byte s_7;
     internal static ulong[] s_16;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
@@ -36,7 +38,7 @@ public class Program
         return 101;
     }
 
-    public static void Foo(object o)
+    internal static void Foo(object o)
     {
         s_rt = o;
         var vr3 = new sbyte[]{0};

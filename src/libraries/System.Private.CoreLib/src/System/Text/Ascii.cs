@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Text
 {
@@ -112,7 +113,7 @@ namespace System.Text
                     Vector128.LoadUnsafe(ref Unsafe.Subtract(ref searchSpaceEnd, Vector128<T>.Count)));
             }
 
-            if (Vector256.IsHardwareAccelerated)
+            if (Avx.IsSupported)
             {
                 // Process inputs with lengths [33, 64] bytes.
                 if (length <= 2 * Vector256<T>.Count)

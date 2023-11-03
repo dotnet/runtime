@@ -25,7 +25,7 @@
 #include "threadstore.inl"
 #include "thread.inl"
 
-EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode)
+EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -35,7 +35,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uM
     pCurThread->DisablePreemptiveMode();
 
     ASSERT(!pCurThread->IsDoNotTriggerGcSet());
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(uGeneration, FALSE, uMode);
+    GCHeapUtilities::GetGCHeap()->GarbageCollect(uGeneration, lowMemoryP, uMode);
 
     pCurThread->EnablePreemptiveMode();
 }
@@ -80,14 +80,14 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpEndNoGCRegion()
 
 COOP_PINVOKE_HELPER(void, RhSuppressFinalize, (OBJECTREF refObj))
 {
-    if (!refObj->get_EEType()->HasFinalizer())
+    if (!refObj->GetMethodTable()->HasFinalizer())
         return;
     GCHeapUtilities::GetGCHeap()->SetFinalizationRun(refObj);
 }
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhReRegisterForFinalize, (OBJECTREF refObj))
 {
-    if (!refObj->get_EEType()->HasFinalizer())
+    if (!refObj->GetMethodTable()->HasFinalizer())
         FC_RETURN_BOOL(true);
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, refObj));
 }
@@ -107,6 +107,17 @@ COOP_PINVOKE_HELPER(int32_t, RhGetGeneration, (OBJECTREF obj))
     return GCHeapUtilities::GetGCHeap()->WhichGeneration(obj);
 }
 
+COOP_PINVOKE_HELPER(int64_t, RhGetGenerationSize, (int32_t gen))
+{
+    return (int64_t)(GCHeapUtilities::GetGCHeap()->GetLastGCGenerationSize(gen));
+}
+
+COOP_PINVOKE_HELPER(int64_t, RhGetLastGCPercentTimeInGC, ())
+{
+    return GCHeapUtilities::GetGCHeap()->GetLastGCPercentTimeInGC();
+}
+
+
 COOP_PINVOKE_HELPER(int32_t, RhGetGcLatencyMode, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();
@@ -115,6 +126,11 @@ COOP_PINVOKE_HELPER(int32_t, RhGetGcLatencyMode, ())
 COOP_PINVOKE_HELPER(int32_t, RhSetGcLatencyMode, (int32_t newLatencyMode))
 {
     return GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
+}
+
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhIsPromoted, (OBJECTREF obj))
+{
+    FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->IsPromoted(obj));
 }
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhIsServerGc, ())
@@ -300,6 +316,29 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEnumerateConfigurationValues(void* configu
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
+}
+
+GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+bool g_gcHeapHardLimitInfoSpecified = false;
+
+EXTERN_C NATIVEAOT_API void __cdecl RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
+{
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    g_gcHeapHardLimitInfo = heapHardLimitInfo;
+    g_gcHeapHardLimitInfoSpecified = true;
+    pHeap->RefreshMemoryLimit();
+}
+
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhGetGenerationBudget(int generation)
+{
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    return pHeap->GetGenerationBudget(generation);
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
+{
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
 }
 
 EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()

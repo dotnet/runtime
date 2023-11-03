@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
 using BrowserDebugProxy;
+using Microsoft.FileFormats.PE;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -204,6 +205,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetTypeFromToken = 11,
         GetMethodFromToken = 12,
         HasDebugInfo = 13,
+        HasDebugInfoLoaded = 18
     }
 
     internal enum CmdModule {
@@ -359,7 +361,32 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal enum StepSize
     {
         Minimal,
-        Line
+        LineColumn
+    }
+
+    internal sealed class AssemblyAndPdbData
+    {
+        public bool IsAsmMetadataOnly { get; init; }
+        public byte[] AsmBytes { get; set; }
+        public byte[] PdbBytes { get; set; }
+        public bool HasDebugInfo { get; set; }
+        public int PdbAge { get; set; }
+        public Guid PdbGuid { get; set; }
+        public string PdbPath { get; set; }
+        public int PdbUncompressedSize { get; set; }
+        public bool IsPortableCodeView { get; init; }
+        public List<PdbChecksum> PdbChecksums { get; init; }
+        internal AssemblyAndPdbData(byte[] asm, byte[] pdb)
+        {
+            AsmBytes = asm;
+            PdbBytes = pdb;
+        }
+        internal AssemblyAndPdbData()
+        {
+            IsPortableCodeView = true;
+            IsAsmMetadataOnly = true;
+            PdbChecksums = new();
+        }
     }
 
     internal sealed record ArrayDimensions
@@ -537,16 +564,29 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
-            if (objectId.Scheme == "object")
+            switch (objectId.Scheme)
             {
-                Write(ElementType.Class, objectId.Value);
-            }
-            else if (objectId.Scheme == "valuetype")
-            {
-                if (SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                case "object":
+                {
+                    Write(ElementType.Class, objectId.Value);
+                    break;
+                }
+                case "array":
+                {
+                    Write(ElementType.Array, objectId.Value);
+                    break;
+                }
+                case "valuetype":
+                {
+                    if (!SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                        throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
                     Write(vt.Buffer);
-                else
-                    throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
+                    break;
+                }
+                default:
+                {
+                    throw new NotImplementedException($"Writing object of scheme: {objectId.Scheme} is not supported");
+                }
             }
         }
 
@@ -560,7 +600,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             switch (type)
             {
-                case ElementType.U1:
+                case ElementType.I1:
                 case ElementType.I2:
                 case ElementType.I4:
                     Write((ElementType)type, (int)value);
@@ -577,7 +617,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         intBoolVal = (bool)value ? 1 : 0;
                     Write((ElementType)type, intBoolVal);
                     return true;
-                case ElementType.I1:
+                case ElementType.U1:
                 case ElementType.U2:
                 case ElementType.U4:
                     Write((ElementType)type, (uint)value);
@@ -610,51 +650,53 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
+        public bool WriteConst(PrefixUnaryExpressionSyntax constValue)
+        {
+            switch (constValue.Kind())
+            {
+                case SyntaxKind.UnaryMinusExpression:
+                {
+                    switch (constValue.Operand)
+                    {
+                        case LiteralExpressionSyntax les:
+                        {
+                            return WriteNumber(les.Token.Value, convertToNegative: true);
+                        }
+                        default:
+                        {
+                            // not supported yet
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case SyntaxKind.UnaryPlusExpression:
+                {
+                    switch (constValue.Operand)
+                    {
+                        case LiteralExpressionSyntax les:
+                        {
+                            return WriteNumber(les.Token.Value, convertToNegative: false);
+                        }
+                        default:
+                        {
+                            // not supported yet
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            return false;
+        }
+
         public async Task<bool> WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
         {
             switch (constValue.Kind())
             {
                 case SyntaxKind.NumericLiteralExpression:
                 {
-                    switch (constValue.Token.Value) {
-                        case double d:
-                            Write(ElementType.R8, d);
-                            break;
-                        case float f:
-                            Write(ElementType.R4, f);
-                            break;
-                        case long l:
-                            Write(ElementType.I8, l);
-                            break;
-                        case ulong ul:
-                            Write(ElementType.U8, ul);
-                            break;
-                        case byte b:
-                            Write(ElementType.U1, (int)b);
-                            break;
-                        case sbyte sb:
-                            Write(ElementType.I1, (uint)sb);
-                            break;
-                        case ushort us:
-                            Write(ElementType.U2, (int)us);
-                            break;
-                        case short s:
-                            Write(ElementType.I2, (uint)s);
-                            break;
-                        case uint ui:
-                            Write(ElementType.U4, ui);
-                            break;
-                        case IntPtr ip:
-                            Write(ElementType.I, (int)ip);
-                            break;
-                        case UIntPtr up:
-                            Write(ElementType.U, (uint)up);
-                            break;
-                        default:
-                            Write(ElementType.I4, (int)constValue.Token.Value);
-                            break;
-                    }
-                    return true;
+                    return WriteNumber(constValue.Token.Value);
                 }
                 case SyntaxKind.StringLiteralExpression:
                 {
@@ -688,14 +730,86 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, CancellationToken token)
+        public bool WriteNumber(object number, bool convertToNegative=false)
+        {
+            int coeff = convertToNegative ? -1 : 1;
+            switch (number)
+            {
+                case double d:
+                    Write(ElementType.R8, d * coeff);
+                    break;
+                case float f:
+                    Write(ElementType.R4, f * coeff);
+                    break;
+                case long l:
+                    Write(ElementType.I8, l * coeff);
+                    break;
+                case ulong ul:
+                    Write(ElementType.U8, ul);
+                    break;
+                case byte b:
+                    Write(ElementType.U1, (int)b);
+                    break;
+                case sbyte sb:
+                    Write(ElementType.I1, (uint)sb);
+                    break;
+                case ushort us:
+                    Write(ElementType.U2, (int)us);
+                    break;
+                case short s:
+                    Write(ElementType.I2, (uint)s  * coeff);
+                    break;
+                case uint ui:
+                    Write(ElementType.U4, ui);
+                    break;
+                case IntPtr ip:
+                    Write(ElementType.I, (int)ip);
+                    break;
+                case UIntPtr up:
+                    Write(ElementType.U, (uint)up);
+                    break;
+                default:
+                    Write(ElementType.I4, (int)number * coeff);
+                    break;
+            }
+            return true;
+        }
+
+        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, ElementType? expectedType, CancellationToken token)
         {
             switch (objValue["type"].Value<string>())
             {
                 case "number":
                 {
-                    // FixMe: what if the number is not int but single/double?
-                    Write(ElementType.I4, objValue["value"].Value<int>());
+                    var expected = expectedType is not null ? expectedType.Value : ElementType.I4;
+                    switch (expected)
+                    {
+                        case ElementType.I1:
+                        case ElementType.I2:
+                        case ElementType.I4:
+                            Write(expected, objValue["value"].Value<int>());
+                            break;
+                        case ElementType.U1:
+                        case ElementType.U2:
+                        case ElementType.U4:
+                            Write(expected, objValue["value"].Value<uint>());
+                            break;
+                        case ElementType.I8:
+                            Write(expected, objValue["value"].Value<long>());
+                            break;
+                        case ElementType.U8:
+                            Write(expected, objValue["value"].Value<ulong>());
+                            break;
+                        case ElementType.R4:
+                            Write(expected, objValue["value"].Value<float>());
+                            break;
+                        case ElementType.R8:
+                            Write(expected, objValue["value"].Value<double>());
+                            break;
+                        default:
+                            objValue["value"].Value<int>();
+                            break;
+                    };
                     return true;
                 }
                 case "symbol":
@@ -787,9 +901,11 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     internal sealed partial class MonoSDBHelper
     {
+        public const string WebcilInWasmExtension = ".wasm";
+
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        private const int MINOR_VERSION = 61;
+        private const int MINOR_VERSION = 66;
         private const int MAJOR_VERSION = 2;
 
         private int VmMinorVersion { get; set; }
@@ -878,6 +994,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     asm = AssemblyInfo.WithoutDebugInfo(logger);
                     logger.LogDebug($"Created assembly without debug information: {assemblyName}");
+                }
+            }
+            else
+            {
+                if (asm.asmMetadataReader is null) //load on demand
+                {
+                    var assemblyAndPdbData = await GetDataFromAssemblyAndPdbAsync(asm.Name, true, token);
+                    if (assemblyAndPdbData is not null)
+                        asm.LoadInfoFromBytes(proxy, sessionId, assemblyAndPdbData, token);
                 }
             }
             asm.SetDebugId(assemblyId);
@@ -1219,6 +1344,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string baseName = result.Substring(0, result.Length - 7);
                 result = baseName + ".dll";
             }
+            if (result.EndsWith(WebcilInWasmExtension)) {
+                /* don't leak webcil .wasm names to the debugger - work in terms of the original .dlls */
+                string baseName = result.Substring(0, result.Length - WebcilInWasmExtension.Length);
+                result = baseName + ".dll";
+            }
             return result;
         }
 
@@ -1431,7 +1561,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)1);
             commandParamsWriter.Write((byte)ModifierKind.Step);
             commandParamsWriter.Write(thread_id);
-            commandParamsWriter.Write((int)StepSize.Line);
+            commandParamsWriter.Write((int)StepSize.LineColumn);
             commandParamsWriter.Write((int)kind);
             commandParamsWriter.Write((int)(StepFilter.StaticCtor)); //filter
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token, throwOnError: false);
@@ -1609,7 +1739,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public JToken GetEvaluationResultProperties(string id)
         {
-            ExecutionContext context = proxy.GetContext(sessionId);
+            ExecutionContext context = proxy.Contexts.GetCurrentContext(sessionId);
             var resolver = new MemberReferenceResolver(proxy, context, sessionId, context.CallStack.First().Id, logger);
             var evaluationResult = resolver.TryGetEvaluationResult(id);
             return evaluationResult["value"];
@@ -1630,7 +1760,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var stringId = getCAttrsRetReader.ReadInt32();
                 var dispAttrStr = await GetStringValue(stringId, token);
-                ExecutionContext context = proxy.GetContext(sessionId);
+                ExecutionContext context = proxy.Contexts.GetCurrentContext(sessionId);
                 GetMembersResult members = await GetTypeMemberValues(
                     dotnetObjectId,
                     GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerDisplayAttribute,
@@ -1890,14 +2020,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 : throw new ArgumentException($"Cannot invoke method with id {methodId} on {dotnetObjectId}", nameof(dotnetObjectId));
         }
 
-        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, CancellationToken token)
+        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, bool invokeToStringInObject, CancellationToken token)
         {
             try
             {
                 foreach (var typeId in typeIds)
                 {
                     var typeInfo = await GetTypeInfo(typeId, token);
-                    if (typeInfo == null || typeInfo.Name == "object")
+                    if (typeInfo == null || (typeInfo.Name == "object" && !invokeToStringInObject))
                         continue;
                     Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
                     if (isEnum != true && methodInfo == null)
@@ -1908,7 +2038,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     foreach (var methodId in methodIds)
                     {
                         var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
-                        if (methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
+                        if (methodInfoFromRuntime?.Info?.GetParametersInfo()?.Length > 0)
                             continue;
                         var retMethod = await InvokeMethod(objectId, methodId, isValueType, token);
                         return retMethod["value"]?["value"].Value<string>();
@@ -2474,23 +2604,59 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
+        public async Task<bool> HasDebugInfoLoadedByRuntimeAsync(string assemblyName, CancellationToken token)
         {
+            var assemblyId = await GetAssemblyId(assemblyName, token);
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(assemblyId);
+            using var retDebuggerCmdReader1 = await SendDebuggerAgentCommand(CmdAssembly.HasDebugInfoLoaded, commandParamsWriter, token);
+            return retDebuggerCmdReader1.ReadByte() == 1;
+        }
+
+        public async Task<AssemblyAndPdbData> GetDataFromAssemblyAndPdbAsync(string assemblyName, bool ignoreJMC, CancellationToken token)
+        {
+            if (!ignoreJMC && proxy.JustMyCode && !assemblyName.StartsWith("System.Private.CoreLib", StringComparison.Ordinal) && !(await HasDebugInfoLoadedByRuntimeAsync(assemblyName, token)))
+                return null; //only load symbols if JustMyCode is disabled, or it's corelib or has debug info loaded by runtime which mean it's an user assembly
             using var commandParamsWriter = new MonoBinaryWriter();
             byte[] assembly_buf = null;
             byte[] pdb_buf = null;
+            var pdbUncompressedSize = 0;
+            (int MajorVersion, int MinorVersion) = await GetVMVersion(token);
+
             commandParamsWriter.Write(assemblyName);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyAndPdbBytes, commandParamsWriter, token);
             int assembly_size = retDebuggerCmdReader.ReadInt32();
             if (assembly_size > 0)
                 assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
+            if (MajorVersion == 2 && MinorVersion >= 64 || MajorVersion >= 2)
+                pdbUncompressedSize = retDebuggerCmdReader.ReadInt32();
             int pdb_size = retDebuggerCmdReader.ReadInt32();
             if (pdb_size > 0)
                 pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
-            byte[][] ret = new byte[2][];
-            ret[0] = assembly_buf;
-            ret[1] = pdb_buf;
-            return ret;
+
+            if (!(MajorVersion == 2 && MinorVersion >= 64 || MajorVersion >= 2)) //versions older than 2.64 do not support this new format of GetAssemblyAndPdbBytes
+                return new(assembly_buf, pdb_buf);
+
+            AssemblyAndPdbData data = new();
+            data.AsmBytes = assembly_buf;
+            data.PdbBytes = pdb_buf;
+            data.HasDebugInfo = retDebuggerCmdReader.ReadBoolean();
+            data.PdbUncompressedSize = pdbUncompressedSize;
+            if (!data.HasDebugInfo)
+                return data;
+
+            data.PdbAge = retDebuggerCmdReader.ReadInt32();
+            var pdbGuidSize = retDebuggerCmdReader.ReadInt32();
+            data.PdbGuid = new Guid(retDebuggerCmdReader.ReadBytes(pdbGuidSize));
+            data.PdbPath = retDebuggerCmdReader.ReadString();
+            var pdbChecksumCount = retDebuggerCmdReader.ReadInt32();
+            for (int i = 0; i < pdbChecksumCount; i++)
+            {
+                var algorithmName = retDebuggerCmdReader.ReadString();
+                var pdbChecksumSize = retDebuggerCmdReader.ReadInt32();
+                data.PdbChecksums.Add(new PdbChecksum(algorithmName, retDebuggerCmdReader.ReadBytes(pdbChecksumSize)));
+            }
+            return data;
         }
         private static readonly string[] s_primitiveTypeNames = new[]
             {

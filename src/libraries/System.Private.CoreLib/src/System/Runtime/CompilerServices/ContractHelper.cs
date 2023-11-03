@@ -3,6 +3,7 @@
 
 #define DEBUG // The behavior of this contract library should be consistent regardless of build type.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Runtime.CompilerServices
@@ -28,7 +29,7 @@ namespace System.Runtime.CompilerServices
         /// On exit: null if the event was handled and should not trigger a failure.
         ///          Otherwise, returns the localized failure message.
         /// </summary>
-        [System.Diagnostics.DebuggerNonUserCode]
+        [DebuggerNonUserCode]
         public static string? RaiseContractFailedEvent(ContractFailureKind failureKind, string? userMessage, string? conditionText, Exception? innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
@@ -83,7 +84,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Rewriter calls this method to get the default failure behavior.
         /// </summary>
-        [System.Diagnostics.DebuggerNonUserCode]
+        [DebuggerNonUserCode]
         public static void TriggerFailure(ContractFailureKind kind, string? displayMessage, string? userMessage, string? conditionText, Exception? innerException)
         {
             if (string.IsNullOrEmpty(displayMessage))
@@ -91,7 +92,7 @@ namespace System.Runtime.CompilerServices
                 displayMessage = GetDisplayMessage(kind, userMessage, conditionText);
             }
 
-            System.Diagnostics.Debug.ContractFailure(displayMessage, string.Empty, GetFailureMessage(kind, null));
+            Debug.ContractFailure(displayMessage, string.Empty, GetFailureMessage(kind, null));
         }
 
         private static string GetFailureMessage(ContractFailureKind failureKind, string? conditionText)

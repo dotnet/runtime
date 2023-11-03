@@ -1029,7 +1029,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
         EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
 
-        g_exceptionCount++;
+        InterlockedIncrement((LONG*)&g_exceptionCount);
 
     } // End of case-1-or-3
 

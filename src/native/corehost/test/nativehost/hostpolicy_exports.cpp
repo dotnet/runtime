@@ -8,7 +8,7 @@ hostpolicy_exports::hostpolicy_exports()
 {
     if (!pal::get_loaded_library(LIBHOSTPOLICY_NAME, "corehost_set_error_writer", &_dll, &path))
     {
-        std::cout << _X("Failed to find hostpolicy library already loaded in the process.") << std::endl;
+        std::cout << "Failed to find hostpolicy library already loaded in the process." << std::endl;
         throw StatusCode::CoreHostLibMissingFailure;
     }
 

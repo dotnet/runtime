@@ -1125,6 +1125,32 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(1, disposable.DisposeCount);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ValidateOnBuild_True_ResolvesConstrainedOpenGeneric(bool validateOnBuild)
+        {
+            var services = new ServiceCollection();
+
+            services.AddTransient<IBB<AA>, BB>();
+            services.AddTransient(typeof(IBB<>), typeof(GenericBB<>));
+            services.AddTransient(typeof(IBB<>), typeof(ConstrainedGenericBB<>));
+
+            var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = validateOnBuild });
+            var handlers = serviceProvider
+                .GetServices<IBB<AA>>()
+                .ToList();
+
+            Assert.Equal(3, handlers.Count);
+            var handlersTypes = handlers
+                .Select(h => h.GetType())
+                .ToList();
+
+            Assert.Contains(typeof(BB), handlersTypes);
+            Assert.Contains(typeof(GenericBB<AA>), handlersTypes);
+            Assert.Contains(typeof(ConstrainedGenericBB<AA>), handlersTypes);
+        }
+
         private class FakeDisposable : IDisposable
         {
             public bool IsDisposed { get; private set; }
@@ -1319,5 +1345,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
             public A PropertyA { get; }
         }
+        private interface IAA { }
+        private interface IBB<T> { }
+        private class AA : IAA { }
+        private class BB : IBB<AA> { }
+        private class GenericBB<T> : IBB<T> { }
+        private class ConstrainedGenericBB<T> : IBB<T> where T : IAA { }
     }
 }

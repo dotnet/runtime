@@ -43,6 +43,13 @@ namespace ILCompiler.DependencyAnalysis
             EETypeRareFlags rareFlags = 0;
 
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
+
+            // Generic array enumerators use special variance rules recognized by the runtime
+            // Runtime casting logic relies on all interface types implemented on arrays
+            // to have the variant flag set.
+            if (_type == factory.ArrayOfTEnumeratorType || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+                flags |= (uint)EETypeFlags.GenericVarianceFlag;
+
             if (_type.IsByRefLike)
                 rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
 

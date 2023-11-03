@@ -3,6 +3,9 @@
 #ifndef __SPINLOCK_H__
 #define __SPINLOCK_H__
 
+// defined in gcrhenv.cpp
+bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
+
 // #SwitchToThreadSpinning
 //
 // If you call __SwitchToThread in a loop waiting for a condition to be met,

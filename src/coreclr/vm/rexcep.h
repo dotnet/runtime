@@ -95,7 +95,7 @@ DEFINE_EXCEPTION(g_SystemNS,           ApplicationException,           false,  C
 DEFINE_EXCEPTION(g_SystemNS,           ArithmeticException,            false,  COR_E_ARITHMETIC)
 
 DEFINE_EXCEPTION(g_SystemNS,           ArgumentException,              false,
-                 COR_E_ARGUMENT, STD_CTL_SCODE(449), STD_CTL_SCODE(450), CLR_E_BIND_UNRECOGNIZED_IDENTITY_FORMAT)
+                 COR_E_ARGUMENT, STD_CTL_SCODE(449), STD_CTL_SCODE(450))
 
 DEFINE_EXCEPTION(g_SystemNS,           ArgumentOutOfRangeException,    false,  COR_E_ARGUMENTOUTOFRANGE, HRESULT_FROM_WIN32(ERROR_NO_UNICODE_TRANSLATION))
 DEFINE_EXCEPTION(g_SystemNS,           ArrayTypeMismatchException,     false,  COR_E_ARRAYTYPEMISMATCH)
@@ -143,9 +143,8 @@ DEFINE_EXCEPTION(g_SystemNS,           FieldAccessException,           false,  C
 
 DEFINE_EXCEPTION(g_IONS,               FileLoadException,              true,
                  COR_E_FILELOAD,
-                 FUSION_E_CACHEFILE_FAILED,
                  FUSION_E_INVALID_NAME,
-                 FUSION_E_PRIVATE_ASM_DISALLOWED, 
+                 FUSION_E_PRIVATE_ASM_DISALLOWED,
                  FUSION_E_REF_DEF_MISMATCH,
                  HRESULT_FROM_WIN32(ERROR_TOO_MANY_OPEN_FILES),
                  HRESULT_FROM_WIN32(ERROR_SHARING_VIOLATION), HRESULT_FROM_WIN32(ERROR_LOCK_VIOLATION),
@@ -163,9 +162,7 @@ DEFINE_EXCEPTION(g_IONS,               FileNotFoundException,           true,
                  HRESULT_FROM_WIN32(ERROR_WRONG_TARGET_NAME), INET_E_UNKNOWN_PROTOCOL,
                  INET_E_CONNECTION_TIMEOUT, INET_E_CANNOT_CONNECT, INET_E_RESOURCE_NOT_FOUND,
                  INET_E_OBJECT_NOT_FOUND, INET_E_DOWNLOAD_FAILURE, INET_E_DATA_NOT_AVAILABLE,
-                 HRESULT_FROM_WIN32(ERROR_DLL_NOT_FOUND),
-                 CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW, CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH,
-                 CLR_E_BIND_ASSEMBLY_NOT_FOUND)
+                 HRESULT_FROM_WIN32(ERROR_DLL_NOT_FOUND))
 
 DEFINE_EXCEPTION(g_SystemNS,           FormatException,                false,  COR_E_FORMAT)
 
@@ -251,7 +248,7 @@ DEFINE_EXCEPTION(g_SystemNS,           TypeInitializationException,    false,  C
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_EXCEPTION(g_SystemNS,           TypeLoadException,              false,  COR_E_TYPELOAD,
-                 RO_E_METADATA_NAME_NOT_FOUND, CLR_E_BIND_TYPE_NOT_FOUND)
+                 RO_E_METADATA_NAME_NOT_FOUND)
 #else
 DEFINE_EXCEPTION(g_SystemNS,           TypeLoadException,              false,  COR_E_TYPELOAD)
 #endif

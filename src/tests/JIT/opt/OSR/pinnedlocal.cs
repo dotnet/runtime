@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Run under DOTNET_GCStress=3
 
-class PinnedLocal
+public class PinnedLocal
 {
     static int F(char c)
     {
         return (int) c;
     }
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         string ss = "goodbye, world\n";
         string s = "hello, world\n";

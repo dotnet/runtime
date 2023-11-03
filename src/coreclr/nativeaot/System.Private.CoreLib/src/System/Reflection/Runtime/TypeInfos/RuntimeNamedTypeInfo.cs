@@ -95,7 +95,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 string name = Name;
 
-                Type? declaringType = this.DeclaringType;
+                RuntimeTypeInfo? declaringType = this.InternalDeclaringType;
                 if (declaringType is not null)
                 {
                     string? declaringTypeFullName = declaringType.FullName;
@@ -108,10 +108,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return ns + "." + name;
             }
         }
-
-#if DEBUG
-        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
-#endif
 
         protected abstract void GetPackSizeAndSize(out int packSize, out int size);
 

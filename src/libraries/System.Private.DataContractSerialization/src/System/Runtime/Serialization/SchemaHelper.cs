@@ -43,8 +43,8 @@ namespace System.Runtime.Serialization
     {
         internal static bool NamespacesEqual(string? ns1, string? ns2)
         {
-            if (ns1 == null || ns1.Length == 0)
-                return (ns2 == null || ns2.Length == 0);
+            if (string.IsNullOrEmpty(ns1))
+                return string.IsNullOrEmpty(ns2);
             else
                 return ns1 == ns2;
         }

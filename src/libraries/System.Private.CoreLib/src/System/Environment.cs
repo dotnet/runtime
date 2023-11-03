@@ -222,7 +222,7 @@ namespace System
         public static string StackTrace
         {
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
-            get => new StackTrace(true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+            get => new StackTrace(true).ToString(Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         private static volatile int s_systemPageSize;

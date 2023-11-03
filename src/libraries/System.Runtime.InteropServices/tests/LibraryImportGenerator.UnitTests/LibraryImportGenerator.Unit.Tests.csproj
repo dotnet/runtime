@@ -10,6 +10,7 @@
       We don't want to enable the rest of the "good behaving analyzer" API rules on our tests as it is test code and not shipping code.
       -->
     <NoWarn>$(NoWarn);RS1036</NoWarn>
+    <StringResourcesPath>../../gen/Common/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +32,8 @@
             Link="Verifiers\CSharpAnalyzerVerifier.cs"/>
     <Compile Include="..\Common\Verifiers\CSharpCodeFixVerifier.cs"
             Link="Verifiers\CSharpCodeFixVerifier.cs"/>
+    <Compile Include="..\Common\Verifiers\CSharpSourceGeneratorVerifier.cs"
+            Link="Verifiers\CSharpSourceGeneratorVerifier.cs"/>
     <Compile Include="..\Common\Verifiers\CSharpVerifierHelper.cs"
             Link="Verifiers\CSharpVerifierHelper.cs"/>
   </ItemGroup>
@@ -39,6 +42,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,5 @@
 <Project>
+
   <!--
     ##### Contract project settings #####
     - Allows referencing contract projects for passing matching reference assemblies to tooling like ApiCompat.
@@ -60,6 +61,23 @@
     <_ApiCompatLibReplacementString>lib/$1/$2</_ApiCompatLibReplacementString>
     <!-- CoreLib source projects have different output paths. -->
     <_ApiCompatLibReplacementString Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib'">lib/$(NetCoreAppCurrent)/$2</_ApiCompatLibReplacementString>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and
+                                              '$(HasMatchingContract)' != 'true' and
+                                              '$(IsPrivateAssembly)' != 'true'">true</IsRuntimeAndReferenceAssembly>
+  </PropertyGroup>
+
+  <!-- Disable suppression validation for packable projects that have a corresponding reference source project.
+       That is necessary as APICompat is invoked twice, once for the ref <-> src comparision and then again
+       for the package validation (which doesn't include reference assemblies). As both operations don't have
+       all the inputs available, some suppressions might only apply to one or the other and hence unnecessary
+       suppressions can't be determined.
+       Disable the validation under source build as that might use an out-of-date SDK and not the ApiCompat.Task package. -->
+  <PropertyGroup Condition="('$(IsPackable)' == 'true' and '$(IsRuntimeAndReferenceAssembly)' != 'true') or '$(DotNetBuildFromSource)' == 'true'">
+    <ApiCompatPreserveUnnecessarySuppressions>true</ApiCompatPreserveUnnecessarySuppressions>
+    <ApiCompatPermitUnnecessarySuppressions>true</ApiCompatPermitUnnecessarySuppressions>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsCrossTargetingBuild)' != 'true'">

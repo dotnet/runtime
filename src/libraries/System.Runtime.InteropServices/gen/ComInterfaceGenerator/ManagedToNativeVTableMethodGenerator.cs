@@ -4,12 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -43,12 +43,10 @@ namespace Microsoft.Interop
         private readonly ManagedToNativeStubCodeContext _context;
 
         public ManagedToNativeVTableMethodGenerator(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             bool implicitThis,
-            Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
+            GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorFactory generatorFactory)
         {
             _setLastError = setLastError;
@@ -74,18 +72,15 @@ namespace Microsoft.Interop
                 argTypes = newArgTypes.ToImmutableArray();
             }
 
-            _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
+            _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
             _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
 
-            foreach (var failure in bindingFailures)
-            {
-                marshallingNotSupportedCallback(failure.Info, failure.Exception);
-            }
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
             }
         }
 
@@ -102,9 +97,7 @@ namespace Microsoft.Interop
             var setupStatements = new List<StatementSyntax>
             {
                 // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey(typeof(<containingTypeName>));
-                ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
+                AssignmentStatement(
                         DeclarationExpression(
                             IdentifierName("var"),
                             ParenthesizedVariableDesignation(
@@ -114,16 +107,13 @@ namespace Microsoft.Interop
                                             Identifier(NativeThisParameterIdentifier)),
                                         SingleVariableDesignation(
                                             Identifier(VirtualMethodTableIdentifier))}))),
-                        InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
+                        MethodInvocation(
                                 ParenthesizedExpression(
                                     CastExpression(
-                                        ParseTypeName(TypeNames.IUnmanagedVirtualMethodTableProvider),
+                                        TypeSyntaxes.IUnmanagedVirtualMethodTableProvider,
                                         ThisExpression())),
-                                IdentifierName("GetVirtualMethodTableInfoForKey") ))
-                        .WithArgumentList(
-                            ArgumentList(SeparatedList(new[]{ Argument(TypeOfExpression(containingTypeName)) })))))
+                                IdentifierName("GetVirtualMethodTableInfoForKey"),
+                                Argument(TypeOfExpression(containingTypeName))))
             };
 
             GeneratedStatements statements = GeneratedStatements.Create(
@@ -131,26 +121,23 @@ namespace Microsoft.Interop
                 _context,
                 CreateFunctionPointerExpression(
                     // <vtableDeclaration>[<index>]
-                    ElementAccessExpression(IdentifierName(VirtualMethodTableIdentifier),
-                        BracketedArgumentList(SingletonSeparatedList(
-                            Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(index)))))),
+                    IndexExpression(IdentifierName(VirtualMethodTableIdentifier), Argument(IntLiteral(index))),
                     callConv));
-            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
+            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.CleanupCallerAllocated.IsEmpty || !statements.CleanupCalleeAllocated.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
-
 
             if (_setLastError)
             {
                 // Declare variable for last error
-                setupStatements.Add(MarshallerHelpers.Declare(
+                setupStatements.Add(Declare(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     LastErrorIdentifier,
                     initializeToDefault: false));
             }
 
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
+                setupStatements.Add(Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
             }
 
             setupStatements.AddRange(declarations.Initializations);
@@ -176,25 +163,36 @@ namespace Microsoft.Interop
             }
             tryStatements.Add(statements.Pin.CastArray<FixedStatementSyntax>().NestFixedStatements(fixedBlock));
 
+            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
             // <invokeSucceeded> = true;
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
                 tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(InvokeSucceededIdentifier),
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
 
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+            // Keep the this object alive across the native call, similar to how we handle marshalling managed delegates.
+            // We do this right after the NotifyForSuccessfulInvoke phase as that phase is where the delegate objects are kept alive.
+            // If we ever move the "this" object handling out of this type, we'll move the handling to be emitted in that phase.
+            // GC.KeepAlive(this);
+            tryStatements.Add(
+                MethodInvocationStatement(
+                    TypeSyntaxes.System_GC,
+                    IdentifierName("KeepAlive"),
+                    Argument(ThisExpression())));
+
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = new List<StatementSyntax>();
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
+                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal.Concat(statements.CleanupCalleeAllocated))));
             }
 
-            finallyStatements.AddRange(statements.Cleanup);
+            finallyStatements.AddRange(statements.CleanupCallerAllocated);
             if (finallyStatements.Count > 0)
             {
                 // Add try-finally block if there are any statements in the finally block
@@ -216,7 +214,7 @@ namespace Microsoft.Interop
             if (!_marshallers.IsManagedVoidReturn)
                 allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.ManagedReturnMarshaller.TypeInfo).managed)));
 
-            return Block(allStatements);
+            return Block(allStatements.Where(s => s is not EmptyStatementSyntax));
         }
 
         private ParenthesizedExpressionSyntax CreateFunctionPointerExpression(
@@ -225,7 +223,7 @@ namespace Microsoft.Interop
         {
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();
             var (paramList, retType, _) = _marshallers.GenerateTargetMethodSignatureData(_context);
-            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
+            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(attributeLists: default, p.Modifiers, p.Type)));
             functionPointerParameters.Add(FunctionPointerParameter(retType));
 
             // ((delegate* unmanaged<...>)<untypedFunctionPointerExpression>)

@@ -16,12 +16,16 @@ namespace System.Runtime.Loader.Tests
         // Tests related to Collectible assemblies
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void CreateAndLoadContext(CollectibleChecker checker)
+        static void CreateAndLoadContext(CollectibleChecker checker, bool unloadTwice = false)
         {
             var alc = new ResourceAssemblyLoadContext(true);
             checker.SetAssemblyLoadContext(0, alc);
 
             alc.Unload();
+            if (unloadTwice)
+            {
+                alc.Unload();
+            }
 
             // Check that any attempt to load an assembly after an explicit Unload will fail
             Assert.Throws<InvalidOperationException>(() => alc.LoadFromAssemblyPath(Path.GetFullPath("none.dll")));
@@ -38,6 +42,19 @@ namespace System.Runtime.Loader.Tests
             CreateAndLoadContext(checker);
             checker.GcAndCheck();
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
+        public static void DoubleUnload_CollectibleWithNoAssemblyLoaded()
+        {
+            // Use a collectible ALC + Unload
+            // Check that we receive the Unloading event
+
+            var checker = new CollectibleChecker(1);
+            CreateAndLoadContext(checker, unloadTwice: true);
+            checker.GcAndCheck();
+        }
+
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void Finalizer_CollectibleWithNoAssemblyLoaded()
@@ -434,24 +451,6 @@ namespace System.Runtime.Loader.Tests
 
             test.UnloadAndClearContext(0);
             test.CheckContextUnloaded1();
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
-        public static void Unsupported_FixedAddressValueType()
-        {
-            var asmName = new AssemblyName(TestAssemblyNotSupported);
-            var alc = new ResourceAssemblyLoadContext(true) { LoadBy = LoadBy.Path };
-            Assembly asm = alc.LoadFromAssemblyName(asmName);
-
-            Assert.NotNull(asm);
-
-            ReflectionTypeLoadException exception = Assert.Throws<ReflectionTypeLoadException>(() => asm.DefinedTypes);
-
-            // Expecting two exceptions:
-            //  Collectible type 'System.Runtime.Loader.Tests.TestClassNotSupported_FixedAddressValueType' has unsupported FixedAddressValueTypeAttribute applied to a field
-            Assert.Equal(1, exception.LoaderExceptions.Length);
-            Assert.True(exception.LoaderExceptions.All(exp => exp is TypeLoadException));
         }
 
         private class CollectibleChecker

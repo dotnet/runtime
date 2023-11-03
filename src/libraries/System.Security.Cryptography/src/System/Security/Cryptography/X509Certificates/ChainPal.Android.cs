@@ -342,12 +342,13 @@ namespace System.Security.Cryptography.X509Certificates
                     X509ChainStatus chainStatus = ValidationErrorToChainStatus(error);
                     Marshal.FreeHGlobal(error.Message);
 
-                    if (!statusByIndex.ContainsKey(error.Index))
+                    if (!statusByIndex.TryGetValue(error.Index, out List<X509ChainStatus>? value))
                     {
-                        statusByIndex.Add(error.Index, new List<X509ChainStatus>());
+                        value = new List<X509ChainStatus>();
+                        statusByIndex.Add(error.Index, value);
                     }
 
-                    statusByIndex[error.Index].Add(chainStatus);
+                    value.Add(chainStatus);
                 }
 
                 return statusByIndex;

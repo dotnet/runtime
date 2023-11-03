@@ -3,8 +3,9 @@
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
-  <!-- For MacCatalyst, adhoc is the default.  Set it here so that we don't have to specify when running local -->
+  <!-- For MacCatalyst, adhoc is the default. Set it here so that we don't have to specify when running local -->
   <PropertyGroup>
+    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' != 'maccatalyst'">-</DevTeamProvisioning>
     <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' == 'maccatalyst'">adhoc</DevTeamProvisioning>
   </PropertyGroup>
 
@@ -12,7 +13,7 @@
   <Import Project="$(MSBuildThisFileDirectory)AppleBuild.targets" />
 
   <!-- Use local runtime pack -->
-  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences">
+  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" Condition="'$(PublishAotUsingRuntimePack)' != 'true'">
     <PropertyGroup>
       <_LocalMicrosoftNetCoreAppRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_LocalMicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>

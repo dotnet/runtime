@@ -38,7 +38,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_ns == null || _ns.Length == 0)
+                if (string.IsNullOrEmpty(_ns))
                 {
                     return "##any";
                 }

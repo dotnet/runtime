@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
-    static class IntAdd
+    public static class IntAdd
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static sbyte Int8_Add(sbyte x, sbyte y)
@@ -86,7 +87,8 @@ namespace CodeGenTests
             return x + y;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Int8
             if (Int8_Add(SByte.MaxValue, 15) != -114)

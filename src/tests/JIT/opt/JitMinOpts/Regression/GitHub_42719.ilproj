@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <Optimize>False</Optimize>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="GitHub_42719.il" />
-  </ItemGroup>
-</Project>

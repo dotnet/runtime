@@ -136,10 +136,11 @@ namespace System.Reflection.TypeLoading
                 // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
                 if (types == null || types.Length == 0)
                 {
+                    PropertyInfo firstCandidate = candidates[0];
+
                     // no arguments
                     if (candidates.Count == 1)
                     {
-                        PropertyInfo firstCandidate = candidates[0];
                         if (!(returnType is null) && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                             return null;
                         return firstCandidate;
@@ -148,7 +149,7 @@ namespace System.Reflection.TypeLoading
                     {
                         if (returnType is null)
                             // if we are here we have no args or property type to select over and we have more than one property with that name
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
                     }
                 }
 

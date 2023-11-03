@@ -217,7 +217,7 @@ namespace System.Configuration
         }
 
         // Force all sections and section groups to be instantiated.
-        private void ForceGroupsRecursive(ConfigurationSectionGroup group)
+        private static void ForceGroupsRecursive(ConfigurationSectionGroup group)
         {
             foreach (ConfigurationSection configSection in group.Sections)
             {

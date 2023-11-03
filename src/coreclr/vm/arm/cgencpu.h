@@ -32,10 +32,6 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-#ifndef TARGET_UNIX
-#define USE_REDIRECT_FOR_GCSTRESS
-#endif // TARGET_UNIX
-
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
 
@@ -48,10 +44,6 @@ EXTERN_C void checkStack(void);
 //**********************************************************************
 
 #define COMMETHOD_PREPAD                        12   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             12
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   8   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
 
 #define STACK_ALIGN_SIZE                        4
 
@@ -182,6 +174,33 @@ struct EHContext {
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 
+
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+#ifdef PROFILING_SUPPORTED
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    UINT32      r0;         // Keep r0 & r1 contiguous to make returning 64-bit results easier
+    UINT32      r1;
+    void       *R11;
+    void       *Pc;
+    union                   // Float arg registers as 32-bit (s0-s15) and 64-bit (d0-d7)
+    {
+        UINT32  s[16];
+        UINT64  d[8];
+    };
+    FunctionID  functionId;
+    void       *probeSp;    // stack pointer of managed function
+    void       *profiledSp; // location of arguments on stack
+    LPVOID      hiddenArg;
+    UINT32      flags;
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
+
 //**********************************************************************
 // Exception handling
 //**********************************************************************
@@ -228,10 +247,6 @@ inline void ClearITState(T_CONTEXT *context) {
     LIMITED_METHOD_DAC_CONTRACT;
     context->Cpsr = context->Cpsr & 0xf9ff03ff;
 }
-
-#ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
-#endif // FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------
 inline void emitUnconditionalBranchThumb(LPBYTE pBuffer, int16_t offset)
@@ -313,24 +328,6 @@ inline PCODE decodeJump(PCODE pCode)
 // For all other platforms back to back jumps don't require anything special
 // That is why we have these two wrapper functions that call emitJump and decodeJump
 //
-
-//------------------------------------------------------------------------
-inline BOOL isJump(PCODE pCode)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    TADDR pInstr = PCODEToPINSTR(pCode);
-
-    return *dac_cast<PTR_DWORD>(pInstr) == 0xf000f8df;
-}
-
-//------------------------------------------------------------------------
-inline BOOL isBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJump(pBuffer);
-}
 
 //------------------------------------------------------------------------
 inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
@@ -1026,7 +1023,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
-    static const int Type = 0x46;
+    static const int Type = 0x01;
 
     // mov r12, r0
     // mov r0, r1

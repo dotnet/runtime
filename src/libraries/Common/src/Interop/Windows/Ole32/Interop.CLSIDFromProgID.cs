@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Ole32
     {
-        [LibraryImport(Interop.Libraries.Ole32, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Ole32, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int CLSIDFromProgID(string lpszProgID, out Guid lpclsid);
     }
 }

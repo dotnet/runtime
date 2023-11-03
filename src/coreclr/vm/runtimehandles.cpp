@@ -803,59 +803,6 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
 }
 FCIMPLEND
 
-
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsValueType, ReflectClassBaseObject *pTypeUNSAFE)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    _ASSERTE(refType != NULL);
-
-    TypeHandle typeHandle = refType->GetType();
-
-    FC_RETURN_BOOL(typeHandle.IsValueType());
-}
-FCIMPLEND;
-
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsInterface, ReflectClassBaseObject *pTypeUNSAFE)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    _ASSERTE(refType != NULL);
-
-    TypeHandle typeHandle = refType->GetType();
-
-    FC_RETURN_BOOL(typeHandle.IsInterface());
-}
-FCIMPLEND;
-
-
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsByRefLike, ReflectClassBaseObject *pTypeUNSAFE)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    _ASSERTE(refType != NULL);
-
-    TypeHandle typeHandle = refType->GetType();
-
-    FC_RETURN_BOOL(typeHandle.IsByRefLike());
-}
-FCIMPLEND
-
 FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE)
 {
     CONTRACTL {
@@ -1102,9 +1049,8 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementat
         pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(
             thOwnerOfMD.GetMethodTable(),
             pMD,
-            /* allowNullResult */ TRUE,
-            /* verifyImplemented*/ FALSE,
-            /*allowVariantMatches */ TRUE);
+            ResolveVirtualStaticMethodFlags::AllowNullResult |
+            ResolveVirtualStaticMethodFlags::AllowVariantMatches);
     }
     else
     {
@@ -2413,7 +2359,8 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pM
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
 
     TypeHandle instType = refType->GetType();
-    MethodDesc* pMDescInCanonMT = instType.GetMethodTable()->GetParallelMethodDesc(pMethod);
+    MethodTable* pCanonMT = instType.GetMethodTable()->GetCanonicalMethodTable();
+    MethodDesc* pMDescInCanonMT = pCanonMT->GetParallelMethodDesc(pMethod);
 
     return pMDescInCanonMT;
 }

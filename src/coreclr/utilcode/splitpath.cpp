@@ -86,7 +86,7 @@ void    SplitPathInterior(
 
     /* extract drive letter and :, if any */
 
-    if ((wcslen(wszPath) > (_MAX_DRIVE - 2)) && (*(wszPath + _MAX_DRIVE - 2) == _T(':'))) {
+    if ((u16_strlen(wszPath) > (_MAX_DRIVE - 2)) && (*(wszPath + _MAX_DRIVE - 2) == _T(':'))) {
         if (pwszDrive && pcchDrive) {
             *pwszDrive = wszPath;
             *pcchDrive = _MAX_DRIVE - 1;

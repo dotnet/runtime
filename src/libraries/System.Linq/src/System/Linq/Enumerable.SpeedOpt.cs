@@ -8,5 +8,10 @@ namespace System.Linq
     public static partial class Enumerable
     {
         public static IEnumerable<TResult> Empty<TResult>() => EmptyPartition<TResult>.Instance;
+
+        private static IEnumerable<TResult>? GetEmptyIfEmpty<TSource, TResult>(IEnumerable<TSource> source) =>
+            source is EmptyPartition<TSource> ?
+                EmptyPartition<TResult>.Instance :
+                null;
     }
 }

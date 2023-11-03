@@ -48,7 +48,7 @@ namespace System.Text
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly ASCIIEncodingSealed s_default = new ASCIIEncodingSealed();
 
-        public ASCIIEncoding() : base(Encoding.CodePageASCII)
+        public ASCIIEncoding() : base(CodePageASCII)
         {
         }
 

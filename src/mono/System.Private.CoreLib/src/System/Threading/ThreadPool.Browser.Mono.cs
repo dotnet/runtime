@@ -13,14 +13,19 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-#if !FEATURE_WASM_THREADS
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#if FEATURE_WASM_THREADS
+#error when compiled with FEATURE_WASM_THREADS, we use PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs
 #endif
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle()
         {
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        internal bool Repeating => false;
+#pragma warning restore CA1822
 
         public bool Unregister(WaitHandle? waitObject)
         {
@@ -74,12 +79,12 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
-        internal static void RequestWorkerThread()
+        internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
-            QueueCallback();
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         internal static void NotifyWorkItemProgress()
@@ -110,14 +115,24 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
-        [DynamicDependency("Callback")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void QueueCallback();
+        internal static extern unsafe void MainThreadScheduleBackgroundJob(void* callback);
 
-        private static void Callback()
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
+        // this callback will arrive on the bound thread, called from mono_background_exec
+        private static void BackgroundJobHandler ()
         {
-            _callbackQueued = false;
-            ThreadPoolWorkQueue.Dispatch();
+            try
+            {
+                _callbackQueued = false;
+                ThreadPoolWorkQueue.Dispatch();
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("ThreadPool.BackgroundJobHandler failed", e);
+            }
         }
 
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
@@ -149,6 +164,12 @@ namespace System.Threading
         public static bool BindHandle(SafeHandle osHandle)
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
+
+        [Conditional("unnecessary")]
+        internal static void ReportThreadStatus(bool isWorking)
+        {
+
         }
     }
 }

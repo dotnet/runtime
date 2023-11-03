@@ -40,9 +40,3 @@ void interceptor_ICJC::getVersionIdentifier(GUID* versionIdentifier /* OUT */)
     mcs->AddCall("getVersionIdentifier");
     original_ICorJitCompiler->getVersionIdentifier(versionIdentifier);
 }
-
-unsigned interceptor_ICJC::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
-{
-    mcs->AddCall("getMaxIntrinsicSIMDVectorLength");
-    return original_ICorJitCompiler->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-}

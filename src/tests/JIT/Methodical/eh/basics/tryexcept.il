@@ -11,7 +11,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'tryexcept' {}
+.assembly ASSEMBLY_NAME {}
 
 .class public auto ansi Test_tryexcept extends [mscorlib] System.Object {
 .method public static int32 main() {

@@ -13,32 +13,38 @@ namespace System.Globalization
     {
         // Characters which require special handling are those in [0x00, 0x1F] and [0x7F, 0xFFFF] except \t\v\f
         // Matches HighCharTable below.
-        private static readonly IndexOfAnyValues<char> s_nonSpecialAsciiChars =
-            IndexOfAnyValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        private static readonly SearchValues<char> s_nonSpecialAsciiChars =
+            SearchValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
 
         private void IcuInitSortHandle(string interopCultureName)
         {
+            _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
+            if (!GlobalizationMode.Invariant)
+            {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                    return;
+#endif
+                 _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
+            }
+        }
+
+        private bool GetIsAsciiEqualityOrdinal(string interopCultureName)
+        {
             if (GlobalizationMode.Invariant)
-            {
-                _isAsciiEqualityOrdinal = true;
-            }
-            else
-            {
-                Debug.Assert(!GlobalizationMode.UseNls);
-                Debug.Assert(interopCultureName != null);
+                return true;
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(interopCultureName != null);
 
-                // Inline the following condition to avoid potential implementation cycles within globalization
-                //
-                // _isAsciiEqualityOrdinal = _sortName == "" || _sortName == "en" || _sortName.StartsWith("en-", StringComparison.Ordinal);
-                //
-                _isAsciiEqualityOrdinal = _sortName.Length == 0 ||
-                    (_sortName.Length >= 2 && _sortName[0] == 'e' && _sortName[1] == 'n' && (_sortName.Length == 2 || _sortName[2] == '-'));
-
-                _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
-            }
+            // Inline the following condition to avoid potential implementation cycles within globalization
+            //
+            // _isAsciiEqualityOrdinal = _sortName == "" || _sortName == "en" || _sortName.StartsWith("en-", StringComparison.Ordinal);
+            //
+            return _sortName.Length == 0 ||
+                (_sortName.Length >= 2 && _sortName[0] == 'e' && _sortName[1] == 'n' && (_sortName.Length == 2 || _sortName[2] == '-'));
         }
 
         private unsafe int IcuCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
@@ -78,6 +84,10 @@ namespace System.Globalization
                 fixed (char* pSource = &MemoryMarshal.GetReference(source))
                 fixed (char* pTarget = &MemoryMarshal.GetReference(target))
                 {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
+                        return IndexOfCoreNative(pTarget, target.Length, pSource, source.Length, options, fromBeginning, matchLengthPtr);
+#endif
                     if (fromBeginning)
                         return Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
                     else
@@ -104,14 +114,14 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
+                if (target.ContainsAnyExcept(s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    if (source.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
+                    if (source.ContainsAnyExcept(s_nonSpecialAsciiChars))
                     {
                         goto InteropCall;
                     }
@@ -185,6 +195,18 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
+                    if (exception != 0)
+                        throw new Exception((string)ex_result);
+                    return result;
+                }
+#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return IndexOfCoreNative(b, target.Length, a, source.Length, options, fromBeginning, matchLengthPtr);
+#endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
                 else
@@ -205,14 +227,14 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
+                if (target.ContainsAnyExcept(s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    if (source.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
+                    if (source.ContainsAnyExcept(s_nonSpecialAsciiChars))
                     {
                         goto InteropCall;
                     }
@@ -275,6 +297,18 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
+                    if (exception != 0)
+                        throw new Exception((string)ex_result);
+                    return result;
+                }
+#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return IndexOfCoreNative(b, target.Length, a, source.Length, options, fromBeginning, matchLengthPtr);
+#endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
                 else
@@ -303,6 +337,10 @@ namespace System.Globalization
                 fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
                 {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
+                        return NativeStartsWith(pPrefix, prefix.Length, pSource, source.Length, options);
+#endif
                     return Interop.Globalization.StartsWith(_sortHandle, pPrefix, prefix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
@@ -382,6 +420,10 @@ namespace System.Globalization
                 return true;
 
             InteropCall:
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return NativeStartsWith(bp, prefix.Length, ap, source.Length, options);
+#endif
                 return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options, matchLengthPtr);
             }
         }
@@ -450,6 +492,10 @@ namespace System.Globalization
                 return true;
 
             InteropCall:
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return NativeStartsWith(bp, prefix.Length, ap, source.Length, options);
+#endif
                 return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options, matchLengthPtr);
             }
         }
@@ -475,6 +521,10 @@ namespace System.Globalization
                 fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
                 {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
+                        return NativeEndsWith(pSuffix, suffix.Length, pSource, source.Length, options);
+#endif
                     return Interop.Globalization.EndsWith(_sortHandle, pSuffix, suffix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
@@ -555,6 +605,10 @@ namespace System.Globalization
                 return true;
 
             InteropCall:
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return NativeEndsWith(bp, suffix.Length, ap, source.Length, options);
+#endif
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options, matchLengthPtr);
             }
         }
@@ -623,6 +677,10 @@ namespace System.Globalization
                 return true;
 
             InteropCall:
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return NativeEndsWith(bp, suffix.Length, ap, source.Length, options);
+#endif
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options, matchLengthPtr);
             }
         }
@@ -852,8 +910,8 @@ namespace System.Globalization
             }
         }
 
-        private static ReadOnlySpan<bool> HighCharTable => new bool[0x80]
-        {
+        private static ReadOnlySpan<bool> HighCharTable => // 0x80
+        [
             true, /* 0x0, 0x0 */
             true, /* 0x1, .*/
             true, /* 0x2, .*/
@@ -982,6 +1040,6 @@ namespace System.Globalization
             false, /*0x7D, }*/
             false, /*0x7E, ~*/
             true, /*0x7F, */
-        };
+        ];
     }
 }

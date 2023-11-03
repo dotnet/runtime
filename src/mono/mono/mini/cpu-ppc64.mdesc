@@ -229,6 +229,37 @@ ppc_subfze: dest:i src1:i len:4
 bigmul: len:12 dest:i src1:i src2:i
 bigmul_un: len:12 dest:i src1:i src2:i
 
+# R4 opcodes
+r4_conv_to_i1: dest:i src1:f len:40
+r4_conv_to_u1: dest:i src1:f len:40
+r4_conv_to_i2: dest:i src1:f len:40
+r4_conv_to_u2: dest:i src1:f len:40
+r4_conv_to_i4: dest:i src1:f len:40
+r4_conv_to_u4: dest:i src1:f len:40
+r4_conv_to_i8: dest:i src1:f len:40
+r4_conv_to_u8: dest:i src1:f len:40
+r4_conv_to_r8: dest:f src1:f len:4
+r4_conv_to_r4: dest:f src1:f len:4
+r4_add: dest:f src1:f src2:f len:4
+r4_sub: dest:f src1:f src2:f len:4
+r4_mul: dest:f src1:f src2:f len:4
+r4_div: dest:f src1:f src2:f len:4
+r4_rem: dest:f src1:f src2:f len:16
+r4_neg: dest:f src1:f len:4
+r4_ceq: dest:i src1:f src2:f len:16
+r4_cgt: dest:i src1:f src2:f len:16
+r4_cgt_un: dest:i src1:f src2:f len:20
+r4_clt: dest:i src1:f src2:f len:16
+r4_clt_un: dest:i src1:f src2:f len:20
+r4_cneq: dest:i src1:f src2:f len:16
+r4_cge: dest:i src1:f src2:f len:16
+r4_cle: dest:i src1:f src2:f len:16
+rmove: dest:f src1:f len:4
+rcompare: src1:f src2:f len:12
+rcall_membase: dest:g src1:b len:16 clob:c
+rcall_reg: dest:g src1:i len:16 clob:c
+rcall: dest:g len:40 clob:c
+
 # Linear IR opcodes
 dummy_use: src1:i len:0
 dummy_iconst: dest:i len:0
@@ -258,7 +289,7 @@ int_conv_to_i1: dest:i src1:i len:8
 int_conv_to_i2: dest:i src1:i len:8
 int_conv_to_i4: dest:i src1:i len:4
 sext_i4: dest:i src1:i len:4
-int_conv_to_r4: dest:f src1:i len:20
+int_conv_to_r4: dest:f src1:i len:16
 int_conv_to_r8: dest:f src1:i len:16
 int_conv_to_u4: dest:i src1:i len:4
 int_conv_to_u2: dest:i src1:i len:8
@@ -354,7 +385,7 @@ long_not: dest:i src1:i len:4
 long_conv_to_i1: dest:i src1:i len:4
 long_conv_to_i2: dest:i src1:i len:4
 long_conv_to_i4: dest:i src1:i len:4
-long_conv_to_r4: dest:f src1:i len:16
+long_conv_to_r4: dest:f src1:i len:12
 long_conv_to_r8: dest:f src1:i len:12
 long_conv_to_u4: dest:i src1:i
 long_conv_to_u2: dest:i src1:i len:4

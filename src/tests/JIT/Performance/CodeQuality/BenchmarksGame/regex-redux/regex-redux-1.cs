@@ -17,12 +17,14 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using Xunit;
 
 namespace BenchmarksGame
 {
     public class RegexRedux_1
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
 

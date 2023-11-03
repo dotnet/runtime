@@ -17,10 +17,12 @@ public class Utils
         ILogger logger,
         Action<string?>? logStdOut = null,
         Action<string?>? logStdErr = null,
+        bool silent = false,
         string? label = null)
     {
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
-        logger.LogInformation($"{msgPrefix}Running: {psi.FileName} {string.Join(" ", psi.ArgumentList)}");
+        if (!silent)
+            logger.LogInformation($"{msgPrefix}Running: {psi.FileName} {string.Join(" ", psi.ArgumentList)}");
 
         psi.UseShellExecute = false;
         psi.CreateNoWindow = true;
@@ -29,7 +31,8 @@ public class Utils
         if (logStdErr != null)
             psi.RedirectStandardError = true;
 
-        logger.LogDebug($"{msgPrefix}Using working directory: {psi.WorkingDirectory ?? Environment.CurrentDirectory}", msgPrefix);
+        if (!silent)
+            logger.LogDebug($"{msgPrefix}Using working directory: {psi.WorkingDirectory ?? Environment.CurrentDirectory}", msgPrefix);
 
         // if (psi.EnvironmentVariables.Count > 0)
             // logger.LogDebug($"{msgPrefix}Setting environment variables for execution:", msgPrefix);

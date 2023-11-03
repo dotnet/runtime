@@ -7,12 +7,7 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private bool InitCultureDataCore() =>
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-        GlobalizationMode.Hybrid ? InitAppleCultureDataCore() : InitIcuCultureDataCore();
-#else
-        InitIcuCultureDataCore();
-#endif
+        private bool InitCultureDataCore() => InitIcuCultureDataCore();
 
         // Unix doesn't support user overrides
         partial void InitUserOverride(bool useUserOverride);
@@ -25,7 +20,7 @@ namespace System.Globalization
 
         private string[]? GetTimeFormatsCore(bool shortFormat)
         {
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             string format = GlobalizationMode.Hybrid ? GetTimeFormatStringNative(shortFormat) : IcuGetTimeFormatString(shortFormat);
 #else
             string format = IcuGetTimeFormatString(shortFormat);

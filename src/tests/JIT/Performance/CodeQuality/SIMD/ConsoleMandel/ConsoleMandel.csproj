@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
   </PropertyGroup>
   <PropertyGroup>

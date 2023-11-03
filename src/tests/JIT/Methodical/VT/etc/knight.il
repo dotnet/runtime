@@ -12,7 +12,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly knight
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

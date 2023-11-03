@@ -45,7 +45,7 @@ internal static partial class Interop
             public long MatchAllKeyword;
         }
 
-        [LibraryImport(Interop.Libraries.Advapi32)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial int EnumerateTraceGuidsEx(
             TRACE_QUERY_INFO_CLASS TraceQueryInfoClass,
             void* InBuffer,

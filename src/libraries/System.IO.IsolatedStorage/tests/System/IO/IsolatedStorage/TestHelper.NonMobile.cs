@@ -31,6 +31,14 @@ namespace System.IO.IsolatedStorage
 
             return roots;
         }
+
+        /// <summary>
+        /// The actual root of the store (housekeeping files are kept here in NetFX)
+        /// </summary>
+        public static string GetIdentityRootDirectory(this IsolatedStorageFile isf)
+        {
+            return Path.GetDirectoryName(isf.GetUserRootDirectory().TrimEnd(Path.DirectorySeparatorChar));           
+        }
     }
 }
     

@@ -37,7 +37,7 @@ namespace System
         internal const string CreatePdbGeneratorMessage = "The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException.";
         internal const string CreatePdbGeneratorDiagId = "SYSLIB0008";
 
-        internal const string AuthenticationManagerMessage = "The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.";
+        internal const string AuthenticationManagerMessage = "AuthenticationManager is not supported. Methods will no-op or throw PlatformNotSupportedException.";
         internal const string AuthenticationManagerDiagId = "SYSLIB0009";
 
         internal const string RemotingApisMessage = "This Remoting API is not supported and throws PlatformNotSupportedException.";
@@ -168,5 +168,8 @@ namespace System
 
         internal const string RegexExtensibilityImplMessage = "This API supports obsolete mechanisms for Regex extensibility. It is not supported.";
         internal const string RegexExtensibilityDiagId = "SYSLIB0052";
+
+        internal const string AesGcmTagConstructorMessage = "AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.";
+        internal const string AesGcmTagConstructorDiagId = "SYSLIB0053";
     }
 }

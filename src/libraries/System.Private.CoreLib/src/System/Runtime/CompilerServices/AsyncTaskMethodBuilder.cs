@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Provides a builder for asynchronous methods that return <see cref="System.Threading.Tasks.Task"/>.
+    /// Provides a builder for asynchronous methods that return <see cref="Threading.Tasks.Task"/>.
     /// This type is intended for compiler use only.
     /// </summary>
     /// <remarks>
@@ -34,8 +34,8 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The builder is incorrectly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="stateMachine"/> argument was null (<see langword="Nothing" /> in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The builder is incorrectly initialized.</exception>
         public void SetStateMachine(IAsyncStateMachine stateMachine) =>
             AsyncMethodBuilderCore.SetStateMachine(stateMachine, task: null);
 
@@ -66,9 +66,9 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine =>
             AsyncTaskMethodBuilder<VoidTaskResult>.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine, ref m_task);
 
-        /// <summary>Gets the <see cref="System.Threading.Tasks.Task"/> for this builder.</summary>
-        /// <returns>The <see cref="System.Threading.Tasks.Task"/> representing the builder's asynchronous operation.</returns>
-        /// <exception cref="System.InvalidOperationException">The builder is not initialized.</exception>
+        /// <summary>Gets the <see cref="Threading.Tasks.Task"/> for this builder.</summary>
+        /// <returns>The <see cref="Threading.Tasks.Task"/> representing the builder's asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">The builder is not initialized.</exception>
         public Task Task
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -88,11 +88,11 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Completes the <see cref="System.Threading.Tasks.Task"/> in the
-        /// <see cref="System.Threading.Tasks.TaskStatus">RanToCompletion</see> state.
+        /// Completes the <see cref="Threading.Tasks.Task"/> in the
+        /// <see cref="TaskStatus">RanToCompletion</see> state.
         /// </summary>
-        /// <exception cref="System.InvalidOperationException">The builder is not initialized.</exception>
-        /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
+        /// <exception cref="InvalidOperationException">The builder is not initialized.</exception>
+        /// <exception cref="InvalidOperationException">The task has already completed.</exception>
         public void SetResult()
         {
             // Get the currently stored task, which will be non-null if get_Task has already been accessed.
@@ -109,13 +109,13 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Completes the <see cref="System.Threading.Tasks.Task"/> in the
-        /// <see cref="System.Threading.Tasks.TaskStatus">Faulted</see> state with the specified exception.
+        /// Completes the <see cref="Threading.Tasks.Task"/> in the
+        /// <see cref="TaskStatus">Faulted</see> state with the specified exception.
         /// </summary>
-        /// <param name="exception">The <see cref="System.Exception"/> to use to fault the task.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="exception"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The builder is not initialized.</exception>
-        /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
+        /// <param name="exception">The <see cref="Exception"/> to use to fault the task.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="exception"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The builder is not initialized.</exception>
+        /// <exception cref="InvalidOperationException">The task has already completed.</exception>
         public void SetException(Exception exception) =>
             AsyncTaskMethodBuilder<VoidTaskResult>.SetException(exception, ref m_task);
 

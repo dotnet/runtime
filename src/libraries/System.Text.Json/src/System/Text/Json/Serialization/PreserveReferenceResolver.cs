@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(_referenceIdToObjectMap != null);
 
-            if (!JsonHelpers.TryAdd(_referenceIdToObjectMap, referenceId, value))
+            if (!_referenceIdToObjectMap.TryAdd(referenceId, value))
             {
                 ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(referenceId);
             }

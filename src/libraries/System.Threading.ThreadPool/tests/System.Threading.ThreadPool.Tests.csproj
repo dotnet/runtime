@@ -3,6 +3,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">64</_WasmPThreadPoolSize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ThreadPoolTests.cs" />
@@ -13,5 +14,8 @@
              Link="CommonTest\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
              Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Threading.ThreadPool.UseWindowsThreadPool" Value="false" />
   </ItemGroup>
 </Project>

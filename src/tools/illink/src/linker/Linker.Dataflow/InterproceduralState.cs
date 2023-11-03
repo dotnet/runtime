@@ -35,7 +35,7 @@ namespace Mono.Linker.Dataflow
 		public override int GetHashCode () => HashUtils.Combine (MethodBodies.GetHashCode (), HoistedLocals.GetHashCode ());
 
 		public InterproceduralState Clone ()
-			=> new (MethodBodies.Clone (), HoistedLocals.Clone (), lattice);
+			=> new (MethodBodies.DeepCopy (), HoistedLocals.Clone (), lattice);
 
 		public void TrackMethod (MethodDefinition method)
 		{

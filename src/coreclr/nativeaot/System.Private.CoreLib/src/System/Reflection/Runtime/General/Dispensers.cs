@@ -44,7 +44,7 @@ namespace System.Reflection.Runtime.Assemblies
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
         {
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
             if (!binder.Bind(rawAssembly, pdbSymbolStore, out AssemblyBindResult bindResult, out Exception exception))
             {
                 if (exception != null)
@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.Assemblies
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssemblyFromPath(string assemblyPath)
         {
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
             if (!binder.Bind(assemblyPath, out AssemblyBindResult bindResult, out Exception exception))
             {
                 if (exception != null)
@@ -107,7 +107,7 @@ namespace System.Reflection.Runtime.Assemblies
                 DispenserScenario.AssemblyRefName_Assembly,
                 delegate (RuntimeAssemblyName assemblyRefName)
                 {
-                    AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+                    AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
                     if (!binder.Bind(assemblyRefName, cacheMissedLookups: true, out AssemblyBindResult bindResult, out Exception exception))
                         return exception;
 
@@ -159,19 +159,6 @@ namespace System.Reflection.Runtime.MethodInfos
             return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypes, options, action);
         }
     }
-
-#if FEATURE_COMINTEROP
-    //-----------------------------------------------------------------------------------------------------------
-    // Nullary constructor for types manufactured by Type.GetTypeFromCLSID().
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeCLSIDNullaryConstructorInfo : RuntimeConstructorInfo
-    {
-        internal static RuntimeCLSIDNullaryConstructorInfo GetRuntimeCLSIDNullaryConstructorInfo(RuntimeCLSIDTypeInfo declaringType)
-        {
-            return new RuntimeCLSIDNullaryConstructorInfo(declaringType);
-        }
-    }
-#endif
 
     //-----------------------------------------------------------------------------------------------------------
     // MethodInfos for method definitions (i.e. Foo.Moo() or Foo.Moo<>() but not Foo.Moo<int>)

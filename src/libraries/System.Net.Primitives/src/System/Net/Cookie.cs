@@ -42,10 +42,10 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        private static readonly IndexOfAnyValues<char> s_reservedToNameChars = IndexOfAnyValues.Create("\t\r\n=;,");
+        private static readonly SearchValues<char> s_reservedToNameChars = SearchValues.Create("\t\r\n=;,");
 
-        private static readonly IndexOfAnyValues<char> s_domainChars =
-            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+        private static readonly SearchValues<char> s_domainChars =
+            SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -242,7 +242,7 @@ namespace System.Net
                 || value.StartsWith('$')
                 || value.StartsWith(' ')
                 || value.EndsWith(' ')
-                || value.AsSpan().IndexOfAny(s_reservedToNameChars) >= 0)
+                || value.AsSpan().ContainsAny(s_reservedToNameChars))
             {
                 m_name = string.Empty;
                 return false;
@@ -350,7 +350,7 @@ namespace System.Net
                 m_name.StartsWith('$') ||
                 m_name.StartsWith(' ') ||
                 m_name.EndsWith(' ') ||
-                m_name.AsSpan().IndexOfAny(s_reservedToNameChars) >= 0)
+                m_name.AsSpan().ContainsAny(s_reservedToNameChars))
             {
                 if (shouldThrow)
                 {
@@ -361,7 +361,7 @@ namespace System.Net
 
             // Check the value
             if (m_value == null ||
-                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().IndexOfAny(';', ',') >= 0))
+                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().ContainsAny(';', ',')))
             {
                 if (shouldThrow)
                 {
@@ -372,7 +372,7 @@ namespace System.Net
 
             // Check Comment syntax
             if (Comment != null && !(Comment.Length > 2 && Comment.StartsWith('\"') && Comment.EndsWith('\"'))
-                && (Comment.AsSpan().IndexOfAny(';', ',') >= 0))
+                && (Comment.AsSpan().ContainsAny(';', ',')))
             {
                 if (shouldThrow)
                 {
@@ -383,7 +383,7 @@ namespace System.Net
 
             // Check Path syntax
             if (Path != null && !(Path.Length > 2 && Path.StartsWith('\"') && Path.EndsWith('\"'))
-                && (Path.AsSpan().IndexOfAny(';', ',') != -1))
+                && (Path.AsSpan().ContainsAny(';', ',')))
             {
                 if (shouldThrow)
                 {
@@ -565,7 +565,7 @@ namespace System.Net
         // as per RFC 952 (relaxed on first char could be a digit and string can have '_').
         private static bool DomainCharsTest(string name) =>
             !string.IsNullOrEmpty(name) &&
-            name.AsSpan().IndexOfAnyExcept(s_domainChars) < 0;
+            !name.AsSpan().ContainsAnyExcept(s_domainChars);
 
         [AllowNull]
         public string Port

@@ -3897,7 +3897,7 @@ sgen_gc_init (void)
 
 	sgen_card_table_init (&remset);
 
-	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handles (SGen, Normal)");
+	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, GINT_TO_POINTER (ROOT_TYPE_NORMAL), "GC Handles (SGen, Normal)");
 
 	gc_initialized = 1;
 
@@ -4070,7 +4070,7 @@ guint64 memory_pressure_removes[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history
 const unsigned min_memorypressure_budget = 4 * 1024 * 1024;		// 4 MB
 
 // Resets pressure accounting after a gen2 GC has occurred.
-static void check_pressure_counts ()
+static void check_pressure_counts (void)
 {
 	if (memory_pressure_gc_count != sgen_gc_collection_count(GENERATION_OLD)) {
 		memory_pressure_gc_count = sgen_gc_collection_count(GENERATION_OLD);

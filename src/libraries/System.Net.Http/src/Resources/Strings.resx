@@ -180,9 +180,6 @@
   <data name="net_http_content_read_as_stream_has_task" xml:space="preserve">
     <value>The content's stream has already been retrieved via async ReadAsStreamAsync and cannot be subsequently accessed synchronously.</value>
   </data>
-  <data name="net_http_argument_empty_string" xml:space="preserve">
-    <value>The value cannot be null or empty.</value>
-  </data>
   <data name="net_http_client_request_already_sent" xml:space="preserve">
     <value>The request message was already sent. Cannot send the same request message multiple times.</value>
   </data>
@@ -373,7 +370,7 @@
     <value>Cannot access a closed stream.</value>
   </data>
   <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
-    <value>Only the 'http', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
+    <value>Only the 'http', 'https', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
   </data>
   <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
     <value>Request headers must contain only ASCII characters.</value>
@@ -425,9 +422,6 @@
   </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
-  </data>
-  <data name="event_OperationReturnedSomething" xml:space="preserve">
-    <value>{0} returned {1}.</value>
   </data>
   <data name="net_log_operation_failed_with_error" xml:space="preserve">
     <value>{0} failed with error {1}.</value>
@@ -540,6 +534,9 @@
   <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
     <value>Synchronous reads are not supported, use ReadAsync instead.</value>
   </data>
+  <data name="net_http_synchronous_writes_not_supported" xml:space="preserve">
+    <value>Synchronous writes are not supported, use WriteAsync instead.</value>
+  </data>
   <data name="net_socks_auth_failed" xml:space="preserve">
     <value>Failed to authenticate with the SOCKS server.</value>
   </data>
@@ -569,6 +566,9 @@
   </data>
   <data name="net_http_proxy_tunnel_returned_failure_status_code" xml:space="preserve">
     <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>
+  </data>
+  <data name="net_http_proxy_tunnel_error" xml:space="preserve">
+    <value>An error occurred while establishing a connection to the proxy tunnel.</value>
   </data>
   <data name="PlatformNotSupported_NetHttp" xml:space="preserve">
     <value>System.Net.Http is not supported on this platform.</value>

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(CMAKE_OBJC_STANDARD 99)
 set(CMAKE_OBJC_STANDARD_REQUIRED TRUE)

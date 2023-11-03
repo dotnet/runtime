@@ -9,12 +9,14 @@
 // Mutually protective try example.
 
 using System;
+using Xunit;
 
 class E : Exception {}
 
-class MainLoopMutuallyProtectiveTry
+public class MainLoopMutuallyProtectiveTry
 {
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {
        Console.WriteLine($"starting sum");
        int result = 0;

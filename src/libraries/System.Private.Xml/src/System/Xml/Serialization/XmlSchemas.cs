@@ -468,7 +468,7 @@ namespace System.Xml.Serialization
             {
                 if (item.Parent is XmlSchemaType type)
                 {
-                    if (type.Name != null && type.Name.Length != 0)
+                    if (!string.IsNullOrEmpty(type.Name))
                     {
                         return type.QualifiedName;
                     }
@@ -489,7 +489,7 @@ namespace System.Xml.Serialization
             {
                 o = o.Parent;
             }
-            if (ns == null || ns.Length == 0)
+            if (string.IsNullOrEmpty(ns))
             {
                 XmlSchemaObject tmp = o;
                 while (tmp.Parent != null)
@@ -512,7 +512,7 @@ namespace System.Xml.Serialization
             }
             else if (o is XmlSchemaElement e)
             {
-                if (e.Name == null || e.Name.Length == 0)
+                if (string.IsNullOrEmpty(e.Name))
                 {
                     XmlQualifiedName parentName = XmlSchemas.GetParentName(o);
                     // Element reference '{0}' declared in schema type '{1}' from namespace '{2}'
@@ -533,7 +533,7 @@ namespace System.Xml.Serialization
             }
             else if (o is XmlSchemaAttribute a)
             {
-                if (a.Name == null || a.Name.Length == 0)
+                if (string.IsNullOrEmpty(a.Name))
                 {
                     XmlQualifiedName parentName = XmlSchemas.GetParentName(o);
                     // Attribure reference '{0}' declared in schema type '{1}' from namespace '{2}'

@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''                  # optional -- operating system subgroup
   condition: true
   pool: ''
-  timeoutInMinutes: 180           # build timeout
+  timeoutInMinutes: 240           # build timeout
   variables: {}
   helixQueues: ''
   dependOnEvaluatePaths: false
@@ -42,10 +42,14 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
-      - name: releaseProductRootFolderPath
-        value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - name: releaseProductRootFolderPath
+          value: '$(Build.SourcesDirectory)\artifacts\bin\coreclr\$(osGroup).$(archType).Release'
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - name: releaseProductRootFolderPath
+          value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
       - name: releaseProductArtifactName
-        value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_release'
+        value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_release'
 
     steps:
 

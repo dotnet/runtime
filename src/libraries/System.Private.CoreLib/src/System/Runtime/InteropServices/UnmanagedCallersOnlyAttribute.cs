@@ -4,7 +4,7 @@
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Any method marked with <see cref="System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" /> can be directly called from
+    /// Any method marked with <see cref="UnmanagedCallersOnlyAttribute" /> can be directly called from
     /// native code. The function token can be loaded to a local variable using the <see href="https://docs.microsoft.com/dotnet/csharp/language-reference/operators/pointer-related-operators#address-of-operator-">address-of</see> operator
     /// in C# and passed as a callback to a native method.
     /// </summary>

@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
-.assembly ovflrem1 {}
+.assembly ASSEMBLY_NAME {}
 .class public auto ansi beforefieldinit ovflrem1
        extends [mscorlib]System.Object
 {

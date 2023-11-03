@@ -1,3 +1,7 @@
+# Due to how we build the libraries native build as part of the CoreCLR build as well as standalone,
+# we can end up coming to this file twice. Only run it once to simplify our build.
+include_guard()
+
 include(${CMAKE_CURRENT_LIST_DIR}/configuretools.cmake)
 
 # Set initial flags for each configuration
@@ -19,12 +23,13 @@ include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 #-----------------------------------------------------
 
 if (CLR_CMAKE_HOST_UNIX)
-    add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-conversion)
+        add_compile_options(-glldb)
     else()
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=conversion-null>)
+        add_compile_options(-g)
     endif()
 endif()
 
@@ -49,7 +54,22 @@ add_compile_definitions("$<$<CONFIG:CHECKED>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDL
 add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEBUG;URTBLDENV_FRIENDLY=Retail>")
 
 if (MSVC)
-  add_linker_flag(/guard:cf)
+
+  define_property(TARGET PROPERTY CLR_CONTROL_FLOW_GUARD INHERITED BRIEF_DOCS "Controls the /guard:cf flag presence" FULL_DOCS "Set this property to ON or OFF to indicate if the /guard:cf compiler and linker flag should be present")
+  define_property(TARGET PROPERTY CLR_EH_CONTINUATION INHERITED BRIEF_DOCS "Controls the /guard:ehcont flag presence" FULL_DOCS "Set this property to ON or OFF to indicate if the /guard:ehcont compiler flag should be present")
+  define_property(TARGET PROPERTY CLR_EH_OPTION INHERITED BRIEF_DOCS "Defines the value of the /EH option" FULL_DOCS "Set this property to one of the valid /EHxx options (/EHa, /EHsc, /EHa-, ...)")
+
+  set_property(GLOBAL PROPERTY CLR_CONTROL_FLOW_GUARD ON)
+
+  # Remove the /EHsc from the CXX flags so that the compile options are the only source of truth for that
+  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set_property(GLOBAL PROPERTY CLR_EH_OPTION /EHsc)
+
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
+  add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
+
+  # Load all imported DLLs from the System32 directory.
+  add_linker_flag(/DEPENDENTLOADFLAG:0x800)
 
   # Linker flags
   #
@@ -78,12 +98,29 @@ if (MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUGTYPE:CV,FIXUP")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
+  # For sanitized builds, we bump up the stack size to 8MB to match behavior on Unix platforms.
+  # Sanitized builds can use significantly more stack space than non-sanitized builds due to instrumentation.
+  # We don't want to change the default stack size for all builds, as that will likely cause confusion and will
+  # increase memory usage.
+  if (CLR_CMAKE_ENABLE_SANITIZERS)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x800000")
+  else()
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x180000")
+  endif()
 
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+
+  if (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
+    # Debug build specific flags
+    # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that
+    # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
+    add_linker_flag(/INCREMENTAL:NO DEBUG)
+    add_linker_flag(/OPT:NOREF DEBUG)
+    add_linker_flag(/OPT:NOICF DEBUG)
+  endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
 
   # Checked build specific flags
   add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
@@ -103,72 +140,12 @@ if (MSVC)
   add_linker_flag(/OPT:ICF RELWITHDEBINFO)
   set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
 
-  # Force uCRT to be dynamically linked for Release build
-  add_linker_flag(/NODEFAULTLIB:libucrt.lib RELEASE)
-  add_linker_flag(/DEFAULTLIB:ucrt.lib RELEASE)
-
 elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;CHECKED;RELEASE;RELWITHDEBINFO")
 
   # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
   string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-
-  set(CLR_SANITIZE_CXX_OPTIONS "")
-  set(CLR_SANITIZE_LINK_OPTIONS "")
-
-  # set the CLANG sanitizer flags for debug build
-  if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
-    # obtain settings from running enablesanitizers.sh
-    string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
-    string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
-    if ((${__ASAN_POS} GREATER -1) OR (${__UBSAN_POS} GREATER -1))
-      list(APPEND CLR_SANITIZE_CXX_OPTIONS -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/sanitizerblacklist.txt)
-      set (CLR_CXX_SANITIZERS "")
-      set (CLR_LINK_SANITIZERS "")
-      if (${__ASAN_POS} GREATER -1)
-        list(APPEND CLR_CXX_SANITIZERS address)
-        list(APPEND CLR_LINK_SANITIZERS address)
-        set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS}address,")
-        set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
-        add_definitions(-DHAS_ASAN)
-        message("Address Sanitizer (asan) enabled")
-      endif ()
-      if (${__UBSAN_POS} GREATER -1)
-        # all sanitizer flags are enabled except alignment (due to heavy use of __unaligned modifier)
-        list(APPEND CLR_CXX_SANITIZERS
-          "bool"
-          bounds
-          enum
-          float-cast-overflow
-          float-divide-by-zero
-          "function"
-          integer
-          nonnull-attribute
-          null
-          object-size
-          "return"
-          returns-nonnull-attribute
-          shift
-          unreachable
-          vla-bound
-          vptr)
-        list(APPEND CLR_LINK_SANITIZERS
-          undefined)
-        message("Undefined Behavior Sanitizer (ubsan) enabled")
-      endif ()
-      list(JOIN CLR_CXX_SANITIZERS "," CLR_CXX_SANITIZERS_OPTIONS)
-      list(APPEND CLR_SANITIZE_CXX_OPTIONS "-fsanitize=${CLR_CXX_SANITIZERS_OPTIONS}")
-      list(JOIN CLR_LINK_SANITIZERS "," CLR_LINK_SANITIZERS_OPTIONS)
-      list(APPEND CLR_SANITIZE_LINK_OPTIONS "-fsanitize=${CLR_LINK_SANITIZERS_OPTIONS}")
-
-      # -O1: optimization level used instead of -O0 to avoid compile error "invalid operand for inline asm constraint"
-      add_compile_options("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;-O1>")
-      add_linker_flag("${CLR_SANITIZE_LINK_OPTIONS}" DEBUG CHECKED)
-      # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
-      add_linker_flag("-Wl,--gc-sections" DEBUG CHECKED)
-    endif ()
-  endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
 
   if(CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI)
     # The emscripten build has additional warnings so -Werror breaks
@@ -177,6 +154,129 @@ elseif (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-implicit-int-float-conversion)
   endif()
 endif(MSVC)
+
+if (CLR_CMAKE_ENABLE_SANITIZERS)
+  set (CLR_CMAKE_BUILD_SANITIZERS "")
+  set (CLR_CMAKE_SANITIZER_RUNTIMES "")
+  string(FIND "${CLR_CMAKE_ENABLE_SANITIZERS}" "address" __ASAN_POS)
+  if(${__ASAN_POS} GREATER -1)
+    # Set up build flags for AddressSanitizer
+    set (CLR_CMAKE_ENABLE_ASAN ON)
+    if (MSVC)
+      # /RTC1 is added by default by CMake and incompatible with ASAN, so remove it.
+      string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+      string(REPLACE "/RTC1" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+      string(REPLACE "/RTC1" "" CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG}")
+      string(REPLACE "/RTC1" "" CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
+    endif()
+    # For Mac and Windows platforms, we install the ASAN runtime next to the rest of our outputs to ensure that it's present when we execute our tests on Helix machines
+    # The rest of our platforms use statically-linked ASAN so this isn't a concern for those platforms.
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
+      function(getSanitizerRuntimeDirectory output)
+        enable_language(C)
+        execute_process(
+          COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
+          OUTPUT_VARIABLE compilerResourceDir
+          OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(${output} "${compilerResourceDir}/lib/darwin/" PARENT_SCOPE)
+      endfunction()
+      getSanitizerRuntimeDirectory(sanitizerRuntimeDirectory)
+      find_library(ASAN_RUNTIME clang_rt.asan_osx_dynamic PATHS ${sanitizerRuntimeDirectory})
+      add_compile_definitions(SANITIZER_SHARED_RUNTIME)
+    elseif (CLR_CMAKE_TARGET_WIN32)
+      function(getSanitizerRuntimeDirectory output archSuffixOutput)
+        get_filename_component(compiler_directory "${CMAKE_C_COMPILER}" DIRECTORY)
+        set(${output} "${compiler_directory}" PARENT_SCOPE)
+        if (CLR_CMAKE_TARGET_ARCH_I386)
+          set(${archSuffixOutput} "i386" PARENT_SCOPE)
+        elseif (CLR_CMAKE_TARGET_ARCH_AMD64)
+          set(${archSuffixOutput} "x86_64" PARENT_SCOPE)
+        elseif (CLR_CMAKE_TARGET_ARCH_ARM)
+          set(${archSuffixOutput} "armhf" PARENT_SCOPE)
+        elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
+          set(${archSuffixOutput} "aarch64" PARENT_SCOPE)
+        endif()
+      endfunction()
+      getSanitizerRuntimeDirectory(sanitizerRuntimeDirectory archSuffix)
+      set(ASAN_RUNTIME "${sanitizerRuntimeDirectory}/clang_rt.asan_dynamic-${archSuffix}.dll")
+      add_compile_definitions(SANITIZER_SHARED_RUNTIME)
+    endif()
+    if (CLR_CMAKE_ENABLE_ASAN)
+      message("-- Address Sanitizer (asan) enabled")
+      list(APPEND CLR_CMAKE_BUILD_SANITIZERS
+        address)
+      list(APPEND CLR_CMAKE_SANITIZER_RUNTIMES
+        address)
+      # We can't use preprocessor defines to determine if we're building with ASAN in assembly, so we'll
+      # define the preprocessor define ourselves.
+      add_compile_definitions($<$<COMPILE_LANGUAGE:ASM,ASM_MASM>:HAS_ADDRESS_SANITIZER>)
+
+      # Disable the use-after-return check for ASAN on Clang. This is because we have a lot of code that
+      # depends on the fact that our locals are not saved in a parallel stack, so we can't enable this today.
+      # If we ever have a way to detect a parallel stack and track its bounds, we can re-enable this check.
+      add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:-fsanitize-address-use-after-return=never>)
+    endif()
+  endif()
+
+  # Set up build flags for UBSanitizer
+  if (CLR_CMAKE_HOST_UNIX)
+
+    set (CLR_CMAKE_ENABLE_UBSAN OFF)
+    # COMPAT: Allow enabling UBSAN in Debug/Checked builds via an environment variable.
+    if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+      # obtain settings from running enablesanitizers.sh
+      string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_ENV_POS)
+      if (${__UBSAN_ENV_POS} GREATER -1)
+        set(CLR_CMAKE_ENABLE_UBSAN ON)
+      endif()
+    endif()
+    string(FIND "${CLR_CMAKE_ENABLE_SANITIZERS}" "undefined" __UBSAN_POS)
+    if (${__UBSAN_POS} GREATER -1)
+      set(CLR_CMAKE_ENABLE_UBSAN ON)
+    endif()
+
+    # set the CLANG sanitizer flags for debug build
+    if(CLR_CMAKE_ENABLE_UBSAN)
+      list(APPEND CLR_CMAKE_BUILD_SANITIZE_OPTIONS -fsanitize-ignorelist=${CMAKE_CURRENT_SOURCE_DIR}/sanitizer-ignorelist.txt)
+      # all sanitizer flags are enabled except alignment (due to heavy use of __unaligned modifier)
+      list(APPEND CLR_CMAKE_BUILD_SANITIZERS
+        "bool"
+        bounds
+        enum
+        float-cast-overflow
+        float-divide-by-zero
+        "function"
+        integer
+        nonnull-attribute
+        null
+        object-size
+        "return"
+        returns-nonnull-attribute
+        shift
+        unreachable
+        vla-bound
+        vptr)
+      list(APPEND CLR_CMAKE_SANITIZER_RUNTIMES
+        undefined)
+      message("-- Undefined Behavior Sanitizer (ubsan) enabled")
+    endif ()
+  endif()
+  list(JOIN CLR_CMAKE_BUILD_SANITIZERS "," CLR_CMAKE_BUILD_SANITIZERS)
+  list(JOIN CLR_CMAKE_SANITIZER_RUNTIMES "," CLR_LINK_SANITIZERS_OPTIONS)
+  if (CLR_CMAKE_BUILD_SANITIZERS)
+    list(APPEND CLR_CMAKE_BUILD_SANITIZE_OPTIONS "-fsanitize=${CLR_CMAKE_BUILD_SANITIZERS}")
+  endif()
+  if (CLR_CMAKE_SANITIZER_RUNTIMES)
+    list(APPEND CLR_CMAKE_LINK_SANITIZE_OPTIONS "-fsanitize=${CLR_CMAKE_SANITIZER_RUNTIMES}")
+  endif()
+  if (MSVC)
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
+  else()
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
+    add_linker_flag("${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
+  endif()
+endif()
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
 # CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
@@ -205,6 +305,9 @@ elseif(CLR_CMAKE_HOST_SUNOS)
 elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_definitions(-D_XOPEN_SOURCE)
   add_linker_flag("-Wl,-bind_at_load")
+elseif(CLR_CMAKE_HOST_HAIKU)
+  add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  add_linker_flag("-Wl,--no-undefined")
 endif()
 
 #------------------------------------
@@ -323,6 +426,8 @@ if (CLR_CMAKE_HOST_UNIX)
     message("Detected NetBSD amd64")
   elseif(CLR_CMAKE_HOST_SUNOS)
     message("Detected SunOS amd64")
+  elseif(CLR_CMAKE_HOST_HAIKU)
+    message("Detected Haiku x86_64")
   endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -415,6 +520,17 @@ if (CLR_CMAKE_HOST_UNIX)
   # using twos-complement representation (this is normally undefined according to the C++ spec).
   add_compile_options(-fwrapv)
 
+  if(CLR_CMAKE_HOST_APPLE)
+    # Clang will by default emit objc_msgSend stubs in Xcode 14, which ld from earlier Xcodes doesn't understand.
+    # We disable this by passing -fno-objc-msgsend-selector-stubs to clang.
+    # We can probably remove this flag once we require developers to use Xcode 14.
+    # Ref: https://github.com/xamarin/xamarin-macios/issues/16223
+    check_c_compiler_flag(-fno-objc-msgsend-selector-stubs COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+    if(COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+      set(CLR_CMAKE_COMMON_OBJC_FLAGS "${CLR_CMAKE_COMMON_OBJC_FLAGS} -fno-objc-msgsend-selector-stubs")
+    endif()
+  endif()
+
   if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
     add_compile_options(-fstack-protector)
@@ -497,15 +613,14 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-misleading-indentation>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-overflow>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-restrict>)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-truncation>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-stringop-truncation>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
 
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
       # this warning is only reported by g++ 11 in debug mode when building
       # src/coreclr/vm/stackingallocator.h. It is a false-positive, fixed in g++ 12.
       # see: https://github.com/dotnet/runtime/pull/69188#issuecomment-1136764770
       add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
-
-      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
     endif()
 
     if (CMAKE_CXX_COMPILER_ID)
@@ -522,7 +637,7 @@ if (CLR_CMAKE_HOST_UNIX)
 
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
-  
+
   # Separate functions so linker can remove them.
   add_compile_options(-ffunction-sections)
 
@@ -601,6 +716,8 @@ if(CLR_CMAKE_TARGET_UNIX)
     if(CLR_CMAKE_TARGET_OS_ILLUMOS)
       add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ILLUMOS>)
     endif()
+  elseif(CLR_CMAKE_TARGET_HAIKU)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_HAIKU>)
   endif()
 elseif(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
@@ -739,7 +856,9 @@ if (MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
-  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>>:/GL>)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
 
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     # The generator expression in the following command means that the /homeparams option is added only for debug builds for C and C++ source files
@@ -748,16 +867,15 @@ if (MSVC)
 
   # enable control-flow-guard support for native components for non-Arm64 builds
   # Added using variables instead of add_compile_options to let individual projects override it
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:cf")
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>>:/guard:cf>)
 
   # Enable EH-continuation table and CET-compatibility for native components for amd64 builds except for components of the Mono
   # runtime. Added some switches using variables instead of add_compile_options to let individual projects override it.
   if (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:ehcont")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
-    set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /guard:ehcont")
-    add_linker_flag(/guard:ehcont)
+    set_property(GLOBAL PROPERTY CLR_EH_CONTINUATION ON)
+
+    add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>>:/guard:ehcont>)
+    add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:/guard:ehcont>)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
   endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
 
@@ -769,6 +887,15 @@ if (MSVC)
   # production-time scenarios.
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<AND:$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:Debug>)
 
+  if (NOT CLR_CMAKE_ENABLE_SANITIZERS)
+    # Force uCRT to be dynamically linked for Release build
+    # We won't do this for sanitized builds as the dynamic CRT is not compatible with the static sanitizer runtime and
+    # the dynamic sanitizer runtime is not redistributable. Sanitized runtime builds are not production-time scenarios
+    # so we don't get the benefits of a dynamic CRT for sanitized runtime builds.
+    add_linker_flag(/NODEFAULTLIB:libucrt.lib RELEASE)
+    add_linker_flag(/DEFAULTLIB:ucrt.lib RELEASE)
+  endif()
+
   add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/ZH:SHA_256>)
 
   if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
@@ -777,8 +904,19 @@ if (MSVC)
   endif (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
 
   # Don't display the output header when building RC files.
-  add_compile_options($<$<COMPILE_LANGUAGE:RC>:/nologo>)
+  set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} /nologo")
+  # Don't display the output header when building asm files.
+  set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /nologo")
 endif (MSVC)
+
+# Configure non-MSVC compiler flags that apply to all platforms (unix-like or otherwise)
+if (NOT MSVC)
+  # Check for sometimes suppressed warnings
+  check_c_compiler_flag(-Wreserved-identifier COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  if(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+    add_compile_definitions(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  endif()
+endif()
 
 if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 

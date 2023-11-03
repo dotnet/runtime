@@ -285,9 +285,10 @@ namespace System.Numerics
                                                            | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
-                                                           | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
+                                                           | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
+                                                           | NumberStyles.AllowBinarySpecifier);
 
-        private static ReadOnlySpan<uint> UInt32PowersOfTen => new uint[] { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+        private static ReadOnlySpan<uint> UInt32PowersOfTen => [1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000];
 
         internal enum ParsingStatus
         {
@@ -371,10 +372,13 @@ namespace System.Numerics
             {
                 return HexNumberToBigInteger(ref bigNumber, out result);
             }
-            else
+
+            if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return NumberToBigInteger(ref bigNumber, out result);
+                return BinaryNumberToBigInteger(ref bigNumber, out result);
             }
+
+            return NumberToBigInteger(ref bigNumber, out result);
         }
 
         internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
@@ -466,6 +470,11 @@ namespace System.Numerics
 
                 Debug.Assert(partialDigitCount == 0 && bitsBufferPos == -1);
 
+                if (isNegative)
+                {
+                    NumericsHelpers.DangerousMakeTwosComplement(bitsBuffer);
+                }
+
                 // BigInteger requires leading zero blocks to be truncated.
                 bitsBuffer = bitsBuffer.TrimEnd(0u);
 
@@ -477,9 +486,104 @@ namespace System.Numerics
                     sign = 0;
                     bits = null;
                 }
-                else if (bitsBuffer.Length == 1)
+                else if (bitsBuffer.Length == 1 && bitsBuffer[0] <= int.MaxValue)
                 {
-                    sign = (int)bitsBuffer[0];
+                    sign = (int)bitsBuffer[0] * (isNegative ? -1 : 1);
+                    bits = null;
+                }
+                else
+                {
+                    sign = isNegative ? -1 : 1;
+                    bits = bitsBuffer.ToArray();
+                }
+
+                result = new BigInteger(sign, bits);
+                return ParsingStatus.OK;
+            }
+            finally
+            {
+                if (arrayFromPool != null)
+                {
+                    ArrayPool<uint>.Shared.Return(arrayFromPool);
+                }
+            }
+        }
+
+        private static ParsingStatus BinaryNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
+        {
+            if (number.digits is null || number.digits.Length == 0)
+            {
+                result = default;
+                return ParsingStatus.Failed;
+            }
+
+            int totalDigitCount = number.digits.Length - 1;   // Ignore trailing '\0'
+            int partialDigitCount;
+
+            (int blockCount, int remainder) = int.DivRem(totalDigitCount, BigInteger.kcbitUint);
+            if (remainder == 0)
+            {
+                partialDigitCount = 0;
+            }
+            else
+            {
+                blockCount++;
+                partialDigitCount = BigInteger.kcbitUint - remainder;
+            }
+
+            Debug.Assert(number.digits[0] is '0' or '1');
+            bool isNegative = number.digits[0] == '1';
+            uint currentBlock = isNegative ? 0xFF_FF_FF_FFu : 0x0;
+
+            uint[]? arrayFromPool = null;
+            Span<uint> buffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
+                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
+
+            int bufferPos = blockCount - 1;
+
+            try
+            {
+                foreach (ReadOnlyMemory<char> digitsChunkMem in number.digits.GetChunks())
+                {
+                    ReadOnlySpan<char> chunkDigits = digitsChunkMem.Span;
+                    for (int i = 0; i < chunkDigits.Length; i++)
+                    {
+                        char digitChar = chunkDigits[i];
+                        if (digitChar == '\0')
+                        {
+                            break;
+                        }
+
+                        Debug.Assert(digitChar is '0' or '1');
+                        currentBlock = (currentBlock << 1) | (uint)(digitChar - '0');
+                        partialDigitCount++;
+
+                        if (partialDigitCount == BigInteger.kcbitUint)
+                        {
+                            buffer[bufferPos--] = currentBlock;
+                            partialDigitCount = 0;
+
+                            // we do not need to reset currentBlock now, because it should always set all its bits by left shift in subsequent iterations
+                        }
+                    }
+                }
+
+                Debug.Assert(partialDigitCount == 0 && bufferPos == -1);
+
+                buffer = buffer.TrimEnd(0u);
+
+                int sign;
+                uint[]? bits;
+
+                if (buffer.IsEmpty)
+                {
+                    sign = 0;
+                    bits = null;
+                }
+                else if (buffer.Length == 1)
+                {
+                    sign = (int)buffer[0];
                     bits = null;
 
                     if ((!isNegative && sign < 0) || sign == int.MinValue)
@@ -491,7 +595,7 @@ namespace System.Numerics
                 else
                 {
                     sign = isNegative ? -1 : 1;
-                    bits = bitsBuffer.ToArray();
+                    bits = buffer.ToArray();
 
                     if (isNegative)
                     {
@@ -504,7 +608,7 @@ namespace System.Numerics
             }
             finally
             {
-                if (arrayFromPool != null)
+                if (arrayFromPool is not null)
                 {
                     ArrayPool<uint>.Shared.Return(arrayFromPool);
                 }
@@ -1002,6 +1106,105 @@ namespace System.Numerics
             }
         }
 
+        private static string? FormatBigIntegerToBinary(bool targetSpan, BigInteger value, int digits, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        {
+            // Get the bytes that make up the BigInteger.
+            byte[]? arrayToReturnToPool = null;
+            Span<byte> bytes = stackalloc byte[64]; // arbitrary threshold
+            if (!value.TryWriteOrCountBytes(bytes, out int bytesWrittenOrNeeded))
+            {
+                bytes = arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(bytesWrittenOrNeeded);
+                bool success = value.TryWriteBytes(bytes, out _);
+                Debug.Assert(success);
+            }
+            bytes = bytes.Slice(0, bytesWrittenOrNeeded);
+
+            Debug.Assert(!bytes.IsEmpty);
+
+            byte highByte = bytes[^1];
+
+            int charsInHighByte = 9 - byte.LeadingZeroCount(value._sign >= 0 ? highByte : (byte)~highByte);
+            long tmpCharCount = charsInHighByte + ((long)(bytes.Length - 1) << 3);
+
+            if (tmpCharCount > Array.MaxLength)
+            {
+                Debug.Assert(arrayToReturnToPool is not null);
+                ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
+
+                throw new FormatException(SR.Format_TooLarge);
+            }
+
+            int charsForBits = (int)tmpCharCount;
+
+            Debug.Assert(digits < Array.MaxLength);
+            int charsIncludeDigits = Math.Max(digits, charsForBits);
+
+            try
+            {
+                scoped ValueStringBuilder sb;
+                if (targetSpan)
+                {
+                    if (charsIncludeDigits > destination.Length)
+                    {
+                        charsWritten = 0;
+                        spanSuccess = false;
+                        return null;
+                    }
+
+                    // Because we have ensured destination can take actual char length, so now just use ValueStringBuilder as wrapper so that subsequent logic can be reused by 2 flows (targetSpan and non-targetSpan);
+                    // meanwhile there is no need to copy to destination again after format data for targetSpan flow.
+                    sb = new ValueStringBuilder(destination);
+                }
+                else
+                {
+                    // each byte is typically eight chars
+                    sb = charsIncludeDigits > 512
+                        ? new ValueStringBuilder(charsIncludeDigits)
+                        : new ValueStringBuilder(stackalloc char[512]);
+                }
+
+                if (digits > charsForBits)
+                {
+                    sb.Append(value._sign >= 0 ? '0' : '1', digits - charsForBits);
+                }
+
+                AppendByte(ref sb, highByte, charsInHighByte - 1);
+
+                for (int i = bytes.Length - 2; i >= 0; i--)
+                {
+                    AppendByte(ref sb, bytes[i]);
+                }
+
+                Debug.Assert(sb.Length == charsIncludeDigits);
+
+                if (targetSpan)
+                {
+                    charsWritten = charsIncludeDigits;
+                    spanSuccess = true;
+                    return null;
+                }
+
+                charsWritten = 0;
+                spanSuccess = false;
+                return sb.ToString();
+            }
+            finally
+            {
+                if (arrayToReturnToPool is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
+                }
+            }
+
+            static void AppendByte(ref ValueStringBuilder sb, byte b, int startHighBit = 7)
+            {
+                for (int i = startHighBit; i >= 0; i--)
+                {
+                    sb.Append((char)('0' + ((b >> i) & 0x1)));
+                }
+            }
+        }
+
         internal static string FormatBigInteger(BigInteger value, string? format, NumberFormatInfo info)
         {
             return FormatBigInteger(targetSpan: false, value, format, format, info, default, out _, out _)!;
@@ -1026,7 +1229,10 @@ namespace System.Numerics
             {
                 return FormatBigIntegerToHex(targetSpan, value, fmt, digits, info, destination, out charsWritten, out spanSuccess);
             }
-
+            if (fmt == 'b' || fmt == 'B')
+            {
+                return FormatBigIntegerToBinary(targetSpan, value, digits, destination, out charsWritten, out spanSuccess);
+            }
 
             if (value._bits == null)
             {

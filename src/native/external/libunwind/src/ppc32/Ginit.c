@@ -48,12 +48,20 @@ uc_addr (ucontext_t *uc, int reg)
   void *addr;
 
   if ((unsigned) (reg - UNW_PPC32_R0) < 32)
+#if defined(__linux__)
     addr = &uc->uc_mcontext.uc_regs->gregs[reg - UNW_PPC32_R0];
+#elif defined(__FreeBSD__)
+    addr = &uc->uc_mcontext.mc_gpr[reg - UNW_PPC32_R0];
+#endif
 
   else
   if ( ((unsigned) (reg - UNW_PPC32_F0) < 32) &&
        ((unsigned) (reg - UNW_PPC32_F0) >= 0) )
+#if defined(__linux__)
     addr = &uc->uc_mcontext.uc_regs->fpregs.fpregs[reg - UNW_PPC32_F0];
+ #elif defined(__FreeBSD__)
+    addr = &uc->uc_mcontext.mc_fpreg[reg - UNW_PPC32_F0];
+#endif
 
   else
     {
@@ -76,7 +84,11 @@ uc_addr (ucontext_t *uc, int reg)
         default:
           return NULL;
         }
+#if defined(__linux__)
       addr = &uc->uc_mcontext.uc_regs->gregs[gregs_idx];
+#elif defined(__FreeBSD__)
+      addr = &uc->uc_mcontext.mc_gpr[gregs_idx];
+#endif
     }
   return addr;
 }

@@ -7,7 +7,7 @@ namespace System.Globalization.Tests
     {
         public static int[] UrINNumberGroupSizes()
         {
-            if (PlatformDetection.WindowsVersion >= 10 || PlatformDetection.ICUVersion.Major >= 55)
+            if (PlatformDetection.WindowsVersion >= 10 || PlatformDetection.ICUVersion.Major >= 55 || PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 return new int[] { 3 };
             }

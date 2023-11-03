@@ -48,7 +48,7 @@ namespace System.Globalization
         private const int MinAdvancedHijri = -2;
         private const int MaxAdvancedHijri = 2;
 
-        private static ReadOnlySpan<int> HijriMonthDays => new int[] { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
+        private static ReadOnlySpan<int> HijriMonthDays => [0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355];
 
         private int _hijriAdvance = int.MinValue;
 
@@ -198,7 +198,7 @@ namespace System.Globalization
 
             // Get the absolute date. The absolute date is the number of days from January 1st, 1 A.D.
             // 1/1/0001 is absolute date 1.
-            long numDays = ticks / GregorianCalendar.TicksPerDay + 1;
+            long numDays = ticks / TicksPerDay + 1;
 
             // See how much we need to backup or advance
             numDays += HijriAdjustment;
@@ -297,7 +297,7 @@ namespace System.Globalization
             }
 
             long ticks = GetAbsoluteDateHijri(y, m, d) * TicksPerDay + (time.Ticks % TicksPerDay);
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
 
@@ -413,7 +413,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
 
-            return new DateTime(lDate * GregorianCalendar.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
+            return new DateTime(lDate * TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
         private const int DefaultTwoDigitYearMax = 1451;

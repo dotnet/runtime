@@ -582,8 +582,9 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
         HELPER_METHOD_FRAME_BEGIN_EX_BODY(ret, helperFrame, gcpoll, allowGC)    \
             /* <TODO>TODO TURN THIS ON!!!   </TODO> */                    \
             /* gcpoll; */                                                       \
+            if (g_isNewExceptionHandlingEnabled) __helperframe.Push();         \
             INSTALL_MANAGED_EXCEPTION_DISPATCHER;                               \
-            __helperframe.Push();                                               \
+            if (!g_isNewExceptionHandlingEnabled) __helperframe.Push();          \
             MAKE_CURRENT_THREAD_AVAILABLE_EX(__helperframe.GetThread()); \
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(&__helperframe);
 
@@ -616,8 +617,9 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 
 #define HELPER_METHOD_FRAME_END_EX(gcpoll,allowGC)                          \
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;                          \
-            __helperframe.Pop();                                            \
+            if (!g_isNewExceptionHandlingEnabled) __helperframe.Pop();      \
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;                         \
+            if (g_isNewExceptionHandlingEnabled) __helperframe.Pop();       \
         HELPER_METHOD_FRAME_END_EX_BODY(gcpoll,allowGC);
 
 #define HELPER_METHOD_FRAME_END_EX_NOTHROW(gcpoll,allowGC)                  \
@@ -1348,7 +1350,6 @@ typedef UINT16 FC_UINT16_RET;
 
 // FC_TypedByRef should be used for TypedReferences in FCall signatures
 #define FC_TypedByRef   TypedByRef
-#define FC_DECIMAL      DECIMAL
 
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make

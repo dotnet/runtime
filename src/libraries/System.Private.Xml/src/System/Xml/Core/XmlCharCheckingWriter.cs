@@ -109,10 +109,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
 
                 ValidateNCName(localName);
 
@@ -129,10 +126,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
 
                 ValidateNCName(localName);
 
@@ -296,10 +290,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
 
                 XmlConvert.VerifyNMTOKEN(name);
             }

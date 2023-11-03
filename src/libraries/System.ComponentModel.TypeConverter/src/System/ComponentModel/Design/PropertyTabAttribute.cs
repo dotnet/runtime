@@ -145,34 +145,25 @@ namespace System.ComponentModel
         public PropertyTabScope[] TabScopes { get; private set; }
 
         public override bool Equals([NotNullWhen(true)] object? other)
-        {
-            if (other is PropertyTabAttribute propertyTabAttribute)
-            {
-                return Equals(propertyTabAttribute);
-            }
-            return false;
-        }
+            => Equals(other as PropertyTabAttribute);
 
-        public bool Equals(PropertyTabAttribute other)
+        public bool Equals([NotNullWhen(true)] PropertyTabAttribute? other)
         {
-            if (other == (object)this)
-            {
-                return true;
-            }
-            if (other.TabClasses.Length != TabClasses.Length ||
-                other.TabScopes.Length != TabScopes.Length)
-            {
+            if (other is null)
                 return false;
-            }
+
+            if (ReferenceEquals(this, other))
+                return true;
+
+            if (other.TabClasses.Length != TabClasses.Length || other.TabScopes.Length != TabScopes.Length)
+                return false;
 
             for (int i = 0; i < TabClasses.Length; i++)
             {
-                if (TabClasses[i] != other.TabClasses[i] ||
-                    TabScopes[i] != other.TabScopes[i])
-                {
+                if (TabClasses[i] != other.TabClasses[i] || TabScopes[i] != other.TabScopes[i])
                     return false;
-                }
             }
+
             return true;
         }
 

@@ -5,7 +5,6 @@
 
 //! This is not considered public API with backward compatibility guarantees. 
 
-declare const promise_control_symbol: unique symbol;
 interface PromiseController<T = any> {
     isDone: boolean;
     readonly promise: Promise<T>;
@@ -13,7 +12,7 @@ interface PromiseController<T = any> {
     reject: (reason?: any) => void;
 }
 interface ControllablePromise<T = any> extends Promise<T> {
-    [promise_control_symbol]: PromiseController<T>;
+    __brand: "ControllablePromise";
 }
 interface PromiseAndController<T> {
     promise: ControllablePromise<T>;

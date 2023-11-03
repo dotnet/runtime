@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ep-rt-types.h targeting AOT runtime.
-#ifndef __EVENTPIPE_RT_TYPES_AOT_H__
-#define __EVENTPIPE_RT_TYPES_AOT_H__
+#ifndef EVENTPIPE_RT_TYPES_AOT_H
+#define EVENTPIPE_RT_TYPES_AOT_H
 
 #include <eventpipe/ep-rt-config.h>
 
@@ -58,7 +58,7 @@ typedef class MethodDesc ep_rt_method_desc_t;
  */
 
 #undef ep_rt_file_handle_t
-typedef class CFileStream * ep_rt_file_handle_t;
+typedef void * ep_rt_file_handle_t;
 
 #undef ep_rt_wait_event_handle_t
 typedef struct _rt_aot_event_internal_t ep_rt_wait_event_handle_t;
@@ -78,14 +78,10 @@ typedef struct _rt_aot_lock_internal_t ep_rt_spin_lock_handle_t;
 typedef class Thread * ep_rt_thread_handle_t;
 
 #undef ep_rt_thread_activity_id_handle_t
-typedef class Thread * ep_rt_thread_activity_id_handle_t;
+typedef EventPipeThread * ep_rt_thread_activity_id_handle_t;
 
 #undef ep_rt_thread_id_t
-// #ifndef TARGET_UNIX
-// typedef DWORD ep_rt_thread_id_t;
-// #else
 typedef size_t ep_rt_thread_id_t;
-//#endif
 
 #undef ep_rt_thread_start_func
 typedef size_t (__stdcall *ep_rt_thread_start_func)(void *lpThreadParameter);
@@ -102,4 +98,4 @@ typedef struct _rt_aot_thread_params_t {
 } ep_rt_thread_params_t;
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __EVENTPIPE_RT_TYPES_AOT_H__ */
+#endif /* EVENTPIPE_RT_TYPES_AOT_H */

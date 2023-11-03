@@ -22,7 +22,7 @@ namespace System
         [Intrinsic]
         public Type GetType()
         {
-            return Type.GetTypeFromEETypePtr(this.GetEETypePtr());
+            return Type.GetTypeFromMethodTable(m_pEEType);
         }
 
         [Intrinsic]

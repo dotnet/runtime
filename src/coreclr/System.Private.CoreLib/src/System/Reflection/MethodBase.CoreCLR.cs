@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Security;
 using System.Threading;
 
 namespace System.Reflection
@@ -34,7 +35,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static MethodBase? GetCurrentMethod()
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -46,7 +47,7 @@ namespace System.Reflection
         // used by EE
         private IntPtr GetMethodDesc() { return MethodHandle.Value; }
 
-        internal virtual ParameterInfo[] GetParametersNoCopy() { return GetParameters(); }
+        internal virtual ReadOnlySpan<ParameterInfo> GetParametersAsSpan() { return GetParameters(); }
         #endregion
     }
 }

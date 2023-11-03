@@ -5,16 +5,18 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 
 public unsafe class StackallocTests
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int numberOftests = 0;
         foreach (var method in typeof(StackallocTests)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(t => t.Name.StartsWith("Test")))
+            .Where(t => t.Name.StartsWith("Test") && (t.Name != "TestEntryPoint")))
         {
             // Invoke the test and make sure both return value and out
             // parameters are empty guids

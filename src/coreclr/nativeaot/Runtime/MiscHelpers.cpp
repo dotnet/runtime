@@ -35,9 +35,10 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
+#include "RhConfig.h"
+#include <minipal/cpuid.h>
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -89,9 +90,9 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
 
     // If a result array is passed then it should be an array type with pointer-sized components that are not
     // GC-references.
-    ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
-    ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultArray || pResultArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
+    ASSERT(!pResultArray || pResultArray->GetMethodTable()->IsArray());
+    ASSERT(!pResultArray || !pResultArray->GetMethodTable()->HasReferenceFields());
+    ASSERT(!pResultArray || pResultArray->GetMethodTable()->RawGetComponentSize() == sizeof(void*));
 
     uint32_t cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
     HANDLE * pResultElements = pResultArray ? (HANDLE*)(pResultArray + 1) : NULL;
@@ -118,16 +119,6 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
         return (HANDLE)pCodeManager->GetOsModuleHandle();
 
     return NULL;
-}
-
-COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (MethodTable * pEEType))
-{
-    return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
-}
-
-COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetModuleFromEEType, (MethodTable * pEEType))
-{
-    return *pEEType->GetTypeManagerPtr();
 }
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle, uint32_t blobId, uint8_t ** ppbBlob, uint32_t * pcbBlob))
@@ -349,30 +340,6 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
     return pCodeOrg;
 }
 
-// Get the universal transition thunk. If the universal transition stub is called through
-// the normal PE static linkage model, a jump stub would be used which may interfere with
-// the custom calling convention of the universal transition thunk. So instead, a special
-// api just for getting the thunk address is needed.
-// TODO: On ARM this may still result in a jump stub that trashes R12. Determine if anything
-//       needs to be done about that when we implement the stub for ARM.
-extern "C" void RhpUniversalTransition();
-COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
-{
-    return (void*)RhpUniversalTransition;
-}
-
-extern CrstStatic g_ThunkPoolLock;
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
-{
-    g_ThunkPoolLock.Enter();
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
-{
-    g_ThunkPoolLock.Leave();
-}
-
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()
 {
     return PalGetTickCount64();
@@ -420,6 +387,13 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
 {
     return PalGetProcessCpuCount();
+}
+
+COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** pResultValues))
+{
+    *pResultKeys = g_pRhConfig->GetKnobNames();
+    *pResultValues = g_pRhConfig->GetKnobValues();
+    return g_pRhConfig->GetKnobCount();
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)

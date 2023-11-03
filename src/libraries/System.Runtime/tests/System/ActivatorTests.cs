@@ -198,6 +198,8 @@ namespace System.Tests
             yield return new object[] { typeof(int[]) };
             yield return new object[] { typeof(int).MakeByRefType() };
             yield return new object[] { typeof(int).MakePointerType() };
+            yield return new object[] { FunctionPointerType() };
+            static unsafe Type FunctionPointerType() => typeof(delegate*<int, int>);
         }
 
         [Theory]

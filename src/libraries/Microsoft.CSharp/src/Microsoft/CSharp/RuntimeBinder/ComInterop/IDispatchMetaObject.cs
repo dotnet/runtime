@@ -11,6 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     internal sealed class IDispatchMetaObject : ComFallbackMetaObject
     {
         private readonly IDispatchComObject _self;
+        private static readonly bool[] s_false = new bool[] { false };
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal IDispatchMetaObject(Expression expression, IDispatchComObject self)
@@ -218,7 +219,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 DynamicMetaObject result = new ComInvokeBinder(
                     new CallInfo(1),
                     new[] { value },
-                    new bool[] { false },
+                    s_false,
                     restrictions,
                     Expression.Constant(method),
                     dispatch,

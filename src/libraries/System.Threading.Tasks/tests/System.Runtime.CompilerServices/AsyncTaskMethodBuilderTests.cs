@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -377,7 +378,7 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void TaskMethodBuilderDecimal_DoesntUseCompletedCache()
         {
-            TaskMethodBuilderT_UsesCompletedCache(0m, shouldBeCached: false);
+            TaskMethodBuilderT_UsesCompletedCache(default(decimal), shouldBeCached: true);
             TaskMethodBuilderT_UsesCompletedCache(0.0m, shouldBeCached: false);
             TaskMethodBuilderT_UsesCompletedCache(42m, shouldBeCached: false);
         }
@@ -576,6 +577,11 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
         {
+            if (!PlatformDetection.IsPreciseGcSupported)
+            {
+                throw new SkipTestException("Test requires precise GC");
+            }
+
             RemoteExecutor.Invoke(() =>
             {
                 using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
@@ -623,7 +629,14 @@ namespace System.Threading.Tasks.Tests
                     }
 
                     EventWrittenEventArgs iam = events.SingleOrDefault(e => e.EventName == "IncompleteAsyncMethod");
-                    Assert.NotNull(iam);
+                    if (iam == null)
+                    {
+                        sb.AppendLine("Events did not contain IncompleteAsyncMethod event.")
+                          .AppendLine("List of events contained:")
+                          .AppendLine(string.Join(Environment.NewLine, events.Select(e => e.EventName)))
+                          .AppendLine();
+                        throw new XunitException(sb.ToString());
+                    }
                     Assert.NotNull(iam.Payload);
 
                     string description = iam.Payload[0] as string;

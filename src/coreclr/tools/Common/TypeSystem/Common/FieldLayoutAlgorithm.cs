@@ -84,6 +84,7 @@ namespace Internal.TypeSystem
         public bool LayoutAbiStable; // Is the layout stable such that it can safely be used in function calling conventions
         public bool IsAutoLayoutOrHasAutoLayoutFields;
         public bool IsInt128OrHasInt128Fields;
+        public bool IsVectorTOrHasVectorTFields;
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.

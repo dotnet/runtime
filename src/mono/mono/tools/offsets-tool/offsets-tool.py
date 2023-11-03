@@ -23,7 +23,10 @@ class Target:
 		if self.arch_define:
 			ret.append (self.arch_define)
 		if self.platform_define:
-			ret.append (self.platform_define)
+			if isinstance(self.platform_define, list):
+				ret.extend (self.platform_define)
+			else:
+				ret.append (self.platform_define)
 		if self.defines:
 			ret.extend (self.defines)
 		return ret
@@ -86,12 +89,14 @@ class OffsetsTool:
 
 		if "wasm" in args.abi:
 			if args.wasi_path != None:
-				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/14.0.4/include", args.mono_path + "/wasi/mono-include"]
+				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/16/include", args.mono_path + "/wasi/mono-include"]
 				self.target = Target ("TARGET_WASI", None, ["TARGET_WASM"] + WASI_DEFINES)
 				self.target_args += ["-target", args.abi]
 			else:
 				require_emscipten_path (args)
-				self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten", args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic"]
+				clang_path = os.path.dirname(args.libclang)
+				self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten", args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic",
+									 clang_path + "/../lib/clang/16/include"]
 				self.target = Target ("TARGET_WASM", None, [])
 				self.target_args += ["-target", args.abi]
 
@@ -138,21 +143,11 @@ class OffsetsTool:
 					self.target_args += ["-I", prefix + "/include"]
 					self.target_args += ["-I", prefix + "/include-fixed"]
 
-		# iOS
-		elif "arm-apple-darwin10" == args.abi:
-			require_sysroot (args)
-			self.target = Target ("TARGET_ARM", "TARGET_IOS", ["ARM_FPU_VFP", "HAVE_ARMV5"] + IOS_DEFINES)
-			self.target_args += ["-arch", "arm"]
-			self.target_args += ["-isysroot", args.sysroot]
+		# iOS/tvOS
 		elif "aarch64-apple-darwin10" == args.abi:
 			require_sysroot (args)
-			self.target = Target ("TARGET_ARM64", "TARGET_IOS", IOS_DEFINES)
+			self.target = Target ("TARGET_ARM64", ["TARGET_IOS", "TARGET_TVOS"], IOS_DEFINES)
 			self.target_args += ["-arch", "arm64"]
-			self.target_args += ["-isysroot", args.sysroot]
-		elif "i386-apple-darwin10" == args.abi:
-			require_sysroot (args)
-			self.target = Target ("TARGET_X86", "", IOS_DEFINES)
-			self.target_args += ["-arch", "i386"]
 			self.target_args += ["-isysroot", args.sysroot]
 		elif "x86_64-apple-darwin10" == args.abi:
 			require_sysroot (args)
@@ -288,7 +283,7 @@ class OffsetsTool:
 
 		clang_args = []
 		clang_args += self.target_args
-		clang_args += ['-std=gnu99', '-DMONO_GENERATING_OFFSETS']
+		clang_args += ['-std=gnu11', '-DMONO_GENERATING_OFFSETS']
 		for include in self.sys_includes:
 			clang_args.append ("-isystem")
 			clang_args.append (include)
@@ -356,7 +351,10 @@ class OffsetsTool:
 		if target.arch_define:
 			f.write ("#ifdef " + target.arch_define + "\n")
 		if target.platform_define:
-			f.write ("#ifdef " + target.platform_define + "\n")
+			if isinstance(target.platform_define, list):
+				f.write ("#if " + " || ".join (["defined (" + platform_define + ")" for platform_define in target.platform_define]) + "\n")
+			else:
+				f.write ("#ifdef " + target.platform_define + "\n")
 		f.write ("#ifndef HAVE_BOEHM_GC\n")
 		f.write ("#define HAS_CROSS_COMPILER_OFFSETS\n")
 		f.write ("#if defined (USE_CROSS_COMPILE_OFFSETS) || defined (MONO_CROSS_COMPILE)\n")
@@ -372,8 +370,11 @@ class OffsetsTool:
 			if type.size == -1:
 				continue
 			f.write ("DECL_SIZE2(%s,%s)\n" % (type.name, type.size))
+			done_fields = {}
 			for field in type.fields:
-				f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
+				if field.name not in done_fields:
+					f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
+					done_fields [field.name] = field.name
 		f.write ("#endif //disable metadata check\n")
 
 		f.write ("#ifndef DISABLE_JIT_OFFSETS\n")
@@ -383,8 +384,11 @@ class OffsetsTool:
 			if type.size == -1:
 				continue
 			f.write ("DECL_SIZE2(%s,%s)\n" % (type.name, type.size))
+			done_fields = {}
 			for field in type.fields:
-				f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
+				if field.name not in done_fields:
+					f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
+					done_fields [field.name] = field.name
 		f.write ("#endif //disable jit check\n")
 
 		f.write ("#endif //cross compiler checks\n")
@@ -392,7 +396,10 @@ class OffsetsTool:
 		if target.arch_define:
 			f.write ("#endif //" + target.arch_define + "\n")
 		if target.platform_define:
-			f.write ("#endif //" + target.platform_define + "\n")
+			if isinstance(target.platform_define, list):
+				f.write ("#endif //" + " || ".join (target.platform_define) + "\n")
+			else:
+				f.write ("#endif //" + target.platform_define + "\n")
 		f.write ("#endif //USED_CROSS_COMPILER_OFFSETS check\n")
 
 tool = OffsetsTool ()

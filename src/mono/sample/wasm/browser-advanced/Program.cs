@@ -13,6 +13,29 @@ namespace Sample
         public static int Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
+
+            var rand = new Random();
+            Console.WriteLine ("Today's lucky number is " + rand.Next(100) + " and " + Guid.NewGuid());
+
+            var start = DateTime.UtcNow;
+            var timezonesCount = TimeZoneInfo.GetSystemTimeZones().Count;
+            var end = DateTime.UtcNow;
+            Console.WriteLine($"Found {timezonesCount} timezones in the TZ database in {end-start}");
+
+            TimeZoneInfo utc = TimeZoneInfo.FindSystemTimeZoneById("UTC");
+            Console.WriteLine($"{utc.DisplayName} BaseUtcOffset is {utc.BaseUtcOffset}");
+
+            try
+            {
+                TimeZoneInfo tst = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+                Console.WriteLine($"{tst.DisplayName} BaseUtcOffset is {tst.BaseUtcOffset}");
+            }
+            catch (TimeZoneNotFoundException tznfe)
+            {
+                Console.WriteLine($"Could not find Asia/Tokyo: {tznfe.Message}");
+            }
+
+
             return 0;
         }
 

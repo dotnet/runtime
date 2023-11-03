@@ -17,7 +17,9 @@ namespace ILCompiler
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
+        protected InlinedThreadStatics _inlinedThreadStatics = new InlinedThreadStatics();
         protected MethodImportationErrorProvider _methodImportationErrorProvider = new MethodImportationErrorProvider();
+        protected ReadOnlyFieldPolicy _readOnlyFieldPolicy = new ReadOnlyFieldPolicy();
         protected IInliningPolicy _inliningPolicy;
         protected bool _methodBodyFolding;
         protected InstructionSetSupport _instructionSetSupport;
@@ -109,6 +111,18 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseReadOnlyFieldPolicy(ReadOnlyFieldPolicy policy)
+        {
+            _readOnlyFieldPolicy = policy;
+            return this;
+        }
+
+        public CompilationBuilder UseInlinedThreadStatics(InlinedThreadStatics inlinedThreadStatics)
+        {
+            _inlinedThreadStatics = inlinedThreadStatics;
+            return this;
+        }
+
         public CompilationBuilder UseDwarf5(bool value)
         {
             _useDwarf5 = value;
@@ -118,7 +132,7 @@ namespace ILCompiler
         protected PreinitializationManager GetPreinitializationManager()
         {
             if (_preinitializationManager == null)
-                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy());
+                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy(), new StaticReadOnlyFieldPolicy());
             return _preinitializationManager;
         }
 

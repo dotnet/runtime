@@ -691,6 +691,152 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(countBefore + 1, countAfter);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        [InlineData(Oids.Sha3_256)]
+        [InlineData(Oids.Sha3_384)]
+        [InlineData(Oids.Sha3_512)]
+        public static void ComputeSignature_Rsa_Sha3_Roundtrip(string hashAlgorithm)
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+            byte[] cmsBytes;
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(hashAlgorithm, null);
+
+                cms.ComputeSignature(signer);
+                cmsBytes = cms.Encode();
+                cms = new SignedCms();
+                cms.Decode(cmsBytes);
+                cms.CheckSignature(true); // Assert.NoThrow
+                Assert.Single(cms.SignerInfos);
+
+                SignerInfo signerInfo = cms.SignerInfos[0];
+                Assert.Equal(hashAlgorithm, signerInfo.DigestAlgorithm.Value);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        [InlineData(Oids.Sha3_256)]
+        [InlineData(Oids.Sha3_384)]
+        [InlineData(Oids.Sha3_512)]
+        public static void ComputeSignature_Ecdsa_Sha3_Roundtrip(string hashAlgorithm)
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+            byte[] cmsBytes;
+
+            using (X509Certificate2 cert = Certificates.ECDsaP521Win.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(hashAlgorithm, null);
+
+                cms.ComputeSignature(signer);
+                cmsBytes = cms.Encode();
+                cms = new SignedCms();
+                cms.Decode(cmsBytes);
+                cms.CheckSignature(true); // Assert.NoThrow
+                Assert.Single(cms.SignerInfos);
+
+                SignerInfo signerInfo = cms.SignerInfos[0];
+                Assert.Equal(hashAlgorithm, signerInfo.DigestAlgorithm.Value);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DoesNotSupportSha3))]
+        [InlineData(Oids.Sha3_256)]
+        [InlineData(Oids.Sha3_384)]
+        [InlineData(Oids.Sha3_512)]
+        public static void ComputeSignature_Sha3_NotSupported(string hashAlgorithm)
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(hashAlgorithm, null);
+
+                Assert.Throws<CryptographicException>(() => cms.ComputeSignature(signer));
+            }
+        }
+
+        [Fact]
+        public static void ExistingDocument_Rsa_Sha3_256()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.Rsa_Sha3_256_SignedDocument);
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                cms.CheckSignature(true); // Assert.NoThrow
+                Assert.Single(cms.SignerInfos);
+
+                SignerInfo signerInfo = cms.SignerInfos[0];
+                Assert.Equal(Oids.Sha3_256, signerInfo.DigestAlgorithm.Value);
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
+        }
+
+        [Fact]
+        public static void ExistingDocument_Rsa_Sha3_384()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.Rsa_Sha3_384_SignedDocument);
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                cms.CheckSignature(true); // Assert.NoThrow
+                Assert.Single(cms.SignerInfos);
+
+                SignerInfo signerInfo = cms.SignerInfos[0];
+                Assert.Equal(Oids.Sha3_384, signerInfo.DigestAlgorithm.Value);
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
+        }
+
+        [Fact]
+        public static void ExistingDocument_Rsa_Sha3_512()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.Rsa_Sha3_512_SignedDocument);
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                cms.CheckSignature(true); // Assert.NoThrow
+                Assert.Single(cms.SignerInfos);
+
+                SignerInfo signerInfo = cms.SignerInfos[0];
+                Assert.Equal(Oids.Sha3_512, signerInfo.DigestAlgorithm.Value);
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
+        }
+
+        [Fact]
+        public static void ExistingDocument_Ecdsa_Sha256_FromNetFX()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.Ecdsa_Sha256_FromNetFX_SignedDocument);
+
+            cms.CheckSignature(true); // Assert.NoThrow
+            Assert.Single(cms.SignerInfos);
+
+            SignerInfo signerInfo = cms.SignerInfos[0];
+            Assert.Equal(Oids.Sha256, signerInfo.DigestAlgorithm.Value);
+            Assert.Equal(Oids.EcPublicKey, signerInfo.SignatureAlgorithm.Value);
+        }
+
         private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
         {
             using (var pubCert = new X509Certificate2(cert.RawData))

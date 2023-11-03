@@ -3,10 +3,15 @@
 
 using System.Runtime.CompilerServices;
 
+// We disable the below warnings since all boxing/unboxing happens
+// under a value type based type check and they are impossible to hit
+
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type
+#pragma warning disable CS8605 // Unboxing a possibly null value
+
 namespace System.Runtime.Intrinsics
 {
     internal static class Scalar<T>
-        where T : struct
     {
         public static T AllBitsSet
         {
@@ -63,7 +68,8 @@ namespace System.Runtime.Intrinsics
                 }
                 else
                 {
-                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                    ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                    return default!;
                 }
             }
         }
@@ -123,7 +129,8 @@ namespace System.Runtime.Intrinsics
                 }
                 else
                 {
-                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                    ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                    return default!;
                 }
             }
         }
@@ -163,7 +170,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -220,7 +228,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -237,7 +246,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -294,7 +304,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -351,7 +362,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -430,7 +442,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -447,7 +460,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -504,7 +518,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -561,7 +576,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -618,7 +634,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -675,7 +692,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -732,7 +750,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -788,7 +807,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -849,7 +869,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -910,7 +931,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -971,7 +993,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -1028,7 +1051,8 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
 
@@ -1085,8 +1109,12 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
             }
         }
     }
 }
+
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type
+#pragma warning restore CS8605 // Unboxing a possibly null value

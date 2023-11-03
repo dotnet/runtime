@@ -5961,7 +5961,7 @@ namespace System.Tests
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                Assert.True(s.ToUpper().Equals(expected, StringComparison.Ordinal));
+                Assert.Equal(s.ToUpper(), expected);
 
                 Span<char> destination = new char[s.Length];
                 Assert.Equal(s.Length, s.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
@@ -7575,7 +7575,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void InternTest()
         {
             AssertExtensions.Throws<ArgumentNullException>("str", () => string.Intern(null));

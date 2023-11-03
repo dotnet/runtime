@@ -23,17 +23,16 @@
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkNativePath>
-    <LinkerFlavor Condition="'$(TargetOS)' == 'linux'">lld</LinkerFlavor>
-    <NoWarn>$(NoWarn);IL1005;IL2105;IL3000;IL3001;IL3002;IL3003</NoWarn>
+    <NoWarn>$(NoWarn);IL1005;IL2105;IL3000;IL3001;IL3002;IL3003;IL3050;IL3051;IL3052;IL3053</NoWarn>
     <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <SuppressAotAnalysisWarnings>true</SuppressAotAnalysisWarnings>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
@@ -73,11 +72,10 @@
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
 
-    <!-- Tests are doing private reflection. -->
-    <IlcArg Include="--nometadatablocking" />
-
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
     <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
+
+    <TrimmerRootAssembly Include="TestUtilities" />
   </ItemGroup>
 
   <ItemGroup>
@@ -130,25 +128,18 @@
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
     </PropertyGroup>
 
-    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
     </Exec>
-  </Target>
 
-  <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
-          BeforeTargets="_PrepareForReadyToRunCompilation">
     <PropertyGroup>
-      <Crossgen2ArtifactPath>$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)</Crossgen2ArtifactPath>
+      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
+      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
+      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
     </PropertyGroup>
-
-    <ItemGroup>
-      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(Crossgen2ArtifactPath)')" />
-      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
-      <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="PublishTestAsSingleFile"

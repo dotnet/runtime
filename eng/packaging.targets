@@ -10,12 +10,14 @@
     <DisablePackageBaselineValidation Condition="'$(IsShipping)' == 'false' or
                                                  '$(SuppressFinalPackageVersion)' == 'true' or
                                                  '$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
-    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(NetCoreAppPreviousPackageBaselineVersion)</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(ApiCompatNetCoreAppBaselineVersion)</PackageValidationBaselineVersion>
     <BeforePack>$(BeforePack);IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging</BeforePack>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludeProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
     <IncludeBuildOutput Condition="'$(PackageUsePlatformTargeting)' != 'true' and '$(TargetPlatformIdentifier)' != '' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking Condition="'$(PackageUsePlatformTargeting)' != 'true' and '$(TargetPlatformIdentifier)' != '' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</SuppressDependenciesWhenPacking>
+    <!-- Don't treat the TPM as an input to APICompat PackageValidation's reference assembly calculation. -->
+    <ApiCompatIgnoreTargetPlatformMoniker Condition="'$(SuppressDependenciesWhenPacking)' == 'true'">true</ApiCompatIgnoreTargetPlatformMoniker>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and Exists('PACKAGE.md')">PACKAGE.md</PackageReadmeFile>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
@@ -130,10 +132,12 @@
                                               @(DocumentationProjectOutputGroupOutput)" />
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
                               PackagePath="runtimes\$(_packageTargetRuntime)\$(BuildOutputTargetFolder)\$(_targetFrameworkWithoutSuffix)\" />
-      <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
-                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
+      <!-- Create the item and use its metadata separately to avoid MSB4120. See https://aka.ms/msbuild/metadata-self-ref for more info. -->
+      <_RuntimeSymbolPath Include="$(RuntimeSymbolPath)" />
+      <TfmSpecificDebugSymbolsFile Include="@(_RuntimeSymbolPath)"
+                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(_RuntimeSymbolPath.Filename)%(_RuntimeSymbolPath.Extension)"
                                    TargetFramework="$(_targetFrameworkWithoutSuffix)"
-                                   Condition="'$(IncludeSymbols)' == 'true' and Exists('$(RuntimeSymbolPath)')" />
+                                   Condition="'$(IncludeSymbols)' == 'true' and Exists('%(_RuntimeSymbolPath.Identity)')" />
     </ItemGroup>
   </Target>
 
@@ -270,9 +274,10 @@
   <Target Name="AddBuildOutputToToolsPackage">
     <ItemGroup>
       <!-- Include build outputs in the package under tools directory. -->
-      <TfmSpecificPackageFile Include="$(OutputPath)**"
-                              Exclude="$(OutputPath)publish\**;
-                                       $(OutputPath)"
+      <_BuildOutputPackageFile Include="$(OutputPath)**"
+                               Exclude="$(OutputPath)publish\**;
+                                        $(OutputPath)" />
+      <TfmSpecificPackageFile Include="@(_BuildOutputPackageFile)"
                               PackagePath="tools/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
                                    TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"

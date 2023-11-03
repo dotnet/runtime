@@ -115,7 +115,6 @@ BEGIN
     FUSION_E_REF_DEF_MISMATCH               "The located assembly's manifest definition with name '%1' does not match the assembly reference."
     FUSION_E_PRIVATE_ASM_DISALLOWED         "Assembly '%1' is required to be strongly named."
     FUSION_E_INVALID_NAME                   "The given assembly name, '%1', was invalid."
-    FUSION_E_CACHEFILE_FAILED               "Failed to add file to AppDomain cache."
     FUSION_E_APP_DOMAIN_LOCKED              "The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."
     IDS_EE_HASH_VAL_FAILED                  "Hash validation failed for file or assembly '%1'."
     CORSEC_E_INVALID_PUBLICKEY              "The public key for assembly '%1' was invalid."
@@ -526,7 +525,6 @@ BEGIN
     IDS_CLASSLOAD_TOO_MANY_METHODS          "Type '%1' from assembly '%2' contains more methods than the current implementation allows."
     IDS_CLASSLOAD_MI_CANNOT_OVERRIDE        "Cannot override runtime implemented method '%3' on type '%1' from assembly '%2'."
 
-    IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR   "Collectible type '%1' has unsupported FixedAddressValueTypeAttribute applied to a field."
     IDS_EE_JIT_COMPILER_ERROR               "The JIT compiler encountered invalid IL code or an internal limitation."
     IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  "Invalid managed/unmanaged type combination (Marshaling to and from COM VARIANTs isn't supported)."
     IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED      "Invalid managed/unmanaged type combination (Marshaling to and from COM interface pointers isn't supported)."
@@ -607,6 +605,7 @@ BEGIN
         BFA_GENERIC_METHODS_INST                "Generic methods should always be mcInstantiated."
         BFA_BAD_FIELD_TOKEN                     "Field token out of range."
         BFA_INVALID_FIELD_ACC_FLAGS             "Invalid Field Access Flags."
+        BFA_INVALID_UNSAFEACCESSOR              "Invalid usage of UnsafeAccessorAttribute."
         BFA_FIELD_LITERAL_AND_INIT              "Field is Literal and InitOnly."
         BFA_NONSTATIC_GLOBAL_FIELD              "Non-Static Global Field."
         BFA_INSTANCE_FIELD_IN_INT               "Instance Field in an Interface."

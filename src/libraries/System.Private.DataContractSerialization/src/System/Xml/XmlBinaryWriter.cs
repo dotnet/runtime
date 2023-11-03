@@ -708,7 +708,7 @@ namespace System.Xml
             if (ch > char.MaxValue)
             {
                 SurrogateChar sch = new SurrogateChar(ch);
-                WriteTextImpl(stackalloc char[] { sch.HighChar, sch.LowChar });
+                WriteTextImpl([sch.HighChar, sch.LowChar]);
             }
             else
             {
@@ -1074,7 +1074,7 @@ namespace System.Xml
                     _captureXText = null;
                 }
 
-                if (_captureText == null || _captureText.Length == 0)
+                if (string.IsNullOrEmpty(_captureText))
                 {
                     _captureText = s;
                 }

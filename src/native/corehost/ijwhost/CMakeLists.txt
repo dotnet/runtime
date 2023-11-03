@@ -32,7 +32,7 @@ add_definitions(-DFEATURE_LIBHOST=1)
 convert_to_absolute_path(SOURCES ${SOURCES})
 convert_to_absolute_path(ASM_HELPERS_SOURCES ${ASM_HELPERS_SOURCES})
 
-if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
     preprocess_files(ASM_HELPERS_SOURCES ${ASM_HELPERS_SOURCES})
     if (CMAKE_GENERATOR MATCHES "Visual Studio")
         compile_asm(TARGET ijwhost ASM_FILES ${ASM_HELPERS_SOURCES} OUTPUT_OBJECTS ASM_HELPERS_SOURCES)
@@ -47,8 +47,8 @@ list(APPEND SOURCES ${ASM_HELPERS_SOURCES})
 
 include(../lib.cmake)
 
-# Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
+# Specify non-default Windows libs to be used for Arm64 builds
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
     target_link_libraries(ijwhost PRIVATE Ole32.lib)
 endif()
 

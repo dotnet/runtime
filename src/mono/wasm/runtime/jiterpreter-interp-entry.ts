@@ -1,20 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, MonoMethod, MonoType } from "./types";
+import { MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module } from "./globals";
+import { Module, mono_assert } from "./globals";
 import {
-    getU32_unaligned, _zero_region
+    setI32, getU32_unaligned, _zero_region
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 import {
-    WasmValtype, WasmBuilder, addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getRawCwrap, importDef,
+    WasmBuilder, addWasmFunctionPointer,
+    _now, getRawCwrap, importDef,
     getWasmFunctionTable, recordFailure, getOptions,
-    JiterpreterOptions, getMemberOffset, JiterpMember
+    JiterpreterOptions, getMemberOffset,
+    getCounter, modifyCounter
 } from "./jiterpreter-support";
+import { WasmValtype } from "./jiterpreter-opcodes";
+import { mono_log_error, mono_log_info } from "./logging";
+import { utf8ToString } from "./strings";
+import {
+    JiterpreterTable, JiterpCounter, JiterpMember, JitQueue
+} from "./jiterpreter-enums";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -36,6 +43,7 @@ typedef struct {
     ThreadContext *context; // 4
     gpointer orig_domain; // 8
     gpointer attach_cookie; // 12
+    int params_count; // 16
 } JiterpEntryDataHeader;
 */
 
@@ -51,7 +59,6 @@ let trampBuilder: WasmBuilder;
 let trampImports: Array<[string, string, Function]> | undefined;
 let fnTable: WebAssembly.Table;
 let jitQueueTimeout = 0;
-const jitQueue: TrampolineInfo[] = [];
 const infoTable: { [ptr: number]: TrampolineInfo } = {};
 
 /*
@@ -127,6 +134,14 @@ class TrampolineInfo {
 
 let mostRecentOptions: JiterpreterOptions | undefined = undefined;
 
+// If a method is freed we need to remove its info (just in case another one gets
+//  allocated at that exact memory offset later) and more importantly, ensure it is
+//  not waiting in the jit queue
+export function mono_jiterp_free_method_data_interp_entry(imethod: number) {
+    delete infoTable[imethod];
+}
+
+// FIXME: move this counter into C and make it thread safe
 export function mono_interp_record_interp_entry(imethod: number) {
     // clear the unbox bit
     imethod = imethod & ~0x1;
@@ -145,8 +160,8 @@ export function mono_interp_record_interp_entry(imethod: number) {
     else if (info.hitCount !== mostRecentOptions!.interpEntryHitCount)
         return;
 
-    jitQueue.push(info);
-    if (jitQueue.length >= maxJitQueueLength)
+    const jitQueueLength = cwraps.mono_jiterp_tlqueue_add(JitQueue.InterpEntry, <any>imethod);
+    if (jitQueueLength >= maxJitQueueLength)
         flush_wasm_entry_trampoline_jit_queue();
     else
         ensure_jit_is_scheduled();
@@ -164,7 +179,7 @@ export function mono_interp_jit_wasm_entry_trampoline(
 
     const info = new TrampolineInfo(
         imethod, method, argumentCount, pParamTypes,
-        unbox, hasThisReference, hasReturnValue, Module.UTF8ToString(<any>name),
+        unbox, hasThisReference, hasReturnValue, utf8ToString(<any>name),
         defaultImplementation
     );
     if (!fnTable)
@@ -176,7 +191,18 @@ export function mono_interp_jit_wasm_entry_trampoline(
     // Some entry wrappers are also only called a few dozen times, so it's valuable to wait
     //  until a wrapper is called a lot before wasting time/memory jitting it.
     const defaultImplementationFn = fnTable.get(defaultImplementation);
-    info.result = addWasmFunctionPointer(defaultImplementationFn);
+    const tableId = (hasThisReference
+        ? (
+            hasReturnValue
+                ? JiterpreterTable.InterpEntryInstanceRet0
+                : JiterpreterTable.InterpEntryInstance0
+        )
+        : (
+            hasReturnValue
+                ? JiterpreterTable.InterpEntryStaticRet0
+                : JiterpreterTable.InterpEntryStatic0
+        )) + argumentCount;
+    info.result = addWasmFunctionPointer(tableId, defaultImplementationFn);
 
     infoTable[imethod] = info;
     return info.result;
@@ -202,7 +228,18 @@ function ensure_jit_is_scheduled() {
 }
 
 function flush_wasm_entry_trampoline_jit_queue() {
-    if (jitQueue.length <= 0)
+    const jitQueue : TrampolineInfo[] = [];
+    let methodPtr = <MonoMethod><any>0;
+    while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.InterpEntry)) != 0) {
+        const info = infoTable[<any>methodPtr];
+        if (!info) {
+            mono_log_info(`Failed to find corresponding info for method ptr ${methodPtr} from jit queue!`);
+            continue;
+        }
+        jitQueue.push(info);
+    }
+
+    if (!jitQueue.length)
         return;
 
     // If the function signature contains types that need stackval_from_data, that'll use
@@ -231,7 +268,6 @@ function flush_wasm_entry_trampoline_jit_queue() {
             "interp_entry",
             {
                 "pData": WasmValtype.i32,
-                "sp_args": WasmValtype.i32,
                 "res": WasmValtype.i32,
             },
             WasmValtype.void, true
@@ -243,13 +279,12 @@ function flush_wasm_entry_trampoline_jit_queue() {
                 "result": WasmValtype.i32,
                 "value": WasmValtype.i32
             },
-            WasmValtype.i32, true
+            WasmValtype.void, true
         );
     } else
         builder.clear(constantSlots);
 
-    if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
-        jitQueue.length = 0;
+    if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
         return;
     }
 
@@ -289,10 +324,14 @@ function flush_wasm_entry_trampoline_jit_queue() {
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, false, trampImports[i][2]);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, trampImports[i][2]);
         }
 
-        builder._generateImportSection();
+        // Assign import indices so they get emitted in the import section
+        for (let i = 0; i < trampImports.length; i++)
+            builder.markImportAsUsed(trampImports[i][0]);
+
+        builder._generateImportSection(false);
 
         // Function section
         builder.beginSection(3);
@@ -340,15 +379,12 @@ function flush_wasm_entry_trampoline_jit_queue() {
         compileStarted = _now();
         const buffer = builder.getArrayView();
         if (trace > 0)
-            console.log(`jit queue generated ${buffer.length} byte(s) of wasm`);
-        counters.bytesGenerated += buffer.length;
+            mono_log_info(`jit queue generated ${buffer.length} byte(s) of wasm`);
+        modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
         const traceModule = new WebAssembly.Module(buffer);
+        const wasmImports = builder.getWasmImports();
 
-        const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: builder.getImportedFunctionTable(),
-            c: <any>builder.getConstants(),
-            m: { h: (<any>Module).asm.memory },
-        });
+        const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
         // Now that we've jitted the trampolines, go through and fix up the function pointers
         //  to point to the new jitted trampolines instead of the default implementations
@@ -361,26 +397,26 @@ function flush_wasm_entry_trampoline_jit_queue() {
             fnTable.set(info.result, fn);
 
             rejected = false;
-            counters.entryWrappersCompiled++;
         }
+        modifyCounter(JiterpCounter.EntryWrappersCompiled, jitQueue.length);
     } catch (exc: any) {
         threw = true;
         rejected = false;
         // console.error(`${traceName} failed: ${exc} ${exc.stack}`);
         // HACK: exc.stack is enormous garbage in v8 console
-        console.error(`MONO_WASM: interp_entry code generation failed: ${exc}`);
+        mono_log_error(`interp_entry code generation failed: ${exc}`);
         recordFailure();
     } finally {
         const finished = _now();
         if (compileStarted) {
-            elapsedTimes.generation += compileStarted - started;
-            elapsedTimes.compilation += finished - compileStarted;
+            modifyCounter(JiterpCounter.ElapsedGenerationMs, compileStarted - started);
+            modifyCounter(JiterpCounter.ElapsedCompilationMs, finished - compileStarted);
         } else {
-            elapsedTimes.generation += finished - started;
+            modifyCounter(JiterpCounter.ElapsedGenerationMs, finished - started);
         }
 
         if (threw || (!rejected && ((trace >= 2) || dumpWrappers))) {
-            console.log(`// MONO_WASM: ${jitQueue.length} trampolines generated, blob follows //`);
+            mono_log_info(`// ${jitQueue.length} trampolines generated, blob follows //`);
             let s = "", j = 0;
             try {
                 if (builder.inSection)
@@ -398,26 +434,24 @@ function flush_wasm_entry_trampoline_jit_queue() {
                 s += b.toString(16);
                 s += " ";
                 if ((s.length % 10) === 0) {
-                    console.log(`${j}\t${s}`);
+                    mono_log_info(`${j}\t${s}`);
                     s = "";
                     j = i + 1;
                 }
             }
-            console.log(`${j}\t${s}`);
-            console.log("// end blob //");
+            mono_log_info(`${j}\t${s}`);
+            mono_log_info("// end blob //");
         } else if (rejected && !threw) {
-            console.error("MONO_WASM: failed to generate trampoline for unknown reason");
+            mono_log_error("failed to generate trampoline for unknown reason");
         }
-
-        jitQueue.length = 0;
     }
 }
 
 function append_stackval_from_data(
-    builder: WasmBuilder, type: MonoType, valueName: string
+    builder: WasmBuilder, imethod: number, type: MonoType, valueName: string, argIndex: number
 ) {
-    const stackvalSize = cwraps.mono_jiterp_get_size_of_stackval();
     const rawSize = cwraps.mono_jiterp_type_get_raw_value_size(type);
+    const offset = cwraps.mono_jiterp_get_arg_offset(imethod, 0, argIndex);
 
     switch (rawSize) {
         case 256: {
@@ -426,10 +460,7 @@ function append_stackval_from_data(
             builder.local(valueName);
 
             builder.appendU8(WasmOpcode.i32_store);
-            builder.appendMemarg(0, 2);
-
-            // Fixed stackval size
-            builder.i32_const(stackvalSize);
+            builder.appendMemarg(offset, 2);
             break;
         }
 
@@ -468,18 +499,18 @@ function append_stackval_from_data(
             }
 
             builder.appendU8(WasmOpcode.i32_store);
-            builder.appendMemarg(0, 2);
-
-            // Fixed stackval size
-            builder.i32_const(stackvalSize);
+            builder.appendMemarg(offset, 2);
             break;
         }
 
         default: {
-            // Call stackval_from_data to copy the value and get its size
+            // Call stackval_from_data to copy the value
             builder.ptr_const(type);
             // result
             builder.local("sp_args");
+            // apply offset
+            builder.i32_const(offset);
+            builder.appendU8(WasmOpcode.i32_add);
             // value
             builder.local(valueName);
 
@@ -487,11 +518,6 @@ function append_stackval_from_data(
             break;
         }
     }
-
-    // Value size is on the stack, add it to sp_args and update it
-    builder.local("sp_args");
-    builder.appendU8(WasmOpcode.i32_add);
-    builder.local("sp_args", WasmOpcode.set_local);
 }
 
 function generate_wasm_body(
@@ -507,6 +533,13 @@ function generate_wasm_body(
     //  will always have put the buffers in a constant slot. This will be necessary for thread safety
     const scratchBuffer = <any>Module._malloc(sizeOfJiterpEntryData);
     _zero_region(scratchBuffer, sizeOfJiterpEntryData);
+
+    // Initialize the parameter count in the data blob. This is used to calculate the new value of sp
+    //  before entering the interpreter
+    setI32(
+        scratchBuffer + getMemberOffset(JiterpMember.ParamsCount),
+        info.paramTypes.length + (info.hasThisReference ? 1 : 0)
+    );
 
     // the this-reference may be a boxed struct that needs to be unboxed, for example calling
     //  methods like object.ToString on structs will end up with the unbox flag set
@@ -562,7 +595,7 @@ function generate_wasm_body(
 
     if (info.hasThisReference) {
         // null type for raw ptr copy
-        append_stackval_from_data(builder, <any>0, "this_arg");
+        append_stackval_from_data(builder, info.imethod, <any>0, "this_arg", 0);
     }
 
     /*
@@ -579,11 +612,10 @@ function generate_wasm_body(
 
     for (let i = 0; i < info.paramTypes.length; i++) {
         const type = <any>info.paramTypes[i];
-        append_stackval_from_data(builder, type, `arg${i}`);
+        append_stackval_from_data(builder, info.imethod, type, `arg${i}`, i + (info.hasThisReference ? 1 : 0));
     }
 
     builder.local("scratchBuffer");
-    builder.local("sp_args");
     if (info.hasReturnValue)
         builder.local("res");
     else

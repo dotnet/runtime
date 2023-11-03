@@ -20,6 +20,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        public TempFileHolder(byte[] content)
+        {
+            FilePath = Path.GetTempFileName();
+
+            File.WriteAllBytes(FilePath, content);
+        }
+
         public void Dispose()
         {
             try

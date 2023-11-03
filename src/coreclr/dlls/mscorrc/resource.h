@@ -350,7 +350,6 @@
 #define IDS_EE_OUT_OF_SYNCBLOCKS                0x1aae
 
 #define IDS_CLASSLOAD_MI_CANNOT_OVERRIDE        0x1ab3
-#define IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR    0x1ab6
 #define IDS_CLASSLOAD_EQUIVALENTBADTYPE         0x1ab7
 #define IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR 0x1abb
 #define IDS_CLASSLOAD_WRONGCPU                  0x1abc
@@ -427,6 +426,7 @@
 #define BFA_BAD_COMPLUS_SIG                     0x2049
 #define BFA_BAD_ELEM_IN_SIZEOF                  0x204b
 #define BFA_IJW_IN_COLLECTIBLE_ALC              0x204c
+#define BFA_INVALID_UNSAFEACCESSOR              0x204d
 
 #define IDS_CLASSLOAD_INTERFACE_NO_ACCESS       0x204f
 

@@ -16,7 +16,7 @@ namespace System.Xml.Linq.Tests
         public void XPIEmptyStringShouldNotBeAllowed()
         {
             var pi = new XProcessingInstruction("PI", "data");
-            Assert.Throws<ArgumentNullException>(() => pi.Target = string.Empty);
+            Assert.Throws<ArgumentException>(() => pi.Target = string.Empty);
         }
 
         [Fact]

@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
+#endif
 using Xunit;
 
 namespace Microsoft.Extensions
@@ -13,7 +15,7 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public partial class ConfigurationBinderCollectionTests
+    public sealed partial class ConfigurationBinderCollectionTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void GetList()
@@ -79,7 +81,7 @@ namespace Microsoft.Extensions
             Assert.True(list[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
         public void GetDictionaryInvalidValues()
         {
             var input = new Dictionary<string, string>
@@ -214,49 +216,57 @@ namespace Microsoft.Extensions
             Assert.Equal("val_3", options[KeyUintEnum.ghi]);
         }
 
-        [Fact]
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetSByteDictionary()
         {
             GetIntDictionaryT<sbyte>(0, 1, 2);
         }
 
-        [Fact]
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetByteDictionary()
         {
             GetIntDictionaryT<byte>(0, 1, 2);
         }
 
-        [Fact]
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetShortDictionary()
         {
             GetIntDictionaryT<short>(0, 1, 2);
         }
 
-        [Fact]
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetUShortDictionary()
         {
             GetIntDictionaryT<ushort>(0, 1, 2);
         }
 
-        [Fact]
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetIntDictionary()
         {
             GetIntDictionaryT<int>(0, 1, 2);
         }
 
-        [Fact]
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetUIntDictionary()
         {
             GetIntDictionaryT<uint>(0, 1, 2);
         }
 
-        [Fact]
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetLongDictionary()
         {
             GetIntDictionaryT<long>(0, 1, 2);
         }
 
-        [Fact]
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetULongDictionary()
         {
             GetIntDictionaryT<ulong>(0, 1, 2);
@@ -276,7 +286,9 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
             var options = new Dictionary<T, string>();
+#pragma warning disable SYSLIB1104 
             config.GetSection("IntegerKeyDictionary").Bind(options);
+#pragma warning restore SYSLIB1104
 
             Assert.Equal(3, options.Count);
 
@@ -638,7 +650,7 @@ namespace Microsoft.Extensions
             Assert.Equal("val_3", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(3));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanOverrideExistingDictionaryKey()
         {
             var input = new Dictionary<string, string>
@@ -824,7 +836,7 @@ namespace Microsoft.Extensions
 #endif
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void GetStringArray()
         {
             var input = new Dictionary<string, string>
@@ -853,7 +865,7 @@ namespace Microsoft.Extensions
         }
 
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void BindStringArray()
         {
             var input = new Dictionary<string, string>
@@ -881,7 +893,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[3]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void GetAlreadyInitializedArray()
         {
             var input = new Dictionary<string, string>
@@ -911,7 +923,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[6]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void BindAlreadyInitializedArray()
         {
             var input = new Dictionary<string, string>
@@ -942,7 +954,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[6]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void ArrayInNestedOptionBinding()
         {
             var input = new Dictionary<string, string>
@@ -971,7 +983,7 @@ namespace Microsoft.Extensions
             Assert.Equal(12, options.ObjectArray[1].ArrayInNestedOption[2]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
         public void UnsupportedMultidimensionalArrays()
         {
             var input = new Dictionary<string, string>
@@ -992,7 +1004,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void JaggedArrayBinding()
         {
             var input = new Dictionary<string, string>
@@ -1021,7 +1033,7 @@ namespace Microsoft.Extensions
             Assert.Equal("12", options.JaggedArray[1][2]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void ReadOnlyArrayIsIgnored()
         {
             var input = new Dictionary<string, string>
@@ -1040,7 +1052,7 @@ namespace Microsoft.Extensions
             Assert.Equal(new OptionsWithArrays().ReadOnlyArray, options.ReadOnlyArray);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIEnumerable()
         {
             var input = new Dictionary<string, string>
@@ -1068,7 +1080,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[3]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInitializedIEnumerableAndTheOriginalItemsAreNotMutated()
         {
             var input = new Dictionary<string, string>
@@ -1115,7 +1127,7 @@ namespace Microsoft.Extensions
             Assert.Equal("ExtraItem", options.ICollectionNoSetter.ElementAt(2));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInitializedCustomIEnumerableBasedList()
         {
             // A field declared as IEnumerable<T> that is instantiated with a class
@@ -1145,7 +1157,7 @@ namespace Microsoft.Extensions
             Assert.Equal("val1", array[3]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInitializedCustomIndirectlyDerivedIEnumerableList()
         {
             // A field declared as IEnumerable<T> that is instantiated with a class
@@ -1175,7 +1187,7 @@ namespace Microsoft.Extensions
             Assert.Equal("val1", array[3]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInitializedIReadOnlyDictionaryAndDoesNotModifyTheOriginal()
         {
             // A field declared as IEnumerable<T> that is instantiated with a class
@@ -1207,7 +1219,7 @@ namespace Microsoft.Extensions
             Assert.Equal("val_2", InitializedCollectionsOptions.ExistingDictionary["existing_key_2"]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedICollection()
         {
             var input = new Dictionary<string, string>
@@ -1240,7 +1252,7 @@ namespace Microsoft.Extensions
             Assert.Equal("ExtraItem", options.ICollection.ElementAt(4));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIList()
         {
             var input = new Dictionary<string, string>
@@ -1273,7 +1285,7 @@ namespace Microsoft.Extensions
             Assert.Equal("ExtraItem", options.IList[4]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIReadOnlyCollection()
         {
             var input = new Dictionary<string, string>
@@ -1301,7 +1313,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[3]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIReadOnlyList()
         {
             var input = new Dictionary<string, string>
@@ -1329,7 +1341,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[3]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIDictionary()
         {
             var input = new Dictionary<string, string>
@@ -1353,7 +1365,7 @@ namespace Microsoft.Extensions
             Assert.Equal("val_3", options.IDictionary["ghi"]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIReadOnlyDictionary()
         {
             var input = new Dictionary<string, string>
@@ -1380,7 +1392,7 @@ namespace Microsoft.Extensions
         /// <summary>
         /// Replicates scenario from https://github.com/dotnet/runtime/issues/65710
         /// </summary>
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindWithInterdependentProperties()
         {
             var input = new Dictionary<string, string>
@@ -1403,7 +1415,7 @@ namespace Microsoft.Extensions
         /// <summary>
         /// Replicates scenario from https://github.com/dotnet/runtime/issues/63479
         /// </summary>
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void TestCanBindListPropertyWithoutSetter()
         {
             var input = new Dictionary<string, string>
@@ -1422,7 +1434,7 @@ namespace Microsoft.Extensions
             Assert.Equal(new[] { "a", "b" }, options.ListPropertyWithoutSetter);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedIEnumerableWithItems()
         {
             var dic = new Dictionary<string, string>
@@ -1442,7 +1454,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.NonInstantiatedIEnumerable.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedISet()
         {
             var dic = new Dictionary<string, string>
@@ -1463,7 +1475,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindISetNoSetter()
         {
             var dic = new Dictionary<string, string>
@@ -1485,7 +1497,7 @@ namespace Microsoft.Extensions
         }
 
 #if NETCOREAPP
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedIReadOnlySet()
         {
             var dic = new Dictionary<string, string>
@@ -1505,7 +1517,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedIReadOnlySet.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedIReadOnlyWithSomeValues()
         {
             var dic = new Dictionary<string, string>
@@ -1527,7 +1539,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(3));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedIReadOnlySet()
         {
             var dic = new Dictionary<string, string>
@@ -1547,7 +1559,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.NonInstantiatedIReadOnlySet.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedDictionaryOfIReadOnlySetWithSomeExistingValues()
         {
             var dic = new Dictionary<string, string>
@@ -1575,7 +1587,7 @@ namespace Microsoft.Extensions
         }
 #endif
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedReadOnlyDictionary2()
         {
             var dic = new Dictionary<string, string>
@@ -1599,7 +1611,7 @@ namespace Microsoft.Extensions
 
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void BindInstantiatedIReadOnlyDictionary_CreatesCopyOfOriginal()
         {
             var dic = new Dictionary<string, string>
@@ -1624,7 +1636,7 @@ namespace Microsoft.Extensions
             Assert.Equal(3, options.Dictionary["item3"]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void BindNonInstantiatedIReadOnlyDictionary()
         {
             var dic = new Dictionary<string, string>
@@ -1645,7 +1657,7 @@ namespace Microsoft.Extensions
             Assert.Equal(2, options.Dictionary["item2"]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void BindInstantiatedConcreteDictionary_OverwritesOriginal()
         {
             var dic = new Dictionary<string, string>
@@ -1669,7 +1681,7 @@ namespace Microsoft.Extensions
             Assert.Equal(3, options.Dictionary["item3"]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedReadOnlyDictionary()
         {
             var dic = new Dictionary<string, string>
@@ -1692,7 +1704,7 @@ namespace Microsoft.Extensions
             Assert.Equal(4, resultingDictionary["item4"]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedReadOnlyDictionary()
         {
             var dic = new Dictionary<string, string>
@@ -1712,8 +1724,7 @@ namespace Microsoft.Extensions
             Assert.Equal(4, options.NonInstantiatedReadOnlyDictionary["item4"]);
         }
 
-
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedDictionaryOfISet()
         {
             var dic = new Dictionary<string, string>
@@ -1737,7 +1748,7 @@ namespace Microsoft.Extensions
             Assert.Equal("bar-2", options.NonInstantiatedDictionaryWithISet["bar"].ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedDictionaryOfISet()
         {
             var dic = new Dictionary<string, string>
@@ -1761,7 +1772,7 @@ namespace Microsoft.Extensions
             Assert.Equal("bar-2", options.InstantiatedDictionaryWithHashSet["bar"].ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedDictionaryOfISetWithSomeExistingValues()
         {
             var dic = new Dictionary<string, string>
@@ -1788,7 +1799,7 @@ namespace Microsoft.Extensions
             Assert.Equal("bar-2", options.InstantiatedDictionaryWithHashSetWithSomeValues["bar"].ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Dropped members for binding: diagnostic warning issued instead.
         public void ThrowsForCustomIEnumerableCollection()
         {
             var configurationBuilder = new ConfigurationBuilder();
@@ -1805,7 +1816,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Dropped members for binding: diagnostic warning issued instead.
         public void ThrowsForCustomICollection()
         {
             var configurationBuilder = new ConfigurationBuilder();
@@ -1822,7 +1833,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Dropped members for binding: diagnostic warning issued instead.
         public void ThrowsForCustomDictionary()
         {
             var configurationBuilder = new ConfigurationBuilder();
@@ -1839,7 +1850,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Dropped members for binding: diagnostic warning issued instead.
         public void ThrowsForCustomSet()
         {
             var configurationBuilder = new ConfigurationBuilder();
@@ -1856,7 +1867,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedISet()
         {
             var dic = new Dictionary<string, string>
@@ -1877,7 +1888,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedISet.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedISetWithSomeValues()
         {
             var dic = new Dictionary<string, string>
@@ -1899,7 +1910,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedISetWithSomeValues.ElementAt(3));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedHashSetWithSomeValues()
         {
             var dic = new Dictionary<string, string>
@@ -1921,7 +1932,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedHashSetWithSomeValues.ElementAt(3));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedHashSet()
         {
             var dic = new Dictionary<string, string>
@@ -1941,7 +1952,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.NonInstantiatedHashSet.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedSortedSetWithSomeValues()
         {
             var dic = new Dictionary<string, string>
@@ -1963,7 +1974,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedSortedSetWithSomeValues.ElementAt(3));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedSortedSetWithSomeValues()
         {
             var dic = new Dictionary<string, string>
@@ -1983,7 +1994,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.NonInstantiatedSortedSetWithSomeValues.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
         public void DoesNotBindInstantiatedISetWithUnsupportedKeys()
         {
             var dic = new Dictionary<string, string>
@@ -2001,7 +2012,7 @@ namespace Microsoft.Extensions
             Assert.Equal(0, options.HashSetWithUnsupportedKey.Count);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
         public void DoesNotBindUninstantiatedISetWithUnsupportedKeys()
         {
             var dic = new Dictionary<string, string>
@@ -2019,7 +2030,7 @@ namespace Microsoft.Extensions
             Assert.Null(options.UninstantiatedHashSetWithUnsupportedKey);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedIEnumerableWithItems()
         {
             var dic = new Dictionary<string, string>
@@ -2039,7 +2050,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedCustomICollectionWithoutAnAddMethodWithItems()
         {
             var dic = new Dictionary<string, string>
@@ -2059,7 +2070,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedCustomICollectionWithoutAnAddMethodWithItems()
         {
             var dic = new Dictionary<string, string>
@@ -2079,7 +2090,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.NonInstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedICollectionWithItems()
         {
             var dic = new Dictionary<string, string>
@@ -2099,7 +2110,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedICollection.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedIReadOnlyCollectionWithItems()
         {
             var dic = new Dictionary<string, string>
@@ -2119,7 +2130,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedIReadOnlyCollection.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedIEnumerableWithNullItems()
         {
             var dic = new Dictionary<string, string>
@@ -2140,7 +2151,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void DifferentDictionaryBindingCasesTest()
         {
             var dic = new Dictionary<string, string>() { { "key", "value" } };
@@ -2151,60 +2162,15 @@ namespace Microsoft.Extensions
             Assert.Single(config.Get<Dictionary<string, string>>());
             Assert.Single(config.Get<IDictionary<string, string>>());
             Assert.Single(config.Get<ExtendedDictionary<string, string>>());
+            // The System.Reflection.AmbiguousMatchException scenario that
+            // this test validates is not applicable. Source generator will
+            // statically bind to best-fit dictionary value indexer.
+#if !BUILDING_SOURCE_GENERATOR_TESTS
             Assert.Single(config.Get<ImplementerOfIDictionaryClass<string, string>>());
-        }
-
-        public class OptionsWithDifferentCollectionInterfaces
-        {
-            private static IEnumerable<string> s_instantiatedIEnumerable = new List<string> { "value1", "value2" };
-            public bool IsSameInstantiatedIEnumerable() => object.ReferenceEquals(s_instantiatedIEnumerable, InstantiatedIEnumerable);
-            public IEnumerable<string> InstantiatedIEnumerable { get; set; } = s_instantiatedIEnumerable;
-
-            private static IList<string> s_instantiatedIList = new List<string> { "value1", "value2" };
-            public bool IsSameInstantiatedIList() => object.ReferenceEquals(s_instantiatedIList, InstantiatedIList);
-            public IList<string> InstantiatedIList { get; set; } = s_instantiatedIList;
-
-            private static IReadOnlyList<string> s_instantiatedIReadOnlyList = new List<string> { "value1", "value2" };
-            public bool IsSameInstantiatedIReadOnlyList() => object.ReferenceEquals(s_instantiatedIReadOnlyList, InstantiatedIReadOnlyList);
-            public IReadOnlyList<string> InstantiatedIReadOnlyList { get; set; } = s_instantiatedIReadOnlyList;
-
-            private static IDictionary<string, string> s_instantiatedIDictionary = new Dictionary<string, string> { ["Key1"] = "value1", ["Key2"] = "value2" };
-            public IDictionary<string, string> InstantiatedIDictionary { get; set; } = s_instantiatedIDictionary;
-            public bool IsSameInstantiatedIDictionary() => object.ReferenceEquals(s_instantiatedIDictionary, InstantiatedIDictionary);
-
-            private static IReadOnlyDictionary<string, string> s_instantiatedIReadOnlyDictionary = new Dictionary<string, string> { ["Key1"] = "value1", ["Key2"] = "value2" };
-            public IReadOnlyDictionary<string, string> InstantiatedIReadOnlyDictionary { get; set; } = s_instantiatedIReadOnlyDictionary;
-            public bool IsSameInstantiatedIReadOnlyDictionary() => object.ReferenceEquals(s_instantiatedIReadOnlyDictionary, InstantiatedIReadOnlyDictionary);
-
-            private static ISet<string> s_instantiatedISet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "A", "b" };
-            public ISet<string> InstantiatedISet { get; set; } = s_instantiatedISet;
-            public bool IsSameInstantiatedISet() => object.ReferenceEquals(s_instantiatedISet, InstantiatedISet);
-
-#if NETCOREAPP
-            private static IReadOnlySet<string> s_instantiatedIReadOnlySet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "A", "b" };
-            public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = s_instantiatedIReadOnlySet;
-            public bool IsSameInstantiatedIReadOnlySet() => object.ReferenceEquals(s_instantiatedIReadOnlySet, InstantiatedIReadOnlySet);
-
-            public IReadOnlySet<string> UnInstantiatedIReadOnlySet { get; set; }
 #endif
-            private static ICollection<string> s_instantiatedICollection = new List<string> { "a", "b", "c" };
-            public ICollection<string> InstantiatedICollection { get; set; } = s_instantiatedICollection;
-            public bool IsSameInstantiatedICollection() => object.ReferenceEquals(s_instantiatedICollection, InstantiatedICollection);
-
-            private static IReadOnlyCollection<string> s_instantiatedIReadOnlyCollection = new List<string> { "a", "b", "c" };
-            public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = s_instantiatedIReadOnlyCollection;
-            public bool IsSameInstantiatedIReadOnlyCollection() => object.ReferenceEquals(s_instantiatedIReadOnlyCollection, InstantiatedIReadOnlyCollection);
-
-            public IReadOnlyCollection<string> UnInstantiatedIReadOnlyCollection { get; set; }
-            public ICollection<string> UnInstantiatedICollection { get; set; }
-            public ISet<string> UnInstantiatedISet { get; set; }
-            public IReadOnlyDictionary<string, string> UnInstantiatedIReadOnlyDictionary { get; set; }
-            public IEnumerable<string> UnInstantiatedIEnumerable { get; set; }
-            public IList<string> UnInstantiatedIList { get; set; }
-            public IReadOnlyList<string> UnInstantiatedIReadOnlyList { get; set; }
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void TestOptionsWithDifferentCollectionInterfaces()
         {
             var input = new Dictionary<string, string>
@@ -2312,7 +2278,7 @@ namespace Microsoft.Extensions
             Assert.Equal(new string[] { "r", "e" }, options.UnInstantiatedIReadOnlyCollection);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void TestMutatingDictionaryValues()
         {
             IConfiguration config = new ConfigurationBuilder()

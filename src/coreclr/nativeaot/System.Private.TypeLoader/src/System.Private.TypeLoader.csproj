@@ -9,6 +9,8 @@
     <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
     <!-- we access a lot of internals of System.Private.CoreLib, disable compiling against the ref assembly for now so we don't need to update it -->
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+    <!-- CA2252: Opt in to preview features before using them (Lock) -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
@@ -231,7 +233,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\LockFreeObjectInterner.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataNameExtensions.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInfoLoadContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInterfacesAlgorithm.cs" />
@@ -272,9 +273,6 @@
     <Compile Include="Internal\TypeSystem\ThrowHelper.cs" />
     <Compile Include="Internal\TypeSystem\TypeDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\TypeSystemContext.Runtime.cs" />
-    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
-      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeDesc.ToString.cs">

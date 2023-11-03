@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Reflection.Emit
 {
@@ -22,6 +20,8 @@ namespace System.Reflection.Emit
         internal MarshallingData? _marshallingData;
         internal int _offset;
         internal List<CustomAttributeWrapper>? _customAttributes;
+        internal object? _defaultValue = DBNull.Value;
+        internal FieldDefinitionHandle _handle;
 
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
@@ -32,7 +32,61 @@ namespace System.Reflection.Emit
             _offset = -1;
         }
 
-        protected override void SetConstantCore(object? defaultValue) => throw new NotImplementedException();
+        protected override void SetConstantCore(object? defaultValue)
+        {
+            if (defaultValue == null)
+            {
+                // nullable value types can hold null value.
+                if (_fieldType.IsValueType && !(_fieldType.IsGenericType && _fieldType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+                    throw new ArgumentException(SR.Argument_ConstantNull);
+            }
+            else
+            {
+                Type type = defaultValue.GetType();
+                Type destType = _fieldType;
+
+                // We should allow setting a constant value on a ByRef parameter
+                if (destType.IsByRef)
+                    destType = destType.GetElementType()!;
+
+                // Convert nullable types to their underlying type.
+                destType = Nullable.GetUnderlyingType(destType) ?? destType;
+
+                if (destType.IsEnum)
+                {
+                    Type underlyingType;
+                    if (destType is EnumBuilderImpl enumBldr)
+                    {
+                        underlyingType = enumBldr.GetEnumUnderlyingType();
+
+                        if (type != enumBldr._typeBuilder.UnderlyingSystemType && type != underlyingType)
+                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
+                    }
+                    else if (destType is TypeBuilderImpl typeBldr)
+                    {
+                        underlyingType = typeBldr.UnderlyingSystemType;
+
+                        if (underlyingType == null || (type != typeBldr.UnderlyingSystemType && type != underlyingType))
+                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
+                    }
+                    else
+                    {
+                        underlyingType = Enum.GetUnderlyingType(destType);
+
+                        if (type != destType && type != underlyingType)
+                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
+                    }
+                }
+                else
+                {
+                    if (!destType.IsAssignableFrom(type))
+                        throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
+                }
+
+                _defaultValue = defaultValue;
+            }
+        }
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             // Handle pseudo custom attributes
@@ -52,7 +106,7 @@ namespace System.Reflection.Emit
                     return;
                 case "System.Runtime.InteropServices.MarshalAsAttribute":
                     _attributes |= FieldAttributes.HasFieldMarshal;
-                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField : true);
+                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField: true);
                     return;
             }
 
@@ -69,7 +123,7 @@ namespace System.Reflection.Emit
 
         #region MemberInfo Overrides
 
-        public override int MetadataToken => throw new NotImplementedException();
+        public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
 
         public override Module Module => _typeBuilder.Module;
 

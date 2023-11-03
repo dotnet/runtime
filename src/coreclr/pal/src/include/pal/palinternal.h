@@ -505,19 +505,6 @@ function_name() to call the system's implementation
 
 #undef fprintf
 #undef vfprintf
-#undef wcstod
-#undef wcstoul
-#undef _wcstoui64
-#undef wcscat
-#undef wcscpy
-#undef wcslen
-#undef wcsncmp
-#undef wcschr
-#undef wcsrchr
-#undef wcspbrk
-#undef wcsstr
-#undef wcscmp
-#undef wcsncpy
 #undef iswupper
 #undef iswspace
 #undef towlower
@@ -645,9 +632,6 @@ typedef enum _TimeConversionConstants
 
 #ifdef __cplusplus
 }
-
-bool
-PAL_ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
 #ifdef __APPLE__
 bool

@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 class Base
 {
@@ -21,9 +22,10 @@ class ClassB : ClassA
     public override int Test(Base b1, Base b2, bool p) => b1.Test(b1, b2, p);
 }
 
-class Program
+public class Program
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -31,7 +33,6 @@ class Program
             Test(new ClassB(), new ClassA(), new Base(), true);
             Thread.Sleep(15);
         }
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

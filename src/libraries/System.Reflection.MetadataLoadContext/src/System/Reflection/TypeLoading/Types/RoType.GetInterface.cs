@@ -33,7 +33,7 @@ namespace System.Reflection.TypeLoading
                 if (ns.Length != 0 && !ns.Equals(ifc.Namespace))
                     continue;
                 if (match != null)
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(match);
                 match = ifc;
             }
             return match;

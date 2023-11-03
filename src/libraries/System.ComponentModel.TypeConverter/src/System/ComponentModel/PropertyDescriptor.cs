@@ -336,7 +336,7 @@ namespace System.ComponentModel
         protected Type? GetTypeFromName(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string? typeName)
         {
-            if (typeName == null || typeName.Length == 0)
+            if (string.IsNullOrEmpty(typeName))
             {
                 return null;
             }

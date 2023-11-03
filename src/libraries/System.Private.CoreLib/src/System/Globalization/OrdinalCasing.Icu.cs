@@ -85,8 +85,8 @@ namespace System.Globalization
         // 1 - NoCasingPage
         // The bits are in reverse order for readability, i.e. the highest order bit refers to
         // the lowest index.
-        private static ReadOnlySpan<byte> s_casingTableInit => new byte[32]
-        {
+        private static ReadOnlySpan<byte> s_casingTableInit => // 32
+        [
             /* 0000-07FF */    0b00000000,
             /* 0800-0FFF */    0b00000000,
             /* 1000-17FF */    0b01001100,
@@ -119,7 +119,7 @@ namespace System.Globalization
             /* E800-EFFF */    0b11111111,
             /* F000-F7FF */    0b11111111,
             /* F800-FFFF */    0b11001000,
-        };
+        ];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToUpper(char c)
@@ -217,8 +217,8 @@ namespace System.Globalization
                             continue;
                         }
 
-                        char aUpper = OrdinalCasing.ToUpper(a);
-                        char bUpper = OrdinalCasing.ToUpper(b);
+                        char aUpper = ToUpper(a);
+                        char bUpper = ToUpper(b);
 
                         if (aUpper == bUpper)
                         {

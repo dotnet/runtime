@@ -7,14 +7,16 @@ export function log(message) {
 }
 
 export function install() {
-    const measuredCallbackName = "mono_wasm_set_timeout_exec";
+    const Module = globalThis.App.runtime.Module;
+    const measuredCallbackName = "mono_wasm_schedule_timer_tick";
     globalThis.registerCount = 0;
     globalThis.hitCount = 0;
     log("install")
     if (!globalThis.originalSetTimeout) {
-        globalThis.originalSetTimeout = globalThis.setTimeout;
+        globalThis.originalSetTimeout = Module.safeSetTimeout;
     }
-    globalThis.setTimeout = (cb, time) => {
+
+    Module.safeSetTimeout = (cb, time) => {
         var start = Date.now().valueOf();
         if (cb.name === measuredCallbackName) {
             globalThis.registerCount++;
@@ -26,7 +28,7 @@ export function install() {
                 globalThis.hitCount++;
                 log(`hitCount: ${globalThis.hitCount} now:${hit} delay:${time} delta:${hit - start}`)
             }
-            cb();
+            return cb();
         }, time);
     };
 }
@@ -43,5 +45,6 @@ export function getHitCount() {
 
 export function cleanup() {
     log(`cleanup registerCount: ${globalThis.registerCount} hitCount: ${globalThis.hitCount} `)
-    globalThis.setTimeout = globalThis.originalSetTimeout;
+    const Module = globalThis.App.runtime.Module;
+    Module.safeSetTimeout = globalThis.originalSetTimeout;
 }

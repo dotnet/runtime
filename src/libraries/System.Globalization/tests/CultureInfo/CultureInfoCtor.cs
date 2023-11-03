@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using Xunit;
 
@@ -39,8 +40,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "az", new [] { "az" }};
             yield return new object[] { "az-Cyrl", new [] { "az-Cyrl" }};
             yield return new object[] { "az-Cyrl-AZ", new [] { "az-Cyrl-AZ" }};
-            yield return new object[] { "az-Latn", new [] { "az-Latn" }};
-            yield return new object[] { "az-Latn-AZ", new [] { "az-Latn-AZ" }};
             yield return new object[] { "ba", new [] { "ba" }};
             yield return new object[] { "ba-RU", new [] { "ba-RU" }};
             yield return new object[] { "be", new [] { "be" }};
@@ -57,8 +56,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "bs", new [] { "bs" }};
             yield return new object[] { "bs-Cyrl", new [] { "bs-Cyrl" }};
             yield return new object[] { "bs-Cyrl-BA", new [] { "bs-Cyrl-BA" }};
-            yield return new object[] { "bs-Latn", new [] { "bs-Latn" }};
-            yield return new object[] { "bs-Latn-BA", new [] { "bs-Latn-BA" }};
             yield return new object[] { "ca", new [] { "ca" } };
             yield return new object[] { "ca-ES", new [] { "ca-ES" } };
             yield return new object[] { "co", new [] { "co" }};
@@ -153,8 +150,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "gu", new [] { "gu" } };
             yield return new object[] { "gu-IN", new [] { "gu-IN" } };
             yield return new object[] { "ha", new [] { "ha" }};
-            yield return new object[] { "ha-Latn", new [] { "ha-Latn" }};
-            yield return new object[] { "ha-Latn-NG", new [] { "ha-Latn-NG" }};
             yield return new object[] { "he", new [] { "he" } };
             yield return new object[] { "he-IL", new [] { "he-IL" } };
             yield return new object[] { "hi", new [] { "hi" } };
@@ -220,7 +215,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "ml", new [] { "ml" } };
             yield return new object[] { "ml-IN", new [] { "ml-IN" } };
             yield return new object[] { "mn", new [] { "mn" }};
-            yield return new object[] { "mn-Cyrl", new [] { "mn-Cyrl" }};
             yield return new object[] { "mn-MN", new [] { "mn-MN" }};
             yield return new object[] { "mn-Mong", new [] { "mn-Mong" }};
             yield return new object[] { "mn-Mong-CN", new [] { "mn-Mong-CN" }};
@@ -242,7 +236,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "nl-NL", new [] { "nl-NL" } };
             yield return new object[] { "nn", new [] { "nn" }};
             yield return new object[] { "nn-NO", new [] { "nn-NO" }};
-            yield return new object[] { "no", new [] { "no" } };
             yield return new object[] { "nso", new [] { "nso" }};
             yield return new object[] { "nso-ZA", new [] { "nso-ZA" }};
             yield return new object[] { "oc", new [] { "oc" }};
@@ -253,8 +246,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "pa-IN", new [] { "pa-IN" }};
             yield return new object[] { "pl", new [] { "pl" } };
             yield return new object[] { "pl-PL", new [] { "pl-PL" } };
-            yield return new object[] { "prs", new [] { "prs" }};
-            yield return new object[] { "prs-AF", new [] { "prs-AF" }};
+            yield return new object[] { "prs", new [] { "prs", "fa" } };
+            yield return new object[] { "prs-AF", new [] { "prs-AF", "fa-AF" }};
             yield return new object[] { "ps", new [] { "ps" }};
             yield return new object[] { "ps-AF", new [] { "ps-AF" }};
             yield return new object[] { "pt", new [] { "pt" } };
@@ -299,14 +292,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "sq", new [] { "sq" }};
             yield return new object[] { "sq-AL", new [] { "sq-AL" }};
             yield return new object[] { "sr", new [] { "sr" } };
-            yield return new object[] { "sr-Cyrl", new [] { "sr-Cyrl" } };
-            yield return new object[] { "sr-Cyrl-BA", new [] { "sr-Cyrl-BA" }};
-            yield return new object[] { "sr-Cyrl-CS", new [] { "sr-Cyrl-CS" }};
-            yield return new object[] { "sr-Cyrl-ME", new [] { "sr-Cyrl-ME" }};
-            yield return new object[] { "sr-Cyrl-RS", new [] { "sr-Cyrl-RS" } };
             yield return new object[] { "sr-Latn", new [] { "sr-Latn" } };
             yield return new object[] { "sr-Latn-BA", new [] { "sr-Latn-BA" }};
-            yield return new object[] { "sr-Latn-CS", new [] { "sr-Latn-CS" }};
             yield return new object[] { "sr-Latn-ME", new [] { "sr-Latn-ME" }};
             yield return new object[] { "sr-Latn-RS", new [] { "sr-Latn-RS" } };
             yield return new object[] { "sv", new [] { "sv" } };
@@ -321,8 +308,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "te", new [] { "te" } };
             yield return new object[] { "te-IN", new [] { "te-IN" } };
             yield return new object[] { "tg", new [] { "tg" }};
-            yield return new object[] { "tg-Cyrl", new [] { "tg-Cyrl" }};
-            yield return new object[] { "tg-Cyrl-TJ", new [] { "tg-Cyrl-TJ" }};
             yield return new object[] { "th", new [] { "th" } };
             yield return new object[] { "th-TH", new [] { "th-TH" } };
             yield return new object[] { "tk", new [] { "tk" }};
@@ -334,8 +319,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "tt", new [] { "tt" }};
             yield return new object[] { "tt-RU", new [] { "tt-RU" }};
             yield return new object[] { "tzm", new [] { "tzm" }};
-            yield return new object[] { "tzm-Latn", new [] { "tzm-Latn" }};
-            yield return new object[] { "tzm-Latn-DZ", new [] { "tzm-Latn-DZ" }};
             yield return new object[] { "ug", new [] { "ug" }};
             yield return new object[] { "ug-CN", new [] { "ug-CN" }};
             yield return new object[] { "uk", new [] { "uk" } };
@@ -345,8 +328,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "uz", new [] { "uz" }};
             yield return new object[] { "uz-Cyrl", new [] { "uz-Cyrl" }};
             yield return new object[] { "uz-Cyrl-UZ", new [] { "uz-Cyrl-UZ" }};
-            yield return new object[] { "uz-Latn", new [] { "uz-Latn" }};
-            yield return new object[] { "uz-Latn-UZ", new [] { "uz-Latn-UZ" }};
             yield return new object[] { "vi", new [] { "vi" } };
             yield return new object[] { "vi-VN", new [] { "vi-VN" } };
             yield return new object[] { "wo", new [] { "wo" }};
@@ -376,6 +357,30 @@ namespace System.Globalization.Tests
             yield return new object[] { "zu-ZA", new [] { "zu-ZA" }};
             yield return new object[] { CultureInfo.CurrentCulture.Name, new [] { CultureInfo.CurrentCulture.Name } };
 
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { "az-Latn", new [] { "az-Latn" }};
+                yield return new object[] { "az-Latn-AZ", new [] { "az-Latn-AZ" }};
+                yield return new object[] { "bs-Latn", new [] { "bs-Latn" }};
+                yield return new object[] { "bs-Latn-BA", new [] { "bs-Latn-BA" }};
+                yield return new object[] { "ha-Latn", new [] { "ha-Latn" }};
+                yield return new object[] { "ha-Latn-NG", new [] { "ha-Latn-NG" }};
+                yield return new object[] { "mn-Cyrl", new [] { "mn-Cyrl" }};
+                yield return new object[] { "no", new [] { "no" } };
+                yield return new object[] { "sr-Cyrl", new [] { "sr-Cyrl" } };
+                yield return new object[] { "sr-Cyrl-BA", new [] { "sr-Cyrl-BA" }};
+                yield return new object[] { "sr-Cyrl-CS", new [] { "sr-Cyrl-CS" }};
+                yield return new object[] { "sr-Cyrl-ME", new [] { "sr-Cyrl-ME" }};
+                yield return new object[] { "sr-Cyrl-RS", new [] { "sr-Cyrl-RS" } };
+                yield return new object[] { "sr-Latn-CS", new [] { "sr-Latn-CS" }};
+                yield return new object[] { "tg-Cyrl", new [] { "tg-Cyrl" }};
+                yield return new object[] { "tg-Cyrl-TJ", new [] { "tg-Cyrl-TJ" }};
+                yield return new object[] { "tzm-Latn", new [] { "tzm-Latn" }};
+                yield return new object[] { "tzm-Latn-DZ", new [] { "tzm-Latn-DZ" }};
+                yield return new object[] { "uz-Latn", new [] { "uz-Latn" }};
+                yield return new object[] { "uz-Latn-UZ", new [] { "uz-Latn-UZ" }};
+            }
+
             if ((!PlatformDetection.IsWindows || PlatformDetection.WindowsVersion >= 10) && (PlatformDetection.IsNotBrowser))
             {
                 yield return new object[] { "en-US-CUSTOM", new [] { "en-US-CUSTOM", "en-US-custom" } };
@@ -385,7 +390,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_String_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79867", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public void Ctor_String(string name, string[] expectedNames)
         {
             CultureInfo culture = new CultureInfo(name);
@@ -396,7 +400,7 @@ namespace System.Globalization.Tests
             Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         public void Ctor_String_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => new CultureInfo(null)); // Name is null
@@ -434,13 +438,60 @@ namespace System.Globalization.Tests
             Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
         }
 
-        [InlineData("zh-TW-u-co-zhuyin")]
-        [InlineData("de-DE-u-co-phoneb")]
-        [InlineData("de-u-co-phonebk")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        public void TestCreationWithMangledSortName(string cultureName)
+        [InlineData("zh-TW-u-co-zhuyin", "zh-TW", "zh-TW_zhuyin")]
+        [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-u-xx", "de-DE-u-xx", "de-DE-u-xx_phoneboo")]
+        [InlineData("de-DE-u-xx-u-co-phonebk", "de-DE-u-xx-u-co-phonebk", "de-DE-u-xx-u-co-phonebk")]
+        [InlineData("de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phoneboo")]
+        [InlineData("de-DE", "de-DE", "de-DE")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalizationAndNotHybrid))]
+        public void TestCreationWithMangledSortName(string cultureName, string expectedCultureName, string expectedSortName)
         {
-            Assert.True(CultureInfo.GetCultureInfo(cultureName).CompareInfo.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase));
+            CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
+
+            Assert.Equal(expectedCultureName, ci.Name);
+            Assert.Equal(expectedSortName, ci.CompareInfo.Name);
+        }
+
+        [InlineData("xx-u-XX", "xx-u-xx")]
+        [InlineData("xx-u-XX-u-yy", "xx-u-xx-u-yy")]
+        [InlineData("xx-t-ja-JP", "xx-t-ja-jp")]
+        [InlineData("qps-plocm", "qps-PLOCM")] // ICU normalize this name to "qps--plocm" which we normalize it back to "qps-plocm"
+        [InlineData("zh_CN", "zh_cn")]
+        [InlineData("km_KH", "km_kh")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalizationAndNotHybrid), nameof(PlatformDetection.IsNotWindowsServerCore))]
+        public void TestCreationWithICUNormalizedNames(string cultureName, string expectedCultureName)
+        {
+            CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
+            Assert.Equal(expectedCultureName, ci.Name);
+        }
+
+        private static bool SupportRemoteExecutionWithIcu => RemoteExecutor.IsSupported && PlatformDetection.IsIcuGlobalization;
+
+        [InlineData("xx-u-XX")]
+        [InlineData("xx-u-XX-u-yy")]
+        [InlineData("xx-t-ja-JP")]
+        [InlineData("qps-plocm")]
+        [InlineData("zh-TW-u-co-zhuyin")]
+        [InlineData("de-DE-u-co-phonebk")]
+        [InlineData("de-DE-u-co-phonebk-u-xx")]
+        [InlineData("de-DE-u-xx-u-co-phonebk")]
+        [InlineData("de-DE-t-xx-u-co-phonebk")]
+        [InlineData("de-DE-u-co-phonebk-t-xx")]
+        [InlineData("de-DE-u-co-phonebk-t-xx-u-yy")]
+        [InlineData("de-DE")]
+        [ConditionalTheory(nameof(SupportRemoteExecutionWithIcu))]
+        public void TestWithResourceLookup(string cultureName)
+        {
+            RemoteExecutor.Invoke(name => {
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(name);
+                int Zero = 0;
+
+                // This should go through the resource manager to get the localized exception message using the current UI culture
+                Assert.Throws<DivideByZeroException>(() => 1 / Zero);
+            }, cultureName).Dispose();
         }
     }
 }

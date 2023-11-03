@@ -10,75 +10,96 @@ namespace System.Security.Cryptography
     internal static class RsaPaddingProcessor
     {
         // DigestInfo header values taken from https://tools.ietf.org/html/rfc3447#section-9.2, Note 1.
-        private static ReadOnlySpan<byte> DigestInfoMD5 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoMD5 =>
+            [
                 0x30, 0x20, 0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86,
                 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, 0x05, 0x00,
                 0x04, 0x10,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha1 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha1 =>
+            [
                 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03,
                 0x02, 0x1A, 0x05, 0x00, 0x04, 0x14,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha256 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha256 =>
+            [
                 0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04,
                 0x20,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha384 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha384 =>
+            [
                 0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04,
                 0x30,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha512 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha512 =>
+            [
                 0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04,
                 0x40,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> EightZeros => new byte[8];
+        private static ReadOnlySpan<byte> DigestInfoSha3_256 =>
+            [
+                0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x08, 0x05, 0x00, 0x04,
+                0x20,
+            ];
+
+        private static ReadOnlySpan<byte> DigestInfoSha3_384 =>
+            [
+                0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x09, 0x05, 0x00, 0x04,
+                0x30,
+            ];
+
+        private static ReadOnlySpan<byte> DigestInfoSha3_512 =>
+            [
+                0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x0A, 0x05, 0x00, 0x04,
+                0x40,
+            ];
+
+        private static ReadOnlySpan<byte> EightZeros => [0, 0, 0, 0, 0, 0, 0, 0];
 
         private static ReadOnlySpan<byte> GetDigestInfoForAlgorithm(
             HashAlgorithmName hashAlgorithmName,
             out int digestLengthInBytes)
         {
-            if (hashAlgorithmName == HashAlgorithmName.MD5)
+            switch (hashAlgorithmName.Name)
             {
-                digestLengthInBytes = MD5.HashSizeInBytes;
-                return DigestInfoMD5;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA1)
-            {
-                digestLengthInBytes = SHA1.HashSizeInBytes;
-                return DigestInfoSha1;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
-            {
-                digestLengthInBytes = SHA256.HashSizeInBytes;
-                return DigestInfoSha256;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
-            {
-                digestLengthInBytes = SHA384.HashSizeInBytes;
-                return DigestInfoSha384;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
-            {
-                digestLengthInBytes = SHA512.HashSizeInBytes;
-                return DigestInfoSha512;
-            }
-            else
-            {
-                Debug.Fail("Unknown digest algorithm");
-                throw new CryptographicException();
+                case HashAlgorithmNames.MD5:
+                    digestLengthInBytes = MD5.HashSizeInBytes;
+                    return DigestInfoMD5;
+                case HashAlgorithmNames.SHA1:
+                    digestLengthInBytes = SHA1.HashSizeInBytes;
+                    return DigestInfoSha1;
+                case HashAlgorithmNames.SHA256:
+                    digestLengthInBytes = SHA256.HashSizeInBytes;
+                    return DigestInfoSha256;
+                case HashAlgorithmNames.SHA384:
+                    digestLengthInBytes = SHA384.HashSizeInBytes;
+                    return DigestInfoSha384;
+                case HashAlgorithmNames.SHA512:
+                    digestLengthInBytes = SHA512.HashSizeInBytes;
+                    return DigestInfoSha512;
+                case HashAlgorithmNames.SHA3_256:
+                    digestLengthInBytes = SHA3_256.HashSizeInBytes;
+                    return DigestInfoSha3_256;
+                case HashAlgorithmNames.SHA3_384:
+                    digestLengthInBytes = SHA3_384.HashSizeInBytes;
+                    return DigestInfoSha3_384;
+                case HashAlgorithmNames.SHA3_512:
+                    digestLengthInBytes = SHA3_512.HashSizeInBytes;
+                    return DigestInfoSha3_512;
+                default:
+                    Debug.Fail("Unknown digest algorithm");
+                    throw new CryptographicException();
             }
         }
 

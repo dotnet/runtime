@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Functions
 {
@@ -56,7 +58,14 @@ namespace Functions
             ["tanhsingle"] = MathTests.TanhSingleTest
         };
 
-        private static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            return Test(Array.Empty<string>());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int Test(string[] args)
         {
             var isPassing = true; var iterations = defaultIterations;
             ICollection<string> testsToRun = new HashSet<string>();

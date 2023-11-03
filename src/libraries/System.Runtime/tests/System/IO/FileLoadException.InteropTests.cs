@@ -12,7 +12,6 @@ namespace System.IO.Tests
     {
         [Theory]
         [InlineData(HResults.COR_E_FILELOAD)]
-        [InlineData(HResults.FUSION_E_CACHEFILE_FAILED)]
         [InlineData(HResults.FUSION_E_INVALID_NAME)]
         [InlineData(HResults.FUSION_E_PRIVATE_ASM_DISALLOWED)]
         [InlineData(HResults.FUSION_E_REF_DEF_MISMATCH)]

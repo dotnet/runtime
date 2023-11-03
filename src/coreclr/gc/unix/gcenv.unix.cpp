@@ -136,7 +136,7 @@ typedef cpuset_t cpu_set_t;
 #endif
 #endif // __APPLE__
 
-#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
@@ -168,6 +168,17 @@ enum membarrier_cmd
 
 bool CanFlushUsingMembarrier()
 {
+
+#ifdef TARGET_ANDROID
+    // Avoid calling membarrier on older Android versions where membarrier
+    // may be barred by seccomp causing the process to be killed.
+    int apiLevel = android_get_device_api_level();
+    if (apiLevel < __ANDROID_API_Q__)
+    {
+        return false;
+    }
+#endif
+
     // Starting with Linux kernel 4.14, process memory barriers can be generated
     // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
 
@@ -1080,12 +1091,18 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
 #ifdef HOST_64BIT
+#ifndef TARGET_RISCV64
     // There is no API to get the total virtual address space size on
     // Unix, so we use a constant value representing 128TB, which is
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
+#else // TARGET_RISCV64
+    // For RISC-V Linux Kernel SV39 virtual memory limit is 256gb.
+    static const uint64_t _256GB = (1ull << 38);
+    return _256GB;
+#endif // TARGET_RISCV64
 #else
     return (size_t)-1;
 #endif
@@ -1154,7 +1171,34 @@ uint64_t GetAvailablePhysicalMemory()
     uint64_t available = 0;
 
     // Get the physical memory available.
-#ifndef __APPLE__
+#if defined(__APPLE__)
+    vm_size_t page_size;
+    mach_port_t mach_port;
+    mach_msg_type_number_t count;
+    vm_statistics_data_t vm_stats;
+    mach_port = mach_host_self();
+    count = sizeof(vm_stats) / sizeof(natural_t);
+    if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
+    {
+        if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
+        {
+            available = (int64_t)vm_stats.free_count * (int64_t)page_size;
+        }
+    }
+    mach_port_deallocate(mach_task_self(), mach_port);
+#elif defined(__FreeBSD__)
+    size_t inactive_count = 0, laundry_count = 0, free_count = 0;
+    size_t sz = sizeof(inactive_count);
+    sysctlbyname("vm.stats.vm.v_inactive_count", &inactive_count, &sz, NULL, 0); 
+
+    sz = sizeof(laundry_count);
+    sysctlbyname("vm.stats.vm.v_laundry_count", &laundry_count, &sz, NULL, 0); 
+
+    sz = sizeof(free_count);
+    sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);
+
+    available = (inactive_count + laundry_count + free_count) * sysconf(_SC_PAGESIZE);
+#else // Linux
     static volatile bool tryReadMemInfo = true;
 
     if (tryReadMemInfo)
@@ -1170,22 +1214,7 @@ uint64_t GetAvailablePhysicalMemory()
         // Fall back to getting the available pages using sysconf.
         available = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
     }
-#else // __APPLE__
-    vm_size_t page_size;
-    mach_port_t mach_port;
-    mach_msg_type_number_t count;
-    vm_statistics_data_t vm_stats;
-    mach_port = mach_host_self();
-    count = sizeof(vm_stats) / sizeof(natural_t);
-    if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
-    {
-        if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-        {
-            available = (int64_t)vm_stats.free_count * (int64_t)page_size;
-        }
-    }
-    mach_port_deallocate(mach_task_self(), mach_port);
-#endif // __APPLE__
+#endif
 
     return available;
 }

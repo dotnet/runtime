@@ -7,6 +7,7 @@
 //
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class TestClass8505
 {
     static int s_int32_6 = -5;
@@ -19,7 +20,7 @@ public class TestClass8505
             return s_sbyte_8 <<= s_int32_6 >>= s_int32_6 ^ (-2 - (s_int32_6 &= -5)) / (-1 * s_int32_6 * (2 ^ -2)) + 77;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -38,13 +39,12 @@ public class TestClass8505
                 {
                 }
             }
-            return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         TestClass8505 objTestClass8505 = new TestClass8505();
         objTestClass8505.Method0();
-        return 100;
     }
 }

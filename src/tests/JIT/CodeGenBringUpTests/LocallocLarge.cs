@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class ThreadData
 {
@@ -60,7 +61,8 @@ public class BringUpTest_LocallocLarge
         return ok;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int j = 2; j < 1024 * 100; j += 331)
         {

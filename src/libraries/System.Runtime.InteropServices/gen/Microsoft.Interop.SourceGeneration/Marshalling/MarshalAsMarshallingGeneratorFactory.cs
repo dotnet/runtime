@@ -18,7 +18,6 @@ namespace Microsoft.Interop
         private static readonly Forwarder s_forwarder = new();
         private static readonly BlittableMarshaller s_blittable = new();
         private static readonly DelegateMarshaller s_delegate = new();
-        private static readonly SafeHandleMarshaller s_safeHandle = new();
         private InteropGenerationOptions Options { get; }
         private IMarshallingGeneratorFactory InnerFactory { get; }
 
@@ -34,7 +33,7 @@ namespace Microsoft.Interop
         /// <param name="info">Type details</param>
         /// <param name="context">Metadata about the stub the type is associated with</param>
         /// <returns>A <see cref="IMarshallingGenerator"/> instance.</returns>
-        public IMarshallingGenerator Create(
+        public ResolvedGenerator Create(
             TypePositionInfo info,
             StubCodeContext context)
         {
@@ -45,15 +44,16 @@ namespace Microsoft.Interop
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U1, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I2, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U2, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Error, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4 or UnmanagedType.Error, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I8, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U8, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysInt, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysUInt, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R4, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
-                    return s_blittable;
+                    // TODO: Report the MarshalAs attribute as unnecessary
+                    return ResolvedGenerator.Resolved(s_blittable);
 
                 // Enum with no marshalling info
                 case { ManagedType: EnumTypeInfo enumType, MarshallingAttributeInfo: NoMarshallingInfo }:
@@ -61,48 +61,37 @@ namespace Microsoft.Interop
                     SpecialType underlyingSpecialType = enumType.UnderlyingType;
                     if (underlyingSpecialType == SpecialType.System_Boolean || underlyingSpecialType == SpecialType.System_Char)
                     {
-                        throw new MarshallingNotSupportedException(info, context);
+                        return ResolvedGenerator.NotSupported(new(info, context));
                     }
-                    return s_blittable;
+                    return ResolvedGenerator.Resolved(s_blittable);
 
                 // Pointer with no marshalling info
                 case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer: false), MarshallingAttributeInfo: NoMarshallingInfo }:
-                    return s_blittable;
+                    return ResolvedGenerator.Resolved(s_blittable);
 
                 // Function pointer with no marshalling info
                 case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer: true), MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
-                    return s_blittable;
+                    return ResolvedGenerator.Resolved(s_blittable);
 
+                // Bool with marshalling info
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U1, _) }:
-                    return s_byteBool;
+                    return ResolvedGenerator.Resolved(s_byteBool);
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1, _) }:
-                    return s_signed_byteBool;
+                    return ResolvedGenerator.Resolved(s_signed_byteBool);
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U4, _) }:
-                    return s_winBool;
+                    return ResolvedGenerator.Resolved(s_winBool);
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Bool, _) }:
-                    return s_signed_winBool;
+                    return ResolvedGenerator.Resolved(s_signed_winBool);
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
-                    return s_variantBool;
+                    return ResolvedGenerator.Resolved(s_variantBool);
 
+                // Delegate types
                 case { ManagedType: DelegateTypeInfo, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
-                    return s_delegate;
+                    return ResolvedGenerator.Resolved(s_delegate);
 
-                case { MarshallingAttributeInfo: SafeHandleMarshallingInfo(_, bool isAbstract) }:
-                    if (!context.AdditionalTemporaryStateLivesAcrossStages)
-                    {
-                        throw new MarshallingNotSupportedException(info, context);
-                    }
-                    if (info.IsByRef && isAbstract)
-                    {
-                        throw new MarshallingNotSupportedException(info, context)
-                        {
-                            NotSupportedDetails = SR.SafeHandleByRefMustBeConcrete
-                        };
-                    }
-                    return s_safeHandle;
-
+                // void
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Void } }:
-                    return s_forwarder;
+                    return ResolvedGenerator.Resolved(s_forwarder);
 
                 default:
                     return InnerFactory.Create(info, context);

@@ -24,7 +24,6 @@ extends:
           - linux_arm64
           - linux_x64
           - osx_arm64
-          - windows_arm
           - windows_arm64
           - windows_x64
           - windows_x86
@@ -50,7 +49,6 @@ extends:
           - linux_arm64
           - linux_x64
           - osx_arm64
-          - windows_arm
           - windows_arm64
           - windows_x64
           - windows_x86

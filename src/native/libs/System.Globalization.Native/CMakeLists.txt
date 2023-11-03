@@ -1,6 +1,13 @@
+# Required for StaticICULinking
+cmake_minimum_required(VERSION 3.10..3.20)
+
 project(System.Globalization.Native C)
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
+    if (ANDROID_FORCE_ICU_DATA_DIR)
+        add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
+    endif()
+
     add_compile_options(-Wno-switch-enum)
     add_compile_options(-Wno-covered-switch-default)
 
@@ -53,6 +60,7 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_calendarData.c
     pal_casing.c
     pal_collation.c
+    pal_common.c
     pal_idna.c
     pal_locale.c
     pal_localeNumberData.c
@@ -89,7 +97,15 @@ else()
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m)
+    set(NATIVEGLOBALIZATION_SOURCES_OBJC
+        pal_locale.m
+        pal_collation.m
+        pal_casing.m
+        pal_calendarData.m
+        pal_normalization.m
+        pal_timeZoneInfo.m)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES_OBJC} PROPERTIES COMPILE_FLAGS "-fobjc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} ${NATIVEGLOBALIZATION_SOURCES_OBJC})
 endif()
 
 # time zone names are filtered out of icu data for the browser and associated functionality is disabled
@@ -117,7 +133,7 @@ if (GEN_SHARED_LIB)
 
     target_link_libraries(System.Globalization.Native
         PRIVATE
-        dl
+        ${CMAKE_DL_LIBS}
         ${FOUNDATION}
     )
 
@@ -136,7 +152,7 @@ endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"
@@ -154,14 +170,14 @@ if(CLR_CMAKE_TARGET_WIN32)
             STATIC
             ${NATIVEGLOBALIZATION_SOURCES}
         )
-        target_compile_options(System.Globalization.Native.Aot PRIVATE /guard:cf-)
-        target_compile_options(System.Globalization.Native.Aot PRIVATE /GL-)
+        set_target_properties(System.Globalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
+        set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
         add_library(System.Globalization.Native.Aot.GuardCF
             STATIC
             ${NATIVEGLOBALIZATION_SOURCES}
         )
-        target_compile_options(System.Globalization.Native.Aot.GuardCF PRIVATE /GL-)
+        set_target_properties(System.Globalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
         install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
