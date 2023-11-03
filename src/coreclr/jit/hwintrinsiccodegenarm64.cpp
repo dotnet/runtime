@@ -821,7 +821,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(argReg == argNode->GetRegNum());
                     argReg = REG_NEXT(argReg);
                 }
-                assert(ins == INS_st1_2regs && regCount == 2 || ins == INS_st1_3regs && regCount == 3 || ins == INS_st1_4regs && regCount == 4);
+                assert((ins == INS_st1_2regs && regCount == 2) || (ins == INS_st1_3regs && regCount == 3) ||
+                       (ins == INS_st1_4regs && regCount == 4));
 #endif
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
