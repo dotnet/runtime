@@ -317,7 +317,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // One optimized (combined) cast here
-                    tree = gtNewCastNode(TYP_FLOAT, innerOper, false, TYP_FLOAT);
+                    tree = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
                     return fgMorphTree(tree);
                 }
             }
@@ -327,20 +327,33 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // This if check needs to be changed to make sure we only 
     // block casts which are already Fixed UP.
     do {
-        if ( srcType == TYP_DOUBLE && dstType == TYP_ULONG ){
-            if ( oper->OperIs(GT_HWINTRINSIC) && (oper->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_ToScalar) ) {
+        if ( varTypeIsFloating(srcType) && dstType == TYP_ULONG )
+        {
+            if ( oper->OperIs(GT_HWINTRINSIC) && (oper->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_ToScalar) )
+            {
                 GenTree*  innerOper    = oper->AsHWIntrinsic()->Op(1);
-                if ( innerOper->OperIs(GT_HWINTRINSIC) && (innerOper->AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_FixupScalar) ) {
+                if ( innerOper->OperIs(GT_HWINTRINSIC) && (innerOper->AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_FixupScalar) )
+                {
                     break;
                 }
             }
 
-            if ( !compOpportunisticallyDependsOn(InstructionSet_AVX512F) ) {
+            if ( !compOpportunisticallyDependsOn(InstructionSet_AVX512F) )
+            {
                 break;
             }
             // Generate the control table for VFIXUPIMMSD
             // The behavior we want is to saturate negative values to 0.
             GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
+
+            // QNAN: 0b0000:
+            // SNAN: 0b0000
+            // ZERO: 0b0000:
+            // +ONE: 0b0000
+            // -INF: 0b0000
+            // +INF: 0b0000
+            // -VAL: 0b1000: Saturate to Zero
+            // +VAL: 0b0000
             tbl->gtSimdVal.i32[0] = 0x08000000;
 
             // Generate first operand
@@ -349,16 +362,16 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Hence we clone the first operand
             GenTree* op2Clone;
             oper = impCloneExpr(oper, &op2Clone, CHECK_SPILL_ALL,
-                                nullptr DEBUGARG("Cloning non-constant for Math.Max/Min"));
+                                nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
             
             //run vfixupimmsd base on table and no flags reporting
             GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
-                                                        NI_AVX512F_FixupScalar, CORINFO_TYPE_DOUBLE, 16);
+                                                        NI_AVX512F_FixupScalar, (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT, 16);
             
             // Convert to scalar
             // Here, we try to insert a Vector128 to Scalar node so that the input 
-            // can be provided to the cast
-            GenTree* retNode1 = gtNewSimdHWIntrinsicNode(TYP_DOUBLE, retNode, NI_Vector128_ToScalar, CORINFO_TYPE_DOUBLE, 16);
+            // can be provided to the scalar cast
+            GenTree* retNode1 = gtNewSimdHWIntrinsicNode(srcType, retNode, NI_Vector128_ToScalar, (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT, 16);
             tree = gtNewCastNode(TYP_ULONG, retNode1, false, TYP_ULONG);
             return fgMorphTree(tree);
         }
