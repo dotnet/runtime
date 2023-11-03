@@ -198,4 +198,13 @@
   <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
     <value>The specified opcode cannot be passed to EmitCall.</value>
   </data>
+  <data name="Argument_BadExceptionCodeGen" xml:space="preserve">
+    <value>Incorrect code generation for exception block.</value>
+  </data>
+  <data name="Argument_NotInExceptionBlock" xml:space="preserve">
+    <value>Not currently in an exception block.</value>
+  </data>
+  <data name="Argument_ShouldNotSpecifyExceptionType" xml:space="preserve">
+    <value>Should not specify exception type for catch clause for filter block.</value>
+  </data>
 </root>

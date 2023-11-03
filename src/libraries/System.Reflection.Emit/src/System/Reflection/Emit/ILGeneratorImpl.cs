@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -15,19 +14,23 @@ namespace System.Reflection.Emit
         private readonly MethodBuilder _methodBuilder;
         private readonly BlobBuilder _builder;
         private readonly InstructionEncoder _il;
+        private readonly ControlFlowBuilder _cfBuilder;
         private bool _hasDynamicStackAllocation;
         private int _maxStackSize;
         private int _currentStack;
         private List<LocalBuilder> _locals = new();
         private Dictionary<Label, LabelHandle> _labelTable = new(2);
         private List<KeyValuePair<MemberInfo, BlobWriter>> _memberReferences = new();
+        private List<ExceptionBlock> _exceptionStack = new();
+        private int _currentExStackIndex = -1;
 
         internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
         {
             _methodBuilder = methodBuilder;
             // For compat, runtime implementation doesn't throw for negative or zero value.
             _builder = new BlobBuilder(Math.Max(size, DefaultSize));
-            _il = new InstructionEncoder(_builder, new ControlFlowBuilder());
+            _cfBuilder = new ControlFlowBuilder();
+            _il = new InstructionEncoder(_builder, _cfBuilder);
         }
 
         internal int GetMaxStackSize() => _maxStackSize;
@@ -38,11 +41,145 @@ namespace System.Reflection.Emit
 
         public override int ILOffset => _il.Offset;
 
-        public override void BeginCatchBlock(Type? exceptionType) => throw new NotImplementedException();
-        public override void BeginExceptFilterBlock() => throw new NotImplementedException();
-        public override Label BeginExceptionBlock() => throw new NotImplementedException();
-        public override void BeginFaultBlock() => throw new NotImplementedException();
-        public override void BeginFinallyBlock() => throw new NotImplementedException();
+        public override void BeginCatchBlock(Type? exceptionType)
+        {
+            if (_currentExStackIndex <= -1)
+            {
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
+            }
+
+            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            if (currentExBlock.State == ExceptionState.Filter)
+            {
+                // Filter block  should be followed by catch block with null exception type
+                if (exceptionType != null)
+                {
+                    throw new ArgumentException(SR.Argument_ShouldNotSpecifyExceptionType);
+                }
+
+                Emit(OpCodes.Endfilter);
+                MarkLabel(currentExBlock.HandleStart);
+            }
+            else
+            {
+                ArgumentNullException.ThrowIfNull(exceptionType);
+
+                Emit(OpCodes.Leave, currentExBlock.EndLabel);
+                if (currentExBlock.State == ExceptionState.Try)
+                {
+                    MarkLabel(currentExBlock.TryEnd);
+                }
+                else if (currentExBlock.State == ExceptionState.Catch)
+                {
+                    MarkLabel(currentExBlock.HandleEnd);
+                }
+
+                currentExBlock.HandleStart = DefineLabel();
+                currentExBlock.HandleEnd = DefineLabel();
+                ModuleBuilderImpl module = (ModuleBuilderImpl)_methodBuilder.Module;
+                _cfBuilder.AddCatchRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
+                    _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd], module.GetTypeHandle(exceptionType));
+                MarkLabel(currentExBlock.HandleStart);
+            }
+
+            currentExBlock.State = ExceptionState.Catch;
+        }
+
+        public override void BeginExceptFilterBlock()
+        {
+            if (_currentExStackIndex <= -1)
+            {
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
+            }
+
+            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            Emit(OpCodes.Leave, currentExBlock.EndLabel);
+            if (currentExBlock.State == ExceptionState.Try)
+            {
+                MarkLabel(currentExBlock.TryEnd);
+            }
+            else if (currentExBlock.State == ExceptionState.Catch)
+            {
+                MarkLabel(currentExBlock.HandleEnd);
+            }
+
+            currentExBlock.FilterStart = DefineLabel();
+            currentExBlock.HandleStart = DefineLabel();
+            currentExBlock.HandleEnd = DefineLabel();
+            _cfBuilder.AddFilterRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
+                _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd], _labelTable[currentExBlock.FilterStart]);
+            currentExBlock.State = ExceptionState.Filter;
+            MarkLabel(currentExBlock.FilterStart);
+        }
+
+        public override Label BeginExceptionBlock()
+        {
+            ExceptionBlock currentExBlock = new ExceptionBlock();
+            currentExBlock.TryStart = DefineLabel();
+            currentExBlock.TryEnd = DefineLabel();
+            currentExBlock.EndLabel = DefineLabel(); // End label of the whole exception block
+            MarkLabel(currentExBlock.TryStart);
+            currentExBlock.State = ExceptionState.Try;
+            _exceptionStack.Add(currentExBlock);
+            _currentExStackIndex++;
+            return currentExBlock.EndLabel;
+        }
+
+        public override void BeginFaultBlock()
+        {
+            if (_currentExStackIndex <= -1)
+            {
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
+            }
+
+            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            Emit(OpCodes.Leave, currentExBlock.EndLabel);
+            if (currentExBlock.State == ExceptionState.Try)
+            {
+                MarkLabel(currentExBlock.TryEnd);
+            }
+            else if (currentExBlock.State == ExceptionState.Catch)
+            {
+                MarkLabel(currentExBlock.HandleEnd);
+            }
+
+            currentExBlock.HandleStart = DefineLabel();
+            currentExBlock.HandleEnd = DefineLabel();
+            _cfBuilder.AddFaultRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
+                               _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd]);
+            currentExBlock.State = ExceptionState.Fault;
+            MarkLabel(currentExBlock.HandleStart);
+        }
+
+        public override void BeginFinallyBlock()
+        {
+            if (_currentExStackIndex <= -1)
+            {
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
+            }
+
+            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            Label finallyEndLabel = DefineLabel();
+            if (currentExBlock.State == ExceptionState.Try)
+            {
+                Emit(OpCodes.Leave, finallyEndLabel);
+            }
+            else if (currentExBlock.State == ExceptionState.Catch)
+            {
+                Emit(OpCodes.Leave, currentExBlock.EndLabel);
+                MarkLabel(currentExBlock.HandleEnd);
+                currentExBlock.TryEnd = DefineLabel(); // need to nest the catch block within finally
+            }
+
+            MarkLabel(currentExBlock.TryEnd);
+            currentExBlock.HandleStart = DefineLabel();
+            currentExBlock.HandleEnd = finallyEndLabel;
+            _cfBuilder.AddFinallyRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
+                               _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd]);
+            currentExBlock.State = ExceptionState.Finally;
+            MarkLabel(currentExBlock.HandleStart);
+        }
+
         public override void BeginScope() => throw new NotImplementedException();
 
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
@@ -398,7 +535,40 @@ namespace System.Reflection.Emit
 
         public override void EmitCalli(OpCode opcode, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes) => throw new NotImplementedException();
         public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
-        public override void EndExceptionBlock() => throw new NotImplementedException();
+
+        public override void EndExceptionBlock()
+        {
+            if (_currentExStackIndex <= -1)
+            {
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
+            }
+
+            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            ExceptionState state = currentExBlock.State;
+            Label endLabel = currentExBlock.EndLabel;
+
+            if (state == ExceptionState.Filter || state == ExceptionState.Try)
+            {
+                throw new InvalidOperationException(SR.Argument_BadExceptionCodeGen);
+            }
+
+            if (state == ExceptionState.Catch)
+            {
+                Emit(OpCodes.Leave, endLabel);
+                MarkLabel(currentExBlock.HandleEnd);
+            }
+            else if (state == ExceptionState.Finally || state == ExceptionState.Fault)
+            {
+                Emit(OpCodes.Endfinally);
+                MarkLabel(currentExBlock.HandleEnd);
+            }
+
+            MarkLabel(endLabel);
+            currentExBlock.State = ExceptionState.Done;
+            _exceptionStack.Remove(currentExBlock);
+            _currentExStackIndex--;
+        }
+
         public override void EndScope() => throw new NotImplementedException();
 
         public override void MarkLabel(Label loc)
@@ -414,5 +584,27 @@ namespace System.Reflection.Emit
         }
 
         public override void UsingNamespace(string usingNamespace) => throw new NotImplementedException();
+    }
+
+    internal sealed class ExceptionBlock
+    {
+        public Label TryStart;
+        public Label TryEnd;
+        public Label HandleStart;
+        public Label HandleEnd;
+        public Label FilterStart;
+        public Label EndLabel;
+        public ExceptionState State;
+    }
+
+    internal enum ExceptionState
+    {
+        Undefined,
+        Try,
+        Filter,
+        Catch,
+        Finally,
+        Fault,
+        Done
     }
 }

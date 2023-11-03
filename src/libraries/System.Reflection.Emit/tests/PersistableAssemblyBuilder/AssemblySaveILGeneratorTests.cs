@@ -173,7 +173,7 @@ namespace System.Reflection.Emit.Tests
         public void ILOffset_Test()
         {
             AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-            MethodBuilder method = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[0]);
+            MethodBuilder method = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), Type.EmptyTypes);
             ILGenerator ilGenerator = method.GetILGenerator();
 
             Assert.Equal(0, ilGenerator.ILOffset);
@@ -187,7 +187,7 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(long), new Type[] { typeof(int), typeof(long), typeof(short), typeof(byte) });
+                MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(long), new [] { typeof(int), typeof(long), typeof(short), typeof(byte) });
                 ILGenerator il1 = method1.GetILGenerator();
 
                 // public int Method1(int x, int y, short z, byte r) =>
@@ -777,7 +777,7 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), new Type[0]);
+                MethodBuilder method = tb.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), Type.EmptyTypes);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 LocalBuilder lb0 = ilGenerator.DeclareLocal(typeof(ValueTuple));
                 ilGenerator.Emit(OpCodes.Ldloca, lb0);
@@ -825,6 +825,525 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentException>(() => il.MarkLabel(new Label()));
             // only OpCodes.Call or OpCodes.Callvirt or OpCodes.Newob expected
             Assert.Throws<ArgumentException>(() => il.EmitCall(OpCodes.Ldfld, method, null));
+        }
+
+        [Fact]
+        public void SimpleTryCatchBlock()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                Type dBZException = typeof(DivideByZeroException);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
+                Label exBlock = ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.BeginCatchBlock(dBZException);
+                ilGenerator.EmitWriteLine("Error: division by zero");
+                ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(1, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(dBZException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                byte[] bodyBytes = body.GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
+                Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
+                // Next 4 bytes 'exBlock' label location
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]); // "Error: division by zero"
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[14]); // Calls Console.WriteLine
+                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[25]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[30]);
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[31]);
+            }
+        }
+
+        [Fact]
+        public void TryMultipleCatchBlocks()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                Type dBZException = typeof(DivideByZeroException);
+                Type exception = typeof(Exception);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
+                Label exBlock = ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.BeginCatchBlock(dBZException);
+                ilGenerator.EmitWriteLine("Error: division by zero");
+                ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Error: generic Exception");
+                ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(2, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
+                Assert.Equal(dBZException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+                byte[] bodyBytes = body.GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
+                Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]); // "Error: division by zero"
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[14]); // Calls Console.WriteLine
+                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[25]);
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[30]); // "Error: division by zero"
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[35]); // Calls Console.WriteLine
+                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[40]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[45]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[46]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[51]);
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[52]);
+            }
+        }
+
+        [Fact]
+        public void TryFilterCatchBlock()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                Type dBZException = typeof(DivideByZeroException);
+                Type exception = typeof(Exception);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
+                Label filterEnd = ilGenerator.DefineLabel();
+                Label filterCheck = ilGenerator.DefineLabel();
+                Label exBlock = ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.BeginExceptFilterBlock();
+                ilGenerator.Emit(OpCodes.Isinst, dBZException);
+                ilGenerator.Emit(OpCodes.Dup);
+                ilGenerator.Emit(OpCodes.Brtrue_S, filterCheck);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                ilGenerator.Emit(OpCodes.Br_S, filterEnd);
+                ilGenerator.MarkLabel(filterCheck);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                ilGenerator.Emit(OpCodes.Cgt_Un);
+                ilGenerator.MarkLabel(filterEnd);
+                ilGenerator.BeginCatchBlock(null);
+                ilGenerator.EmitWriteLine("Filtered division by zero");
+                ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Generic Exception");
+                ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(2, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[0].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
+                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+            }
+        }
+
+        [Fact]
+        public void TryCatchFilterCatchBlock()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                Type dBZException = typeof(DivideByZeroException);
+                Type overflowException = typeof(OverflowException);
+                Type exception = typeof(Exception);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
+                Label filterEnd = ilGenerator.DefineLabel();
+                Label filterCheck = ilGenerator.DefineLabel();
+                Label exBlock = ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Mul);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.BeginCatchBlock(overflowException);
+                ilGenerator.EmitWriteLine("Overflow Exception!");
+                ilGenerator.ThrowException(overflowException);
+                ilGenerator.BeginExceptFilterBlock();
+                ilGenerator.Emit(OpCodes.Isinst, dBZException);
+                ilGenerator.Emit(OpCodes.Dup);
+                ilGenerator.Emit(OpCodes.Brtrue_S, filterCheck);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                ilGenerator.Emit(OpCodes.Br_S, filterEnd);
+                ilGenerator.MarkLabel(filterCheck);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                ilGenerator.Emit(OpCodes.Cgt_Un);
+                ilGenerator.MarkLabel(filterEnd);
+                ilGenerator.BeginCatchBlock(null);
+                ilGenerator.EmitWriteLine("Filtered division by zero");
+                ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Generic Exception");
+                ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(3, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[1].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
+                Assert.Equal(overflowException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[2].CatchType.FullName);
+            }
+        }
+
+        [Fact]
+        public void TryFinallyBlock()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
+                Label exBlock = ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.BeginFinallyBlock();
+                ilGenerator.EmitWriteLine("Finally handler");
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(1, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[0].Flags);
+                byte[] bodyBytes = body.GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
+                Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]);
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[14]);
+                Assert.Equal(OpCodes.Endfinally.Value, bodyBytes[19]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[20]);
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[21]);
+            }
+        }
+
+        [Fact]
+        public void TryCatchFinallyBlock()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] { typeof(int), typeof(int) });
+                Type exception = typeof(Exception);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Generic Exception");
+                ilGenerator.BeginFinallyBlock();
+                ilGenerator.EmitWriteLine("Finally handler");
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(2, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[1].Flags);
+                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+            }
+        }
+
+        [Fact]
+        public void TryFilterCatchFinallyBlock()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(int), typeof(int) });
+                Type overflowEType = typeof(OverflowException);
+                ConstructorInfo myConstructorInfo = overflowEType.GetConstructor(new [] { typeof(string) });
+                MethodInfo myExToStrMI = overflowEType.GetMethod("ToString");
+                MethodInfo myWriteLineMI = typeof(Console).GetMethod("WriteLine", new [] {typeof(string),typeof(object) });
+                ILGenerator myAdderIL = method.GetILGenerator();
+                LocalBuilder myLocalBuilder1 = myAdderIL.DeclareLocal(typeof(int));
+                LocalBuilder myLocalBuilder2 = myAdderIL.DeclareLocal(overflowEType);
+
+                Label myFailedLabel = myAdderIL.DefineLabel();
+                Label myEndOfMethodLabel = myAdderIL.DefineLabel();
+                Label myLabel = myAdderIL.BeginExceptionBlock();
+                myAdderIL.Emit(OpCodes.Ldarg_0);
+                myAdderIL.Emit(OpCodes.Ldc_I4_S, 10);
+                myAdderIL.Emit(OpCodes.Bgt_S, myFailedLabel);
+                myAdderIL.Emit(OpCodes.Ldarg_1);
+                myAdderIL.Emit(OpCodes.Ldc_I4_S, 10);
+                myAdderIL.Emit(OpCodes.Bgt_S, myFailedLabel);
+                myAdderIL.Emit(OpCodes.Ldarg_0);
+                myAdderIL.Emit(OpCodes.Ldarg_1);
+                myAdderIL.Emit(OpCodes.Add_Ovf_Un);
+                myAdderIL.Emit(OpCodes.Stloc_S, myLocalBuilder1);
+                myAdderIL.Emit(OpCodes.Br_S, myEndOfMethodLabel);
+                myAdderIL.MarkLabel(myFailedLabel);
+                myAdderIL.Emit(OpCodes.Ldstr, "Cannot accept values over 10 for add.");
+                myAdderIL.Emit(OpCodes.Newobj, myConstructorInfo);
+                myAdderIL.Emit(OpCodes.Stloc_S, myLocalBuilder2);
+                myAdderIL.Emit(OpCodes.Ldloc_S, myLocalBuilder2);
+                myAdderIL.Emit(OpCodes.Throw);
+                myAdderIL.BeginExceptFilterBlock();
+                myAdderIL.BeginCatchBlock(null);
+                myAdderIL.EmitWriteLine("Except filter block handled.");
+                myAdderIL.BeginCatchBlock(overflowEType);
+                myAdderIL.Emit(OpCodes.Ldstr, "{0}");
+                myAdderIL.Emit(OpCodes.Ldloc_S, myLocalBuilder2);
+                myAdderIL.EmitCall(OpCodes.Callvirt, myExToStrMI, null);
+                myAdderIL.EmitCall(OpCodes.Call, myWriteLineMI, null);
+                myAdderIL.Emit(OpCodes.Ldc_I4_M1);
+                myAdderIL.Emit(OpCodes.Stloc_S, myLocalBuilder1);
+                myAdderIL.BeginFinallyBlock();
+                myAdderIL.EmitWriteLine("Finally block handled.");
+                myAdderIL.EndExceptionBlock();
+                myAdderIL.MarkLabel(myEndOfMethodLabel);
+                myAdderIL.Emit(OpCodes.Ldloc_S, myLocalBuilder1);
+                myAdderIL.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(3, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[0].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[2].Flags);
+                Assert.Equal(overflowEType.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+            }
+        }
+
+        [Fact]
+        public void TryFaultBlock()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                ILGenerator ilGenerator = method.GetILGenerator();
+                Label exBlock = ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.BeginFaultBlock();
+                ilGenerator.EmitWriteLine("Fault handling");
+                ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(1, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Fault, body.ExceptionHandlingClauses[0].Flags);
+                byte[] bodyBytes = body.GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
+                Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]);
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[14]);
+                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
+                Assert.Equal(OpCodes.Endfinally.Value, bodyBytes[25]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[26]);
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[27]);
+            }
+        }
+
+        [Fact]
+        public void NestedTryCatchBlocks()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] { typeof(int), typeof(int) });
+                Type exception = typeof(Exception);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.BeginExceptionBlock();
+                ilGenerator.EmitWriteLine("Try block nested in try");
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Catch block nested in try");
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.EmitWriteLine("Outer try block ends");
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Outer catch block starts");
+                ilGenerator.BeginExceptionBlock();
+                ilGenerator.EmitWriteLine("Try block nested in catch");
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Catch block nested in catch");
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.EmitWriteLine("Outer catch block ends");
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(3, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
+                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[2].CatchType.FullName);
+            }
+        }
+
+        [Fact]
+        public void DeeperNestedTryCatchFilterFinallyBlocks()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(int), typeof(int) });
+                Type exception = typeof(Exception);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder local = ilGenerator.DeclareLocal(typeof(int));
+                ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+
+                ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Div);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+
+                ilGenerator.BeginExceptionBlock();
+                ilGenerator.EmitWriteLine("1st nested try block nested in try");
+                Label myLabel = ilGenerator.BeginExceptionBlock();
+                ilGenerator.EmitWriteLine("2nd nested try block starts");
+                ilGenerator.Emit(OpCodes.Ldc_I4_3);
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+
+                ilGenerator.BeginExceptionBlock();
+                ilGenerator.EmitWriteLine("3rd nested try block");
+                ilGenerator.BeginFinallyBlock();
+                ilGenerator.EmitWriteLine("3rd nested finally block");
+                ilGenerator.EndExceptionBlock();
+
+                ilGenerator.EmitWriteLine("2nd nested try block ends");
+                ilGenerator.BeginExceptFilterBlock();
+                ilGenerator.EmitWriteLine("2nd nested filter block starts.");
+                ilGenerator.BeginCatchBlock(null);
+                ilGenerator.EmitWriteLine("2nd nested filter block handled.");
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("2nd nested catch block handled.");
+                ilGenerator.BeginFinallyBlock();
+                ilGenerator.EmitWriteLine("2nd nested finally block handled.");
+                ilGenerator.EndExceptionBlock();
+
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Catch block nested in try");
+                ilGenerator.EndExceptionBlock();
+
+                ilGenerator.EmitWriteLine("Outer try block ends");
+                ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.EmitWriteLine("Outer catch block starts");
+                ilGenerator.EmitWriteLine("Outer catch block ends");
+                ilGenerator.EndExceptionBlock();
+
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                Assert.Equal(6, body.ExceptionHandlingClauses.Count);
+                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[0].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[1].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[3].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[4].Flags);
+                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[5].Flags);
+            }
         }
     }
 }
