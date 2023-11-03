@@ -23,7 +23,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			BlockProxy,
 			LocalStateAndContext<TValue, TContext>,
 			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>,
-			LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice>,
+			LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice>,
 			TConditionValue>
 		// This struct constraint prevents warnings due to possible null returns from the visitor methods.
 		// Note that this assumes that default(TValue) is equal to the TopValue.
@@ -33,7 +33,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		where TContextLattice : ILattice<TContext>
 		where TConditionValue : struct, INegate<TConditionValue>
 	{
-		protected readonly LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice> LocalContextLattice;
+		protected readonly LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> LocalContextLattice;
 
 		protected readonly InterproceduralStateLattice<TValue, TValueLattice> InterproceduralStateLattice;
 
@@ -54,7 +54,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			=> !lValueFlowCaptures.TryGetValue (captureId, out var captureKind) || captureKind != FlowCaptureKind.LValueCapture;
 
 		public LocalDataFlowVisitor (
-			LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice> lattice,
+			LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph cfg,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,

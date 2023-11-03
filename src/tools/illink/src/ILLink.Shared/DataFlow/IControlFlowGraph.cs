@@ -47,6 +47,20 @@ namespace ILLink.Shared.DataFlow
 			public readonly TBlock Source;
 			private readonly TBlock? Destination;
 
+			// The finally regions exited when control flows through this edge.
+			// For example:
+			//
+			// try {
+			//     try {
+			//         Source();
+			//     }
+			//     finally {}
+			// } finally {}
+			// Target();
+			//
+			// There will be an edge in the CRFG from the block that calls
+			// Source() to the block that calls Target(), which exits both
+			// finally regions.
 			public readonly ImmutableArray<TRegion> FinallyRegions;
 			public readonly bool IsConditional;
 			public ControlFlowBranch (TBlock source, TBlock? destination, ImmutableArray<TRegion> finallyRegions, bool isConditional)

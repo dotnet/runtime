@@ -33,6 +33,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
 
+		// The initial state of the feature context is None, meaning that
+		// no features are enabled at the beginning of the entry block.
+		// This way, calls to all Requires-annotated APIs will warn unless
+		// guarded by a feature check.
 		public TrimDataFlowAnalysis (
 			OperationBlockAnalysisContext context,
 			DataFlowAnalyzerContext dataFlowAnalyzerContext,

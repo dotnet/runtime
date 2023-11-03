@@ -43,7 +43,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		FeatureChecksVisitor _featureChecksVisitor;
 
 		public TrimAnalysisVisitor (
-			LocalContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
+			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,

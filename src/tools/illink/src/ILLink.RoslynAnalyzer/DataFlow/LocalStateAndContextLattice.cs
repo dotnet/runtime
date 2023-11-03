@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public override int GetHashCode () => HashUtils.Combine (LocalState, Context);
 	}
 
-	public readonly struct LocalContextLattice<TValue, TContext, TValueLattice, TContextLattice> : ILattice<LocalStateAndContext<TValue, TContext>>
+	public readonly struct LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> : ILattice<LocalStateAndContext<TValue, TContext>>
 		where TValue : struct, IEquatable<TValue>
 		where TContext : struct, IEquatable<TContext>
 		where TValueLattice : ILattice<TValue>
@@ -37,7 +37,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public readonly LocalStateLattice<TValue, TValueLattice> LocalStateLattice;
 		public readonly TContextLattice ContextLattice;
 
-		public LocalContextLattice (LocalStateLattice<TValue, TValueLattice> localStateLattice, TContextLattice contextLattice)
+		public LocalStateAndContextLattice (LocalStateLattice<TValue, TValueLattice> localStateLattice, TContextLattice contextLattice)
 		{
 			LocalStateLattice = localStateLattice;
 			ContextLattice = contextLattice;

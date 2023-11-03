@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		: ForwardDataFlowAnalysis<
 			LocalStateAndContext<TValue, TContext>,
 			LocalDataFlowState<TValue, TContext, TLattice, TContextLattice>,
-			LocalContextLattice<TValue, TContext, TLattice, TContextLattice>,
+			LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice>,
 			BlockProxy,
 			RegionProxy,
 			ControlFlowGraphProxy,
@@ -38,11 +38,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		readonly IOperation OperationBlock;
 
-		static LocalContextLattice<TValue, TContext, TLattice, TContextLattice> GetLatticeAndEntryValue(
+		static LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice> GetLatticeAndEntryValue(
 			TContext initialContext,
 			out LocalStateAndContext<TValue, TContext> entryValue)
 		{
-			LocalContextLattice<TValue, TContext, TLattice, TContextLattice> lattice = new (new (new TLattice ()), new TContextLattice ());
+			LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice> lattice = new (new (new TLattice ()), new TContextLattice ());
 			entryValue = new LocalStateAndContext<TValue, TContext> (default (LocalState<TValue>), initialContext);
 			return lattice;
 		}
