@@ -2649,6 +2649,13 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                 if (!opts.compReloc)
                 {
                     conValTree = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
+
+                    // The generated constant node will have TYP_I_IMPL. However, we might be replacing a TYP_REF
+                    // node. If so, make it a TYP_REF.
+                    if (tree->TypeIs(TYP_REF))
+                    {
+                        conValTree->gtType = TYP_REF;
+                    }
                 }
             }
             else
@@ -2705,6 +2712,13 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                 if (!opts.compReloc)
                 {
                     conValTree = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
+
+                    // The generated constant node will have TYP_I_IMPL. However, we might be replacing a TYP_REF
+                    // node. If so, make it a TYP_REF.
+                    if (tree->TypeIs(TYP_REF))
+                    {
+                        conValTree->gtType = TYP_REF;
+                    }
                 }
             }
             else
