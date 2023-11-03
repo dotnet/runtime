@@ -236,7 +236,7 @@ void MorphInitBlockHelper::PropagateBlockAssertions()
 {
     if (m_comp->optLocalAssertionProp)
     {
-        m_comp->optAssertionGen(m_store);
+        m_comp->fgAssertionGen(m_store);
     }
 }
 
@@ -254,7 +254,7 @@ void MorphInitBlockHelper::PropagateExpansionAssertions()
     //
     if (m_comp->optLocalAssertionProp && (m_transformationDecision == BlockTransformation::OneStoreBlock))
     {
-        m_comp->optAssertionGen(m_store);
+        m_comp->fgAssertionGen(m_store);
     }
 }
 
@@ -425,7 +425,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
 
         if (m_comp->optLocalAssertionProp)
         {
-            m_comp->optAssertionGen(store);
+            m_comp->fgAssertionGen(store);
         }
 
         if (tree != nullptr)
@@ -1385,7 +1385,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
         if (m_comp->optLocalAssertionProp)
         {
-            m_comp->optAssertionGen(dstFldStore);
+            m_comp->fgAssertionGen(dstFldStore);
         }
 
         if (addrSpillStore != nullptr)

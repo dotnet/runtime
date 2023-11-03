@@ -12,7 +12,7 @@
 
 .assembly DefaultImplementationsOfInterfaces{}
 
-.class interface private abstract auto ansi DefaultInterface
+.class interface public abstract auto ansi DefaultInterface
 {
   .method public hidebysig newslot virtual
           instance void  Method() cil managed
@@ -56,7 +56,7 @@
     ret
   }
 
-.method private hidebysig static int32
+.method public hidebysig static int32
         Main() cil managed
 {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

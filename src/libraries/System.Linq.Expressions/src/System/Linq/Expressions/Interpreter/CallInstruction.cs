@@ -50,6 +50,8 @@ namespace System.Linq.Expressions.Interpreter
             if (!CanCreateArbitraryDelegates)
                 return new MethodInfoCallInstruction(info, argumentCount);
 
+            // This code should be unreachable in AOT. The analyzer currently doesn't understand feature switches
+#pragma warning disable IL3050
             if (!info.IsStatic && info.DeclaringType!.IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
@@ -113,6 +115,7 @@ namespace System.Linq.Expressions.Interpreter
             s_cache[info] = res;
 
             return res;
+#pragma warning restore IL3050
         }
 
         private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount)
@@ -205,6 +208,7 @@ namespace System.Linq.Expressions.Interpreter
         /// <summary>
         /// Uses reflection to create new instance of the appropriate ReflectedCaller
         /// </summary>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static CallInstruction SlowCreate(MethodInfo info, ParameterInfo[] pis)
         {
             List<Type> types = new List<Type>();
