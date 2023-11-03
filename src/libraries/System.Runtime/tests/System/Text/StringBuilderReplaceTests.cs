@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public partial class StringBuilderReplaceTests
+    public abstract class StringBuilderReplaceTests
     {
         [Theory]
         [InlineData("", "a", "!", 0, 0, "")]
@@ -93,7 +93,7 @@ namespace System.Text.Tests
             => builder.Replace(oldValue, newValue, startIndex, count);
     }
 
-    public partial class StringBuilderReplaceTests_String
+    public partial class StringBuilderReplaceTests_String : StringBuilderReplaceTests
     {
         [Fact]
         public void Replace_String_Invalid()
@@ -101,8 +101,8 @@ namespace System.Text.Tests
             var builder = new StringBuilder(0, 5);
             builder.Append("Hello");
 
-            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, "")); // Old value is null
-            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, "a", 0, 0)); // Old value is null
+            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => Replace(builder, null, "")); // Old value is null
+            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => Replace(builder, null, "a", 0, 0)); // Old value is null
         }
     }
 
