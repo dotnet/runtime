@@ -112,9 +112,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, frame_size);
 
 	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, imm - sizeof (host_mgreg_t), 0);
-	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_RA, -sizeof (host_mgreg_t));
+	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_RA, -(int)sizeof (host_mgreg_t));
 	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, imm - sizeof (host_mgreg_t) * 2, 0);
-	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_FP, -sizeof (host_mgreg_t) * 2);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_FP, -(int)sizeof (host_mgreg_t) * 2);
 
 	riscv_addi (code, RISCV_FP, RISCV_SP, imm);
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_FP, 0);

@@ -631,7 +631,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void InterlockedIncrement_Multithreaded_Int32()
         {
             const int ThreadCount = 10;
@@ -669,7 +668,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void InterlockedCompareExchange_Multithreaded_Double()
         {
             const int ThreadCount = 10;
@@ -718,7 +716,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void InterlockedAddAndRead_Multithreaded_Int64()
         {
             const int ThreadCount = 10;
@@ -794,7 +791,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void MemoryBarrierProcessWide()
         {
             // Stress MemoryBarrierProcessWide correctness using a simple AsymmetricLock

@@ -2949,9 +2949,79 @@ namespace System
 
             byte[] result = GC.AllocateUninitializedArray<byte>(chars.Length >> 1);
 
-            if (!HexConverter.TryDecodeFromUtf16(chars, result))
+            if (!HexConverter.TryDecodeFromUtf16(chars, result, out _))
                 throw new FormatException(SR.Format_BadHexChar);
 
+            return result;
+        }
+
+        /// <summary>
+        /// Converts the string, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer span.
+        /// </summary>
+        /// <param name="source">The string to convert.</param>
+        /// <param name="destination">
+        /// The span in which to write the converted 8-bit unsigned integers. When this method returns value different than <see cref="OperationStatus.Done"/>,
+        /// either the span remains unmodified or contains an incomplete conversion of <paramref name="source"/>,
+        /// up to the last valid character.
+        /// </param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of characters that were consumed from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        /// <exception cref="ArgumentNullException">Passed string <paramref name="source"/> is null.</exception>
+        public static OperationStatus FromHexString(string source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return FromHexString(source.AsSpan(), destination, out charsConsumed, out bytesWritten);
+        }
+
+        /// <summary>
+        /// Converts the span of chars, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer span.
+        /// </summary>
+        /// <param name="source">The span to convert.</param>
+        /// <param name="destination">
+        /// The span in which to write the converted 8-bit unsigned integers. When this method returns value different than <see cref="OperationStatus.Done"/>,
+        /// either the span remains unmodified or contains an incomplete conversion of <paramref name="source"/>,
+        /// up to the last valid character.
+        /// </param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of characters that were consumed from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        public static OperationStatus FromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
+        {
+            (int quotient, int remainder) = Math.DivRem(source.Length, 2);
+
+            if (quotient == 0)
+            {
+                charsConsumed = 0;
+                bytesWritten = 0;
+
+                return remainder == 1 ? OperationStatus.NeedMoreData : OperationStatus.Done;
+            }
+
+            var result = OperationStatus.Done;
+
+            if (destination.Length < quotient)
+            {
+                source = source.Slice(0, destination.Length * 2);
+                quotient = destination.Length;
+                result = OperationStatus.DestinationTooSmall;
+            }
+            else if (remainder == 1)
+            {
+                source = source.Slice(0, source.Length - 1);
+                destination = destination.Slice(0, destination.Length - 1);
+                result = OperationStatus.NeedMoreData;
+            }
+
+            if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))
+            {
+                bytesWritten = charsConsumed / 2;
+                return OperationStatus.InvalidData;
+            }
+
+            bytesWritten = quotient;
+            charsConsumed = source.Length;
             return result;
         }
 
@@ -3005,6 +3075,32 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, int.MaxValue / 2, nameof(bytes));
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
+        }
+
+
+        /// <summary>
+        /// Converts a span of 8-bit unsigned integers to its equivalent span representation that is encoded with uppercase hex characters.
+        /// </summary>
+        /// <param name="source">A span of 8-bit unsigned integers.</param>
+        /// <param name="destination">The span representation in hex of the elements in <paramref name="source"/>.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars that were written in <paramref name="destination"/>.</param>
+        /// <returns>true if the conversion was successful; otherwise, false.</returns>
+        public static bool TryToHexString(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
+        {
+            if (source.Length == 0)
+            {
+                charsWritten = 0;
+                return true;
+            }
+            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length  * 2)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            HexConverter.EncodeToUtf16(source, destination);
+            charsWritten = source.Length  * 2;
+            return true;
         }
     }  // class Convert
 }  // namespace

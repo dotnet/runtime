@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
@@ -22,7 +23,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
         public Collections.IEnumerator GetEnumerator()
         {
-            Variant result;
+            ComVariant result;
             unsafe
             {
                 void* resultLocal = &result;
@@ -54,7 +55,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             }
             finally
             {
-                result.Clear();
+                result.Dispose();
 
                 if (enumVariantPtr != IntPtr.Zero)
                     Marshal.Release(enumVariantPtr);

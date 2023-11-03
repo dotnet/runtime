@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
@@ -6,6 +7,7 @@
     <NoWarn>$(NoWarn);0618</NoWarn>
     <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -74,4 +76,5 @@ System.Management.SelectQuery</PackageDescription>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
   </ItemGroup>
+
 </Project>

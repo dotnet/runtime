@@ -11,7 +11,7 @@
 
 .assembly 'fault' {}
 	
-.class auto ansi Fault
+.class public auto ansi Fault
 {
 	.method public static int32 Main() il managed
 	{

@@ -35,22 +35,19 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        private const string DefaultRuntimeAssetsRelativePath = "./_framework/";
-
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
-            string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
-            string mainJsContent = File.ReadAllText(mainJsPath);
+            base.UpdateBrowserMainJs((mainJsContent) => {
+                // .withExitOnUnhandledError() is available only only >net7.0
+                mainJsContent = mainJsContent.Replace(".create()",
+                        (targetFramework == "net8.0" || targetFramework == "net9.0")
+                            ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
+                            : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
 
-            // .withExitOnUnhandledError() is available only only >net7.0
-            mainJsContent = mainJsContent.Replace(".create()",
-                    targetFramework == "net8.0"
-                        ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                        : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+                mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
-            mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
-
-            File.WriteAllText(mainJsPath, mainJsContent);
+                return mainJsContent;
+            }, targetFramework, runtimeAssetsRelativePath);
         }
 
         private void UpdateConsoleMainJs()
@@ -190,7 +187,8 @@ namespace Wasm.Build.Tests
         [Theory]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("Debug", "-f net7.0", "net7.0")]
-        [InlineData("Debug", "-f net8.0", "net8.0")]
+        //[InlineData("Debug", "-f net8.0", "net8.0")]
+        [InlineData("Debug", "-f net9.0", "net9.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
             => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM, addFrameworkArg: extraNewArgs?.Length == 0);
 
@@ -277,7 +275,7 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project {projectFile} --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFile}\" --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -287,7 +285,7 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project {projectFile} --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -307,7 +305,7 @@ namespace Wasm.Build.Tests
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
             {
-                string runArgs = $"run --no-silent -c {config} --project {projectFile}";
+                string runArgs = $"run --no-silent -c {config} --project \"{projectFile}\"";
                 runArgs += " x y z";
                 using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                     .WithWorkingDirectory(workingDir)
@@ -323,7 +321,7 @@ namespace Wasm.Build.Tests
 
             {
                 // Run with --no-build
-                string runArgs = $"run --no-silent -c {config} --project {projectFile} --no-build";
+                string runArgs = $"run --no-silent -c {config} --project \"{projectFile}\" --no-build";
                 runArgs += " x y z";
                 using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(workingDir);
@@ -392,7 +390,12 @@ namespace Wasm.Build.Tests
                             UseCache: false,
                             IsBrowserProject: false));
 
-            string runArgs = $"run --no-silent --no-build -c {config}";
+            new RunCommand(s_buildEnv, _testOutput, label: id)
+                                .WithWorkingDirectory(_projectDir!)
+                                .ExecuteWithCapturedOutput("--info")
+                                .EnsureExitCode(0);
+
+            string runArgs = $"run --no-silent --no-build -c {config} -v diag";
             runArgs += " x y z";
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
@@ -408,12 +411,11 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
+        [InlineData("-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath)]
+        [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/90979")]
         // [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
         // [InlineData("-f net8.0", "net8.0", "./")]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
-        // [InlineData("-f net7.0", "net7.0")]
-        [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";

@@ -776,4 +776,49 @@ const char* GlobalizationNative_GetICUDataPathFallback(void)
         return strdup([dataPath UTF8String]);
     }
 }
+
+const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
+{
+    @autoreleasepool
+    {
+        NSLocale *currentLocale = [NSLocale currentLocale];
+        NSString *localeName = @"";
+
+        if (!currentLocale)
+        {
+            return strdup([localeName UTF8String]);
+        }
+
+        if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
+        {
+            localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
+        }
+        else
+        {
+            localeName = currentLocale.localeIdentifier;
+        }
+
+        return strdup([localeName UTF8String]);
+    }
+}
+
+// GlobalizationNative_IsPredefinedLocaleNative returns TRUE if localeName exists in availableLocaleIdentifiers.
+// Otherwise it returns FALSE;
+
+int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
+{
+    @autoreleasepool
+    {
+        NSString *localeIdentifier = [NSString stringWithFormat:@"%s", localeName];
+        NSString *localeIdentifierByRegionDesignator = [localeIdentifier stringByReplacingOccurrencesOfString:@"-" withString:@"_"];
+        NSArray<NSString *> *availableLocales = [NSLocale availableLocaleIdentifiers];
+
+        if ([availableLocales containsObject:localeIdentifier] || [availableLocales containsObject:localeIdentifierByRegionDesignator])
+        {
+            return true;
+        }
+
+        return false;
+    }
+}
 #endif

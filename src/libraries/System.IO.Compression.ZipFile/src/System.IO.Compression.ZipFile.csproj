@@ -1,8 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\IO\Compression\ZipFile.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFile.Extract.cs" />
@@ -16,12 +19,14 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
+
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Windows.cs"
              Link="Common\System\IO\Archiving.Utils.Windows.cs" />
     <Compile Include="System\IO\Compression\ZipFile.Create.Windows.cs" />
   </ItemGroup>
+
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
     <Compile Include="System\IO\Compression\ZipFile.Create.Unix.cs" />
@@ -38,10 +43,12 @@
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs"
              Link="Common\System\IO\Archiving.Utils.Unix.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
+
 </Project>

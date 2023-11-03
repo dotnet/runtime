@@ -64,7 +64,7 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 #  if defined(_MSC_VER)
 #    define MONO_USE_WIN32_ATOMIC 1
 #  else
-#    error FIXME: Implement atomics for mingw and/or clang
+#    error FIXME: Implement atomics for MinGW and/or clang
 #  endif
 #elif defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS)
 #  define MONO_USE_C11_ATOMIC 1
@@ -93,7 +93,7 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #if defined(MONO_USE_C11_ATOMIC)
 
-#include<stdatomic.h>
+#include <stdatomic.h>
 
 static inline guint8
 mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)

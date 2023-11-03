@@ -55,7 +55,13 @@ export async function mono_run_main(main_assembly_name: string, args?: string[])
         await mono_wasm_wait_for_debugger();
     }
     const method = find_entry_point(main_assembly_name);
-    return runtimeHelpers.javaScriptExports.call_entry_point(method, args);
+
+    const res = await runtimeHelpers.javaScriptExports.call_entry_point(method, args);
+
+    // one more timer loop before we return, so that any remaining queued calls could run
+    await new Promise(resolve => globalThis.setTimeout(resolve, 0));
+
+    return res;
 }
 
 export function find_entry_point(assembly: string) {

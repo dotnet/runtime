@@ -133,13 +133,13 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (typeArgument == null)
                     throw new ArgumentNullException();
 
-                if (typeArgument is not RuntimeType)
+                if (typeArgument is not RuntimeType typeArgumentAsRuntimeType)
                     throw new PlatformNotSupportedException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]));
 
-                if (typeArgument.IsByRefLike)
+                if (typeArgumentAsRuntimeType.IsByRefLike)
                     throw new BadImageFormatException(SR.CannotUseByRefLikeTypeInInstantiation);
 
-                genericTypeArguments[i] = typeArgument.CastToRuntimeTypeInfo();
+                genericTypeArguments[i] = typeArgumentAsRuntimeType.GetRuntimeTypeInfo();
             }
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
@@ -176,7 +176,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _reflectedType;
+                return _reflectedType.ToType();
             }
         }
 

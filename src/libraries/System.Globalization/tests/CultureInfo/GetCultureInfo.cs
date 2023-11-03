@@ -21,7 +21,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "ja-JP" };
             yield return new object[] { "ar-SA" };
             yield return new object[] { "xx-XX" };
-            yield return new object[] { "de-AT-1901" };
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { "de-AT-1901" };
+            }
             yield return new object[] { "zh-Hans" };
             yield return new object[] { "zh-Hans-HK" };
             yield return new object[] { "zh-Hans-MO" };
@@ -30,16 +33,22 @@ namespace System.Globalization.Tests
             yield return new object[] { "zh-Hant-CN" };
             yield return new object[] { "zh-Hant-SG" };
 
-            if (PlatformDetection.IsIcuGlobalization)
+            if (PlatformDetection.IsIcuGlobalization || PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 if (PlatformDetection.IsNotWindows)
                 {
                     yield return new object[] { "x\u0000X-Yy", "x" }; // Null byte
-                    yield return new object[] { "zh-cmn", "zh-CMN" };
-                    yield return new object[] { "zh-CMN-HANS" };
-                    yield return new object[] { "zh-cmn-Hant", "zh-CMN-HANT" };
+                    if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                    {
+                        yield return new object[] { "zh-cmn", "zh-CMN" };
+                        yield return new object[] { "zh-CMN-HANS" };
+                        yield return new object[] { "zh-cmn-Hant", "zh-CMN-HANT" };
+                    }
                 }
-                yield return new object[] { "sgn-BE-FR" };
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                {
+                    yield return new object[] { "sgn-BE-FR" };
+                }
                 yield return new object[] { "zh-min-nan", "nan" };
                 yield return new object[] { "zh-gan", "gan" };
                 yield return new object[] { "zh-Hans-CN" };
@@ -98,7 +107,7 @@ namespace System.Globalization.Tests
         [InlineData("foo_-bar")]
         [InlineData("foo/bar")]
         [InlineData("/")]
-        [InlineData("0123456789012345678901234567890123456789012345678901234567890123456789012345678901234")] // > 85 characters
+        [InlineData("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345")] // > 85 characters
         public void TestInvalidCultureNames(string name)
         {
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name));
