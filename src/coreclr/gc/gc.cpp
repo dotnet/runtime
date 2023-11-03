@@ -31644,6 +31644,12 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
     dprintf (REGIONS_LOG, ("after going through the rest of regions - regions in g2: %d, g1: %d, g0: %d, to be empty %d now",
         planned_regions_per_gen[2], planned_regions_per_gen[1], planned_regions_per_gen[0], to_be_empty_regions));
 
+    // We may not have gone through the while loop above so we could get an alloc region that's SIP (which normally would be
+    // filtered out by get_next_alloc_seg in allocate_in_condemned_generations. But we are not allocating in condemned anymore
+    // so make sure we skip if it's SIP.
+    current_region = heap_segment_non_sip (current_region);
+    dprintf (REGIONS_LOG, ("now current region is %p", (current_region ? heap_segment_mem (current_region) : 0)));
+
     if (current_region)
     {
         decide_on_demotion_pin_surv (current_region, &to_be_empty_regions);
