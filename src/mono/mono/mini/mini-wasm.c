@@ -743,6 +743,7 @@ mono_wasm_get_debug_level (void)
 gboolean
 mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 {
+	MonoType *result = NULL;
 	MonoClass *klass;
 	MonoClassField *field;
 	gpointer iter;
@@ -751,7 +752,7 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		*etype = NULL;
 
 	if (!MONO_TYPE_ISSTRUCT (type))
-		return FALSE;
+		return NULL;
 	klass = mono_class_from_mono_type_internal (type);
 	mono_class_init_internal (klass);
 
@@ -766,8 +767,12 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		nfields ++;
-		if (nfields > 1)
-			return FALSE;
+		if (nfields > 1) {
+			/*
+			g_fprintf (stderr, "Struct %s has too many fields to be scalar vtype\n", m_class_get_name (klass));
+			*/
+			return NULL;
+		}
 		MonoType *t = mini_get_underlying_type (field->type);
 		if (MONO_TYPE_ISSTRUCT (t)) {
 			if (!mini_wasm_is_scalar_vtype (t, etype))

@@ -1334,6 +1334,20 @@ static MonoFuncV mono_native_to_interp_trampoline = NULL;
 #endif
 
 #ifndef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+static MonoType*
+filter_type_for_build_args_from_sig (MonoType *type)
+{
+#ifdef HOST_WASM
+	// If the parameter type is scalarized according to WASM C ABI, treat it as the
+	//  scalarized type. Otherwise the MONO_TYPE_VALUETYPE case will treat it as int32.
+	MonoType *scalar = mini_wasm_get_scalar_vtype (type);
+	if (scalar)
+		return scalar;
+#endif
+
+	return type;
+}
+
 static InterpMethodArguments*
 build_args_from_sig (MonoMethodSignature *sig, InterpFrame *frame)
 {
@@ -1352,7 +1366,9 @@ build_args_from_sig (MonoMethodSignature *sig, InterpFrame *frame)
 		margs->ilen++;
 
 	for (int i = 0; i < sig->param_count; i++) {
-		guint32 ptype = m_type_is_byref (sig->params [i]) ? MONO_TYPE_PTR : sig->params [i]->type;
+		MonoType *param_type = filter_type_for_build_args_from_sig (sig->params [i]);
+		guint32 ptype = m_type_is_byref (param_type) ? MONO_TYPE_PTR : param_type->type;
+
 		switch (ptype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -1423,7 +1439,7 @@ build_args_from_sig (MonoMethodSignature *sig, InterpFrame *frame)
 	for (int i = 0; i < sig->param_count; i++) {
 		guint32 offset = get_arg_offset (frame->imethod, sig, i);
 		stackval *sp_arg = STACK_ADD_BYTES (frame->stack, offset);
-		MonoType *type = sig->params [i];
+		MonoType *type = filter_type_for_build_args_from_sig (sig->params [i]);
 		guint32 ptype;
 retry:
 		ptype = m_type_is_byref (type) ? MONO_TYPE_PTR : type->type;
@@ -1516,7 +1532,9 @@ retry:
 		}
 	}
 
-	switch (sig->ret->type) {
+	margs->ret_type = filter_type_for_build_args_from_sig (sig->ret);
+
+	switch (margs->ret_type->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I1:
@@ -1549,7 +1567,7 @@ retry:
 			margs->retval = NULL;
 			break;
 		default:
-			g_error ("build_args_from_sig: ret type not implemented yet: 0x%x\n", sig->ret->type);
+			g_error ("build_args_from_sig: ret type not implemented yet: 0x%x\n", margs->ret_type->type);
 	}
 
 	return margs;
@@ -1721,8 +1739,8 @@ ves_pinvoke_method (
 	g_free (ccontext.stack);
 #else
 	// Only the vt address has been returned, we need to copy the entire content on interp stack
-	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (sig->ret))
-		stackval_from_data (sig->ret, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
+	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (margs->ret_type))
+		stackval_from_data (margs->ret_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
 
 	g_free (margs->iargs);
 	g_free (margs->fargs);
@@ -4182,7 +4200,7 @@ main_loop:
 				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
 			}
 
-jit_call:		
+jit_call:
 			{
 				InterpMethodCodeType code_type = cmethod->code_type;
 

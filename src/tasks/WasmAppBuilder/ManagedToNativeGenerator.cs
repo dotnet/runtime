@@ -8,8 +8,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using WasmAppBuilder;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
@@ -37,9 +39,6 @@ public class ManagedToNativeGenerator : Task
 
     private static readonly char[] s_charsToReplace = new[] { '.', '-', '+', '<', '>' };
 
-    // Avoid sharing this cache with all the invocations of this task throughout the build
-    private readonly Dictionary<string, string> _symbolNameFixups = new();
-
     public override bool Execute()
     {
         if (Assemblies!.Length == 0)
@@ -56,7 +55,8 @@ public class ManagedToNativeGenerator : Task
 
         try
         {
-            ExecuteInternal();
+            var logAdapter = new LogAdapter(Log);
+            ExecuteInternal(logAdapter);
             return !Log.HasLoggedErrors;
         }
         catch (LogAsErrorException e)
@@ -66,33 +66,80 @@ public class ManagedToNativeGenerator : Task
         }
     }
 
-    private void ExecuteInternal()
+    // dotnet/roslyn src/Compilers/Shared/RuntimeHostInfo.cs
+
+    private const string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
+
+    /// <summary>
+    /// Get the path to the dotnet executable. In the case the .NET SDK did not provide this information
+    /// in the environment this tries to find "dotnet" on the PATH. In the case it is not found,
+    /// this will return simply "dotnet".
+    /// </summary>
+    internal static string GetDotNetPathOrDefault()
+    {
+        if (Environment.GetEnvironmentVariable(DotNetHostPathEnvironmentName) is string pathToDotNet)
+        {
+            return pathToDotNet;
+        }
+
+        var (fileName, sep) = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+            System.Runtime.InteropServices.OSPlatform.Windows
+        )
+            ? ("dotnet.exe", ';')
+            : ("dotnet", ':');
+
+        var path = Environment.GetEnvironmentVariable("PATH") ?? "";
+        foreach (var item in path.Split(sep))
+        {
+            if (string.IsNullOrEmpty(item))
+                continue;
+
+            try
+            {
+                var filePath = Path.Combine(item, fileName);
+                if (File.Exists(filePath))
+                {
+                    return filePath;
+                }
+            }
+            catch
+            {
+                // If we can't read a directory for any reason just skip it
+            }
+        }
+
+        return fileName;
+    }
+
+    private void ExecuteInternal(LogAdapter logAdapter)
     {
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         if (ShouldRun(managedAssemblies))
         {
-            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, Log);
-            var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, Log);
+            var rspPath = Path.GetTempFileName();
+            var rsp = new ExecuteArguments(
+                managedAssemblies.Select(Path.GetFullPath).ToArray(),
+                RuntimeIcallTableFile,
+                PInvokeModules,
+                PInvokeOutputPath,
+                IcallOutputPath, InterpToNativeOutputPath,
+                CacheFilePath
+            );
+            var rspText = JsonSerializer.Serialize(rsp);
+            File.WriteAllText(rspPath, rspText);
+            var dotnetPath = GetDotNetPathOrDefault();
 
-            var resolver = new PathAssemblyResolver(managedAssemblies);
-            using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
-            foreach (string asmPath in managedAssemblies)
-            {
-                Log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes, and icalls");
-                Assembly asm = mlc.LoadFromAssemblyPath(asmPath);
-                pinvoke.ScanAssembly(asm);
-                icall.ScanAssembly(asm);
-            }
-
-            IEnumerable<string> cookies = Enumerable.Concat(
-                pinvoke.Generate(PInvokeModules, PInvokeOutputPath),
-                icall.Generate(IcallOutputPath));
-
-            var m2n = new InterpToNativeGenerator(Log);
-            m2n.Generate(cookies, InterpToNativeOutputPath);
-
-            if (!string.IsNullOrEmpty(CacheFilePath))
-                File.WriteAllLines(CacheFilePath, PInvokeModules);
+            (int exitCode, string output) = Utils.TryRunProcess(
+                Log,
+                dotnetPath,
+                $"{GetType().Assembly.Location} {rspPath}",
+                envVars: null,
+                workingDir: null,
+                silent: false,
+                logStdErrAsMessage: true
+            );
+            if (exitCode != 0)
+                logAdapter.Error("WASM0066", $"WasmAppBuilder external process failed with exit code {exitCode}!");
         }
 
         List<string> fileWritesList = new() { PInvokeOutputPath, InterpToNativeOutputPath };
@@ -102,6 +149,85 @@ public class ManagedToNativeGenerator : Task
             fileWritesList.Add(CacheFilePath);
 
         FileWrites = fileWritesList.ToArray();
+    }
+
+    internal readonly record struct ExecuteArguments (
+        IList<string> managedAssemblies,
+        string? runtimeIcallTableFile,
+        string[] pInvokeModules,
+        string pInvokeOutputPath,
+        string? icallOutputPath,
+        string interpToNativeOutputPath,
+        string? cacheFilePath
+    );
+
+    internal static void ExecuteForAssemblies(
+        LogAdapter logAdapter,
+        IList<string> managedAssemblies,
+        string? runtimeIcallTableFile,
+        string[] pInvokeModules,
+        string pInvokeOutputPath,
+        string? icallOutputPath,
+        string interpToNativeOutputPath,
+        string? cacheFilePath
+    ) {
+        Dictionary<string, string> _symbolNameFixups = new();
+
+        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, logAdapter);
+        var icall = new IcallTableGenerator(runtimeIcallTableFile, FixupSymbolName, logAdapter);
+
+        var resolver = new PathAssemblyResolver(managedAssemblies);
+        using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
+        foreach (string asmPath in managedAssemblies)
+        {
+            logAdapter.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes, and icalls");
+            Assembly asm = mlc.LoadFromAssemblyPath(asmPath);
+            pinvoke.ScanAssembly(asm);
+            icall.ScanAssembly(asm);
+        }
+
+        IEnumerable<string> cookies = Enumerable.Concat(
+            pinvoke.Generate(pInvokeModules, pInvokeOutputPath),
+            icall.Generate(icallOutputPath));
+
+        var m2n = new InterpToNativeGenerator(logAdapter);
+        m2n.Generate(cookies, interpToNativeOutputPath);
+
+        if (!string.IsNullOrEmpty(cacheFilePath))
+            File.WriteAllLines(cacheFilePath, pInvokeModules);
+
+        string FixupSymbolName(string name)
+        {
+            if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
+                return fixedName;
+
+            UTF8Encoding utf8 = new();
+            byte[] bytes = utf8.GetBytes(name);
+            StringBuilder sb = new();
+
+            foreach (byte b in bytes)
+            {
+                if ((b >= (byte)'0' && b <= (byte)'9') ||
+                    (b >= (byte)'a' && b <= (byte)'z') ||
+                    (b >= (byte)'A' && b <= (byte)'Z') ||
+                    (b == (byte)'_'))
+                {
+                    sb.Append((char)b);
+                }
+                else if (s_charsToReplace.Contains((char)b))
+                {
+                    sb.Append('_');
+                }
+                else
+                {
+                    sb.Append($"_{b:X}_");
+                }
+            }
+
+            fixedName = sb.ToString();
+            _symbolNameFixups[name] = fixedName;
+            return fixedName;
+        }
     }
 
     private bool ShouldRun(IList<string> managedAssemblies)
@@ -156,39 +282,6 @@ public class ManagedToNativeGenerator : Task
             oldestDt = utc < oldestDt ? utc : oldestDt;
             return false;
         }
-    }
-
-    public string FixupSymbolName(string name)
-    {
-        if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
-            return fixedName;
-
-        UTF8Encoding utf8 = new();
-        byte[] bytes = utf8.GetBytes(name);
-        StringBuilder sb = new();
-
-        foreach (byte b in bytes)
-        {
-            if ((b >= (byte)'0' && b <= (byte)'9') ||
-                (b >= (byte)'a' && b <= (byte)'z') ||
-                (b >= (byte)'A' && b <= (byte)'Z') ||
-                (b == (byte)'_'))
-            {
-                sb.Append((char)b);
-            }
-            else if (s_charsToReplace.Contains((char)b))
-            {
-                sb.Append('_');
-            }
-            else
-            {
-                sb.Append($"_{b:X}_");
-            }
-        }
-
-        fixedName = sb.ToString();
-        _symbolNameFixups[name] = fixedName;
-        return fixedName;
     }
 
     private List<string> FilterOutUnmanagedBinaries(string[] assemblies)

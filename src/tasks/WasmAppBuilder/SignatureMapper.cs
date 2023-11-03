@@ -7,10 +7,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using WasmAppBuilder;
 
 internal static class SignatureMapper
 {
-    private static char? TypeToChar(Type t)
+    private static char? TypeToChar(Type t, LogAdapter log)
     {
         char? c = t.Name switch
         {
@@ -41,17 +42,27 @@ internal static class SignatureMapper
             else if (t.IsInterface)
                 c = 'I';
             else if (t.IsEnum)
-                c = TypeToChar(t.GetEnumUnderlyingType());
-            else if (t.IsValueType)
+                c = TypeToChar(t.GetEnumUnderlyingType(), log);
+            else if (t.IsPointer)
                 c = 'I';
+            else if (PInvokeTableGenerator.IsFunctionPointer(t))
+                c = 'I';
+            else if (t.IsValueType)
+            {
+                var fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (fields.Length == 1)
+                    return TypeToChar(fields[0].FieldType, log);
+                else if (PInvokeTableGenerator.IsBlittable(t, log))
+                    c = 'I';
+            }
         }
 
         return c;
     }
 
-    public static string? MethodToSignature(MethodInfo method)
+    public static string? MethodToSignature(MethodInfo method, LogAdapter log)
     {
-        string? result = TypeToChar(method.ReturnType)?.ToString();
+        string? result = TypeToChar(method.ReturnType, log)?.ToString();
         if (result == null)
         {
             return null;
@@ -59,7 +70,7 @@ internal static class SignatureMapper
 
         foreach (var parameter in method.GetParameters())
         {
-            char? parameterChar = TypeToChar(parameter.ParameterType);
+            char? parameterChar = TypeToChar(parameter.ParameterType, log);
             if (parameterChar == null)
             {
                 return null;
