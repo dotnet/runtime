@@ -1469,16 +1469,6 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
             *pFlags    = tree->GetIconHandleFlag();
             return true;
         }
-#ifdef TARGET_64BIT
-        // Just to be clear, get it from gtLconVal rather than
-        // overlapping gtIconVal.
-        else if (tree->OperGet() == GT_CNS_LNG)
-        {
-            *pConstant = tree->AsLngCon()->gtLconVal;
-            *pFlags    = tree->GetIconHandleFlag();
-            return true;
-        }
-#endif
         return false;
     }
 
@@ -1506,6 +1496,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
         return true;
     }
 #endif
+
     return false;
 }
 
