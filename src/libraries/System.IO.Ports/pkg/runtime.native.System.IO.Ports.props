@@ -11,6 +11,7 @@
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
     <!-- This is a native package and doesn't contain any ref/lib assets. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <ItemGroup>
