@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			CallFeatureUnguarded.Test ();
 			CallFeatureGuarded.Test ();
 			FeatureCheckBooleanExpressions.Test ();
-			SupportedFeatureChecks.Test ();
+			TestFeatureChecks.Test ();
 			FeatureCheckCombinations.Test ();
 			GuardedPatterns.Test ();
 			ExceptionalDataFlow.Test ();
@@ -29,19 +29,30 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class CallFeatureUnguarded
 		{
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void Unguarded ()
 			{
 				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
+				RequiresAssemblyFiles ();
 			}
 
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void UnguardedIf ()
 			{
-				if (!RuntimeFeature.IsDynamicCodeSupported)
+				if (!RuntimeFeature.IsDynamicCodeSupported) {
 					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
+					RequiresAssemblyFiles ();
+				}
 			}
 
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void UnguardedElse ()
 			{
 				if (RuntimeFeature.IsDynamicCodeSupported)
@@ -51,6 +62,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				else
 				{
 					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
+					RequiresAssemblyFiles ();
 				}
 			}
 
@@ -75,6 +88,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void UnguardedThrow ()
 			{
 				if (RuntimeFeature.IsDynamicCodeSupported)
@@ -83,6 +98,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
+				RequiresAssemblyFiles ();
 			}
 
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -161,12 +178,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GuardedDoesNotReturnIfFalseCtor ();
 			}
 
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
 			static void GuardedIf ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported)
+				if (RuntimeFeature.IsDynamicCodeSupported) {
 					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
+					RequiresAssemblyFiles ();
+				}
 			}
 
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
 			static void GuardedElse ()
 			{
 				if (!RuntimeFeature.IsDynamicCodeSupported)
@@ -176,6 +200,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				else
 				{
 					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
+					RequiresAssemblyFiles ();
 				}
 			}
 
@@ -195,6 +221,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var b = !RuntimeFeature.IsDynamicCodeSupported ? true : RequiresDynamicCodeBool ();
 			}
 
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
 			static void GuardedThrow ()
 			{
 				if (!RuntimeFeature.IsDynamicCodeSupported)
@@ -203,6 +231,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
+				RequiresAssemblyFiles ();
 			}
 
 			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
@@ -437,7 +467,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		class SupportedFeatureChecks
+		class TestFeatureChecks
 		{
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void CallTestUnreferencedCodeGuarded ()
