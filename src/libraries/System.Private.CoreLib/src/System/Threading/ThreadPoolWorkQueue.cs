@@ -404,12 +404,19 @@ namespace System.Threading
         private readonly int[] _assignedWorkItemQueueThreadCounts =
             s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
 
+        private enum QueueProcessingStage
+        {
+            NotScheduled,
+            Determining,
+            Scheduled
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct CacheLineSeparated
         {
             private readonly Internal.PaddingFor32 pad1;
 
-            public int hasOutstandingThreadRequest;
+            public int queueProcessingStage;
 
             private readonly Internal.PaddingFor32 pad2;
         }
@@ -573,22 +580,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void EnsureThreadRequested()
         {
-            // Only one thread is requested at a time to avoid over-parallelization
-            if (Interlocked.CompareExchange(ref _separated.hasOutstandingThreadRequest, 1, 0) == 0)
+            if (Interlocked.Exchange(
+                ref _separated.queueProcessingStage,
+                (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
             {
                 ThreadPool.RequestWorkerThread();
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void MarkThreadRequestSatisfied()
-        {
-            // The change needs to be visible to other threads that may request a worker thread before a work item is attempted
-            // to be dequeued by the current thread. In particular, if an enqueuer queues a work item and does not request a
-            // thread because it sees that a thread request is already outstanding, and the current thread is the last thread
-            // processing work items, the current thread must see the work item queued by the enqueuer.
-            _separated.hasOutstandingThreadRequest = 0;
-            Interlocked.MemoryBarrier();
         }
 
         public void Enqueue(object callback, bool forceGlobal)
@@ -816,20 +813,32 @@ namespace System.Threading
                 workQueue.AssignWorkItemQueue(tl);
             }
 
-            // Before dequeuing the first work item, acknowledge that the thread request has been satisfied
-            workQueue.MarkThreadRequestSatisfied();
-
             object? workItem = null;
             if (_nextWorkItemToProcess != null)
             {
                 workItem = Interlocked.Exchange(ref _nextWorkItemToProcess, null);
             }
 
-            if (workItem == null)
+            // Try to dequeue a work item, clean up and return if no item was found
+            while (workItem == null)
             {
-                workItem = DequeueWithPriorityAlternation(workQueue, tl, out bool missedSteal);
-                if (workItem == null)
+                Debug.Assert(workQueue._separated.queueProcessingStage == (int)QueueProcessingStage.Scheduled);
+                workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Determining;
+
+                if ((workItem = DequeueWithPriorityAlternation(workQueue, tl, out bool missedSteal)) != null)
                 {
+                    break;
+                }
+
+                int stageBeforeUpdate =
+                    Interlocked.CompareExchange(
+                        ref workQueue._separated.queueProcessingStage,
+                        (int)QueueProcessingStage.NotScheduled,
+                        (int)QueueProcessingStage.Determining);
+                Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
+                if (stageBeforeUpdate == (int)QueueProcessingStage.Determining)
+                {
+                    // no work items found, no work items enqueued so far
                     if (s_assignableWorkItemQueueCount > 0)
                     {
                         workQueue.UnassignWorkItemQueue(tl);
@@ -866,7 +875,26 @@ namespace System.Threading
                     // responsibility of the new thread and other enqueuers to request more threads as necessary. The
                     // parallelization may be necessary here for correctness (aside from perf) if the work item blocks for some
                     // reason that may have a dependency on other queued work items.
-                    workQueue.EnsureThreadRequested();
+
+                    workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Scheduled;
+                    // I thought we might want to add a MemoryBarrier here but not sure about it
+                    ThreadPool.RequestWorkerThread();
+                }
+                else
+                {
+                    // the state should be Determining if no more work items were enqueued
+                    // however, another thread might have done so and changed the state to Scheduled
+                    int stageBeforeUpdate =
+                        Interlocked.CompareExchange(
+                            ref workQueue._separated.queueProcessingStage,
+                            (int)QueueProcessingStage.NotScheduled,
+                            (int)QueueProcessingStage.Determining);
+                    Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
+                    if (stageBeforeUpdate == (int)QueueProcessingStage.Scheduled)
+                    {
+                        // Request another worker thread given that there is more work
+                        ThreadPool.RequestWorkerThread();
+                    }
                 }
 
                 // After this point, this method is no longer responsible for ensuring thread requests except for missed steals
