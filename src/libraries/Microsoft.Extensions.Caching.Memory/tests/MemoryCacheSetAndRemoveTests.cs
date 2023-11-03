@@ -806,12 +806,12 @@ namespace Microsoft.Extensions.Caching.Memory
             };            
             var value = cache.GetOrCreate<string>(cacheKey, _ => cacheKey, cacheEntryOptions);
             Assert.NotNull(value);
-            Thread.Sleep(TimeSpan.FromSeconds(2));
-            Assert.False(cache.TryGetValue(cacheKey, out value));
+            Thread.Sleep(expiry);
+            Assert.False(cache.TryGetValue(cacheKey, out _));
         }
 
         [Fact]
-        public void GetOrCreateAsyncWithCacheEntryOptions()
+        public async Task GetOrCreateAsyncWithCacheEntryOptions()
         {
             var cacheKey = "test";
             var cache = CreateCache();
@@ -820,10 +820,10 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 AbsoluteExpirationRelativeToNow = expiry
             };            
-            var value = cache.GetOrCreateAsync<string>(cacheKey, _ => Task.FromResult(cacheKey), cacheEntryOptions);
+            var value = await cache.GetOrCreateAsync<string>(cacheKey, _ => Task.FromResult(cacheKey), cacheEntryOptions);
             Assert.NotNull(value);
-            Thread.Sleep(TimeSpan.FromSeconds(2));
-            Assert.False(cache.TryGetValue(cacheKey, out value));
+            await Task.Delay(expiry);
+            Assert.False(cache.TryGetValue(cacheKey, out _));
         }
 
         private class TestKey
