@@ -824,6 +824,7 @@ namespace System.Threading
             {
                 Debug.Assert(workQueue._separated.queueProcessingStage == (int)QueueProcessingStage.Scheduled);
                 workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Determining;
+                Interlocked.MemoryBarrier();
 
                 if ((workItem = DequeueWithPriorityAlternation(workQueue, tl, out bool missedSteal)) != null)
                 {
@@ -1189,6 +1190,7 @@ namespace System.Threading
             {
                 Debug.Assert(_queueProcessingStage == (int)QueueProcessingStage.Scheduled);
                 _queueProcessingStage = (int)QueueProcessingStage.Determining;
+                Interlocked.MemoryBarrier();
 
                 if (_workItems.TryDequeue(out workItem))
                 {
