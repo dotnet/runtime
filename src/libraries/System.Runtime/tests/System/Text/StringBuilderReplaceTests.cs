@@ -93,7 +93,7 @@ namespace System.Text.Tests
             => builder.Replace(oldValue, newValue, startIndex, count);
     }
 
-    public partial class StringBuilderReplaceTests_String : StringBuilderReplaceTests
+    public class StringBuilderReplaceTests_String : StringBuilderReplaceTests
     {
         [Fact]
         public void Replace_String_Invalid()
@@ -106,7 +106,7 @@ namespace System.Text.Tests
         }
     }
 
-    public partial class StringBuilderReplaceTests_Span : StringBuilderReplaceTests
+    public class StringBuilderReplaceTests_Span : StringBuilderReplaceTests
     {
         protected override StringBuilder Replace(StringBuilder builder, string oldValue, string newValue)
             => builder.Replace(oldValue.AsSpan(), newValue.AsSpan());
