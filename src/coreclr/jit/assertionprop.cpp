@@ -4794,7 +4794,8 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             // For now, we're mainly interested in "X op CNS" pattern (where CNS > 0).
             const GenTree* op1 = tree->gtGetOp1();
             const GenTree* op2 = tree->gtGetOp2();
-            if (!optLocalAssertionProp && !BitVecOps::IsEmpty(apTraits, assertions) && op2->IsNeverNegative(this))
+            if (varTypeIsIntegral(tree) && !optLocalAssertionProp && !BitVecOps::IsEmpty(apTraits, assertions) &&
+                op2->IsNeverNegative(this))
             {
                 const ValueNum lclVN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
                 for (AssertionIndex index = 1; index <= optAssertionCount; index++)
