@@ -5761,6 +5761,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 		if (ins->opcode == OP_REGVAR) {
 			switch (ainfo->storage) {
 			case ArgInIReg:
+			case ArgSwiftError:
 				arm_movx (code, ins->dreg, ainfo->reg);
 				if (i == 0 && sig->hasthis) {
 					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, GPTRDIFF_TO_INT (code - cfg->native_code));
