@@ -412,6 +412,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\FrozenRuntimeTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FunctionPointerMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsHashtableEntryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />

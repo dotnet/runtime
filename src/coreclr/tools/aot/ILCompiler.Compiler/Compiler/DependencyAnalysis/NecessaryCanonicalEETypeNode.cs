@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -24,6 +25,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
         }
+
+        protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory) => throw new NotSupportedException();
 
         public override int ClassCode => 1505000724;
     }
