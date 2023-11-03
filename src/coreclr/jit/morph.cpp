@@ -11076,8 +11076,8 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
         // addTwo is now "icon1 + icon2" so we can fold it using gtFoldExprConst
         addTwo->gtOp1 = constOne;
-        add->gtOp2 = gtFoldExprConst(add->gtOp2);
-        op2        = add->gtGetOp2();
+        add->gtOp2    = gtFoldExprConst(add->gtOp2);
+        op2           = add->gtGetOp2();
     }
 
     // Fold (x + 0) - given it won't change the tree type.
