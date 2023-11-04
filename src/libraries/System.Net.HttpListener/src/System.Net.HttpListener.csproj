@@ -193,7 +193,6 @@
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
     <Compile Include="System\Net\Managed\WebSockets\HttpWebSocket.Managed.cs" />
     <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Net.ServicePoint" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
