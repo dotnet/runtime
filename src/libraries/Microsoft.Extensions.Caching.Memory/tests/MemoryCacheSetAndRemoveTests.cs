@@ -793,21 +793,32 @@ namespace Microsoft.Extensions.Caching.Memory
             var cache = CreateCache();
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.GetOrCreateAsync<object>(null, null));
         }
-        
+
         [Fact]
         public void GetOrCreateWithCacheEntryOptions()
         {
             var cacheKey = "test";
             var cache = CreateCache();
-            var expiry = 1000;
-            var cacheEntryOptions = new MemoryCacheEntryOptions()
+            ManualResetEvent mre = new ManualResetEvent(false);
+
+            var options = new MemoryCacheEntryOptions();
+            options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(expiry)
-            };            
-            var value = cache.GetOrCreate<string>(cacheKey, _ => cacheKey, cacheEntryOptions);
+                EvictionCallback = (key, value, reason, state) =>
+                {
+                    Assert.Equal(cacheKey, key);
+                    Assert.Equal(cacheKey, value);
+                    Assert.Equal(EvictionReason.Removed, reason);
+                    mre.Set();
+                }
+            });
+
+            var value = cache.GetOrCreate<string>(cacheKey, _ => cacheKey, options);
             Assert.Equal(cacheKey, value);
             Assert.True(cache.TryGetValue(cacheKey, out _));
-            Thread.Sleep(expiry * 2);
+
+            cache.Remove(cacheKey);
+            Assert.True(mre.WaitOne(TimeSpan.FromSeconds(30)));
             Assert.False(cache.TryGetValue(cacheKey, out _));
         }
 
@@ -816,15 +827,26 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cacheKey = "test";
             var cache = CreateCache();
-            var expiry = 1000;
-            var cacheEntryOptions = new MemoryCacheEntryOptions()
+            ManualResetEvent mre = new ManualResetEvent(false);
+
+            var options = new MemoryCacheEntryOptions();
+            options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(expiry)
-            };            
-            var value = await cache.GetOrCreateAsync<string>(cacheKey, _ => Task.FromResult(cacheKey), cacheEntryOptions);
+                EvictionCallback = (key, value, reason, state) =>
+                {
+                    Assert.Equal(cacheKey, key);
+                    Assert.Equal(cacheKey, value);
+                    Assert.Equal(EvictionReason.Removed, reason);
+                    mre.Set();
+                }
+            });
+
+            var value = await cache.GetOrCreateAsync<string>(cacheKey, _ => Task.FromResult(cacheKey), options);
             Assert.Equal(cacheKey, value);
             Assert.True(cache.TryGetValue(cacheKey, out _));
-            await Task.Delay(expiry * 2);
+
+            cache.Remove(cacheKey);
+            Assert.True(mre.WaitOne(TimeSpan.FromSeconds(30)));
             Assert.False(cache.TryGetValue(cacheKey, out _));
         }
 
