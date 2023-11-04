@@ -30,7 +30,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int OffsetToStringData => string.OFFSET_TO_STRING;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
