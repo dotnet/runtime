@@ -52,6 +52,31 @@ namespace System.Text.Json
 
         private static JsonSerializerOptions? s_defaultOptions;
 
+        /// <summary>
+        /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the web configuration.
+        /// </summary>
+        /// <remarks>
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
+        /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
+        /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
+        /// </remarks>
+        public static JsonSerializerOptions Web
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
+            {
+                if (s_webOptions is not JsonSerializerOptions options)
+                {
+                    options = GetOrCreateWebOptionsInstance();
+                }
+
+                return options;
+            }
+        }
+
+        private static JsonSerializerOptions? s_webOptions;
+
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
         private IJsonTypeInfoResolver? _typeInfoResolver;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
@@ -954,6 +979,20 @@ namespace System.Text.Json
             };
 
             return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static JsonSerializerOptions GetOrCreateWebOptionsInstance()
+        {
+            var options = new JsonSerializerOptions
+            {
+                _propertyNameCaseInsensitive = true,
+                _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                _numberHandling = JsonNumberHandling.AllowReadingFromString
+            };
+
+            return Interlocked.CompareExchange(ref s_webOptions, options, null) ?? options;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

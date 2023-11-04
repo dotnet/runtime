@@ -713,7 +713,7 @@ namespace System.Text.Json.Serialization.Tests
                     ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
                 }
             };
-            
+
             RemoteExecutor.Invoke(static () =>
             {
                 var unsupportedValue = new MyClass { Value = "value" };
@@ -1253,7 +1253,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void PredefinedSerializerOptions_Web()
         {
-            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            var options = JsonSerializerOptions.Web;
             Assert.True(options.PropertyNameCaseInsensitive);
             Assert.Same(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
             Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
