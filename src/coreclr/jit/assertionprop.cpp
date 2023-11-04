@@ -3551,6 +3551,33 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
     return nullptr;
 }
 
+GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+{
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return nullptr;
+    }
+
+    // For now, we're mainly interested in "X op CNS" pattern (where CNS > 0).
+    // Technically, we can check assertions for both operands, but it's not clear if it's worth it.
+    if (!tree->gtGetOp2()->IsNeverNegative(this))
+    {
+        return nullptr;
+    }
+
+    const ValueNum dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+    for (AssertionIndex index = 1; index <= optAssertionCount; index++)
+    {
+        AssertionDsc* curAssertion = optGetAssertion(index);
+        if (BitVecOps::IsMember(apTraits, assertions, index - 1) && curAssertion->IsNeverNegative(this, dividendVN))
+        {
+            tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+            return optAssertionProp_Update(tree, tree, stmt);
+        }
+    }
+    return nullptr;
+}
+
 //------------------------------------------------------------------------
 // optAssertionProp_Return: Try and optimize a GT_RETURN via assertions.
 //
@@ -4789,28 +4816,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_MOD:
         case GT_DIV:
-        {
-            // Convert MOD/DIV to UMOD/UDIV if both operands are known to be non-negative.
-            // For now, we're mainly interested in "X op CNS" pattern (where CNS > 0).
-            const GenTree* op1 = tree->gtGetOp1();
-            const GenTree* op2 = tree->gtGetOp2();
-            if (varTypeIsIntegral(tree) && !optLocalAssertionProp && !BitVecOps::IsEmpty(apTraits, assertions) &&
-                op2->IsNeverNegative(this))
-            {
-                const ValueNum lclVN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-                for (AssertionIndex index = 1; index <= optAssertionCount; index++)
-                {
-                    AssertionDsc* curAssertion = optGetAssertion(index);
-                    if (BitVecOps::IsMember(apTraits, assertions, index - 1) &&
-                        curAssertion->IsNeverNegative(this, lclVN))
-                    {
-                        tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-                        break;
-                    }
-                }
-            }
-            return nullptr;
-        }
+            return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt);
 
         case GT_BLK:
         case GT_IND:
@@ -4837,11 +4843,9 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_LE:
         case GT_GT:
         case GT_GE:
-
             return optAssertionProp_RelOp(assertions, tree, stmt);
 
         case GT_JTRUE:
-
             if (block != nullptr)
             {
                 return optVNConstantPropOnJTrue(block, tree);
