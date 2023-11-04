@@ -3580,7 +3580,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         return nullptr;
     }
 
-    const ValueNum dividendVN = vnStore->VNLiberalNormalValue(tree->gtGetOp1()->gtVNPair);
+    const ValueNum dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
         if (!BitVecOps::IsMember(apTraits, assertions, index - 1))
