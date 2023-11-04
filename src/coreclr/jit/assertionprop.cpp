@@ -3580,14 +3580,15 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         return nullptr;
     }
 
-    const ValueNum dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+    const ValueNum dividendVN = vnStore->VNLiberalNormalValue(tree->gtGetOp1()->gtVNPair);
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
-        AssertionDsc* curAssertion = optGetAssertion(index);
         if (!BitVecOps::IsMember(apTraits, assertions, index - 1))
         {
             continue;
         }
+
+        AssertionDsc* curAssertion = optGetAssertion(index);
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
@@ -3612,7 +3613,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
             continue;
         }
 
-        auto cmpOper = static_cast<genTreeOps>(info.cmpOper);
+        genTreeOps cmpOper = static_cast<genTreeOps>(info.cmpOper);
 
         // Normalize "(X relop CNS) == false" to "(X reversed_relop CNS) == true"
         if (curAssertion->assertionKind == OAK_EQUAL)
