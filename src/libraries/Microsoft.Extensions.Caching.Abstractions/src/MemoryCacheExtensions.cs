@@ -233,7 +233,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
         /// <param name="key">The key of the entry to look for or create.</param>
         /// <param name="factory">The factory task that creates the value associated with this key if the key does not exist in the cache.</param>
-        /// <param name="createOptions">The <see cref="MemoryCacheEntryOptions"/> needs to be applied to the created <see cref="ICacheEntry"/> if not null.</param>
+        /// <param name="createOptions">The options to be applied to the <see cref="ICacheEntry"/> if the key does not exist in the cache.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
         public static async Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory, MemoryCacheEntryOptions? createOptions)
         {
