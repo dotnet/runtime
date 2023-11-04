@@ -9,20 +9,6 @@ namespace System.Globalization
     {
         private const int LOC_FULLNAME_CAPACITY = 157;           // max size of locale name
 
-        /// <summary>
-        /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
-        /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
-        /// </summary>
-        private bool InitAppleCultureDataCore()
-        {
-            Debug.Assert(_sRealName != null);
-            Debug.Assert(!GlobalizationMode.Invariant);
-            string realNameBuffer = _sRealName;
-
-            _sWindowsName = _sName = _sRealName = GetLocaleNameNative(realNameBuffer);
-            return true;
-        }
-
         internal static string GetLocaleNameNative(string localeName)
         {
             return Interop.Globalization.GetLocaleNameNative(localeName);

@@ -134,6 +134,7 @@ ep_session_alloc (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool stackwalk_requested,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
@@ -208,7 +209,7 @@ ep_session_alloc (
 	instance->session_start_time = ep_system_timestamp_get ();
 	instance->session_start_timestamp = ep_perf_timestamp_get ();
 	instance->paused = false;
-	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk ();
+	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk () && stackwalk_requested;
 	instance->started = 0;
 
 ep_on_exit:

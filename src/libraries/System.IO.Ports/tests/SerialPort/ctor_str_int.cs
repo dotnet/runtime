@@ -198,7 +198,7 @@ namespace System.IO.Ports.Tests
                     serPortProp.VerifyPropertiesAndPrint(com);
                 }
             }
-            catch (TrueException)
+            catch (FailException)
             {
                 // This is an inner failure
                 throw;

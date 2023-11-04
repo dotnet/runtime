@@ -30,11 +30,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
-        public static int OffsetToStringData
-        {
-            [Intrinsic]
-            get => OffsetToStringData;
-        }
+        public static int OffsetToStringData => string.OFFSET_TO_STRING;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int InternalGetHashCode(object? o);

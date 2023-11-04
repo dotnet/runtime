@@ -15,7 +15,14 @@ namespace System.Data.Common
 {
     internal sealed class ObjectStorage : DataStorage
     {
-        private enum Families { DATETIME, NUMBER, STRING, BOOLEAN, ARRAY };
+        private enum Families
+        {
+            DATETIME,
+            NUMBER,
+            STRING,
+            BOOLEAN,
+            ARRAY
+        };
 
         private object?[] _values = default!; // Late-initialized
         private readonly bool _implementsIXmlSerializable;

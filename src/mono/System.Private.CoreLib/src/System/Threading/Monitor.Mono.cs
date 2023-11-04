@@ -145,10 +145,9 @@ namespace System.Threading
             try_enter_with_atomic_var(obj, timeout, true, ref lockTaken);
         }
 
-        public static extern long LockContentionCount
-        {
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            get;
-        }
+        public static long LockContentionCount => Monitor_get_lock_contention_count() + Lock.ContentionCount;
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern long Monitor_get_lock_contention_count();
     }
 }

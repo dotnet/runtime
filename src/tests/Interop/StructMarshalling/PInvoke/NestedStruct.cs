@@ -10,7 +10,8 @@ public class Managed
     [DllImport("MarshalStructAsParam")]
     static extern GameControllerBindType getBindType (GameControllerButtonBind button);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         GameControllerButtonBind button = new GameControllerButtonBind(GameControllerBindType.ControllerBindtypeAxis, null);
         if (getBindType(button) == GameControllerBindType.ControllerBindtypeAxis)

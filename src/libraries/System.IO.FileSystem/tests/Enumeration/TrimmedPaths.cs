@@ -130,7 +130,7 @@ namespace System.IO.Tests.Enumeration
                     }
                     else
                     {
-                        Assert.False(true, $"Unexpected name '{fi.FullName}'");
+                        Assert.Fail($"Unexpected name '{fi.FullName}'");
                     }
                 }
 
@@ -219,7 +219,7 @@ namespace System.IO.Tests.Enumeration
                     }
                     else
                     {
-                        Assert.False(true, $"Unexpected name '{fi.FullName}'");
+                        Assert.Fail($"Unexpected name '{fi.FullName}'");
                     }
                 }
             }
@@ -255,7 +255,7 @@ namespace System.IO.Tests.Enumeration
                 }
                 else
                 {
-                    Assert.False(true, $"Found unexpected name '{di.Name}'");
+                    Assert.Fail($"Found unexpected name '{di.Name}'");
                 }
             }
 
@@ -275,7 +275,7 @@ namespace System.IO.Tests.Enumeration
                 }
                 else
                 {
-                    Assert.False(true, $"Found unexpected name '{di.Name}'");
+                    Assert.Fail($"Found unexpected name '{di.Name}'");
                 }
             }
         }

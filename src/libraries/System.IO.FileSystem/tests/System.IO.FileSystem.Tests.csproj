@@ -33,7 +33,9 @@
     <Compile Include="Directory\GetLogicalDrives.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="FileSystemTest.cs" />
+    <Compile Include="File\AppendAllBytesAsync.cs" />
     <Compile Include="File\EncryptDecrypt.cs" />
+    <Compile Include="File\AppendAllBytes.cs" />
     <Compile Include="File\GetSetAttributes_String.cs" />
     <Compile Include="File\GetSetAttributes_SafeFileHandle.cs" />
     <Compile Include="File\GetSetTimes.cs" />

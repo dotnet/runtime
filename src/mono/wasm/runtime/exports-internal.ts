@@ -11,6 +11,7 @@ import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_close, ws_wasm_abort } from "./web-socket";
 import { mono_wasm_get_loaded_files } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
+import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
 import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 import { loadLazyAssembly } from "./lazyLoading";
@@ -86,6 +87,10 @@ export function export_internal(): any {
         jiterpreter_dump_stats,
         jiterpreter_apply_options: applyOptions,
         jiterpreter_get_options: getOptions,
+
+        // interpreter pgo
+        interp_pgo_load_data,
+        interp_pgo_save_data,
 
         // Blazor GC Lock support
         mono_wasm_gc_lock,

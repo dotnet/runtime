@@ -16,7 +16,6 @@ using Xunit;
 public static class XmlDictionaryWriterTest
 {
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
     public static void XmlBaseWriter_WriteBase64Async()
     {
         string actual;
@@ -64,7 +63,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
     public static void XmlBaseWriter_FlushAsync()
     {
         string actual = null;
@@ -110,7 +108,7 @@ public static class XmlDictionaryWriterTest
             sb.AppendLine(e.StackTrace);
             sb.AppendLine();
             sb.AppendLine($"The last completed operation before the exception was: {lastCompletedOperation}");
-            Assert.True(false, sb.ToString());
+            Assert.Fail(sb.ToString());
         }
 
         Assert.Equal(expect, actual);
@@ -145,7 +143,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
     public static void XmlBaseWriter_CheckAsync_ThrowInvalidOperationException()
     {
         int byteSize = 1024;

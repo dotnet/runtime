@@ -60,7 +60,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void RunThreadLocalTest4_Value()
         {
             ThreadLocal<string> tlocal = null;
@@ -274,7 +273,7 @@ namespace System.Threading.Tests
                             }
                         }
                     }
-                    Assert.True(false, message);
+                    Assert.Fail(message);
                 }
                 for (int i = 0; i < 1000; i++)
                 {
@@ -357,7 +356,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void RunThreadLocalTest9_Uninitialized()
         {
             for (int iter = 0; iter < 10; iter++)
@@ -440,7 +438,6 @@ namespace System.Threading.Tests
         private enum UniqueEnumUsedOnlyWithNonInterferenceTest { True, False }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TestUnrelatedThreadLocalDoesNotInterfereWithTrackAllValues()
         {
             ThreadLocal<UniqueEnumUsedOnlyWithNonInterferenceTest> localThatDoesNotTrackValues = new ThreadLocal<UniqueEnumUsedOnlyWithNonInterferenceTest>(false);

@@ -34,6 +34,7 @@
 #include "interp.h"
 #include "transform.h"
 #include "tiering.h"
+#include "interp-pgo.h"
 
 #if HOST_BROWSER
 #include "jiterpreter.h"
@@ -2305,16 +2306,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_INITBLK;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
-		if (!strcmp (tm, "get_OffsetToStringData")) {
-			g_assert (csignature->param_count == 0);
-			int offset = MONO_STRUCT_OFFSET (MonoString, chars);
-			interp_add_ins (td, MINT_LDC_I4);
-			WRITE32_INS (td->last_ins, 0, &offset);
-			push_simple_type (td, STACK_TYPE_I4);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			td->ip += 5;
-			return TRUE;
-		} else if (!strcmp (tm, "GetHashCode") || !strcmp (tm, "InternalGetHashCode")) {
+		if (!strcmp (tm, "GetHashCode") || !strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
 		} else if (!strcmp (tm, "TryGetHashCode")) {
 			*op = MINT_INTRINS_TRY_GET_HASHCODE;
@@ -8256,6 +8248,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 	}
 
+	if (td->optimized && !inlining)
+		mono_interp_pgo_method_was_tiered (method);
+
 exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
@@ -11136,6 +11131,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	}
 
 retry:
+	mono_interp_pgo_generate_start ();
 	memset (&transform_data, 0, sizeof(transform_data));
 	td = &transform_data;
 
@@ -11340,6 +11336,7 @@ exit:
 		g_array_free (td->line_numbers, TRUE);
 	g_slist_free (td->imethod_items);
 	mono_mempool_destroy (td->mempool);
+	mono_interp_pgo_generate_end ();
 	if (retry_compilation)
 		goto retry;
 }
