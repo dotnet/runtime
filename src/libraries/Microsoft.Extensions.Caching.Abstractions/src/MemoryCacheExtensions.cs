@@ -167,15 +167,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The value associated with this key.</returns>
         public static TItem? GetOrCreate<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, TItem> factory)
         {
-            if (!cache.TryGetValue(key, out object? result))
-            {
-                using ICacheEntry entry = cache.CreateEntry(key);
-
-                result = factory(entry);
-                entry.Value = result;
-            }
-
-            return (TItem?)result;
+            return GetOrCreate(cache, key, factory, null);
         }
 
         /// <summary>
@@ -213,17 +205,9 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="key">The key of the entry to look for or create.</param>
         /// <param name="factory">The factory task that creates the value associated with this key if the key does not exist in the cache.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        public static async Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory)
+        public static Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory)
         {
-            if (!cache.TryGetValue(key, out object? result))
-            {
-                using ICacheEntry entry = cache.CreateEntry(key);
-
-                result = await factory(entry).ConfigureAwait(false);
-                entry.Value = result;
-            }
-
-            return (TItem?)result;
+            return GetOrCreateAsync<TItem>(cache, key, factory, null);
         }
 
         /// <summary>
