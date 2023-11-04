@@ -185,7 +185,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
         /// <param name="key">The key of the entry to look for or create.</param>
         /// <param name="factory">The factory that creates the value associated with this key if the key does not exist in the cache.</param>
-        /// <param name="createOptions">The <see cref="MemoryCacheEntryOptions"/> needs to be applied to the created <see cref="ICacheEntry"/> if not null.</param>
+        /// <param name="createOptions">The options to be applied to the <see cref="ICacheEntry"/> if the key does not exist in the cache.</param>
         /// <returns>The value associated with this key.</returns>
         public static TItem? GetOrCreate<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, TItem> factory, MemoryCacheEntryOptions? createOptions)
         {
