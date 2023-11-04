@@ -8,11 +8,17 @@ using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
+	// Note: the XML must be passed as an embedded resource named ILLink.Substitutions.xml,
+	// not as a separate substitution file, for it to work with NativeAot.
+	// Related: https://github.com/dotnet/runtime/issues/88647
+    [SetupCompileResource ("FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
+	[IgnoreSubstitutions (false)]
 	public class FeatureCheckDataFlow
 	{
 		public static void Main ()
@@ -28,120 +34,119 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class CallFeatureUnguarded
 		{
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void Unguarded ()
 			{
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 				RequiresAssemblyFiles ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void UnguardedIf ()
 			{
-				if (!RuntimeFeature.IsDynamicCodeSupported) {
-					RequiresDynamicCode ();
+				if (!TestFeatures.IsUnreferencedCodeSupported) {
 					RequiresUnreferencedCode ();
+					RequiresDynamicCode ();
 					RequiresAssemblyFiles ();
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void UnguardedElse ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported)
+				if (TestFeatures.IsUnreferencedCodeSupported)
 				{
 					throw new Exception ();
 				}
 				else
 				{
-					RequiresDynamicCode ();
 					RequiresUnreferencedCode ();
+					RequiresDynamicCode ();
 					RequiresAssemblyFiles ();
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedAnd ()
 			{
-				var a = !RuntimeFeature.IsDynamicCodeSupported && RequiresDynamicCodeBool ();
+				var a = !TestFeatures.IsUnreferencedCodeSupported && RequiresUnreferencedCodeBool ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedOr ()
 			{
-				var a = RuntimeFeature.IsDynamicCodeSupported || RequiresDynamicCodeBool ();
+				var a = TestFeatures.IsUnreferencedCodeSupported || RequiresUnreferencedCodeBool ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedTernary ()
 			{
-				var a = RuntimeFeature.IsDynamicCodeSupported ? true : RequiresDynamicCodeBool ();
-				var b = !RuntimeFeature.IsDynamicCodeSupported ? RequiresDynamicCodeBool () : true;
+				var a = TestFeatures.IsUnreferencedCodeSupported ? true : RequiresUnreferencedCodeBool ();
+				var b = !TestFeatures.IsUnreferencedCodeSupported ? RequiresUnreferencedCodeBool () : true;
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void UnguardedThrow ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported)
+				if (TestFeatures.IsUnreferencedCodeSupported)
 				{
 					throw new Exception ();
 				}
 
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 				RequiresAssemblyFiles ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedAssert ()
 			{
-				Debug.Assert (!RuntimeFeature.IsDynamicCodeSupported);
+				Debug.Assert (!TestFeatures.IsUnreferencedCodeSupported);
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedDoesNotReturnIfTrue ()
 			{
-				DoesNotReturnIfTrue (RuntimeFeature.IsDynamicCodeSupported);
+				DoesNotReturnIfTrue (TestFeatures.IsUnreferencedCodeSupported);
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedDoesNotReturnIfFalse ()
 			{
-				DoesNotReturnIfFalse (!RuntimeFeature.IsDynamicCodeSupported);
+				DoesNotReturnIfFalse (!TestFeatures.IsUnreferencedCodeSupported);
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedDoesNotReturn ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported)
+				if (TestFeatures.IsUnreferencedCodeSupported)
 					DoesNotReturn ();
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfFalse
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedDoesNotReturnIfFalseCtor ()
 			{
-				new DoesNotReturnIfFalseCtor (RuntimeFeature.IsDynamicCodeSupported);
+				new DoesNotReturnIfFalseCtor (!TestFeatures.IsUnreferencedCodeSupported);
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
 			public static void Test ()
@@ -178,268 +183,271 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GuardedDoesNotReturnIfFalseCtor ();
 			}
 
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
 			static void GuardedIf ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported) {
-					RequiresDynamicCode ();
+				if (TestFeatures.IsUnreferencedCodeSupported) {
 					RequiresUnreferencedCode ();
+					RequiresDynamicCode ();
 					RequiresAssemblyFiles ();
 				}
 			}
 
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
 			static void GuardedElse ()
 			{
-				if (!RuntimeFeature.IsDynamicCodeSupported)
+				if (!TestFeatures.IsUnreferencedCodeSupported)
 				{
 					throw new Exception ();
 				}
 				else
 				{
-					RequiresDynamicCode ();
 					RequiresUnreferencedCode ();
+					RequiresDynamicCode ();
 					RequiresAssemblyFiles ();
 				}
 			}
 
 			static void GuardedAnd ()
 			{
-				var a = RuntimeFeature.IsDynamicCodeSupported && RequiresDynamicCodeBool ();
+				var a = TestFeatures.IsUnreferencedCodeSupported && RequiresUnreferencedCodeBool ();
 			}
 
 			static void GuardedOr ()
 			{
-				var a = !RuntimeFeature.IsDynamicCodeSupported || RequiresDynamicCodeBool ();
+				var a = !TestFeatures.IsUnreferencedCodeSupported || RequiresUnreferencedCodeBool ();
 			}
 
 			static void GuardedTernary ()
 			{
-				var a = RuntimeFeature.IsDynamicCodeSupported ? RequiresDynamicCodeBool () : true;
-				var b = !RuntimeFeature.IsDynamicCodeSupported ? true : RequiresDynamicCodeBool ();
+				var a = TestFeatures.IsUnreferencedCodeSupported ? RequiresUnreferencedCodeBool () : true;
+				var b = !TestFeatures.IsUnreferencedCodeSupported ? true : RequiresUnreferencedCodeBool ();
 			}
 
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
 			static void GuardedThrow ()
 			{
-				if (!RuntimeFeature.IsDynamicCodeSupported)
+				if (!TestFeatures.IsUnreferencedCodeSupported)
 				{
 					throw new Exception ();
 				}
 
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 				RequiresAssemblyFiles ();
 			}
 
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void GuardedAssert ()
 			{
-				Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+				Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void GuardedDoesNotReturnIfTrue ()
 			{
-				DoesNotReturnIfTrue (!RuntimeFeature.IsDynamicCodeSupported);
+				DoesNotReturnIfTrue (!TestFeatures.IsUnreferencedCodeSupported);
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void GuardedDoesNotReturnIfFalse ()
 			{
-				DoesNotReturnIfFalse (RuntimeFeature.IsDynamicCodeSupported);
+				DoesNotReturnIfFalse (TestFeatures.IsUnreferencedCodeSupported);
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
-			// NativeAot doesn't optimize branches away based on DoesNotReturnAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void GuardedDoesNotReturn ()
 			{
-				if (!RuntimeFeature.IsDynamicCodeSupported)
+				if (!TestFeatures.IsUnreferencedCodeSupported)
 					DoesNotReturn ();
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void GuardedDoesNotReturnIfFalseCtor ()
 			{
-				new DoesNotReturnIfFalseCtor (RuntimeFeature.IsDynamicCodeSupported);
+				new DoesNotReturnIfFalseCtor (TestFeatures.IsUnreferencedCodeSupported);
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 		}
 
 		class FeatureCheckBooleanExpressions
 		{
+			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
 			static void And ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported) {
-					RequiresDynamicCode ();
+				if (TestFeatures.IsUnreferencedCodeSupported && RuntimeFeature.IsDynamicCodeSupported) {
 					RequiresUnreferencedCode ();
+					RequiresDynamicCode ();
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void AndNot ()
 			{
-				if (!RuntimeFeature.IsDynamicCodeSupported && !TestFeatures.IsUnreferencedCodeSupported)
+				if (!TestFeatures.IsUnreferencedCodeSupported && !RuntimeFeature.IsDynamicCodeSupported)
 					throw null;
 
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 			}
 
+			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
 			static void NotAnd ()
 			{
-				if (!(RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported))
+				if (!(TestFeatures.IsUnreferencedCodeSupported && RuntimeFeature.IsDynamicCodeSupported))
 					throw null;
 
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void Or ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported || TestFeatures.IsUnreferencedCodeSupported) {
-					RequiresDynamicCode ();
+				if (TestFeatures.IsUnreferencedCodeSupported || RuntimeFeature.IsDynamicCodeSupported) {
 					RequiresUnreferencedCode ();
+					RequiresDynamicCode ();
 				}
 			}
 
+			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
 			static void OrNot ()
 			{
-				if (!RuntimeFeature.IsDynamicCodeSupported || !TestFeatures.IsUnreferencedCodeSupported)
+				if (!TestFeatures.IsUnreferencedCodeSupported || !RuntimeFeature.IsDynamicCodeSupported)
 					throw null;
 
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void NotOr ()
 			{
-				if (!(RuntimeFeature.IsDynamicCodeSupported || TestFeatures.IsUnreferencedCodeSupported))
+				if (!(TestFeatures.IsUnreferencedCodeSupported || RuntimeFeature.IsDynamicCodeSupported))
 					throw null;
 
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 			}
 
 			static void EqualsTrue ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported == true)
-					RequiresDynamicCode ();
+				if (TestFeatures.IsUnreferencedCodeSupported == true)
+					RequiresUnreferencedCode ();
 			}
 
 			static void TrueEquals ()
 			{
-				if (true == RuntimeFeature.IsDynamicCodeSupported)
-					RequiresDynamicCode ();
+				if (true == TestFeatures.IsUnreferencedCodeSupported)
+					RequiresUnreferencedCode ();
 			}
 
 			static void EqualsFalse ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported == false)
+				if (TestFeatures.IsUnreferencedCodeSupported == false)
 					throw null;
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
 			static void FalseEquals ()
 			{
-				if (false == RuntimeFeature.IsDynamicCodeSupported)
+				if (false == TestFeatures.IsUnreferencedCodeSupported)
 					throw null;
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
 			static void NotEqualsTrue ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported != true)
+				if (TestFeatures.IsUnreferencedCodeSupported != true)
 					throw null;
 					
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
 			static void NotEqualsFalse ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported != false)
-					RequiresDynamicCode ();
+				if (TestFeatures.IsUnreferencedCodeSupported != false)
+					RequiresUnreferencedCode ();
 			}
 
 			static void TrueNotEquals ()
 			{
-				if (true != RuntimeFeature.IsDynamicCodeSupported)
+				if (true != TestFeatures.IsUnreferencedCodeSupported)
 					throw null;
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
 			static void FalseNotEquals ()
 			{
-				if (false != RuntimeFeature.IsDynamicCodeSupported)
-					RequiresDynamicCode ();
+				if (false != TestFeatures.IsUnreferencedCodeSupported)
+					RequiresUnreferencedCode ();
 			}
 
 			static void IsTrue ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported is true)
-					RequiresDynamicCode ();
+				if (TestFeatures.IsUnreferencedCodeSupported is true)
+					RequiresUnreferencedCode ();
 			}
 
 			static void IsFalse ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported is false)
+				if (TestFeatures.IsUnreferencedCodeSupported is false)
 					throw null;
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
 			static void IsNotTrue ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported is not true)
+				if (TestFeatures.IsUnreferencedCodeSupported is not true)
 					throw null;
 
-				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
 			}
 
 			static void IsNotFalse ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported is not false)
-					RequiresDynamicCode ();
+				if (TestFeatures.IsUnreferencedCodeSupported is not false)
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void Contradiction ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeSupported) {
-					RequiresDynamicCode ();
+				if (TestFeatures.IsUnreferencedCodeSupported && !TestFeatures.IsUnreferencedCodeSupported) {
+					RequiresUnreferencedCode ();
 				} else {
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 				}
 			}
 
@@ -469,7 +477,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class TestFeatureChecks
 		{
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void CallTestUnreferencedCodeGuarded ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {
@@ -477,73 +484,100 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			static void CallTestUnreferencedCodeUnguarded ()
+			{
+				RequiresUnreferencedCode ();
+			}
+
+			static void CallTestRequiresDynamicCodeGuarded ()
+			{
+				if (RuntimeFeature.IsDynamicCodeSupported)
+					RequiresDynamicCode ();
+			}
+
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void CallTestRequiresDynamicCodeUnguarded ()
+			{
+				RequiresDynamicCode ();
+			}
+
 			static void CallTestAssemblyFilesGuarded ()
 			{
-				if (TestFeatures.IsAssemblyFilesSupported)
+				if (TestFeatures.IsAssemblyFilesSupported) {
 					RequiresAssemblyFiles ();
+				}
+			}
+
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void CallTestAssemblyFilesUnguarded ()
+			{
+				RequiresAssemblyFiles ();
 			}
 
 			public static void Test ()
 			{
 				CallTestUnreferencedCodeGuarded ();
+				CallTestUnreferencedCodeUnguarded ();
+				CallTestRequiresDynamicCodeGuarded ();
+				CallTestRequiresDynamicCodeUnguarded ();
 				CallTestAssemblyFilesGuarded ();
+				CallTestAssemblyFilesUnguarded ();
 			}
 		}
 
 		class FeatureCheckCombinations
 		{
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
+			// Trimmer warns because IsDynamicCodeSupported is not a constant, so the call is reachable.
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
 			static void MeetFeaturesEmptyIntersection (bool b = true)
 			{
 				if (b) {
-					if (!RuntimeFeature.IsDynamicCodeSupported)
-						throw null;
-				} else {
 					if (!TestFeatures.IsUnreferencedCodeSupported)
 						throw null;
+				} else {
+					if (!RuntimeFeature.IsDynamicCodeSupported)
+						throw null;
 				}
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 			}
 
-			// NativeAot assumes that IsDynamicCodeSupported returns false.
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
 			static void MeetFeaturesIntersection (bool b = true)
 			{
 				if (b) {
-					if (!RuntimeFeature.IsDynamicCodeSupported)
-						throw null;
-				} else {
 					if (!TestFeatures.IsUnreferencedCodeSupported)
 						throw null;
+				} else {
 					if (!RuntimeFeature.IsDynamicCodeSupported)
 						throw null;
+					if (!TestFeatures.IsUnreferencedCodeSupported)
+						throw null;
 				}
-				RequiresDynamicCode ();
 				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
 			}
 
 			static void IntroduceFeature ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported) {
+				if (TestFeatures.IsUnreferencedCodeSupported) {
 					if (TestFeatures.IsAssemblyFilesSupported) {
 						RequiresAssemblyFiles ();
-						RequiresDynamicCode ();
+						RequiresUnreferencedCode ();
 					}
 				}
 			}
 
-			// NativeAot assumes that IsDynamicCodeSupported returns false.
 			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
 			static void RemoveFeature ()
 			{
-				if (RuntimeFeature.IsDynamicCodeSupported) {
+				if (TestFeatures.IsUnreferencedCodeSupported) {
 					if (TestFeatures.IsAssemblyFilesSupported) {
 					} else {
 						RequiresAssemblyFiles ();
-						RequiresDynamicCode ();
+						RequiresUnreferencedCode ();
 					}
 				}
 			}
@@ -559,7 +593,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class GuardedPatterns
 		{
-			[ExpectedWarning ("IL2067", nameof (RequiresAll), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void MethodCall (Type t)
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {
@@ -567,7 +600,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2069", nameof (RequiresAllField), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void Assignment (Type t)
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {
@@ -575,7 +607,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2111", nameof (RequiresAll), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void ReflectionAcces ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {
@@ -583,7 +614,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2026", nameof (ClassWithRequires.StaticField), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void FieldAccess ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {
@@ -592,11 +622,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// TODO: move generic analysis to dataflow analyzer to support this if it is an actual scenario.
-			[ExpectedWarning ("IL2091", nameof (RequiresAllGeneric<T>))]
+			[ExpectedWarning ("IL2091", nameof (RequiresAllGeneric<T>), ProducedBy = Tool.Analyzer)]
 			static void GenericRequirement<T> ()
 			{
-				if (TestFeatures.IsUnreferencedCodeSupported)
+				if (TestFeatures.IsUnreferencedCodeSupported) {
 					new RequiresAllGeneric<T> ();
+				}
 			}
 
 			public static void Test ()
@@ -614,328 +645,328 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void GuardedTryCatchFinally ()
 			{
 
-				if (RuntimeFeature.IsDynamicCodeSupported)
+				if (TestFeatures.IsUnreferencedCodeSupported)
 				{
 					try {
-						RequiresDynamicCode ();
+						RequiresUnreferencedCode0 ();
 					} catch {
-						RequiresDynamicCode ();
+						RequiresUnreferencedCode1 ();
 					} finally {
-						RequiresDynamicCode ();
+						RequiresUnreferencedCode2 ();
 					}
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			static void CheckInTry ()
 			{
 				try {
-					if (RuntimeFeature.IsDynamicCodeSupported)
-						RequiresDynamicCode ();
+					if (TestFeatures.IsUnreferencedCodeSupported)
+						RequiresUnreferencedCode0 ();
 				} catch {
-					RequiresDynamicCode (); // should warn
+					RequiresUnreferencedCode1 (); // should warn
 				} finally {
-					RequiresDynamicCode (); // should warn
+					RequiresUnreferencedCode2 (); // should warn
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode4), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode4))]
 			static void NestedTryInCheckInTry ()
 			{
 				try {
-					if (RuntimeFeature.IsDynamicCodeSupported) {
+					if (TestFeatures.IsUnreferencedCodeSupported) {
 						try {
-							RequiresDynamicCode0 ();
+							RequiresUnreferencedCode0 ();
 						} catch {
-							RequiresDynamicCode1 ();
+							RequiresUnreferencedCode1 ();
 						} finally {
-							RequiresDynamicCode2 ();
+							RequiresUnreferencedCode2 ();
 						}
 					}
 				} catch {
-					RequiresDynamicCode3 ();
+					RequiresUnreferencedCode3 ();
 				} finally {
-					RequiresDynamicCode4 ();
+					RequiresUnreferencedCode4 ();
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode4), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode4))]
 			static void NestedTryInCheckInCatch ()
 			{
 				try {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} catch {
-					if (RuntimeFeature.IsDynamicCodeSupported) {
+					if (TestFeatures.IsUnreferencedCodeSupported) {
 						try {
-							RequiresDynamicCode1 ();
+							RequiresUnreferencedCode1 ();
 						} catch {
-							RequiresDynamicCode2 ();
+							RequiresUnreferencedCode2 ();
 						} finally {
-							RequiresDynamicCode3 ();
+							RequiresUnreferencedCode3 ();
 						}
 					}
 				} finally {
-					RequiresDynamicCode4 ();
+					RequiresUnreferencedCode4 ();
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			static void NestedTryInCheckInFinally ()
 			{
 				try {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} catch {
-					RequiresDynamicCode1 ();
+					RequiresUnreferencedCode1 ();
 				} finally {
-					if (RuntimeFeature.IsDynamicCodeSupported) {
+					if (TestFeatures.IsUnreferencedCodeSupported) {
 						try {
-							RequiresDynamicCode2 ();
+							RequiresUnreferencedCode2 ();
 						} catch {
-							RequiresDynamicCode3 ();
+							RequiresUnreferencedCode3 ();
 						} finally {
-							RequiresDynamicCode4 ();
+							RequiresUnreferencedCode4 ();
 						}
 					}
 				}
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void AssertInTryNoCatch () {
 				try {
-					Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 				} finally {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				}
-				RequiresDynamicCode1 (); // Only reachable if assert succeeded.
+				RequiresUnreferencedCode1 (); // Only reachable if assert succeeded.
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			static void AssertInTryWithCatch () {
 				try {
-					Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 				} catch {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} finally {
-					RequiresDynamicCode1 ();
+					RequiresUnreferencedCode1 ();
 				}
-				RequiresDynamicCode2 ();
+				RequiresUnreferencedCode2 ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			static void AssertInCatch () {
 				try {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} catch {
-					Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 				} finally {
-					RequiresDynamicCode1 ();
+					RequiresUnreferencedCode1 ();
 				}
-				RequiresDynamicCode2 ();
+				RequiresUnreferencedCode2 ();
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void AssertInFinally () {
 				try {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} catch {
-					RequiresDynamicCode1 ();
+					RequiresUnreferencedCode1 ();
 				} finally {
-					Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 				}
-				RequiresDynamicCode2 (); // Only reachable if assert succeeded.
+				RequiresUnreferencedCode2 (); // Only reachable if assert succeeded.
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void AssertInTryNestedInTry ()
 			{
 				try {
 					try {
-						Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+						Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 					} finally {
-						RequiresDynamicCode0 ();
+						RequiresUnreferencedCode0 ();
 					}
-					RequiresDynamicCode1 (); // Only reachable if assert succeeded.
+					RequiresUnreferencedCode1 (); // Only reachable if assert succeeded.
 				} finally {
-					RequiresDynamicCode2 (); // warning, as expected.
+					RequiresUnreferencedCode2 (); // warning, as expected.
 				}
 
-				RequiresDynamicCode3 (); // Only reachable if assert succeeded.
+				RequiresUnreferencedCode3 (); // Only reachable if assert succeeded.
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3))]
 			static void AssertInTryWithCatchNestedInTry ()
 			{
 				try {
 					try {
-						Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+						Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 					} catch {
 					} finally {
-						RequiresDynamicCode0 ();
+						RequiresUnreferencedCode0 ();
 					}
-					RequiresDynamicCode1 (); // Due to catch, this can be reached if assert failed.
+					RequiresUnreferencedCode1 (); // Due to catch, this can be reached if assert failed.
 				} finally {
-					RequiresDynamicCode2 (); // warning, as expected.
+					RequiresUnreferencedCode2 (); // warning, as expected.
 				}
 
-				RequiresDynamicCode3 (); // Same here.
+				RequiresUnreferencedCode3 (); // Same here.
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void AssertInTryNestedInFinally ()
 			{
 				try {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} finally {
 					try {
-						Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+						Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 					} finally {
-						RequiresDynamicCode1 ();
+						RequiresUnreferencedCode1 ();
 					}
-					RequiresDynamicCode2 (); // Only reachable if assert succeeded.
+					RequiresUnreferencedCode2 (); // Only reachable if assert succeeded.
 				}
-				RequiresDynamicCode3 (); // Only reachable if assert succeeded.
+				RequiresUnreferencedCode3 (); // Only reachable if assert succeeded.
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3))]
 			static void AssertInTryWithCatchNestedInFinally ()
 			{
 				try {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} finally {
 					try {
-						Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+						Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 					} catch {
 					} finally {
-						RequiresDynamicCode1 ();
+						RequiresUnreferencedCode1 ();
 					}
-					RequiresDynamicCode2 (); // Due to catch, this can be reached if assert failed.
+					RequiresUnreferencedCode2 (); // Due to catch, this can be reached if assert failed.
 				}
-				RequiresDynamicCode3 (); // Same here.
+				RequiresUnreferencedCode3 (); // Same here.
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void AssertInFinallyNestedInTry () {
 				try {
 					try {
-						RequiresDynamicCode0 ();
+						RequiresUnreferencedCode0 ();
 					} finally {
-						Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+						Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 					}
-					RequiresDynamicCode1 (); // Only reachable if assert succeeded.
+					RequiresUnreferencedCode1 (); // Only reachable if assert succeeded.
 				} finally {
-					RequiresDynamicCode2 ();
+					RequiresUnreferencedCode2 ();
 				}
-				RequiresDynamicCode3 (); // Only reachable if assert succeeded.
+				RequiresUnreferencedCode3 (); // Only reachable if assert succeeded.
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void AssertInFinallyWithCatchNestedInTry () {
 				try {
 					try {
-						RequiresDynamicCode0 ();
+						RequiresUnreferencedCode0 ();
 					} catch { // This catch makes no difference to the result.
 					} finally {
-						Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+						Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 					}
-					RequiresDynamicCode1 (); // Only reachable if assert succeeded.
+					RequiresUnreferencedCode1 (); // Only reachable if assert succeeded.
 				} finally {
-					RequiresDynamicCode2 ();
+					RequiresUnreferencedCode2 ();
 				}
-				RequiresDynamicCode3 (); // Only reachable if assert succeeded.
+				RequiresUnreferencedCode3 (); // Only reachable if assert succeeded.
 			}
 
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void AssertInFinallyNestedInFinally ()
 			{
 				try {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} finally {
 					try {
-						RequiresDynamicCode1 ();
+						RequiresUnreferencedCode1 ();
 					} finally {
-						Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+						Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 					}
-					RequiresDynamicCode2 (); // Only reachable if assert succeeded.
+					RequiresUnreferencedCode2 (); // Only reachable if assert succeeded.
 				}
-				RequiresDynamicCode3 (); // Only reachable if assertc succeeded.
+				RequiresUnreferencedCode3 (); // Only reachable if assertc succeeded.
 			}
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			// NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode3), ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			// Trimmer/NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void AssertInFinallyWithCatchNestedInFinally ()
 			{
 				try {
-					RequiresDynamicCode0 ();
+					RequiresUnreferencedCode0 ();
 				} finally {
 					try {
-						RequiresDynamicCode1 ();
+						RequiresUnreferencedCode1 ();
 					} catch { // This catch makes no difference to the result.
 					} finally {
-						Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+						Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 					}
-					RequiresDynamicCode2 (); // Only reachable if assert succeeded.
+					RequiresUnreferencedCode2 (); // Only reachable if assert succeeded.
 				}
-				RequiresDynamicCode3 (); // Only reachable if assertc succeeded.
+				RequiresUnreferencedCode3 (); // Only reachable if assertc succeeded.
 			}
 
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode0), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode1), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode2), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			static void AssertInTryWithTryFinallyInFinally ()
 			{
 				try {
-					Debug.Assert (RuntimeFeature.IsDynamicCodeSupported);
+					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
 				} finally {
 					try {
-						RequiresDynamicCode0 ();
+						RequiresUnreferencedCode0 ();
 					} finally {
-						RequiresDynamicCode1 ();
+						RequiresUnreferencedCode1 ();
 					}
-					RequiresDynamicCode2 ();
+					RequiresUnreferencedCode2 ();
 				}
 			}
 
@@ -965,29 +996,29 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 
-		[RequiresDynamicCode (nameof (RequiresDynamicCode))]
-		static void RequiresDynamicCode () {}
-
-		[RequiresDynamicCode (nameof (RequiresDynamicCode0))]
-		static void RequiresDynamicCode0 () {}
-
-		[RequiresDynamicCode (nameof (RequiresDynamicCode1))]
-		static void RequiresDynamicCode1 () {}
-
-		[RequiresDynamicCode (nameof (RequiresDynamicCode2))]
-		static void RequiresDynamicCode2 () {}
-
-		[RequiresDynamicCode (nameof (RequiresDynamicCode3))]
-		static void RequiresDynamicCode3 () {}
-
-		[RequiresDynamicCode (nameof (RequiresDynamicCode4))]
-		static void RequiresDynamicCode4 () {}
-
-		[RequiresDynamicCode (nameof (RequiresDynamicCodeBool))]
-		static bool RequiresDynamicCodeBool () => true;
-
 		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
 		static void RequiresUnreferencedCode () {}
+
+		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode0))]
+		static void RequiresUnreferencedCode0 () {}
+
+		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode1))]
+		static void RequiresUnreferencedCode1 () {}
+
+		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode2))]
+		static void RequiresUnreferencedCode2 () {}
+
+		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode3))]
+		static void RequiresUnreferencedCode3 () {}
+
+		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode4))]
+		static void RequiresUnreferencedCode4 () {}
+
+		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCodeBool))]
+		static bool RequiresUnreferencedCodeBool () => true;
+
+		[RequiresDynamicCode (nameof (RequiresUnreferencedCode))]
+		static void RequiresDynamicCode () {}
 
 		[RequiresAssemblyFiles (nameof (RequiresAssemblyFiles))]
 		static void RequiresAssemblyFiles () {}
