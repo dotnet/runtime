@@ -992,7 +992,7 @@ namespace System.Text.Json
                 _numberHandling = JsonNumberHandling.AllowReadingFromString
             };
 
-            return Interlocked.CompareExchange(ref s_webOptions, options, null) ?? options;
+            return Interlocked.CompareExchange(ref s_webOptions, options, null) ?? s_webOptions;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
