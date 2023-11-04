@@ -3580,15 +3580,17 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         return nullptr;
     }
 
-    const ValueNum dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-    for (AssertionIndex index = 1; index <= optAssertionCount; index++)
+    const ValueNum  dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
     {
-        if (!BitVecOps::IsMember(apTraits, assertions, index - 1))
+        const AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
         {
-            continue;
+            break;
         }
-
-        AssertionDsc* curAssertion = optGetAssertion(index);
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
