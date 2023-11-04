@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.CustomAttributes;
 using System.Collections.Generic;
@@ -10,6 +9,7 @@ using System.Collections.Generic;
 using Internal.Reflection.Core;
 using Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.Assemblies.NativeFormat;
+using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.Modules.NativeFormat
 {
@@ -62,43 +62,25 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
 
         [RequiresUnreferencedCode("Fields might be removed")]
         public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr)
-        {
-            QScopeDefinition scope = _assembly.Scope;
-            MetadataReader reader = scope.Reader;
-            return scope.ScopeDefinition.GlobalModuleType.GetNamedType(reader).GetField(name, bindingAttr);
-        }
+            => GetGlobalModuleRuntimeType().GetField(name, bindingAttr);
 
         [RequiresUnreferencedCode("Fields might be removed")]
         public sealed override FieldInfo[] GetFields(BindingFlags bindingFlags)
-        {
-            QScopeDefinition scope = _assembly.Scope;
-            MetadataReader reader = scope.Reader;
-            return scope.ScopeDefinition.GlobalModuleType.GetNamedType(reader).GetFields(bindingFlags);
-        }
+            => GetGlobalModuleRuntimeType().GetFields(bindingFlags);
 
         [RequiresUnreferencedCode("Methods might be removed")]
         protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
-        {
-            QScopeDefinition scope = _assembly.Scope;
-            MetadataReader reader = scope.Reader;
-            TypeInfos.RuntimeTypeDefinitionTypeInfo runtimeType = scope.ScopeDefinition.GlobalModuleType.GetNamedType(reader);
-
-            if (types == null)
-            {
-                return runtimeType.GetMethod(name, bindingAttr);
-            }
-            else
-            {
-                return runtimeType.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
-            }
-        }
+            => GetGlobalModuleRuntimeType().GetMethodImpl(name, RuntimeTypeInfo.GenericParameterCountAny, bindingAttr, binder, callConvention, types, modifiers);
 
         [RequiresUnreferencedCode("Methods might be removed")]
         public sealed override MethodInfo[] GetMethods(BindingFlags bindingFlags)
+            => GetGlobalModuleRuntimeType().GetMethods(bindingFlags);
+
+        private TypeInfos.RuntimeTypeDefinitionTypeInfo GetGlobalModuleRuntimeType()
         {
             QScopeDefinition scope = _assembly.Scope;
             MetadataReader reader = scope.Reader;
-            return scope.ScopeDefinition.GlobalModuleType.GetNamedType(reader).GetMethods(bindingFlags);
+            return scope.ScopeDefinition.GlobalModuleType.GetNamedType(reader);
         }
 
         private readonly NativeFormatRuntimeAssembly _assembly;

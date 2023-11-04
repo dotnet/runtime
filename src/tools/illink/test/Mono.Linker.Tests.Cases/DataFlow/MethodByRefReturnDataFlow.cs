@@ -18,6 +18,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AssignDirectlyToAnnotatedTypeReference ();
 			AssignToCapturedAnnotatedTypeReference ();
 			AssignToAnnotatedTypeReferenceWithRequirements ();
+			var _ = AnnotatedTypeReferenceAsUnannotatedProperty;
+			AssignToAnnotatedTypeReferenceProperty ();
+			AssignDirectlyToAnnotatedTypeReferenceProperty ();
+			AssignToCapturedAnnotatedTypeReferenceProperty ();
 			TestCompoundAssignment (typeof (int));
 			TestCompoundAssignmentCapture (typeof (int));
 			TestCompoundAssignmentMultipleCaptures (typeof (int), typeof (int));
@@ -69,6 +73,34 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void AssignToAnnotatedTypeReferenceWithRequirements ()
 		{
 			ReturnAnnotatedTypeWithRequirements (GetWithPublicMethods ()) = GetWithPublicFields ();
+		}
+
+		static ref Type AnnotatedTypeReferenceAsUnannotatedProperty => ref _annotatedField;
+
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static ref Type AnnotatedTypeReferenceAsAnnotatedProperty => ref _annotatedField;
+
+		[ExpectedWarning ("IL2026", "Message for --TestType.Requires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		static void AssignToAnnotatedTypeReferenceProperty ()
+		{
+			ref Type typeShouldHaveAllMethods = ref AnnotatedTypeReferenceAsAnnotatedProperty;
+			typeShouldHaveAllMethods = typeof (TestTypeWithRequires);
+			_annotatedField.GetMethods ();
+		}
+
+		// https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2026", "Message for --TestType.Requires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		static void AssignDirectlyToAnnotatedTypeReferenceProperty ()
+		{
+			AnnotatedTypeReferenceAsAnnotatedProperty = typeof (TestTypeWithRequires);
+			_annotatedField.GetMethods ();
+		}
+
+		// https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2073", nameof (GetWithPublicFields), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		static void AssignToCapturedAnnotatedTypeReferenceProperty ()
+		{
+			AnnotatedTypeReferenceAsAnnotatedProperty = GetWithPublicMethods () ?? GetWithPublicFields ();
 		}
 
 		static int intField;

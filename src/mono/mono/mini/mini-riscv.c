@@ -3738,7 +3738,6 @@ guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
 	guint8 *code;
-	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
 
 	cfg->code_size = MAX (cfg->header->code_size * 4, 1024);
 	code = cfg->native_code = g_malloc (cfg->code_size);

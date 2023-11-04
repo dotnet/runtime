@@ -97,7 +97,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			HandleReturnValue (branchValue, branchValueOperation);
 		}
 
-		public abstract TValue GetFieldTargetValue (IFieldSymbol field);
+		public abstract TValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation);
 
 		public abstract TValue GetParameterTargetValue (IParameterSymbol parameter);
 
@@ -170,7 +170,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			case IFieldReferenceOperation:
 			case IParameterReferenceOperation: {
 					TValue targetValue = targetOperation switch {
-						IFieldReferenceOperation fieldRef => GetFieldTargetValue (fieldRef.Field),
+						IFieldReferenceOperation fieldRef => GetFieldTargetValue (fieldRef.Field, fieldRef),
 						IParameterReferenceOperation parameterRef => GetParameterTargetValue (parameterRef.Parameter),
 						_ => throw new InvalidOperationException ()
 					};
@@ -211,6 +211,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					// The return value of a property set expression is the value,
 					// even though a property setter has no return value.
 					return value;
+				}
+			case IEventReferenceOperation eventRef: {
+					// Handles assignment to an event like 'Event = Handler;', which is a write to the underlying field,
+					// not a call to an event accessor method. There is no Roslyn API to access the field,
+					// so just visit the instance and the value. https://github.com/dotnet/roslyn/issues/40103
+					Visit (eventRef.Instance, state);
+					return Visit (operation.Value, state);
 				}
 			case IImplicitIndexerReferenceOperation indexerRef: {
 					// An implicit reference to an indexer where the argument is a System.Index
@@ -265,22 +272,23 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				Debug.Assert (operation.Target is not IFlowCaptureReferenceOperation);
 				break;
 			case IInvalidOperation:
-			// This can happen for a field assignment in an attribute instance.
-			// TODO: validate against the field attributes.
+				// This can happen for a field assignment in an attribute instance.
+				// TODO: validate against the field attributes.
 			case IInstanceReferenceOperation:
-			// Assignment to 'this' is not tracked currently.
-			// Not relevant for trimming dataflow.
+				// Assignment to 'this' is not tracked currently.
+				// Not relevant for trimming dataflow.
 			case IInvocationOperation:
-			// This can happen for an assignment to a ref return. Skip for now.
-			// The analyzer doesn't handle refs yet. This should be fixed once the analyzer
-			// also produces warnings for ref params/locals/returns.
-			// https://github.com/dotnet/linker/issues/2632
-			// https://github.com/dotnet/linker/issues/2158
-			case IEventReferenceOperation:
-				// An event assignment is an assignment to the generated backing field for
-				// auto-implemented events. There is no Roslyn API to access the field, so
-				// skip this. https://github.com/dotnet/roslyn/issues/40103
+				// This can happen for an assignment to a ref return. Skip for now.
+				// The analyzer doesn't handle refs yet. This should be fixed once the analyzer
+				// also produces warnings for ref params/locals/returns.
+				// https://github.com/dotnet/linker/issues/2632
+				// https://github.com/dotnet/linker/issues/2158
 				Visit (targetOperation, state);
+				break;
+			case IDynamicMemberReferenceOperation:
+			case IDynamicIndexerAccessOperation:
+				// Not yet implemented in analyzer:
+				// https://github.com/dotnet/runtime/issues/94057
 				break;
 
 			// Keep these cases in sync with those in CapturedReferenceValue, for any that
@@ -357,6 +365,26 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			return value;
+		}
+
+		public override TValue VisitEventAssignment (IEventAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			var eventReference = (IEventReferenceOperation) operation.EventReference;
+			TValue instanceValue = Visit (eventReference.Instance, state);
+			TValue value = Visit (operation.HandlerValue, state);
+			if (operation.Adds) {
+				IMethodSymbol? addMethod = eventReference.Event.AddMethod;
+				Debug.Assert (addMethod != null);
+				if (addMethod != null)
+					HandleMethodCall (addMethod, instanceValue, ImmutableArray.Create (value), operation);
+				return value;
+			} else {
+				IMethodSymbol? removeMethod = eventReference.Event.RemoveMethod;
+				Debug.Assert (removeMethod != null);
+				if (removeMethod != null)
+					HandleMethodCall (removeMethod, instanceValue, ImmutableArray.Create (value), operation);
+				return value;
+			}
 		}
 
 		TValue GetFlowCaptureValue (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
@@ -465,43 +493,58 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitDelegateCreation (IDelegateCreationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (operation.Target is IFlowAnonymousFunctionOperation lambda) {
-				VisitFlowAnonymousFunction (lambda, state);
+			Visit (operation.Target, state);
 
-				// Instance of a lambda or local function should be the instance of the containing method.
-				// Don't need to track a dataflow value, since the delegate creation will warn if the
-				// lambda or local function has an annotated this parameter.
-				var instance = TopValue;
-				return HandleDelegateCreation (lambda.Symbol, instance, operation);
+			IMethodSymbol? targetMethodSymbol = null;
+			switch (operation.Target) {
+				case IFlowAnonymousFunctionOperation lambda:
+					// Tracking lambdas is handled by normal visiting logic for IFlowAnonymousFunctionOperation.
+
+					// Instance of a lambda or local function should be the instance of the containing method.
+					// Don't need to track a dataflow value, since the delegate creation will warn if the
+					// lambda or local function has an annotated this parameter.
+					targetMethodSymbol = lambda.Symbol;
+					break;
+				case IMethodReferenceOperation methodReference:
+					IMethodSymbol method = methodReference.Method.OriginalDefinition;
+					if (method.ContainingSymbol is IMethodSymbol) {
+						// Track references to local functions
+						var localFunction = method;
+						Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);;
+						var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
+						InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
+					}
+					targetMethodSymbol = method;
+					break;
+				case IMemberReferenceOperation:
+				case IInvocationOperation:
+					// No method symbol.
+					break;
+				default:
+					// Unimplemented case that might need special handling.
+					// Fail in debug mode only.
+					Debug.Fail ($"{operation.Target.GetType ()}: {operation.Target.Syntax.GetLocation ().GetLineSpan ()}");
+					break;
 			}
 
-			Debug.Assert (operation.Target is IMemberReferenceOperation,
-				$"{operation.Target.GetType ()}: {operation.Syntax.GetLocation ().GetLineSpan ()}");
-			if (operation.Target is not IMemberReferenceOperation memberReference)
+			if (targetMethodSymbol == null)
 				return TopValue;
 
-			TValue instanceValue = Visit (memberReference.Instance, state);
-
-			if (memberReference.Member is not IMethodSymbol method)
-				return TopValue;
-
-			// Track references to local functions
-			if (method.OriginalDefinition.ContainingSymbol is IMethodSymbol) {
-				var localFunction = method.OriginalDefinition;
-				Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);;
-				var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
-				InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
-			}
-
-			return HandleDelegateCreation (method, instanceValue, operation);
+			return HandleDelegateCreation (targetMethodSymbol, operation);
 		}
 
-		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, TValue instance, IOperation operation);
+		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation);
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
+			if (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write)) {
+				// Property references may be passed as ref/out parameters.
+				// Enable this assert once we have support for deconstruction assignments.
+				// https://github.com/dotnet/linker/issues/3158
+				// Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
+				// $"{operation.Syntax.GetLocation ().GetLineSpan ()}");
 				return TopValue;
+			}
 
 			// Accessing property for reading is really a call to the getter
 			// The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
@@ -516,10 +559,26 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleMethodCall (getMethod!, instanceValue, arguments.ToImmutableArray (), operation);
 		}
 
-		public override TValue VisitImplicitIndexerReference (IImplicitIndexerReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		public override TValue VisitEventReference (IEventReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
+			// Writing to an event should not go through this path.
+			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
 			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
 				return TopValue;
+
+			Visit (operation.Instance, state);
+			// Accessing event for reading retrieves the event delegate from the event's backing field,
+			// so there is no method call to handle.
+			return TopValue;
+		}
+
+		public override TValue VisitImplicitIndexerReference (IImplicitIndexerReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			if (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write)) {
+				// Implicit indexer references may be passed as ref/out parameters.
+				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference));
+				return TopValue;
+			}
 
 			TValue instanceValue = Visit (operation.Instance, state);
 			TValue indexArgumentValue = Visit (operation.Argument, state);

@@ -208,7 +208,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [MemberData(nameof(GetAbbreviatedEraName_TestData))]
         public void GetAbbreviatedEraName_Invoke_ReturnsExpected(DateTimeFormatInfo format, int era, string expected)
         {

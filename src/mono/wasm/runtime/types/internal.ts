@@ -109,6 +109,7 @@ export type LoaderHelpers = {
     assertAfterExit: boolean;
 
     exitCode: number | undefined;
+    exitReason: any;
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
@@ -307,7 +308,6 @@ export type EmscriptenReplacements = {
     require: any,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
-    noExitRuntime?: boolean;
     ENVIRONMENT_IS_WORKER: boolean;
 }
 export interface ExitStatusError {

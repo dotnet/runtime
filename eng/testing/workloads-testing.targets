@@ -9,12 +9,17 @@
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-for-none-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
+
+    <_DotNetPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), 'dotnet'))</_DotNetPath>
+    <_DotNetPath Condition="$([MSBuild]::IsOSPlatform('windows'))">$(_DotNetPath).exe</_DotNetPath>
+
     <PreparePackagesForWorkloadInstall Condition="'$(PreparePackagesForWorkloadInstall)' == ''">true</PreparePackagesForWorkloadInstall>
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
       _ProvisionDotNetForWorkloadTesting;
       _InstallSharedFrameworksForWorkloadTesting;
       _GetDotNetVersion;
+      _FirstDotNetRun;
       _SetPackageVersionForWorkloadsTesting;
       GetNuGetsToBuildForWorkloadTesting;
       _PreparePackagesForWorkloadInstall;
@@ -101,8 +106,6 @@
 
   <Target Name="_GetDotNetVersion">
     <PropertyGroup>
-      <_DotNetPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), 'dotnet'))</_DotNetPath>
-      <_DotNetPath Condition="$([MSBuild]::IsOSPlatform('windows'))">$(_DotNetPath).exe</_DotNetPath>
       <_DotNetVersionCommand>$(_DotNetPath) --version</_DotNetVersionCommand>
     </PropertyGroup>
 
@@ -130,6 +133,11 @@
       ********************"
              Condition="$(SdkBandVersionForWorkload_ComputedFromInstaller) != $(SdkBandVersionForWorkload_FromRuntimeVersions)"
              Importance="High" />
+  </Target>
+
+  <Target Name="_FirstDotNetRun">
+    <!-- info`, or version don't trigger workload integrity check -->
+    <Exec Command="$(_DotNetPath) workload list" ConsoleToMsBuild="true" StandardOutputImportance="Low" />
   </Target>
 
   <Target Name="_SetPackageVersionForWorkloadsTesting">

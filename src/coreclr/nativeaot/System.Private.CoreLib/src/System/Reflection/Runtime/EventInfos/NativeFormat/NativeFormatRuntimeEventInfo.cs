@@ -140,7 +140,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
         {
             get
             {
-                return _event.Type.Resolve(_reader, ContextTypeInfo.TypeContext);
+                return _event.Type.Resolve(_reader, ContextTypeInfo.TypeContext).ToType();
             }
         }
 

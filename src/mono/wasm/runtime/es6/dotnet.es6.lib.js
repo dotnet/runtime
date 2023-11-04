@@ -24,7 +24,6 @@ function setup(linkerSetup) {
         require,
         pthreadReplacements,
         scriptDirectory,
-        noExitRuntime
     };
     // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
     #if USE_PTHREADS
