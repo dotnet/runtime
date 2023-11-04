@@ -7598,46 +7598,6 @@ public:
             return false;
         }
 
-        bool IsNeverNegative(Compiler* comp, ValueNum vn)
-        {
-            // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
-            // representing "(X relop CNS) ==/!= 0" assertion.
-            if (!IsConstantBound())
-            {
-                return false;
-            }
-
-            ValueNumStore::ConstantBoundInfo info;
-            comp->vnStore->GetConstantBoundInfo(op1.vn, &info);
-            if ((info.cmpOpVN != vn) || info.isUnsigned)
-            {
-                return false;
-            }
-
-            // Root assertion has to be either:
-            // (X relop CNS) == 0
-            // (X relop CNS) != 0
-            if ((op2.kind != O2K_CONST_INT) || (op2.u1.iconVal != 0))
-            {
-                return false;
-            }
-
-            genTreeOps oper = (genTreeOps)info.cmpOper;
-
-            // Normalize "(X relop CNS) == false" to "(X reversed_relop CNS) == true"
-            if (assertionKind == OAK_EQUAL)
-            {
-                oper = GenTree::ReverseRelop(oper);
-            }
-
-            if (info.constVal >= 0)
-            {
-                // "X >= CNS" or "X > CNS"
-                return (oper == GT_GE) || (oper == GT_GT);
-            }
-            return false;
-        }
-
         bool Complementary(AssertionDsc* that, bool vnBased)
         {
             return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that, vnBased) &&

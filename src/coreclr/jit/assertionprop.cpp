@@ -3551,6 +3551,21 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// optAssertionProp_ModDiv: Convert DIV/MOD to UDIV/UMOD if both operands
+//    can be proven to be non-negative, e.g.:
+//
+//    if (x > 0)         // creates "x > 0" assertion
+//        return x / 8;  // DIV can be converted to UDIV
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - the DIV/MOD node to optimize
+//    stmt       - statement containing DIV/MOD
+//
+// Returns:
+//    Updated UDIV/UMOD node, or "nullptr"
+//
 GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
 {
     if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
@@ -3569,8 +3584,46 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if (BitVecOps::IsMember(apTraits, assertions, index - 1) && curAssertion->IsNeverNegative(this, dividendVN))
+        if (!BitVecOps::IsMember(apTraits, assertions, index - 1))
         {
+            continue;
+        }
+        
+        // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
+        // representing "(X relop CNS) ==/!= 0" assertion.
+        if (!curAssertion->IsConstantBound())
+        {
+            continue;
+        }
+
+        ValueNumStore::ConstantBoundInfo info;
+        vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
+
+        if (info.cmpOpVN != dividendVN)
+        {
+            continue;
+        }
+
+        // Root assertion has to be either:
+        // (X relop CNS) == 0
+        // (X relop CNS) != 0
+        if ((curAssertion->op2.kind != O2K_CONST_INT) || (curAssertion->op2.u1.iconVal != 0))
+        {
+            continue;
+        }
+
+        auto cmpOper = static_cast<genTreeOps>(info.cmpOper);
+
+        // Normalize "(X relop CNS) == false" to "(X reversed_relop CNS) == true"
+        if (curAssertion->assertionKind == OAK_EQUAL)
+        {
+            cmpOper = GenTree::ReverseRelop(cmpOper);
+        }
+
+        // "X >= CNS" or "X > CNS" where CNS is >= 0
+        if ((info.constVal >= 0) && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+        {
+            JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
             tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
             return optAssertionProp_Update(tree, tree, stmt);
         }
