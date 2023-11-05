@@ -17,7 +17,12 @@ internal static partial class Interop
         // For disambiguation, see https://systemd.io/CGROUP_DELEGATION/#three-different-tree-setups-
 
         /// <summary>The supported versions of cgroup.</summary>
-        internal enum CGroupVersion { None, CGroup1, CGroup2 };
+        internal enum CGroupVersion
+        {
+            None,
+            CGroup1,
+            CGroup2
+        };
 
         /// <summary>Path to cgroup filesystem that tells us which version of cgroup is in use.</summary>
         private const string SysFsCgroupFileSystemPath = "/sys/fs/cgroup";

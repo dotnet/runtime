@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>
     <IsTrimmable>false</IsTrimmable>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types that can be used to model the structure of a source code document and to output source code for that model in a supported language.
 

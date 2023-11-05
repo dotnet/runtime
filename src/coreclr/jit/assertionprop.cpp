@@ -554,14 +554,14 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     optLocalAssertionProp  = isLocalProp;
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
-    optComplementaryAssertionMap =
-        new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
     assert(NO_ASSERTION_INDEX == 0);
 
     if (!isLocalProp)
     {
         optValueNumToAsserts =
             new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
+        optComplementaryAssertionMap = new (this, CMK_AssertionProp)
+            AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
     }
 
     if (optAssertionDep == nullptr)
@@ -572,6 +572,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     optAssertionTraitsInit(optMaxAssertionCount);
     optAssertionCount      = 0;
+    optAssertionOverflow   = 0;
     optAssertionPropagated = false;
     bbJtrueAssertionOut    = nullptr;
     optCanPropLclVar       = false;
@@ -1468,16 +1469,6 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
             *pFlags    = tree->GetIconHandleFlag();
             return true;
         }
-#ifdef TARGET_64BIT
-        // Just to be clear, get it from gtLconVal rather than
-        // overlapping gtIconVal.
-        else if (tree->OperGet() == GT_CNS_LNG)
-        {
-            *pConstant = tree->AsLngCon()->gtLconVal;
-            *pFlags    = tree->GetIconHandleFlag();
-            return true;
-        }
-#endif
         return false;
     }
 
@@ -1505,6 +1496,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
         return true;
     }
 #endif
+
     return false;
 }
 
@@ -1607,6 +1599,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     // Check if we are within max count.
     if (optAssertionCount >= optMaxAssertionCount)
     {
+        optAssertionOverflow++;
         return NO_ASSERTION_INDEX;
     }
 
@@ -2370,8 +2363,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
     }
 
-    // For global assertion prop we must store the assertion number in the tree node
-    if (assertionInfo.HasAssertion() && assertionProven && !optLocalAssertionProp)
+    if (assertionInfo.HasAssertion() && assertionProven)
     {
         tree->SetAssertionInfo(assertionInfo);
     }
@@ -2459,9 +2451,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if ((optLocalAssertionProp ||
-             BitVecOps::IsMember(apTraits, assertions, index - 1)) && // either local prop or use propagated assertions
-            curAssertion->CanPropSubRange())
+        if (BitVecOps::IsMember(apTraits, assertions, index - 1) && curAssertion->CanPropSubRange())
         {
             // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
             bool isEqual = optLocalAssertionProp
@@ -2493,13 +2483,13 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
  */
 AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions)
 {
-    if (!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions))
+    if (BitVecOps::IsEmpty(apTraits, assertions))
     {
         return NO_ASSERTION_INDEX;
     }
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
-        if (!optLocalAssertionProp && !BitVecOps::IsMember(apTraits, assertions, index - 1))
+        if (!BitVecOps::IsMember(apTraits, assertions, index - 1))
         {
             continue;
         }
@@ -3594,7 +3584,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 {
     noway_assert((op1Kind == O1K_LCLVAR) || (op1Kind == O1K_EXACT_TYPE) || (op1Kind == O1K_SUBTYPE));
     noway_assert((op2Kind == O2K_CONST_INT) || (op2Kind == O2K_IND_CNS_INT) || (op2Kind == O2K_ZEROOBJ));
-    if (!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions))
+    if (BitVecOps::IsEmpty(apTraits, assertions))
     {
         return NO_ASSERTION_INDEX;
     }
@@ -3602,7 +3592,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
     for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if (optLocalAssertionProp || BitVecOps::IsMember(apTraits, assertions, index - 1))
+        if (BitVecOps::IsMember(apTraits, assertions, index - 1))
         {
             if ((curAssertion->assertionKind != OAK_EQUAL) && (curAssertion->assertionKind != OAK_NOT_EQUAL))
             {
@@ -4386,17 +4376,27 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
     }
     else
     {
-        unsigned lclNum = op->AsLclVarCommon()->GetLclNum();
-        // Check each assertion to find if we have a variable == or != null assertion.
-        for (AssertionIndex index = 1; index <= optAssertionCount; index++)
+        // Find live assertions related to lclNum
+        //
+        unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
+        ASSERT_TP      apDependent = GetAssertionDep(lclNum);
+        BitVecOps::IntersectionD(apTraits, apDependent, apLocal);
+
+        // Scan those looking for a suitable assertion
+        //
+        BitVecOps::Iter iter(apTraits, assertions);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
         {
-            AssertionDsc* curAssertion = optGetAssertion(index);
+            AssertionIndex assertionIndex = GetAssertionIndex(index);
+            AssertionDsc*  curAssertion   = optGetAssertion(assertionIndex);
+
             if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && // kind
                 (curAssertion->op1.kind == O1K_LCLVAR) &&         // op1
                 (curAssertion->op2.kind == O2K_CONST_INT) &&      // op2
                 (curAssertion->op1.lcl.lclNum == lclNum) && (curAssertion->op2.u1.iconVal == 0))
             {
-                return index;
+                return assertionIndex;
             }
         }
     }

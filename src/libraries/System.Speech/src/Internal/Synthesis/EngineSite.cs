@@ -364,7 +364,9 @@ namespace System.Speech.Internal.Synthesis
     {
         public enum PhonemeConversion
         {
-            IpaToSapi, SapiToIpa, NoConversion
+            IpaToSapi,
+            SapiToIpa,
+            NoConversion
         }
 
         internal PhonemeEventMapper(ITtsEventSink sink, PhonemeConversion conversion, AlphabetConverter alphabetConverter) : base(sink)
