@@ -73,7 +73,7 @@ namespace Internal.Runtime.Binder
                 textualIdentity.Append(", Retargetable=Yes");
             }
 
-            if ((includeFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE) != 0)
+            if ((includeFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CONTENT_TYPE) != 0)
             {
                 textualIdentity.Append($", ContentType={nameof(System.Reflection.AssemblyContentType.WindowsRuntime)}");
             }

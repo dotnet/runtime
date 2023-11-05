@@ -199,7 +199,7 @@ namespace Internal.Runtime.Binder
         // TODO: Is this simple comparison enough?
         public bool IsCoreLib => string.EqualsOrdinalIgnoreCase(SimpleName, CoreLib.Name);
 
-        public bool IsNeutralCulture => string.EqualsOrdinalIgnoreCase(CultureOrLanguage, NeutralCulture);
+        public bool IsNeutralCulture => string.IsNullOrEmpty(CultureOrLanguage) || string.EqualsOrdinalIgnoreCase(CultureOrLanguage, NeutralCulture);
 
         public override int GetHashCode() => GetHashCode(AssemblyNameIncludeFlags.INCLUDE_ALL);
 
