@@ -840,6 +840,7 @@ IROPDEF(MINT_TIER_PATCHPOINT_DATA, "tier_patchpoint_data", 2, 0, 0, MintOpShortI
 // These two opcodes are resolved to a normal MINT_MOV when emitting compacted instructions
 IROPDEF(MINT_MOV_SRC_OFF, "mov.src.off", 6, 1, 1, MintOpTwoShorts)
 IROPDEF(MINT_MOV_DST_OFF, "mov.dst.off", 6, 1, 1, MintOpTwoShorts)
+IROPDEF(MINT_PHI, "phi", 2, 1, 0, MintOpNoArgs)
 
 #ifdef __DEFINED_IROPDEF__
 #undef IROPDEF
