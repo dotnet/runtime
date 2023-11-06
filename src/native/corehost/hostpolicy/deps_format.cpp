@@ -76,7 +76,9 @@ namespace
 
     bool deps_file_exists(pal::string_t& deps_path)
     {
-        if (bundle::info_t::config_t::probe(deps_path) || pal::realpath(&deps_path, /*skip_error_logging*/ true))
+        // We use fullpath because we don't care about the final path of the deps file, as it won't be used
+        // as a relative path to any other files.
+        if (bundle::info_t::config_t::probe(deps_path) || pal::fullpath(&deps_path, /*skip_error_logging*/ true))
             return true;
 
         trace::verbose(_X("Dependencies manifest does not exist at [%s]"), deps_path.c_str());

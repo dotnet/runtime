@@ -546,6 +546,7 @@ namespace
 
         if (startup_info.host_path.empty())
         {
+            // Use realpath to find the host_path behind symlinks
             if (!pal::get_own_executable_path(&startup_info.host_path) || !pal::realpath(&startup_info.host_path))
             {
                 trace::error(_X("Failed to resolve full path of the current host [%s]"), startup_info.host_path.c_str());
@@ -560,7 +561,8 @@ namespace
                 return StatusCode::CoreHostCurHostFindFailure;
 
             startup_info.dotnet_root = get_dotnet_root_from_fxr_path(mod_path);
-            if (!pal::realpath(&startup_info.dotnet_root))
+            // We don't support directory symlinks, so use fullpath
+            if (!pal::fullpath(&startup_info.dotnet_root))
             {
                 trace::error(_X("Failed to resolve full path of dotnet root [%s]"), startup_info.dotnet_root.c_str());
                 return StatusCode::CoreHostCurHostFindFailure;

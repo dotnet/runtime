@@ -145,6 +145,7 @@ namespace
         if (mode == host_mode_t::apphost)
         {
             app_candidate = host_info.app_path;
+            // Use realpath since we want the path to the app through symlinks
             doesAppExist = bundle::info_t::is_single_file_bundle() || pal::realpath(&app_candidate);
         }
         else
@@ -169,6 +170,7 @@ namespace
                 }
             }
 
+            // Use realpath since we want the path to the app through symlinks
             doesAppExist = pal::realpath(&app_candidate);
             if (!doesAppExist)
             {

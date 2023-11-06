@@ -20,7 +20,8 @@ namespace
         pal::stringstream_t ss(path);
         while (std::getline(ss, tok, PATH_SEPARATOR))
         {
-            if (pal::realpath(&tok))
+            // Use fullpath since we don't care about resolving symlinks right now
+            if (pal::fullpath(&tok))
             {
                 append_path(&tok, arch);
                 append_path(&tok, tfm.c_str());
