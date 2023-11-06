@@ -65,11 +65,11 @@
         <GroupNumber>1</GroupNumber>
       </_GroupStartsWith> -->
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical">
         <GroupNumber>2</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Regression">
         <GroupNumber>3</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
@@ -80,31 +80,31 @@
         <GroupNumber>1</GroupNumber>
       </_GroupStartsWith> -->
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics\HardwareIntrinsics_Arm_r.csproj">
+      <_GroupStartsWith Include="$(TestRoot)Interop">
         <GroupNumber>2</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics\HardwareIntrinsics_General_r.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Directed">
         <GroupNumber>3</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics\HardwareIntrinsics_General_ro.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\IL_Conformance">
         <GroupNumber>4</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics\HardwareIntrinsics_X86_Avx512_r.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical">
         <GroupNumber>5</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\HardwareIntrinsics\HardwareIntrinsics_X86_Avx_r.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical\flowgraph">
         <GroupNumber>6</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\jit64">
+      <_GroupStartsWith Include="$(TestRoot)JIT\opt">
         <GroupNumber>7</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\opt">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Regression\CLR-x86-JIT\V1-M11-Beta2">
         <GroupNumber>8</GroupNumber>
       </_GroupStartsWith>
 
@@ -112,7 +112,7 @@
         <GroupNumber>9</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)Loader\classloader\Casting">
+      <_GroupStartsWith Include="$(TestRoot)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest200">
         <GroupNumber>10</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
@@ -128,11 +128,11 @@
         <InGroup>True</InGroup>
       </AllProjects>
 
-      <AllProjects Condition=" '$(_GroupStartsWith)' != '' And $([System.StringComparer]::Ordinal.Compare($(_GroupStartsWith), %(Identity))) &gt; 0 ">
+      <AllProjects Condition=" '$(_GroupStartsWith)' != '' And $([System.StringComparer]::OrdinalIgnoreCase.Compare($(_GroupStartsWith), %(Identity))) &gt; 0 ">
         <InGroup>False</InGroup>
       </AllProjects>
 
-      <AllProjects Condition=" '$(_GroupEndsWithExcl)' != '' And $([System.StringComparer]::Ordinal.Compare(%(Identity), $(_GroupEndsWithExcl))) &gt;= 0 ">
+      <AllProjects Condition=" '$(_GroupEndsWithExcl)' != '' And $([System.StringComparer]::OrdinalIgnoreCase.Compare(%(Identity), $(_GroupEndsWithExcl))) &gt;= 0 ">
         <InGroup>False</InGroup>
       </AllProjects>
     </ItemGroup>
@@ -142,6 +142,9 @@
         <AdditionalProperties>TargetOS=$(TargetOS)</AdditionalProperties>
       </Project>
     </ItemGroup>
+
+    <Message Importance="High" Text="Number of test projects total: @(Project->Count())" Condition="'$(__TestGroupToBuild)' == ''" />
+    <Message Importance="High" Text="Number of test projects in group $(__TestGroupToBuild): @(Project->Count())" Condition="'$(__TestGroupToBuild)' != ''" />
 
   </Target>
 
