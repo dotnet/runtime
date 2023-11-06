@@ -423,9 +423,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
     </PropertyGroup>
 
-    <ItemGroup>
-      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" Condition="@(WasmAssembliesFinal->Count()) == 0" />
-      <_WasmResolvedFilesToPublish Include="@(WasmAssembliesFinal)" Condition="@(WasmAssembliesFinal->Count()) > 0" />
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0">
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
+    </ItemGroup>
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) > 0">
+      <_WasmResolvedFilesToPublish Include="@(WasmAssembliesFinal)" />
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" Condition="'%(Extension)' != '.dll'" />
     </ItemGroup>
 
     <ComputeWasmPublishAssets
