@@ -7826,7 +7826,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
                 }
                 break;
             }
-#else
+#endif
 
 #ifdef TARGET_ARM64
             case NI_AdvSimd_Multiply:
