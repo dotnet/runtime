@@ -289,7 +289,7 @@ typedef struct
 
 #define interp_ins_set_dummy_dreg(ins,td) do { \
 	if (td->dummy_var < 0) \
-		create_interp_dummy_var (td); \
+		interp_create_dummy_var (td); \
 	ins->dreg = td->dummy_var; \
 } while (0)
 
@@ -380,6 +380,74 @@ mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
 /* debugging aid */
 void
 mono_interp_print_td_code (TransformData *td);
+
+/* Compilation internal methods */
+
+InterpInst*
+interp_new_ins (TransformData *td, int opcode, int len);
+
+InterpInst*
+interp_insert_ins_bb (TransformData *td, InterpBasicBlock *bb, InterpInst *prev_ins, int opcode);
+
+InterpInst*
+interp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
+
+InterpInst*
+interp_first_ins (InterpBasicBlock *bb);
+
+InterpInst*
+interp_next_ins (InterpInst *ins);
+
+InterpInst*
+interp_prev_ins (InterpInst *ins);
+
+void
+interp_clear_ins (InterpInst *ins);
+
+gboolean
+interp_ins_is_nop (InterpInst *ins);
+
+int
+interp_get_ins_length (InterpInst *ins);
+
+void
+interp_dump_ins (InterpInst *ins, gpointer *data_items);
+
+InterpInst*
+interp_get_ldc_i4_from_const (TransformData *td, InterpInst *ins, gint32 ct, int dreg);
+
+gint32 
+interp_get_const_from_ldc_i4 (InterpInst *ins);
+
+int
+interp_get_mov_for_type (int mt, gboolean needs_sext);
+
+gboolean
+interp_is_short_offset (int src_offset, int dest_offset);
+
+InterpBasicBlock*
+interp_alloc_bb (TransformData *td);
+
+void
+interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to);
+
+int
+interp_compute_native_offset_estimates (TransformData *td);
+
+void
+interp_optimize_code (TransformData *td);
+
+void
+interp_alloc_offsets (TransformData *td);
+
+int
+interp_alloc_global_var_offset (TransformData *td, int var);
+
+int
+interp_create_local (TransformData *td, MonoType *type);
+
+void
+interp_foreach_local_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int, gpointer));
 
 /* Forward definitions for simd methods */
 static gboolean
