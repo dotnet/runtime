@@ -15,17 +15,6 @@
 // This instruction is protected by a clause
 #define INTERP_INST_FLAG_PROTECTED_NEWOBJ 128
 
-#define INTERP_LOCAL_FLAG_DEAD 1
-#define INTERP_LOCAL_FLAG_EXECUTION_STACK 2
-#define INTERP_LOCAL_FLAG_CALL_ARGS 4
-#define INTERP_LOCAL_FLAG_GLOBAL 8
-#define INTERP_LOCAL_FLAG_NO_CALL_ARGS 16
-
-#define INTERP_LOCAL_FLAG_UNKNOWN_USE 32
-#define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
-// We use this flag to avoid addition of align field in InterpVar, for now
-#define INTERP_LOCAL_FLAG_SIMD 128
-
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
 typedef struct _InterpCallInfo InterpCallInfo;
@@ -179,7 +168,6 @@ typedef struct {
 typedef struct {
 	MonoType *type;
 	int mt;
-	int flags;
 	int indirects;
 	int offset;
 	int size;
@@ -200,6 +188,15 @@ typedef struct {
 		// Only used during super instruction pass.
 		InterpInst *def;
 	};
+
+	guint dead : 1;
+	guint execution_stack : 1;
+	guint call_args : 1;
+	guint global : 1;
+	guint no_call_args : 1;
+	guint unknown_use : 1;
+	guint local_only : 1;
+	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
 } InterpVar;
 
 typedef struct

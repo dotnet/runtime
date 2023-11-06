@@ -267,7 +267,7 @@ get_stack_size (TransformData *td, StackInfo *sp, int count)
 	int result = 0;
 	for (int i = 0; i < count; i++) {
 		result += sp [i].size;
-		if (td->vars [sp [i].var].flags & INTERP_LOCAL_FLAG_SIMD)
+		if (td->vars [sp [i].var].simd)
 			result = ALIGN_TO (result, MINT_SIMD_ALIGNMENT);
 	}
 	return result;
@@ -366,12 +366,12 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	}
 	int mt = mono_mint_type (type);
 	InterpVar *local = &td->vars [td->vars_size];
+	memset (local, 0, sizeof (InterpVar));
 
 	local->type = type;
 	local->mt = mt;
-	local->flags = 0;
 	if (mt == MINT_TYPE_VT && m_class_is_simd_type (mono_class_from_mono_type_internal (type)))
-		local->flags |= INTERP_LOCAL_FLAG_SIMD;
+		local->simd = TRUE;
 	local->indirects = 0;
 	local->offset = -1;
 	local->size = size;
@@ -390,7 +390,7 @@ interp_create_dummy_var (TransformData *td)
 	g_assert (td->dummy_var < 0);
 	td->dummy_var = interp_create_var_explicit (td, m_class_get_byval_arg (mono_defaults.void_class), 8);
 	td->vars [td->dummy_var].offset = 0;
-	td->vars [td->dummy_var].flags = INTERP_LOCAL_FLAG_GLOBAL;
+	td->vars [td->dummy_var].global = TRUE;
 }
 
 static int
@@ -408,7 +408,7 @@ interp_create_stack_var (TransformData *td, StackInfo *sp, int type_size)
 {
 	int local = interp_create_var_explicit (td, get_type_from_stack (sp->type, sp->klass), type_size);
 
-	td->vars [local].flags |= INTERP_LOCAL_FLAG_EXECUTION_STACK;
+	td->vars [local].execution_stack = TRUE;
 	sp->var = local;
 }
 
@@ -435,7 +435,7 @@ push_type_explicit (TransformData *td, int type, MonoClass *k, int type_size)
 	interp_create_stack_var (td, sp, type_size);
 	if (!td->optimized) {
 		sp->offset = get_tos_offset (td);
-		if (td->vars [sp->var].flags & INTERP_LOCAL_FLAG_SIMD)
+		if (td->vars [sp->var].simd)
 			sp->offset = ALIGN_TO (sp->offset, MINT_SIMD_ALIGNMENT);
 		td->vars [sp->var].stack_offset = sp->offset;
 		// Additional space that is allocated for the frame, when we don't run the var offset allocator
@@ -3040,7 +3040,7 @@ static void
 interp_realign_simd_params (TransformData *td, StackInfo *sp_params, int num_args, int prev_offset)
 {
 	for (int i = 1; i < num_args; i++) {
-		if (td->vars [sp_params [i].var].flags & INTERP_LOCAL_FLAG_SIMD) {
+		if (td->vars [sp_params [i].var].simd) {
 			gint16 offset_amount;
 			// If the simd struct comes immediately after the previous argument we do upper align
 			// otherwise we should lower align to preserve call convention
@@ -3545,7 +3545,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				// needs to be able to access the actual arguments to continue with the call so it
 				// needs to know whether there is an empty stack slot between the delegate ptr and the
 				// rest of the args
-				gboolean first_arg_is_simd = td->vars [sp_args [1].var].flags & INTERP_LOCAL_FLAG_SIMD;
+				gboolean first_arg_is_simd = td->vars [sp_args [1].var].simd;
 				td->last_ins->data [2] = first_arg_is_simd ? MINT_SIMD_ALIGNMENT : MINT_STACK_SLOT_SIZE;
 			}
 		} else if (calli) {
@@ -4098,7 +4098,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	int num_locals = num_args + num_il_locals;
 
 	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
-	td->vars = (InterpVar*)g_malloc (num_locals * sizeof (InterpVar));
+	td->vars = (InterpVar*)g_malloc0 (num_locals * sizeof (InterpVar));
 	td->vars_size = num_locals;
 	td->vars_capacity = td->vars_size;
 	offset = 0;
@@ -4116,7 +4116,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 			type = mono_method_signature_internal (td->method)->params [i - sig->hasthis];
 		int mt = mono_mint_type (type);
 		td->vars [i].type = type;
-		td->vars [i].flags = INTERP_LOCAL_FLAG_GLOBAL;
+		td->vars [i].global = TRUE;
 		td->vars [i].indirects = 0;
 		td->vars [i].mt = mt;
 		td->vars [i].def = NULL;
@@ -4143,7 +4143,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		imethod->local_offsets [i] = offset;
 		td->vars [index].type = header->locals [i];
 		td->vars [index].offset = offset;
-		td->vars [index].flags = INTERP_LOCAL_FLAG_GLOBAL;
+		td->vars [index].global = TRUE;
 		td->vars [index].indirects = 0;
 		td->vars [index].mt = mono_mint_type (header->locals [i]);
 		td->vars [index].def = NULL;
@@ -4160,7 +4160,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
 	for (guint i = 0; i < header->num_clauses; i++) {
 		int var = interp_create_var (td, mono_get_object_type ());
-		td->vars [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
+		td->vars [var].global = TRUE;
 		interp_alloc_global_var_offset (td, var);
 		imethod->clause_data_offsets [i] = td->vars [var].offset;
 		td->clause_vars [i] = var;
@@ -6062,7 +6062,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				call_offset = ALIGN_TO (call_offset, MINT_STACK_ALIGNMENT);
 
 				if (param_count) {
-					if (td->vars [sp_params [0].var].flags & INTERP_LOCAL_FLAG_SIMD) {
+					if (td->vars [sp_params [0].var].simd) {
 						// if first arg is simd, move all args at next aligned offset after this ptr
 						interp_add_ins (td, MINT_MOV_STACK_UNOPT);
 						td->last_ins->data [0] = GINT_TO_UINT16 (param_offset);
@@ -8059,7 +8059,7 @@ alloc_unopt_global_local (TransformData *td, int *plocal, gpointer data)
 	int local = *plocal;
 	// Execution stack locals are resolved when we emit the instruction in the code stream,
 	// once all global locals have their offset resolved
-	if (td->vars [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK)
+	if (td->vars [local].execution_stack)
 		return;
 	// Check if already resolved
 	if (td->vars [local].offset != -1)
@@ -8193,7 +8193,7 @@ get_local_offset (TransformData *td, int local)
 	// If we use the optimized offset allocator, all locals should have had their offsets already allocated
 	g_assert (!td->optimized);
 	// The only remaining locals to allocate are the ones from the execution stack
-	g_assert (td->vars [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK);
+	g_assert (td->vars [local].execution_stack);
 
 	td->vars [local].offset = td->total_locals_size + td->vars [local].stack_offset;
 	return td->vars [local].offset;
