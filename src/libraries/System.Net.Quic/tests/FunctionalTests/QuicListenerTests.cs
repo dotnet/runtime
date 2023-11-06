@@ -124,14 +124,14 @@ namespace System.Net.Quic.Tests
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
 
-            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync());
-            Assert.True(exception.InnerException is ObjectDisposedException);
-            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask());
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout));
+            Assert.IsType<ObjectDisposedException>(exception.InnerException);
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(PassingTestTimeout));
 
             // Throwing ODE in callback should keep Listener running
             connectTask = CreateQuicConnection(listener.LocalEndPoint);
-            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await using QuicConnection clientConnection = await connectTask;
+            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout);
+            await using QuicConnection clientConnection = await connectTask.AsTask().WaitAsync(PassingTestTimeout);
         }
 
         [Theory]
