@@ -12,16 +12,16 @@ alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 	int size, offset;
 
 	offset = *ptos;
-	size = td->locals [local].size;
+	size = td->vars [local].size;
 
-	if (td->locals [local].flags & INTERP_LOCAL_FLAG_SIMD)
+	if (td->vars [local].flags & INTERP_LOCAL_FLAG_SIMD)
 		offset = ALIGN_TO (offset, MINT_SIMD_ALIGNMENT);
 
-	td->locals [local].offset = offset;
+	td->vars [local].offset = offset;
 
 	*ptos = ALIGN_TO (offset + size, MINT_STACK_SLOT_SIZE);
 
-	return td->locals [local].offset;
+	return td->vars [local].offset;
 }
 
 int
@@ -34,11 +34,11 @@ static void
 set_var_live_range (TransformData *td, int var, int ins_index)
 {
 	// We don't track liveness yet for global vars
-	if (td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL)
+	if (td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL)
 		return;
-	if (td->locals [var].live_start == -1)
-		td->locals [var].live_start = ins_index;
-	td->locals [var].live_end = ins_index;
+	if (td->vars [var].live_start == -1)
+		td->vars [var].live_start = ins_index;
+	td->vars [var].live_end = ins_index;
 }
 
 static void
@@ -51,17 +51,17 @@ static void
 initialize_global_var (TransformData *td, int var, int bb_index)
 {
 	// Check if already handled
-	if (td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL)
+	if (td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL)
 		return;
 
-	if (td->locals [var].bb_index == -1) {
-		td->locals [var].bb_index = bb_index;
-	} else if (td->locals [var].bb_index != bb_index) {
+	if (td->vars [var].bb_index == -1) {
+		td->vars [var].bb_index = bb_index;
+	} else if (td->vars [var].bb_index != bb_index) {
 		// var used in multiple basic blocks
 		if (td->verbose_level)
 			g_print ("alloc global var %d to offset %d\n", var, td->total_locals_size);
 		interp_alloc_global_var_offset (td, var);
-		td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
+		td->vars [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 	}
 }
 
@@ -86,11 +86,11 @@ initialize_global_vars (TransformData *td)
 			} else if (opcode == MINT_LDLOCA_S) {
 				int var = ins->sregs [0];
 				// If global flag is set, it means its offset was already allocated
-				if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL)) {
+				if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL)) {
 					if (td->verbose_level)
 						g_print ("alloc ldloca global var %d to offset %d\n", var, td->total_locals_size);
 					interp_alloc_global_var_offset (td, var);
-					td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
+					td->vars [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 				}
 			}
 			interp_foreach_ins_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
@@ -231,7 +231,7 @@ static void
 init_active_vars (TransformData *td, ActiveVars *av)
 {
 	av->active_vars_count = 0;
-	av->active_vars_capacity = MAX (td->locals_size / td->bb_count, 10);
+	av->active_vars_capacity = MAX (td->vars_size / td->bb_count, 10);
 	av->active_vars = (ActiveVar*)mono_mempool_alloc (td->mempool, av->active_vars_capacity * sizeof (ActiveVars));
 }
 
@@ -275,7 +275,7 @@ compact_active_vars (TransformData *td, ActiveVars *av, gint32 *current_offset)
 	int i = av->active_vars_count - 1;
 	while (i >= 0 && !av->active_vars [i].is_alive) {
 		av->active_vars_count--;
-		*current_offset = td->locals [av->active_vars [i].var].offset;
+		*current_offset = td->vars [av->active_vars [i].var].offset;
 		i--;
 	}
 }
@@ -287,7 +287,7 @@ dump_active_vars (TransformData *td, ActiveVars *av)
 		g_print ("active :");
 		for (int i = 0; i < av->active_vars_count; i++) {
 			if (av->active_vars [i].is_alive)
-				g_print (" %d (end %d),", av->active_vars [i].var, td->locals [av->active_vars [i].var].live_end);
+				g_print (" %d (end %d),", av->active_vars [i].var, td->vars [av->active_vars [i].var].live_end);
 		}
 		g_print ("\n");
 	}
@@ -330,7 +330,7 @@ interp_alloc_offsets (TransformData *td)
 				// the created object is set before the call is made. We solve this by making
 				// sure that the dreg is not allocated in the param area, so there is no
 				// risk of conflicts.
-				td->locals [ins->dreg].flags |= INTERP_LOCAL_FLAG_NO_CALL_ARGS;
+				td->vars [ins->dreg].flags |= INTERP_LOCAL_FLAG_NO_CALL_ARGS;
 			}
 			if (ins->flags & INTERP_INST_FLAG_CALL) {
 				if (ins->info.call_info && ins->info.call_info->call_args) {
@@ -341,18 +341,18 @@ interp_alloc_offsets (TransformData *td)
 					int var = *call_args;
 
 					while (var != -1) {
-						if (td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL ||
+						if (td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL ||
 								!td->local_ref_count || td->local_ref_count [var] > 1 ||
-								td->locals [var].flags & INTERP_LOCAL_FLAG_NO_CALL_ARGS) {
+								td->vars [var].flags & INTERP_LOCAL_FLAG_NO_CALL_ARGS) {
 							// Some vars can't be allocated on the call args stack, since the constraint is that
 							// call args vars die after the call. This isn't necessarily true for global vars or
 							// vars that are used by other instructions aside from the call.
 							// We need to copy the var into a new tmp var
-							int new_var = interp_create_local (td, td->locals [var].type);
-							td->locals [new_var].call = ins;
-							td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+							int new_var = interp_create_var (td, td->vars [var].type);
+							td->vars [new_var].call = ins;
+							td->vars [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 
-							int mt = mono_mint_type (td->locals [var].type);
+							int mt = mono_mint_type (td->vars [var].type);
 							if (mt != MINT_TYPE_VT && num_pairs < MINT_MOV_PAIRS_MAX && var <= G_MAXUINT16 && new_var <= G_MAXUINT16) {
 								// We store these in the instruction data slots so we do this optimizations only if they fit
 								pair_sregs [num_pairs] = (guint16)var;
@@ -366,7 +366,7 @@ interp_alloc_offsets (TransformData *td)
 								interp_ins_set_dreg (new_inst, new_var);
 								interp_ins_set_sreg (new_inst, var);
 								if (opcode == MINT_MOV_VT)
-									new_inst->data [0] = GINT_TO_UINT16 (td->locals [var].size);
+									new_inst->data [0] = GINT_TO_UINT16 (td->vars [var].size);
 								// The arg of the call is no longer global
 								*call_args = new_var;
 								// Also update liveness for this instruction
@@ -375,8 +375,8 @@ interp_alloc_offsets (TransformData *td)
 							}
 						} else {
 							// Flag this var as it has special storage on the call args stack
-							td->locals [var].call = ins;
-							td->locals [var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+							td->vars [var].call = ins;
+							td->vars [var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 						}
 						call_args++;
 						var = *call_args;
@@ -388,7 +388,7 @@ interp_alloc_offsets (TransformData *td)
 							set_var_live_range (td, pair_dregs [i], ins_index);
 						}
 						if (num_pairs == 1) {
-							int mt = mono_mint_type (td->locals [pair_sregs [0]].type);
+							int mt = mono_mint_type (td->vars [pair_sregs [0]].type);
 							int opcode = interp_get_mov_for_type (mt, FALSE);
 							InterpInst *new_inst = interp_insert_ins_bb (td, bb, ins->prev, opcode);
 							interp_ins_set_dreg (new_inst, pair_dregs [0]);
@@ -431,8 +431,8 @@ interp_alloc_offsets (TransformData *td)
 				int var = ins->sregs [i];
 				if (var == MINT_CALL_ARGS_SREG)
 					continue;
-				if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].live_end == ins_index) {
-					g_assert (!(td->locals [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS));
+				if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->vars [var].live_end == ins_index) {
+					g_assert (!(td->vars [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS));
 					end_active_var (td, &av, var);
 				}
 			}
@@ -442,7 +442,7 @@ interp_alloc_offsets (TransformData *td)
 				int num_pairs = 2 + opcode - MINT_MOV_8_2;
 				for (int i = 0; i < num_pairs; i++) {
 					int var = ins->data [2 * i + 1];
-					if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].live_end == ins_index)
+					if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->vars [var].live_end == ins_index)
 						end_active_var (td, &av, var);
 				}
 			}
@@ -456,21 +456,21 @@ interp_alloc_offsets (TransformData *td)
 			if (mono_interp_op_dregs [opcode]) {
 				int var = ins->dreg;
 
-				if (td->locals [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
-					add_active_call (td, &ac, td->locals [var].call);
-				} else if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].offset == -1) {
+				if (td->vars [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
+					add_active_call (td, &ac, td->vars [var].call);
+				} else if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->vars [var].offset == -1) {
 					alloc_var_offset (td, var, &current_offset);
 					if (current_offset > final_total_locals_size)
 						final_total_locals_size = current_offset;
 
 					if (td->verbose_level)
-						g_print ("alloc var %d to offset %d\n", var, td->locals [var].offset);
+						g_print ("alloc var %d to offset %d\n", var, td->vars [var].offset);
 
-					if (td->locals [var].live_end > ins_index) {
+					if (td->vars [var].live_end > ins_index) {
 						// if dreg is still used in the basic block, add it to the active list
 						add_active_var (td, &av, var);
 					} else {
-						current_offset = td->locals [var].offset;
+						current_offset = td->vars [var].offset;
 					}
 				}
 			}
@@ -484,11 +484,11 @@ interp_alloc_offsets (TransformData *td)
 	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
 	// then also update td->total_locals_size to account for this space.
 	td->param_area_offset = final_total_locals_size;
-	for (unsigned int i = 0; i < td->locals_size; i++) {
+	for (unsigned int i = 0; i < td->vars_size; i++) {
 		// These are allocated separately at the end of the stack
-		if (td->locals [i].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
-			td->locals [i].offset += td->param_area_offset;
-			final_total_locals_size = MAX (td->locals [i].offset + td->locals [i].size, final_total_locals_size);
+		if (td->vars [i].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
+			td->vars [i].offset += td->param_area_offset;
+			final_total_locals_size = MAX (td->vars [i].offset + td->vars [i].size, final_total_locals_size);
 		}
 	}
 	td->total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_ALIGNMENT);
@@ -625,8 +625,8 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 
 	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		if (ins->opcode == MINT_LDLOCA_S) {
-			td->locals [ins->sregs [0]].indirects--;
-			if (!td->locals [ins->sregs [0]].indirects) {
+			td->vars [ins->sregs [0]].indirects--;
+			if (!td->vars [ins->sregs [0]].indirects) {
 				// We can do cprop now through this local. Run cprop again.
 				needs_cprop = TRUE;
 			}
@@ -950,24 +950,24 @@ interp_local_deadce (TransformData *td)
 	gboolean needs_dce = FALSE;
 	gboolean needs_cprop = FALSE;
 
-	for (unsigned int i = 0; i < td->locals_size; i++) {
+	for (unsigned int i = 0; i < td->vars_size; i++) {
 		g_assert (local_ref_count [i] >= 0);
-		g_assert (td->locals [i].indirects >= 0);
-		if (td->locals [i].indirects || (td->locals [i].flags & INTERP_LOCAL_FLAG_DEAD))
+		g_assert (td->vars [i].indirects >= 0);
+		if (td->vars [i].indirects || (td->vars [i].flags & INTERP_LOCAL_FLAG_DEAD))
 			continue;
 		if (!local_ref_count [i]) {
 			needs_dce = TRUE;
-			td->locals [i].flags |= INTERP_LOCAL_FLAG_DEAD;
-		} else if (!(td->locals [i].flags & INTERP_LOCAL_FLAG_UNKNOWN_USE)) {
-			if (!(td->locals [i].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY)) {
+			td->vars [i].flags |= INTERP_LOCAL_FLAG_DEAD;
+		} else if (!(td->vars [i].flags & INTERP_LOCAL_FLAG_UNKNOWN_USE)) {
+			if (!(td->vars [i].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY)) {
 				// The value of this var is not passed between multiple basic blocks
-				td->locals [i].flags |= INTERP_LOCAL_FLAG_LOCAL_ONLY;
+				td->vars [i].flags |= INTERP_LOCAL_FLAG_LOCAL_ONLY;
 				if (td->verbose_level)
 					g_print ("Var %d is local only\n", i);
 				needs_cprop = TRUE;
 			}
 		}
-		td->locals [i].flags &= ~INTERP_LOCAL_FLAG_UNKNOWN_USE;
+		td->vars [i].flags &= ~INTERP_LOCAL_FLAG_UNKNOWN_USE;
 	}
 
 	// Return early if all locals are alive
@@ -980,15 +980,15 @@ interp_local_deadce (TransformData *td)
 			if (MINT_NO_SIDE_EFFECTS (ins->opcode) ||
 					ins->opcode == MINT_LDLOCA_S) {
 				int dreg = ins->dreg;
-				if (td->locals [dreg].flags & INTERP_LOCAL_FLAG_DEAD) {
+				if (td->vars [dreg].flags & INTERP_LOCAL_FLAG_DEAD) {
 					if (td->verbose_level) {
 						g_print ("kill dead ins:\n\t");
 						interp_dump_ins (ins, td->data_items);
 					}
 
 					if (ins->opcode == MINT_LDLOCA_S) {
-						td->locals [ins->sregs [0]].indirects--;
-						if (!td->locals [ins->sregs [0]].indirects) {
+						td->vars [ins->sregs [0]].indirects--;
+						if (!td->vars [ins->sregs [0]].indirects) {
 							// We can do cprop now through this local. Run cprop again.
 							needs_cprop = TRUE;
 						}
@@ -1071,66 +1071,66 @@ interp_get_mt_for_ldind (int ldind_op)
 		break;
 
 static InterpInst*
-interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
+interp_fold_unop (TransformData *td, InterpVarValue *local_defs, InterpInst *ins)
 {
 	int *local_ref_count = td->local_ref_count;
 	// ins should be an unop, therefore it should have a single dreg and a single sreg
 	int dreg = ins->dreg;
 	int sreg = ins->sregs [0];
-	LocalValue *val = &local_defs [sreg];
-	LocalValue result;
+	InterpVarValue *val = &local_defs [sreg];
+	InterpVarValue result;
 
-	if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8)
+	if (val->type != VAR_VALUE_I4 && val->type != VAR_VALUE_I8)
 		return ins;
 
 	// Top of the stack is a constant
 	switch (ins->opcode) {
-		INTERP_FOLD_UNOP (MINT_ADD1_I4, LOCAL_VALUE_I4, i, 1+);
-		INTERP_FOLD_UNOP (MINT_ADD1_I8, LOCAL_VALUE_I8, l, 1+);
-		INTERP_FOLD_UNOP (MINT_SUB1_I4, LOCAL_VALUE_I4, i, -1+);
-		INTERP_FOLD_UNOP (MINT_SUB1_I8, LOCAL_VALUE_I8, l, -1+);
-		INTERP_FOLD_UNOP (MINT_NEG_I4, LOCAL_VALUE_I4, i, -);
-		INTERP_FOLD_UNOP (MINT_NEG_I8, LOCAL_VALUE_I8, l, -);
-		INTERP_FOLD_UNOP (MINT_NOT_I4, LOCAL_VALUE_I4, i, ~);
-		INTERP_FOLD_UNOP (MINT_NOT_I8, LOCAL_VALUE_I8, l, ~);
-		INTERP_FOLD_UNOP (MINT_CEQ0_I4, LOCAL_VALUE_I4, i, 0 ==);
+		INTERP_FOLD_UNOP (MINT_ADD1_I4, VAR_VALUE_I4, i, 1+);
+		INTERP_FOLD_UNOP (MINT_ADD1_I8, VAR_VALUE_I8, l, 1+);
+		INTERP_FOLD_UNOP (MINT_SUB1_I4, VAR_VALUE_I4, i, -1+);
+		INTERP_FOLD_UNOP (MINT_SUB1_I8, VAR_VALUE_I8, l, -1+);
+		INTERP_FOLD_UNOP (MINT_NEG_I4, VAR_VALUE_I4, i, -);
+		INTERP_FOLD_UNOP (MINT_NEG_I8, VAR_VALUE_I8, l, -);
+		INTERP_FOLD_UNOP (MINT_NOT_I4, VAR_VALUE_I4, i, ~);
+		INTERP_FOLD_UNOP (MINT_NOT_I8, VAR_VALUE_I8, l, ~);
+		INTERP_FOLD_UNOP (MINT_CEQ0_I4, VAR_VALUE_I4, i, 0 ==);
 
-		INTERP_FOLD_CONV (MINT_CONV_I1_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint8);
-		INTERP_FOLD_CONV (MINT_CONV_I1_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint8);
-		INTERP_FOLD_CONV (MINT_CONV_U1_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, guint8);
-		INTERP_FOLD_CONV (MINT_CONV_U1_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, guint8);
+		INTERP_FOLD_CONV (MINT_CONV_I1_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint8);
+		INTERP_FOLD_CONV (MINT_CONV_I1_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint8);
+		INTERP_FOLD_CONV (MINT_CONV_U1_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, guint8);
+		INTERP_FOLD_CONV (MINT_CONV_U1_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, guint8);
 
-		INTERP_FOLD_CONV (MINT_CONV_I2_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint16);
-		INTERP_FOLD_CONV (MINT_CONV_I2_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint16);
-		INTERP_FOLD_CONV (MINT_CONV_U2_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, guint16);
-		INTERP_FOLD_CONV (MINT_CONV_U2_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, guint16);
+		INTERP_FOLD_CONV (MINT_CONV_I2_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint16);
+		INTERP_FOLD_CONV (MINT_CONV_I2_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint16);
+		INTERP_FOLD_CONV (MINT_CONV_U2_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, guint16);
+		INTERP_FOLD_CONV (MINT_CONV_U2_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, guint16);
 
-		INTERP_FOLD_CONV (MINT_CONV_I8_I4, LOCAL_VALUE_I8, l, LOCAL_VALUE_I4, i, gint32);
-		INTERP_FOLD_CONV (MINT_CONV_I8_U4, LOCAL_VALUE_I8, l, LOCAL_VALUE_I4, i, guint32);
+		INTERP_FOLD_CONV (MINT_CONV_I8_I4, VAR_VALUE_I8, l, VAR_VALUE_I4, i, gint32);
+		INTERP_FOLD_CONV (MINT_CONV_I8_U4, VAR_VALUE_I8, l, VAR_VALUE_I4, i, guint32);
 
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint8, val->i >= G_MININT8 && val->i <= G_MAXINT8);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint8, val->l >= G_MININT8 && val->l <= G_MAXINT8);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_U4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint8, val->i >= 0 && val->i <= G_MAXINT8);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_U8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint8, val->l >= 0 && val->l <= G_MAXINT8);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U1_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, guint8, val->i >= 0 && val->i <= G_MAXUINT8);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U1_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, guint8, val->l >= 0 && val->l <= G_MAXUINT8);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint8, val->i >= G_MININT8 && val->i <= G_MAXINT8);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint8, val->l >= G_MININT8 && val->l <= G_MAXINT8);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_U4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint8, val->i >= 0 && val->i <= G_MAXINT8);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_U8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint8, val->l >= 0 && val->l <= G_MAXINT8);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U1_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, guint8, val->i >= 0 && val->i <= G_MAXUINT8);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U1_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, guint8, val->l >= 0 && val->l <= G_MAXUINT8);
 
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint16, val->i >= G_MININT16 && val->i <= G_MAXINT16);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, i, gint16, val->l >= G_MININT16 && val->l <= G_MAXINT16);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_U4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint16, val->i >= 0 && val->i <= G_MAXINT16);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_U8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint16, val->l >= 0 && val->l <= G_MAXINT16);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U2_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, guint16, val->i >= 0 && val->i <= G_MAXUINT16);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U2_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, guint16, val->l >= 0 && val->l <= G_MAXUINT16);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint16, val->i >= G_MININT16 && val->i <= G_MAXINT16);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, i, gint16, val->l >= G_MININT16 && val->l <= G_MAXINT16);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_U4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint16, val->i >= 0 && val->i <= G_MAXINT16);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_U8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint16, val->l >= 0 && val->l <= G_MAXINT16);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U2_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, guint16, val->i >= 0 && val->i <= G_MAXUINT16);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U2_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, guint16, val->l >= 0 && val->l <= G_MAXUINT16);
 
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_U4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint32, val->i >= 0);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint32, val->l >= G_MININT32 && val->l <= G_MAXINT32);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_U8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint32, val->l >= 0 && val->l <= G_MAXINT32);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U4_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, guint32, val->i >= 0);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U4_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, guint32, val->l >= 0 && val->l <= G_MAXINT32);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_U4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, gint32, val->i >= 0);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint32, val->l >= G_MININT32 && val->l <= G_MAXINT32);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_U8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, gint32, val->l >= 0 && val->l <= G_MAXINT32);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U4_I4, VAR_VALUE_I4, i, VAR_VALUE_I4, i, guint32, val->i >= 0);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U4_I8, VAR_VALUE_I4, i, VAR_VALUE_I8, l, guint32, val->l >= 0 && val->l <= G_MAXINT32);
 
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I8_U8, LOCAL_VALUE_I8, l, LOCAL_VALUE_I8, l, gint64, val->l >= 0);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U8_I4, LOCAL_VALUE_I8, l, LOCAL_VALUE_I4, i, guint64, val->i >= 0);
-		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U8_I8, LOCAL_VALUE_I8, l, LOCAL_VALUE_I8, l, guint64, val->l >= 0);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I8_U8, VAR_VALUE_I8, l, VAR_VALUE_I8, l, gint64, val->l >= 0);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U8_I4, VAR_VALUE_I8, l, VAR_VALUE_I4, i, guint64, val->i >= 0);
+		INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U8_I8, VAR_VALUE_I8, l, VAR_VALUE_I8, l, guint64, val->l >= 0);
 
 		default:
 			return ins;
@@ -1139,9 +1139,9 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 	// We were able to compute the result of the ins instruction. We replace the unop
 	// with a LDC of the constant. We leave alone the sregs of this instruction, for
 	// deadce to kill the instructions initializing them.
-	if (result.type == LOCAL_VALUE_I4)
+	if (result.type == VAR_VALUE_I4)
 		ins = interp_get_ldc_i4_from_const (td, ins, result.i, dreg);
-	else if (result.type == LOCAL_VALUE_I8)
+	else if (result.type == VAR_VALUE_I8)
 		ins = interp_inst_replace_with_i8_const (td, ins, result.l);
 	else
 		g_assert_not_reached ();
@@ -1174,17 +1174,17 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 		break;
 
 static InterpInst*
-interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *local_defs, InterpInst *ins)
+interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, InterpVarValue *local_defs, InterpInst *ins)
 {
 	int *local_ref_count = td->local_ref_count;
 	// ins should be an unop conditional branch, therefore it should have a single sreg
 	int sreg = ins->sregs [0];
-	LocalValue *val = &local_defs [sreg];
+	InterpVarValue *val = &local_defs [sreg];
 
-	if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8 && val->type != LOCAL_VALUE_NON_NULL)
+	if (val->type != VAR_VALUE_I4 && val->type != VAR_VALUE_I8 && val->type != VAR_VALUE_NON_NULL)
 		return ins;
 
-	if (val->type == LOCAL_VALUE_NON_NULL) {
+	if (val->type == VAR_VALUE_NON_NULL) {
 		switch (ins->opcode) {
 			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4, FALSE);
 			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8, FALSE);
@@ -1237,87 +1237,87 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 
 #define INTERP_FOLD_RELOP(opcode,local_type,field,relop,cast_type) \
 	case opcode: \
-		result.type = LOCAL_VALUE_I4; \
+		result.type = VAR_VALUE_I4; \
 		result.i = (cast_type) val1->field relop (cast_type) val2->field; \
 		break;
 
 
 static InterpInst*
-interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins, gboolean *folded)
+interp_fold_binop (TransformData *td, InterpVarValue *local_defs, InterpInst *ins, gboolean *folded)
 {
 	int *local_ref_count = td->local_ref_count;
 	// ins should be a binop, therefore it should have a single dreg and two sregs
 	int dreg = ins->dreg;
 	int sreg1 = ins->sregs [0];
 	int sreg2 = ins->sregs [1];
-	LocalValue *val1 = &local_defs [sreg1];
-	LocalValue *val2 = &local_defs [sreg2];
-	LocalValue result;
+	InterpVarValue *val1 = &local_defs [sreg1];
+	InterpVarValue *val2 = &local_defs [sreg2];
+	InterpVarValue result;
 
 	*folded = FALSE;
 
-	if (val1->type != LOCAL_VALUE_I4 && val1->type != LOCAL_VALUE_I8)
+	if (val1->type != VAR_VALUE_I4 && val1->type != VAR_VALUE_I8)
 		return ins;
-	if (val2->type != LOCAL_VALUE_I4 && val2->type != LOCAL_VALUE_I8)
+	if (val2->type != VAR_VALUE_I4 && val2->type != VAR_VALUE_I8)
 		return ins;
 
 	// Top two values of the stack are constants
 	switch (ins->opcode) {
-		INTERP_FOLD_BINOP (MINT_ADD_I4, LOCAL_VALUE_I4, i, +);
-		INTERP_FOLD_BINOP (MINT_ADD_I8, LOCAL_VALUE_I8, l, +);
-		INTERP_FOLD_BINOP (MINT_SUB_I4, LOCAL_VALUE_I4, i, -);
-		INTERP_FOLD_BINOP (MINT_SUB_I8, LOCAL_VALUE_I8, l, -);
-		INTERP_FOLD_BINOP (MINT_MUL_I4, LOCAL_VALUE_I4, i, *);
-		INTERP_FOLD_BINOP (MINT_MUL_I8, LOCAL_VALUE_I8, l, *);
+		INTERP_FOLD_BINOP (MINT_ADD_I4, VAR_VALUE_I4, i, +);
+		INTERP_FOLD_BINOP (MINT_ADD_I8, VAR_VALUE_I8, l, +);
+		INTERP_FOLD_BINOP (MINT_SUB_I4, VAR_VALUE_I4, i, -);
+		INTERP_FOLD_BINOP (MINT_SUB_I8, VAR_VALUE_I8, l, -);
+		INTERP_FOLD_BINOP (MINT_MUL_I4, VAR_VALUE_I4, i, *);
+		INTERP_FOLD_BINOP (MINT_MUL_I8, VAR_VALUE_I8, l, *);
 
-		INTERP_FOLD_BINOP (MINT_AND_I4, LOCAL_VALUE_I4, i, &);
-		INTERP_FOLD_BINOP (MINT_AND_I8, LOCAL_VALUE_I8, l, &);
-		INTERP_FOLD_BINOP (MINT_OR_I4, LOCAL_VALUE_I4, i, |);
-		INTERP_FOLD_BINOP (MINT_OR_I8, LOCAL_VALUE_I8, l, |);
-		INTERP_FOLD_BINOP (MINT_XOR_I4, LOCAL_VALUE_I4, i, ^);
-		INTERP_FOLD_BINOP (MINT_XOR_I8, LOCAL_VALUE_I8, l, ^);
+		INTERP_FOLD_BINOP (MINT_AND_I4, VAR_VALUE_I4, i, &);
+		INTERP_FOLD_BINOP (MINT_AND_I8, VAR_VALUE_I8, l, &);
+		INTERP_FOLD_BINOP (MINT_OR_I4, VAR_VALUE_I4, i, |);
+		INTERP_FOLD_BINOP (MINT_OR_I8, VAR_VALUE_I8, l, |);
+		INTERP_FOLD_BINOP (MINT_XOR_I4, VAR_VALUE_I4, i, ^);
+		INTERP_FOLD_BINOP (MINT_XOR_I8, VAR_VALUE_I8, l, ^);
 
-		INTERP_FOLD_SHIFTOP (MINT_SHL_I4, LOCAL_VALUE_I4, i, <<, gint32);
-		INTERP_FOLD_SHIFTOP (MINT_SHL_I8, LOCAL_VALUE_I8, l, <<, gint64);
-		INTERP_FOLD_SHIFTOP (MINT_SHR_I4, LOCAL_VALUE_I4, i, >>, gint32);
-		INTERP_FOLD_SHIFTOP (MINT_SHR_I8, LOCAL_VALUE_I8, l, >>, gint64);
-		INTERP_FOLD_SHIFTOP (MINT_SHR_UN_I4, LOCAL_VALUE_I4, i, >>, guint32);
-		INTERP_FOLD_SHIFTOP (MINT_SHR_UN_I8, LOCAL_VALUE_I8, l, >>, guint64);
+		INTERP_FOLD_SHIFTOP (MINT_SHL_I4, VAR_VALUE_I4, i, <<, gint32);
+		INTERP_FOLD_SHIFTOP (MINT_SHL_I8, VAR_VALUE_I8, l, <<, gint64);
+		INTERP_FOLD_SHIFTOP (MINT_SHR_I4, VAR_VALUE_I4, i, >>, gint32);
+		INTERP_FOLD_SHIFTOP (MINT_SHR_I8, VAR_VALUE_I8, l, >>, gint64);
+		INTERP_FOLD_SHIFTOP (MINT_SHR_UN_I4, VAR_VALUE_I4, i, >>, guint32);
+		INTERP_FOLD_SHIFTOP (MINT_SHR_UN_I8, VAR_VALUE_I8, l, >>, guint64);
 
-		INTERP_FOLD_RELOP (MINT_CEQ_I4, LOCAL_VALUE_I4, i, ==, gint32);
-		INTERP_FOLD_RELOP (MINT_CEQ_I8, LOCAL_VALUE_I8, l, ==, gint64);
-		INTERP_FOLD_RELOP (MINT_CNE_I4, LOCAL_VALUE_I4, i, !=, gint32);
-		INTERP_FOLD_RELOP (MINT_CNE_I8, LOCAL_VALUE_I8, l, !=, gint64);
+		INTERP_FOLD_RELOP (MINT_CEQ_I4, VAR_VALUE_I4, i, ==, gint32);
+		INTERP_FOLD_RELOP (MINT_CEQ_I8, VAR_VALUE_I8, l, ==, gint64);
+		INTERP_FOLD_RELOP (MINT_CNE_I4, VAR_VALUE_I4, i, !=, gint32);
+		INTERP_FOLD_RELOP (MINT_CNE_I8, VAR_VALUE_I8, l, !=, gint64);
 
-		INTERP_FOLD_RELOP (MINT_CGT_I4, LOCAL_VALUE_I4, i, >, gint32);
-		INTERP_FOLD_RELOP (MINT_CGT_I8, LOCAL_VALUE_I8, l, >, gint64);
-		INTERP_FOLD_RELOP (MINT_CGT_UN_I4, LOCAL_VALUE_I4, i, >, guint32);
-		INTERP_FOLD_RELOP (MINT_CGT_UN_I8, LOCAL_VALUE_I8, l, >, guint64);
+		INTERP_FOLD_RELOP (MINT_CGT_I4, VAR_VALUE_I4, i, >, gint32);
+		INTERP_FOLD_RELOP (MINT_CGT_I8, VAR_VALUE_I8, l, >, gint64);
+		INTERP_FOLD_RELOP (MINT_CGT_UN_I4, VAR_VALUE_I4, i, >, guint32);
+		INTERP_FOLD_RELOP (MINT_CGT_UN_I8, VAR_VALUE_I8, l, >, guint64);
 
-		INTERP_FOLD_RELOP (MINT_CGE_I4, LOCAL_VALUE_I4, i, >=, gint32);
-		INTERP_FOLD_RELOP (MINT_CGE_I8, LOCAL_VALUE_I8, l, >=, gint64);
-		INTERP_FOLD_RELOP (MINT_CGE_UN_I4, LOCAL_VALUE_I4, i, >=, guint32);
-		INTERP_FOLD_RELOP (MINT_CGE_UN_I8, LOCAL_VALUE_I8, l, >=, guint64);
+		INTERP_FOLD_RELOP (MINT_CGE_I4, VAR_VALUE_I4, i, >=, gint32);
+		INTERP_FOLD_RELOP (MINT_CGE_I8, VAR_VALUE_I8, l, >=, gint64);
+		INTERP_FOLD_RELOP (MINT_CGE_UN_I4, VAR_VALUE_I4, i, >=, guint32);
+		INTERP_FOLD_RELOP (MINT_CGE_UN_I8, VAR_VALUE_I8, l, >=, guint64);
 
-		INTERP_FOLD_RELOP (MINT_CLT_I4, LOCAL_VALUE_I4, i, <, gint32);
-		INTERP_FOLD_RELOP (MINT_CLT_I8, LOCAL_VALUE_I8, l, <, gint64);
-		INTERP_FOLD_RELOP (MINT_CLT_UN_I4, LOCAL_VALUE_I4, i, <, guint32);
-		INTERP_FOLD_RELOP (MINT_CLT_UN_I8, LOCAL_VALUE_I8, l, <, guint64);
+		INTERP_FOLD_RELOP (MINT_CLT_I4, VAR_VALUE_I4, i, <, gint32);
+		INTERP_FOLD_RELOP (MINT_CLT_I8, VAR_VALUE_I8, l, <, gint64);
+		INTERP_FOLD_RELOP (MINT_CLT_UN_I4, VAR_VALUE_I4, i, <, guint32);
+		INTERP_FOLD_RELOP (MINT_CLT_UN_I8, VAR_VALUE_I8, l, <, guint64);
 
-		INTERP_FOLD_RELOP (MINT_CLE_I4, LOCAL_VALUE_I4, i, <=, gint32);
-		INTERP_FOLD_RELOP (MINT_CLE_I8, LOCAL_VALUE_I8, l, <=, gint64);
-		INTERP_FOLD_RELOP (MINT_CLE_UN_I4, LOCAL_VALUE_I4, i, <=, guint32);
-		INTERP_FOLD_RELOP (MINT_CLE_UN_I8, LOCAL_VALUE_I8, l, <=, guint64);
+		INTERP_FOLD_RELOP (MINT_CLE_I4, VAR_VALUE_I4, i, <=, gint32);
+		INTERP_FOLD_RELOP (MINT_CLE_I8, VAR_VALUE_I8, l, <=, gint64);
+		INTERP_FOLD_RELOP (MINT_CLE_UN_I4, VAR_VALUE_I4, i, <=, guint32);
+		INTERP_FOLD_RELOP (MINT_CLE_UN_I8, VAR_VALUE_I8, l, <=, guint64);
 
-		INTERP_FOLD_BINOP_FULL (MINT_DIV_I4, LOCAL_VALUE_I4, i, /, gint32, val2->i != 0 && (val1->i != G_MININT32 || val2->i != -1));
-		INTERP_FOLD_BINOP_FULL (MINT_DIV_I8, LOCAL_VALUE_I8, l, /, gint64, val2->l != 0 && (val1->l != G_MININT64 || val2->l != -1));
-		INTERP_FOLD_BINOP_FULL (MINT_DIV_UN_I4, LOCAL_VALUE_I4, i, /, guint32, val2->i != 0);
-		INTERP_FOLD_BINOP_FULL (MINT_DIV_UN_I8, LOCAL_VALUE_I8, l, /, guint64, val2->l != 0);
+		INTERP_FOLD_BINOP_FULL (MINT_DIV_I4, VAR_VALUE_I4, i, /, gint32, val2->i != 0 && (val1->i != G_MININT32 || val2->i != -1));
+		INTERP_FOLD_BINOP_FULL (MINT_DIV_I8, VAR_VALUE_I8, l, /, gint64, val2->l != 0 && (val1->l != G_MININT64 || val2->l != -1));
+		INTERP_FOLD_BINOP_FULL (MINT_DIV_UN_I4, VAR_VALUE_I4, i, /, guint32, val2->i != 0);
+		INTERP_FOLD_BINOP_FULL (MINT_DIV_UN_I8, VAR_VALUE_I8, l, /, guint64, val2->l != 0);
 
-		INTERP_FOLD_BINOP_FULL (MINT_REM_I4, LOCAL_VALUE_I4, i, %, gint32, val2->i != 0 && (val1->i != G_MININT32 || val2->i != -1));
-		INTERP_FOLD_BINOP_FULL (MINT_REM_I8, LOCAL_VALUE_I8, l, %, gint64, val2->l != 0 && (val1->l != G_MININT64 || val2->l != -1));
-		INTERP_FOLD_BINOP_FULL (MINT_REM_UN_I4, LOCAL_VALUE_I4, i, %, guint32, val2->i != 0);
-		INTERP_FOLD_BINOP_FULL (MINT_REM_UN_I8, LOCAL_VALUE_I8, l, %, guint64, val2->l != 0);
+		INTERP_FOLD_BINOP_FULL (MINT_REM_I4, VAR_VALUE_I4, i, %, gint32, val2->i != 0 && (val1->i != G_MININT32 || val2->i != -1));
+		INTERP_FOLD_BINOP_FULL (MINT_REM_I8, VAR_VALUE_I8, l, %, gint64, val2->l != 0 && (val1->l != G_MININT64 || val2->l != -1));
+		INTERP_FOLD_BINOP_FULL (MINT_REM_UN_I4, VAR_VALUE_I4, i, %, guint32, val2->i != 0);
+		INTERP_FOLD_BINOP_FULL (MINT_REM_UN_I8, VAR_VALUE_I8, l, %, guint64, val2->l != 0);
 
 		default:
 			return ins;
@@ -1327,9 +1327,9 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins, g
 	// with a LDC of the constant. We leave alone the sregs of this instruction, for
 	// deadce to kill the instructions initializing them.
 	*folded = TRUE;
-	if (result.type == LOCAL_VALUE_I4)
+	if (result.type == VAR_VALUE_I4)
 		ins = interp_get_ldc_i4_from_const (td, ins, result.i, dreg);
-	else if (result.type == LOCAL_VALUE_I8)
+	else if (result.type == VAR_VALUE_I8)
 		ins = interp_inst_replace_with_i8_const (td, ins, result.l);
 	else
 		g_assert_not_reached ();
@@ -1366,42 +1366,42 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins, g
 		break;
 
 static InterpInst*
-interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *local_defs, InterpInst *ins)
+interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, InterpVarValue *local_defs, InterpInst *ins)
 {
 	int *local_ref_count = td->local_ref_count;
 	// ins should be a conditional binop, therefore it should have only two sregs
 	int sreg1 = ins->sregs [0];
 	int sreg2 = ins->sregs [1];
-	LocalValue *val1 = &local_defs [sreg1];
-	LocalValue *val2 = &local_defs [sreg2];
+	InterpVarValue *val1 = &local_defs [sreg1];
+	InterpVarValue *val2 = &local_defs [sreg2];
 
-	if (val1->type != LOCAL_VALUE_I4 && val1->type != LOCAL_VALUE_I8)
+	if (val1->type != VAR_VALUE_I4 && val1->type != VAR_VALUE_I8)
 		return ins;
-	if (val2->type != LOCAL_VALUE_I4 && val2->type != LOCAL_VALUE_I8)
+	if (val2->type != VAR_VALUE_I4 && val2->type != VAR_VALUE_I8)
 		return ins;
 
 	switch (ins->opcode) {
-		INTERP_FOLD_BINOP_BR (MINT_BEQ_I4, LOCAL_VALUE_I4, val1->i == val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BEQ_I8, LOCAL_VALUE_I8, val1->l == val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BGE_I4, LOCAL_VALUE_I4, val1->i >= val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BGE_I8, LOCAL_VALUE_I8, val1->l >= val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BGT_I4, LOCAL_VALUE_I4, val1->i > val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BGT_I8, LOCAL_VALUE_I8, val1->l > val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BLT_I4, LOCAL_VALUE_I4, val1->i < val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BLT_I8, LOCAL_VALUE_I8, val1->l < val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BLE_I4, LOCAL_VALUE_I4, val1->i <= val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BLE_I8, LOCAL_VALUE_I8, val1->l <= val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BEQ_I4, VAR_VALUE_I4, val1->i == val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BEQ_I8, VAR_VALUE_I8, val1->l == val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BGE_I4, VAR_VALUE_I4, val1->i >= val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BGE_I8, VAR_VALUE_I8, val1->l >= val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BGT_I4, VAR_VALUE_I4, val1->i > val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BGT_I8, VAR_VALUE_I8, val1->l > val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BLT_I4, VAR_VALUE_I4, val1->i < val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BLT_I8, VAR_VALUE_I8, val1->l < val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BLE_I4, VAR_VALUE_I4, val1->i <= val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BLE_I8, VAR_VALUE_I8, val1->l <= val2->l);
 
-		INTERP_FOLD_BINOP_BR (MINT_BNE_UN_I4, LOCAL_VALUE_I4, val1->i != val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BNE_UN_I8, LOCAL_VALUE_I8, val1->l != val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BGE_UN_I4, LOCAL_VALUE_I4, (guint32)val1->i >= (guint32)val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BGE_UN_I8, LOCAL_VALUE_I8, (guint64)val1->l >= (guint64)val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BGT_UN_I4, LOCAL_VALUE_I4, (guint32)val1->i > (guint32)val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BGT_UN_I8, LOCAL_VALUE_I8, (guint64)val1->l > (guint64)val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BLE_UN_I4, LOCAL_VALUE_I4, (guint32)val1->i <= (guint32)val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BLE_UN_I8, LOCAL_VALUE_I8, (guint64)val1->l <= (guint64)val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BLT_UN_I4, LOCAL_VALUE_I4, (guint32)val1->i < (guint32)val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BLT_UN_I8, LOCAL_VALUE_I8, (guint64)val1->l < (guint64)val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BNE_UN_I4, VAR_VALUE_I4, val1->i != val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BNE_UN_I8, VAR_VALUE_I8, val1->l != val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BGE_UN_I4, VAR_VALUE_I4, (guint32)val1->i >= (guint32)val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BGE_UN_I8, VAR_VALUE_I8, (guint64)val1->l >= (guint64)val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BGT_UN_I4, VAR_VALUE_I4, (guint32)val1->i > (guint32)val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BGT_UN_I8, VAR_VALUE_I8, (guint64)val1->l > (guint64)val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BLE_UN_I4, VAR_VALUE_I4, (guint32)val1->i <= (guint32)val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BLE_UN_I8, VAR_VALUE_I8, (guint64)val1->l <= (guint64)val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BLT_UN_I4, VAR_VALUE_I4, (guint32)val1->i < (guint32)val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BLT_UN_I8, VAR_VALUE_I8, (guint64)val1->l < (guint64)val2->l);
 
 		default:
 			return ins;
@@ -1417,7 +1417,7 @@ interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue 
 }
 
 static void
-write_v128_element (gpointer v128_addr, LocalValue *val, int index, int el_size)
+write_v128_element (gpointer v128_addr, InterpVarValue *val, int index, int el_size)
 {
 	gpointer el_addr = (gint8*)v128_addr + index * el_size;
 	g_assert ((gint8*)el_addr < ((gint8*)v128_addr + 16));
@@ -1432,7 +1432,7 @@ write_v128_element (gpointer v128_addr, LocalValue *val, int index, int el_size)
 }
 
 static InterpInst*
-interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *local_defs, InterpInst *ins)
+interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, InterpVarValue *local_defs, InterpInst *ins)
 {
 	int *local_ref_count = td->local_ref_count;
 
@@ -1440,8 +1440,8 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *l
 	int index = 0;
 	int var = args [index];
 	while (var != -1) {
-		LocalValue *val = &local_defs [var];
-		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8 && val->type != LOCAL_VALUE_R4)
+		InterpVarValue *val = &local_defs [var];
+		if (val->type != VAR_VALUE_I4 && val->type != VAR_VALUE_I8 && val->type != VAR_VALUE_R4)
 			return ins;
 		index++;
 		var = args [index];
@@ -1461,7 +1461,7 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *l
 	index = 0;
 	var = args [index];
 	while (var != -1) {
-		LocalValue *val = &local_defs [var];
+		InterpVarValue *val = &local_defs [var];
 		write_v128_element (v128_addr, val, index, el_size);
 		val->ref_count--;
 		local_ref_count [var]--;
@@ -1475,21 +1475,21 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *l
 	}
 
 	local_defs [dreg].ins = ins;
-	local_defs [dreg].type = LOCAL_VALUE_NONE;
+	local_defs [dreg].type = VAR_VALUE_NONE;
 
 	return ins;
 }
 
 static void
-cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_defs)
+cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, InterpVarValue *local_defs)
 {
 	int *local_ref_count = td->local_ref_count;
 	int sreg = *psreg;
 
 	local_ref_count [sreg]++;
 	local_defs [sreg].ref_count++;
-	if (local_defs [sreg].type == LOCAL_VALUE_LOCAL) {
-		int cprop_local = local_defs [sreg].local;
+	if (local_defs [sreg].type == VAR_VALUE_OTHER_VAR) {
+		int cprop_local = local_defs [sreg].var;
 
 		// We are trying to replace sregs [i] with its def local (cprop_local), but cprop_local has since been
 		// modified, so we can't use it.
@@ -1504,7 +1504,7 @@ cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_de
 		if (td->verbose_level)
 			interp_dump_ins (ins, td->data_items);
 	} else if (!local_defs [sreg].ins) {
-		td->locals [sreg].flags |= INTERP_LOCAL_FLAG_UNKNOWN_USE;
+		td->vars [sreg].flags |= INTERP_LOCAL_FLAG_UNKNOWN_USE;
 	}
 }
 
@@ -1512,8 +1512,8 @@ static void
 clear_local_defs (TransformData *td, int *pvar, void *data)
 {
 	int var = *pvar;
-	LocalValue *local_defs = (LocalValue*) data;
-	local_defs [var].type = LOCAL_VALUE_NONE;
+	InterpVarValue *local_defs = (InterpVarValue*) data;
+	local_defs [var].type = VAR_VALUE_NONE;
 	local_defs [var].ins = NULL;
 	local_defs [var].ref_count = 0;
 }
@@ -1522,12 +1522,12 @@ static void
 clear_unused_defs (TransformData *td, int *pvar, void *data)
 {
 	int var = *pvar;
-	if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY))
+	if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY))
 		return;
-	if (td->locals [var].indirects)
+	if (td->vars [var].indirects)
 		return;
 
-	LocalValue *local_def = &((LocalValue*) data) [var];
+	InterpVarValue *local_def = &((InterpVarValue*) data) [var];
 	InterpInst *def_ins = local_def->ins;
 	if (!def_ins)
 		return;
@@ -1550,8 +1550,8 @@ clear_unused_defs (TransformData *td, int *pvar, void *data)
 static void
 interp_cprop (TransformData *td)
 {
-	LocalValue *local_defs = (LocalValue*) g_malloc (td->locals_size * sizeof (LocalValue));
-	int *local_ref_count = (int*) g_malloc (td->locals_size * sizeof (int));
+	InterpVarValue *local_defs = (InterpVarValue*) g_malloc (td->vars_size * sizeof (InterpVarValue));
+	int *local_ref_count = (int*) g_malloc (td->vars_size * sizeof (int));
 	InterpBasicBlock *bb;
 	gboolean needs_retry;
 	int ins_index;
@@ -1560,7 +1560,7 @@ interp_cprop (TransformData *td)
 	td->local_ref_count = local_ref_count;
 retry:
 	needs_retry = FALSE;
-	memset (local_ref_count, 0, td->locals_size * sizeof (int));
+	memset (local_ref_count, 0, td->vars_size * sizeof (int));
 
 	if (td->verbose_level)
 		g_print ("\ncprop iteration %d\n", iteration_count++);
@@ -1616,7 +1616,7 @@ retry:
 				// MINT_MOV_DST_OFF doesn't fully write to the var, so we special case it here
 				if (local_defs [dreg].ins != NULL &&
 						local_defs [dreg].ref_count == 0 &&
-						!td->locals [dreg].indirects &&
+						!td->vars [dreg].indirects &&
 						opcode != MINT_MOV_DST_OFF) {
 					InterpInst *prev_def = local_defs [dreg].ins;
 					if (MINT_NO_SIDE_EFFECTS (prev_def->opcode)) {
@@ -1625,14 +1625,14 @@ retry:
 						interp_clear_ins (prev_def);
 					}
 				}
-				local_defs [dreg].type = LOCAL_VALUE_NONE;
+				local_defs [dreg].type = VAR_VALUE_NONE;
 				local_defs [dreg].ins = ins;
 				local_defs [dreg].def_index = ins_index;
 			}
 
 			// We always store to the full i4, except as part of STIND opcodes. These opcodes can be
 			// applied to a local var only if that var has LDLOCA applied to it
-			if ((opcode >= MINT_MOV_I4_I1 && opcode <= MINT_MOV_I4_U2) && !td->locals [sregs [0]].indirects) {
+			if ((opcode >= MINT_MOV_I4_I1 && opcode <= MINT_MOV_I4_U2) && !td->vars [sregs [0]].indirects) {
 				ins->opcode = MINT_MOV_4;
 				opcode = MINT_MOV_4;
 			}
@@ -1644,12 +1644,12 @@ retry:
 						g_print ("clear redundant mov\n");
 					interp_clear_ins (ins);
 					local_ref_count [sreg]--;
-				} else if (td->locals [sreg].indirects || td->locals [dreg].indirects) {
+				} else if (td->vars [sreg].indirects || td->vars [dreg].indirects) {
 					// Don't bother with indirect locals
-				} else if (local_defs [sreg].type == LOCAL_VALUE_I4 || local_defs [sreg].type == LOCAL_VALUE_I8) {
+				} else if (local_defs [sreg].type == VAR_VALUE_I4 || local_defs [sreg].type == VAR_VALUE_I8) {
 					// Replace mov with ldc
-					gboolean is_i4 = local_defs [sreg].type == LOCAL_VALUE_I4;
-					g_assert (!td->locals [sreg].indirects);
+					gboolean is_i4 = local_defs [sreg].type == VAR_VALUE_I4;
+					g_assert (!td->vars [sreg].indirects);
 					local_defs [dreg].type = local_defs [sreg].type;
 					if (is_i4) {
 						int ct = local_defs [sreg].i;
@@ -1667,8 +1667,8 @@ retry:
 						interp_dump_ins (ins, td->data_items);
 					}
 				} else if (local_defs [sreg].ins != NULL &&
-						(td->locals [sreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
-						!(td->locals [dreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
+						(td->vars [sreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
+						!(td->vars [dreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
 						interp_prev_ins (ins) == local_defs [sreg].ins &&
 						!(interp_prev_ins (ins)->flags & INTERP_INST_FLAG_PROTECTED_NEWOBJ)) {
 					// hackish temporary optimization that won't be necessary in the future
@@ -1683,13 +1683,13 @@ retry:
 					ins->dreg = original_dreg;
 					sregs [0] = dreg;
 
-					local_defs [dreg].type = LOCAL_VALUE_NONE;
+					local_defs [dreg].type = VAR_VALUE_NONE;
 					local_defs [dreg].ins = def;
 					local_defs [dreg].def_index = local_defs [original_dreg].def_index;
 					local_defs [dreg].ref_count++;
-					local_defs [original_dreg].type = LOCAL_VALUE_LOCAL;
+					local_defs [original_dreg].type = VAR_VALUE_OTHER_VAR;
 					local_defs [original_dreg].ins = ins;
-					local_defs [original_dreg].local = dreg;
+					local_defs [original_dreg].var = dreg;
 					local_defs [original_dreg].def_index = ins_index;
 					local_defs [original_dreg].ref_count--;
 
@@ -1705,29 +1705,29 @@ retry:
 				} else {
 					if (td->verbose_level)
 						g_print ("local copy %d <- %d\n", dreg, sreg);
-					local_defs [dreg].type = LOCAL_VALUE_LOCAL;
-					local_defs [dreg].local = sreg;
+					local_defs [dreg].type = VAR_VALUE_OTHER_VAR;
+					local_defs [dreg].var = sreg;
 				}
 			} else if (opcode == MINT_LDLOCA_S) {
 				// The local that we are taking the address of is not a sreg but still referenced
 				local_ref_count [ins->sregs [0]]++;
 			} else if (MINT_IS_LDC_I4 (opcode)) {
-				local_defs [dreg].type = LOCAL_VALUE_I4;
+				local_defs [dreg].type = VAR_VALUE_I4;
 				local_defs [dreg].i = interp_get_const_from_ldc_i4 (ins);
 			} else if (MINT_IS_LDC_I8 (opcode)) {
-				local_defs [dreg].type = LOCAL_VALUE_I8;
+				local_defs [dreg].type = VAR_VALUE_I8;
 				local_defs [dreg].l = interp_get_const_from_ldc_i8 (ins);
 			} else if (opcode == MINT_LDC_R4) {
 				guint32 val_u = READ32 (&ins->data [0]);
 				float f = *(float*)(&val_u);
-				local_defs [dreg].type = LOCAL_VALUE_R4;
+				local_defs [dreg].type = VAR_VALUE_R4;
 				local_defs [dreg].f = f;
 			} else if (ins->opcode == MINT_LDPTR) {
 #if SIZEOF_VOID_P == 8
-				local_defs [dreg].type = LOCAL_VALUE_I8;
+				local_defs [dreg].type = VAR_VALUE_I8;
 				local_defs [dreg].l = (gint64)td->data_items [ins->data [0]];
 #else
-				local_defs [dreg].type = LOCAL_VALUE_I4;
+				local_defs [dreg].type = VAR_VALUE_I4;
 				local_defs [dreg].i = (gint32)td->data_items [ins->data [0]];
 #endif
 			} else if (MINT_IS_UNOP (opcode)) {
@@ -1743,22 +1743,22 @@ retry:
 					int sreg = -1;
 					guint16 mov_op = 0;
 					if ((opcode == MINT_MUL_I4 || opcode == MINT_DIV_I4) &&
-							local_defs [ins->sregs [1]].type == LOCAL_VALUE_I4 &&
+							local_defs [ins->sregs [1]].type == VAR_VALUE_I4 &&
 							local_defs [ins->sregs [1]].i == 1) {
 						sreg = ins->sregs [0];
 						mov_op = MINT_MOV_4;
 					} else if ((opcode == MINT_MUL_I8 || opcode == MINT_DIV_I8) &&
-							local_defs [ins->sregs [1]].type == LOCAL_VALUE_I8 &&
+							local_defs [ins->sregs [1]].type == VAR_VALUE_I8 &&
 							local_defs [ins->sregs [1]].l == 1) {
 						sreg = ins->sregs [0];
 						mov_op = MINT_MOV_8;
 					} else if (opcode == MINT_MUL_I4 &&
-							local_defs [ins->sregs [0]].type == LOCAL_VALUE_I4 &&
+							local_defs [ins->sregs [0]].type == VAR_VALUE_I4 &&
 							local_defs [ins->sregs [0]].i == 1) {
 						sreg = ins->sregs [1];
 						mov_op = MINT_MOV_4;
 					} else if (opcode == MINT_MUL_I8 &&
-							local_defs [ins->sregs [0]].type == LOCAL_VALUE_I8 &&
+							local_defs [ins->sregs [0]].type == VAR_VALUE_I8 &&
 							local_defs [ins->sregs [0]].l == 1) {
 						sreg = ins->sregs [1];
 						mov_op = MINT_MOV_8;
@@ -1779,7 +1779,7 @@ retry:
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
 					int local = ldloca->sregs [0];
-					int mt = td->locals [local].mt;
+					int mt = td->vars [local].mt;
 					if (mt != MINT_TYPE_VT) {
 						// LDIND cannot simply be replaced with a mov because it might also include a
 						// necessary conversion (especially when we do cprop and do moves between vars of
@@ -1811,7 +1811,7 @@ retry:
 					int local = ldloca->sregs [0];
 					// Allow ldloca instruction to be killed
 					local_ref_count [sregs [0]]--;
-					if (td->locals [local].mt == (ins->opcode - MINT_LDFLD_I1) && ins->data [0] == 0) {
+					if (td->vars [local].mt == (ins->opcode - MINT_LDFLD_I1) && ins->data [0] == 0) {
 						// Replace LDLOCA + LDFLD with LDLOC, when the loading field represents
 						// the entire local. This is the case with loading the only field of an
 						// IntPtr. We don't handle value type loads.
@@ -1871,7 +1871,7 @@ retry:
 					int local = ldloca->sregs [0];
 					local_ref_count [sregs [0]]--;
 
-					if (ldsize == td->locals [local].size) {
+					if (ldsize == td->vars [local].size) {
 						// Replace LDLOCA + LDOBJ_VT with MOV_VT
 						ins->opcode = MINT_MOV_VT;
 						sregs [0] = local;
@@ -1898,7 +1898,7 @@ retry:
 					int stsize = ins->data [0];
 					int local = ldloca->sregs [0];
 
-					if (stsize == td->locals [local].size) {
+					if (stsize == td->vars [local].size) {
 						// Replace LDLOCA + STOBJ_VT with MOV_VT
 						local_ref_count [sregs [0]]--;
 						ins->opcode = MINT_MOV_VT;
@@ -1916,7 +1916,7 @@ retry:
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
 					int local = ldloca->sregs [0];
-					int mt = td->locals [local].mt;
+					int mt = td->vars [local].mt;
 					if (mt != MINT_TYPE_VT) {
 						// We have an 8 byte local, just replace the stind with a mov
 						local_ref_count [sregs [0]]--;
@@ -1939,7 +1939,7 @@ retry:
 					int local = ldloca->sregs [0];
 					local_ref_count [sregs [0]]--;
 					// Allow ldloca instruction to be killed
-					if (td->locals [local].mt == (ins->opcode - MINT_STFLD_I1) && ins->data [0] == 0) {
+					if (td->vars [local].mt == (ins->opcode - MINT_STFLD_I1) && ins->data [0] == 0) {
 						ins->opcode = GINT_TO_OPCODE (interp_get_mov_for_type (mt, FALSE));
 						// The sreg of the MOV is the same as the second sreg of the STFLD
 						ins->dreg = local;
@@ -1995,7 +1995,7 @@ retry:
 				}
 			} else if (opcode == MINT_BOX) {
 				// TODO Add more relevant opcodes
-				local_defs [dreg].type = LOCAL_VALUE_NON_NULL;
+				local_defs [dreg].type = VAR_VALUE_NON_NULL;
 			}
 
 			ins_index++;
@@ -2024,7 +2024,7 @@ mono_test_interp_cprop (TransformData *td)
 static gboolean
 get_sreg_imm (TransformData *td, int sreg, gint16 *imm, int result_mt)
 {
-	InterpInst *def = td->locals [sreg].def;
+	InterpInst *def = td->vars [sreg].def;
 	if (def != NULL && td->local_ref_count [sreg] == 1) {
 		gint64 ct;
 		if (MINT_IS_LDC_I4 (def->opcode))
@@ -2153,15 +2153,15 @@ interp_super_instructions (TransformData *td)
 			int opcode = ins->opcode;
 			if (MINT_IS_NOP (opcode))
 				continue;
-			if (mono_interp_op_dregs [opcode] && !(td->locals [ins->dreg].flags & INTERP_LOCAL_FLAG_GLOBAL))
-				td->locals [ins->dreg].def = ins;
+			if (mono_interp_op_dregs [opcode] && !(td->vars [ins->dreg].flags & INTERP_LOCAL_FLAG_GLOBAL))
+				td->vars [ins->dreg].def = ins;
 
 			if (opcode == MINT_RET || (opcode >= MINT_RET_I1 && opcode <= MINT_RET_U2)) {
 				// ldc + ret -> ret.imm
 				int sreg = ins->sregs [0];
 				gint16 imm;
 				if (get_sreg_imm (td, sreg, &imm, (opcode == MINT_RET) ? MINT_TYPE_I2 : opcode - MINT_RET_I1)) {
-					InterpInst *def = td->locals [sreg].def;
+					InterpInst *def = td->vars [sreg].def;
 					int ret_op = MINT_IS_LDC_I4 (def->opcode) ? MINT_RET_I4_IMM : MINT_RET_I8_IMM;
 					InterpInst *new_inst = interp_insert_ins (td, ins, ret_op);
 					new_inst->data [0] = imm;
@@ -2199,7 +2199,7 @@ interp_super_instructions (TransformData *td)
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = sreg;
 					new_inst->data [0] = imm;
-					interp_clear_ins (td->locals [sreg_imm].def);
+					interp_clear_ins (td->vars [sreg_imm].def);
 					interp_clear_ins (ins);
 					local_ref_count [sreg_imm]--;
 					if (td->verbose_level) {
@@ -2217,7 +2217,7 @@ interp_super_instructions (TransformData *td)
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = ins->sregs [0];
 					new_inst->data [0] = -imm;
-					interp_clear_ins (td->locals [sreg_imm].def);
+					interp_clear_ins (td->vars [sreg_imm].def);
 					interp_clear_ins (ins);
 					local_ref_count [sreg_imm]--;
 					if (td->verbose_level) {
@@ -2227,7 +2227,7 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (opcode == MINT_MUL_I4_IMM || opcode == MINT_MUL_I8_IMM) {
 				int sreg = ins->sregs [0];
-				InterpInst *def = td->locals [sreg].def;
+				InterpInst *def = td->vars [sreg].def;
 				if (def != NULL && td->local_ref_count [sreg] == 1) {
 					gboolean is_i4 = opcode == MINT_MUL_I4_IMM;
 					if ((is_i4 && def->opcode == MINT_ADD_I4_IMM) ||
@@ -2256,7 +2256,7 @@ interp_super_instructions (TransformData *td)
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = ins->sregs [0];
 					new_inst->data [0] = imm;
-					interp_clear_ins (td->locals [sreg_imm].def);
+					interp_clear_ins (td->vars [sreg_imm].def);
 					interp_clear_ins (ins);
 					local_ref_count [sreg_imm]--;
 					if (td->verbose_level) {
@@ -2265,7 +2265,7 @@ interp_super_instructions (TransformData *td)
 					}
 				} else if (opcode == MINT_SHL_I4 || opcode == MINT_SHL_I8) {
 					int amount_var = ins->sregs [1];
-					InterpInst *amount_def = td->locals [amount_var].def;
+					InterpInst *amount_def = td->vars [amount_var].def;
 					if (amount_def != NULL && td->local_ref_count [amount_var] == 1 && amount_def->opcode == MINT_AND_I4) {
 						int mask_var = amount_def->sregs [1];
 						if (get_sreg_imm (td, mask_var, &imm, MINT_TYPE_I2)) {
@@ -2285,7 +2285,7 @@ interp_super_instructions (TransformData *td)
 								local_ref_count [amount_var]--;
 								local_ref_count [mask_var]--;
 
-								interp_clear_ins (td->locals [mask_var].def);
+								interp_clear_ins (td->vars [mask_var].def);
 								interp_clear_ins (amount_def);
 								interp_clear_ins (ins);
 								if (td->verbose_level) {
@@ -2299,7 +2299,7 @@ interp_super_instructions (TransformData *td)
 			} else if (opcode == MINT_DIV_UN_I4 || opcode == MINT_DIV_UN_I8) {
 				// ldc + div.un -> shr.imm
 				int sreg_imm = ins->sregs [1];
-				InterpInst *def = td->locals [sreg_imm].def;
+				InterpInst *def = td->vars [sreg_imm].def;
 				if (def != NULL && td->local_ref_count [sreg_imm] == 1) {
 					int power2 = -1;
 					if (MINT_IS_LDC_I4 (def->opcode)) {
@@ -2331,7 +2331,7 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (MINT_IS_LDIND_INT (opcode)) {
 				int sreg_base = ins->sregs [0];
-				InterpInst *def = td->locals [sreg_base].def;
+				InterpInst *def = td->vars [sreg_base].def;
 				if (def != NULL && td->local_ref_count [sreg_base] == 1) {
 					InterpInst *new_inst = NULL;
 					if (def->opcode == MINT_ADD_P) {
@@ -2359,7 +2359,7 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (MINT_IS_LDIND_OFFSET (opcode)) {
 				int sreg_off = ins->sregs [1];
-				InterpInst *def = td->locals [sreg_off].def;
+				InterpInst *def = td->vars [sreg_off].def;
 				if (def != NULL && td->local_ref_count [sreg_off] == 1) {
 					if (def->opcode == MINT_MUL_P_IMM || def->opcode == MINT_ADD_P_IMM || def->opcode == MINT_ADD_MUL_P_IMM) {
 						int ldind_offset_op = MINT_LDIND_OFFSET_ADD_MUL_IMM_I1 + (opcode - MINT_LDIND_OFFSET_I1);
@@ -2395,7 +2395,7 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (MINT_IS_STIND_INT (opcode)) {
 				int sreg_base = ins->sregs [0];
-				InterpInst *def = td->locals [sreg_base].def;
+				InterpInst *def = td->vars [sreg_base].def;
 				if (def != NULL && td->local_ref_count [sreg_base] == 1) {
 					InterpInst *new_inst = NULL;
 					if (def->opcode == MINT_ADD_P) {
@@ -2427,7 +2427,7 @@ interp_super_instructions (TransformData *td)
 				// when inlining property accessors. We should have more advanced cknull removal
 				// optimzations, so we can catch cases where instructions are not next to each other.
 				int obj_sreg = ins->sregs [0];
-				InterpInst *def = td->locals [obj_sreg].def;
+				InterpInst *def = td->vars [obj_sreg].def;
 				if (def != NULL && def->opcode == MINT_CKNULL && interp_prev_ins (ins) == def &&
 						def->dreg == obj_sreg && local_ref_count [obj_sreg] == 1) {
 					if (td->verbose_level) {
@@ -2452,7 +2452,7 @@ interp_super_instructions (TransformData *td)
 						new_ins->sregs [0] = ins->sregs [0];
 						new_ins->data [0] = imm;
 						new_ins->info.target_bb = ins->info.target_bb;
-						interp_clear_ins (td->locals [sreg_imm].def);
+						interp_clear_ins (td->vars [sreg_imm].def);
 						interp_clear_ins (ins);
 						local_ref_count [sreg_imm]--;
 						if (td->verbose_level) {
@@ -2478,7 +2478,7 @@ interp_super_instructions (TransformData *td)
 				if (opcode == MINT_BRFALSE_I4 || opcode == MINT_BRTRUE_I4) {
 					gboolean negate = opcode == MINT_BRFALSE_I4;
 					int cond_sreg = ins->sregs [0];
-					InterpInst *def = td->locals [cond_sreg].def;
+					InterpInst *def = td->vars [cond_sreg].def;
 					if (def != NULL && local_ref_count [cond_sreg] == 1) {
 						int replace_opcode = -1;
 						switch (def->opcode) {
@@ -2538,7 +2538,7 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (opcode == MINT_STOBJ_VT_NOREF) {
 				int sreg_src = ins->sregs [1];
-				InterpInst *def = td->locals [sreg_src].def;
+				InterpInst *def = td->vars [sreg_src].def;
 				if (def != NULL && interp_prev_ins (ins) == def && def->opcode == MINT_LDOBJ_VT && ins->data [0] == def->data [0] && td->local_ref_count [sreg_src] == 1) {
 					InterpInst *new_inst = interp_insert_ins (td, ins, MINT_CPOBJ_VT_NOREF);
 					new_inst->sregs [0] = ins->sregs [0]; // dst
