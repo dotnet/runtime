@@ -2874,17 +2874,14 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
     if (elemType == ELEMENT_TYPE_GENERICINST)
     {
         IfFailThrow(sig.GetElemType(&elemType));
-        if (elemType == ELEMENT_TYPE_VALUETYPE)
-        {
-            return AsyncTaskMethod::NormalMethod; // Task<T> is a class, so we can't be that if we get here
-        }
+        *pIsValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
         IfFailThrow(sig.GetToken(&tk));
         IfFailThrow(sig.GetData(&data));
         if (data == 1)
         {
             // This might be System.Threading.Tasks.Task`1
             GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-            if (((strcmp(name, "Task`1") == 0) || (strcmp(name, "ValueTask`1") == 0)) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+            if ((strcmp(name, *pIsValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
             {
                 *pIsValueTask = name[0] == 'V';
                 if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
@@ -2895,9 +2892,10 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
     else if ((elemType == ELEMENT_TYPE_CLASS) || (elemType == ELEMENT_TYPE_VALUETYPE))
     {
         IfFailThrow(sig.GetToken(&tk));
+        *pIsValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
         // This might be System.Threading.Tasks.Task or ValueTask
         GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-        if (((strcmp(name, "Task") == 0) || (strcmp(name, "ValueTask") == 0)) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+        if ((strcmp(name, *pIsValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
         {
             *pIsValueTask = name[0] == 'V';
             if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
