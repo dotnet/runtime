@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
@@ -16,7 +17,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// - field
 	// - parameter
 	// - method return
-	public abstract class LocalDataFlowVisitor<TValue, TValueLattice> : OperationWalker<LocalDataFlowState<TValue, TValueLattice>, TValue>,
+	public abstract partial class LocalDataFlowVisitor<TValue, TValueLattice> : OperationWalker<LocalDataFlowState<TValue, TValueLattice>, TValue>,
 		ITransfer<BlockProxy, LocalState<TValue>, LocalDataFlowState<TValue, TValueLattice>, LocalStateLattice<TValue, TValueLattice>>
 		// This struct constraint prevents warnings due to possible null returns from the visitor methods.
 		// Note that this assumes that default(TValue) is equal to the TopValue.
@@ -26,6 +27,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		protected readonly LocalStateLattice<TValue, TValueLattice> LocalStateLattice;
 
 		protected readonly InterproceduralStateLattice<TValue, TValueLattice> InterproceduralStateLattice;
+
+		protected readonly Compilation Compilation;
 
 		protected readonly ISymbol OwningSymbol;
 
@@ -44,12 +47,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			=> !lValueFlowCaptures.TryGetValue (captureId, out var captureKind) || captureKind != FlowCaptureKind.LValueCapture;
 
 		public LocalDataFlowVisitor (
+			Compilation compilation,
 			LocalStateLattice<TValue, TValueLattice> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph cfg,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			InterproceduralState<TValue, TValueLattice> interproceduralState)
 		{
+			Compilation = compilation;
 			LocalStateLattice = lattice;
 			InterproceduralStateLattice = default;
 			OwningSymbol = owningSymbol;
@@ -123,6 +128,30 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			return GetLocal (operation, state);
 		}
+
+		TValue ProcessBinderCall (IOperation operation, string methodName, LocalDataFlowState<TValue, TValueLattice> state) {
+			var assemblyType = Compilation.GetTypeByMetadataName ("Microsoft.CSharp.RuntimeBinder.Binder");
+			Debug.Assert (assemblyType != null);
+			if (assemblyType == null)
+				return TopValue;
+			var method = assemblyType.GetMembers (methodName).OfType<IMethodSymbol> ().SingleOrDefault ();
+			Debug.Assert (method != null);
+			if (method == null)
+				return TopValue;
+			return ProcessMethodCall (operation, method, null, ImmutableArray<IArgumentOperation>.Empty, state);
+		}
+
+		public override TValue VisitDynamicInvocation (IDynamicInvocationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+			=> ProcessBinderCall (operation, "InvokeMember", state);
+
+		public override TValue VisitDynamicObjectCreation (IDynamicObjectCreationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+			=> ProcessBinderCall (operation, "InvokeConstructor", state);
+
+		public override TValue VisitDynamicMemberReference (IDynamicMemberReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+			=> ProcessBinderCall (operation, operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write) ? "SetMember" : "GetMember", state);
+
+		public override TValue VisitDynamicIndexerAccess (IDynamicIndexerAccessOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+			=> ProcessBinderCall (operation, operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write) ? "SetIndex" : "GetIndex", state);
 
 		bool IsReferenceToCapturedVariable (ILocalReferenceOperation localReference)
 		{
@@ -283,12 +312,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// also produces warnings for ref params/locals/returns.
 				// https://github.com/dotnet/linker/issues/2632
 				// https://github.com/dotnet/linker/issues/2158
-				Visit (targetOperation, state);
-				break;
 			case IDynamicMemberReferenceOperation:
 			case IDynamicIndexerAccessOperation:
-				// Not yet implemented in analyzer:
-				// https://github.com/dotnet/runtime/issues/94057
+				// Assignment to dynamic member/indexer will translate into a call to runtime binder methods
+				// which should produce warnings, but isn't relevant for dataflow.
+				Visit (targetOperation, state);
 				break;
 
 			// Keep these cases in sync with those in CapturedReferenceValue, for any that

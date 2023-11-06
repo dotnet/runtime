@@ -27,8 +27,6 @@ namespace ILLink.RoslynAnalyzer
 		private protected abstract DiagnosticDescriptor RequiresAttributeMismatch { get; }
 		private protected abstract DiagnosticDescriptor RequiresOnStaticCtor { get; }
 
-		private protected virtual ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions { get; } = ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)>.Empty;
-
 		private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
 		private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
 
@@ -102,10 +100,6 @@ namespace ILLink.RoslynAnalyzer
 						}
 					}
 				}, SyntaxKind.GenericName);
-
-				// Register any extra operation actions supported by the analyzer.
-				foreach (var extraOperationAction in ExtraOperationActions)
-					context.RegisterOperationAction (extraOperationAction.Action, extraOperationAction.OperationKind);
 
 				foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
 					context.RegisterSyntaxNodeAction (extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
