@@ -7636,17 +7636,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int swift_error_args = 0;
 				int swift_self_args = 0;
 				for (int i = 0; i < method->signature->param_count; ++i) {
-					MonoType *arg_type = method->signature->params [i];
-					if (arg_type && arg_type->data.klass) {
-						const char *name_space = m_class_get_name_space(arg_type->data.klass);
-						const char *class_name = m_class_get_name(arg_type->data.klass);
-
-						if (name_space && class_name && !strcmp(name_space, "System.Runtime.InteropServices.Swift")) {
-							if (!strcmp(class_name, "SwiftError")) {
-								swift_error_args++;
-							} else if (!strcmp(class_name, "SwiftSelf")) {
-								swift_self_args++;
-							}
+					MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+					if (klass) {
+						// References cannot be retrieved directly. For SwiftError*, use strncmp since its length is predefined,
+						// allowing the trailing '*' character to be ignored.
+						MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+						if (swift_error &&
+							!strcmp (m_class_get_name_space (klass), m_class_get_name_space (swift_error)) && 
+							!strncmp (m_class_get_name (klass), m_class_get_name (swift_error), 10)) {
+							swift_error_args++;
+						} else if (klass == mono_class_try_get_swift_self_class ()) {
+							swift_self_args++;
 						}
 					}
 				}

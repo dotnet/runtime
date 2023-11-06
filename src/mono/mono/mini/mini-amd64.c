@@ -1079,17 +1079,17 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		}
 
 		if (sig->call_convention == MONO_CALL_SWIFTCALL) {
-			MonoType *arg_type = sig->params[i]->data.type;
-			if (arg_type && arg_type->data.klass) {
-				const char *name_space = m_class_get_name_space(arg_type->data.klass);
-				const char *class_name = m_class_get_name(arg_type->data.klass);
-
-				if (name_space && class_name && !strcmp(name_space, "System.Runtime.InteropServices.Swift")) {
-					if (!strcmp(class_name, "SwiftError")) {
-						ainfo->storage = ArgSwiftError;
-					} else if (!strcmp(class_name, "SwiftSelf")) {
-						ainfo->storage = ArgSwiftSelf;
-					}
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+			if (klass) {
+				// References cannot be retrieved directly. For SwiftError*, use strncmp since its length is predefined,
+				// allowing the trailing '*' character to be ignored.
+				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+				if (swift_error &&
+					!strcmp (m_class_get_name_space (klass), m_class_get_name_space (swift_error)) && 
+					!strncmp (m_class_get_name (klass), m_class_get_name (swift_error), 10)) {
+					ainfo->storage = ArgSwiftError;
+				} else if (klass == mono_class_try_get_swift_self_class ()) {
+					ainfo->storage = ArgSwiftSelf;
 				}
 			}
 		}
@@ -1125,9 +1125,9 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 		case ArgInIReg:
 			return &ccontext->gregs [ainfo->reg];
 		case ArgSwiftSelf:
-			return &ccontext->cregs [AMD64_R13 - CTX_REGS_OFFSET];
+			return &ccontext->cregs [ctx_regs [AMD64_R13]];
 		case ArgSwiftError:
-			return &ccontext->cregs [AMD64_R12 - CTX_REGS_OFFSET];
+			return &ccontext->cregs [ctx_regs [AMD64_R12]];
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
 			return &ccontext->fregs [ainfo->reg];

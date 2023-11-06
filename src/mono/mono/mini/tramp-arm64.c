@@ -722,11 +722,9 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FP_PARAM_REGS; i++)
 		arm_ldrfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
-#ifdef CTX_REGS
 	/* set all context registers from CallContext */
 	for (i = 0; i < CTX_REGS; i++)
 		arm_ldrx (code, i + CTX_REGS_OFFSET, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, cregs) + i * sizeof (host_mgreg_t));
-#endif
 
 	/* load target addr */
 	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, off_targetaddr);
@@ -745,11 +743,9 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FP_PARAM_REGS; i++)
 		arm_strfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
-#ifdef CTX_REGS
 	/* set all context registers to CallContext */
 	for (i = 0; i < CTX_REGS; i++)
 		arm_strx (code, i + CTX_REGS_OFFSET, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, cregs) + i * sizeof (host_mgreg_t));
-#endif
 
 	arm_movspx (code, ARMREG_SP, ARMREG_FP);
 	arm_ldpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
