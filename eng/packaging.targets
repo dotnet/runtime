@@ -37,6 +37,12 @@
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
 
+  <!-- Main packages don't include assets for net6.0 and net7.0 anymore. -->
+  <ItemGroup>
+    <PackageValidationBaselineFrameworkToIgnore Include="net6.0" />
+    <PackageValidationBaselineFrameworkToIgnore Include="net7.0" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
                             '$(PackageUseIncrementalServicingVersion)' == 'true'">
     <!-- If no servicing version is set we need to default to 0 in order for dependency versions to

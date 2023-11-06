@@ -1,17 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- net6.0 and net7.0 aren't supported by the current package and any errors should be suppressed. -->
-  <Suppression>
-    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
-    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <Left>lib/net7.0/System.Data.Odbc.dll</Left>
-    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Data.Odbc.ODBC32</Target>
