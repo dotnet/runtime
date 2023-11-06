@@ -1125,9 +1125,9 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 		case ArgInIReg:
 			return &ccontext->gregs [ainfo->reg];
 		case ArgSwiftSelf:
-			return &ccontext->cregs [ctx_regs [AMD64_R13]];
+			return &ccontext->cregs [AMD64_R13 - CTX_REGS_OFFSET];
 		case ArgSwiftError:
-			return &ccontext->cregs [ctx_regs [AMD64_R12]];
+			return &ccontext->cregs [AMD64_R12 - CTX_REGS_OFFSET];
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
 			return &ccontext->fregs [ainfo->reg];
