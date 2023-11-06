@@ -1,14 +1,14 @@
 setlocal ENABLEEXTENSIONS
 pushd %~dp0
 
-set ASYNC_SUFFIX=async-5
+set ASYNC_SUFFIX=async-6
 
 cd ..
 pushd dotnet-roslyn
 
 git fetch AzDo dev/vsadov/a2
 rem when updating this, make sure to update the ASYNC_SUFFIX above and the versions.props file
-git checkout 1d2dccc8ad7d4169112c2f93796a418a1cd9d930
+git checkout facd968bc0e0c2889c78d4f121c5d1d39c3d6566
 
 call restore.cmd
 call build.cmd -c release

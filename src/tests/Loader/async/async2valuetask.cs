@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
-public class Async2Object
+public class Async2valuetask
 {
     [Fact]
     public static int TestEntryPoint()
@@ -14,13 +14,13 @@ public class Async2Object
         return (int)AsyncTestEntryPoint(100).Result;
     }
 
-    private static async Task<object> AsyncTestEntryPoint(int arg)
+    private static ValueTask<int> AsyncTestEntryPoint(int arg)
     {
-        return await ObjMethod(arg);
+        return M1(arg);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 object ObjMethod(int arg)
+    [ValueTaskAsyncAttribute]
+    private static async2 int M1(int arg)
     {
         await Task.Yield();
         return arg;
