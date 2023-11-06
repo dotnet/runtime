@@ -159,6 +159,27 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunMultiplyKaratsubaBoundary()
+        {
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            // Multiply Method - One Large BigInteger
+            for (int i = 0; i < s_samples; i++)
+            {
+                for (int d1 = -2; d1 <= 2; d1++)
+                {
+                    tempByteArray1 = GetRandomByteArray(s_random, BigIntegerCalculator.MultiplyThreshold + d1);
+                    for (int d2 = -4; d2 <= 4; d2++)
+                    {
+                        tempByteArray2 = GetRandomByteArray(s_random, (BigIntegerCalculator.MultiplyThreshold + 1) * 2 + d2);
+                        VerifyMultiplyString(Print(tempByteArray1) + Print(tempByteArray2) + "b*");
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public static void RunMultiplyTests()
         {
             byte[] tempByteArray1 = new byte[0];
