@@ -78,7 +78,7 @@ endif()
 
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 
-  if (TARGET_DARWIN)
+  if (TARGET_DARWIN AND NOT CLR_CMAKE_TARGET_OSX)
     set(icu_shim_darwin_sources_base
         pal_locale.m
         pal_collation.m
