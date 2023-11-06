@@ -12,11 +12,13 @@ namespace System.Text.Json.SourceGeneration
         {
             // Must be kept in sync with https://github.com/dotnet/runtime/blob/main/docs/project/list-of-diagnostics.md
 
+            private const string CategoryName = "System.Text.Json.SourceGeneration";
+
             public static DiagnosticDescriptor TypeNotSupported { get; } = DiagnosticDescriptorHelper.Create(
                 id: "SYSLIB1030",
                 title: new LocalizableResourceString(nameof(SR.TypeNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.TypeNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -24,7 +26,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1031",
                 title: new LocalizableResourceString(nameof(SR.DuplicateTypeNameTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.DuplicateTypeNameMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -32,7 +34,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1032",
                 title: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -40,7 +42,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1033",
                 title: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
@@ -48,7 +50,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1034",
                 title: new LocalizableResourceString(nameof(SR.JsonStringEnumConverterNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.JsonStringEnumConverterNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -56,7 +58,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1035",
                 title: new LocalizableResourceString(nameof(SR.MultipleJsonExtensionDataAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.MultipleJsonExtensionDataAttributeFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
@@ -64,7 +66,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1036",
                 title: new LocalizableResourceString(nameof(SR.DataExtensionPropertyInvalidTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.DataExtensionPropertyInvalidFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
@@ -72,7 +74,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1038",
                 title: new LocalizableResourceString(nameof(SR.InaccessibleJsonIncludePropertiesNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.InaccessibleJsonIncludePropertiesNotSupportedFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -80,7 +82,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1039",
                 title: new LocalizableResourceString(nameof(SR.FastPathPolymorphismNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.FastPathPolymorphismNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -88,7 +90,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1220",
                 title: new LocalizableResourceString(nameof(SR.JsonConverterAttributeInvalidTypeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.JsonConverterAttributeInvalidTypeMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -96,7 +98,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1221",
                 title: new LocalizableResourceString(nameof(SR.JsonUnsupportedLanguageVersionTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.JsonUnsupportedLanguageVersionMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
@@ -104,7 +106,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1222",
                 title: new LocalizableResourceString(nameof(SR.JsonConstructorInaccessibleTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.JsonConstructorInaccessibleMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -112,7 +114,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1223",
                 title: new LocalizableResourceString(nameof(SR.DerivedJsonConverterAttributesNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.DerivedJsonConverterAttributesNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -120,7 +122,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1224",
                 title: new LocalizableResourceString(nameof(SR.JsonSerializableAttributeOnNonContextTypeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.JsonSerializableAttributeOnNonContextTypeMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                category: CategoryName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
         }

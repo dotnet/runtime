@@ -230,10 +230,10 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonStringEnumConverterOfTType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter`1", ref _JsonStringEnumConverterOfTType);
         private Option<INamedTypeSymbol?> _JsonStringEnumConverterOfTType;
 
-        public INamedTypeSymbol? IJsonOnSerializingType => GetOrResolveType(JsonConstants.IJsonOnSerializingFullName, ref _IJsonOnSerializingType);
+        public INamedTypeSymbol? IJsonOnSerializingType => GetOrResolveType("System.Text.Json.Serialization.IJsonOnSerializing", ref _IJsonOnSerializingType);
         private Option<INamedTypeSymbol?> _IJsonOnSerializingType;
 
-        public INamedTypeSymbol? IJsonOnSerializedType => GetOrResolveType(JsonConstants.IJsonOnSerializedFullName, ref _IJsonOnSerializedType);
+        public INamedTypeSymbol? IJsonOnSerializedType => GetOrResolveType("System.Text.Json.Serialization.IJsonOnSerialized", ref _IJsonOnSerializedType);
         private Option<INamedTypeSymbol?> _IJsonOnSerializedType;
 
         // Unsupported types

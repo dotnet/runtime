@@ -61,7 +61,6 @@
     <Compile Include="Helpers\SourceGeneratorHelpers.cs" />
     <Compile Include="Helpers\KnownTypeSymbols.cs" />
     <Compile Include="Helpers\RoslynExtensions.cs" />
-    <Compile Include="JsonConstants.cs" />
     <Compile Include="JsonSourceGenerator.DiagnosticDescriptors.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.ExceptionMessages.cs" />
