@@ -1789,7 +1789,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 					// Remove the ldlocas
 					td->locals [ldloca1->sregs [0]].indirects--;
 					td->locals [ldloca2->sregs [0]].indirects--;
-					mono_interp_stats.ldlocas_removed += 2;
 					interp_clear_ins (ldloca1);
 					interp_clear_ins (ldloca2);
 					td->sp -= 2;

@@ -987,7 +987,6 @@ interp_local_deadce (TransformData *td)
 					}
 
 					if (ins->opcode == MINT_LDLOCA_S) {
-						mono_interp_stats.ldlocas_removed++;
 						td->locals [ins->sregs [0]].indirects--;
 						if (!td->locals [ins->sregs [0]].indirects) {
 							// We can do cprop now through this local. Run cprop again.
@@ -995,7 +994,6 @@ interp_local_deadce (TransformData *td)
 						}
 					}
 					interp_clear_ins (ins);
-					mono_interp_stats.killed_instructions++;
 					// FIXME This is lazy. We should update the ref count for the sregs and redo deadce.
 					needs_cprop = TRUE;
 				}
@@ -1141,8 +1139,6 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 	// We were able to compute the result of the ins instruction. We replace the unop
 	// with a LDC of the constant. We leave alone the sregs of this instruction, for
 	// deadce to kill the instructions initializing them.
-	mono_interp_stats.constant_folds++;
-
 	if (result.type == LOCAL_VALUE_I4)
 		ins = interp_get_ldc_i4_from_const (td, ins, result.i, dreg);
 	else if (result.type == LOCAL_VALUE_I8)
@@ -1216,7 +1212,6 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 		interp_dump_ins (ins, td->data_items);
 	}
 
-	mono_interp_stats.constant_folds++;
 	local_ref_count [sreg]--;
 	return ins;
 }
@@ -1331,7 +1326,6 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins, g
 	// We were able to compute the result of the ins instruction. We replace the binop
 	// with a LDC of the constant. We leave alone the sregs of this instruction, for
 	// deadce to kill the instructions initializing them.
-	mono_interp_stats.constant_folds++;
 	*folded = TRUE;
 	if (result.type == LOCAL_VALUE_I4)
 		ins = interp_get_ldc_i4_from_const (td, ins, result.i, dreg);
@@ -1417,7 +1411,6 @@ interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue 
 		interp_dump_ins (ins, td->data_items);
 	}
 
-	mono_interp_stats.constant_folds++;
 	local_ref_count [sreg1]--;
 	local_ref_count [sreg2]--;
 	return ins;
@@ -1669,7 +1662,6 @@ retry:
 					}
 					local_defs [dreg].ins = ins;
 					local_ref_count [sreg]--;
-					mono_interp_stats.copy_propagations++;
 					if (td->verbose_level) {
 						g_print ("cprop loc %d -> ct :\n\t", sreg);
 						interp_dump_ins (ins, td->data_items);
@@ -2067,7 +2059,6 @@ get_sreg_imm (TransformData *td, int sreg, gint16 *imm, int result_mt)
 		}
 		if (ct >= min_val && ct <= max_val) {
 			*imm = (gint16)ct;
-			mono_interp_stats.super_instructions++;
 			return TRUE;
 		}
 	}
@@ -2360,7 +2351,6 @@ interp_super_instructions (TransformData *td)
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
 						local_ref_count [sreg_base]--;
-						mono_interp_stats.super_instructions++;
 						if (td->verbose_level) {
 							g_print ("superins: ");
 							interp_dump_ins (new_inst, td->data_items);
@@ -2397,7 +2387,6 @@ interp_super_instructions (TransformData *td)
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
 						local_ref_count [sreg_off]--;
-						mono_interp_stats.super_instructions++;
 						if (td->verbose_level) {
 							g_print ("method %s:%s, superins: ", m_class_get_name (td->method->klass), td->method->name);
 							interp_dump_ins (new_inst, td->data_items);
@@ -2426,7 +2415,6 @@ interp_super_instructions (TransformData *td)
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
 						local_ref_count [sreg_base]--;
-						mono_interp_stats.super_instructions++;
 						if (td->verbose_level) {
 							g_print ("superins: ");
 							interp_dump_ins (new_inst, td->data_items);
@@ -2449,7 +2437,6 @@ interp_super_instructions (TransformData *td)
 					ins->sregs [0] = def->sregs [0];
 					interp_clear_ins (def);
 					local_ref_count [obj_sreg]--;
-					mono_interp_stats.super_instructions++;
 				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode) && interp_is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
 				gint16 imm;
@@ -2527,7 +2514,6 @@ interp_super_instructions (TransformData *td)
 								ins->sregs [1] = def->sregs [1];
 							interp_clear_ins (def);
 							local_ref_count [cond_sreg]--;
-							mono_interp_stats.super_instructions++;
 							if (td->verbose_level) {
 								g_print ("superins: ");
 								interp_dump_ins (ins, td->data_items);
@@ -2562,7 +2548,6 @@ interp_super_instructions (TransformData *td)
 					interp_clear_ins (def);
 					interp_clear_ins (ins);
 					local_ref_count [sreg_src]--;
-					mono_interp_stats.super_instructions++;
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						interp_dump_ins (new_inst, td->data_items);
