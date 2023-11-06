@@ -7808,20 +7808,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
                     }
                 }
 
-                // Handle x * 1 => x, but only if the scalar RHS is 1.
-                ValueNum oneVN;
-                if (varTypeIsSIMD(TypeOfVN(arg1VN)))
-                {
-                    oneVN = VNOneForSimdType(TypeOfVN(arg1VN), baseType);
-                }
-                else
-                {
-                    oneVN = VNOneForType(baseType);
-                }
+                assert((TypeOfVN(arg0VN) == type) && (TypeOfVN(arg1VN) == TYP_SIMD8));
 
-                if (arg1VN == oneVN)
+                // Handle x * 1 => x, but only if the scalar RHS is 1.
+                if (arg1VN == VNOneForSimdType(TYP_SIMD8, baseType))
                 {
-                    assert(TypeOfVN(arg0VN) == type);
                     return arg0VN;
                 }
                 break;
