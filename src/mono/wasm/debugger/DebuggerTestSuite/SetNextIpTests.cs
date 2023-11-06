@@ -113,7 +113,6 @@ public class SetNextIpTests : DebuggerTests
     }
 
     [ConditionalFact(nameof(RunningOnChrome))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -160,7 +159,6 @@ public class SetNextIpTests : DebuggerTests
         }
 
     [ConditionalFact(nameof(RunningOnChrome))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda_InvalidLocation()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -190,7 +188,6 @@ public class SetNextIpTests : DebuggerTests
     }
 
     [ConditionalFact(nameof(RunningOnChrome))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda_ToNestedLambda()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -221,7 +218,6 @@ public class SetNextIpTests : DebuggerTests
         }
 
     [ConditionalFact(nameof(RunningOnChrome))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda_ToNestedSingleLineLambda_Invalid()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -252,7 +248,6 @@ public class SetNextIpTests : DebuggerTests
     }
 
     [ConditionalFact(nameof(RunningOnChrome))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda_ToNestedSingleLineLambda_Valid()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
