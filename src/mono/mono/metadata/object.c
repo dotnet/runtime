@@ -1373,8 +1373,8 @@ print_imt_entry (const char* message, MonoImtBuilderEntry *e, int num) {
 				message,
 				num,
 				method,
-				method->klass->name_space,
-				method->klass->name,
+				m_class_get_name_space (method->klass),
+				m_class_get_name (method->klass),
 				method->name);
 	} else {
 		printf ("  * %s: NULL\n", message);
