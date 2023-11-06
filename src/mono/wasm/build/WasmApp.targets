@@ -510,6 +510,7 @@
   <Target Name="_AfterWasmBuildApp">
     <ItemGroup>
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
+      <WasmAssembliesFinal Include="@(_WasmSatelliteAssemblies)" />
     </ItemGroup>
   </Target>
 </Project>
