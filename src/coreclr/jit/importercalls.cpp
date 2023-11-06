@@ -903,7 +903,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
             }
 
-            if (call->AsCall()->gtIsAsyncCall && compIsAsync2StateMachine())
+            if (sig->isAsyncCall() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0))
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
@@ -923,7 +923,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
             }
 
-            if (call->AsCall()->gtIsAsyncCall && compIsAsync2StateMachine())
+            if (sig->isAsyncCall() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0))
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
@@ -2582,6 +2582,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         GenTree* node = new (this, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
         node->SetHasOrderingSideEffect();
         node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
+        info.compUsesAsyncContinuation = true;
         return node;
     }
 

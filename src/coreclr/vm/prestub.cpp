@@ -1760,24 +1760,17 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
             DWORD localArg = 0;
             if (asyncMsig.HasThis())
             {
+                // Struct async thunks not yet implemented
+                _ASSERTE(!this->GetMethodTable()->IsValueType());
                 pCode->EmitLDARG(localArg++);
             }
-            if ((asyncMsig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE) != 0)
-            {
-                _ASSERTE(!"Cannot handle generic context");
-            }
-            _ASSERTE((asyncMsig.GetCallingConventionInfo() & CORINFO_CALLCONV_ASYNCCALL) != 0);
-
-            pCode->EmitLDNULL(); // Async continuation; not resuming
-
             for (UINT iArg = 0; iArg < asyncMsig.NumFixedArgs(); iArg++)
             {
                 pCode->EmitLDARG(localArg++);
             }
 
-            // TODO: This and instantiating stubs can directly load the target from the precode slot
-            pCode->EmitLDC(pAsyncOtherVariant->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
-            pCode->EmitCALLI(pCode->GetSigToken(pTargetSig, cbTargetSig), localArg + 2, logicalResultLocal != UINT_MAX ? 1 : 0);
+            pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, logicalResultLocal != UINT_MAX ? 1 : 0);
+
             if (logicalResultLocal != UINT_MAX)
                 pCode->EmitSTLOC(logicalResultLocal);
             pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC2_CALL_CONTINUATION, 0, 1);

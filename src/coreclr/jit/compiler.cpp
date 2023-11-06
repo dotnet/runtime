@@ -6827,7 +6827,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
 
-    info.compHasNextCallRetAddr = false;
+    info.compHasNextCallRetAddr    = false;
+    info.compUsesAsyncContinuation = false;
 
     if (opts.IsReversePInvoke())
     {

@@ -10087,12 +10087,13 @@ public:
         // (2) the code is hot/cold split, and we issued less code than we expected
         // in the cold section (the hot section will always be padded out to compTotalHotCodeSize).
 
-        bool compIsStatic : 1;           // Is the method static (no 'this' pointer)?
-        bool compIsVarArgs : 1;          // Does the method have varargs parameters?
-        bool compInitMem : 1;            // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
-        bool compProfilerCallback : 1;   // JIT inserted a profiler Enter callback
-        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
-        bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
+        bool compIsStatic : 1;              // Is the method static (no 'this' pointer)?
+        bool compIsVarArgs : 1;             // Does the method have varargs parameters?
+        bool compInitMem : 1;               // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
+        bool compProfilerCallback : 1;      // JIT inserted a profiler Enter callback
+        bool compPublishStubParam : 1;      // EAX captured in prolog will be available through an intrinsic
+        bool compHasNextCallRetAddr : 1;    // The NextCallReturnAddress intrinsic is used.
+        bool compUsesAsyncContinuation : 1; // The Async2CallContinuation intrinsic is used.
 
         var_types compRetType;       // Return type of the method as declared in IL (including SIMD normalization)
         var_types compRetNativeType; // Normalized return type as per target arch ABI

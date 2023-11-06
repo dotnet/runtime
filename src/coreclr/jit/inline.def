@@ -113,6 +113,7 @@ INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",     
 INLINE_OBSERVATION(DEBUG_CODEGEN,             bool,   "debug codegen",                        FATAL,       CALLER)
 INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoInlineRange",        FATAL,       CALLER)
 INLINE_OBSERVATION(USES_NEXT_CALL_RET_ADDR,   bool,   "uses NextCallReturnAddress intrinsic", FATAL,       CALLER)
+INLINE_OBSERVATION(ASYNC2_USED_CONTINUATION,  bool,   "uses Async2CallContinuation intrinsic",FATAL,       CALLER)
 
 // ------ Caller Information -------
 
