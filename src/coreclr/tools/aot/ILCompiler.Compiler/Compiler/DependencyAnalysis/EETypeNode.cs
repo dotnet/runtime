@@ -639,12 +639,16 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Ask the metadata manager
-            // if we have any dependencies due to presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
+            if (!ConstructedEETypeNode.CreationAllowed(_type))
+            {
+                // If necessary MethodTable is the highest load level for this type, ask the metadata manager
+                // if we have any dependencies due to presence of the EEType.
+                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
 
-            if (_type is MetadataType mdType)
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
+                // If necessary MethodTable is the highest load level, consider this a module use
+                if (_type is MetadataType mdType)
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
+            }
 
             if (_type.IsFunctionPointer)
                 FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);

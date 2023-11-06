@@ -349,7 +349,7 @@ class DeadCodeElimination
             Console.WriteLine(s_type == typeof(Never));
 
 #if !DEBUG
-            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Never));
+            ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
 #endif
         }
     }
@@ -398,7 +398,7 @@ class DeadCodeElimination
 
             // We only expect to be able to get rid of it when optimizing
 #if !DEBUG
-            ThrowIfPresentWithUsableMethodTable(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
 #endif
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
 
