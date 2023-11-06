@@ -13,6 +13,7 @@ class DeadCodeElimination
     {
         SanityTest.Run();
         TestInstanceMethodOptimization.Run();
+        TestReflectionInvokeSignatures.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
@@ -72,6 +73,32 @@ class DeadCodeElimination
 #endif
 
             ThrowIfPresent(typeof(TestInstanceMethodOptimization), nameof(UnreferencedType));
+        }
+    }
+
+    class TestReflectionInvokeSignatures
+    {
+        public class Never1 { }
+
+        public static void Invoke1(Never1 inst) { }
+
+        public struct Allocated1 { }
+
+        public static void Invoke2(out Allocated1 inst) { inst = default; }
+
+        public static void Run()
+        {
+            {
+                MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke1));
+                mi.Invoke(null, new object[1]);
+                ThrowIfPresentWithUsableMethodTable(typeof(TestReflectionInvokeSignatures), nameof(Never1));
+            }
+
+            {
+                MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke2));
+                mi.Invoke(null, new object[1]);
+                ThrowIfNotPresent(typeof(TestReflectionInvokeSignatures), nameof(Allocated1));
+            }
         }
     }
 
