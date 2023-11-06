@@ -32,7 +32,7 @@ namespace System
             if (MethodTable.SupportsWritableData)
             {
                 ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
-                return type ?? GetTypeFromMethodTableSlow(pMT, ref type);
+                return type ?? GetTypeFromMethodTableSlow(pMT);
             }
             else
             {
@@ -41,7 +41,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT, ref RuntimeType? runtimeTypeCache)
+        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
             // TODO: instead of fragmenting the frozen object heap, we should have our own allocator
             // for objects that live forever outside the GC heap.
@@ -57,6 +57,7 @@ namespace System
 
             type.DangerousSetUnderlyingEEType(pMT);
 
+            ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
             if (Interlocked.CompareExchange(ref runtimeTypeCache, type, null) == null)
             {
                 // Create and leak a GC handle
