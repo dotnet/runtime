@@ -3585,12 +3585,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
-        const AssertionIndex assertionIndex = GetAssertionIndex(index);
-        if (assertionIndex > optAssertionCount)
-        {
-            break;
-        }
-        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
