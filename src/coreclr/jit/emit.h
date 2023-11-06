@@ -774,9 +774,9 @@ protected:
         unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
-        unsigned _idEvexbContext : 2; // does EVEX.b need to be set.
+        unsigned _idEvexbContext : 2;        // does EVEX.b need to be set.
         unsigned _idEvexEmbeddedRounding : 2 // indicate the rounding mode when embedded rounding is enabled.
-#endif                                //  TARGET_XARCH
+#endif                                       //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
 
@@ -1547,7 +1547,7 @@ protected:
         {
             assert(_idEvexbContext == 0);
             assert(instOptions != INS_OPTS_NONE);
-            if(instOptions == INS_OPTS_EVEX_b)
+            if (instOptions == INS_OPTS_EVEX_b)
             {
                 _idEvexbContext = 1; // EVEX.b context: embedded broadcast
             }
@@ -1563,19 +1563,19 @@ protected:
 
         void idSetEvexRoundingControl(insOpts instOptions)
         {
-            if(instOptions == INS_OPTS_EVEX_er_rn)
+            if (instOptions == INS_OPTS_EVEX_er_rn)
             {
                 _idEvexEmbeddedRounding = 0;
             }
-            else if(instOptions == INS_OPTS_EVEX_er_rd)
+            else if (instOptions == INS_OPTS_EVEX_er_rd)
             {
                 _idEvexEmbeddedRounding = 1;
             }
-            else if(instOptions == INS_OPTS_EVEX_er_ru)
+            else if (instOptions == INS_OPTS_EVEX_er_ru)
             {
                 _idEvexEmbeddedRounding = 2;
             }
-            else if(instOptions == INS_OPTS_EVEX_er_rz)
+            else if (instOptions == INS_OPTS_EVEX_er_rz)
             {
                 _idEvexEmbeddedRounding = 3;
             }

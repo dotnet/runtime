@@ -1684,9 +1684,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512F_Add:
         {
             CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            uint32_t simdSize = node->GetSimdSize();
-            size_t numArgs = node->GetOperandCount();
-            if(numArgs == 2)
+            uint32_t    simdSize        = node->GetSimdSize();
+            size_t      numArgs         = node->GetOperandCount();
+            if (numArgs == 2)
             {
                 break;
             }
@@ -1694,12 +1694,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // If we reach this point, then we have rounding mode parameter.
             GenTree* op3 = node->Op(numArgs);
             assert(op3->IsCnsIntOrI());
-            uint8_t mode = static_cast<uint8_t>(node->Op(numArgs)->AsIntCon()->IconValue());
-            GenTreeHWIntrinsic* binaryNode = comp->gtNewSimdBinOpNode(GT_ADD, TYP_SIMD64, node->Op(1), node->Op(2), simdBaseJitType, simdSize)->AsHWIntrinsic();
+            uint8_t             mode = static_cast<uint8_t>(node->Op(numArgs)->AsIntCon()->IconValue());
+            GenTreeHWIntrinsic* binaryNode =
+                comp->gtNewSimdBinOpNode(GT_ADD, TYP_SIMD64, node->Op(1), node->Op(2), simdBaseJitType, simdSize)
+                    ->AsHWIntrinsic();
             binaryNode->SetEmbRoundingMode(mode);
             BlockRange().InsertAfter(op3, binaryNode);
             LIR::Use use;
-            if(BlockRange().TryGetUse(node, &use))
+            if (BlockRange().TryGetUse(node, &use))
             {
                 use.ReplaceWith(binaryNode);
             }
@@ -1709,10 +1711,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             BlockRange().Remove(node);
             BlockRange().Remove(op3);
-            // As embedded rounding can only work under register-to-register form, we can skip contain check at this point.
+            // As embedded rounding can only work under register-to-register form, we can skip contain check at this
+            // point.
             return binaryNode->gtNext;
         }
-
 
         case NI_FMA_MultiplyAddScalar:
             LowerFusedMultiplyAdd(node);

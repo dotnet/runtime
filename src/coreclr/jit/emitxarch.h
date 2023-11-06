@@ -627,7 +627,12 @@ void emitIns_R_R_S(instruction ins,
                    int         offs,
                    insOpts     instOptions = INS_OPTS_NONE);
 
-void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insOpts instOptions = INS_OPTS_NONE);
+void emitIns_R_R_R(instruction ins,
+                   emitAttr    attr,
+                   regNumber   reg1,
+                   regNumber   reg2,
+                   regNumber   reg3,
+                   insOpts     instOptions = INS_OPTS_NONE);
 
 void emitIns_R_R_A_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, int ival, insFormat fmt);
@@ -738,7 +743,12 @@ void emitIns_SIMD_R_R_C(instruction          ins,
                         CORINFO_FIELD_HANDLE fldHnd,
                         int                  offs,
                         insOpts              instOptions = INS_OPTS_NONE);
-void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, insOpts instOptions = INS_OPTS_NONE );
+void emitIns_SIMD_R_R_R(instruction ins,
+                        emitAttr    attr,
+                        regNumber   targetReg,
+                        regNumber   op1Reg,
+                        regNumber   op2Reg,
+                        insOpts     instOptions = INS_OPTS_NONE);
 void emitIns_SIMD_R_R_S(instruction ins,
                         emitAttr    attr,
                         regNumber   targetReg,

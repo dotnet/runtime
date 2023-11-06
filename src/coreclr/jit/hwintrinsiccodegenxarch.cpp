@@ -734,7 +734,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
 
     bool isRMW = node->isRMWHWIntrinsic(compiler);
 
-    if(node->GetEmbRoundingMode() != 0)
+    if (node->GetEmbRoundingMode() != 0)
     {
         // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
         OperandDesc op2Desc = genOperandDesc(op2);
@@ -754,7 +754,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
             op1Reg = targetReg;
         }
 
-        uint8_t mode = node->GetEmbRoundingMode();
+        uint8_t mode        = node->GetEmbRoundingMode();
         insOpts instOptions = (insOpts)(mode);
         GetEmitter()->emitIns_SIMD_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
         return;

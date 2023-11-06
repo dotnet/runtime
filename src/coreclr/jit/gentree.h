@@ -2244,7 +2244,7 @@ public:
                 break;
             case 0x0B:
                 gtFlags |= GTF_HW_ER_TOZERO;
-                break;            
+                break;
             default:
                 break;
         }
@@ -6366,7 +6366,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;
-
 
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.

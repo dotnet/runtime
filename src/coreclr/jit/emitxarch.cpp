@@ -1326,17 +1326,17 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     if (id->idGetEvexbContext() == 2) // Evex.b context: embedded rounding, need to set Evex.L'L accordingly
     {
         unsigned roundingMode = id->idGetEvexRoundingControl();
-        if(roundingMode == 0)
+        if (roundingMode == 0)
         {
             code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
             code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
         }
-        else if(roundingMode == 1)
+        else if (roundingMode == 1)
         {
             code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
             code |= LBIT_IN_BYTE_EVEX_PREFIX;
         }
-        else if(roundingMode == 2)
+        else if (roundingMode == 2)
         {
             code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
             code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
@@ -1347,7 +1347,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code |= LBIT_IN_BYTE_EVEX_PREFIX;
         }
     }
-
 
     regNumber maskReg = REG_NA;
 
@@ -6907,7 +6906,8 @@ void emitter::emitIns_R_R_C(instruction          ins,
 *  Add an instruction with three register operands.
 */
 
-void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, insOpts instOptions)
+void emitter::emitIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
@@ -6919,7 +6919,7 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     id->idReg2(reg1);
     id->idReg3(reg2);
 
-    if(instOptions != INS_OPTS_NONE)
+    if (instOptions != INS_OPTS_NONE)
     {
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
         id->idSetEvexbContext(instOptions);
