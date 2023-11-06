@@ -1441,7 +1441,14 @@ interp_dump_ins (InterpInst *ins, gpointer *data_items)
 	else
 		g_string_append_printf (str, " [nil <-");
 
-	if (mono_interp_op_sregs [opcode] > 0) {
+	if (opcode == MINT_PHI) {
+		int *args = ins->info.args;
+		while (*args != -1) {
+			g_string_append_printf (str, " %d", *args);
+			args++;
+		}
+		g_string_append_printf (str, "],");
+	} else if (mono_interp_op_sregs [opcode] > 0) {
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
 			if (ins->sregs [i] == MINT_CALL_ARGS_SREG) {
 				g_string_append_printf (str, " c:");

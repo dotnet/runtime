@@ -769,10 +769,66 @@ interp_compute_global_vars (TransformData *td)
 	}
 }
 
-static void
-insert_phi_nodes ()
+static gboolean
+bb_has_phi (InterpBasicBlock *bb, int var)
 {
-	// TODO
+	InterpInst *ins = bb->first_ins;
+	while (ins) {
+		if (ins->opcode == MINT_PHI) {
+			if (ins->dreg == var)
+				return TRUE;
+		} else {
+			// if we have a phi it is at the start of the bb
+			return FALSE;
+		}
+		ins = ins->next;
+	}
+	return FALSE;
+}
+
+static void
+bb_insert_phi (TransformData *td, InterpBasicBlock *bb, int var)
+{
+	InterpInst *phi = interp_insert_ins_bb (td, bb, NULL, MINT_PHI);
+	if (td->verbose_level)
+		g_print ("BB%d NEW_PHI %d\n", bb->index, var);
+
+	phi->dreg = var;
+	phi->info.args = (int*)mono_mempool_alloc (td->mempool, (bb->in_count + 1) * sizeof (int));
+	int i;
+	for (i = 0; i < bb->in_count; i++)
+		phi->info.args [i] = var;
+	phi->info.args [i] = -1;
+}
+
+static void
+insert_phi_nodes (TransformData *td)
+{
+	if (td->verbose_level)
+		g_print ("\nINSERT PHI NODES:\n");
+	for (int i = 0; i < td->vars_size; i++) {
+		if (!td->vars [i].ssa_global)
+			continue;
+
+		// For every definition of this var, we add a phi node at the start of
+		// all bblocks in the dominance frontier of the defining bblock.
+		GSList *workset = g_slist_copy (td->vars [i].declare_bbs);
+		while (workset) {
+			GSList *old_head = workset;
+			InterpBasicBlock *bb = (InterpBasicBlock*)workset->data;
+			workset = workset->next;
+			g_free (old_head);
+			int j;
+			mono_bitset_foreach_bit (bb->dfrontier, j, td->bb_count) {
+				InterpBasicBlock *bd = td->bblocks [j];
+				if (!bb_has_phi (bd, i)) {
+					bb_insert_phi (td, bd, i);
+					if (!g_slist_find (workset, bd))
+						workset = g_slist_prepend (workset, bd);
+				}
+			}
+		}
+	}
 }
 
 static void
@@ -788,7 +844,7 @@ interp_compute_ssa (TransformData *td)
 
 	interp_compute_global_vars (td);
 
-	insert_phi_nodes ();
+	insert_phi_nodes (td);
 
 	rename_vars ();
 }
@@ -796,6 +852,18 @@ interp_compute_ssa (TransformData *td)
 static void
 interp_exit_ssa (TransformData *td)
 {
+	// Remove all MINT_PHI opcodes
+	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		InterpInst *ins;
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			if (ins->opcode == MINT_PHI)
+				ins->opcode = MINT_NOP;
+			else
+				break;
+		}
+	}
+
+	// Free memory and restore state
 	for (unsigned int i = 0; i < td->vars_size; i++) {
 		if (td->vars [i].declare_bbs) {
 			g_slist_free (td->vars [i].declare_bbs);

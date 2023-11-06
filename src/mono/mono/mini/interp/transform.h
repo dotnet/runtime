@@ -78,6 +78,7 @@ struct _InterpInst {
 		InterpBasicBlock *target_bb;
 		InterpBasicBlock **target_bb_table;
 		InterpCallInfo *call_info;
+		int *args; // for variable number of args, used only for phi
 	} info;
 	// Variable data immediately following the dreg/sreg information. This is represented exactly
 	// in the final code stream as in this array.
