@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Note: the XML must be passed as an embedded resource named ILLink.Substitutions.xml,
 	// not as a separate substitution file, for it to work with NativeAot.
 	// Related: https://github.com/dotnet/runtime/issues/88647
-    [SetupCompileResource ("FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
+	[SetupCompileResource ("FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)]
 	public class FeatureCheckDataFlow
 	{
@@ -544,6 +544,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequiresDynamicCode ();
 			}
 
+			// Shows that ILLink has the same branch removal as NativeAot for this pattern, when
+			// the branches both use a feature check that's substituted by ILLink.
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
+			static void MeetFeaturesEmptyIntersection_IdenticalBranches (bool b = true)
+			{
+				if (b) {
+					if (!TestFeatures.IsUnreferencedCodeSupported)
+						throw null;
+				} else {
+					if (!TestFeatures.IsUnreferencedCodeSupported)
+						throw null;
+				}
+				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
+			}
+
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
 			static void MeetFeaturesIntersection (bool b = true)
 			{
@@ -585,6 +601,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				MeetFeaturesEmptyIntersection ();
+				MeetFeaturesEmptyIntersection_IdenticalBranches ();
 				MeetFeaturesIntersection ();
 				IntroduceFeature ();
 				RemoveFeature ();
