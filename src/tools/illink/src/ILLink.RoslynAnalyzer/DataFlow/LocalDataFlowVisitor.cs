@@ -34,7 +34,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		where TContextLattice : ILattice<TContext>
 		where TConditionValue : struct, INegate<TConditionValue>
 	{
-		protected readonly LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> LocalContextLattice;
+		protected readonly LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> LocalStateAndContextLattice;
 
 		protected readonly InterproceduralStateLattice<TValue, TValueLattice> InterproceduralStateLattice;
 
@@ -44,7 +44,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		private readonly ControlFlowGraph ControlFlowGraph;
 
-		protected TValue TopValue => LocalContextLattice.LocalStateLattice.Lattice.ValueLattice.Top;
+		protected TValue TopValue => LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Top;
 
 		private readonly ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures;
 
@@ -65,7 +65,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			InterproceduralState<TValue, TValueLattice> interproceduralState)
 		{
 			Compilation = compilation;
-			LocalContextLattice = lattice;
+			LocalStateAndContextLattice = lattice;
 			InterproceduralStateLattice = default;
 			OwningSymbol = owningSymbol;
 			ControlFlowGraph = cfg;
@@ -164,7 +164,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return GetLocal (operation, state);
 		}
 
-		TValue ProcessBinderCall (IOperation operation, string methodName, LocalDataFlowState<TValue, TValueLattice> state) {
+		TValue ProcessBinderCall (IOperation operation, string methodName, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state) {
 			var assemblyType = Compilation.GetTypeByMetadataName ("Microsoft.CSharp.RuntimeBinder.Binder");
 			Debug.Assert (assemblyType != null);
 			if (assemblyType == null)
@@ -176,16 +176,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return ProcessMethodCall (operation, method, null, ImmutableArray<IArgumentOperation>.Empty, state);
 		}
 
-		public override TValue VisitDynamicInvocation (IDynamicInvocationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		public override TValue VisitDynamicInvocation (IDynamicInvocationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessBinderCall (operation, "InvokeMember", state);
 
-		public override TValue VisitDynamicObjectCreation (IDynamicObjectCreationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		public override TValue VisitDynamicObjectCreation (IDynamicObjectCreationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessBinderCall (operation, "InvokeConstructor", state);
 
-		public override TValue VisitDynamicMemberReference (IDynamicMemberReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		public override TValue VisitDynamicMemberReference (IDynamicMemberReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessBinderCall (operation, operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write) ? "SetMember" : "GetMember", state);
 
-		public override TValue VisitDynamicIndexerAccess (IDynamicIndexerAccessOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		public override TValue VisitDynamicIndexerAccess (IDynamicIndexerAccessOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessBinderCall (operation, operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write) ? "SetIndex" : "GetIndex", state);
 
 		bool IsReferenceToCapturedVariable (ILocalReferenceOperation localReference)
@@ -424,7 +424,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			foreach (var capturedReference in capturedReferences) {
 				targetOperation = capturedReference.Reference;
 				var singleValue = ProcessSingleTargetAssignment (targetOperation, operation, state, merge: true);
-				value = LocalContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet (value, singleValue);
+				value = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet (value, singleValue);
 			}
 
 			return value;
@@ -531,7 +531,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						capturedValue = TopValue;
 						foreach (var capturedReference in state.Current.LocalState.CapturedReferences.Get (captureRef.Id)) {
 							var value = Visit (capturedReference.Reference, state);
-							capturedValue = LocalContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet (capturedValue, value);
+							capturedValue = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet (capturedValue, value);
 						}
 					} else {
 						capturedValue = state.Get (new LocalKey (captureRef.Id));
@@ -748,7 +748,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// - the fall-through output of the block with the check (x: SomeTrackedValue).
 				// Because Top is the identity of meet, the state from before the if block is preserved,
 				// so 'WitnessState(x)' sees that x has 'SomeTrackedValue' in this case.
-				state.Current = LocalContextLattice.Top;
+				state.Current = LocalStateAndContextLattice.Top;
 				return value;
 			}
 
