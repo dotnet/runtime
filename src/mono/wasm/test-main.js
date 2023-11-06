@@ -113,7 +113,7 @@ function initRunArgs(runArgs) {
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
     runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
-    runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? true : runArgs.interpreterPgo;
+    runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
 
     return runArgs;
 }
@@ -147,6 +147,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.forwardConsole = false;
         } else if (currentArg == "--no-memory-snapshot") {
             runArgs.memorySnapshot = false;
+        } else if (currentArg == "--interpreter-pgo") {
+            runArgs.interpreterPgo = true;
         } else if (currentArg == "--no-interpreter-pgo") {
             runArgs.interpreterPgo = false;
         } else if (currentArg.startsWith("--fetch-random-delay=")) {

@@ -509,7 +509,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
-                string typeName = typeSymbol.GetTypeName().Name;
 
                 ObjectInstantiationStrategy initializationStrategy = ObjectInstantiationStrategy.None;
                 DiagnosticDescriptor? initDiagDescriptor = null;
@@ -548,11 +547,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (!hasPublicParameterlessCtor && hasMultipleParameterizedCtors)
                     {
                         initDiagDescriptor = DiagnosticDescriptors.MultipleParameterizedConstructors;
-                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.MultipleParameterizedConstructors, typeName);
+                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.MultipleParameterizedConstructors, typeSymbol.GetFullName());
                     }
 
                     ctor = typeSymbol.IsValueType
-                        // Roslyn ctor fetching APIs include paramerterless ctors for structs, unlike System.Reflection.
+                        // Roslyn ctor fetching APIs include parameterless ctors for structs, unlike System.Reflection.
                         ? parameterizedCtor ?? parameterlessCtor
                         : parameterlessCtor ?? parameterizedCtor;
                 }
@@ -560,7 +559,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (ctor is null)
                 {
                     initDiagDescriptor = DiagnosticDescriptors.MissingPublicInstanceConstructor;
-                    initExceptionMessage = string.Format(Emitter.ExceptionMessages.MissingPublicInstanceConstructor, typeName);
+                    initExceptionMessage = string.Format(Emitter.ExceptionMessages.MissingPublicInstanceConstructor, typeSymbol.GetFullName());
                 }
                 else
                 {
@@ -634,7 +633,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (invalidParameters?.Count > 0)
                     {
-                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.CannotBindToConstructorParameter, typeName, FormatParams(invalidParameters));
+                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.CannotBindToConstructorParameter, typeSymbol.GetFullName(), FormatParams(invalidParameters));
                     }
                     else if (missingParameters?.Count > 0)
                     {
@@ -644,7 +643,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                         else
                         {
-                            initExceptionMessage = string.Format(Emitter.ExceptionMessages.ConstructorParametersDoNotMatchProperties, typeName, FormatParams(missingParameters));
+                            initExceptionMessage = string.Format(Emitter.ExceptionMessages.ConstructorParametersDoNotMatchProperties, typeSymbol.GetFullName(), FormatParams(missingParameters));
                         }
                     }
 
@@ -819,7 +818,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RecordTypeDiagnostic(TypeParseInfo typeParseInfo, DiagnosticDescriptor descriptor)
             {
-                RecordDiagnostic(descriptor, typeParseInfo.BinderInvocation.Location, new object?[] { typeParseInfo.TypeName });
+                RecordDiagnostic(descriptor, typeParseInfo.BinderInvocation.Location, [typeParseInfo.FullName]);
                 ReportContainingTypeDiagnosticIfRequired(typeParseInfo);
             }
 
@@ -829,7 +828,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 while (containingTypeDiagInfo is not null)
                 {
-                    string containingTypeName = containingTypeDiagInfo.TypeName;
+                    string containingTypeName = containingTypeDiagInfo.FullName;
 
                     object[] messageArgs = containingTypeDiagInfo.MemberName is string memberName
                         ? new[] { memberName, containingTypeName }

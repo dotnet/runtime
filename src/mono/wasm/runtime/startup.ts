@@ -38,9 +38,6 @@ import { BINDING, MONO } from "./net6-legacy/globals";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 
-// default size if MonoConfig.pthreadPoolSize is undefined
-const MONO_PTHREAD_POOL_SIZE = 4;
-
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
     await checkMemorySnapshotSize();
@@ -181,6 +178,7 @@ async function preInitWorkerAsync() {
         mono_log_debug("preInitWorker");
         runtimeHelpers.beforePreInit.promise_control.resolve();
         mono_wasm_pre_init_essential(true);
+        await ensureUsedWasmFeatures();
         await init_polyfills_async();
         runtimeHelpers.afterPreInit.promise_control.resolve();
         endMeasure(mark, MeasuredBlock.preInitWorker);
@@ -393,7 +391,7 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
     if (MonoWasmThreads) {
-        preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, runtimeHelpers.config);
+        preAllocatePThreadWorkerPool(runtimeHelpers.config.pthreadPoolSize!);
     }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");

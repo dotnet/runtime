@@ -43,6 +43,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		FeatureChecksVisitor _featureChecksVisitor;
 
 		public TrimAnalysisVisitor (
+			Compilation compilation,
 			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
@@ -50,7 +51,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			TrimAnalysisPatternStore trimAnalysisPatterns,
 			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState,
 			DataFlowAnalyzerContext dataFlowAnalyzerContext)
-			: base (lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
+			: base (compilation, lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
 		{
 			_multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;
