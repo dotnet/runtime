@@ -101,7 +101,7 @@ if ($iOSNativeAOT) {
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
-$CleanedBranchName = "main"
+$CleanedBranchName = "release/8.0"
 if($Branch.Contains("refs/heads/release"))
 {
     $CleanedBranchName = $Branch.replace('refs/heads/', '')
