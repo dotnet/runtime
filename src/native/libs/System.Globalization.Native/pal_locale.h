@@ -8,8 +8,7 @@
 // #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 // #include <unicode/utypes.h>
 // #endif
-#ifndef __APPLE__
-
+#if !defined(__APPLE__) || (defined(TARGET_OSX) && defined(__APPLE__))
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
@@ -23,7 +22,7 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeNam
                                                           int32_t valueLength);
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(TARGET_OSX)
 #include <unicode/utypes.h>
 
 PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
