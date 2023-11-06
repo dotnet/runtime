@@ -266,7 +266,7 @@ static void DoesNotReturnIfTrue([DoesNotReturnIf(true)] condition) {
 
 ### DoesNotReturnAttribute
 
-ILLink and ILCompiler dont't optimize branches away based on `DoesNotReturnAttribute`. This is similar to `DoesNotReturnIfAttribute`. 
+ILLink and ILCompiler dont't optimize branches away based on `DoesNotReturnAttribute`. This is similar to `DoesNotReturnIfAttribute`.
 
 ```csharp
 if (!Feature.IsSupported)
