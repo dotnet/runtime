@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-Provides support for accessing Windows system event notifications, which can be crucial for applications to respond to changes in the system or user environment​
+Provides support for accessing Windows system event notifications, which can be crucial for applications to respond to changes in the system or user environment​.
 Through this assembly, applications can subscribe to a set of global system events provided by the `SystemEvents` class, gaining the ability to react to changes like system power mode alterations, user preference modifications, and session switches, among others.
 
 ## Key Features
