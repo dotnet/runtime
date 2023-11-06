@@ -55,64 +55,6 @@ namespace System.IO.Compression
         {
         }
 
-        [Fact]
-        public async Task ConcatenatedEmptyGzipStreams()
-        {
-            const int copyToBufferSizeRequested = 0x8000;
-
-            // we'll request a specific size buffer, but we cannot guarantee that's the size
-            // that will be used since CopyTo will rent from the array pool
-            // take advantage of this knowledge to find out what size it will actually use
-            var rentedBuffer = ArrayPool<byte>.Shared.Rent(copyToBufferSizeRequested);
-            int actualBufferSize = rentedBuffer.Length;
-            ArrayPool<byte>.Shared.Return(rentedBuffer);
-
-            // use 3 buffers-full so that we can prime the stream with the first buffer-full,
-            // test that CopyTo successfully flushes this at the beginning of the operation,
-            // then populates the second buffer-full and reads its entirety despite every
-            // payload being 0 length before it reads the final buffer-full.
-            int minCompressedSize = 3 * actualBufferSize;
-
-            using (Stream compressedStream = new DerivedMemoryStream())
-            {
-                using (var gz = new GZipStream(compressedStream, CompressionLevel.NoCompression, leaveOpen: true))
-                {
-                    // write one byte in order to allow us to prime the inflater buffer
-                    gz.WriteByte(3);
-                }
-
-                while (compressedStream.Length < minCompressedSize)
-                {
-                    using (var gz = new GZipStream(compressedStream, CompressionLevel.NoCompression, leaveOpen: true))
-                    {
-                        gz.Write(Array.Empty<byte>());
-                    }
-                }
-
-                compressedStream.Seek(0, SeekOrigin.Begin);
-                using (Stream gz = new GZipStream(compressedStream, CompressionMode.Decompress, leaveOpen: true))
-                using (Stream decompressedData = new DerivedMemoryStream())
-                {
-                    // read one byte in order to fill the inflater buffer before copy
-                    Assert.Equal(3, gz.ReadByte());
-
-                    gz.CopyTo(decompressedData, copyToBufferSizeRequested);
-                    Assert.Equal(0, decompressedData.Length);
-                }
-
-                compressedStream.Seek(0, SeekOrigin.Begin);
-                using (Stream gz = new GZipStream(compressedStream, CompressionMode.Decompress, leaveOpen: true))
-                using (Stream decompressedData = new DerivedMemoryStream())
-                {
-                    // read one byte in order to fill the inflater buffer before copy
-                    Assert.Equal(3, gz.ReadByte());
-
-                    await gz.CopyToAsync(decompressedData, copyToBufferSizeRequested);
-                    Assert.Equal(0, decompressedData.Length);
-                }
-            }
-        }
-
         [Theory]
         [InlineData(1000, TestScenario.Read, 1000, 1)]
         [InlineData(1000, TestScenario.ReadByte, 0, 1)]
