@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -22,7 +23,6 @@ namespace System.Reflection.Emit
         private Dictionary<Label, LabelHandle> _labelTable = new(2);
         private List<KeyValuePair<MemberInfo, BlobWriter>> _memberReferences = new();
         private List<ExceptionBlock> _exceptionStack = new();
-        private int _currentExStackIndex = -1;
 
         internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
         {
@@ -43,12 +43,12 @@ namespace System.Reflection.Emit
 
         public override void BeginCatchBlock(Type? exceptionType)
         {
-            if (_currentExStackIndex <= -1)
+            if (_exceptionStack.Count < 1)
             {
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             }
 
-            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            ExceptionBlock currentExBlock = _exceptionStack[_exceptionStack.Count - 1];
             if (currentExBlock.State == ExceptionState.Filter)
             {
                 // Filter block  should be followed by catch block with null exception type
@@ -87,12 +87,12 @@ namespace System.Reflection.Emit
 
         public override void BeginExceptFilterBlock()
         {
-            if (_currentExStackIndex <= -1)
+            if (_exceptionStack.Count < 1)
             {
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             }
 
-            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            ExceptionBlock currentExBlock = _exceptionStack[_exceptionStack.Count - 1];
             Emit(OpCodes.Leave, currentExBlock.EndLabel);
             if (currentExBlock.State == ExceptionState.Try)
             {
@@ -121,18 +121,17 @@ namespace System.Reflection.Emit
             MarkLabel(currentExBlock.TryStart);
             currentExBlock.State = ExceptionState.Try;
             _exceptionStack.Add(currentExBlock);
-            _currentExStackIndex++;
             return currentExBlock.EndLabel;
         }
 
         public override void BeginFaultBlock()
         {
-            if (_currentExStackIndex <= -1)
+            if (_exceptionStack.Count < 1)
             {
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             }
 
-            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            ExceptionBlock currentExBlock = _exceptionStack[_exceptionStack.Count - 1];
             Emit(OpCodes.Leave, currentExBlock.EndLabel);
             if (currentExBlock.State == ExceptionState.Try)
             {
@@ -153,12 +152,12 @@ namespace System.Reflection.Emit
 
         public override void BeginFinallyBlock()
         {
-            if (_currentExStackIndex <= -1)
+            if (_exceptionStack.Count < 1)
             {
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             }
 
-            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            ExceptionBlock currentExBlock = _exceptionStack[_exceptionStack.Count - 1];
             Label finallyEndLabel = DefineLabel();
             if (currentExBlock.State == ExceptionState.Try)
             {
@@ -538,12 +537,12 @@ namespace System.Reflection.Emit
 
         public override void EndExceptionBlock()
         {
-            if (_currentExStackIndex <= -1)
+            if (_exceptionStack.Count < 1)
             {
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             }
 
-            ExceptionBlock currentExBlock = _exceptionStack[_currentExStackIndex];
+            ExceptionBlock currentExBlock = _exceptionStack[_exceptionStack.Count - 1];
             ExceptionState state = currentExBlock.State;
             Label endLabel = currentExBlock.EndLabel;
 
@@ -566,7 +565,6 @@ namespace System.Reflection.Emit
             MarkLabel(endLabel);
             currentExBlock.State = ExceptionState.Done;
             _exceptionStack.Remove(currentExBlock);
-            _currentExStackIndex--;
         }
 
         public override void EndScope() => throw new NotImplementedException();
