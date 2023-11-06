@@ -489,5 +489,68 @@ namespace Wasm.Build.Tests
                                         .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
                                         .EnsureSuccessful();
         }
+
+        [Fact]
+        public void Test_WasmStripILAfterAOT()
+        {
+            string id = $"Release_{GetRandomId()}";
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            string projectName = Path.GetFileNameWithoutExtension(projectFile);
+            string projectDirectory = Path.GetDirectoryName(projectFile)!;
+            bool aot = true;
+
+            UpdateProgramCS();
+            UpdateConsoleMainJs();
+
+            AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
+            AddItemsPropertiesToProject(projectFile, "<WasmStripILAfterAOT>true</WasmStripILAfterAOT>");
+            AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>false</WasmEnableWebcil>");
+
+            var buildArgs = new BuildArgs(projectName, "Release", aot, id, null);
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            BuildTemplateProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                            CreateProject: false,
+                            HasV8Script: false,
+                            MainJS: "main.mjs",
+                            Publish: true,
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
+                            UseCache: false,
+                            IsBrowserProject: false,
+                            AssertAppBundle: false));
+
+            string runArgs = $"run --no-silent --no-build -c Release";
+            runArgs += " x y z";
+            var res = new RunCommand(s_buildEnv, _testOutput, label: id)
+                                .WithWorkingDirectory(_projectDir!)
+                                .ExecuteWithCapturedOutput(runArgs)
+                                .EnsureExitCode(42);
+            
+            string frameworkDir = Path.Combine(projectDirectory, "bin", "Release", BuildTestBase.DefaultTargetFramework, "browser-wasm", "AppBundle", "_framework");
+            string objBuildDir = Path.Combine(projectDirectory, "obj", "Release", BuildTestBase.DefaultTargetFramework, "browser-wasm", "wasm", "for-publish");
+            string origAssemblyDir = Path.Combine(objBuildDir, "aot-in");
+            string strippedAssemblyDir = Path.Combine(objBuildDir, "stripped");
+            Assert.True(Directory.Exists(origAssemblyDir), $"Could not find the original AOT input assemblies dir: {origAssemblyDir}");
+            Assert.True(Directory.Exists(strippedAssemblyDir), $"Could not find the stripped assemblies dir: {strippedAssemblyDir}");
+
+            string assemblyToExam = "System.Private.CoreLib.dll";
+            string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExam);
+            string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExam);
+            string bundledAssembly = Path.Combine(frameworkDir, assemblyToExam);
+            Assert.True(File.Exists(originalAssembly));
+            Assert.True(File.Exists(strippedAssembly));
+            Assert.True(File.Exists(bundledAssembly));
+
+            string compressedOriginalAssembly = Compress(originalAssembly);
+            string compressedStrippedAssembly = Compress(strippedAssembly);
+            string compressedBundledAssembly = Compress(bundledAssembly);
+            FileInfo compressedOriginalAssembly_fi = new FileInfo(compressedOriginalAssembly);
+            FileInfo compressedStrippedAssembly_fi = new FileInfo(compressedStrippedAssembly);
+            FileInfo compressedBundledAssembly_fi = new FileInfo(compressedBundledAssembly);
+            Assert.True(compressedOriginalAssembly_fi.Length > compressedBundledAssembly_fi.Length);
+            Assert.Equal(compressedBundledAssembly_fi.Length, compressedStrippedAssembly_fi.Length);
+        }
     }
 }
