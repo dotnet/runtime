@@ -2768,7 +2768,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		ainfo = cinfo->args + i;
 
 		ins = cfg->args [i];
-		if (ins->opcode == OP_REGVAR)
+		/* We force the ArgSwiftError to be allocated to the stack slot because we need to retrieve it after the call */
+		if (ins->opcode == OP_REGVAR && ainfo->storage != ArgSwiftError)
 			continue;
 
 		ins->opcode = OP_REGOFFSET;
