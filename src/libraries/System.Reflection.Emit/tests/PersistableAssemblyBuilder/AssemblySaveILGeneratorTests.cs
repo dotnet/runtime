@@ -1,6 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
+using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -423,10 +423,10 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal((byte)OpCodes.Ldarg_0.Value, bodyBytes[11]);
                 Assert.Equal((byte)OpCodes.Stloc_0.Value, bodyBytes[12]);
                 Assert.Equal((byte)OpCodes.Ldc_I4_S.Value, bodyBytes[13]);
-                Assert.Equal(120, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(14, 4)));
+                Assert.Equal(120, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(14, 4)));
                 Assert.Equal(0xFE, bodyBytes[18]); // Stloc instruction occupies 2 bytes 0xfe0e
                 Assert.Equal(0x0E, bodyBytes[19]);
-                Assert.Equal(2, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(20, 4))); // index 2 of 'il.Emit(OpCodes.Stloc, 2);' instruction
+                Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(20, 4))); // index 2 of 'il.Emit(OpCodes.Stloc, 2);' instruction
                 Assert.Equal((byte)OpCodes.Ldloc_2.Value, bodyBytes[24]);
                 Assert.Equal(0xFE, bodyBytes[25]); // Ldloc = 0xfe0c
                 Assert.Equal(0x0C, bodyBytes[26]);
@@ -568,7 +568,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.NotEqual(0, fbNumber.MetadataToken);
                 Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
                 Assert.Equal(OpCodes.Ldfld.Value, bodyBytes[1]);
-                Assert.Equal(fbNumber.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(2, 4)));
+                Assert.Equal(fbNumber.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(2, 4)));
                 Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[6]);
                 Assert.Equal(OpCodes.Mul.Value, bodyBytes[7]);
                 Assert.Equal(OpCodes.Ret.Value, bodyBytes[8]);
@@ -632,16 +632,16 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[10]);
                 Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[15]);
                 Assert.Equal(OpCodes.Ldfld.Value, bodyBytes[16]);
-                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(17, 4)));
+                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(17, 4)));
                 Assert.Equal(OpCodes.Box.Value, bodyBytes[21]);
-                int intTypeToken = BitConverter.ToInt32(bodyBytes.AsSpan().Slice(22, 4));
+                int intTypeToken = BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(22, 4));
                 Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[26]);
                 Assert.Equal(OpCodes.Box.Value, bodyBytes[27]);
                 Assert.Equal(intTypeToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(28, 4)));
                 Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[32]);
                 Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[33]);
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[34]);
-                Assert.Equal(methodMultiply.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(35, 4)));
+                Assert.Equal(methodMultiply.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(35, 4)));
                 Assert.Equal(OpCodes.Box.Value, bodyBytes[39]);
                 Assert.Equal(intTypeToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(40, 4)));
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[44]);
@@ -679,10 +679,10 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[1]);
                 Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[2]);
                 Assert.Equal(OpCodes.Stsfld.Value, bodyBytes[3]);
-                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(4, 4)));
+                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(4, 4)));
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[8]);
                 Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[13]);
-                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(14, 4)));
+                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(14, 4)));
                 Assert.Equal(OpCodes.Callvirt.Value, bodyBytes[18]);
                 Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[23]);
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[28]);
@@ -690,7 +690,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[38]);
                 Assert.Equal(OpCodes.Callvirt.Value, bodyBytes[39]);
                 Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[44]);
-                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(45, 4)));
+                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(45, 4)));
                 Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
             }
         }
@@ -734,12 +734,12 @@ namespace System.Reflection.Emit.Tests
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
                 byte[]? bodyBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[0]);
-                Assert.Equal(staticMethod.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(1, 4)));
+                Assert.Equal(staticMethod.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(1, 4)));
                 Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[5]);
                 Assert.Equal(OpCodes.Stsfld.Value, bodyBytes[6]);
-                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(7, 4)));
+                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(7, 4)));
                 Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[11]);
-                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(12, 4)));
+                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(12, 4)));
                 Assert.Equal(OpCodes.Ret.Value, bodyBytes[16]);
             }
         }
