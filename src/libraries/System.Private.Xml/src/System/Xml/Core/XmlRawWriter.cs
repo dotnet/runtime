@@ -152,8 +152,7 @@ namespace System.Xml
         // Forward call to WriteString(string).
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            ReadOnlySpan<char> entity = stackalloc char[] { lowChar, highChar };
-            WriteString(new string(entity));
+            WriteString(new string([lowChar, highChar]));
         }
 
         // Forward call to WriteString(string).

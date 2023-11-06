@@ -192,6 +192,7 @@ Write-PipelineSetVariable -Name 'UseBaselineCoreRun' -Value "$UseBaselineCoreRun
 Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRepo" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'MonoAOT' -Value "$MonoAOT" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iOSLlvmBuild" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iOSStripSymbols" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'hybridGlobalization' -Value "$HybridGlobalization" -IsMultiJobVariable $false

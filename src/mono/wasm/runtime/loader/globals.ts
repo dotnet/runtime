@@ -8,7 +8,7 @@ import { exceptions, simd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
-import type { AssetEntryInternal, DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, RuntimeHelpers } from "../types/internal";
+import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
@@ -100,7 +100,7 @@ export function setLoaderGlobals(
 
         afterConfigLoaded: createPromiseController<MonoConfig>(),
         allDownloadsQueued: createPromiseController<void>(),
-        wasmDownloadPromise: createPromiseController<AssetEntryInternal>(),
+        wasmCompilePromise: createPromiseController<WebAssembly.Module>(),
         runtimeModuleLoaded: createPromiseController<void>(),
         memorySnapshotSkippedOrDone: createPromiseController<void>(),
 

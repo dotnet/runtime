@@ -10,6 +10,7 @@
          Once this package has shipped a stable version, the following line
          should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
 
   <ItemGroup>

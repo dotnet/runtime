@@ -24,6 +24,7 @@ namespace ILCompiler
         internal readonly RyuJitCompilationOptions _compilationOptions;
         private readonly ProfileDataManager _profileDataManager;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
+        private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
         private readonly int _parallelism;
 
         public InstructionSetSupport InstructionSetSupport { get; }
@@ -40,6 +41,7 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             ProfileDataManager profileDataManager,
             MethodImportationErrorProvider errorProvider,
+            ReadOnlyFieldPolicy readOnlyFieldPolicy,
             RyuJitCompilationOptions options,
             int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, inliningPolicy, logger)
@@ -51,10 +53,14 @@ namespace ILCompiler
 
             _methodImportationErrorProvider = errorProvider;
 
+            _readOnlyFieldPolicy = readOnlyFieldPolicy;
+
             _parallelism = parallelism;
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
+
+        public bool IsInitOnly(FieldDesc field) => _readOnlyFieldPolicy.IsReadOnly(field);
 
         public override IEETypeNode NecessaryTypeSymbolIfPossible(TypeDesc type)
         {
@@ -71,6 +77,16 @@ namespace ILCompiler
                 return _nodeFactory.MaximallyConstructableType(type);
 
             return _nodeFactory.NecessaryTypeSymbol(type);
+        }
+
+        public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
+        {
+            bool canPotentiallyConstruct = _devirtualizationManager == null
+                ? true : _devirtualizationManager.CanConstructType(type);
+            if (canPotentiallyConstruct && ConstructedEETypeNode.CreationAllowed(type))
+                return _nodeFactory.SerializedConstructedRuntimeTypeObject(type);
+
+            return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)

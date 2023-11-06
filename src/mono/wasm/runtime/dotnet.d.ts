@@ -160,6 +160,16 @@ type MonoConfig = {
      */
     startupMemoryCache?: boolean;
     /**
+     * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
+     *  on future runs of the application
+     */
+    interpreterPgo?: boolean;
+    /**
+     * Configures how long to wait before saving the interpreter PGO list. If your application takes
+     *  a while to start you should adjust this value.
+     */
+    interpreterPgoSaveDelay?: number;
+    /**
      * application environment
      */
     applicationEnvironment?: string;
@@ -182,11 +192,12 @@ type MonoConfig = {
         [name: string]: any;
     };
     /**
-     * This is current working directory for the runtime on the virtual file system. Default is "/".
+     * This is initial working directory for the runtime on the virtual file system. Default is "/".
      */
     virtualWorkingDirectory?: string;
     /**
-     * This is the arguments to the Main() method of the program. Default is [].
+     * This is the arguments to the Main() method of the program when called with dotnet.run() Default is [].
+     * Note: RuntimeAPI.runMain() and RuntimeAPI.runMainAndExit() will replace this value, if they provide it.
      */
     applicationArguments?: string[];
 };

@@ -1,6 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- net6.0 and net7.0 aren't supported by the current package and any errors should be suppressed. -->
+  <Suppression>
+    <Left>lib/net6.0/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <Left>lib/net7.0/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType,System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.AsymmetricAlgorithm)</Target>
@@ -204,34 +215,6 @@
     <Target>M:System.Security.Cryptography.Pkcs.SubjectIdentifier.MatchesCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2)</Target>
     <Left>ref/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
     <Right>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.CspParameters):[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net6.0/System.Security.Cryptography.Pkcs.dll</Left>
-    <Right>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:System.Security.Cryptography.Pkcs.SignerInfo.ComputeCounterSignature:[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net6.0/System.Security.Cryptography.Pkcs.dll</Left>
-    <Right>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.CspParameters):[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net7.0/System.Security.Cryptography.Pkcs.dll</Left>
-    <Right>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:System.Security.Cryptography.Pkcs.SignerInfo.ComputeCounterSignature:[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net7.0/System.Security.Cryptography.Pkcs.dll</Left>
-    <Right>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
@@ -250,12 +233,5 @@
     <Target>M:System.Security.Cryptography.Pkcs.SignerInfo.ComputeCounterSignature:[T:System.ComponentModel.EditorBrowsableAttribute]</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
     <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Security.Cryptography, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net7.0/System.Security.Cryptography.Pkcs.dll</Left>
-    <Right>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
 </Suppressions>

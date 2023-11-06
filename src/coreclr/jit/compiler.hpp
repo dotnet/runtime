@@ -521,7 +521,7 @@ static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFun
             // will be yielded as a normal successor.  Don't also yield as
             // an exceptional successor.
             BasicBlock* flowBlock = eh->ExFlowBlock();
-            if (!block->KindIs(BBJ_CALLFINALLY) || (block->bbJumpDest != flowBlock))
+            if (!block->KindIs(BBJ_CALLFINALLY) || !block->HasJumpTo(flowBlock))
             {
                 RETURN_ON_ABORT(func(flowBlock));
             }
@@ -616,53 +616,24 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 {
     switch (bbJumpKind)
     {
-        case BBJ_EHFILTERRET:
-            RETURN_ON_ABORT(func(bbJumpDest));
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
-            break;
-
         case BBJ_EHFINALLYRET:
-        {
-            EHblkDsc* ehDsc = comp->ehGetDsc(getHndIndex());
-            assert(ehDsc->HasFinallyHandler());
-
-            BasicBlock* begBlk;
-            BasicBlock* endBlk;
-            comp->ehGetCallFinallyBlockRange(getHndIndex(), &begBlk, &endBlk);
-
-            BasicBlock* finBeg = ehDsc->ebdHndBeg;
-
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
-                {
-                    continue;
-                }
-
-                assert(bcall->isBBCallAlwaysPair());
-
-                RETURN_ON_ABORT(func(bcall->bbNext));
+                RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
             }
 
             RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
 
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
-                {
-                    continue;
-                }
-
-                assert(bcall->isBBCallAlwaysPair());
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bcall->bbNext, func));
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpEhf->bbeSuccs[i], func));
             }
 
             break;
-        }
 
         case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             RETURN_ON_ABORT(func(bbJumpDest));
             RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
@@ -752,38 +723,16 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 {
     switch (bbJumpKind)
     {
-        case BBJ_EHFILTERRET:
-            RETURN_ON_ABORT(func(bbJumpDest));
-            break;
-
         case BBJ_EHFINALLYRET:
-        {
-            EHblkDsc* ehDsc = comp->ehGetDsc(getHndIndex());
-            assert(ehDsc->HasFinallyHandler());
-
-            BasicBlock* begBlk;
-            BasicBlock* endBlk;
-            comp->ehGetCallFinallyBlockRange(getHndIndex(), &begBlk, &endBlk);
-
-            BasicBlock* finBeg = ehDsc->ebdHndBeg;
-
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
-                {
-                    continue;
-                }
-
-                assert(bcall->isBBCallAlwaysPair());
-
-                RETURN_ON_ABORT(func(bcall->bbNext));
+                RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
             }
-
             break;
-        }
 
         case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
             RETURN_ON_ABORT(func(bbJumpDest));
@@ -3120,7 +3069,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 
 inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 {
-    if (!fgIsCodeAdded())
+    if (!fgRngChkThrowAdded)
     {
         return false;
     }
@@ -3146,6 +3095,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 
     if (!((call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
+          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_FAIL_FAST)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTEXCEPTION)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW))))
@@ -3162,7 +3112,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         if (block == add->acdDstBlk)
         {
             return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW ||
-                   add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN;
+                   add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
         }
     }
 
@@ -3187,7 +3137,7 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
             // Compute assert cond separately as assert macro cannot have conditional compilation directives.
             bool cond =
                 (add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW ||
-                 add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN);
+                 add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST);
             assert(cond);
 
             // TODO: bbTgtStkDepth is DEBUG-only.
@@ -3206,58 +3156,6 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 }
 
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-/*
-    Small inline function to change a given block to a throw block.
-
-*/
-inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
-{
-    JITDUMP("Converting " FMT_BB " to BBJ_THROW\n", block->bbNum);
-    assert(fgPredsComputed);
-
-    // Ordering of the following operations matters.
-    // First, note if we are looking at the first block of a call always pair.
-    const bool isCallAlwaysPair = block->isBBCallAlwaysPair();
-
-    // Scrub this block from the pred lists of any successors
-    fgRemoveBlockAsPred(block);
-
-    // Update jump kind after the scrub.
-    block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
-
-    // Any block with a throw is rare
-    block->bbSetRunRarely();
-
-    // If we've converted a BBJ_CALLFINALLY block to a BBJ_THROW block,
-    // then mark the subsequent BBJ_ALWAYS block as unreferenced.
-    //
-    // Must do this after we update bbJumpKind of block.
-    if (isCallAlwaysPair)
-    {
-        BasicBlock* leaveBlk = block->bbNext;
-        noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
-
-        // leaveBlk is now unreachable, so scrub the pred lists.
-        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
-        leaveBlk->bbRefs  = 0;
-        leaveBlk->bbPreds = nullptr;
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        fgClearFinallyTargetBit(leaveBlk->bbJumpDest);
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    }
-}
-
-/*****************************************************************************
- *
- *  Return true if we've added any new basic blocks.
- */
-
-inline bool Compiler::fgIsCodeAdded()
-{
-    return fgAddCodeModf;
-}
 
 /*****************************************************************************
   Is the offset too big?
@@ -4656,15 +4554,15 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            if (visitor(cmpXchg->gtOpLocation) == VisitResult::Abort)
+            if (visitor(cmpXchg->Addr()) == VisitResult::Abort)
             {
                 return;
             }
-            if (visitor(cmpXchg->gtOpValue) == VisitResult::Abort)
+            if (visitor(cmpXchg->Data()) == VisitResult::Abort)
             {
                 return;
             }
-            visitor(cmpXchg->gtOpComparand);
+            visitor(cmpXchg->Comparand());
             return;
         }
 

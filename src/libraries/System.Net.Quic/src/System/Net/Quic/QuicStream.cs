@@ -713,9 +713,6 @@ public sealed partial class QuicStream
             await valueTask.ConfigureAwait(false);
         }
         Debug.Assert(_startedTcs.IsCompleted);
-        // TODO: If there was and ongoing read/write when dispose was called, MsQuic events might be processed, but the continuations may not thus the state can still be in Ready.
-        //Debug.Assert(_receiveTcs.IsCompleted);
-        //Debug.Assert(_sendTcs.IsCompleted);
         _handle.Dispose();
 
         // TODO: memory leak if not disposed

@@ -684,7 +684,7 @@ namespace DebuggerTests
                 $"'[debugger-test] DebuggerTests.InlineArray:run'" +
                 "); }, 1);";
 
-            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 441, 12, "DebuggerTests.InlineArray.run");
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 442, 12, "DebuggerTests.InlineArray.run");
             var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
             await EvaluateOnCallFrameAndCheck(id,
                    ($"{varName}[0]", TObject("DebuggerTests.InlineArray.E")),
@@ -714,6 +714,7 @@ namespace DebuggerTests
                 o = TObject("DebuggerTests.InlineArray.Two")
             }, "s_one_props#1");
         }
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InspectInlineArray2()
         {
@@ -723,13 +724,14 @@ namespace DebuggerTests
                 $"'[debugger-test] DebuggerTests.InlineArray:run2'" +
                 "); }, 1);";
 
-            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 459, 12, "DebuggerTests.InlineArray.run2");
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 460, 12, "DebuggerTests.InlineArray.run2");
             var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
             await EvaluateOnCallFrameAndCheck(id,
                    ($"a2[0]", TNumber(1)),
                    ($"a3[0]", TNumber(2)),
                    ($"a4[0]", TObject("DebuggerTests.InlineArray.E")),
-                   ($"Arr4.myStaticField", TNumber(50))
+                   ($"Arr4.myStaticField", TNumber(50)),
+                   ($"a2.InlineMethod(1)", TNumber(101))
                    );
 
             var (_, res) = await EvaluateOnCallFrame(id,$"a3[1]", expect_ok: false);

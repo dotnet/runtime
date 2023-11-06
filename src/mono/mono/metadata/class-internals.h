@@ -1062,7 +1062,7 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, 
 }
 #endif // __cplusplus
 
-#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), NULL))
+#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), NULL))
 
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass);

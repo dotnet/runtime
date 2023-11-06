@@ -151,10 +151,10 @@ namespace System.Globalization.Tests
 
                 if (reverseExpected != reverseActual)
                 {
-                    throw new AssertActualExpectedException(
+                    throw EqualException.ForMismatchedValues(
                         expected: PrintCodePointsForDebug(reverseExpected),
                         actual: PrintCodePointsForDebug(reverseActual),
-                        userMessage: "Grapheme break test failed on test case: " + line);
+                        banner: "Grapheme break test failed on test case: " + line);
                 }
             }
         }

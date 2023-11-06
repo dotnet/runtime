@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class IA { }
 public class IB { }
@@ -21,12 +22,11 @@ public abstract class Base<B> : Base where B : IB
     public sealed override B Value => null;
 }
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         new Derived();
-
-        return 100;
     }
 }

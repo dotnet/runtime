@@ -31,7 +31,6 @@ internal class Program
         TestCctorCycle.Run();
         TestReferenceTypeAllocation.Run();
         TestReferenceTypeWithGCPointerAllocation.Run();
-        TestReferenceTypeWithReadonlyNullGCPointerAllocation.Run();
         TestRelationalOperators.Run();
         TestTryFinally.Run();
         TestTryCatch.Run();
@@ -428,27 +427,6 @@ class TestReferenceTypeWithGCPointerAllocation
     {
         Assert.IsLazyInitialized(typeof(TestReferenceTypeWithGCPointerAllocation));
         Assert.AreSame("hi", s_referenceType.StringValue);
-    }
-}
-
-class TestReferenceTypeWithReadonlyNullGCPointerAllocation
-{
-    class ReferenceType
-    {
-        public readonly string StringValue;
-
-        public ReferenceType(string stringvalue)
-        {
-            StringValue = stringvalue;
-        }
-    }
-
-    static ReferenceType s_referenceType = new ReferenceType(null);
-
-    public static void Run()
-    {
-        Assert.IsPreinitialized(typeof(TestReferenceTypeWithReadonlyNullGCPointerAllocation));
-        Assert.AreSame(null, s_referenceType.StringValue);
     }
 }
 

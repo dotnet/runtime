@@ -105,7 +105,7 @@ jobs:
       ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'AOT')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }} $(extraSetupParametersSuffix)
       ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot
+        extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot --llvm
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), ne(parameters.osSubGroup, '_musl')) }}:
         extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), eq(parameters.osSubGroup, '_musl')) }}:

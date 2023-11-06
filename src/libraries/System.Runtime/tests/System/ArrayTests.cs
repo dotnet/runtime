@@ -4433,9 +4433,9 @@ namespace System.Tests
         {
             Array array = NonZeroLowerBoundArray(new int[] { 1, 2, 3 }, int.MinValue);
 
-            Reverse(array, int.MinValue, 0, new int[] { 1, 2, 3 });
-            Reverse(array, int.MinValue, 1, new int[] { 1, 2, 3 });
-            Reverse(array, int.MinValue, 2, new int[] { 2, 1, 3 });
+            Reverse(array, int.MinValue, 0, NonZeroLowerBoundArray(new int[] { 1, 2, 3 }, int.MinValue));
+            Reverse(array, int.MinValue, 1, NonZeroLowerBoundArray(new int[] { 1, 2, 3 }, int.MinValue));
+            Reverse(array, int.MinValue, 2, NonZeroLowerBoundArray(new int[] { 2, 1, 3 }, int.MinValue));
         }
 
         [Fact]
@@ -4559,7 +4559,6 @@ namespace System.Tests
         }
 
         private static Array NonZeroLowerBoundArray(Array szArrayContents, int lowerBound)
-
         {
             Assert.Equal(0, szArrayContents.GetLowerBound(0));
 

@@ -289,6 +289,8 @@ INTRINS_OVR_2_ARG(WASM_NARROW_UNSIGNED_V16, wasm_narrow_unsigned, Wasm, sse_i1_t
 INTRINS_OVR_2_ARG(WASM_NARROW_UNSIGNED_V8, wasm_narrow_unsigned, Wasm, sse_i2_t, sse_i4_t)
 INTRINS_OVR_2_ARG(WASM_CONV_R8_TO_I4, fptosi_sat, Generic, v64_i4_t, v128_r8_t)
 INTRINS_OVR_2_ARG(WASM_CONV_R8_TO_U4, fptoui_sat, Generic, v64_i4_t, v128_r8_t)
+INTRINS_OVR_TAG(WASM_FMAX, maximum, Generic, V128 | R4 | R8)
+INTRINS_OVR_TAG(WASM_FMIN, minimum, Generic, V128 | R4 | R8)
 INTRINS_OVR_TAG(WASM_PMAX, wasm_pmax, Wasm, V128 | R4 | R8)
 INTRINS_OVR_TAG(WASM_PMIN, wasm_pmin, Wasm, V128 | R4 | R8)
 INTRINS_OVR(WASM_PMAX_V4, fabs, Generic, sse_r4_t)

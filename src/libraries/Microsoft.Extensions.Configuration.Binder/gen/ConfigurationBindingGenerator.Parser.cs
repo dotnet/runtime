@@ -26,6 +26,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private readonly InterceptorInfo.Builder _interceptorInfoBuilder = new();
             private BindingHelperInfo.Builder? _helperInfoBuilder; // Init'ed with type index when registering interceptors, after creating type specs.
+            private bool _emitEnumParseMethod;
+            private bool _emitGenericParseEnum;
 
             public List<DiagnosticInfo>? Diagnostics { get; private set; }
 
@@ -45,12 +47,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ParseInvocations(invocations);
                 CreateTypeSpecs(cancellationToken);
                 RegisterInterceptors();
+                CheckIfToEmitParseEnumMethod();
 
                 return new SourceGenerationSpec
                 {
                     InterceptorInfo = _interceptorInfoBuilder.ToIncrementalValue(),
                     BindingHelperInfo = _helperInfoBuilder!.ToIncrementalValue(),
                     ConfigTypes = _createdTypeSpecs.Values.OrderBy(s => s.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
+                    EmitEnumParseMethod = _emitEnumParseMethod,
+                    EmitGenericParseEnum = _emitGenericParseEnum,
+                    EmitThrowIfNullMethod = IsThrowIfNullMethodToBeEmitted()
                 };
             }
 
@@ -503,7 +509,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
-                string typeName = typeSymbol.GetTypeName().Name;
 
                 ObjectInstantiationStrategy initializationStrategy = ObjectInstantiationStrategy.None;
                 DiagnosticDescriptor? initDiagDescriptor = null;
@@ -542,11 +547,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (!hasPublicParameterlessCtor && hasMultipleParameterizedCtors)
                     {
                         initDiagDescriptor = DiagnosticDescriptors.MultipleParameterizedConstructors;
-                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.MultipleParameterizedConstructors, typeName);
+                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.MultipleParameterizedConstructors, typeSymbol.GetFullName());
                     }
 
                     ctor = typeSymbol.IsValueType
-                        // Roslyn ctor fetching APIs include paramerterless ctors for structs, unlike System.Reflection.
+                        // Roslyn ctor fetching APIs include parameterless ctors for structs, unlike System.Reflection.
                         ? parameterizedCtor ?? parameterlessCtor
                         : parameterlessCtor ?? parameterizedCtor;
                 }
@@ -554,7 +559,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (ctor is null)
                 {
                     initDiagDescriptor = DiagnosticDescriptors.MissingPublicInstanceConstructor;
-                    initExceptionMessage = string.Format(Emitter.ExceptionMessages.MissingPublicInstanceConstructor, typeName);
+                    initExceptionMessage = string.Format(Emitter.ExceptionMessages.MissingPublicInstanceConstructor, typeSymbol.GetFullName());
                 }
                 else
                 {
@@ -583,9 +588,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
 
-                            PropertySpec spec = new(property)
+                            PropertySpec spec = new(property, propertyTypeRef)
                             {
-                                TypeRef = propertyTypeRef,
                                 ConfigurationKeyName = configKeyName
                             };
 
@@ -617,9 +621,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                         else
                         {
-                            ParameterSpec paramSpec = new ParameterSpec(parameter)
+                            ParameterSpec paramSpec = new ParameterSpec(parameter, propertySpec.TypeRef)
                             {
-                                TypeRef = propertySpec.TypeRef,
                                 ConfigurationKeyName = propertySpec.ConfigurationKeyName,
                             };
 
@@ -630,7 +633,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (invalidParameters?.Count > 0)
                     {
-                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.CannotBindToConstructorParameter, typeName, FormatParams(invalidParameters));
+                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.CannotBindToConstructorParameter, typeSymbol.GetFullName(), FormatParams(invalidParameters));
                     }
                     else if (missingParameters?.Count > 0)
                     {
@@ -640,7 +643,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                         else
                         {
-                            initExceptionMessage = string.Format(Emitter.ExceptionMessages.ConstructorParametersDoNotMatchProperties, typeName, FormatParams(missingParameters));
+                            initExceptionMessage = string.Format(Emitter.ExceptionMessages.ConstructorParametersDoNotMatchProperties, typeSymbol.GetFullName(), FormatParams(missingParameters));
                         }
                     }
 
@@ -815,7 +818,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RecordTypeDiagnostic(TypeParseInfo typeParseInfo, DiagnosticDescriptor descriptor)
             {
-                RecordDiagnostic(descriptor, typeParseInfo.BinderInvocation.Location, new object?[] { typeParseInfo.TypeName });
+                RecordDiagnostic(descriptor, typeParseInfo.BinderInvocation.Location, [typeParseInfo.FullName]);
                 ReportContainingTypeDiagnosticIfRequired(typeParseInfo);
             }
 
@@ -825,7 +828,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 while (containingTypeDiagInfo is not null)
                 {
-                    string containingTypeName = containingTypeDiagInfo.TypeName;
+                    string containingTypeName = containingTypeDiagInfo.FullName;
 
                     object[] messageArgs = containingTypeDiagInfo.MemberName is string memberName
                         ? new[] { memberName, containingTypeName }
@@ -841,6 +844,45 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Diagnostics ??= new List<DiagnosticInfo>();
                 Diagnostics.Add(DiagnosticInfo.Create(descriptor, trimmedLocation, messageArgs));
+            }
+
+            private void CheckIfToEmitParseEnumMethod()
+            {
+                foreach (var typeSymbol in _createdTypeSpecs.Keys)
+                {
+                    if (IsEnum(typeSymbol))
+                    {
+                        _emitEnumParseMethod = true;
+                        _emitGenericParseEnum = _typeSymbols.Enum.GetMembers("Parse").Any(m => m is IMethodSymbol methodSymbol && methodSymbol.IsGenericMethod);
+                        return;
+                    }
+                }
+            }
+
+            private bool IsThrowIfNullMethodToBeEmitted()
+            {
+                if (_typeSymbols.ArgumentNullException is not null)
+                {
+                    var throwIfNullMethods = _typeSymbols.ArgumentNullException.GetMembers("ThrowIfNull");
+
+                    foreach (var throwIfNullMethod in throwIfNullMethods)
+                    {
+                        if (throwIfNullMethod is IMethodSymbol throwIfNullMethodSymbol && throwIfNullMethodSymbol.IsStatic && throwIfNullMethodSymbol.Parameters.Length == 2)
+                        {
+                            var parameters = throwIfNullMethodSymbol.Parameters;
+                            var firstParam = parameters[0];
+                            var secondParam = parameters[1];
+
+                            if (firstParam.Name == "argument" && firstParam.Type.SpecialType == SpecialType.System_Object
+                                && secondParam.Name == "paramName" && secondParam.Type.Equals(_typeSymbols.String, SymbolEqualityComparer.Default))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                return false;
             }
         }
     }

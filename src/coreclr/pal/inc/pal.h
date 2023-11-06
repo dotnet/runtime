@@ -2709,16 +2709,6 @@ PALAPI
 PAL_GetTotalCpuCount();
 
 PALIMPORT
-size_t
-PALAPI
-PAL_GetRestrictedPhysicalMemoryLimit();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetPhysicalMemoryUsed(size_t* val);
-
-PALIMPORT
 BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val);

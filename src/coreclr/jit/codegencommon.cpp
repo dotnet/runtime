@@ -376,13 +376,13 @@ void CodeGen::genMarkLabelsForCodegen()
 
     for (BasicBlock* const block : compiler->Blocks())
     {
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
             case BBJ_COND:
             case BBJ_EHCATCHRET:
-                JITDUMP("  " FMT_BB " : branch target\n", block->bbJumpDest->bbNum);
-                block->bbJumpDest->bbFlags |= BBF_HAS_LABEL;
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
+                block->GetJumpDest()->bbFlags |= BBF_HAS_LABEL;
                 break;
 
             case BBJ_SWITCH:
@@ -402,10 +402,10 @@ void CodeGen::genMarkLabelsForCodegen()
                 {
                     // For callfinally thunks, we need to mark the block following the callfinally/always pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
-                    BasicBlock* bbToLabel = block->bbNext;
+                    BasicBlock* bbToLabel = block->Next();
                     if (block->isBBCallAlwaysPair())
                     {
-                        bbToLabel = bbToLabel->bbNext; // skip the BBJ_ALWAYS
+                        bbToLabel = bbToLabel->Next(); // skip the BBJ_ALWAYS
                     }
                     if (bbToLabel != nullptr)
                     {
@@ -446,16 +446,16 @@ void CodeGen::genMarkLabelsForCodegen()
         JITDUMP("  " FMT_BB " : try begin\n", HBtab->ebdTryBeg->bbNum);
         JITDUMP("  " FMT_BB " : hnd begin\n", HBtab->ebdHndBeg->bbNum);
 
-        if (HBtab->ebdTryLast->bbNext != nullptr)
+        if (!HBtab->ebdTryLast->IsLast())
         {
-            HBtab->ebdTryLast->bbNext->bbFlags |= BBF_HAS_LABEL;
-            JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->bbNext->bbNum);
+            HBtab->ebdTryLast->Next()->bbFlags |= BBF_HAS_LABEL;
+            JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->Next()->bbNum);
         }
 
-        if (HBtab->ebdHndLast->bbNext != nullptr)
+        if (!HBtab->ebdHndLast->IsLast())
         {
-            HBtab->ebdHndLast->bbNext->bbFlags |= BBF_HAS_LABEL;
-            JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->bbNext->bbNum);
+            HBtab->ebdHndLast->Next()->bbFlags |= BBF_HAS_LABEL;
+            JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->Next()->bbNum);
         }
 
         if (HBtab->HasFilter())
@@ -856,7 +856,8 @@ BasicBlock* CodeGen::genCreateTempLabel()
     compiler->fgSafeBasicBlockCreation = true;
 #endif
 
-    BasicBlock* block = compiler->bbNewBasicBlock(BBJ_NONE);
+    // Label doesn't need a jump kind
+    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
 
 #ifdef DEBUG
     compiler->fgSafeBasicBlockCreation = false;
@@ -2008,6 +2009,11 @@ void CodeGen::genEmitMachineCode()
                codeSize, prologSize, compiler->info.compPerfScore, instrCount,
                GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
 
+        if (JitConfig.JitMetrics() > 0)
+        {
+            printf(", num cse %d", compiler->optCSEcount);
+        }
+
 #if TRACK_LSRA_STATS
         if (JitConfig.DisplayLsraStats() == 3)
         {
@@ -2302,9 +2308,9 @@ void CodeGen::genReportEH()
         hndBeg = compiler->ehCodeOffset(HBtab->ebdHndBeg);
 
         tryEnd = (HBtab->ebdTryLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(HBtab->ebdTryLast->bbNext);
+                                                           : compiler->ehCodeOffset(HBtab->ebdTryLast->Next());
         hndEnd = (HBtab->ebdHndLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(HBtab->ebdHndLast->bbNext);
+                                                           : compiler->ehCodeOffset(HBtab->ebdHndLast->Next());
 
         if (HBtab->HasFilter())
         {
@@ -2524,9 +2530,9 @@ void CodeGen::genReportEH()
                 hndBeg = compiler->ehCodeOffset(bbHndBeg);
 
                 tryEnd = (bbTryLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(bbTryLast->bbNext);
+                                                           : compiler->ehCodeOffset(bbTryLast->Next());
                 hndEnd = (bbHndLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(bbHndLast->bbNext);
+                                                           : compiler->ehCodeOffset(bbHndLast->Next());
 
                 if (encTab->HasFilter())
                 {
@@ -2590,10 +2596,10 @@ void CodeGen::genReportEH()
 
                 // How big is it? The BBJ_ALWAYS has a null bbEmitCookie! Look for the block after, which must be
                 // a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
-                BasicBlock* bbLabel = block->bbNext;
+                BasicBlock* bbLabel = block->Next();
                 if (block->isBBCallAlwaysPair())
                 {
-                    bbLabel = bbLabel->bbNext; // skip the BBJ_ALWAYS
+                    bbLabel = bbLabel->Next(); // skip the BBJ_ALWAYS
                 }
                 if (bbLabel == nullptr)
                 {
@@ -3235,7 +3241,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && varDsc->lvLiveInOutOfHndlr);
 
             /* mark stack arguments since we will take care of those first */
-            regArgTab[regArgNum + i].stackArg = (varDsc->lvIsInReg()) ? false : true;
+            regArgTab[regArgNum + i].stackArg = varDsc->lvIsInReg() ? false : true;
 
             /* If it goes on the stack or in a register that doesn't hold
              * an argument anymore -> CANNOT form a circular dependency */
@@ -4579,7 +4585,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                NYI_RISCV64("genZeroInitFltRegs is not implemented");
+                GetEmitter()->emitIns_R_R(INS_fmv_w_x, EA_4BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4618,7 +4624,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_LOONGARCH64)
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                NYI_RISCV64("genZeroInitFltRegs is not implemented.");
+                GetEmitter()->emitIns_R_R(INS_fmv_d_x, EA_8BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -5210,8 +5216,8 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     assert(block != nullptr);
     const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    bool             last = (block->bbNext == nullptr);
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg, last);
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg,
+                                          block->IsLast());
 }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -5257,9 +5263,8 @@ void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
 
     JITDUMP("Reserving funclet epilog IG for block " FMT_BB "\n", block->bbNum);
 
-    bool last = (block->bbNext == nullptr);
     GetEmitter()->emitCreatePlaceholderIG(IGPT_FUNCLET_EPILOG, block, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                          gcInfo.gcRegByrefSetCur, last);
+                                          gcInfo.gcRegByrefSetCur, block->IsLast());
 }
 
 #endif // FEATURE_EH_FUNCLETS
@@ -5812,7 +5817,7 @@ void CodeGen::genFnProlog()
     {
         excludeMask |= RBM_PINVOKE_FRAME;
 
-        assert((!compiler->opts.ShouldUsePInvokeHelpers()) || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!compiler->opts.ShouldUsePInvokeHelpers() || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!compiler->opts.ShouldUsePInvokeHelpers())
         {
             excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
@@ -5881,6 +5886,13 @@ void CodeGen::genFnProlog()
     if (isRoot && compiler->opts.IsOSR())
     {
         initReg = REG_IP1;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    // For LoongArch64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH;
     }
 #endif
 

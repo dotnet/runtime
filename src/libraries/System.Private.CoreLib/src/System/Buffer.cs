@@ -8,6 +8,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -128,7 +129,7 @@ namespace System
         }
 
         [Intrinsic] // Unrolled for small constant lengths
-        internal static void Memmove(ref byte dest, ref byte src, nuint len)
+        internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
             if (((nuint)(nint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)(nint)Unsafe.ByteOffset(ref dest, ref src) < len))
@@ -245,6 +246,22 @@ namespace System
             {
                 goto PInvoke;
             }
+
+#if HAS_CUSTOM_BLOCKS
+            if (len >= 256)
+            {
+                // Try to opportunistically align the destination below. The input isn't pinned, so the GC
+                // is free to move the references. We're therefore assuming that reads may still be unaligned.
+                //
+                // dest is more important to align than src because an unaligned store is more expensive
+                // than an unaligned load.
+                nuint misalignedElements = 64 - (nuint)Unsafe.AsPointer(ref dest) & 63;
+                Unsafe.As<byte, Block64>(ref dest) = Unsafe.As<byte, Block64>(ref src);
+                src = ref Unsafe.Add(ref src, misalignedElements);
+                dest = ref Unsafe.Add(ref dest, misalignedElements);
+                len -= misalignedElements;
+            }
+#endif
 
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.

@@ -101,10 +101,7 @@ if not "%__ConfigureOnly%" == "1" (
                 exit /B 0
             ) else (
                 echo The CMake command line differs from the last run. Running CMake again.
-                echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
             )
-        ) else (
-            echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
         )
     )
 )
@@ -114,6 +111,11 @@ if /i "%__UseEmcmake%" == "1" (
 ) else (
     "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 )
+
+if "%errorlevel%" == "0" (
+    echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
+)
+
 endlocal
 exit /B %errorlevel%
 

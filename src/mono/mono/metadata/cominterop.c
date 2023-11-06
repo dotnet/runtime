@@ -95,11 +95,11 @@ Code shared between the DISABLE_COM and !DISABLE_COM
 // must be extern "C".
 #ifndef DISABLE_JIT
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), #func))
 #else
 /* No need for the name/C symbol */
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (no_wrapper), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, NULL, (sig), (no_wrapper), NULL))
 #endif
 
 mono_bstr

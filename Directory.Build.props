@@ -58,12 +58,11 @@
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
+        - dotnet/installer repo > src/redist/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
     <iOSVersionMin>11.0</iOSVersionMin>
     <tvOSVersionMin>11.0</tvOSVersionMin>
-    <watchOSVersionMin>2.0</watchOSVersionMin>
-    <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
     <macOSVersionMin>10.15</macOSVersionMin>
     <macOSVersionMin Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
   </PropertyGroup>

@@ -45,12 +45,12 @@ namespace Internal.Cryptography
         [return: NotNullIfNotNull(nameof(src))]
         public static byte[]? CloneByteArray(this byte[]? src)
         {
-            if (src == null)
+            return src switch
             {
-                return null;
-            }
-
-            return (byte[])(src.Clone());
+                null => null,
+                { Length: 0 } => src,
+                _ => (byte[])src.Clone(),
+            };
         }
 
         internal static bool TryCopyToDestination(this ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)

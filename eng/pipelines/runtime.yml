@@ -271,7 +271,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
+                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT checked build and smoke tests
@@ -292,7 +292,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -309,7 +309,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
+                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build and smoke tests
@@ -353,7 +353,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
+                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build and libraries tests
@@ -384,7 +384,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
+                eq(variables['isRollingBuild'], true))
 
       # Build and test clr tools
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -426,6 +426,10 @@ extends:
             - publish: $(Build.SourcesDirectory)/artifacts/bin/coreclr
               displayName: Publish CrossDacs for diagnostics
               artifact: CoreCLRCrossDacArtifacts
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       # Build Mono AOT offset headers once, for consumption elsewhere
       # Only when mono changed
@@ -562,7 +566,7 @@ extends:
             - browser_wasm_win
           condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
           nameSuffix: MultiThreaded
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
           publishWBT: false
 
@@ -598,7 +602,7 @@ extends:
           platforms:
             - browser_wasm
           nameSuffix: _Threading_Smoke
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
@@ -658,15 +662,16 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-              condition: >-
-                or(
-                eq(variables['librariesContainsChange'], true),
-                eq(variables['monoContainsChange'], true),
-                eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['monoContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
@@ -919,9 +924,8 @@ extends:
           - linux_musl_x64
           - linux_arm64
           - linux_musl_arm64
+          - windows_arm64
           - windows_x64
-          # - windows_x86
-          # - windows_arm64
           jobParameters:
             runtimeVariant: crossaot
             dependsOn:
@@ -1107,32 +1111,45 @@ extends:
               condition: >-
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
 
+      #
+      # Build and test libraries for .NET Framework
+      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
           platforms:
           - windows_x86
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
           jobParameters:
             framework: net48
-            runTests: true
-            testScope: innerloop
+            buildArgs: -s tools+libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
+            nameSuffix: Libraries_NET48
+            timeoutInMinutes: 150
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NET48_$(_BuildConfig)
+                  extraHelixArguments: /p:BuildTargetFramework=net48
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      #
+      # Build and test libraries AllConfigurations
+      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - windows_x64
           jobParameters:
-            framework: allConfigurations
-            runTests: true
-            useHelix: false
+            buildArgs: -test -s tools+libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            nameSuffix: Libraries_AllConfigurations
+            timeoutInMinutes: 150
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1602,8 +1619,6 @@ extends:
           - SourceBuild_centos8_x64
           jobParameters:
             nameSuffix: centos8SourceBuild
-            extraStepsParameters:
-              name: SourceBuildPackages
             timeoutInMinutes: 95
             condition: eq(variables['isRollingBuild'], true)
 
@@ -1616,7 +1631,5 @@ extends:
           - SourceBuild_banana24_x64
           jobParameters:
             nameSuffix: banana24SourceBuild
-            extraStepsParameters:
-              name: SourceBuildPackages
             timeoutInMinutes: 95
             condition: eq(variables['isRollingBuild'], true)

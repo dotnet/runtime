@@ -68,10 +68,10 @@
       "label": "os-ios"
     },
     {
-      "lead": "alpencolt",
+      "lead": "gbalykov",
       "owners": [
         "clamp03",
-        "gbalykov",
+        "t-mustafin",
         "hjleee",
         "JongHeonChoi",
         "wscho77"
@@ -618,6 +618,7 @@
     },
     {
       "lead": "jeffhandley",
+      "pod": "michael-tanner",
       "owners": [
         "ericstj",
         "GrabYourPitchforks",

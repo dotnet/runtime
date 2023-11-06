@@ -52,7 +52,7 @@ public:
         }
 
         int count = 0;
-        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->bbNext))
+        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->Next()))
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
@@ -101,12 +101,13 @@ private:
     // Arguments:
     //    jumpKind - jump kind for the new basic block
     //    insertAfter - basic block, after which compiler has to insert the new one.
+    //    jumpDest - jump target for the new basic block. Defaults to nullptr.
     //
     // Return Value:
     //    new basic block.
-    BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter)
+    BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
     {
-        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
+        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
         block->bbFlags |= BBF_IMPORTED;
         return block;
     }
@@ -145,8 +146,7 @@ private:
         BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_NONE, block);
 
         // Update flow and flags
-        block->SetBBJumpKind(BBJ_COND DEBUG_ARG(compiler));
-        block->bbJumpDest = remainderBlock;
+        block->SetJumpKindAndTarget(BBJ_COND, remainderBlock DEBUG_ARG(compiler));
         block->bbFlags |= BBF_INTERNAL;
 
         helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
@@ -233,8 +233,7 @@ private:
         }
 
         // Update flow
-        block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(compiler));
-        block->bbJumpDest = nullptr;
+        block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(compiler));
 
         // Add helper call
         //

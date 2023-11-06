@@ -26,6 +26,8 @@ namespace System.Reflection.Emit
         private Type? _enumUnderlyingType;
 
         internal readonly TypeDefinitionHandle _handle;
+        internal int _firstFieldToken;
+        internal int _firsMethodToken;
         internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
         internal readonly List<FieldBuilderImpl> _fieldDefinitions = new();
         internal List<Type>? _interfaces;

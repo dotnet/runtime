@@ -35,16 +35,18 @@ namespace ILCompiler
         private readonly CompilationModuleGroup _compilationGroup;
         private readonly ILProvider _ilProvider;
         private readonly TypePreinitializationPolicy _policy;
+        private readonly ReadOnlyFieldPolicy _readOnlyPolicy;
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
         private readonly Dictionary<TypeDesc, RuntimeTypeValue> _internedTypes = new Dictionary<TypeDesc, RuntimeTypeValue>();
 
-        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy)
+        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy)
         {
             _type = owningType;
             _compilationGroup = compilationGroup;
             _ilProvider = ilProvider;
             _policy = policy;
+            _readOnlyPolicy = readOnlyPolicy;
 
             // Zero initialize all fields we model.
             foreach (var field in owningType.GetFields())
@@ -56,7 +58,7 @@ namespace ILCompiler
             }
         }
 
-        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, MetadataType type)
+        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
@@ -83,7 +85,7 @@ namespace ILCompiler
             Status status;
             try
             {
-                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy);
+                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy, readOnlyPolicy);
                 int instructions = 0;
                 status = preinit.TryScanMethod(type.GetStaticConstructor(), null, null, ref instructions, out _);
             }
@@ -345,11 +347,11 @@ namespace ILCompiler
                             {
                                 stack.PushFromLocation(field.FieldType, _fieldValues[field]);
                             }
-                            else if (field.IsInitOnly
+                            else if (_readOnlyPolicy.IsReadOnly(field)
                                 && field.OwningType.HasStaticConstructor
                                 && _policy.CanPreinitialize(field.OwningType))
                             {
-                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy);
+                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy);
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
 
@@ -376,6 +378,12 @@ namespace ILCompiler
                                     stack.PushFromLocation(field.FieldType, referenceType.ToForeignInstance(baseInstructionCounter));
                                 else
                                     return Status.Fail(methodIL.OwningMethod, opcode);
+                            }
+                            else if (_readOnlyPolicy.IsReadOnly(field)
+                                && !field.OwningType.HasStaticConstructor)
+                            {
+                                // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
+                                stack.PushFromLocation(field.FieldType, NewUninitializedLocationValue(field.FieldType));
                             }
                             else
                             {
@@ -597,7 +605,7 @@ namespace ILCompiler
                                             TypeDesc fieldType = field.FieldType;
                                             if (fieldType.IsGCPointer)
                                             {
-                                                if (!field.IsInitOnly)
+                                                if (!_readOnlyPolicy.IsReadOnly(field))
                                                 {
                                                     allGcPointersAreReadonly = false;
                                                     break;

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -23,64 +24,47 @@ namespace System
         public static unsafe Type? GetTypeFromHandle(RuntimeTypeHandle handle) => handle.IsNull ? null : GetTypeFromMethodTable(handle.ToMethodTable());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Type GetTypeFromMethodTable(MethodTable* pMT)
+        internal static unsafe RuntimeType GetTypeFromMethodTable(MethodTable* pMT)
         {
             // If we support the writable data section on MethodTables, the runtime type associated with the MethodTable
             // is cached there. If writable data is not supported, we need to do a lookup in the runtime type
             // unifier's hash table.
             if (MethodTable.SupportsWritableData)
             {
-                ref GCHandle handle = ref Unsafe.AsRef<GCHandle>(pMT->WritableData);
-                if (handle.IsAllocated)
-                {
-                    return Unsafe.As<Type>(handle.Target);
-                }
-                else
-                {
-                    return GetTypeFromMethodTableSlow(pMT, ref handle);
-                }
+                ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                return type ?? GetTypeFromMethodTableSlow(pMT);
             }
             else
             {
-                return RuntimeTypeUnifier.GetRuntimeTypeForEEType(new EETypePtr(pMT));
+                return RuntimeTypeUnifier.GetRuntimeTypeForMethodTable(pMT);
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe Type GetTypeFromMethodTableSlow(MethodTable* pMT, ref GCHandle handle)
+        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
-            // Note: this is bypassing the "fast" unifier cache (based on a simple IntPtr
-            // identity of MethodTable pointers). There is another unifier behind that cache
-            // that ensures this code is race-free.
-            Type result = RuntimeTypeUnifier.GetRuntimeTypeBypassCache(new EETypePtr(pMT));
-            GCHandle tempHandle = GCHandle.Alloc(result);
+            // TODO: instead of fragmenting the frozen object heap, we should have our own allocator
+            // for objects that live forever outside the GC heap.
 
-            // We don't want to leak a handle if there's a race
-            if (Interlocked.CompareExchange(ref Unsafe.As<GCHandle, IntPtr>(ref handle), (IntPtr)tempHandle, default) != default)
+            RuntimeType? type = null;
+            RuntimeImports.RhAllocateNewObject(
+                (IntPtr)MethodTable.Of<RuntimeType>(),
+                (uint)GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP,
+                Unsafe.AsPointer(ref type));
+
+            if (type == null)
+                throw new OutOfMemoryException();
+
+            type.DangerousSetUnderlyingEEType(pMT);
+
+            ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+            if (Interlocked.CompareExchange(ref runtimeTypeCache, type, null) == null)
             {
-                tempHandle.Free();
+                // Create and leak a GC handle
+                UnsafeGCHandle.Alloc(type);
             }
 
-            return result;
-        }
-
-        internal EETypePtr GetEEType()
-        {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            Debug.Assert(!typeHandle.IsNull);
-            return typeHandle.ToEETypePtr();
-        }
-
-        internal bool TryGetEEType(out EETypePtr eeType)
-        {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            if (typeHandle.IsNull)
-            {
-                eeType = default(EETypePtr);
-                return false;
-            }
-            eeType = typeHandle.ToEETypePtr();
-            return true;
+            return runtimeTypeCache;
         }
 
         //

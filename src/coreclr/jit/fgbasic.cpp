@@ -77,11 +77,14 @@ void Compiler::fgInit()
     genReturnLocal = BAD_VAR_NUM;
 
     /* We haven't reached the global morphing phase */
-    fgGlobalMorph = false;
-    fgModified    = false;
+    fgGlobalMorph     = false;
+    fgGlobalMorphDone = false;
+
+    fgModified = false;
 
 #ifdef DEBUG
     fgSafeBasicBlockCreation = true;
+    fgSafeFlowEdgeCreation   = true;
 #endif // DEBUG
 
     fgLocalVarLivenessDone = false;
@@ -96,7 +99,6 @@ void Compiler::fgInit()
     // as the code that raises an exception when an array range check fails.
 
     fgAddCodeList = nullptr;
-    fgAddCodeModf = false;
 
     for (int i = 0; i < SCK_COUNT; i++)
     {
@@ -109,8 +111,8 @@ void Compiler::fgInit()
     /* This global flag is set whenever we remove a statement */
     fgStmtRemoved = false;
 
-    /* This global flag is set whenever we add a throw block for a RngChk */
-    fgRngChkThrowAdded = false; /* reset flag for fgIsCodeAdded() */
+    // This global flag is set when we create throw helper blocks
+    fgRngChkThrowAdded = false;
 
     /* Keep track of whether or not EH statements have been optimized */
     fgOptimizedFinally = false;
@@ -188,43 +190,6 @@ void Compiler::fgInit()
     fgPredListSortVector         = nullptr;
 }
 
-/*****************************************************************************
- *
- *  Create a basic block and append it to the current BB list.
- */
-
-BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
-{
-    // This method must not be called after the exception table has been
-    // constructed, because it doesn't not provide support for patching
-    // the exception table.
-
-    noway_assert(compHndBBtabCount == 0);
-
-    BasicBlock* block;
-
-    /* Allocate the block descriptor */
-
-    block = bbNewBasicBlock(jumpKind);
-    noway_assert(block->KindIs(jumpKind));
-
-    /* Append the block to the end of the global basic block list */
-
-    if (fgFirstBB)
-    {
-        fgLastBB->setNext(block);
-    }
-    else
-    {
-        fgFirstBB     = block;
-        block->bbPrev = nullptr;
-    }
-
-    fgLastBB = block;
-
-    return block;
-}
-
 //------------------------------------------------------------------------
 // fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
 //
@@ -257,7 +222,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
     assert(fgFirstBBScratch == nullptr);
 
-    BasicBlock* block = bbNewBasicBlock(BBJ_NONE);
+    BasicBlock* block = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
 
     if (fgFirstBB != nullptr)
     {
@@ -268,7 +233,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
         }
 
         // The first block has an implicit ref count which we must
-        // remove. Note the ref count could be greater that one, if
+        // remove. Note the ref count could be greater than one, if
         // the first block is not scratch and is targeted by a
         // branch.
         assert(fgFirstBB->bbRefs >= 1);
@@ -382,6 +347,55 @@ void Compiler::fgRemoveReturnBlock(BasicBlock* block)
     }
 }
 
+//------------------------------------------------------------------------
+// fgConvertBBToThrowBB: Change a given block to a throw block.
+//
+// Arguments:
+//   block - block in question
+//
+void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
+{
+    JITDUMP("Converting " FMT_BB " to BBJ_THROW\n", block->bbNum);
+    assert(fgPredsComputed);
+
+    // Ordering of the following operations matters.
+    // First, note if we are looking at the first block of a call always pair.
+    const bool isCallAlwaysPair = block->isBBCallAlwaysPair();
+
+    // Scrub this block from the pred lists of any successors
+    fgRemoveBlockAsPred(block);
+
+    // Update jump kind after the scrub.
+    block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
+
+    // Any block with a throw is rare
+    block->bbSetRunRarely();
+
+    // If we've converted a BBJ_CALLFINALLY block to a BBJ_THROW block,
+    // then mark the subsequent BBJ_ALWAYS block as unreferenced.
+    //
+    // Must do this after we update bbJumpKind of block.
+    if (isCallAlwaysPair)
+    {
+        BasicBlock* leaveBlk = block->Next();
+        noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
+
+        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+
+        // leaveBlk is now unreachable, so scrub the pred lists.
+        for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
+        {
+            fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
+        }
+        assert(leaveBlk->bbRefs == 0);
+        assert(leaveBlk->bbPreds == nullptr);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    }
+}
+
 /*****************************************************************************
  * fgChangeSwitchBlock:
  *
@@ -439,7 +453,7 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
 }
 
 //------------------------------------------------------------------------
-// fgReplaceSwitchJumpTarget: update BBJ_SWITCH block  so that all control
+// fgReplaceSwitchJumpTarget: update BBJ_SWITCH block so that all control
 //   that previously flowed to oldTarget now flows to newTarget.
 //
 // Arguments:
@@ -449,8 +463,6 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
 //
 // Notes:
 //   Updates the jump table and the cached unique target set (if any).
-//   Can be called before or after pred lists are built.
-//   If pred lists are built, updates pred lists.
 //
 void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* newTarget, BasicBlock* oldTarget)
 {
@@ -462,10 +474,9 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 
     // For the jump targets values that match oldTarget of our BBJ_SWITCH
     // replace predecessor 'blockSwitch' with 'newTarget'
-    //
 
-    unsigned     jumpCnt = blockSwitch->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTab = blockSwitch->bbJumpSwt->bbsDstTab;
+    unsigned     jumpCnt = blockSwitch->GetJumpSwt()->bbsCount;
+    BasicBlock** jumpTab = blockSwitch->GetJumpSwt()->bbsDstTab;
 
     unsigned i = 0;
 
@@ -517,6 +528,151 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 }
 
 //------------------------------------------------------------------------
+// fgChangeEhfBlock: We have a BBJ_EHFINALLYRET block at 'oldBlock' and we want to move this
+// to 'newBlock'. All of the 'oldBlock' successors need to have their predecessor lists updated
+// by removing edges to 'oldBlock' and adding edges to 'newBlock'.
+//
+// Arguments:
+//   oldBlock - previous BBJ_EHFINALLYRET block
+//   newBlock - block that is replacing 'oldBlock'
+//
+void Compiler::fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock)
+{
+    assert(oldBlock != nullptr);
+    assert(newBlock != nullptr);
+    assert(oldBlock->KindIs(BBJ_EHFINALLYRET));
+    assert(fgPredsComputed);
+
+    for (BasicBlock* const succ : oldBlock->EHFinallyRetSuccs())
+    {
+        assert(succ != nullptr);
+
+        // Remove the old edge [oldBlock => succ]
+        //
+        assert(succ->countOfInEdges() > 0);
+        fgRemoveRefPred(succ, oldBlock);
+
+        // Create the new edge [newBlock => succ]
+        //
+        fgAddRefPred(succ, newBlock);
+    }
+}
+
+//------------------------------------------------------------------------
+// fgReplaceEhfSuccessor: update BBJ_EHFINALLYRET block so that all control
+//   that previously flowed to oldSucc now flows to newSucc. It is assumed
+//   that oldSucc is currently a successor of `block`.
+//
+// Arguments:
+//   block   - BBJ_EHFINALLYRET block
+//   oldSucc - old successor
+//   newSucc - new successor
+//
+void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc)
+{
+    assert(block != nullptr);
+    assert(oldSucc != nullptr);
+    assert(newSucc != nullptr);
+    assert(block->KindIs(BBJ_EHFINALLYRET));
+    assert(fgPredsComputed);
+
+    BBehfDesc* const   ehfDesc   = block->GetJumpEhf();
+    const unsigned     succCount = ehfDesc->bbeCount;
+    BasicBlock** const succTab   = ehfDesc->bbeSuccs;
+
+    // Walk the successor table looking for blocks to update the preds for
+    bool      found   = false;
+    FlowEdge* newEdge = nullptr;
+    for (unsigned i = 0; i < succCount; i++)
+    {
+        if (succTab[i] != oldSucc)
+        {
+            continue;
+        }
+
+        found = true;
+
+        // Change the succTab entry to branch to the new location
+        //
+        succTab[i] = newSucc;
+
+        if (newEdge == nullptr)
+        {
+            // Remove the old edge [block => oldSucc]
+            //
+            fgRemoveAllRefPreds(oldSucc, block);
+
+            // Create the new edge [block => newSucc]
+            //
+            newEdge = fgAddRefPred(newSucc, block);
+        }
+        else
+        {
+            newSucc->bbRefs++;
+            newEdge->incrementDupCount();
+        }
+    }
+    noway_assert(found && "Did not find oldSucc in succTab[]");
+}
+
+//------------------------------------------------------------------------
+// fgRemoveEhfSuccessor: update BBJ_EHFINALLYRET block to remove `succ` as a successor.
+// Updates the predecessor list of `succ`.
+//
+// Arguments:
+//   block   - BBJ_EHFINALLYRET block
+//   succ    - successor
+//
+void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
+{
+    assert(block != nullptr);
+    assert(succ != nullptr);
+    assert(fgPredsComputed);
+    assert(block->KindIs(BBJ_EHFINALLYRET));
+
+    // Don't `assert(succ->isBBCallAlwaysPairTail())`; we've already unlinked the CALLFINALLY
+    assert(succ->KindIs(BBJ_ALWAYS));
+
+    fgRemoveRefPred(succ, block);
+
+    BBehfDesc* const ehfDesc   = block->GetJumpEhf();
+    unsigned         succCount = ehfDesc->bbeCount;
+    BasicBlock**     succTab   = ehfDesc->bbeSuccs;
+    bool             found     = false;
+
+    // Walk the successor table looking for the specified successor block.
+    for (unsigned i = 0; i < succCount; i++)
+    {
+        if (succTab[i] == succ)
+        {
+            // If it's not the last one, move everything after in the table down one slot.
+            if (i + 1 < succCount)
+            {
+                memmove_s(&succTab[i], (succCount - i) * sizeof(BasicBlock*), &succTab[i + 1],
+                          (succCount - i - 1) * sizeof(BasicBlock*));
+            }
+
+            --succCount;
+
+            found = true;
+
+#ifdef DEBUG
+            // We only expect to see a successor once in the table.
+            for (; i < succCount; i++)
+            {
+                assert(succTab[i] != succ);
+            }
+#endif // DEBUG
+
+            break;
+        }
+    }
+    assert(found);
+
+    ehfDesc->bbeCount = succCount;
+}
+
+//------------------------------------------------------------------------
 // Compiler::fgReplaceJumpTarget: For a given block, replace the target 'oldTarget' with 'newTarget'.
 //
 // Arguments:
@@ -529,7 +685,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 //    We assert for other jump kinds.
 // 2. All branch targets found are updated. If there are multiple ways for a block
 //    to reach 'oldTarget' (e.g., multiple arms of a switch), all of them are changed.
-// 3. The predecessor lists are updated, if they've been built.
+// 3. The predecessor lists are updated.
 // 4. If any switch table entry was updated, the switch table "unique successor" cache is invalidated.
 //
 void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget)
@@ -537,7 +693,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
     assert(block != nullptr);
     assert(fgPredsComputed);
 
-    switch (block->GetBBJumpKind())
+    switch (block->GetJumpKind())
     {
         case BBJ_CALLFINALLY:
         case BBJ_COND:
@@ -546,9 +702,9 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
 
-            if (block->bbJumpDest == oldTarget)
+            if (block->HasJumpTo(oldTarget))
             {
-                block->bbJumpDest = newTarget;
+                block->SetJumpDest(newTarget);
                 fgRemoveRefPred(oldTarget, block);
                 fgAddRefPred(newTarget, block);
             }
@@ -556,8 +712,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 
         case BBJ_SWITCH:
         {
-            unsigned const     jumpCnt = block->bbJumpSwt->bbsCount;
-            BasicBlock** const jumpTab = block->bbJumpSwt->bbsDstTab;
+            unsigned const     jumpCnt = block->GetJumpSwt()->bbsCount;
+            BasicBlock** const jumpTab = block->GetJumpSwt()->bbsDstTab;
             bool               changed = false;
 
             for (unsigned i = 0; i < jumpCnt; i++)
@@ -647,6 +803,17 @@ BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
     return ehGetDsc(block->getHndIndex())->ebdHndBeg;
 }
 
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// fgInvalidateBBLookup: In non-Release builds, set fgBBs to a dummy value.
+// After calling this, fgInitBBLookup must be called before using fgBBs again.
+//
+void Compiler::fgInvalidateBBLookup()
+{
+    fgBBs = (BasicBlock**)0xCDCD;
+}
+#endif // DEBUG
+
 /*****************************************************************************
  *
  *  The following helps find a basic block given its PC offset.
@@ -694,7 +861,7 @@ BasicBlock* Compiler::fgLookupBB(unsigned addr)
 
         while (dsc->bbFlags & BBF_INTERNAL)
         {
-            dsc = dsc->bbNext;
+            dsc = dsc->Next();
             mid++;
 
             // We skipped over too many, Set hi back to the original mid - 1
@@ -2771,19 +2938,21 @@ void Compiler::fgLinkBasicBlocks()
 
     for (BasicBlock* const curBBdesc : Blocks())
     {
-        switch (curBBdesc->GetBBJumpKind())
+        switch (curBBdesc->GetJumpKind())
         {
             case BBJ_COND:
             case BBJ_ALWAYS:
             case BBJ_LEAVE:
             {
-                BasicBlock* const jumpDest = fgLookupBB(curBBdesc->bbJumpOffs);
-                curBBdesc->bbJumpDest      = jumpDest;
+                BasicBlock* const jumpDest = fgLookupBB(curBBdesc->GetJumpOffs());
+                // Redundantly use SetJumpKindAndTarget() instead of SetJumpDest() just this once,
+                // so we don't break the HasJump() invariant of SetJumpDest().
+                curBBdesc->SetJumpKindAndTarget(curBBdesc->GetJumpKind(), jumpDest DEBUG_ARG(this));
                 fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
-                if (curBBdesc->bbJumpDest->bbNum <= curBBdesc->bbNum)
+                if (curBBdesc->GetJumpDest()->bbNum <= curBBdesc->bbNum)
                 {
-                    fgMarkBackwardJump(curBBdesc->bbJumpDest, curBBdesc);
+                    fgMarkBackwardJump(curBBdesc->GetJumpDest(), curBBdesc);
                 }
 
                 // Is the next block reachable?
@@ -2793,7 +2962,7 @@ void Compiler::fgLinkBasicBlocks()
                     break;
                 }
 
-                if (!curBBdesc->bbNext)
+                if (curBBdesc->IsLast())
                 {
                     BADCODE("Fall thru the end of a method");
                 }
@@ -2803,7 +2972,7 @@ void Compiler::fgLinkBasicBlocks()
                 FALLTHROUGH;
 
             case BBJ_NONE:
-                fgAddRefPred<initializingPreds>(curBBdesc->bbNext, curBBdesc, oldEdge);
+                fgAddRefPred<initializingPreds>(curBBdesc->Next(), curBBdesc, oldEdge);
                 break;
 
             case BBJ_EHFILTERRET:
@@ -2823,8 +2992,8 @@ void Compiler::fgLinkBasicBlocks()
 
             case BBJ_SWITCH:
             {
-                unsigned     jumpCnt = curBBdesc->bbJumpSwt->bbsCount;
-                BasicBlock** jumpPtr = curBBdesc->bbJumpSwt->bbsDstTab;
+                unsigned     jumpCnt = curBBdesc->GetJumpSwt()->bbsCount;
+                BasicBlock** jumpPtr = curBBdesc->GetJumpSwt()->bbsDstTab;
 
                 do
                 {
@@ -2839,7 +3008,7 @@ void Compiler::fgLinkBasicBlocks()
 
                 /* Default case of CEE_SWITCH (next block), is at end of jumpTab[] */
 
-                noway_assert(*(jumpPtr - 1) == curBBdesc->bbNext);
+                noway_assert(curBBdesc->NextIs(*(jumpPtr - 1)));
                 break;
             }
 
@@ -3318,7 +3487,23 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
         /* We need to create a new basic block */
 
-        curBBdesc = fgNewBasicBlock(jmpKind);
+        switch (jmpKind)
+        {
+            case BBJ_SWITCH:
+                curBBdesc = BasicBlock::bbNewBasicBlock(this, swtDsc);
+                break;
+
+            case BBJ_COND:
+            case BBJ_ALWAYS:
+            case BBJ_LEAVE:
+                noway_assert(jmpAddr != DUMMY_INIT(BAD_IL_OFFSET));
+                curBBdesc = BasicBlock::bbNewBasicBlock(this, jmpKind, jmpAddr);
+                break;
+
+            default:
+                curBBdesc = BasicBlock::bbNewBasicBlock(this, jmpKind);
+                break;
+        }
 
         curBBdesc->bbFlags |= bbFlags;
         curBBdesc->bbRefs = 0;
@@ -3326,22 +3511,19 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         curBBdesc->bbCodeOffs    = curBBoffs;
         curBBdesc->bbCodeOffsEnd = nxtBBoffs;
 
-        switch (jmpKind)
+        /* Append the block to the end of the global basic block list */
+
+        if (fgFirstBB)
         {
-            case BBJ_SWITCH:
-                curBBdesc->bbJumpSwt = swtDsc;
-                break;
-
-            case BBJ_COND:
-            case BBJ_ALWAYS:
-            case BBJ_LEAVE:
-                noway_assert(jmpAddr != DUMMY_INIT(BAD_IL_OFFSET));
-                curBBdesc->bbJumpOffs = jmpAddr;
-                break;
-
-            default:
-                break;
+            fgLastBB->SetNext(curBBdesc);
         }
+        else
+        {
+            fgFirstBB = curBBdesc;
+            curBBdesc->SetPrev(nullptr);
+        }
+
+        fgLastBB = curBBdesc;
 
         DBEXEC(verbose, curBBdesc->dspBlockHeader(this, false, false, false));
 
@@ -3664,7 +3846,7 @@ void Compiler::fgFindBasicBlocks()
             hndBegBB->bbCatchTyp      = BBCT_FILTER_HANDLER;
 
             // Mark all BBs that belong to the filter with the XTnum of the corresponding handler
-            for (block = filtBB; /**/; block = block->bbNext)
+            for (block = filtBB; /**/; block = block->Next())
             {
                 if (block == nullptr)
                 {
@@ -3678,14 +3860,14 @@ void Compiler::fgFindBasicBlocks()
                 if (block->KindIs(BBJ_EHFILTERRET))
                 {
                     // Mark catch handler as successor.
-                    block->bbJumpDest = hndBegBB;
+                    block->SetJumpDest(hndBegBB);
                     fgAddRefPred(hndBegBB, block);
-                    assert(block->bbJumpDest->bbCatchTyp == BBCT_FILTER_HANDLER);
+                    assert(block->GetJumpDest()->bbCatchTyp == BBCT_FILTER_HANDLER);
                     break;
                 }
             }
 
-            if (!block->bbNext || block->bbNext != hndBegBB)
+            if (block->IsLast() || !block->NextIs(hndBegBB))
             {
                 BADCODE3("Filter does not immediately precede handler for filter", " at offset %04X",
                          filtBB->bbCodeOffs);
@@ -3726,10 +3908,6 @@ void Compiler::fgFindBasicBlocks()
             }
         }
 
-        /* Mark the initial block and last blocks in the 'try' region */
-
-        tryBegBB->bbFlags |= BBF_TRY_BEG;
-
         /*  Prevent future optimizations of removing the first block   */
         /*  of a TRY block and the first block of an exception handler */
 
@@ -3753,10 +3931,10 @@ void Compiler::fgFindBasicBlocks()
         HBtab->ebdHandlerType = ToEHHandlerType(clause.Flags);
 
         HBtab->ebdTryBeg  = tryBegBB;
-        HBtab->ebdTryLast = (tryEndBB == nullptr) ? fgLastBB : tryEndBB->bbPrev;
+        HBtab->ebdTryLast = (tryEndBB == nullptr) ? fgLastBB : tryEndBB->Prev();
 
         HBtab->ebdHndBeg  = hndBegBB;
-        HBtab->ebdHndLast = (hndEndBB == nullptr) ? fgLastBB : hndEndBB->bbPrev;
+        HBtab->ebdHndLast = (hndEndBB == nullptr) ? fgLastBB : hndEndBB->Prev();
 
         //
         // Assert that all of our try/hnd blocks are setup correctly.
@@ -3798,7 +3976,7 @@ void Compiler::fgFindBasicBlocks()
 
         BasicBlock* block;
 
-        for (block = hndBegBB; block && (block->bbCodeOffs < hndEndOff); block = block->bbNext)
+        for (block = hndBegBB; block && (block->bbCodeOffs < hndEndOff); block = block->Next())
         {
             if (!block->hasHndIndex())
             {
@@ -3808,7 +3986,7 @@ void Compiler::fgFindBasicBlocks()
                 // BBJ_EHFINALLYRET that were imported to BBJ_EHFAULTRET.
                 if ((hndBegBB->bbCatchTyp == BBCT_FAULT) && block->KindIs(BBJ_EHFINALLYRET))
                 {
-                    block->SetBBJumpKind(BBJ_EHFAULTRET DEBUG_ARG(this));
+                    block->SetJumpKind(BBJ_EHFAULTRET);
                 }
             }
 
@@ -3821,7 +3999,7 @@ void Compiler::fgFindBasicBlocks()
 
         /* Mark all blocks within the covered range of the try */
 
-        for (block = tryBegBB; block && (block->bbCodeOffs < tryEndOff); block = block->bbNext)
+        for (block = tryBegBB; block && (block->bbCodeOffs < tryEndOff); block = block->Next())
         {
             /* Mark this BB as belonging to a 'try' block */
 
@@ -3979,7 +4157,7 @@ void Compiler::fgCheckForLoopsInHandlers()
         {
             if (blk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
             {
-                JITDUMP("\nHandler block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
+                JITDUMP("\nHandler block " FMT_BB " is backward jump target; can't have patchpoints in this method\n",
                         blk->bbNum);
                 compHasBackwardJumpInHandler = true;
                 break;
@@ -4016,10 +4194,9 @@ void Compiler::fgFixEntryFlowForOSR()
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_NONE));
-    fgRemoveRefPred(fgFirstBB->bbNext, fgFirstBB);
-    fgFirstBB->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-    fgFirstBB->bbJumpDest = fgOSREntryBB;
-    FlowEdge* const edge  = fgAddRefPred(fgOSREntryBB, fgFirstBB);
+    fgRemoveRefPred(fgFirstBB->Next(), fgFirstBB);
+    fgFirstBB->SetJumpKindAndTarget(BBJ_ALWAYS, fgOSREntryBB DEBUG_ARG(this));
+    FlowEdge* const edge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
     edge->setLikelihood(1.0);
 
     // We don't know the right weight for this block, since
@@ -4057,25 +4234,25 @@ void Compiler::fgCheckBasicBlockControlFlow()
             continue;
         }
 
-        switch (blk->GetBBJumpKind())
+        switch (blk->GetJumpKind())
         {
             case BBJ_NONE: // block flows into the next one (no jump)
 
-                fgControlFlowPermitted(blk, blk->bbNext);
+                fgControlFlowPermitted(blk, blk->Next());
 
                 break;
 
             case BBJ_ALWAYS: // block does unconditional jump to target
 
-                fgControlFlowPermitted(blk, blk->bbJumpDest);
+                fgControlFlowPermitted(blk, blk->GetJumpDest());
 
                 break;
 
             case BBJ_COND: // block conditionally jumps to the target
 
-                fgControlFlowPermitted(blk, blk->bbNext);
+                fgControlFlowPermitted(blk, blk->Next());
 
-                fgControlFlowPermitted(blk, blk->bbJumpDest);
+                fgControlFlowPermitted(blk, blk->GetJumpDest());
 
                 break;
 
@@ -4139,7 +4316,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
             case BBJ_LEAVE: // block always jumps to the target, maybe out of guarded
                             // region. Used temporarily until importing
-                fgControlFlowPermitted(blk, blk->bbJumpDest, true);
+                fgControlFlowPermitted(blk, blk->GetJumpDest(), true);
 
                 break;
 
@@ -4560,16 +4737,17 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 {
     // We'd like to use fgNewBBafter(), but we need to update the preds list before linking in the new block.
     // (We need the successors of 'curr' to be correct when we do this.)
-    BasicBlock* newBlock = bbNewBasicBlock(curr->GetBBJumpKind());
-
-    // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-    newBlock->bbRefs = 0;
+    BasicBlock* newBlock;
 
     // For each successor of the original block, set the new block as their predecessor.
     // Note we are using the "rational" version of the successor iterator that does not hide the finallyret arcs.
     // Without these arcs, a block 'b' may not be a member of succs(preds(b))
     if (!curr->KindIs(BBJ_SWITCH))
     {
+        // Start the new block with no refs. When we set the preds below, this will get updated correctly.
+        newBlock         = BasicBlock::bbNewBasicBlock(this, curr->GetJumpKind(), curr->GetJumpDest());
+        newBlock->bbRefs = 0;
+
         for (BasicBlock* const succ : curr->Succs(this))
         {
             if (succ != newBlock)
@@ -4579,19 +4757,16 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
                 fgReplacePred(succ, curr, newBlock);
             }
         }
-
-        newBlock->bbJumpDest = curr->bbJumpDest;
-        curr->bbJumpDest     = nullptr;
     }
     else
     {
+        // Start the new block with no refs. When we set the preds below, this will get updated correctly.
+        newBlock         = BasicBlock::bbNewBasicBlock(this, curr->GetJumpSwt());
+        newBlock->bbRefs = 0;
+
         // In the case of a switch statement there's more complicated logic in order to wire up the predecessor lists
         // but fortunately there's an existing method that implements this functionality.
-        newBlock->bbJumpSwt = curr->bbJumpSwt;
-
         fgChangeSwitchBlock(curr, newBlock);
-
-        curr->bbJumpSwt = nullptr;
     }
 
     newBlock->inheritWeight(curr);
@@ -4600,9 +4775,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->bbFlags = curr->bbFlags;
 
     // Remove flags that the new block can't have.
-    newBlock->bbFlags &=
-        ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
-          BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+    newBlock->bbFlags &= ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
+                           BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -4628,7 +4802,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     curr->bbFlags &= ~(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
     // Default to fallthru, and add the arc for that.
-    curr->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+    curr->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
     fgAddRefPred(newBlock, curr);
 
     return newBlock;
@@ -4855,7 +5029,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     assert(fgGetPredForBlock(succ, curr) != nullptr);
 
     BasicBlock* newBlock;
-    if (succ == curr->bbNext)
+    if (curr->NextIs(succ))
     {
         // The successor is the fall-through path of a BBJ_COND, or
         // an immediately following block of a BBJ_SWITCH (which has
@@ -4865,9 +5039,8 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     }
     else
     {
-        newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, curr->isRunRarely());
         // The new block always jumps to 'succ'
-        newBlock->bbJumpDest = succ;
+        newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* jumpDest */ succ, /* isRunRarely */ curr->isRunRarely());
     }
     newBlock->bbFlags |= (curr->bbFlags & succ->bbFlags & (BBF_BACKWARD_JUMP));
 
@@ -4877,10 +5050,10 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     if (curr->KindIs(BBJ_COND))
     {
         fgReplacePred(succ, curr, newBlock);
-        if (curr->bbJumpDest == succ)
+        if (curr->HasJumpTo(succ))
         {
             // Now 'curr' jumps to newBlock
-            curr->bbJumpDest = newBlock;
+            curr->SetJumpDest(newBlock);
         }
         fgAddRefPred(newBlock, curr);
     }
@@ -4896,7 +5069,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     {
         assert(curr->KindIs(BBJ_ALWAYS));
         fgReplacePred(succ, curr, newBlock);
-        curr->bbJumpDest = newBlock;
+        curr->SetJumpDest(newBlock);
         fgAddRefPred(newBlock, curr);
     }
 
@@ -4928,26 +5101,14 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
 void Compiler::fgUnlinkBlock(BasicBlock* block)
 {
-    if (block->bbPrev)
-    {
-        block->bbPrev->bbNext = block->bbNext;
-        if (block->bbNext)
-        {
-            block->bbNext->bbPrev = block->bbPrev;
-        }
-        else
-        {
-            fgLastBB = block->bbPrev;
-        }
-    }
-    else
+    if (block->IsFirst())
     {
         assert(block == fgFirstBB);
         assert(block != fgLastBB);
         assert((fgFirstBBScratch == nullptr) || (fgFirstBBScratch == fgFirstBB));
 
-        fgFirstBB         = block->bbNext;
-        fgFirstBB->bbPrev = nullptr;
+        fgFirstBB = block->Next();
+        fgFirstBB->SetPrev(nullptr);
 
         if (fgFirstBBScratch != nullptr)
         {
@@ -4959,6 +5120,14 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
             }
 #endif // DEBUG
             fgFirstBBScratch = nullptr;
+        }
+    }
+    else
+    {
+        block->Prev()->SetNext(block->Next());
+        if (block == fgLastBB)
+        {
+            fgLastBB = block->Prev();
         }
     }
 }
@@ -4975,22 +5144,22 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     assert(bBeg != nullptr);
     assert(bEnd != nullptr);
 
-    BasicBlock* bPrev = bBeg->bbPrev;
+    BasicBlock* bPrev = bBeg->Prev();
     assert(bPrev != nullptr); // Can't unlink a range starting with the first block
 
-    bPrev->setNext(bEnd->bbNext);
+    bPrev->SetNext(bEnd->Next());
 
     /* If we removed the last block in the method then update fgLastBB */
     if (fgLastBB == bEnd)
     {
         fgLastBB = bPrev;
-        noway_assert(fgLastBB->bbNext == nullptr);
+        noway_assert(fgLastBB->IsLast());
     }
 
     // If bEnd was the first Cold basic block update fgFirstColdBlock
-    if (fgFirstColdBlock == bEnd)
+    if (bEnd->IsFirstColdBlock(this))
     {
-        fgFirstColdBlock = bPrev->bbNext;
+        fgFirstColdBlock = bPrev->Next();
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -4999,7 +5168,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     // can't cross the non-funclet/funclet region. And you can't unlink the first block
     // of the first funclet with this, either. (If that's necessary, it could be allowed
     // by updating fgFirstFuncletBB to bEnd->bbNext.)
-    for (BasicBlock* tempBB = bBeg; tempBB != bEnd->bbNext; tempBB = tempBB->bbNext)
+    for (BasicBlock* tempBB = bBeg; tempBB != bEnd->Next(); tempBB = tempBB->Next())
     {
         assert(tempBB != fgFirstFuncletBB);
     }
@@ -5018,7 +5187,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     PREFIX_ASSUME(block != nullptr);
 
-    BasicBlock* bPrev = block->bbPrev;
+    BasicBlock* bPrev = block->Prev();
 
     JITDUMP("fgRemoveBlock " FMT_BB ", unreachable=%s\n", block->bbNum, dspBool(unreachable));
 
@@ -5029,7 +5198,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     // the SwitchDescs might be removed.
     InvalidateUniqueSwitchSuccMap();
 
-    noway_assert((block == fgFirstBB) || (bPrev && (bPrev->bbNext == block)));
+    noway_assert((block == fgFirstBB) || (bPrev && bPrev->NextIs(block)));
     noway_assert(!(block->bbFlags & BBF_DONT_REMOVE));
 
     // Should never remove a genReturnBB, as we might have special hookups there.
@@ -5050,7 +5219,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         // If block was the fgFirstFuncletBB then set fgFirstFuncletBB to block->bbNext
         if (block == fgFirstFuncletBB)
         {
-            fgFirstFuncletBB = block->bbNext;
+            fgFirstFuncletBB = block->Next();
         }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -5063,21 +5232,21 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             NO_WAY("No retless call finally blocks; need unwind target instead");
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
-        else if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->bbJumpDest == block->bbNext &&
-                 !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && (block != fgFirstColdBlock) &&
-                 (block->bbNext != fgFirstColdBlock))
+        else if (bPrev->KindIs(BBJ_ALWAYS) && block->NextIs(bPrev->GetJumpDest()) &&
+                 !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && !block->IsFirstColdBlock(this) &&
+                 !block->IsLastHotBlock(this))
         {
             // previous block is a BBJ_ALWAYS to the next block: change to BBJ_NONE.
             // Note that we don't do it if bPrev follows a BBJ_CALLFINALLY block (BBF_KEEP_BBJ_ALWAYS),
             // because that would violate our invariant that BBJ_CALLFINALLY blocks are followed by
             // BBJ_ALWAYS blocks.
-            bPrev->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+            bPrev->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
-        if (block == fgFirstColdBlock)
+        if (block->IsFirstColdBlock(this))
         {
-            fgFirstColdBlock = block->bbNext;
+            fgFirstColdBlock = block->Next();
         }
 
         /* Unlink this block from the bbNext chain */
@@ -5091,17 +5260,27 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
          */
         if (block->isBBCallAlwaysPair())
         {
-            BasicBlock* leaveBlk = block->bbNext;
+            BasicBlock* leaveBlk = block->Next();
             noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
             leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
-            leaveBlk->bbRefs  = 0;
-            leaveBlk->bbPreds = nullptr;
+
+            // The BBJ_ALWAYS normally has a reference count of 1 and a single predecessor. However,
+            // it might not have a predecessor on ARM, where we don't create BBF_RETLESS_CALL BBJ_CALLFINALLY.
+            // And on other platforms, we might not have marked it as BBF_RETLESS_CALL even though it is.
+            // (Some early flow optimization should probably aggressively mark these as BBF_RETLESS_CALL
+            // and not depend on fgRemoveBlock() to do that.)
+            for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
+            {
+                fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
+            }
+            assert(leaveBlk->bbRefs == 0);
+            assert(leaveBlk->bbPreds == nullptr);
 
             fgRemoveBlock(leaveBlk, /* unreachable */ true);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            fgClearFinallyTargetBit(leaveBlk->bbJumpDest);
+            fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
         else if (block->KindIs(BBJ_RETURN))
@@ -5129,14 +5308,14 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 #ifdef DEBUG
         /* Some extra checks for the empty case */
 
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_NONE:
                 break;
 
             case BBJ_ALWAYS:
                 /* Do not remove a block that jumps to itself - used for while (true){} */
-                noway_assert(block->bbJumpDest != block);
+                noway_assert(!block->HasJumpTo(block));
 
                 /* Empty GOTO can be removed iff bPrev is BBJ_NONE */
                 noway_assert(bPrev && bPrev->KindIs(BBJ_NONE));
@@ -5156,11 +5335,11 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         if (block->KindIs(BBJ_ALWAYS))
         {
-            succBlock = block->bbJumpDest;
+            succBlock = block->GetJumpDest();
         }
         else
         {
-            succBlock = block->bbNext;
+            succBlock = block->Next();
         }
 
         bool skipUnmarkLoop = false;
@@ -5173,16 +5352,16 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
-        if (block == fgFirstColdBlock)
+        if (block->IsFirstColdBlock(this))
         {
-            fgFirstColdBlock = block->bbNext;
+            fgFirstColdBlock = block->Next();
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
         // Update fgFirstFuncletBB if necessary
         if (block == fgFirstFuncletBB)
         {
-            fgFirstFuncletBB = block->bbNext;
+            fgFirstFuncletBB = block->Next();
         }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -5246,7 +5425,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             }
 
             /* change all jumps to the removed block */
-            switch (predBlock->GetBBJumpKind())
+            switch (predBlock->GetJumpKind())
             {
                 default:
                     noway_assert(!"Unexpected bbJumpKind in fgRemoveBlock()");
@@ -5260,24 +5439,23 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     if (block->KindIs(BBJ_ALWAYS))
                     {
                         /* bPrev now becomes a BBJ_ALWAYS */
-                        bPrev->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-                        bPrev->bbJumpDest = succBlock;
+                        bPrev->SetJumpKindAndTarget(BBJ_ALWAYS, succBlock DEBUG_ARG(this));
                     }
                     break;
 
                 case BBJ_COND:
                     /* The links for the direct predecessor case have already been updated above */
-                    if (predBlock->bbJumpDest != block)
+                    if (!predBlock->HasJumpTo(block))
                     {
                         break;
                     }
 
                     /* Check if both side of the BBJ_COND now jump to the same block */
-                    if (predBlock->bbNext == succBlock)
+                    if (predBlock->NextIs(succBlock))
                     {
                         // Make sure we are replacing "block" with "succBlock" in predBlock->bbJumpDest.
-                        noway_assert(predBlock->bbJumpDest == block);
-                        predBlock->bbJumpDest = succBlock;
+                        noway_assert(predBlock->HasJumpTo(block));
+                        predBlock->SetJumpDest(succBlock);
                         fgRemoveConditionalJump(predBlock);
                         break;
                     }
@@ -5288,17 +5466,15 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 case BBJ_CALLFINALLY:
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                    noway_assert(predBlock->bbJumpDest == block);
-                    predBlock->bbJumpDest = succBlock;
+                    noway_assert(predBlock->HasJumpTo(block));
+                    predBlock->SetJumpDest(succBlock);
+                    break;
+
+                case BBJ_EHFINALLYRET:
+                    fgReplaceEhfSuccessor(predBlock, block, succBlock);
                     break;
 
                 case BBJ_SWITCH:
-                    // Change any jumps from 'predBlock' (a BBJ_SWITCH) to 'block' to jump to 'succBlock'
-                    //
-                    // For the jump targets of 'predBlock' (a BBJ_SWITCH) that jump to 'block'
-                    // remove the old predecessor at 'block' from 'predBlock'  and
-                    // add the new predecessor at 'succBlock' from 'predBlock'
-                    //
                     fgReplaceSwitchJumpTarget(predBlock, succBlock, block);
                     break;
             }
@@ -5313,7 +5489,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     if (bPrev != nullptr)
     {
-        switch (bPrev->GetBBJumpKind())
+        switch (bPrev->GetJumpKind())
         {
             case BBJ_CALLFINALLY:
                 // If prev is a BBJ_CALLFINALLY it better be marked as RETLESS
@@ -5327,20 +5503,20 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 // the next block. This is the safest fix. We should remove all this BBJ_CALLFINALLY/BBJ_ALWAYS
                 // pairing.
 
-                if ((bPrev->bbJumpDest == bPrev->bbNext) &&
-                    !fgInDifferentRegions(bPrev, bPrev->bbJumpDest)) // We don't remove a branch from Hot -> Cold
+                if (bPrev->JumpsToNext() &&
+                    !fgInDifferentRegions(bPrev, bPrev->GetJumpDest())) // We don't remove a branch from Hot -> Cold
                 {
                     if ((bPrev == fgFirstBB) || !bPrev->isBBCallAlwaysPairTail())
                     {
                         // It's safe to change the jump type
-                        bPrev->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                        bPrev->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
                     }
                 }
                 break;
 
             case BBJ_COND:
                 /* Check for branch to next block */
-                if (bPrev->bbJumpDest == bPrev->bbNext)
+                if (bPrev->JumpsToNext())
                 {
                     fgRemoveConditionalJump(bPrev);
                 }
@@ -5376,23 +5552,21 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     {
         /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
 
-        if (bSrc->bbFallsThrough() && (bSrc->bbNext != bDst))
+        if (bSrc->bbFallsThrough() && !bSrc->NextIs(bDst))
         {
-            switch (bSrc->GetBBJumpKind())
+            switch (bSrc->GetJumpKind())
             {
-
                 case BBJ_NONE:
-                    bSrc->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-                    bSrc->bbJumpDest = bDst;
+                    bSrc->SetJumpKindAndTarget(BBJ_ALWAYS, bDst DEBUG_ARG(this));
                     JITDUMP("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB "\n",
-                            bSrc->bbNum, bSrc->bbJumpDest->bbNum);
+                            bSrc->bbNum, bSrc->GetJumpDest()->bbNum);
                     break;
 
                 case BBJ_CALLFINALLY:
                 case BBJ_COND:
 
                     // Add a new block after bSrc which jumps to 'bDst'
-                    jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
+                    jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
                     fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
 
                     // Record the loop number in the new block
@@ -5441,12 +5615,10 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                         }
                     }
 
-                    jmpBlk->bbJumpDest = bDst;
-
                     fgReplacePred(bDst, bSrc, jmpBlk);
 
                     JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n",
-                            jmpBlk->bbJumpDest->bbNum, bSrc->bbNum);
+                            jmpBlk->GetJumpDest()->bbNum, bSrc->bbNum);
                     break;
 
                 default:
@@ -5458,14 +5630,16 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
         {
             // If bSrc is an unconditional branch to the next block
             // then change it to a BBJ_NONE block
+            // (It's possible for bSrc's jump destination to not be set yet,
+            // so check with BasicBlock::HasJump before calling BasicBlock::JumpsToNext)
             //
-            if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) &&
-                (bSrc->bbJumpDest == bSrc->bbNext))
+            if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) && bSrc->HasJump() &&
+                bSrc->JumpsToNext())
             {
-                bSrc->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                bSrc->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
                 JITDUMP("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
                         " into a BBJ_NONE block\n",
-                        bSrc->bbNum, bSrc->bbNext->bbNum);
+                        bSrc->bbNum, bSrc->Next()->bbNum);
             }
         }
     }
@@ -5518,7 +5692,7 @@ bool Compiler::fgRenumberBlocks()
             block->bbNum = num;
         }
 
-        if (block->bbNext == nullptr)
+        if (block->IsLast())
         {
             fgLastBB  = block;
             fgBBcount = num;
@@ -5589,12 +5763,12 @@ bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc /* = NULL *
 
     if (bJump->KindIs(BBJ_COND, BBJ_ALWAYS))
     {
-        BasicBlock* bDest = bJump->bbJumpDest;
+        BasicBlock* bDest = bJump->GetJumpDest();
         BasicBlock* bTemp = (bSrc == nullptr) ? bJump : bSrc;
 
         while (true)
         {
-            bTemp = bTemp->bbNext;
+            bTemp = bTemp->Next();
 
             if (bTemp == nullptr)
             {
@@ -5641,24 +5815,20 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
     {
         printf("Relocated block%s [" FMT_BB ".." FMT_BB "] inserted after " FMT_BB "%s\n", (bStart == bEnd) ? "" : "s",
                bStart->bbNum, bEnd->bbNum, insertAfterBlk->bbNum,
-               (insertAfterBlk->bbNext == nullptr) ? " at the end of method" : "");
+               insertAfterBlk->IsLast() ? " at the end of method" : "");
     }
 #endif // DEBUG
 
     /* relink [bStart .. bEnd] into the flow graph */
 
-    bEnd->bbNext = insertAfterBlk->bbNext;
-    if (insertAfterBlk->bbNext)
-    {
-        insertAfterBlk->bbNext->bbPrev = bEnd;
-    }
-    insertAfterBlk->setNext(bStart);
+    bEnd->SetNext(insertAfterBlk->Next());
+    insertAfterBlk->SetNext(bStart);
 
     /* If insertAfterBlk was fgLastBB then update fgLastBB */
     if (insertAfterBlk == fgLastBB)
     {
         fgLastBB = bEnd;
-        noway_assert(fgLastBB->bbNext == nullptr);
+        noway_assert(fgLastBB->IsLast());
     }
 }
 
@@ -5731,7 +5901,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 
 #if !defined(FEATURE_EH_FUNCLETS)
     // In the funclets case, we still need to set some information on the handler blocks
-    if (bLast->bbNext == NULL)
+    if (bLast->IsLast())
     {
         INDEBUG(reason = "region is already at the end of the method";)
         goto FAILURE;
@@ -5756,7 +5926,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
             noway_assert(inTheRange == false);
             inTheRange = true;
         }
-        else if (block == bLast->bbNext)
+        else if (bLast->NextIs(block))
         {
             noway_assert(inTheRange == true);
             inTheRange = false;
@@ -5782,12 +5952,12 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
             break;
         }
 
-        block = block->bbNext;
+        block = block->Next();
     }
     // Ensure that bStart .. bLast defined a valid range
     noway_assert((validRange == true) && (inTheRange == false));
 
-    bPrev = bStart->bbPrev;
+    bPrev = bStart->Prev();
     noway_assert(bPrev != nullptr); // Can't move a range that includes the first block of the function.
 
     JITDUMP("Relocating %s range " FMT_BB ".." FMT_BB " (EH#%u) to end of BBlist\n",
@@ -5824,7 +5994,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 #endif // FEATURE_EH_FUNCLETS
 
     BasicBlock* bNext;
-    bNext = bLast->bbNext;
+    bNext = bLast->Next();
 
     /* Temporarily unlink [bStart .. bLast] from the flow graph */
     fgUnlinkRange(bStart, bLast);
@@ -5873,7 +6043,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
             {
                 // If we moved a set of blocks that were at the end of
                 // a different try region then we may need to update ebdTryLast
-                for (block = HBtab->ebdTryBeg; block != nullptr; block = block->bbNext)
+                for (block = HBtab->ebdTryBeg; block != nullptr; block = block->Next())
                 {
                     if (block == bPrev)
                     {
@@ -5882,7 +6052,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
                         fgSetTryEnd(HBtab, bPrev);
                         break;
                     }
-                    else if (block == HBtab->ebdTryLast->bbNext)
+                    else if (HBtab->ebdTryLast->NextIs(block))
                     {
                         // bPrev does not come after the TryBeg, thus we are larger, and
                         // it is moving with us.
@@ -5894,14 +6064,14 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
             {
                 // If we moved a set of blocks that were at the end of
                 // a different handler region then we must update ebdHndLast
-                for (block = HBtab->ebdHndBeg; block != nullptr; block = block->bbNext)
+                for (block = HBtab->ebdHndBeg; block != nullptr; block = block->Next())
                 {
                     if (block == bPrev)
                     {
                         fgSetHndEnd(HBtab, bPrev);
                         break;
                     }
-                    else if (block == HBtab->ebdHndLast->bbNext)
+                    else if (HBtab->ebdHndLast->NextIs(block))
                     {
                         // bPrev does not come after the HndBeg
                         break;
@@ -5921,7 +6091,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     else
     {
         assert(fgFirstFuncletBB !=
-               insertAfterBlk->bbNext); // We insert at the end, not at the beginning, of the funclet region.
+               insertAfterBlk->Next()); // We insert at the end, not at the beginning, of the funclet region.
     }
 
     // These asserts assume we aren't moving try regions (which we might need to do). Only
@@ -5955,14 +6125,14 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
         {
             // If we moved a set of blocks that were at the end of
             // a different try region then we may need to update ebdTryLast
-            for (block = HBtab->ebdTryBeg; block != NULL; block = block->bbNext)
+            for (block = HBtab->ebdTryBeg; block != NULL; block = block->Next())
             {
                 if (block == bPrev)
                 {
                     fgSetTryEnd(HBtab, bPrev);
                     break;
                 }
-                else if (block == HBtab->ebdTryLast->bbNext)
+                else if (HBtab->ebdTryLast->NextIs(block))
                 {
                     // bPrev does not come after the TryBeg
                     break;
@@ -5973,14 +6143,14 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
         {
             // If we moved a set of blocks that were at the end of
             // a different handler region then we must update ebdHndLast
-            for (block = HBtab->ebdHndBeg; block != NULL; block = block->bbNext)
+            for (block = HBtab->ebdHndBeg; block != NULL; block = block->Next())
             {
                 if (block == bPrev)
                 {
                     fgSetHndEnd(HBtab, bPrev);
                     break;
                 }
-                else if (block == HBtab->ebdHndLast->bbNext)
+                else if (HBtab->ebdHndLast->NextIs(block))
                 {
                     // bPrev does not come after the HndBeg
                     break;
@@ -6064,11 +6234,14 @@ bool Compiler::fgMightHaveLoop()
  * Insert a BasicBlock before the given block.
  */
 
-BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion)
+BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind,
+                                    BasicBlock* block,
+                                    bool        extendRegion,
+                                    BasicBlock* jumpDest /* = nullptr */)
 {
     // Create a new BasicBlock and chain it in
 
-    BasicBlock* newBlk = bbNewBasicBlock(jumpKind);
+    BasicBlock* newBlk = BasicBlock::bbNewBasicBlock(this, jumpKind, jumpDest);
     newBlk->bbFlags |= BBF_INTERNAL;
 
     fgInsertBBbefore(block, newBlk);
@@ -6103,11 +6276,14 @@ BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, boo
  * Insert a BasicBlock after the given block.
  */
 
-BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion)
+BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind,
+                                   BasicBlock* block,
+                                   bool        extendRegion,
+                                   BasicBlock* jumpDest /* = nullptr */)
 {
     // Create a new BasicBlock and chain it in
 
-    BasicBlock* newBlk = bbNewBasicBlock(jumpKind);
+    BasicBlock* newBlk = BasicBlock::bbNewBasicBlock(this, jumpKind, jumpDest);
     newBlk->bbFlags |= BBF_INTERNAL;
 
     fgInsertBBafter(block, newBlk);
@@ -6147,6 +6323,7 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool
 //    tree              - tree that will be wrapped into a statement and
 //                        inserted in the new block.
 //    debugInfo         - debug info to propagate into the new statement.
+//    jumpDest          - the jump target of the new block. Defaults to nullptr.
 //    updateSideEffects - update side effects for the whole statement.
 //
 // Return Value:
@@ -6155,10 +6332,14 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool
 // Notes:
 //    The new block will have BBF_INTERNAL flag and EH region will be extended
 //
-BasicBlock* Compiler::fgNewBBFromTreeAfter(
-    BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects)
+BasicBlock* Compiler::fgNewBBFromTreeAfter(BBjumpKinds jumpKind,
+                                           BasicBlock* block,
+                                           GenTree*    tree,
+                                           DebugInfo&  debugInfo,
+                                           BasicBlock* jumpDest /* = nullptr */,
+                                           bool        updateSideEffects /* = false */)
 {
-    BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true);
+    BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true, jumpDest);
     newBlock->bbFlags |= BBF_INTERNAL;
     Statement* stmt = fgNewStmtFromTree(tree, debugInfo);
     fgInsertStmtAtEnd(newBlock, stmt);
@@ -6180,16 +6361,16 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(
  */
 void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
 {
-    if (insertBeforeBlk->bbPrev)
+    if (insertBeforeBlk->IsFirst())
     {
-        fgInsertBBafter(insertBeforeBlk->bbPrev, newBlk);
+        newBlk->SetNext(fgFirstBB);
+
+        fgFirstBB = newBlk;
+        newBlk->SetPrev(nullptr);
     }
     else
     {
-        newBlk->setNext(fgFirstBB);
-
-        fgFirstBB      = newBlk;
-        newBlk->bbPrev = nullptr;
+        fgInsertBBafter(insertBeforeBlk->Prev(), newBlk);
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -6212,20 +6393,13 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
  */
 void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
 {
-    newBlk->bbNext = insertAfterBlk->bbNext;
-
-    if (insertAfterBlk->bbNext)
-    {
-        insertAfterBlk->bbNext->bbPrev = newBlk;
-    }
-
-    insertAfterBlk->bbNext = newBlk;
-    newBlk->bbPrev         = insertAfterBlk;
+    newBlk->SetNext(insertAfterBlk->Next());
+    insertAfterBlk->SetNext(newBlk);
 
     if (fgLastBB == insertAfterBlk)
     {
         fgLastBB = newBlk;
-        assert(fgLastBB->bbNext == nullptr);
+        assert(fgLastBB->IsLast());
     }
 }
 
@@ -6250,13 +6424,13 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     }
 
     // if bAlt doesn't jump to bCur it can't be a better fall through than bCur
-    if (bAlt->bbJumpDest != bCur)
+    if (!bAlt->HasJumpTo(bCur))
     {
         return false;
     }
 
     // Currently bNext is the fall through for bCur
-    BasicBlock* bNext = bCur->bbNext;
+    BasicBlock* bNext = bCur->Next();
     noway_assert(bNext != nullptr);
 
     // We will set result to true if bAlt is a better fall through than bCur
@@ -6382,7 +6556,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
     // Assert that startBlk precedes endBlk in the block list.
     // We don't want to use bbNum to assert this condition, as we cannot depend on the block numbers being
     // sequential at all times.
-    for (BasicBlock* b = startBlk; b != endBlk; b = b->bbNext)
+    for (BasicBlock* b = startBlk; b != endBlk; b = b->Next())
     {
         assert(b != nullptr); // We reached the end of the block list, but never found endBlk.
     }
@@ -6411,7 +6585,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
     if (nearBlk != nullptr)
     {
         // Does the nearBlk precede the startBlk?
-        for (blk = nearBlk; blk != nullptr; blk = blk->bbNext)
+        for (blk = nearBlk; blk != nullptr; blk = blk->Next())
         {
             if (blk == startBlk)
             {
@@ -6425,7 +6599,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         }
     }
 
-    for (blk = startBlk; blk != endBlk; blk = blk->bbNext)
+    for (blk = startBlk; blk != endBlk; blk = blk->Next())
     {
         // The only way (blk == nullptr) could be true is if the caller passed an endBlk that preceded startBlk in the
         // block list, or if endBlk isn't in the block list at all. In DEBUG, we'll instead hit the similar
@@ -6464,7 +6638,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         // and be in the correct EH region. This is must be guaranteed by the caller (as it is by
         // fgNewBBinRegion(), which passes the search range as an exact EH region block range).
         // Because of this assumption, we only check the EH information for blocks before the last block.
-        if (blk->bbNext != endBlk)
+        if (!blk->NextIs(endBlk))
         {
             // We are in the middle of the search range. We can't insert the new block in
             // an inner try or handler region. We can, however, set the insertion
@@ -6598,10 +6772,10 @@ DONE:
     // inserted block is marked as the entry block for the filter. Becuase this sort of split can be complex
     // (especially given that it must ensure that the liveness of the exception object is properly tracked),
     // we avoid this situation by never generating single-block filters on x86 (see impPushCatchArgOnStack).
-    if (insertingIntoFilter && (bestBlk == endBlk->bbPrev))
+    if (insertingIntoFilter && (bestBlk == endBlk->Prev()))
     {
         assert(bestBlk != startBlk);
-        bestBlk = bestBlk->bbPrev;
+        bestBlk = bestBlk->Prev();
     }
 #endif // defined(JIT32_GCENCODER)
 
@@ -6655,6 +6829,7 @@ DONE:
 //               [0..compHndBBtabCount].
 //    nearBlk  - insert the new block closely after this block, if possible. If nullptr, put the new block anywhere
 //               in the requested region.
+//    jumpDest - the jump target of the new block. Defaults to nullptr.
 //    putInFilter - put the new block in the filter region given by hndIndex, as described above.
 //    runRarely - 'true' if the new block is run rarely.
 //    insertAtEnd - 'true' if the block should be inserted at the end of the region. Note: this is currently only
@@ -6667,6 +6842,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
                                       unsigned    tryIndex,
                                       unsigned    hndIndex,
                                       BasicBlock* nearBlk,
+                                      BasicBlock* jumpDest /* = nullptr */,
                                       bool        putInFilter /* = false */,
                                       bool        runRarely /* = false */,
                                       bool        insertAtEnd /* = false */)
@@ -6756,7 +6932,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
             // We will put the newBB in the try region.
             EHblkDsc* ehDsc = ehGetDsc(tryIndex - 1);
             startBlk        = ehDsc->ebdTryBeg;
-            endBlk          = ehDsc->ebdTryLast->bbNext;
+            endBlk          = ehDsc->ebdTryLast->Next();
             regionIndex     = tryIndex;
         }
         else if (putInFilter)
@@ -6772,7 +6948,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
             // We will put the newBB in the handler region.
             EHblkDsc* ehDsc = ehGetDsc(hndIndex - 1);
             startBlk        = ehDsc->ebdHndBeg;
-            endBlk          = ehDsc->ebdHndLast->bbNext;
+            endBlk          = ehDsc->ebdHndLast->Next();
             regionIndex     = hndIndex;
         }
 
@@ -6792,7 +6968,7 @@ _FoundAfterBlk:;
             BBjumpKindNames[jumpKind], tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely),
             dspBool(insertAtEnd), afterBlk->bbNum);
 
-    return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion);
+    return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion, jumpDest);
 }
 
 //------------------------------------------------------------------------
@@ -6803,12 +6979,17 @@ _FoundAfterBlk:;
 // Arguments:
 //    jumpKind - the jump kind of the new block to create.
 //    srcBlk   - insert the new block in the same EH region as this block, and closely after it if possible.
+//    jumpDest - the jump target of the new block. Defaults to nullptr.
+//    runRarely - 'true' if the new block is run rarely.
+//    insertAtEnd - 'true' if the block should be inserted at the end of the region. Note: this is currently only
+//                  implemented when inserting into the main function (not into any EH region).
 //
 // Return Value:
 //    The new block.
 
 BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
                                       BasicBlock* srcBlk,
+                                      BasicBlock* jumpDest /* = nullptr */,
                                       bool        runRarely /* = false */,
                                       bool        insertAtEnd /* = false */)
 {
@@ -6827,7 +7008,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
         putInFilter = ehGetDsc(hndIndex - 1)->InFilterRegionBBRange(srcBlk);
     }
 
-    return fgNewBBinRegion(jumpKind, tryIndex, hndIndex, srcBlk, putInFilter, runRarely, insertAtEnd);
+    return fgNewBBinRegion(jumpKind, tryIndex, hndIndex, srcBlk, jumpDest, putInFilter, runRarely, insertAtEnd);
 }
 
 //------------------------------------------------------------------------
@@ -6837,13 +7018,14 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
 //
 // Arguments:
 //    jumpKind - the jump kind of the new block to create.
+//    jumpDest - the jump target of the new block. Defaults to nullptr.
 //
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind)
+BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
 {
-    return fgNewBBinRegion(jumpKind, 0, 0, nullptr, /* putInFilter */ false, /* runRarely */ false,
+    return fgNewBBinRegion(jumpKind, 0, 0, nullptr, jumpDest, /* putInFilter */ false, /* runRarely */ false,
                            /* insertAtEnd */ true);
 }
 
@@ -6862,6 +7044,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind)
 //          set its handler index to the most nested handler region enclosing that 'try' region.
 //          Otherwise, put the block in the handler region specified by 'regionIndex', and set its 'try'
 //          index to the most nested 'try' region enclosing that handler region.
+//    jumpDest - the jump target of the new block. Defaults to nullptr.
 //
 // Return Value:
 //    The new block.
@@ -6869,12 +7052,13 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind)
 BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
                                             BasicBlock* afterBlk,
                                             unsigned    regionIndex,
-                                            bool        putInTryRegion)
+                                            bool        putInTryRegion,
+                                            BasicBlock* jumpDest /* = nullptr */)
 {
     /* Insert the new block */
-    BasicBlock* afterBlkNext = afterBlk->bbNext;
+    BasicBlock* afterBlkNext = afterBlk->Next();
     (void)afterBlkNext; // prevent "unused variable" error from GCC
-    BasicBlock* newBlk = fgNewBBafter(jumpKind, afterBlk, false);
+    BasicBlock* newBlk = fgNewBBafter(jumpKind, afterBlk, false, jumpDest);
 
     if (putInTryRegion)
     {
@@ -6905,7 +7089,7 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
         // Is afterBlk at the end of a try region?
         if (HBtab->ebdTryLast == afterBlk)
         {
-            noway_assert(afterBlkNext == newBlk->bbNext);
+            noway_assert(newBlk->NextIs(afterBlkNext));
 
             bool extendTryRegion = false;
             if (newBlk->hasTryIndex())
@@ -6944,7 +7128,7 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
         // Is afterBlk at the end of a handler region?
         if (HBtab->ebdHndLast == afterBlk)
         {
-            noway_assert(afterBlkNext == newBlk->bbNext);
+            noway_assert(newBlk->NextIs(afterBlkNext));
 
             // Does newBlk extend this handler region?
             bool extendHndRegion = false;
@@ -6982,7 +7166,7 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
     }
 
     /* If afterBlk falls through, we insert a jump around newBlk */
-    fgConnectFallThrough(afterBlk, newBlk->bbNext);
+    fgConnectFallThrough(afterBlk, newBlk->Next());
 
     // If the loop table is valid, add this block to the appropriate loop.
     // Note we don't verify (via flow) that this block actually belongs
@@ -6991,8 +7175,8 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
     //
     if (optLoopTableValid)
     {
-        BasicBlock* const bbPrev = newBlk->bbPrev;
-        BasicBlock* const bbNext = newBlk->bbNext;
+        BasicBlock* const bbPrev = newBlk->Prev();
+        BasicBlock* const bbNext = newBlk->Next();
 
         if ((bbPrev != nullptr) && (bbNext != nullptr))
         {

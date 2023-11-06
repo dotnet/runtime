@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Run the same test suite with optimizations on to validate that inlined IL stubs with the disabled marshalling behavior work correctly. -->
     <DebugType>None</DebugType>

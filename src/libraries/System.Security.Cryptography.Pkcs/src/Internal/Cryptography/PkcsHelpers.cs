@@ -661,7 +661,7 @@ namespace Internal.Cryptography
                     return false;
                 }
 
-                ReadOnlySpan<byte> pSpecifiedDefaultParameters = new byte[] { 0x04, 0x00 };
+                ReadOnlySpan<byte> pSpecifiedDefaultParameters = [0x04, 0x00];
 
                 if (oaepParameters.PSourceFunc.Parameters != null &&
                     !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(pSpecifiedDefaultParameters))

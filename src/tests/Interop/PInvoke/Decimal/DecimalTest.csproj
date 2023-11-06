@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
   </ItemGroup>

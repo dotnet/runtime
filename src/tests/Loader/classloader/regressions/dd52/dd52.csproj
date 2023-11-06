@@ -9,6 +9,6 @@
     <Compile Include="runtest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="test.ilproj" />
+    <ProjectReference Include="test_dd52.ilproj" />
   </ItemGroup>
 </Project>

@@ -117,7 +117,7 @@ jobs:
       - ${{ if eq(parameters.archType, 'wasm') }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),

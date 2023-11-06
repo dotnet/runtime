@@ -132,7 +132,7 @@ void ProfileSynthesis::AssignLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -290,7 +290,7 @@ bool ProfileSynthesis::IsLoopExitEdge(FlowEdge* edge)
 //
 void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 {
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->bbNext, block);
+    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->Next(), block);
     edge->setLikelihood(1.0);
 }
 
@@ -303,7 +303,7 @@ void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 {
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->bbJumpDest, block);
+    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
     edge->setLikelihood(1.0);
 }
 
@@ -316,8 +316,8 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 {
-    BasicBlock* const jump = block->bbJumpDest;
-    BasicBlock* const next = block->bbNext;
+    BasicBlock* const jump = block->GetJumpDest();
+    BasicBlock* const next = block->Next();
 
     // Watch for degenerate case
     //
@@ -499,7 +499,7 @@ void ProfileSynthesis::RepairLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -591,7 +591,7 @@ void ProfileSynthesis::BlendLikelihoods()
     {
         weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
 
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -1220,8 +1220,8 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
                             " to reflect capping; current likelihood is " FMT_WT "\n",
                             exitBlock->bbNum, exitEdge->getLikelihood());
 
-                    BasicBlock* const jump               = exitBlock->bbJumpDest;
-                    BasicBlock* const next               = exitBlock->bbNext;
+                    BasicBlock* const jump               = exitBlock->GetJumpDest();
+                    BasicBlock* const next               = exitBlock->Next();
                     FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
                     FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
                     weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;

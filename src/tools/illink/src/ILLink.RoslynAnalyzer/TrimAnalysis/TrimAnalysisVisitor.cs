@@ -113,12 +113,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
-			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ()) {
-				// 'this' is not allowed in field/property initializers, so the owning symbol should be a method.
-				Debug.Assert (OwningSymbol is IMethodSymbol);
-				if (OwningSymbol is IMethodSymbol method)
-					return new MethodParameterValue (method, (ParameterIndex) 0, method.GetDynamicallyAccessedMemberTypes ());
-			}
+			// 'this' is not allowed in field/property initializers, so the owning symbol should be a method.
+			// It can also happen that we see this for a static method - for example a delegate creation
+			// over a local function does this, even thought the "this" makes no sense inside a static scope.
+			if (OwningSymbol is IMethodSymbol method && !method.IsStatic)
+				return new MethodParameterValue (method, (ParameterIndex) 0, method.GetDynamicallyAccessedMemberTypes ());
 
 			return TopValue;
 		}
@@ -142,7 +141,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (TryGetConstantValue (fieldRef, out var constValue))
 				return constValue;
 
-			return GetFieldTargetValue (fieldRef.Field);
+			return GetFieldTargetValue (fieldRef.Field, fieldRef);
 		}
 
 		public override MultiValue VisitTypeOf (ITypeOfOperation typeOfOperation, StateValue state)
@@ -185,15 +184,17 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// - method calls
 		// - value returned from a method
 
-		public override MultiValue GetFieldTargetValue (IFieldSymbol field)
+		public override MultiValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation)
 		{
-			return field.Type.IsTypeInterestingForDataflow () ? new FieldValue (field) : TopValue;
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisFieldAccessPattern (field, fieldReferenceOperation, OwningSymbol)
+			);
+
+			return new FieldValue (field);
 		}
 
 		public override MultiValue GetParameterTargetValue (IParameterSymbol parameter)
-		{
-			return parameter.Type.IsTypeInterestingForDataflow () ? new MethodParameterValue (parameter) : TopValue;
-		}
+			=> new MethodParameterValue (parameter);
 
 		public override void HandleAssignment (MultiValue source, MultiValue target, IOperation operation)
 		{
@@ -204,7 +205,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// annotated with DAMT.
 			TrimAnalysisPatterns.Add (
 				// This will copy the values if necessary
-				new TrimAnalysisAssignmentPattern (source, target, operation),
+				new TrimAnalysisAssignmentPattern (source, target, operation, OwningSymbol),
 				isReturnValue: false
 			);
 		}
@@ -255,28 +256,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			//   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
-			var handleCallAction = new HandleCallAction (diagnosticContext, OwningSymbol, operation);
-			MethodProxy method = new (calledMethod);
-			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
-
-			if (!handleCallAction.Invoke (method, instance, arguments, intrinsicId, out MultiValue methodReturnValue)) {
-				switch (intrinsicId) {
-				case IntrinsicId.Array_Empty:
-					methodReturnValue = ArrayValue.Create (0);
-					break;
-
-				case IntrinsicId.TypeDelegator_Ctor:
-					if (operation is IObjectCreationOperation)
-						methodReturnValue = arguments[0];
-					else
-						methodReturnValue = TopValue;
-
-					break;
-
-				default:
-					throw new InvalidOperationException ($"Unexpected method {calledMethod.GetDisplayName ()} unhandled by HandleCallAction.");
-				}
-			}
+			HandleCall (operation, OwningSymbol, calledMethod, instance, arguments, diagnosticContext, _multiValueLattice, out MultiValue methodReturnValue);
 
 			// This will copy the values if necessary
 			TrimAnalysisPatterns.Add (new TrimAnalysisMethodCallPattern (
@@ -296,6 +276,104 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			return methodReturnValue;
 		}
 
+		internal static void HandleCall(
+			IOperation operation,
+			ISymbol owningSymbol,
+			IMethodSymbol calledMethod,
+			MultiValue instance,
+			ImmutableArray<MultiValue> arguments,
+			DiagnosticContext diagnosticContext,
+			ValueSetLattice<SingleValue> multiValueLattice,
+			out MultiValue methodReturnValue)
+		{
+			var handleCallAction = new HandleCallAction (diagnosticContext, owningSymbol, operation);
+			MethodProxy method = new (calledMethod);
+			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
+
+			if (handleCallAction.Invoke (method, instance, arguments, intrinsicId, out methodReturnValue)) {
+				return;
+			}
+
+			MultiValue? maybeMethodReturnValue = default;
+
+			switch (intrinsicId) {
+			case IntrinsicId.Array_Empty:
+				AddReturnValue (ArrayValue.Create (0));
+				break;
+
+			case IntrinsicId.TypeDelegator_Ctor:
+				if (operation is IObjectCreationOperation)
+					AddReturnValue (arguments[0]);
+
+				break;
+
+			case IntrinsicId.Object_GetType: {
+					foreach (var valueNode in instance) {
+						// Note that valueNode can be statically typed as some generic argument type.
+						// For example:
+						//   void Method<T>(T instance) { instance.GetType().... }
+						// But it could be that T is annotated with for example PublicMethods:
+						//   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
+						// In this case it's in theory possible to handle it, by treating the T basically as a base class
+						// for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
+						// has to happen on the callsite, which doesn't know that GetType() will be used...).
+						// For now we're intentionally ignoring this case - it will produce a warning.
+						// The counter example is:
+						//   Method<Base>(new Derived);
+						// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
+						// currently it won't do.
+
+						// To emulate IL tools behavior (trimmer, NativeAOT compiler), we're going to intentionally "forget" the static type
+						// if it is a generic argument type.
+
+						ITypeSymbol? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+						if (staticType?.TypeKind == TypeKind.TypeParameter)
+							staticType = null;
+
+						if (staticType is null) {
+							// We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
+							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (new (calledMethod)));
+						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.TypeKind == TypeKind.Array) {
+							// We can treat this one the same as if it was a typeof() expression
+
+							// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
+							// on delegates anyway so reflection on something this approximation would miss is actually safe.
+
+							// We can also treat all arrays as "sealed" since it's not legal to derive from Array type (even though it is not sealed itself)
+
+							// We ignore the fact that the type can be annotated (see below for handling of annotated types)
+							// This means the annotations (if any) won't be applied - instead we rely on the exact knowledge
+							// of the type. So for example even if the type is annotated with PublicMethods
+							// but the code calls GetProperties on it - it will work - mark properties, don't mark methods
+							// since we ignored the fact that it's annotated.
+							// This can be seen a little bit as a violation of the annotation, but we already have similar cases
+							// where a parameter is annotated and if something in the method sets a specific known type to it
+							// we will also make it just work, even if the annotation doesn't match the usage.
+							AddReturnValue (new SystemTypeValue (new (staticType)));
+						} else {
+							var annotation = FlowAnnotations.GetTypeAnnotation (staticType);
+							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (new (calledMethod), annotation));
+						}
+					}
+				}
+
+				break;
+
+			default:
+				Debug.Fail ($"Unexpected method {calledMethod.GetDisplayName ()} unhandled by HandleCallAction.");
+
+				// Do nothing even if we reach a point which we didn't expect - the analyzer should never crash as it's a too disruptive experience for the user.
+				break;
+			}
+
+			methodReturnValue = maybeMethodReturnValue ?? multiValueLattice.Top;
+
+			void AddReturnValue (MultiValue value)
+			{
+				maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : multiValueLattice.Meet ((MultiValue) maybeMethodReturnValue, value);
+			}
+		}
+
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
 		{
 			// Return statements should only happen inside of method bodies.
@@ -307,17 +385,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				var returnParameter = new MethodReturnValue (method);
 
 				TrimAnalysisPatterns.Add (
-					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation),
+					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation, OwningSymbol),
 					isReturnValue: true
 				);
 			}
 		}
 
-		public override MultiValue HandleDelegateCreation (IMethodSymbol method, MultiValue instance, IOperation operation)
+		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation)
 		{
 			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
 				method,
-				instance,
 				operation,
 				OwningSymbol
 			));

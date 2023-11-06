@@ -102,6 +102,7 @@ namespace System.IO.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [MemberData(nameof(MemoryStream_PositionOverflow_Throws_MemberData))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/92467")]
         public void MemoryStream_SeekOverflow_Throws(SeekMode mode, int bufferSize, int origin)
         {
             byte[] buffer = new byte[bufferSize];

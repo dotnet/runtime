@@ -70,11 +70,16 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresUnreferencedCodeOnStaticCtor;
 
-		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation) =>
-			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer, compilation);
+		internal override bool IsAnalyzerEnabled (AnalyzerOptions options) =>
+			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer);
 
-		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> specialIncompatibleMembers, ISymbol member)
+		protected override bool CreateSpecialIncompatibleMembersDiagnostic (
+			IOperation operation,
+			ImmutableArray<ISymbol> specialIncompatibleMembers,
+			ISymbol member,
+			out Diagnostic? incompatibleMembersDiagnostic)
 		{
+			incompatibleMembersDiagnostic = null;
 			// Some RUC-annotated APIs are intrinsically handled by the trimmer
 			if (member is IMethodSymbol method && Intrinsics.GetIntrinsicIdForMethod (new MethodProxy (method)) != IntrinsicId.None) {
 				return true;

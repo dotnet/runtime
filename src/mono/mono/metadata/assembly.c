@@ -39,7 +39,6 @@
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/metadata/reflection.h>
-#include <mono/metadata/coree.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>

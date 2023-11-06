@@ -8,9 +8,9 @@ import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExports
 
 import { ENVIRONMENT_IS_WEB, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
-import { mono_exit } from "./exit";
+import { mono_exit, register_exit_handlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
-import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, start_asset_download } from "./assets";
+import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
@@ -165,6 +165,19 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 startupMemoryCache: value
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withInterpreterPgo(value: boolean, autoSaveDelay?: number): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                interpreterPgo: value,
+                interpreterPgoSaveDelay: autoSaveDelay
             });
             return this;
         } catch (err) {
@@ -411,6 +424,8 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
 
+    register_exit_handlers();
+
     return emscriptenModule.ENVIRONMENT_IS_PTHREAD
         ? createEmscriptenWorker()
         : createEmscriptenMain();
@@ -476,12 +491,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     await initCacheToUseIfEnabled();
 
-    const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
-    start_asset_download(wasmModuleAsset).then(asset => {
-        loaderHelpers.wasmDownloadPromise.promise_control.resolve(asset);
-    }).catch(err => {
-        mono_exit(1, err);
-    });
+    streamingCompileWasm(); // intentionally not awaited
 
     setTimeout(async () => {
         try {

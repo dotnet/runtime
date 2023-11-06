@@ -9,6 +9,6 @@
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Test.ilproj" />
+    <ProjectReference Include="Test_dev10_897464.ilproj" />
   </ItemGroup>
 </Project>

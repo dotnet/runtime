@@ -239,6 +239,7 @@ while (($# > 0)); do
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
+      echo "  --llvm                         Set LLVM for Mono runs"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosnativeaot                 Set for ios Native AOT runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
@@ -370,7 +371,7 @@ if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
 
-if [[ "${hybridglobalization,,}" == "true" ]]; then # convert to lowercase to test
+if [[ "$(echo "$hybridglobalization" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then # convert to lowercase to test
     configurations="$configurations HybridGlobalization=True" # Force True for consistency
 fi
 
@@ -420,7 +421,7 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     using_wasm=true
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
-    wasm_args="--experimental-wasm-eh --expose_wasm"
+    wasm_args="--expose_wasm"
     if [ "$javascript_engine" == "v8" ]; then
         # for es6 module support
         wasm_args="$wasm_args --module"
@@ -519,6 +520,7 @@ Write-PipelineSetVariable -name "Kind" -value "$kind" -is_multi_job_variable fal
 Write-PipelineSetVariable -name "_BuildConfig" -value "$_BuildConfig" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
+Write-PipelineSetVariable -name "MonoAOT" -value "$monoaot" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false

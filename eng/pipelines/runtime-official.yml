@@ -149,16 +149,12 @@ extends:
                     filesToSign:
                     - name: createdump
                       path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
                     - name: corerun
                       path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
                     - name: dotnet
                       path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
-                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
                     - name: apphost
                       path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
-                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
               - task: CopyFiles@2
                 displayName: 'Copy signed createdump to sharedFramework'
@@ -456,6 +452,7 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
+          - windows_arm64
           - windows_x64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
@@ -562,6 +559,7 @@ extends:
           jobParameters:
             buildArgs: -s tools+libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
             nameSuffix: Libraries_AllConfigurations
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
@@ -636,6 +634,7 @@ extends:
             - Build_tvos_arm64_release_Mono
             - Build_tvossimulator_arm64_release_Mono
             - Build_tvossimulator_x64_release_Mono
+            - Build_windows_arm64_release_CrossAOT_Mono
             - Build_windows_x64_release_CrossAOT_Mono
             - Build_windows_x64_release_CoreCLR
             - Build_windows_x86_release_CoreCLR

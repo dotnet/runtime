@@ -178,7 +178,7 @@ namespace MonoTests.System.Data
             try
             {
                 c.Equals(r1, r2);
-                Assert.True(false, "#A1");
+                Assert.Fail("#A1");
             }
             catch (RowNotInTableException ex)
             {
@@ -191,7 +191,7 @@ namespace MonoTests.System.Data
             try
             {
                 c.Equals(r2, r1);
-                Assert.True(false, "#B1");
+                Assert.Fail("#B1");
             }
             catch (RowNotInTableException ex)
             {
@@ -206,7 +206,7 @@ namespace MonoTests.System.Data
             try
             {
                 c.Equals(r2, r1);
-                Assert.True(false, "#C1");
+                Assert.Fail("#C1");
             }
             catch (RowNotInTableException ex)
             {
@@ -239,7 +239,7 @@ namespace MonoTests.System.Data
             try
             {
                 c.GetHashCode(null);
-                Assert.True(false, "#1");
+                Assert.Fail("#1");
             }
             catch (ArgumentNullException ex)
             {

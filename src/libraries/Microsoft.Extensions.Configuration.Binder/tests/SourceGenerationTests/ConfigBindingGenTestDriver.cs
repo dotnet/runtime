@@ -96,18 +96,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
     internal struct ConfigBindingGenRunResult
     {
-        public required Compilation OutputCompilation { get; init; }
+        public Compilation OutputCompilation { get; init; }
 
-        public required GeneratedSourceResult? GeneratedSource { get; init; }
+        public GeneratedSourceResult? GeneratedSource { get; init; }
 
         /// <summary>
         /// Diagnostics produced by the generator alone. Doesn't include any from other build participants.
         /// </summary>
-        public required ImmutableArray<Diagnostic> Diagnostics { get; init; }
+        public ImmutableArray<Diagnostic> Diagnostics { get; init; }
 
-        public required ImmutableArray<IncrementalGeneratorRunStep> TrackedSteps { get; init; }
+        public ImmutableArray<IncrementalGeneratorRunStep> TrackedSteps { get; init; }
 
-        public required SourceGenerationSpec? GenerationSpec { get; init; }
+        public SourceGenerationSpec? GenerationSpec { get; init; }
     }
 
     internal enum ExpectedDiagnostics

@@ -257,7 +257,7 @@ namespace System.Xml.XmlSchemaTests
                 CError.Compare(ss.GlobalElements.Contains(new XmlQualifiedName(e2, ns1)), true, "Contains2");
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

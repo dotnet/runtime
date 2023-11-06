@@ -218,22 +218,7 @@ namespace ILLink.Shared.DataFlow
 					foreach (var predecessor in cfg.GetPredecessors (block)) {
 						TValue predecessorState = cfgState.Get (predecessor.Block).Current;
 
-						// Propagate state through all finally blocks.
-						foreach (var exitedFinally in predecessor.FinallyRegions) {
-							TValue oldFinallyInputState = cfgState.GetFinallyInputState (exitedFinally);
-							TValue finallyInputState = lattice.Meet (oldFinallyInputState, predecessorState);
-
-							cfgState.SetFinallyInputState (exitedFinally, finallyInputState);
-
-							// Note: the current approach here is inefficient for long chains of finally regions because
-							// the states will not converge until we have visited each block along the chain
-							// and propagated the new states along this path.
-							if (!changed && !finallyInputState.Equals (oldFinallyInputState))
-								changed = true;
-
-							TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
-							predecessorState = cfgState.Get (lastFinallyBlock).Current;
-						}
+						FlowStateThroughExitedFinallys (predecessor, ref predecessorState);
 
 						currentState = lattice.Meet (currentState, predecessorState);
 					}
@@ -265,9 +250,12 @@ namespace ILLink.Shared.DataFlow
 						// Using predecessors in the finally. But not from outside the finally.
 						exceptionFinallyState = lattice.Top;
 						foreach (var predecessor in cfg.GetPredecessors (block)) {
-							var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState (predecessor.Block, out TValue predecessorFinallyState);
+							var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState (predecessor.Block, out TValue predecessorState);
 							Debug.Assert (isPredecessorInFinally);
-							exceptionFinallyState = lattice.Meet (exceptionFinallyState.Value, predecessorFinallyState);
+
+							FlowStateThroughExitedFinallys (predecessor, ref predecessorState);
+
+							exceptionFinallyState = lattice.Meet (exceptionFinallyState.Value, predecessorState);
 						}
 
 						// For first block, also initialize it from the try or catch blocks.
@@ -348,6 +336,27 @@ namespace ILLink.Shared.DataFlow
 					}
 
 					TraceBlockOutput (state.Current, exceptionState?.Value, exceptionFinallyState);
+				}
+			}
+
+			void FlowStateThroughExitedFinallys (
+				IControlFlowGraph<TBlock, TRegion>.Predecessor predecessor,
+				ref TValue predecessorState)
+			{
+				foreach (var exitedFinally in predecessor.FinallyRegions) {
+					TValue oldFinallyInputState = cfgState.GetFinallyInputState (exitedFinally);
+					TValue finallyInputState = lattice.Meet (oldFinallyInputState, predecessorState);
+
+					cfgState.SetFinallyInputState (exitedFinally, finallyInputState);
+
+					// Note: the current approach here is inefficient for long chains of finally regions because
+					// the states will not converge until we have visited each block along the chain
+					// and propagated the new states along this path.
+					if (!changed && !finallyInputState.Equals (oldFinallyInputState))
+						changed = true;
+
+					TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
+					predecessorState = cfgState.Get (lastFinallyBlock).Current;
 				}
 			}
 		}

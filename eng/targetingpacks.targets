@@ -80,16 +80,9 @@
                       ExcludedRuntimeIdentifiers="android"
                       AppHostPackNamePattern="$(LocalFrameworkOverrideName).Host.**RID**"
                       AppHostPackVersion="$(ProductVersion)"
-                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;linux-ppc64le"
+                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;linux-ppc64le;linux-riscv64"
                       TargetFramework="$(NetCoreAppCurrent)"
                       Condition="'$(UseLocalAppHostPack)' == 'true' and '@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
-  </ItemGroup>
-
-  <!-- Add known packs from the downlevel TFM until we are building with an SDK that supports the new TFM all-up. -->
-  <ItemGroup Condition="'$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
-    <KnownILLinkPack Include="@(KnownILLinkPack->WithMetadataValue('Identity', 'Microsoft.NET.ILLink.Tasks')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))">
-      <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    </KnownILLinkPack>
   </ItemGroup>
 
   <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to the output. -->

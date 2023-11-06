@@ -14612,8 +14612,8 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 static MonoMethodSignature * const * const interp_in_static_sigs [] = {
-    &mono_icall_sig_bool_ptr_int32_ptrref,
-    &mono_icall_sig_bool_ptr_ptrref,
+    &mono_icall_sig_boolean_ptr_int32_ptrref,
+    &mono_icall_sig_boolean_ptr_ptrref,
     &mono_icall_sig_int32_int32_ptrref,
     &mono_icall_sig_int32_int32_ptr_ptrref,
     &mono_icall_sig_int32_ptr_int32_ptr,

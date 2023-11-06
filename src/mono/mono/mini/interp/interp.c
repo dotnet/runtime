@@ -87,6 +87,8 @@
 #endif
 #include <mono/metadata/icall-decl.h>
 
+#include "interp-pgo.h"
+
 #ifdef HOST_BROWSER
 #include "jiterpreter.h"
 #include <emscripten.h>
@@ -513,6 +515,9 @@ mono_interp_get_imethod (MonoMethod *method)
 		imethod->param_types = (MonoType**)m_method_alloc0 (method, sizeof (MonoType*) * sig->param_count);
 	for (i = 0; i < sig->param_count; ++i)
 		imethod->param_types [i] = mini_get_underlying_type (sig->params [i]);
+
+	if (!imethod->optimized && mono_interp_pgo_should_tier_method (method))
+		imethod->optimized = TRUE;
 
 	jit_mm_lock (jit_mm);
 	InterpMethod *old_imethod;
@@ -2707,21 +2712,8 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	interp_push_lmf (&ext, frame);
 
 	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
-#if JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL
-		/*
-		 * invoke jit_call_cb via a single indirect function call that dispatches to
-		 *  either a specialized JS implementation or a specialized WASM EH version
-		 * see jiterpreter-jit-call.ts and do-jit-call.wat
-		 * NOTE: the first argument must ALWAYS be jit_call_cb for the specialization.
-		 *  the actual implementation cannot verify this at runtime, so get it right
-		 * this is faster than mono_llvm_cpp_catch_exception by avoiding the use of
-		 *  emscripten invoke_vi to find and invoke jit_call_cb indirectly
-		 */
-		jiterpreter_do_jit_call (jit_call_cb, &cb_data, &thrown);
-#else
 		/* Catch the exception thrown by the native code using a try-catch */
 		mono_llvm_cpp_catch_exception (jit_call_cb, &cb_data, &thrown);
-#endif
 	} else {
 		jit_call_cb (&cb_data);
 	}
@@ -3996,9 +3988,6 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
-			// FIXME We don't need to encode the whole signature, just param_count
-			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
-			int param_count = csignature->param_count;
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 			MonoDelegate *del = LOCAL_VAR (call_args_offset, MonoDelegate*);
@@ -4044,6 +4033,7 @@ main_loop:
 			}
 			cmethod = del_imethod;
 			if (!is_multicast) {
+				int param_count = ip [4];
 				if (cmethod->param_count == param_count + 1) {
 					// Target method is static but the delegate has a target object. We handle
 					// this separately from the case below, because, for these calls, the instance
@@ -4062,10 +4052,10 @@ main_loop:
 				} else {
 					// skip the delegate pointer for static calls
 					// FIXME we could avoid memmove
-					memmove (locals + call_args_offset, locals + call_args_offset + MINT_STACK_SLOT_SIZE, ip [3]);
+					memmove (locals + call_args_offset, locals + call_args_offset + ip [5], ip [3]);
 				}
 			}
-			ip += 5;
+			ip += 6;
 
 			InterpMethodCodeType code_type = cmethod->code_type;
 

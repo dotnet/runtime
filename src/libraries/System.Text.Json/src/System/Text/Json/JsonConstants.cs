@@ -32,7 +32,7 @@ namespace System.Text.Json
         // UTF-8 representation for them is E2, 80, A8/A9
         public const byte StartingByteOfNonStandardSeparator = 0xE2;
 
-        public static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+        public static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
         public static ReadOnlySpan<byte> TrueValue => "true"u8;
         public static ReadOnlySpan<byte> FalseValue => "false"u8;
         public static ReadOnlySpan<byte> NullValue => "null"u8;
