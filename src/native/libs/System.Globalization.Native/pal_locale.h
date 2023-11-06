@@ -5,7 +5,9 @@
 
 #include "pal_compiler.h"
 #include "pal_icushim_internal.h"
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 #include <unicode/utypes.h>
+#endif
 
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 

@@ -7,8 +7,11 @@
 #include "pal_locale.h"
 #include "pal_compiler.h"
 #include "pal_icushim_internal.h"
+
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 #include <unicode/utypes.h>
 #include <unicode/uidna.h>
+#endif
 
 PALEXPORT int32_t GlobalizationNative_ToAscii(uint32_t flags,
                                               const UChar* lpSrc,
