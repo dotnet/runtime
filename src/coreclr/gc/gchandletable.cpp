@@ -25,9 +25,55 @@ bool GCHandleStore::ContainsHandle(OBJECTHANDLE handle)
     return _underlyingBucket.Contains(handle);
 }
 
+// this is the number of handles we allocate in a handle table before we switch to the next table.
+#define HANDLE_THRESHOLD (15)
+static int s_numTableSlots = 0;
+
+HHANDLETABLE GCHandleStore::GetTable()
+{
+    if (!s_numTableSlots)
+    {
+        s_numTableSlots = getNumberOfSlots();
+    }
+
+    if (s_numTableSlots == 1)
+        return _underlyingBucket.pTable[0];
+
+    gc_alloc_context* ctx = GetCurrentThreadAllocContext();
+    if (!ctx)
+        return _underlyingBucket.pTable[0];
+
+    // high 16-bits are for the handle info.
+    int handleInfo = (uint32_t)(ctx->alloc_count) >> 16;
+
+    // high 10 bits store the cpu index. 
+    // low 6 bits store the # of handles allocated so far (before the next reset).
+    int numHandles = handleInfo & 0x3f;
+    int cpuIndex = handleInfo >> 6;
+    int savedCpuIndex = cpuIndex;
+    if (numHandles == HANDLE_THRESHOLD)
+    {
+        numHandles = 0;
+        cpuIndex++;
+        cpuIndex = (cpuIndex > (s_numTableSlots - 1)) ? 0 : cpuIndex;
+    }
+    else
+    {
+        numHandles++;
+    }
+
+    int newHandleInfo = numHandles | (cpuIndex << 6);
+
+    int low_16_bits = ctx->alloc_count & 0xffff;
+    ctx->alloc_count = low_16_bits | (newHandleInfo << 16);
+
+    HHANDLETABLE handletable = _underlyingBucket.pTable[cpuIndex];
+    return handletable;
+}
+
 OBJECTHANDLE GCHandleStore::CreateHandleOfType(Object* object, HandleType type)
 {
-    HHANDLETABLE handletable = _underlyingBucket.pTable[GetCurrentThreadHomeHeapNumber()];
+    HHANDLETABLE handletable = GetTable();
     return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object));
 }
 

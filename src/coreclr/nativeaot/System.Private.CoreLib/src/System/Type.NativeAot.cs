@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -30,15 +31,8 @@ namespace System
             // unifier's hash table.
             if (MethodTable.SupportsWritableData)
             {
-                ref UnsafeGCHandle handle = ref Unsafe.AsRef<UnsafeGCHandle>(pMT->WritableData);
-                if (handle.IsAllocated)
-                {
-                    return Unsafe.As<RuntimeType>(handle.Target);
-                }
-                else
-                {
-                    return GetTypeFromMethodTableSlow(pMT, ref handle);
-                }
+                ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                return type ?? GetTypeFromMethodTableSlow(pMT);
             }
             else
             {
@@ -47,17 +41,30 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT, ref UnsafeGCHandle handle)
+        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
-            UnsafeGCHandle tempHandle = UnsafeGCHandle.Alloc(new RuntimeType(pMT));
+            // TODO: instead of fragmenting the frozen object heap, we should have our own allocator
+            // for objects that live forever outside the GC heap.
 
-            // We don't want to leak a handle if there's a race
-            if (Interlocked.CompareExchange(ref Unsafe.As<UnsafeGCHandle, IntPtr>(ref handle), Unsafe.As<UnsafeGCHandle, IntPtr>(ref tempHandle), default) != default)
+            RuntimeType? type = null;
+            RuntimeImports.RhAllocateNewObject(
+                (IntPtr)MethodTable.Of<RuntimeType>(),
+                (uint)GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP,
+                Unsafe.AsPointer(ref type));
+
+            if (type == null)
+                throw new OutOfMemoryException();
+
+            type.DangerousSetUnderlyingEEType(pMT);
+
+            ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+            if (Interlocked.CompareExchange(ref runtimeTypeCache, type, null) == null)
             {
-                tempHandle.Free();
+                // Create and leak a GC handle
+                UnsafeGCHandle.Alloc(type);
             }
 
-            return Unsafe.As<RuntimeType>(handle.Target);
+            return runtimeTypeCache;
         }
 
         //

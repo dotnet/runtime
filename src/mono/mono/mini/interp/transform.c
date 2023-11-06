@@ -11157,11 +11157,16 @@ retry:
 	td->seq_points = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;
 	td->prof_coverage = mono_profiler_coverage_instrumentation_enabled (method);
-	td->disable_inlining = !rtm->optimized;
-	if (retry_compilation)
+	if (retry_compilation) {
+		// Optimizing the method can lead to deadce and better var offset allocation
+		// reducing the likelihood of local space overflow.
+		td->optimized = rtm->optimized = TRUE;
 		td->disable_inlining = TRUE;
+	} else {
+		td->optimized = rtm->optimized;
+		td->disable_inlining = !td->optimized;
+	}
 	rtm->data_items = td->data_items;
-	td->optimized = rtm->optimized;
 
 	if (td->prof_coverage)
 		td->coverage_info = mono_profiler_coverage_alloc (method, header->code_size);
@@ -11221,7 +11226,7 @@ retry:
 	generate_compacted_code (rtm, td);
 
 	if (td->total_locals_size >= G_MAXUINT16) {
-		if (td->disable_inlining) {
+		if (td->disable_inlining && td->optimized) {
 			char *name = mono_method_get_full_name (method);
 			char *msg = g_strdup_printf ("Unable to run method '%s': locals size too big.", name);
 			g_free (name);
@@ -11230,7 +11235,9 @@ retry:
 			retry_compilation = FALSE;
 			goto exit;
 		} else {
-			// We give the method another chance to compile with inlining disabled
+			// We give the method another chance to compile with inlining disabled and optimization enabled
+			if (td->verbose_level)
+				g_print ("Local space overflow. Retrying compilation\n");
 			retry_compilation = TRUE;
 			goto exit;
 		}
