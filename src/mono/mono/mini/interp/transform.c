@@ -3800,6 +3800,7 @@ interp_alloc_bb (TransformData *td)
 	bb->native_offset = -1;
 	bb->stack_height = -1;
 	bb->index = td->bb_count++;
+	bb->dfs_index = -1;
 
 	return bb;
 }
@@ -4705,20 +4706,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	td->in_start = td->ip = header->code;
 	end = td->ip + header->code_size;
 
-	td->cbb = td->entry_bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
+	td->cbb = td->entry_bb = interp_alloc_bb (td);
 	if (td->gen_sdb_seq_points)
 		td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, td->cbb);
 
-	td->cbb->index = td->bb_count++;
-	td->cbb->native_offset = -1;
 	td->cbb->stack_height = GPTRDIFF_TO_INT (td->sp - td->stack);
 
-	if (inlining) {
-		exit_bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
-		exit_bb->index = td->bb_count++;
-		exit_bb->native_offset = -1;
-		exit_bb->stack_height = -1;
-	}
+	if (inlining)
+		exit_bb = interp_alloc_bb (td);
+	else
+		td->entry_bb->il_offset = 0;
 
 	il_targets = mono_bitset_mem_new (
 		mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (header->code_size, 0)),

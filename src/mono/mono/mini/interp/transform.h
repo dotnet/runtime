@@ -98,6 +98,15 @@ struct _InterpBasicBlock {
 	gint16 out_count;
 	InterpBasicBlock **out_bb;
 
+	/* Index into td->bblocks */
+	int dfs_index;
+
+	/* Dominance frontier for this bblock */
+	MonoBitSet *dfrontier;
+
+	/* List of bblocks that are immediately dominated by this bblock */
+	GSList *dominated;
+
 	/* The real native offset of this bblock, computed when emitting the instructions in the code stream */
 	int native_offset;
 	/*
@@ -174,6 +183,7 @@ typedef struct {
 	int indirects;
 	int offset;
 	int size;
+	GSList *declare_bbs;
 	union {
 		// live_start and live_end are used by the offset allocator for optimized code
 		int live_start;
@@ -200,6 +210,7 @@ typedef struct {
 	guint unknown_use : 1;
 	guint local_only : 1;
 	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
+	guint ssa_global: 1;
 } InterpVar;
 
 typedef struct
@@ -250,6 +261,9 @@ typedef struct
 	GPtrArray *seq_points;
 	InterpBasicBlock **offset_to_bb;
 	InterpBasicBlock *entry_bb, *cbb;
+	InterpBasicBlock **bblocks; // ordering of bblocks in reverse postorder dfs
+	int bblocks_count;
+	InterpBasicBlock **idoms; // immediate dominator for each bblock, index from reverse postorder dfs
 	int bb_count;
 	MonoMemPool     *mempool;
 	MonoMemoryManager *mem_manager;

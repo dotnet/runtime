@@ -5,6 +5,10 @@
 #include "mintops.h"
 #include "transform.h"
 
+/*
+ * VAR OFFSET ALLOCATOR
+ */
+
 // Allocates var at the offset that tos points to, also updating it.
 static int
 alloc_var_offset (TransformData *td, int local, gint32 *ptos)
@@ -215,7 +219,6 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 }
 
 // Data structure used for offset allocation of local vars
-
 typedef struct {
 	int var;
 	gboolean is_alive;
@@ -494,6 +497,10 @@ interp_alloc_offsets (TransformData *td)
 	td->total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_ALIGNMENT);
 }
 
+/*
+ * DOMINANCE COMPUTATION
+ */
+
 static GString*
 interp_get_bb_links (InterpBasicBlock *bb)
 {
@@ -521,6 +528,294 @@ interp_get_bb_links (InterpBasicBlock *bb)
 }
 
 static void
+dfs_visit (InterpBasicBlock *bb, int *pos, InterpBasicBlock **bb_array)
+{
+	int dfs_index = *pos;
+
+	bb_array [dfs_index] = bb;
+	bb->dfs_index = dfs_index;
+	if (dfs_index != 0)
+		g_assert (bb->in_count);
+	*pos = dfs_index + 1;
+	for (int i = 0; i < bb->out_count; i++) {
+		InterpBasicBlock *out_bb = bb->out_bb [i];
+		if (out_bb->dfs_index == -1)
+			dfs_visit (out_bb, pos, bb_array);
+	}
+}
+
+static void
+interp_compute_dfs_indexes (TransformData *td)
+{
+	int dfs_index = 0;
+	// Sort bblocks in reverse postorder
+	td->bblocks = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
+	g_assert (!td->entry_bb->in_count);
+	dfs_visit (td->entry_bb, &dfs_index, td->bblocks);
+	td->bblocks_count = dfs_index;
+
+	if (td->verbose_level) {
+		InterpBasicBlock *bb;
+		g_print ("\nBASIC BLOCK GRAPH:\n");
+		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+			GString* bb_info = interp_get_bb_links (bb);
+			g_print ("BB%d: DFS(%d), %s\n", bb->index, bb->dfs_index, bb_info->str);
+			g_string_free (bb_info, TRUE);
+		}
+	}
+}
+
+static InterpBasicBlock*
+dom_intersect (InterpBasicBlock **idoms, InterpBasicBlock *bb1, InterpBasicBlock *bb2)
+{
+	while (bb1 != bb2) {
+		while (bb1->dfs_index < bb2->dfs_index)
+			bb2 = idoms [bb2->dfs_index];
+		while (bb2->dfs_index < bb1->dfs_index)
+			bb1 = idoms [bb1->dfs_index];
+	}
+	return bb1;
+}
+
+static void
+interp_compute_dominators (TransformData *td)
+{
+	InterpBasicBlock **idoms = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
+
+	idoms [0] = td->entry_bb;
+	gboolean changed = TRUE;
+	while (changed) {
+		changed = FALSE;
+		// all bblocks in reverse post order except entry
+		for (int i = 1; i < td->bblocks_count; i++) {
+			InterpBasicBlock *bb = td->bblocks [i];
+			InterpBasicBlock *new_idom = NULL;
+			// pick candidate idom from first processed predecessor of it
+			int j;
+			for (j = 0; j < bb->in_count; j++) {
+                                InterpBasicBlock *in_bb = bb->in_bb [j];
+                                if (idoms [in_bb->dfs_index]) {
+                                        new_idom = in_bb;
+                                        break;
+                                }
+                        }
+
+			// intersect new_idom with dominators from the other predecessors
+			for (; j < bb->in_count; j++) {
+				InterpBasicBlock *in_bb = bb->in_bb [j];
+				if (idoms [in_bb->dfs_index])
+					new_idom = dom_intersect (idoms, in_bb, new_idom);
+			}
+
+			// check if we obtained new idom
+			if (idoms [i] != new_idom) {
+				idoms [i] = new_idom;
+				changed = TRUE;
+			}
+		}
+	}
+
+	td->idoms = idoms;
+
+	// Build `dominated` bblock list for each bblock
+	for (int i = 1; i < td->bblocks_count; i++) {
+		InterpBasicBlock *bb = td->bblocks [i];
+		InterpBasicBlock *idom = td->idoms [i];
+		if (idom)
+			idom->dominated = g_slist_prepend (idom->dominated, bb);
+	}
+
+	if (td->verbose_level) {
+		InterpBasicBlock *bb;
+		g_print ("\nBASIC BLOCK IDOMS:\n");
+		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+			if (bb->dfs_index == -1)
+				continue;
+			g_print ("IDOM (BB%d) = BB%d\n", bb->index, td->idoms [bb->dfs_index]->index);
+		}
+
+		g_print ("\nBASIC BLOCK DOMINATED:\n");
+		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+			if (bb->dfs_index == -1)
+				continue;
+			if (bb->dominated) {
+				g_print ("DOMINATED (BB%d)  = {", bb->index);
+				GSList *dominated = bb->dominated;
+				while (dominated) {
+					InterpBasicBlock *dominated_bb = (InterpBasicBlock*)dominated->data;
+					g_print (" BB%d", dominated_bb->index);
+					dominated = dominated->next;
+				}
+				g_print (" }\n");
+			}
+		}
+	}
+}
+
+static void
+interp_compute_dominance_frontier (TransformData *td)
+{
+	int bitsize = mono_bitset_alloc_size (td->bb_count, 0);
+	char *mem = (char *)mono_mempool_alloc0 (td->mempool, bitsize * td->bb_count);
+
+	for (int i = 0; i < td->bblocks_count; i++) {
+		td->bblocks [i]->dfrontier = mono_bitset_mem_new (mem, td->bb_count, 0);
+		mem += bitsize;
+	}
+
+	for (int i = 0; i < td->bblocks_count; i++) {
+		InterpBasicBlock *bb = td->bblocks [i];
+
+		if (bb->in_count > 1) {
+			for (int j = 0; j < bb->in_count; ++j) {
+				InterpBasicBlock *p = bb->in_bb [j];
+
+				g_assert (p->dfs_index || p == td->entry_bb);
+
+				while (p != td->idoms [bb->dfs_index]) {
+					mono_bitset_set_fast (p->dfrontier, bb->dfs_index);
+					p = td->idoms [p->dfs_index];
+				}
+			}
+		}
+	}
+
+	if (td->verbose_level) {
+		InterpBasicBlock *bb;
+		g_print ("\nBASIC BLOCK DFRONTIERS:\n");
+		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+			if (bb->dfs_index == -1)
+				continue;
+			g_print ("DFRONTIER (BB%d) = {", bb->index);
+			int i;
+			mono_bitset_foreach_bit (bb->dfrontier, i, td->bb_count) {
+				g_print (" BB%d", td->bblocks [i]->index);
+			}
+			g_print (" }\n");
+		}
+	}
+}
+
+static void
+interp_compute_dominance (TransformData *td)
+{
+	/*
+	 * A dominator for a bblock n, is a bblock that is reached on every path to n. Dominance is transitive.
+	 * An immediate dominator for a bblock n, is the bblock that dominates n, but doesn't dominate any other
+	 * dominators of n, meaning it is the closest dominator to n. The dominance frontier of a node V is the set
+	 * of nodes where the dominance stops. This means that it is the set of nodes where node V doesn't dominate
+	 * it, but it does dominate a predecessor of it (including if the predecessor is V itself).
+	 *
+	 * The dominance frontier is relevant for SSA computation since, for a var defined in a bblock, the DF of bblock
+	 * represents the set of bblocks where we need to add a PHI opcode for that variable.
+	 */
+	interp_compute_dfs_indexes (td);
+
+	interp_compute_dominators (td);
+
+	interp_compute_dominance_frontier (td);
+}
+
+/*
+ * SSA TRANSFORMATION
+ */
+
+static void
+compute_global_var_cb (TransformData *td, int *pvar, gpointer data)
+{
+	int var = *pvar;
+	InterpBasicBlock *bb = (InterpBasicBlock*)data;
+	InterpVar *var_data = &td->vars [var];
+	// If var is used in another block than the one that it is declared then mark it as global
+	if (var_data->declare_bbs) {
+		if (var_data->declare_bbs->data != bb || var_data->declare_bbs->next)
+			var_data->ssa_global = TRUE;
+	}
+}
+
+// We obtain the list of global vars, as well as the list of bblocks where each one of the global vars is declared.
+static void
+interp_compute_global_vars (TransformData *td)
+{
+	InterpBasicBlock *bb;
+	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		InterpInst *ins;
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			interp_foreach_ins_svar (td, ins, bb, compute_global_var_cb);
+			if (mono_interp_op_dregs [ins->opcode]) {
+				// Save the list of bblocks where a global var is defined in
+				InterpVar *var_data = &td->vars [ins->dreg];
+				if (!var_data->declare_bbs)
+					var_data->declare_bbs = g_slist_prepend (NULL, bb);
+				else if (!g_slist_find (var_data->declare_bbs, bb))
+					var_data->declare_bbs = g_slist_prepend (var_data->declare_bbs, bb);
+			}
+		}
+	}
+
+	if (td->verbose_level) {
+		g_print ("\nSSA GLOBALS:\n");
+		for (unsigned int i = 0; i < td->vars_size; i++) {
+			if (td->vars [i].ssa_global) {
+				g_print ("DECLARE_BB (%d) = {", i);
+				GSList *l = td->vars [i].declare_bbs;
+				while (l) {
+					g_print (" BB%d", ((InterpBasicBlock*)l->data)->index);
+					l = l->next;
+				}
+				g_print (" }\n");
+			}
+		}
+	}
+}
+
+static void
+insert_phi_nodes ()
+{
+	// TODO
+}
+
+static void
+rename_vars ()
+{
+	// TODO
+}
+
+static void
+interp_compute_ssa (TransformData *td)
+{
+	interp_compute_dominance (td);
+
+	interp_compute_global_vars (td);
+
+	insert_phi_nodes ();
+
+	rename_vars ();
+}
+
+static void
+interp_exit_ssa (TransformData *td)
+{
+	for (unsigned int i = 0; i < td->vars_size; i++) {
+		if (td->vars [i].declare_bbs) {
+			g_slist_free (td->vars [i].declare_bbs);
+			td->vars [i].declare_bbs = NULL;
+		}
+	}
+
+	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb)	{
+		if (bb->dominated) {
+			g_slist_free (bb->dominated);
+			bb->dominated = NULL;
+		}
+	}
+}
+
+/*
+ * BASIC BLOCK OPTIMIZATION
+ */
+
+static void
 mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *replace_bb)
 {
 	// Update IL offset to bb mapping so that offset_to_bb doesn't point to dead
@@ -544,6 +839,8 @@ mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *repl
 			break;
 	}
 
+	if (bb->dominated)
+		g_slist_free (bb->dominated);
 	bb->dead = TRUE;
 	// bb should never be used/referenced after this
 }
@@ -2562,19 +2859,11 @@ interp_super_instructions (TransformData *td)
 void
 interp_optimize_code (TransformData *td)
 {
-	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
-		interp_optimize_bblocks (td);
+	if (td->header->num_clauses)
+		return;
 
-	if (mono_interp_opt & INTERP_OPT_CPROP)
-		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
+	interp_compute_ssa (td);
 
-	// After this point control optimizations on control flow can no longer happen, so we can determine
-	// which vars are global. This helps speed up the super instructions pass, which only operates on
-	// single def, single use local vars.
-	initialize_global_vars (td);
-
-	if ((mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS) &&
-			(mono_interp_opt & INTERP_OPT_CPROP))
-		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
+	interp_exit_ssa (td);
 }
 
