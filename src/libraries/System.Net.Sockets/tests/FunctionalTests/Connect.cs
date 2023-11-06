@@ -141,6 +141,7 @@ namespace System.Net.Sockets.Tests
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
                 return;
             }
+
             // Aborting sync operations for non-owning handles is not supported on Unix.
             if (!owning && UsesSync && !PlatformDetection.IsWindows)
             {
