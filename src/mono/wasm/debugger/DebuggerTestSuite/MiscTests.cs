@@ -1163,7 +1163,18 @@ namespace DebuggerTests
             );
         }
 
-        [ConditionalFact(nameof(WasmMultiThreaded))]
+        public static TheoryData<int> CountToTen()
+        {
+            var data = new TheoryData<int>();
+            for(int i=0;i<10;i++)
+            {
+                data.Add(i);
+            }
+            return data;
+        }
+
+        [ConditionalTheory(nameof(WasmMultiThreaded))]
+        [MemberData(nameof(CountToTen))]
         public async Task TestDebugUsingMultiThreadedRuntime()
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "MultiThreadedTest", "Write", 2);
