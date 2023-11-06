@@ -7793,10 +7793,44 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             }
 
 #ifdef TARGET_ARM64
-            case NI_AdvSimd_Multiply:
             case NI_AdvSimd_MultiplyByScalar:
-            case NI_AdvSimd_Arm64_Multiply:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
+            {
+                if (!varTypeIsFloating(baseType))
+                {
+                    // Handle `x * 0 == 0` and `0 * x == 0`
+                    // Not safe for floating-point when x == -0.0, NaN, +Inf, -Inf
+                    ValueNum zeroVN = VNZeroForType(TypeOfVN(cnsVN));
+
+                    if (cnsVN == zeroVN)
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+
+                // Handle x * 1 => x, but only if the scalar RHS is 1.
+                ValueNum oneVN;
+                if (varTypeIsSIMD(TypeOfVN(arg1VN)))
+                {
+                    oneVN = VNOneForSimdType(TypeOfVN(arg1VN), baseType);
+                }
+                else
+                {
+                    oneVN = VNOneForType(baseType);
+                }
+
+                if (arg1VN == oneVN)
+                {
+                    assert(TypeOfVN(arg0VN) == type);
+                    return arg0VN;
+                }
+                break;
+            }
+#else
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Multiply:
+            case NI_AdvSimd_Arm64_Multiply:
 #else
             case NI_SSE_Multiply:
             case NI_SSE2_Multiply:
@@ -7819,7 +7853,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
                     if (cnsVN == zeroVN)
                     {
-                        return VNZeroForType(type);
+                        return zeroVN;
                     }
                 }
 
@@ -7836,7 +7870,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
                     oneVN = VNOneForType(baseType);
                 }
 
-                if ((cnsVN == oneVN) && (TypeOfVN(argVN) == type))
+                if (cnsVN == oneVN)
                 {
                     return argVN;
                 }
