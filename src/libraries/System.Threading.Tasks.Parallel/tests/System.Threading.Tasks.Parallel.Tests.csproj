@@ -6,9 +6,6 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="BreakTests.cs" />
