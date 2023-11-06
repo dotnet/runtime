@@ -5,7 +5,9 @@
 
 #include "pal_icushim_internal.h"
 #include "pal_errors.h"
-
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#include <unicode/utypes.h>
+#endif
 /*
 Converts a UErrorCode to a ResultCode.
 */

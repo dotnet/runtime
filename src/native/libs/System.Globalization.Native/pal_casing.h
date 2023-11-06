@@ -3,7 +3,6 @@
 
 #include "pal_locale.h"
 #include "pal_compiler.h"
-#include "pal_icushim_internal.h"
 
 PALEXPORT void GlobalizationNative_ChangeCase(const UChar* lpSrc,
                                               int32_t cwSrcLength,

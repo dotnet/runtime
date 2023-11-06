@@ -6,7 +6,6 @@
 
 #include "pal_locale.h"
 #include "pal_compiler.h"
-#include "pal_icushim_internal.h"
 
 /*
  * These values should be kept in sync with System.Text.NormalizationForm

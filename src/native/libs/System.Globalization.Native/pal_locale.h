@@ -4,10 +4,11 @@
 #pragma once
 
 #include "pal_compiler.h"
-#include "pal_icushim_internal.h"
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-#include <unicode/utypes.h>
-#endif
+// #include "pal_icushim_internal.h"
+// #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+// #include <unicode/utypes.h>
+// #endif
+#ifndef __APPLE__
 
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 
@@ -20,8 +21,11 @@ PALEXPORT int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,
                                                           int32_t valueLength);
+#endif
 
 #ifdef __APPLE__
+#include <unicode/utypes.h>
+
 PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
 
 PALEXPORT const char* GlobalizationNative_GetLocaleNameNative(const char* localeName);
