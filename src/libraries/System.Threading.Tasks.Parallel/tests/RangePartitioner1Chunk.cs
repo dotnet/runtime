@@ -101,6 +101,7 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         /// <param name="length"></param>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void IterationsWithDependency()
         {
             static void iterationsWithDependency(int length, int dependencyIndex)
