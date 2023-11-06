@@ -177,6 +177,33 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         [Fact]
+        public async Task SucceedWhenGivenConflictingTypeNames()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/93498
+
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                var c = new ConfigurationBuilder().Build();
+                c.Get<Foo.Bar.BType>();
+
+                namespace Microsoft.Foo
+                {
+                    internal class AType {}
+                }
+
+                namespace Foo.Bar
+                {
+                    internal class BType {}
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
         public async Task SucceedWhenGivenMinimumRequiredReferences()
         {
             string source = """

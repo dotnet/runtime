@@ -290,11 +290,7 @@ namespace System.Threading
         private static bool IsAdaptiveSpinEnabled(short minSpinCount) => minSpinCount <= 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-#if !NATIVEAOT
         private ThreadId TryEnterSlow(int timeoutMs, ThreadId currentThreadId)
-#else
-        private ThreadId TryEnterSlow(int timeoutMs, ThreadId currentThreadId, object associatedObject)
-#endif
         {
             Debug.Assert(timeoutMs >= -1);
 
@@ -462,15 +458,6 @@ namespace System.Threading
             // exceptional paths.
             try
             {
-#if NATIVEAOT
-                using var debugBlockingScope =
-                    new Monitor.DebugBlockingScope(
-                        associatedObject,
-                        Monitor.DebugBlockingItemType.MonitorCriticalSection,
-                        timeoutMs,
-                        out _);
-#endif
-
                 Interlocked.Increment(ref s_contentionCount);
 
                 long waitStartTimeTicks = 0;

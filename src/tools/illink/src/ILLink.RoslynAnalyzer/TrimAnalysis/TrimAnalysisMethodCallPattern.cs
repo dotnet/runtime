@@ -65,23 +65,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-
-			if (context.EnableTrimAnalyzer && !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
-				HandleCallAction handleCallAction = new (diagnosticContext, OwningSymbol, Operation);
-				MethodProxy method = new (CalledMethod);
-				IntrinsicId intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
-				if (!handleCallAction.Invoke (method, Instance, Arguments, intrinsicId, out _)) {
-					// If this returns false it means the intrinsic needs special handling:
-					// case IntrinsicId.TypeDelegator_Ctor:
-					//    No diagnostics to report - this is an "identity" operation for data flow, can't produce diagnostics on its own
-					// case IntrinsicId.Array_Empty:
-					//    No diagnostics to report - constant value
-				}
+			if (context.EnableTrimAnalyzer && !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _))
+			{
+				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, diagnosticContext, default, out var _);
 			}
 
-			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, out Diagnostic? diag))
-					diagnosticContext.AddDiagnostic (diag);
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
+			{
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, CalledMethod, OwningSymbol, context, out Diagnostic? diag))
+					diagnosticContext.AddDiagnostic(diag);
 			}
 
 			return diagnosticContext.Diagnostics;

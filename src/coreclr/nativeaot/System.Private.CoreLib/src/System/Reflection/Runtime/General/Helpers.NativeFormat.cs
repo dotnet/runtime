@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 
 namespace System.Reflection.Runtime.General
@@ -10,7 +11,7 @@ namespace System.Reflection.Runtime.General
     internal static partial class Helpers
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NativeFormatRuntimeNamedTypeInfo CastToNativeFormatRuntimeNamedTypeInfo(this Type type)
+        public static NativeFormatRuntimeNamedTypeInfo CastToNativeFormatRuntimeNamedTypeInfo(this RuntimeTypeInfo type)
         {
             Debug.Assert(type is NativeFormatRuntimeNamedTypeInfo);
             return (NativeFormatRuntimeNamedTypeInfo)type;
