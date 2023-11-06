@@ -23,19 +23,21 @@ namespace System.IO
         private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
         private readonly Encoding _encoding;
         private Encoder? _bufferReadEncoder;
+        private readonly bool _isTerminal;
 
         private char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
 
-        internal StdInReader(Encoding encoding)
+        internal StdInReader(Encoding encoding, bool isTerminal)
         {
             _encoding = encoding;
             _unprocessedBufferToBeRead = new char[encoding.GetMaxCharCount(BytesToBeRead)];
             _startIndex = 0;
             _endIndex = 0;
             _readLineSB = new StringBuilder();
+            _isTerminal = isTerminal;
         }
 
         /// <summary> Checks whether the unprocessed buffer is empty. </summary>
@@ -147,6 +149,7 @@ namespace System.IO
             // _availableKeys either contains a line that was already read,
             // or we need to read a new line from stdin.
             bool freshKeys = _availableKeys.Count == 0;
+            bool echo = freshKeys && _isTerminal;
 
            // Don't carry over chars from previous ReadLine call.
             _readLineSB.Clear();
@@ -171,9 +174,9 @@ namespace System.IO
                     // try to keep this very simple, at least for now.
                     if (keyInfo.Key == ConsoleKey.Enter)
                     {
-                        if (freshKeys)
+                        if (echo)
                         {
-                            Console.WriteLine();
+                            WriteToTerminal('\n');
                         }
                         return true;
                     }
@@ -198,7 +201,7 @@ namespace System.IO
                             removed = _tmpKeys.TryPop(out _);
                         }
 
-                        if (removed && freshKeys)
+                        if (removed && echo)
                         {
                             // The ReadLine input may wrap across terminal rows and we need to handle that.
                             // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
@@ -208,9 +211,9 @@ namespace System.IO
                                 s_clearToEol ??= ConsolePal.TerminalFormatStringsInstance.ClrEol ?? string.Empty;
 
                                 // Move to end of previous line
-                                ConsolePal.SetCursorPosition(ConsolePal.WindowWidth - 1, top - 1);
+                                ConsolePal.SetCursorPosition(Interop.Sys.FileDescriptors.STDIN_FILENO, ConsolePal.WindowWidth - 1, top - 1);
                                 // Clear from cursor to end of the line
-                                ConsolePal.WriteStdoutAnsiString(s_clearToEol, mayChangeCursorPosition: false);
+                                ConsolePal.WriteStringToTerminal(Interop.Sys.FileDescriptors.STDIN_FILENO, s_clearToEol, mayChangeCursorPosition: false);
                             }
                             else
                             {
@@ -220,7 +223,7 @@ namespace System.IO
                                     s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
                                 }
 
-                                Console.Write(s_moveLeftString);
+                                WriteToTerminal(s_moveLeftString);
                             }
                         }
                     }
@@ -230,17 +233,17 @@ namespace System.IO
                         {
                             _readLineSB.Append(keyInfo.KeyChar);
                         }
-                        if (freshKeys)
+                        if (echo)
                         {
-                            Console.Write(' ');
+                            WriteToTerminal(' ');
                         }
                     }
                     else if (keyInfo.Key == ConsoleKey.Clear)
                     {
                         _readLineSB.Clear();
-                        if (freshKeys)
+                        if (echo)
                         {
-                            Console.Clear();
+                            WriteToTerminal(ConsolePal.TerminalFormatStringsInstance.Clear);
                         }
                     }
                     else if (keyInfo.KeyChar != '\0')
@@ -249,9 +252,9 @@ namespace System.IO
                         {
                             _readLineSB.Append(keyInfo.KeyChar);
                         }
-                        if (freshKeys)
+                        if (echo)
                         {
-                            Console.Write(keyInfo.KeyChar);
+                            WriteToTerminal(keyInfo.KeyChar);
                         }
                     }
                 }
@@ -311,16 +314,21 @@ namespace System.IO
         /// not work, we simply return the char associated with that
         /// key with ConsoleKey set to default value.
         /// </summary>
-        public ConsoleKeyInfo ReadKey(out bool previouslyProcessed)
+        public ConsoleKeyInfo ReadKey(bool intercept)
         {
             if (_availableKeys.Count > 0)
             {
-                previouslyProcessed = true;
                 return _availableKeys.Pop();
             }
 
-            previouslyProcessed = false;
-            return ReadKey();
+            ConsoleKeyInfo keyInfo = ReadKey();
+
+            if (!intercept && keyInfo.KeyChar != '\0' && _isTerminal)
+            {
+                WriteToTerminal(keyInfo.KeyChar);
+            }
+
+            return keyInfo;
         }
 
         private unsafe ConsoleKeyInfo ReadKey()
@@ -363,5 +371,13 @@ namespace System.IO
 
         /// <summary>Gets whether there's input waiting on stdin.</summary>
         internal static bool StdinReady => Interop.Sys.StdinReady();
+
+        private void WriteToTerminal(char c) => WriteToTerminal($"{c}");
+
+        private void WriteToTerminal(string? value)
+        {
+            Debug.Assert(_isTerminal);
+            ConsolePal.WriteStringToTerminal(Interop.Sys.FileDescriptors.STDIN_FILENO, value);
+        }
     }
 }

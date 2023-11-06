@@ -82,8 +82,8 @@ namespace System
 
                     SyncTextReader reader = SyncTextReader.GetSynchronizedTextReader(
                                                 new StdInReader(
-                                                    encoding: Console.InputEncoding
-                                                ));
+                                                    encoding: Console.InputEncoding,
+                                                    isTerminal: !Console.IsInputRedirected));
 
                     // Don't overwrite a set reader.
                     // The reader doesn't own resources, so we don't need to dispose
@@ -127,13 +127,7 @@ namespace System
                 throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
             }
 
-            bool previouslyProcessed;
-            ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
-
-            if (!intercept && !previouslyProcessed && keyInfo.KeyChar != '\0')
-            {
-                Console.Write(keyInfo.KeyChar);
-            }
+            ConsoleKeyInfo keyInfo = StdInReader.ReadKey(intercept);
             return keyInfo;
         }
 
@@ -231,6 +225,11 @@ namespace System
             if (Console.IsOutputRedirected)
                 return;
 
+            SetCursorPosition(Interop.Sys.FileDescriptors.STDOUT_FILENO, left, top);
+        }
+
+        internal static void SetCursorPosition(SafeFileHandle terminalHandle, int left, int top)
+        {
             lock (Console.Out)
             {
                 if (TryGetCachedCursorPosition(out int leftCurrent, out int topCurrent) &&
@@ -244,7 +243,7 @@ namespace System
                 if (!string.IsNullOrEmpty(cursorAddressFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
-                    WriteStdoutAnsiString(ansiStr);
+                    WriteStringToTerminal(terminalHandle, ansiStr);
                 }
 
                 SetCachedCursorPosition(left, top);
@@ -1095,10 +1094,7 @@ namespace System
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
 
-        /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
-        /// <param name="value">The string to write.</param>
-        /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteStringToTerminal(SafeFileHandle terminalHandle, string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -1117,8 +1113,14 @@ namespace System
 
             lock (Console.Out) // synchronize with other writers
             {
-                Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, mayChangeCursorPosition);
+                Write(terminalHandle, data, mayChangeCursorPosition);
             }
         }
+
+        /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
+        /// <param name="value">The string to write.</param>
+        /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
+       internal static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
+            => WriteStringToTerminal(Interop.Sys.FileDescriptors.STDOUT_FILENO, value, mayChangeCursorPosition);
     }
 }
