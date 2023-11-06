@@ -1346,7 +1346,10 @@ interp_dump_ins (InterpInst *ins, gpointer *data_items)
 {
 	int opcode = ins->opcode;
 	GString *str = g_string_new ("");
-	g_string_append_printf (str, "IL_%04x: %-14s", ins->il_offset, mono_interp_opname (opcode));
+	if (ins->il_offset == -1)
+		g_string_append_printf (str, "IL_----: %-14s", mono_interp_opname (opcode));
+	else
+		g_string_append_printf (str, "IL_%04x: %-14s", ins->il_offset, mono_interp_opname (opcode));
 
 	if (mono_interp_op_dregs [opcode] > 0)
 		g_string_append_printf (str, " [%d <-", ins->dreg);
