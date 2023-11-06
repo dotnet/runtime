@@ -9,10 +9,10 @@ Through this assembly, applications can subscribe to a set of global system even
 
 <!-- The key features of this package -->
 
-* Access to a set of global system events.
-* Notification of changes in user preferences.
-* Notification of system power mode changes.
-* Notification of session switches.
+* Access to a set of global system events
+* Notification of changes in user preferences
+* Notification of system power mode changes
+* Notification of session switches
 
 ## How to Use
 
