@@ -609,7 +609,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_GatherWasmFilesToPublish">
     <ItemGroup>
       <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
-      <WasmAssembliesToBundle Include="%(ResolvedFileToPublish.FullPath)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
+      <WasmAssembliesToBundle Include="@(ResolvedFileToPublish)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
     </ItemGroup>
   </Target>
 </Project>

@@ -705,7 +705,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         string assembly = assemblyItem.GetMetadata("FullPath");
         string assemblyDir = Path.GetDirectoryName(assembly)!;
-        var aotAssembly = new TaskItem(assembly);
+        var aotAssembly = new TaskItem(assembly, assemblyItem.CloneCustomMetadata());
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
         bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
