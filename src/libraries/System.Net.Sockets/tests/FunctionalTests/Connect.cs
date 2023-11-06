@@ -13,7 +13,7 @@ namespace System.Net.Sockets.Tests
 {
     public abstract class Connect<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        public Connect(ITestOutputHelper output) : base(output) {}
+        public Connect(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
         [Theory]
@@ -203,27 +203,27 @@ namespace System.Net.Sockets.Tests
 
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
     {
-        public ConnectSync(ITestOutputHelper output) : base(output) {}
+        public ConnectSync(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
     {
-        public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+        public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class ConnectApm : Connect<SocketHelperApm>
     {
-        public ConnectApm(ITestOutputHelper output) : base(output) {}
+        public ConnectApm(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class ConnectTask : Connect<SocketHelperTask>
     {
-        public ConnectTask(ITestOutputHelper output) : base(output) {}
+        public ConnectTask(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class ConnectEap : Connect<SocketHelperEap>
     {
-        public ConnectEap(ITestOutputHelper output) : base(output) {}
+        public ConnectEap(ITestOutputHelper output) : base(output) { }
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -250,7 +250,7 @@ namespace System.Net.Sockets.Tests
             using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             byte[] buffer = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 };
-            
+
             var mre = new ManualResetEventSlim(false);
             var saea = new SocketAsyncEventArgs();
             saea.RemoteEndPoint = serverEp;
@@ -264,7 +264,7 @@ namespace System.Net.Sockets.Tests
             {
                 saea.SetBuffer(buffer.AsMemory(2, 4));
             }
-            
+
             saea.Completed += (_, __) => mre.Set();
 
             if (client.ConnectAsync(saea))
