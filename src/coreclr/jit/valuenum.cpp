@@ -7819,7 +7819,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
                     if (cnsVN == zeroVN)
                     {
-                        return zeroVN;
+                        return VNZeroForType(type);
                     }
                 }
 
@@ -7836,7 +7836,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
                     oneVN = VNOneForType(baseType);
                 }
 
-                if (cnsVN == oneVN)
+                if ((cnsVN == oneVN) && (TypeOfVN(argVN) == type))
                 {
                     return argVN;
                 }

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNames" Value="STRESS_MAKE_CSE STRESS_SPLIT_TREES_REMOVE_COMMAS" />
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>
