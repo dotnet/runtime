@@ -14,7 +14,7 @@ alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 	offset = *ptos;
 	size = td->vars [local].size;
 
-	if (td->vars [local].flags & INTERP_LOCAL_FLAG_SIMD)
+	if (td->vars [local].simd)
 		offset = ALIGN_TO (offset, MINT_SIMD_ALIGNMENT);
 
 	td->vars [local].offset = offset;
@@ -34,7 +34,7 @@ static void
 set_var_live_range (TransformData *td, int var, int ins_index)
 {
 	// We don't track liveness yet for global vars
-	if (td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL)
+	if (td->vars [var].global)
 		return;
 	if (td->vars [var].live_start == -1)
 		td->vars [var].live_start = ins_index;
@@ -51,7 +51,7 @@ static void
 initialize_global_var (TransformData *td, int var, int bb_index)
 {
 	// Check if already handled
-	if (td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL)
+	if (td->vars [var].global)
 		return;
 
 	if (td->vars [var].bb_index == -1) {
@@ -61,7 +61,7 @@ initialize_global_var (TransformData *td, int var, int bb_index)
 		if (td->verbose_level)
 			g_print ("alloc global var %d to offset %d\n", var, td->total_locals_size);
 		interp_alloc_global_var_offset (td, var);
-		td->vars [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
+		td->vars [var].global = TRUE;
 	}
 }
 
@@ -86,11 +86,11 @@ initialize_global_vars (TransformData *td)
 			} else if (opcode == MINT_LDLOCA_S) {
 				int var = ins->sregs [0];
 				// If global flag is set, it means its offset was already allocated
-				if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL)) {
+				if (!td->vars [var].global) {
 					if (td->verbose_level)
 						g_print ("alloc ldloca global var %d to offset %d\n", var, td->total_locals_size);
 					interp_alloc_global_var_offset (td, var);
-					td->vars [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
+					td->vars [var].global = TRUE;
 				}
 			}
 			interp_foreach_ins_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
@@ -330,7 +330,7 @@ interp_alloc_offsets (TransformData *td)
 				// the created object is set before the call is made. We solve this by making
 				// sure that the dreg is not allocated in the param area, so there is no
 				// risk of conflicts.
-				td->vars [ins->dreg].flags |= INTERP_LOCAL_FLAG_NO_CALL_ARGS;
+				td->vars [ins->dreg].no_call_args = TRUE;
 			}
 			if (ins->flags & INTERP_INST_FLAG_CALL) {
 				if (ins->info.call_info && ins->info.call_info->call_args) {
@@ -341,16 +341,16 @@ interp_alloc_offsets (TransformData *td)
 					int var = *call_args;
 
 					while (var != -1) {
-						if (td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL ||
+						if (td->vars [var].global ||
 								!td->local_ref_count || td->local_ref_count [var] > 1 ||
-								td->vars [var].flags & INTERP_LOCAL_FLAG_NO_CALL_ARGS) {
+								td->vars [var].no_call_args) {
 							// Some vars can't be allocated on the call args stack, since the constraint is that
 							// call args vars die after the call. This isn't necessarily true for global vars or
 							// vars that are used by other instructions aside from the call.
 							// We need to copy the var into a new tmp var
 							int new_var = interp_create_var (td, td->vars [var].type);
 							td->vars [new_var].call = ins;
-							td->vars [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+							td->vars [new_var].call_args = TRUE;
 
 							int mt = mono_mint_type (td->vars [var].type);
 							if (mt != MINT_TYPE_VT && num_pairs < MINT_MOV_PAIRS_MAX && var <= G_MAXUINT16 && new_var <= G_MAXUINT16) {
@@ -376,7 +376,7 @@ interp_alloc_offsets (TransformData *td)
 						} else {
 							// Flag this var as it has special storage on the call args stack
 							td->vars [var].call = ins;
-							td->vars [var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+							td->vars [var].call_args = TRUE;
 						}
 						call_args++;
 						var = *call_args;
@@ -431,8 +431,8 @@ interp_alloc_offsets (TransformData *td)
 				int var = ins->sregs [i];
 				if (var == MINT_CALL_ARGS_SREG)
 					continue;
-				if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->vars [var].live_end == ins_index) {
-					g_assert (!(td->vars [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS));
+				if (!td->vars [var].global && td->vars [var].live_end == ins_index) {
+					g_assert (!td->vars [var].call_args);
 					end_active_var (td, &av, var);
 				}
 			}
@@ -442,7 +442,7 @@ interp_alloc_offsets (TransformData *td)
 				int num_pairs = 2 + opcode - MINT_MOV_8_2;
 				for (int i = 0; i < num_pairs; i++) {
 					int var = ins->data [2 * i + 1];
-					if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->vars [var].live_end == ins_index)
+					if (!td->vars [var].global && td->vars [var].live_end == ins_index)
 						end_active_var (td, &av, var);
 				}
 			}
@@ -456,9 +456,9 @@ interp_alloc_offsets (TransformData *td)
 			if (mono_interp_op_dregs [opcode]) {
 				int var = ins->dreg;
 
-				if (td->vars [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
+				if (td->vars [var].call_args) {
 					add_active_call (td, &ac, td->vars [var].call);
-				} else if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->vars [var].offset == -1) {
+				} else if (!td->vars [var].global && td->vars [var].offset == -1) {
 					alloc_var_offset (td, var, &current_offset);
 					if (current_offset > final_total_locals_size)
 						final_total_locals_size = current_offset;
@@ -486,7 +486,7 @@ interp_alloc_offsets (TransformData *td)
 	td->param_area_offset = final_total_locals_size;
 	for (unsigned int i = 0; i < td->vars_size; i++) {
 		// These are allocated separately at the end of the stack
-		if (td->vars [i].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
+		if (td->vars [i].call_args) {
 			td->vars [i].offset += td->param_area_offset;
 			final_total_locals_size = MAX (td->vars [i].offset + td->vars [i].size, final_total_locals_size);
 		}
@@ -953,21 +953,21 @@ interp_local_deadce (TransformData *td)
 	for (unsigned int i = 0; i < td->vars_size; i++) {
 		g_assert (local_ref_count [i] >= 0);
 		g_assert (td->vars [i].indirects >= 0);
-		if (td->vars [i].indirects || (td->vars [i].flags & INTERP_LOCAL_FLAG_DEAD))
+		if (td->vars [i].indirects || td->vars [i].dead)
 			continue;
 		if (!local_ref_count [i]) {
 			needs_dce = TRUE;
-			td->vars [i].flags |= INTERP_LOCAL_FLAG_DEAD;
-		} else if (!(td->vars [i].flags & INTERP_LOCAL_FLAG_UNKNOWN_USE)) {
-			if (!(td->vars [i].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY)) {
+			td->vars [i].dead = TRUE;
+		} else if (!td->vars [i].unknown_use) {
+			if (!td->vars [i].local_only) {
 				// The value of this var is not passed between multiple basic blocks
-				td->vars [i].flags |= INTERP_LOCAL_FLAG_LOCAL_ONLY;
+				td->vars [i].local_only = TRUE;
 				if (td->verbose_level)
 					g_print ("Var %d is local only\n", i);
 				needs_cprop = TRUE;
 			}
 		}
-		td->vars [i].flags &= ~INTERP_LOCAL_FLAG_UNKNOWN_USE;
+		td->vars [i].unknown_use = FALSE;
 	}
 
 	// Return early if all locals are alive
@@ -980,7 +980,7 @@ interp_local_deadce (TransformData *td)
 			if (MINT_NO_SIDE_EFFECTS (ins->opcode) ||
 					ins->opcode == MINT_LDLOCA_S) {
 				int dreg = ins->dreg;
-				if (td->vars [dreg].flags & INTERP_LOCAL_FLAG_DEAD) {
+				if (td->vars [dreg].dead) {
 					if (td->verbose_level) {
 						g_print ("kill dead ins:\n\t");
 						interp_dump_ins (ins, td->data_items);
@@ -1504,7 +1504,7 @@ cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, InterpVarValue *loca
 		if (td->verbose_level)
 			interp_dump_ins (ins, td->data_items);
 	} else if (!local_defs [sreg].ins) {
-		td->vars [sreg].flags |= INTERP_LOCAL_FLAG_UNKNOWN_USE;
+		td->vars [sreg].unknown_use = TRUE;
 	}
 }
 
@@ -1522,7 +1522,7 @@ static void
 clear_unused_defs (TransformData *td, int *pvar, void *data)
 {
 	int var = *pvar;
-	if (!(td->vars [var].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY))
+	if (!td->vars [var].local_only)
 		return;
 	if (td->vars [var].indirects)
 		return;
@@ -1667,8 +1667,8 @@ retry:
 						interp_dump_ins (ins, td->data_items);
 					}
 				} else if (local_defs [sreg].ins != NULL &&
-						(td->vars [sreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
-						!(td->vars [dreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
+						td->vars [sreg].execution_stack &&
+						!td->vars [dreg].execution_stack &&
 						interp_prev_ins (ins) == local_defs [sreg].ins &&
 						!(interp_prev_ins (ins)->flags & INTERP_INST_FLAG_PROTECTED_NEWOBJ)) {
 					// hackish temporary optimization that won't be necessary in the future
@@ -2153,7 +2153,7 @@ interp_super_instructions (TransformData *td)
 			int opcode = ins->opcode;
 			if (MINT_IS_NOP (opcode))
 				continue;
-			if (mono_interp_op_dregs [opcode] && !(td->vars [ins->dreg].flags & INTERP_LOCAL_FLAG_GLOBAL))
+			if (mono_interp_op_dregs [opcode] && !td->vars [ins->dreg].global)
 				td->vars [ins->dreg].def = ins;
 
 			if (opcode == MINT_RET || (opcode >= MINT_RET_I1 && opcode <= MINT_RET_U2)) {
