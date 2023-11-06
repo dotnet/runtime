@@ -1175,7 +1175,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(WasmMultiThreaded))]
         [MemberData(nameof(CountToTen))]
-        public async Task TestDebugUsingMultiThreadedRuntime()
+        public async Task TestDebugUsingMultiThreadedRuntime(int _attempt)
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "MultiThreadedTest", "Write", 2);
             var expression = $"{{ invoke_static_method('[debugger-test] MultiThreadedTest:Run'); }}";
