@@ -327,7 +327,6 @@ namespace System.Tests
     {
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91597", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void customAttributeCount()
         {
             List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();

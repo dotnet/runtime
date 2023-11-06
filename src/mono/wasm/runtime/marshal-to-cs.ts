@@ -22,6 +22,7 @@ import { stringToMonoStringRoot } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
+import { mono_log_debug } from "./logging";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
@@ -318,8 +319,11 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         addUnsettledPromise();
 
     value.then(data => {
+        if (!loaderHelpers.is_runtime_running()) {
+            mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.");
+            return;
+        }
         try {
-            loaderHelpers.assert_runtime_running();
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
             if (MonoWasmThreads)
                 settleUnsettledPromise();
@@ -330,8 +334,11 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             runtimeHelpers.abort(ex);
         }
     }).catch(reason => {
+        if (!loaderHelpers.is_runtime_running()) {
+            mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.", reason);
+            return;
+        }
         try {
-            loaderHelpers.assert_runtime_running();
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
             if (MonoWasmThreads)
                 settleUnsettledPromise();

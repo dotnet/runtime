@@ -145,9 +145,7 @@ namespace System.Threading
             try_enter_with_atomic_var(obj, timeout, true, ref lockTaken);
         }
 
-#pragma warning disable CA2252 // Opt in to preview features before using them (Lock)
         public static long LockContentionCount => Monitor_get_lock_contention_count() + Lock.ContentionCount;
-#pragma warning restore CA2252
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern long Monitor_get_lock_contention_count();

@@ -76,11 +76,8 @@ namespace System.Threading
         [Intrinsic]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
         {
-            unsafe
-            {
-                if (Unsafe.AsPointer(ref location1) == null)
-                    throw new NullReferenceException();
-            }
+            if (Unsafe.IsNullRef(ref location1))
+                throw new NullReferenceException();
             // Besides avoiding coop handles for efficiency,
             // and correctness, this also appears needed to
             // avoid an assertion failure in the runtime, related to
@@ -104,11 +101,8 @@ namespace System.Threading
         [Intrinsic]
         public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class?
         {
-            unsafe
-            {
-                if (Unsafe.AsPointer(ref location1) == null)
-                    throw new NullReferenceException();
-            }
+            if (Unsafe.IsNullRef(ref location1))
+                throw new NullReferenceException();
             // See CompareExchange(T) for comments.
             //
             // This is not entirely convincing due to lack of volatile.
