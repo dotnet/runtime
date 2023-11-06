@@ -405,12 +405,6 @@ namespace System
             }
         }
 
-        internal ref T GetWritableData<T>() where T : unmanaged
-        {
-            Debug.Assert(Internal.Runtime.WritableData.GetSize(IntPtr.Size) == sizeof(T));
-            return ref Unsafe.AsRef<T>((void*)_value->WritableData);
-        }
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static EETypePtr EETypePtrOf<T>()
