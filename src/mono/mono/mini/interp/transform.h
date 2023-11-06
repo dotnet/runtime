@@ -23,7 +23,7 @@
 
 #define INTERP_LOCAL_FLAG_UNKNOWN_USE 32
 #define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
-// We use this flag to avoid addition of align field in InterpLocal, for now
+// We use this flag to avoid addition of align field in InterpVar, for now
 #define INTERP_LOCAL_FLAG_SIMD 128
 
 typedef struct _InterpInst InterpInst;
@@ -36,22 +36,22 @@ typedef struct
 	unsigned char type;
 	unsigned char flags;
 	/*
-	 * The local associated with the value of this stack entry. Every time we push on
-	 * the stack a new local is created.
+	 * The var associated with the value of this stack entry. Every time we push on
+	 * the stack a new var is created.
 	 */
-	int local;
+	int var;
 	/* The offset from the execution stack start where this is stored. Used by the fast offset allocator */
 	int offset;
 	/* Saves how much stack this is using. It is a multiple of MINT_STACK_SLOT_SIZE*/
 	int size;
 } StackInfo;
 
-#define LOCAL_VALUE_NONE 0
-#define LOCAL_VALUE_LOCAL 1
-#define LOCAL_VALUE_I4 2
-#define LOCAL_VALUE_I8 3
-#define LOCAL_VALUE_R4 4
-#define LOCAL_VALUE_NON_NULL 5
+#define VAR_VALUE_NONE 0
+#define VAR_VALUE_OTHER_VAR 1
+#define VAR_VALUE_I4 2
+#define VAR_VALUE_I8 3
+#define VAR_VALUE_R4 4
+#define VAR_VALUE_NON_NULL 5
 
 // LocalValue contains data to construct an InterpInst that is equivalent with the contents
 // of the stack slot / local / argument.
@@ -60,7 +60,7 @@ typedef struct {
 	int type;
 	// Holds the local index or the actual constant value
 	union {
-		int local;
+		int var;
 		gint32 i;
 		gint64 l;
 		float f;
@@ -70,7 +70,7 @@ typedef struct {
 	int def_index;
 	// ref count for ins->dreg
 	int ref_count;
-} LocalValue;
+} InterpVarValue;
 
 struct _InterpInst {
 	guint16 opcode;
@@ -200,7 +200,7 @@ typedef struct {
 		// Only used during super instruction pass.
 		InterpInst *def;
 	};
-} InterpLocal;
+} InterpVar;
 
 typedef struct
 {
@@ -225,13 +225,16 @@ typedef struct
 	gint32 param_area_offset;
 	gint32 total_locals_size;
 	gint32 max_stack_size;
-	InterpLocal *locals;
 	int dummy_var;
 	int *local_ref_count;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
-	unsigned int locals_size;
-	unsigned int locals_capacity;
+
+	// All vars, used in instructions
+	InterpVar *vars;
+	unsigned int vars_size;
+	unsigned int vars_capacity;
+
 	int n_data_items;
 	int max_data_items;
 	void **data_items;
@@ -444,7 +447,7 @@ int
 interp_alloc_global_var_offset (TransformData *td, int var);
 
 int
-interp_create_local (TransformData *td, MonoType *type);
+interp_create_var (TransformData *td, MonoType *type);
 
 void
 interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer));
