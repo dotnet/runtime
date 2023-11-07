@@ -541,63 +541,87 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 
 void Compiler::optAssertionInit(bool isLocalProp)
 {
-    // See if we should disable cross-block local prop
+    assert(NO_ASSERTION_INDEX == 0);
+    const unsigned maxTrackedLocals = (unsigned)JitConfig.JitMaxLocalsToTrack();
+
+    // We initialize differently for local prop / global prop
     //
-    if (optCrossBlockLocalAssertionProp)
+    if (isLocalProp)
     {
-#ifdef DEBUG
-        // Disable via config
+        optLocalAssertionProp = true;
+
+        // See if we should disable cross-block local prop
         //
-        if (JitConfig.JitDoCrossBlockLocalAssertionProp() == 0)
+        if (optCrossBlockLocalAssertionProp)
         {
-            JITDUMP("Disabling cross-block assertion prop by config setting\n");
-            optCrossBlockLocalAssertionProp = false;
-        }
+#ifdef DEBUG
+            // Disable via config
+            //
+            if (JitConfig.JitDoCrossBlockLocalAssertionProp() == 0)
+            {
+                JITDUMP("Disabling cross-block assertion prop by config setting\n");
+                optCrossBlockLocalAssertionProp = false;
+            }
 #endif
 
-        // Disable if too many locals
-        //
-        // The typical number of local assertions is roughly proportional
-        // to the number of locals. So when we have huge numbers of locals,
-        // just do within-block local assertion prop.
-        //
-        if (lvaCount > (unsigned)JitConfig.JitMaxLocalsToTrack())
-        {
-            JITDUMP("Disabling cross-block assertion prop: too many locals\n");
-            optCrossBlockLocalAssertionProp = false;
+            // Disable if too many locals
+            //
+            // The typical number of local assertions is roughly proportional
+            // to the number of locals. So when we have huge numbers of locals,
+            // just do within-block local assertion prop.
+            //
+            if (lvaCount > maxTrackedLocals)
+            {
+                JITDUMP("Disabling cross-block assertion prop: too many locals\n");
+                optCrossBlockLocalAssertionProp = false;
+            }
         }
+
+        if (optCrossBlockLocalAssertionProp)
+        {
+            // We know lvaCount is less than the tracked limit.
+            // Allow for roughly one assertion per local, up to the tracked limit.
+            // (empirical studies show about 0.6 asserions/local)
+            //
+            optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((lvaCount / 64) + 1) * 64);
+        }
+        else
+        {
+            // The table will be reset for each block, so can be smaller.
+            //
+            optMaxAssertionCount = 64;
+        }
+
+        optAssertionDep =
+            new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
     }
-
-    // Use a function countFunc to determine a proper maximum assertion count for the
-    // method being compiled. The function is linear to the IL size for small and
-    // moderate methods. For large methods, considering throughput impact, we track no
-    // more than 64 assertions.
-    // Note this tracks at most only 256 assertions.
-    static const AssertionIndex countFunc[] = {64, 128, 256, 64};
-    static const unsigned       lowerBound  = 0;
-    static const unsigned       upperBound  = ArrLen(countFunc) - 1;
-    const unsigned              codeSize    = info.compILCodeSize / 512;
-    optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
-
-    optLocalAssertionProp  = isLocalProp;
-    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
-    assert(NO_ASSERTION_INDEX == 0);
-
-    if (!isLocalProp)
+    else
     {
+        // General assertion prop.
+        //
+        optLocalAssertionProp = false;
+
+        // Use a function countFunc to determine a proper maximum assertion count for the
+        // method being compiled. The function is linear to the IL size for small and
+        // moderate methods. For large methods, considering throughput impact, we track no
+        // more than 64 assertions.
+        // Note this tracks at most only 256 assertions.
+        //
+        static const AssertionIndex countFunc[] = {64, 128, 256, 64};
+        static const unsigned       upperBound  = ArrLen(countFunc) - 1;
+        const unsigned              codeSize    = info.compILCodeSize / 512;
+        optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
+
         optValueNumToAsserts =
             new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
         optComplementaryAssertionMap = new (this, CMK_AssertionProp)
             AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
     }
 
-    if (optAssertionDep == nullptr)
-    {
-        optAssertionDep =
-            new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
-    }
+    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
 
     optAssertionTraitsInit(optMaxAssertionCount);
+
     optAssertionCount      = 0;
     optAssertionOverflow   = 0;
     optAssertionPropagated = false;
