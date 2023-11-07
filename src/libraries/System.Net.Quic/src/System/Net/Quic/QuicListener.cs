@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -329,7 +328,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(null, $"Received event {listenerEvent->Type} while listener is already disposed");
+                NetEventSource.Error(null, $"Received event {listenerEvent->Type} for [list][{(nint)listener:X11}] while listener is already disposed");
             }
             return QUIC_STATUS_INVALID_STATE;
         }
@@ -378,8 +377,8 @@ public sealed partial class QuicListener : IAsyncDisposable
         _handle.Dispose();
 
         // Flush the queue and dispose all remaining connections.
-        _disposeCts.Cancel();
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
+        await _disposeCts.CancelAsync().ConfigureAwait(false);
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)));
         while (_acceptQueue.Reader.TryRead(out object? item))
         {
             if (item is QuicConnection connection)

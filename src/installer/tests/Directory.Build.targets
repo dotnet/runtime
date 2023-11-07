@@ -1,14 +1,8 @@
 <Project>
 
-  <Target Name="RefreshProjectTestAssets"
-          Condition="'$(UsesTestAssets)' == 'true' and '$(SkipTests)' != 'true'"
+  <Target Name="SetUpSharedFrameworkPublish"
           DependsOnTargets="DetermineTestOutputDirectory"
           BeforeTargets="RunTests">
-    <!-- Build PrepareTestAssets once for all tests. -->
-    <MSBuild
-      Projects="$(TestDir)PrepareTestAssets\PrepareTestAssets.proj"
-      Targets="PrepareTestAssets" />
-
     <!--
       Set up the shared framework copy this set of tests should use. There's no known reason to have
       one per test project, but RepoDirectoriesProvider may need some tweaking to share.
@@ -16,10 +10,20 @@
     <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
              Targets="PublishToDisk"
              Properties="OutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
+  </Target>
+
+  <Target Name="RefreshProjectTestAssets"
+          Condition="'$(UsesTestAssets)' == 'true' and '$(SkipTests)' != 'true'"
+          DependsOnTargets="DetermineTestOutputDirectory;SetUpSharedFrameworkPublish"
+          BeforeTargets="RunTests">
+    <!-- Build PrepareTestAssets once for all tests. -->
+    <MSBuild
+      Projects="$(TestDir)PrepareTestAssets\PrepareTestAssets.proj"
+      Targets="PrepareTestAssets" />
 
     <!-- Create files with a name that describes what a test dir is. Useful if path abbreviated. -->
     <WriteLinesToFile
-      File="$(TestsOutputRootDir)$(TestsOutputName)-is-$(MSBuildProjectName).txt"
+      File="$(TestArtifactsOutputRoot)$(TestsOutputName)-is-$(MSBuildProjectName).txt"
       Overwrite="true"
       Lines="$(MSBuildProjectName) intermediates are located in '$(TestsOutputName)'. Abbreviated to work around path limits on Windows."
       Condition="'$(TestsOutputName)' != '$(MSBuildProjectName)'" />
@@ -31,6 +35,7 @@
   </Target>
 
   <Target Name="SetupTestContextVariables"
+          Condition="'$(IsTestProject)' == 'true'"
           DependsOnTargets="
             GetProductVersions;
             GetNETCoreAppRuntimePackVersion;
@@ -79,7 +84,8 @@
       <TestContextVariable Include="MNA_VERSION=$(NETCoreAppRuntimePackageVersion)" />
       <TestContextVariable Include="MNA_TFM=$(NetCoreAppCurrent)" />
       <TestContextVariable Include="DOTNET_SDK_PATH=$(DotNetRoot)" />
-      <TestContextVariable Include="TEST_ASSETS=$(MSBuildThisFileDirectory)Assets" />
+      <TestContextVariable Include="TEST_ASSETS=$(TestAssetsDir)" />
+      <TestContextVariable Include="TEST_ASSETS_OUTPUT=$(TestArtifactsOutputRoot)" />
     </ItemGroup>
 
     <WriteLinesToFile
@@ -108,20 +114,29 @@
     <PropertyGroup>
       <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(PackageRID)</TestTargetRid>
       <TestsOutputName Condition="'$(TestsOutputName)' == ''">$(MSBuildProjectName)</TestsOutputName>
-
-      <TestsOutputRootDir Condition="'$(TestsOutputRootDir)' == ''">$(ArtifactsDir)tests/$(Configuration)/</TestsOutputRootDir>
-      <TestsOutputDir Condition="'$(TestsOutputDir)' == ''">$(TestsOutputRootDir)$(TestsOutputName)/</TestsOutputDir>
+      <TestsOutputDir Condition="'$(TestsOutputDir)' == ''">$(TestArtifactsOutputRoot)$(TestsOutputName)/</TestsOutputDir>
     </PropertyGroup>
   </Target>
 
   <Target Name="RemoveOOBPackageReference" AfterTargets="ResolvePackageAssets">
 
     <!-- Tests have some dependencies that use the System.Text.Json package (HostModel, DependencyModel),
-         but the tests should just use the framework on which they are run. Explicitly remove the item. -->
+         but the tests should just use the framework on which they are run if possible Explicitly remove
+         the item if the target framework version for the test matches the referenced package version. -->
     <ItemGroup>
-      <RuntimeCopyLocalItems Remove="@(RuntimeCopyLocalItems)" Condition="'%(NuGetPackageId)' == 'System.Text.Json'" />
+      <RuntimeCopyLocalItems Remove="@(RuntimeCopyLocalItems)"
+                             Condition="'%(NuGetPackageId)' == 'System.Text.Json' and $(SystemTextJsonVersion.StartsWith('$(_TargetFrameworkVersionWithoutV)'))" />
     </ItemGroup>
   </Target>
+
+  <!-- Properties used by runsettings.targets -->
+  <PropertyGroup>
+    <RunSettingsDotNetHostPath>$(DotNetTool)</RunSettingsDotNetHostPath>
+    <RunSettingsTestCaseFilter>$(TestCaseFilter)</RunSettingsTestCaseFilter>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets"
+          Condition="'$(IsTestProject)' == 'true'" />
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>

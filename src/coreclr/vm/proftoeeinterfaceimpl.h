@@ -56,14 +56,18 @@ class ProfileArgIterator
 private:
     void        *m_handle;
     ArgIterator  m_argIterator;
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     UINT64       m_bufferPos;
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_RISCV64)
     // On certain architectures we can pass args in non-sequential registers,
     // this function will copy the struct so it is laid out as it would be in memory
     // so it can be passed to the profiler
-    LPVOID CopyStructFromRegisters();
+    LPVOID CopyStructFromRegisters(
+#ifdef TARGET_RISCV64
+        const ArgLocDesc* argLocDesc
+#endif
+    );
 #endif
 
 #if defined(TARGET_ARM64)
@@ -72,7 +76,7 @@ private:
     LPVOID CopyStructFromFPRegs(int idxFPReg, int cntFPRegs, int hfaFieldSize);
 #endif
 
-#endif // UNIX_AMD64_ABI || TARGET_ARM64
+#endif // UNIX_AMD64_ABI || TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64
 
 public:
     ProfileArgIterator(MetaSig * pMetaSig, void* platformSpecificHandle);

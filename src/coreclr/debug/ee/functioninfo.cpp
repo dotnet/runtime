@@ -1575,7 +1575,11 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     if (startAddr == NULL)
     {
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
-        _ASSERTE(startAddr != NULL);
+        if (startAddr == NULL)
+        {
+            //The only case this should happen is if we are trying to get the DJI for a method that has not been jitted yet.
+            return NULL;
+        }
     }
     else
     {

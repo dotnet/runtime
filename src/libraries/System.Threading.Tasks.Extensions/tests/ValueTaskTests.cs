@@ -1269,7 +1269,7 @@ namespace System.Threading.Tasks.Tests
 
             // _obj is null but other fields are from Task construction
             vtBoxed = new ValueTask(Task.CompletedTask);
-            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, null);
+            typeof(ValueTask).GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, null);
             Record.Exception(() =>
             {
                 bool completed = ((ValueTask)vtBoxed).IsCompleted;
@@ -1278,7 +1278,7 @@ namespace System.Threading.Tasks.Tests
 
             // _obj is a Task but other fields are from result construction
             vtBoxed = new ValueTask();
-            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, Task.CompletedTask);
+            typeof(ValueTask).GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, Task.CompletedTask);
             Record.Exception(() =>
             {
                 bool completed = ((ValueTask)vtBoxed).IsCompleted;
@@ -1287,7 +1287,7 @@ namespace System.Threading.Tasks.Tests
 
             // _obj is an IValueTaskSource but other fields are from Task construction
             vtBoxed = new ValueTask(Task.CompletedTask);
-            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, ManualResetValueTaskSourceFactory.Completed(42));
+            typeof(ValueTask).GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, ManualResetValueTaskSourceFactory.Completed(42));
             Record.Exception(() =>
             {
                 bool completed = ((ValueTask)vtBoxed).IsCompleted;
@@ -1304,7 +1304,7 @@ namespace System.Threading.Tasks.Tests
 
             // _obj is null but other fields are from Task construction
             vtBoxed = new ValueTask<int>(Task.FromResult(42));
-            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, null);
+            typeof(ValueTask<int>).GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, null);
             Record.Exception(() =>
             {
                 bool completed = ((ValueTask)vtBoxed).IsCompleted;
@@ -1313,7 +1313,7 @@ namespace System.Threading.Tasks.Tests
 
             // _obj is a Task but other fields are from result construction
             vtBoxed = new ValueTask<int>(42);
-            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, Task.FromResult(42));
+            typeof(ValueTask<int>).GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, Task.FromResult(42));
             Record.Exception(() =>
             {
                 bool completed = ((ValueTask)vtBoxed).IsCompleted;
@@ -1322,7 +1322,7 @@ namespace System.Threading.Tasks.Tests
 
             // _obj is an IValueTaskSource but other fields are from Task construction
             vtBoxed = new ValueTask<int>(Task.FromResult(42));
-            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, ManualResetValueTaskSourceFactory.Completed(42));
+            typeof(ValueTask<int>).GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, ManualResetValueTaskSourceFactory.Completed(42));
             Record.Exception(() =>
             {
                 bool completed = ((ValueTask)vtBoxed).IsCompleted;

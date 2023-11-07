@@ -29,7 +29,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find MyAttribute");
+            Assert.Fail("Expected to find MyAttribute");
         }
 
         [Fact]
@@ -51,7 +51,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find MyAttribute");
+            Assert.Fail("Expected to find MyAttribute");
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find FlagsAttribute");
+            Assert.Fail("Expected to find FlagsAttribute");
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find ComVisibleAttribute");
+            Assert.Fail("Expected to find ComVisibleAttribute");
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find FieldOffsetAttribute");
+            Assert.Fail("Expected to find FieldOffsetAttribute");
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find MyAttribute");
+            Assert.Fail("Expected to find MyAttribute");
         }
 
         [Flags]

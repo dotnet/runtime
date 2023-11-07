@@ -510,7 +510,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
 
     // Initialize the object memory if necessary.
     bool             bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-    bool             bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+    bool             bbIsReturn = block->KindIs(BBJ_RETURN);
     LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {

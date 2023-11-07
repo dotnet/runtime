@@ -688,7 +688,7 @@ OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 3, 1, 1, MintOpNoArgs)
 /* Calls */
 OPDEF(MINT_CALL, "call", 4, 1, 1, MintOpMethodToken)
 OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 5, 1, 1, MintOpMethodToken)
-OPDEF(MINT_CALL_DELEGATE, "call.delegate", 5, 1, 1, MintOpTwoShorts)
+OPDEF(MINT_CALL_DELEGATE, "call.delegate", 6, 1, 1, MintOpTwoShorts)
 OPDEF(MINT_CALLI, "calli", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_CALLI_NAT, "calli.nat", 8, 1, 2, MintOpTwoShorts)
 OPDEF(MINT_CALLI_NAT_DYNAMIC, "calli.nat.dynamic", 5, 1, 2, MintOpShortInt)

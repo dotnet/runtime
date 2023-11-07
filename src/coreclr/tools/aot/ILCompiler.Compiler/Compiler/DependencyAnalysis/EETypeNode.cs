@@ -94,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
-            _writableDataNode = factory.Target.SupportsRelativePointers ? new WritableDataNode(this) : null;
+            _writableDataNode = SupportsWritableData(factory.Target) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             if (EmitVirtualSlotsAndInterfaces)
@@ -102,6 +102,12 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.TypeSystemContext.EnsureLoadableType(type);
         }
+
+        public static bool SupportsWritableData(TargetDetails target)
+            => target.SupportsRelativePointers;
+
+        public static bool SupportsFrozenRuntimeTypeInstances(TargetDetails target)
+            => SupportsWritableData(target);
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
         {
@@ -437,10 +443,14 @@ namespace ILCompiler.DependencyAnalysis
                 // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
                 // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
                 // possible for any IFoo object to actually be an instance of T.
+                DefType defTypeDefinition = (DefType)defType.GetTypeDefinition();
                 DefType[] defTypeRuntimeInterfaces = defType.RuntimeInterfaces;
+                DefType[] defTypeDefinitionRuntimeInterfaces = defTypeDefinition.RuntimeInterfaces;
+                Debug.Assert(defTypeDefinitionRuntimeInterfaces.Length == defTypeRuntimeInterfaces.Length);
                 for (int interfaceIndex = 0; interfaceIndex < defTypeRuntimeInterfaces.Length; interfaceIndex++)
                 {
                     DefType interfaceType = defTypeRuntimeInterfaces[interfaceIndex];
+                    DefType definitionInterfaceType = defTypeDefinitionRuntimeInterfaces[interfaceIndex];
 
                     Debug.Assert(interfaceType.IsInterface);
 
@@ -457,11 +467,22 @@ namespace ILCompiler.DependencyAnalysis
                         if (!isStaticInterfaceMethod && !needsDependenciesForInstanceInterfaceMethodImpls)
                             continue;
 
+                        MethodDesc interfaceMethodDefinition = interfaceMethod;
+                        if (interfaceType != definitionInterfaceType)
+                            interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(interfaceMethodDefinition.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
+
                         MethodDesc implMethod = isStaticInterfaceMethod ?
-                            defType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :
-                            defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                            defTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethodDefinition) :
+                            defTypeDefinition.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodDefinition);
                         if (implMethod != null)
                         {
+                            TypeDesc implType = defType;
+                            while (!implType.HasSameTypeDefinition(implMethod.OwningType))
+                                implType = implType.BaseType;
+
+                            if (!implType.IsTypeDefinition)
+                                implMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(implMethod.GetTypicalMethodDefinition(), (InstantiatedType)implType);
+
                             if (isStaticInterfaceMethod)
                             {
                                 Debug.Assert(!implMethod.IsVirtual);
@@ -500,12 +521,7 @@ namespace ILCompiler.DependencyAnalysis
                             // Is the implementation provided by a default interface method?
                             // If so, add a dependency on the entrypoint directly since nobody else is going to do that
                             // (interface types have an empty vtable, modulo their generic dictionary).
-                            TypeDesc interfaceOnDefinition = defType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
-                            MethodDesc interfaceMethodDefinition = interfaceMethod;
-                            if (!interfaceType.IsTypeDefinition)
-                                interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(interfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceOnDefinition);
-
-                            var resolution = defType.GetTypeDefinition().ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodDefinition, out implMethod);
+                            var resolution = defTypeDefinition.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodDefinition, out implMethod);
                             if (resolution == DefaultInterfaceMethodResolution.DefaultImplementation)
                             {
                                 DefType providingInterfaceDefinitionType = (DefType)implMethod.OwningType;
@@ -623,12 +639,16 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Ask the metadata manager
-            // if we have any dependencies due to presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
+            if (!ConstructedEETypeNode.CreationAllowed(_type))
+            {
+                // If necessary MethodTable is the highest load level for this type, ask the metadata manager
+                // if we have any dependencies due to presence of the EEType.
+                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
 
-            if (_type is MetadataType mdType)
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
+                // If necessary MethodTable is the highest load level, consider this a module use
+                if (_type is MetadataType mdType)
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
+            }
 
             if (_type.IsFunctionPointer)
                 FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
@@ -866,6 +886,11 @@ namespace ILCompiler.DependencyAnalysis
         protected virtual ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
+        }
+
+        protected virtual FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
+        {
+            return factory.SerializedNecessaryRuntimeTypeObject(_type);
         }
 
         protected virtual ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
@@ -1106,6 +1131,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
             }
+            else if (SupportsWritableData(factory.Target))
+            {
+                objData.EmitInt(0);
+            }
         }
 
         protected void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
@@ -1144,9 +1173,9 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
                     if (factory.Target.SupportsRelativePointers)
-                        objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
+                        objData.EmitReloc(typeDefNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                     else
-                        objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
+                        objData.EmitPointerReloc(typeDefNode);
 
                     ISymbolNode compositionNode = _type.Instantiation.Length > 1
                         ? factory.GenericComposition(_type.Instantiation)
@@ -1397,7 +1426,11 @@ namespace ILCompiler.DependencyAnalysis
             private readonly EETypeNode _type;
 
             public WritableDataNode(EETypeNode type) => _type = type;
-            public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.BssSection;
+            public override ObjectNodeSection GetSection(NodeFactory factory)
+                => SupportsFrozenRuntimeTypeInstances(factory.Target) && _type.GetFrozenRuntimeTypeNode(factory).Marked
+                ? (factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection)
+                : ObjectNodeSection.BssSection;
+
             public override bool StaticDependenciesAreComputed => true;
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
                 => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type.Type));
@@ -1406,10 +1439,29 @@ namespace ILCompiler.DependencyAnalysis
             public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _type.ShouldSkipEmittingObjectNode(factory);
 
             public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
-                => new ObjectData(new byte[WritableData.GetSize(factory.Target.PointerSize)],
-                    Array.Empty<Relocation>(),
-                    WritableData.GetAlignment(factory.Target.PointerSize),
-                    new ISymbolDefinitionNode[] { this });
+            {
+                ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+
+                builder.RequireInitialAlignment(WritableData.GetAlignment(factory.Target.PointerSize));
+                builder.AddSymbol(this);
+
+                // If the whole program view contains a reference to a preallocated RuntimeType
+                // instance for this type, generate a reference to it.
+                // Otherwise, generate as zero to save size.
+                if (SupportsFrozenRuntimeTypeInstances(factory.Target)
+                    && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
+                {
+                    builder.EmitPointerReloc(runtimeTypeObject);
+                }
+                else
+                {
+                    builder.EmitZeroPointer();
+                }
+
+                Debug.Assert(builder.CountBytes == WritableData.GetSize(factory.Target.PointerSize));
+
+                return builder.ToObjectData();
+            }
 
             protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 

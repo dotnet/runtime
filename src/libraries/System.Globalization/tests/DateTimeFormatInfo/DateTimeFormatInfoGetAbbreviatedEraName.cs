@@ -23,7 +23,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, 1, "ዓ/ም" };
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, 1, "сл.Хр." };
                 yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 1, "খৃষ্টাব্দ" };
-                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, PlatformDetection.IsNodeJS ? "খৃষ্টাব্দ" : "খ্রিঃ" }; // NodeJS responses like dotnet
+                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, "খ্রিঃ" }; // "খৃষ্টাব্দ"
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, 1, "dC" };
                 yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, 1, "dC" };
                 yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, 1, "n.l." };
@@ -140,9 +140,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, 1, "A" }; // AD
                 yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, 1, "A" }; // AD
                 yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, 1, "d. C." };
-                string spanishEra = PlatformDetection.IsNodeJS ? "d. C." : "d.C."; // NodeJS responses like dotnet
-                yield return new object[] { new CultureInfo("es-419").DateTimeFormat, 1, spanishEra };
-                yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, 1, spanishEra };
+                yield return new object[] { new CultureInfo("es-419").DateTimeFormat, 1, "d.C." }; // "d. C."
+                yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, 1, "d.C." }; // "d. C."
                 yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, 1, "pKr" };
                 yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, 1, "ه.ش" }; // ه‍.ش.
                 yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, 1, "jKr" };
@@ -209,7 +208,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [MemberData(nameof(GetAbbreviatedEraName_TestData))]
         public void GetAbbreviatedEraName_Invoke_ReturnsExpected(DateTimeFormatInfo format, int era, string expected)
         {

@@ -286,7 +286,7 @@ inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
     }
     CONTRACTL_END;
 
-    m_path = pPath;
+    m_path.Set(pPath);
     m_path.Normalize();
     m_pathHash = m_path.HashCaseInsensitive();
     m_bundleFileLocation = bundleFileLocation;

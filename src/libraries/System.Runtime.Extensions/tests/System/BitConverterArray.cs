@@ -46,6 +46,12 @@ namespace System.Tests
             Assert.Equal(expected, BitConverter.GetBytes(num));
         }
 
+        public override void ConvertFromInt128(Int128 num, byte[] expected)
+        {
+            expected = RangeToLittleEndian(expected, 0, 16);
+            Assert.Equal(expected, BitConverter.GetBytes(num));
+        }
+
         public override void ConvertFromUShort(ushort num, byte[] expected)
         {
             expected = RangeToLittleEndian(expected, 0, 2);
@@ -61,6 +67,12 @@ namespace System.Tests
         public override void ConvertFromULong(ulong num, byte[] expected)
         {
             expected = RangeToLittleEndian(expected, 0, 8);
+            Assert.Equal(expected, BitConverter.GetBytes(num));
+        }
+
+        public override void ConvertFromUInt128(UInt128 num, byte[] expected)
+        {
+            expected = RangeToLittleEndian(expected, 0, 16);
             Assert.Equal(expected, BitConverter.GetBytes(num));
         }
 
@@ -106,6 +118,12 @@ namespace System.Tests
             Assert.Equal(expected, BitConverter.ToInt64(byteArray, index));
         }
 
+        public override void ToInt128(int index, Int128 expected, byte[] byteArray)
+        {
+            byteArray = RangeToLittleEndian(byteArray, index, 16);
+            Assert.Equal(expected, BitConverter.ToInt128(byteArray, index));
+        }
+
         public override void ToUInt16(int index, ushort expected, byte[] byteArray)
         {
             byteArray = RangeToLittleEndian(byteArray, index, 2);
@@ -122,6 +140,12 @@ namespace System.Tests
         {
             byteArray = RangeToLittleEndian(byteArray, index, 8);
             Assert.Equal(expected, BitConverter.ToUInt64(byteArray, index));
+        }
+
+        public override void ToUInt128(int index, UInt128 expected, byte[] byteArray)
+        {
+            byteArray = RangeToLittleEndian(byteArray, index, 16);
+            Assert.Equal(expected, BitConverter.ToUInt128(byteArray, index));
         }
 
         public override void ToHalf(int index, Half expected, byte[] byteArray)

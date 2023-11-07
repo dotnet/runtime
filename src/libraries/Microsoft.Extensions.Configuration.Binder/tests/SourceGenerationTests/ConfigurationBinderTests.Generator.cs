@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -248,6 +250,170 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         private static void AssertRecordIsBound(GeolocationRecord record, int longitude, int latitude)
         {
             Assert.Equal((longitude, latitude), (record.Longitude, record.Latitude));
+        }
+
+        // These are regression tests for https://github.com/dotnet/runtime/issues/90976
+        // Ensure that every emitted identifier name is unique, otherwise name clashes
+        // will occur and cause compilation to fail.
+
+        [Fact]
+        public void NameClashTests_NamingPatternsThatCouldCauseClashes()
+        {
+            // Potential class between type with closed generic & non generic type.
+            // Both types start with same substring. The generic arg type's name is
+            // the same as the suffix of the non generic type's name.
+            // Manifested in https://github.com/dotnet/runtime/issues/90976.
+
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Value"":1}");
+
+            var c1 = new Cint();
+            var c2 = new C<int>();
+
+            configuration.Bind(c1);
+            configuration.Bind(c2);
+            Assert.Equal(1, c1.Value);
+            Assert.Equal(1, c2.Value);
+        }
+
+        internal class C<T>
+        {
+            public int Value { get; set; }
+        }
+
+        internal class Cint
+        {
+            public int Value { get; set; }
+        }
+
+        [Fact]
+        public void NameClashTests_SameTypeName()
+        {
+            // Both types have the same name, but one is a nested type.
+
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Value"":1}");
+
+            var c1 = new ClassWithThisIdentifier();
+            var c2 = new ClassWithThisIdentifier_Wrapper.ClassWithThisIdentifier();
+
+            configuration.Bind(c1);
+            configuration.Bind(c2);
+            Assert.Equal(1, c1.Value);
+            Assert.Equal(1, c2.Value);
+        }
+
+        internal class ClassWithThisIdentifier
+        {
+            public int Value { get; set; }
+        }
+
+        internal class ClassWithThisIdentifier_Wrapper
+        {
+            internal class ClassWithThisIdentifier
+            {
+                public int Value { get; set; }
+            }
+        }
+
+        /// <summary>
+        /// These are regression tests for https://github.com/dotnet/runtime/issues/90909.
+        /// Ensure that we don't emit root interceptors to handle types/members that
+        /// are inaccessible to the generated helpers. Tests for inaccessible transitive members
+        /// are covered in the shared (reflection/src-gen) <see cref="ConfigurationBinderTests"/>,
+        /// e.g. <see cref="NonPublicModeGetStillIgnoresReadonly"/>.
+        /// </summary>
+        /// <remarks>
+        /// In these cases, binding calls will fallback to reflection, as with all cases where
+        /// we can't correctly resolve the type, such as generic call patterns and boxed objects.
+        /// </remarks>
+        [Fact]
+        public void MemberAccessibility_InaccessibleNestedTypeAsRootConfig()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Value"":1}");
+
+            // Ensure no compilation errors; types are skipped.
+
+#pragma warning disable SYSLIB1104 // Binding logic was not generated for a binder call.
+            var c1 = new InaccessibleClass_1();
+            configuration.Bind(c1);
+            var c2 = configuration.Get<InaccessibleClass_2>();
+            var c3 = configuration.Get<InaccessibleClass_3>();
+
+            // Generic collections.
+
+            configuration = TestHelpers
+                .GetConfigurationFromJsonString(@"{""Array"": [{""Value"":1}]}")
+                .GetSection("Array");
+            var c4 = configuration.Get<InaccessibleClass_1[]>();
+            var c5 = configuration.Get<List<InaccessibleClass_1>>();
+
+            // Generic types.
+
+            Action<BinderOptions>? configureOptions = options => options.BindNonPublicProperties = true;
+            string GetNestedObjectPayload(string propName) => $$"""
+                {
+                    "{{propName}}": {
+                        "Value": 1
+                    }
+                }
+                """;
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(GetNestedObjectPayload("item1"));
+            var c6 = configuration.Get<Dictionary<string, InaccessibleClass_1>>(configureOptions);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(GetNestedObjectPayload("protectedMember"));
+            var c7 = configuration.Get<AccessibleGenericClass<InaccessibleClass_1>>(configureOptions);
+            var c8 = configuration.Get<AccessibleGenericClass<InaccessibleClass_1>>(configureOptions);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(GetNestedObjectPayload("publicMember"));
+            var c9 = configuration.Get<InaccessibleGenericClass<AccessibleClass>>(configureOptions);
+            var c10 = configuration.Get<InaccessibleGenericClass<InaccessibleClass_1>>(configureOptions);
+#pragma warning disable SYSLIB1104
+
+            // Reflection fallback.
+
+            Assert.Equal(1, c1.Value);
+            Assert.Equal(1, c2.Value);
+            Assert.Equal(1, c3.Value);
+            
+            Assert.Equal(1, c4[0].Value);
+            Assert.Equal(1, c5[0].Value);
+            Assert.Equal(1, c6["item1"].Value);
+
+            Assert.Equal(1, c7.GetProtectedMember.Value);
+            Assert.Equal(1, c8.GetProtectedMember.Value);
+            Assert.Equal(1, c9.PublicMember.Value);
+            Assert.Equal(1, c10.PublicMember.Value);
+        }
+
+        private class InaccessibleClass_1()
+        {
+            public int Value { get; set; }
+        }
+
+        protected record InaccessibleClass_2(int Value);
+
+        protected internal class InaccessibleClass_3
+        {
+            public InaccessibleClass_3(int value) => Value = value;
+
+            public int Value { get; }
+        }
+
+        internal class AccessibleGenericClass<T>
+        {
+            protected T ProtectedMember { get; set; }
+
+            public T GetProtectedMember => ProtectedMember;
+        }
+
+        private class InaccessibleGenericClass<T>
+        {
+            public T PublicMember { get; set; }
+        }
+
+        public class AccessibleClass()
+        {
+            public int Value { get; set; }
         }
     }
 }

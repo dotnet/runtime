@@ -94,7 +94,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
 #ifdef WIN32
 
-    void * pNewMapping = PalVirtualAlloc(NULL, THUNKS_MAP_SIZE * 2, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
         return NULL;
 
@@ -108,7 +108,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     // reduce it to RW for the data section. For the stubs section we need to increase to RWX to generate the stubs
     // instructions. After this we go back to RX for the stubs section before the stubs are used and should not be
     // changed anymore.
-    void * pNewMapping = PalVirtualAlloc(NULL, THUNKS_MAP_SIZE * 2, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READ);
+    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
         return NULL;
 
@@ -118,7 +118,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     if (!PalVirtualProtect(pDataSection, THUNKS_MAP_SIZE, PAGE_READWRITE) ||
         !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
     {
-        PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
+        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
         return NULL;
     }
 
@@ -244,7 +244,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 #else
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
-        PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
+        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
         return NULL;
     }
 #endif
@@ -288,7 +288,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     {
         int thunkDataSize = thunkDataMappingSize * thunkDataMappingCount;
 
-        g_pThunkStubData = (uintptr_t)PalVirtualAlloc(NULL, thunkDataSize, MEM_RESERVE, PAGE_READWRITE);
+        g_pThunkStubData = (uintptr_t)VirtualAlloc(NULL, thunkDataSize, MEM_RESERVE, PAGE_READWRITE);
 
         if (g_pThunkStubData == NULL)
         {
@@ -298,7 +298,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 
     void* pThunkDataBlock = (int8_t*)g_pThunkStubData + nextThunkDataMapping * thunkDataMappingSize;
 
-    if (PalVirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
+    if (VirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
     {
         return NULL;
     }

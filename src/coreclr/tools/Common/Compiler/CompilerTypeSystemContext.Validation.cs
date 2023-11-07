@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -301,10 +302,19 @@ namespace ILCompiler
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitions
+                // Don't validate generic definitions much other than by checking for illegal recursion.
                 if (type.IsGenericDefinition)
                 {
+                    // Check for illegal recursion
+                    if (type is EcmaType ecmaType && ILCompiler.LazyGenericsSupport.CheckForECMAIllegalGenericRecursion(ecmaType))
+                    {
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
                     return type;
+                }
+                else if (type.HasInstantiation)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type.GetTypeDefinition());
                 }
 
                 // System.__Canon or System.__UniversalCanon

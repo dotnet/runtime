@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NATIVEAOT
 using Internal.Runtime;
 #else
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 #endif
 
@@ -16,20 +16,6 @@ using System.Runtime.ExceptionServices;
 
 namespace System.Runtime
 {
-#if NATIVEAOT
-    public
-#else
-    internal
-#endif
-    enum RhFailFastReason
-    {
-        Unknown = 0,
-        InternalError = 1,                                   // "Runtime internal error"
-        UnhandledException = 2,                              // "unhandled exception"
-        UnhandledExceptionFromPInvoke = 3,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
-        EnvironmentFailFast = 4,
-    }
-
     internal static unsafe partial class EH
     {
         internal static UIntPtr MaxSP

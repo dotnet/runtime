@@ -431,6 +431,13 @@ ep_rt_aot_system_timestamp_get (void)
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
 }
 
+int32_t
+ep_rt_aot_get_os_page_size (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    return (int32_t)OS_PAGE_SIZE;
+}
+
 ep_rt_file_handle_t
 ep_rt_aot_file_open_write (const ep_char8_t *path)
 {
@@ -502,7 +509,7 @@ uint8_t *
 ep_rt_aot_valloc0 (size_t buffer_size)
 {
     STATIC_CONTRACT_NOTHROW;
-    return reinterpret_cast<uint8_t *>(PalVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
+    return reinterpret_cast<uint8_t *>(PalVirtualAlloc (buffer_size, PAGE_READWRITE));
 }
 
 void
@@ -513,7 +520,7 @@ ep_rt_aot_vfree (
     STATIC_CONTRACT_NOTHROW;
 
     if (buffer)
-        PalVirtualFree (buffer, 0, MEM_RELEASE);
+        PalVirtualFree (buffer, buffer_size);
 }
 
 void

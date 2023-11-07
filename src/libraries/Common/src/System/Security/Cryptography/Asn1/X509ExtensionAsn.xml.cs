@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct X509ExtensionAsn
     {
-        private static ReadOnlySpan<byte> DefaultCritical => new byte[] { 0x01, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultCritical => [0x01, 0x01, 0x00];
 
         internal string ExtnId;
         internal bool Critical;

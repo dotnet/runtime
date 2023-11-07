@@ -933,7 +933,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				foreach (var additionalExpectedAttributesFromFixedField in GetCustomAttributeCtorValues<object> (fixedField, nameof (KeptAttributeOnFixedBufferTypeAttribute)))
 					yield return additionalExpectedAttributesFromFixedField.ToString ();
-
 			}
 		}
 

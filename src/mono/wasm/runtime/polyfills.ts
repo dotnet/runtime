@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
 
 const dummyPerformance = {
@@ -30,7 +30,7 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     replacements.fetch = loaderHelpers.fetch_like;
 
     // misc
-    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
+    replacements.ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WORKER;
 
     // threads
     if (MonoWasmThreads) {

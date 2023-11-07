@@ -346,27 +346,27 @@ namespace System.Runtime
         // calls to runtime for thunk pool
         //
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
+        [RuntimeImport(RuntimeLibrary, "RhpGetNumThunkBlocksPerMapping")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int RhpGetNumThunkBlocksPerMapping();
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunksPerBlock")]
+        [RuntimeImport(RuntimeLibrary, "RhpGetNumThunksPerBlock")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int RhpGetNumThunksPerBlock();
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkSize")]
+        [RuntimeImport(RuntimeLibrary, "RhpGetThunkSize")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int RhpGetThunkSize();
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkDataBlockAddress")]
+        [RuntimeImport(RuntimeLibrary, "RhpGetThunkDataBlockAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkStubsBlockAddress")]
+        [RuntimeImport(RuntimeLibrary, "RhpGetThunkStubsBlockAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkBlockSize")]
+        [RuntimeImport(RuntimeLibrary, "RhpGetThunkBlockSize")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int RhpGetThunkBlockSize();
 
@@ -391,10 +391,10 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfAny")]
-        private static extern unsafe object IsInstanceOfAny(MethodTable* pTargetType, object obj);
+        internal static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
-            => IsInstanceOfAny(pTargetType.ToPointer(), obj);
+            => IsInstanceOf(pTargetType.ToPointer(), obj);
 
         //
         // calls to runtime for allocation

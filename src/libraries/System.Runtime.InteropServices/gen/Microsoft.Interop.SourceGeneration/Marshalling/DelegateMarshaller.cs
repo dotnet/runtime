@@ -12,8 +12,6 @@ namespace Microsoft.Interop
 {
     public sealed class DelegateMarshaller : IMarshallingGenerator
     {
-        public bool IsSupported(TargetFramework target, Version version) => true;
-
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return SpecialTypeInfo.IntPtr;

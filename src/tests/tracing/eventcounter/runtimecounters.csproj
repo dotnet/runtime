@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
@@ -10,13 +11,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="runtimecounters.cs" />
-    <ProjectReference Include="../common/common.csproj" />
+    <ProjectReference Include="../common/tracing_common.csproj" />
   </ItemGroup>
 
   <!-- Hack to get NativeAOT assemblies into IlcReference
        In CoreCLR tests, these assemblies get copied to CORE_ROOT, which NativeAOT doesn't use
   -->
-  <Import Project="$(RepoRoot)eng/liveBuilds.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
   <!-- Get all the *.dll files that has IsNative != "true"-->
   <Target Name="GetRequiredNativeAOTAssemblies"
       DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"

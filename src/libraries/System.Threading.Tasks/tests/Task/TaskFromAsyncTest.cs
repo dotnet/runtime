@@ -71,7 +71,7 @@ namespace System.Threading.Tasks.Tests.FromAsync
                     //In case of error conditions we except the method to throw exception
                     RunAPMTest();
 
-                    Assert.True(false, string.Format("Failed to catch ArgumentNullException"));
+                    Assert.Fail(string.Format("Failed to catch ArgumentNullException"));
                 }
                 catch (ArgumentNullException)
                 {
@@ -96,7 +96,7 @@ namespace System.Threading.Tasks.Tests.FromAsync
                 }
                 else
                 {
-                    Assert.True(false, string.Format("Failed to catch AggregateException"));
+                    Assert.Fail(string.Format("Failed to catch AggregateException"));
                 }
             }
             else
@@ -117,18 +117,18 @@ namespace System.Threading.Tasks.Tests.FromAsync
                     expectedOption = TestOption;
 
                 if (_task.CreationOptions != expectedOption)
-                    Assert.True(false, string.Format("task is not created with expected TestOption"));
+                    Assert.Fail(string.Format("task is not created with expected TestOption"));
 
                 if (((TaskOptionAndScheduler)(work.ObservedState)).Option != expectedOption)
-                    Assert.True(false, string.Format("state verification failed on Option"));
+                    Assert.Fail(string.Format("state verification failed on Option"));
 
                 TaskScheduler expectedScheduler = TaskScheduler.Default;
 
                 if (work.ObservedTaskScheduler != expectedScheduler)
-                    Assert.True(false, string.Format("task is not running under expected TestOption"));
+                    Assert.Fail(string.Format("task is not running under expected TestOption"));
 
                 if (((TaskOptionAndScheduler)(work.ObservedState)).Scheduler != expectedScheduler)
-                    Assert.True(false, string.Format("state verification failed on Scheduler"));
+                    Assert.Fail(string.Format("state verification failed on Scheduler"));
             }
         }
 

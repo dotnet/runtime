@@ -327,19 +327,38 @@ bool CodeGen::genInstrWithConstant(instruction ins,
             break;
 
         case INS_strb:
+            assert(size == EA_1BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_1BYTE);
+            break;
+
         case INS_strh:
+            assert(size == EA_2BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_2BYTE);
+            break;
+
         case INS_str:
             // reg1 is a source register for store instructions
             assert(tmpReg != reg1); // regTmp can not match any source register
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
-        case INS_ldrsb:
-        case INS_ldrsh:
-        case INS_ldrsw:
         case INS_ldrb:
+        case INS_ldrsb:
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_1BYTE);
+            break;
+
         case INS_ldrh:
+        case INS_ldrsh:
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_2BYTE);
+            break;
+
+        case INS_ldrsw:
+            assert(size == EA_4BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_4BYTE);
+            break;
+
         case INS_ldr:
+            assert((size == EA_4BYTE) || (size == EA_8BYTE) || (size == EA_16BYTE));
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
@@ -2139,7 +2158,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R0, REG_SPBASE, /* canSkip */ false);
     }
-    GetEmitter()->emitIns_J(INS_bl_local, block->bbJumpDest);
+    GetEmitter()->emitIns_J(INS_bl_local, block->GetJumpDest());
+
+    BasicBlock* const nextBlock = block->Next();
 
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
@@ -2148,7 +2169,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // block), then we need to generate a breakpoint here (since it will never
         // get executed) to get proper unwind behavior.
 
-        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_BREAKPOINT); // This should never get executed
         }
@@ -2160,8 +2181,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
+        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
+
         // Now go to where the finally funclet needs to return to.
-        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
+        if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-ARM64-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -2171,7 +2194,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
+            inst_JMP(EJ_jmp, jumpDest);
         }
 
         GetEmitter()->emitEnableGC();
@@ -2184,7 +2207,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        block = block->bbNext;
+        block = nextBlock;
     }
     return block;
 }
@@ -2193,7 +2216,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 {
     // For long address (default): `adrp + add` will be emitted.
     // For short address (proven later): `adr` will be emitted.
-    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->bbJumpDest, REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetJumpDest(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -3726,11 +3749,11 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
@@ -3911,9 +3934,9 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
     assert(treeNode->OperIs(GT_CMPXCHG));
 
-    GenTree* addr      = treeNode->gtOpLocation;  // arg1
-    GenTree* data      = treeNode->gtOpValue;     // arg2
-    GenTree* comparand = treeNode->gtOpComparand; // arg3
+    GenTree* addr      = treeNode->Addr();      // arg1
+    GenTree* data      = treeNode->Data();      // arg2
+    GenTree* comparand = treeNode->Comparand(); // arg3
 
     regNumber targetReg    = treeNode->GetRegNum();
     regNumber dataReg      = data->GetRegNum();
@@ -4207,22 +4230,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         if (tree->IsVolatile())
         {
-            bool addrIsInReg   = addr->isUsedFromReg();
-            bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
+            bool needsBarrier = true;
+            ins               = genGetVolatileLdStIns(ins, dataReg, tree, &needsBarrier);
 
-            if ((ins == INS_strb) && addrIsInReg)
-            {
-                ins = INS_stlrb;
-            }
-            else if ((ins == INS_strh) && addrIsInReg && addrIsAligned)
-            {
-                ins = INS_stlrh;
-            }
-            else if ((ins == INS_str) && genIsValidIntReg(dataReg) && addrIsInReg && addrIsAligned)
-            {
-                ins = INS_stlr;
-            }
-            else
+            if (needsBarrier)
             {
                 // issue a full memory barrier before a volatile StInd
                 // Note: We cannot issue store barrier ishst because it is a weaker barrier.
@@ -4639,11 +4650,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 //
 void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
-    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->bbJumpDest, reg);
+    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->GetJumpDest(), reg);
 }
 
 //------------------------------------------------------------------------
@@ -4830,7 +4841,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 //
 void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
@@ -4861,7 +4872,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
         instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_tbz : INS_tbnz;
         int         imm = genLog2((size_t)compareImm);
 
-        GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);
+        GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->GetJumpDest(), reg, imm);
     }
     else
     {
@@ -4869,7 +4880,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
         instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_cbz : INS_cbnz;
 
-        GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->bbJumpDest, reg);
+        GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->GetJumpDest(), reg);
     }
 }
 

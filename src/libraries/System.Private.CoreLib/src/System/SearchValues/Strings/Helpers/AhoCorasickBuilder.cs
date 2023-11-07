@@ -17,7 +17,7 @@ namespace System.Buffers
         private readonly bool _ignoreCase;
         private ValueListBuilder<AhoCorasickNode> _nodes;
         private ValueListBuilder<int> _parents;
-        private Vector256<byte> _startingCharsAsciiBitmap;
+        private IndexOfAnyAsciiSearcher.AsciiState _startingAsciiChars;
 
         public AhoCorasickBuilder(ReadOnlySpan<string> values, bool ignoreCase, ref HashSet<string>? unreachableValues)
         {
@@ -53,7 +53,7 @@ namespace System.Buffers
                 GenerateStartingAsciiCharsBitmap();
             }
 
-            return new AhoCorasick(_nodes.AsSpan().ToArray(), _startingCharsAsciiBitmap);
+            return new AhoCorasick(_nodes.AsSpan().ToArray(), _startingAsciiChars);
         }
 
         public void Dispose()
@@ -215,7 +215,7 @@ namespace System.Buffers
 
             if (Ascii.IsValid(startingChars.AsSpan()))
             {
-                IndexOfAnyAsciiSearcher.ComputeBitmap(startingChars.AsSpan(), out _startingCharsAsciiBitmap, out _);
+                IndexOfAnyAsciiSearcher.ComputeAsciiState(startingChars.AsSpan(), out _startingAsciiChars);
             }
 
             startingChars.Dispose();

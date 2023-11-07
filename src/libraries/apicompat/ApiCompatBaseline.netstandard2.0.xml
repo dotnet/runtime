@@ -2775,7 +2775,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
     <Target>P:System.Timers.Timer.Interval:[T:System.ComponentModel.DefaultValueAttribute]</Target>
+    <Left>netstandard2.0/System.dll</Left>
+    <Right>net9.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
     <Left>netstandard2.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
   </Suppression>

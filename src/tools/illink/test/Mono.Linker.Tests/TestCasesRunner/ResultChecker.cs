@@ -718,7 +718,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			var missingInLinked = originalTypes.Keys.Except (linkedTypes.Keys);
 
-			Assert.That (missingInLinked, Is.Empty, $"Expected all types to exist in the linked assembly, but one or more were missing");
+			Assert.That (missingInLinked, Is.Empty, $"Expected all types to exist in the linked assembly {linked.Name}, but one or more were missing");
 
 			foreach (var originalKvp in originalTypes) {
 				var linkedType = linkedTypes[originalKvp.Key];
@@ -873,17 +873,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										}
 										if (memberDefinition is not MethodDefinition)
 											continue;
-										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
-										}
-										if (memberDefinition.Name == ".ctor" &&
-											memberDefinition.DeclaringType.FullName == expectedMember.FullName) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
+										if (actualName.StartsWith (expectedMember.DeclaringType.FullName)) {
+											if (memberDefinition.Name == ".cctor" &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
+											if (memberDefinition.Name == ".ctor" &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
 										}
 									} else if (attrProvider is AssemblyDefinition expectedAssembly) {
 										// Allow assembly-level attributes to match warnings from compiler-generated Main
@@ -1134,6 +1136,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
 				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (IsTypeInOtherAssemblyAssertion)) {
 					var assemblyName = (string) attr.ConstructorArguments[0].Value;
+
+					Tool? toolTarget = (Tool?) (int?) attr.GetPropertyValue ("Tool");
+					if (toolTarget is not null && !toolTarget.Value.HasFlag (Tool.Trimmer))
+						continue;
+
 					if (!checks.TryGetValue (assemblyName, out List<CustomAttribute> checksForAssembly))
 						checks[assemblyName] = checksForAssembly = new List<CustomAttribute> ();
 

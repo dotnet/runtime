@@ -11,6 +11,8 @@ using Internal.Metadata.NativeFormat.Writer;
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     /// <summary>
@@ -73,17 +75,24 @@ namespace ILCompiler
                     (GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) != 0)
                     continue;
 
-                if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(method))
-                    continue;
+                MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
+                bool isHidden = (stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0;
 
-                StackTraceRecordData record = CreateStackTraceRecord(transform, method);
+                if ((stackVisibility & MethodStackTraceVisibilityFlags.HasMetadata) != 0)
+                {
+                    StackTraceRecordData record = CreateStackTraceRecord(transform, method, isHidden);
 
-                stackTraceRecords.Add(record);
+                    stackTraceRecords.Add(record);
 
-                writer.AdditionalRootRecords.Add(record.OwningType);
-                writer.AdditionalRootRecords.Add(record.MethodName);
-                writer.AdditionalRootRecords.Add(record.MethodSignature);
-                writer.AdditionalRootRecords.Add(record.MethodInstantiationArgumentCollection);
+                    writer.AdditionalRootRecords.Add(record.OwningType);
+                    writer.AdditionalRootRecords.Add(record.MethodName);
+                    writer.AdditionalRootRecords.Add(record.MethodSignature);
+                    writer.AdditionalRootRecords.Add(record.MethodInstantiationArgumentCollection);
+                }
+                else if (isHidden)
+                {
+                    stackTraceRecords.Add(new StackTraceRecordData(method, null, null, null, null, isHidden));
+                }
             }
 
             var ms = new MemoryStream();
@@ -178,13 +187,22 @@ namespace ILCompiler
             // Generate stack trace metadata mapping
             foreach (var stackTraceRecord in stackTraceRecords)
             {
-                StackTraceMapping mapping = new StackTraceMapping(
-                    stackTraceRecord.Method,
-                    writer.GetRecordHandle(stackTraceRecord.OwningType),
-                    writer.GetRecordHandle(stackTraceRecord.MethodSignature),
-                    writer.GetRecordHandle(stackTraceRecord.MethodName),
-                    stackTraceRecord.MethodInstantiationArgumentCollection != null ? writer.GetRecordHandle(stackTraceRecord.MethodInstantiationArgumentCollection) : 0);
-                stackTraceMapping.Add(mapping);
+                if (stackTraceRecord.OwningType != null)
+                {
+                    StackTraceMapping mapping = new StackTraceMapping(
+                        stackTraceRecord.Method,
+                        writer.GetRecordHandle(stackTraceRecord.OwningType),
+                        writer.GetRecordHandle(stackTraceRecord.MethodSignature),
+                        writer.GetRecordHandle(stackTraceRecord.MethodName),
+                        stackTraceRecord.MethodInstantiationArgumentCollection != null ? writer.GetRecordHandle(stackTraceRecord.MethodInstantiationArgumentCollection) : 0,
+                        stackTraceRecord.IsHidden);
+                    stackTraceMapping.Add(mapping);
+                }
+                else
+                {
+                    Debug.Assert(stackTraceRecord.IsHidden);
+                    stackTraceMapping.Add(new StackTraceMapping(stackTraceRecord.Method, 0, 0, 0, 0, stackTraceRecord.IsHidden));
+                }
             }
         }
 

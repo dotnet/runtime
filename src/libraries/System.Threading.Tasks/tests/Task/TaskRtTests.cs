@@ -201,7 +201,7 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     fastPath1.Wait();
-                    Assert.True(false, string.Format("RunRunTests:    > FAILURE: Expected proxy for already-faulted Task to throw on Wait()"));
+                    Assert.Fail(string.Format("RunRunTests:    > FAILURE: Expected proxy for already-faulted Task to throw on Wait()"));
                 }
                 catch { }
                 Assert.True(fastPath1.Status == TaskStatus.Faulted, "Expected proxy for already-faulted task to be in Faulted status");
@@ -210,7 +210,7 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     fastPath1.Wait();
-                    Assert.True(false, string.Format("RunRunTests:    > FAILURE: Expected proxy for already-canceled Task to throw on Wait()"));
+                    Assert.Fail(string.Format("RunRunTests:    > FAILURE: Expected proxy for already-canceled Task to throw on Wait()"));
                 }
                 catch { }
                 Assert.True(fastPath1.Status == TaskStatus.Canceled, "RunRunTests: Expected proxy for already-canceled task to be in Canceled status");
@@ -238,7 +238,7 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     fastPath1.Wait();
-                    Assert.True(false, string.Format("RunRunTests:    > FAILURE: Expected proxy for already-faulted future to throw on Wait()"));
+                    Assert.Fail(string.Format("RunRunTests:    > FAILURE: Expected proxy for already-faulted future to throw on Wait()"));
                 }
                 catch { }
                 Assert.True(fastPath1.Status == TaskStatus.Faulted, "Expected proxy for already-faulted future to be in Faulted status");
@@ -247,7 +247,7 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     fastPath1.Wait();
-                    Assert.True(false, string.Format("RunRunTests:    > FAILURE: Expected proxy for already-canceled future to throw on Wait()"));
+                    Assert.Fail(string.Format("RunRunTests:    > FAILURE: Expected proxy for already-canceled future to throw on Wait()"));
                 }
                 catch { }
                 Assert.True(fastPath1.Status == TaskStatus.Canceled, "RunRunTests: Expected proxy for already-canceled future to be in Canceled status");
@@ -538,13 +538,13 @@ namespace System.Threading.Tasks.Tests
                 var contingentProperties = contingentPropertiesField.GetValue(faultedTask);
                 if (contingentProperties != null)
                 {
-                    var exceptionsHolderField = contingentProperties.GetType().GetField("m_exceptionsHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    var exceptionsHolderField = typeof(Task).GetNestedType("ContingentProperties", BindingFlags.NonPublic).GetField("m_exceptionsHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     if (exceptionsHolderField != null)
                     {
                         holderObject = exceptionsHolderField.GetValue(contingentProperties);
                         if (holderObject != null)
                         {
-                            isHandledField = holderObject.GetType().GetField("m_isHandled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            isHandledField = Type.GetType("System.Threading.Tasks.TaskExceptionHolder").GetField("m_isHandled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                         }
                     }
                 }
@@ -602,7 +602,7 @@ namespace System.Threading.Tasks.Tests
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {0}", e));
+                Assert.Fail(string.Format("RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {0}", e));
             }
 
             Assert.True(task1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(0) to run to completion");
@@ -717,14 +717,14 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     mcwTask.Wait();
-                    Assert.True(false, string.Format("RunExceptionWrappingTest:    > FAILED.  Wait-on-continuation did not throw for {0}", scenario));
+                    Assert.Fail(string.Format("RunExceptionWrappingTest:    > FAILED.  Wait-on-continuation did not throw for {0}", scenario));
                 }
                 catch (Exception e)
                 {
                     int levels = NestedLevels(e);
                     if (levels != 2)
                     {
-                        Assert.True(false, string.Format("RunExceptionWrappingTest:    > FAILED.  Exception had {0} levels instead of 2 for {1}.", levels, scenario));
+                        Assert.Fail(string.Format("RunExceptionWrappingTest:    > FAILED.  Exception had {0} levels instead of 2 for {1}.", levels, scenario));
                     }
                 }
             };
@@ -804,14 +804,14 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     _asyncTask.Wait();
-                    Assert.True(false, string.Format("RunExceptionWrappingTest APM-Related Funct:    > FAILED. {0} did not throw exception.", msg));
+                    Assert.Fail(string.Format("RunExceptionWrappingTest APM-Related Funct:    > FAILED. {0} did not throw exception.", msg));
                 }
                 catch (Exception e)
                 {
                     int levels = NestedLevels(e);
                     if (levels != 2)
                     {
-                        Assert.True(false, string.Format("RunExceptionWrappingTest APM-Related Funct:    > FAILED.  {0} exception had {1} levels instead of 2", msg, levels));
+                        Assert.Fail(string.Format("RunExceptionWrappingTest APM-Related Funct:    > FAILED.  {0} exception had {1} levels instead of 2", msg, levels));
                     }
                 }
             };

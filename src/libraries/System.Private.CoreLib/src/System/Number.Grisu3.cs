@@ -34,8 +34,8 @@ namespace System
             private const int MaximalTargetExponent = -32;
             private const int MinimalTargetExponent = -60;
 
-            private static ReadOnlySpan<short> CachedPowersBinaryExponent => new short[]
-            {
+            private static ReadOnlySpan<short> CachedPowersBinaryExponent =>
+            [
                 -1220,
                 -1193,
                 -1166,
@@ -123,10 +123,10 @@ namespace System
                 1013,
                 1039,
                 1066,
-            };
+            ];
 
-            private static ReadOnlySpan<short> CachedPowersDecimalExponent => new short[]
-            {
+            private static ReadOnlySpan<short> CachedPowersDecimalExponent =>
+            [
                 CachedPowersMinDecimalExponent,
                 -340,
                 -332,
@@ -214,10 +214,10 @@ namespace System
                 324,
                 332,
                 CachedPowersPowerMaxDecimalExponent,
-            };
+            ];
 
-            private static ReadOnlySpan<ulong> CachedPowersSignificand => new ulong[]
-            {
+            private static ReadOnlySpan<ulong> CachedPowersSignificand =>
+            [
                 0xFA8FD5A0081C0288,
                 0xBAAEE17FA23EBF76,
                 0x8B16FB203055AC76,
@@ -305,10 +305,10 @@ namespace System
                 0x9E19DB92B4E31BA9,
                 0xEB96BF6EBADF77D9,
                 0xAF87023B9BF0EE6B,
-            };
+            ];
 
-            private static ReadOnlySpan<uint> SmallPowersOfTen => new uint[]
-            {
+            private static ReadOnlySpan<uint> SmallPowersOfTen =>
+            [
                 1,          // 10^0
                 10,         // 10^1
                 100,        // 10^2
@@ -319,7 +319,7 @@ namespace System
                 10000000,   // 10^7
                 100000000,  // 10^8
                 1000000000, // 10^9
-            };
+            ];
 
             public static bool TryRunDouble(double value, int requestedDigits, ref NumberBuffer number)
             {

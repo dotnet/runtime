@@ -6,7 +6,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
-import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_handle } from "./marshal";
+import { alloc_stack_frame, get_arg, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
@@ -30,8 +30,6 @@ export function init_managed_exports(): void {
     mono_assert(call_entry_point, "Can't find CallEntrypoint method");
     const release_js_owned_object_by_gc_handle_method = get_method("ReleaseJSOwnedObjectByGCHandle");
     mono_assert(release_js_owned_object_by_gc_handle_method, "Can't find ReleaseJSOwnedObjectByGCHandle method");
-    const create_task_callback_method = get_method("CreateTaskCallback");
-    mono_assert(create_task_callback_method, "Can't find CreateTaskCallback method");
     const complete_task_method = get_method("CompleteTask");
     mono_assert(complete_task_method, "Can't find CompleteTask method");
     const call_delegate_method = get_method("CallDelegate");
@@ -110,26 +108,14 @@ export function init_managed_exports(): void {
             Module.stackRestore(sp);
         }
     };
-    runtimeHelpers.javaScriptExports.create_task_callback = () => {
-        const sp = Module.stackSave();
-        loaderHelpers.assert_runtime_running();
-        try {
-            const args = alloc_stack_frame(2);
-            invoke_method_and_handle_exception(create_task_callback_method, args);
-            const res = get_arg(args, 1);
-            return get_arg_gc_handle(res);
-        } finally {
-            Module.stackRestore(sp);
-        }
-    };
-    runtimeHelpers.javaScriptExports.complete_task = (holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) => {
+    runtimeHelpers.javaScriptExports.complete_task = (holder_gcv_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) => {
         loaderHelpers.assert_runtime_running();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(5);
             const arg1 = get_arg(args, 2);
             set_arg_type(arg1, MarshalerType.Object);
-            set_gc_handle(arg1, holder_gc_handle);
+            set_gc_handle(arg1, holder_gcv_handle);
             const arg2 = get_arg(args, 3);
             if (error) {
                 marshal_exception_to_cs(arg2, error);

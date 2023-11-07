@@ -1,18 +1,14 @@
 ## About
 
-This package provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers. The metadata format is defined by the [ECMA-335 - Common Language Infrastructure (CLI)](http://www.ecma-international.org/publications/standards/Ecma-335.htm) specification and [its amendments](https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md).
+<!-- A description of the package and where one can find more documentation -->
+
+This package provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers. The metadata format is defined by the [ECMA-335 - Common Language Infrastructure (CLI)](https://www.ecma-international.org/publications-and-standards/standards/ecma-335) specification and [its amendments](https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md).
 
 The `System.Reflection.Metadata` library is included in the .NET Runtime shared framework. The package can be installed when you need to use it in other target frameworks.
 
-For more information, see the documentation:
+## How to Use
 
-- [System.Reflection.Metadata.MetadataReader](https://docs.microsoft.com/dotnet/api/system.reflection.metadata.metadatareader)
-- [System.Reflection.PortableExecutable.PEReader](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.pereader)
-- [System.Reflection.Metadata.Ecma335.MetadataBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder)
-- [System.Reflection.PortableExecutable.PEBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.pebuilder)
-- [System.Reflection.PortableExecutable.ManagedPEBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.managedpebuilder)
-
-## Example
+<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
 
 The following example shows how to read assembly information using PEReader and MetadataReader.
 
@@ -80,3 +76,31 @@ class Program
 }
 
 ```
+
+## Main Types
+
+<!-- The main types provided in this library -->
+
+The main types provided by this library are:
+
+* `System.Reflection.Metadata.MetadataReader`
+* `System.Reflection.PortableExecutable.PEReader`
+* `System.Reflection.Metadata.Ecma335.MetadataBuilder`
+* `System.Reflection.PortableExecutable.PEBuilder`
+* `System.Reflection.PortableExecutable.ManagedPEBuilder`
+
+## Additional Documentation
+
+<!-- Links to further documentation -->
+
+* [System.Reflection.Metadata.MetadataReader](https://docs.microsoft.com/dotnet/api/system.reflection.metadata.metadatareader)
+* [System.Reflection.PortableExecutable.PEReader](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.pereader)
+* [System.Reflection.Metadata.Ecma335.MetadataBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder)
+* [System.Reflection.PortableExecutable.PEBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.pebuilder)
+* [System.Reflection.PortableExecutable.ManagedPEBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.managedpebuilder)
+
+## Feedback & Contributing
+
+<!-- How to provide feedback on this package and contribute to it -->
+
+System.Reflection.Metadata is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).

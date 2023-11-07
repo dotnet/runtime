@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <!-- file locking can't be disabled on Windows -->
     <TargetFramework>$(NetCoreAppCurrent)-unix</TargetFramework>
 

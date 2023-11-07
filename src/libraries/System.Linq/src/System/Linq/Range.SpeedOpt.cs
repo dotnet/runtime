@@ -45,7 +45,7 @@ namespace System.Linq
                     Vector<int>.Count <= 8 &&
                     destination.Length >= Vector<int>.Count)
                 {
-                    Vector<int> init = new Vector<int>((ReadOnlySpan<int>)new int[] { 0, 1, 2, 3, 4, 5, 6, 7 });
+                    Vector<int> init = new Vector<int>((ReadOnlySpan<int>)[0, 1, 2, 3, 4, 5, 6, 7]);
                     Vector<int> current = new Vector<int>(value) + init;
                     Vector<int> increment = new Vector<int>(Vector<int>.Count);
 

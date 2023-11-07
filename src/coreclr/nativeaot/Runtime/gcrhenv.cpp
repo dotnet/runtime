@@ -98,7 +98,7 @@ bool RedhawkGCInterface::InitializeSubsystems()
         GetRuntimeInstance()->EnableConservativeStackReporting();
     }
 
-    HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
+    HRESULT hr = GCHeapUtilities::InitializeGC();
     if (FAILED(hr))
         return false;
 
@@ -129,7 +129,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
-    size_t cbSize = pEEType->get_BaseSize();
+    size_t cbSize = pEEType->GetBaseSize();
 
     if (pEEType->HasComponentSize())
     {
@@ -489,23 +489,6 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
     UNREFERENCED_PARAMETER(pContext);
 }
 
-// Enumerate all the object roots located in handle tables. It is only safe to call this from the context of a
-// GC.
-//
-// static
-void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext)
-{
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
-    ScanRootsContext sContext;
-    sContext.m_pfnCallback = pfnScanCallback;
-    sContext.m_pContext = pContext;
-    Ref_ScanPointers(2, 2, (EnumGcRefScanContext*)&sContext, ScanRootsCallbackWrapper);
-#else
-    UNREFERENCED_PARAMETER(pfnScanCallback);
-    UNREFERENCED_PARAMETER(pContext);
-#endif // !DACCESS_COMPILE
-}
-
 #ifndef DACCESS_COMPILE
 
 uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
@@ -520,11 +503,11 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
-    ASSERT(pObj1->get_EEType()->IsEquivalentTo(pObj2->get_EEType()));
-    ASSERT(pObj1->get_EEType()->IsValueType());
+    ASSERT(pObj1->GetMethodTable() == pObj2->GetMethodTable());
+    ASSERT(pObj1->GetMethodTable()->IsValueType());
 
-    MethodTable * pEEType = pObj1->get_EEType();
-    size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
+    MethodTable * pEEType = pObj1->GetMethodTable();
+    size_t cbFields = pEEType->GetBaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
 
     uint8_t * pbFields1 = (uint8_t*)pObj1 + sizeof(MethodTable*);
     uint8_t * pbFields2 = (uint8_t*)pObj2 + sizeof(MethodTable*);
@@ -749,10 +732,12 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     UNREFERENCED_PARAMETER(gen);
     UNREFERENCED_PARAMETER(reason);
 
+#ifdef FEATURE_EVENT_TRACE
     if (!fConcurrent)
     {
         ETW::GCLog::WalkHeap();
     }
+#endif // FEATURE_EVENT_TRACE
 }
 
 // Note on last parameter: when calling this for bgc, only ETW

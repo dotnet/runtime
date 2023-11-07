@@ -19,6 +19,13 @@ try {
         window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
     }
 
+    // receive blazor benchmark event and forward it to resolveAppStartEvent
+    window.receiveBenchmarkEvent = function (name) {
+        if (window !== window.parent) {
+            window.parent.resolveAppStartEvent("blazor: " + name);
+        }
+    };
+
     window.muteErrors = () => {
         mute = true;
     }
@@ -27,5 +34,4 @@ catch (err) {
     if (!mute) {
         console.error(`WASM ERROR ${err}`);
     }
-    exit(1, err);
 }

@@ -1,6 +1,4 @@
 cmake_minimum_required(VERSION 3.20)
-cmake_policy(SET CMP0091 NEW)
-
 project(corehost)
 
 include(../../../eng/native/configurepaths.cmake)
@@ -8,7 +6,7 @@ include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 if (MSVC)
     # Host components don't try to handle asynchronous exceptions
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc>)
+    set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)
 
     # Explicitly re-enable warnings about declaration hiding (currently disabled by configurecompiler.cmake)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4456>) # declaration of 'identifier' hides previous local declaration

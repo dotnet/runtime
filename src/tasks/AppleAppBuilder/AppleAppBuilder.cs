@@ -140,7 +140,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// List of enabled runtime components
     /// </summary>
-    public string? RuntimeComponents { get; set; } = ""!;
+    public string[] RuntimeComponents { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// Diagnostic ports configuration string
@@ -207,8 +207,8 @@ public class AppleAppBuilderTask : Task
             if (ForceAOT)
                 throw new ArgumentException($"Property \"{nameof(ForceAOT)}\" is not supported with NativeAOT runtime and will be ignored.");
 
-            if (!string.IsNullOrEmpty(RuntimeComponents))
-                throw new ArgumentException($"Property \"{nameof(RuntimeComponents)}\" is not supported with NativeAOT runtime and will be ignored.");
+            if (RuntimeComponents.Length > 0)
+                throw new ArgumentException($"Item \"{nameof(RuntimeComponents)}\" is not supported with NativeAOT runtime and will be ignored.");
 
             if (!string.IsNullOrEmpty(DiagnosticPorts))
                 throw new ArgumentException($"Property \"{nameof(DiagnosticPorts)}\" is not supported with NativeAOT runtime and will be ignored.");
@@ -294,19 +294,9 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        if (!string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
         {
-            bool validDiagnosticsConfig = false;
-
-            if (string.IsNullOrEmpty(RuntimeComponents))
-                validDiagnosticsConfig = false;
-            else if (RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-                validDiagnosticsConfig = true;
-            else if (RuntimeComponents.Contains("diagnostics_tracing", StringComparison.OrdinalIgnoreCase))
-                validDiagnosticsConfig = true;
-
-            if (!validDiagnosticsConfig)
-                throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
+            throw new ArgumentException($"Using DiagnosticPorts requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
         if (EnableAppSandbox && (string.IsNullOrEmpty(DevTeamProvisioning) || DevTeamProvisioning == "-"))

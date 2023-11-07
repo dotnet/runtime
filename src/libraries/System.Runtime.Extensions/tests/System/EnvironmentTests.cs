@@ -470,7 +470,7 @@ namespace System.Tests
             if (attributes == (FileAttributes)(-1))
             {
                 int error = Marshal.GetLastPInvokeError();
-                Assert.False(true, $"error {error} getting attributes for {path}");
+                Assert.Fail($"error {error} getting attributes for {path}");
             }
 
             Assert.True((attributes & FileAttributes.Directory) == FileAttributes.Directory, $"not a directory: {path}");

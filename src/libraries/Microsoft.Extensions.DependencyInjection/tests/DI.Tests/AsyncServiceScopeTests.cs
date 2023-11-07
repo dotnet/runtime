@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public async ValueTask CallsDisposeOnWrappedSyncScopeOnDisposeAsync()
+        public async Task CallsDisposeOnWrappedSyncScopeOnDisposeAsync()
         {
             var wrappedScope = new FakeSyncServiceScope();
             var asyncScope = new AsyncServiceScope(wrappedScope);
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public async ValueTask CallsDisposeAsyncOnWrappedSyncScopeOnDisposeAsync()
+        public async Task CallsDisposeAsyncOnWrappedSyncScopeOnDisposeAsync()
         {
             var wrappedScope = new FakeAsyncServiceScope();
             var asyncScope = new AsyncServiceScope(wrappedScope);

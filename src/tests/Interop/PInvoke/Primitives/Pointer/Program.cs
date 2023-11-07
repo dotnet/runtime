@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace NonBlittablePointer
 {
@@ -12,9 +13,10 @@ namespace NonBlittablePointer
         public static unsafe extern void Negate(bool* ptr);
     }
 
-    class Program
+    public class Program
     {
-        static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             bool value = true;
             NonBlittablePointerNative.Negate(&value);

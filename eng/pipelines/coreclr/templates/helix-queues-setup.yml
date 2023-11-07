@@ -52,7 +52,7 @@ jobs:
 
     # Browser wasm
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
-      - (Ubuntu.1804.Amd64)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-webassembly
+      - (Ubuntu.2204.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:

@@ -598,22 +598,24 @@ namespace System.Xml.Schema
         //
         // for 'block' and 'final' attribute values
         //
-        private static ReadOnlySpan<int> DerivationMethodValues => new int[] {
+        private static ReadOnlySpan<int> DerivationMethodValues =>
+        [
             (int)XmlSchemaDerivationMethod.Substitution,
             (int)XmlSchemaDerivationMethod.Extension,
             (int)XmlSchemaDerivationMethod.Restriction,
             (int)XmlSchemaDerivationMethod.List,
             (int)XmlSchemaDerivationMethod.Union,
             (int)XmlSchemaDerivationMethod.All,
-        };
-        private static readonly string[] s_derivationMethodStrings = {
+        ];
+        private static readonly string[] s_derivationMethodStrings =
+        [
             "substitution",
             "extension",
             "restriction",
             "list",
             "union",
             "#all",
-        };
+        ];
 
         private static readonly string[] s_formStringValues = { "qualified", "unqualified" };
         private static readonly string[] s_useStringValues = { "optional", "prohibited", "required" };

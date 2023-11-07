@@ -8,8 +8,8 @@
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
-        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
-        <target state="translated">Логика привязки не была создана для вызова модуля привязки. К неподдерживаемым шаблонам ввода относятся универсальные вызовы и передача упакованных объектов.</target>
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
+        <target state="needs-review-translation">Логика привязки не была создана для вызова модуля привязки. К неподдерживаемым шаблонам ввода относятся универсальные вызовы и передача упакованных объектов.</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">

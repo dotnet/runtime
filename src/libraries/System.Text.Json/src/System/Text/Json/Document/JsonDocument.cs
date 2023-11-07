@@ -874,6 +874,15 @@ namespace System.Text.Json
             }
         }
 
+        internal void WritePropertyName(int index, Utf8JsonWriter writer)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index - DbRow.Size);
+            Debug.Assert(row.TokenType == JsonTokenType.PropertyName);
+            WritePropertyName(row, writer);
+        }
+
         private void WritePropertyName(in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;

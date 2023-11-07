@@ -138,7 +138,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class OnEventMethod
 		{
 			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = Tool.Trimmer)]
 			static event EventHandler EventToTestRemove {
 				add { }
 				[RequiresUnreferencedCode ("Message for --EventToTestRemove.remove--")]
@@ -148,7 +147,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = Tool.Trimmer)]
 			static event EventHandler EventToTestAdd {
 				[RequiresUnreferencedCode ("Message for --EventToTestAdd.add--")]
 				[RequiresAssemblyFiles ("Message for --EventToTestAdd.add--")]
@@ -156,6 +154,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				add { }
 				remove { }
 			}
+
+			[RequiresAssemblyFiles ("Message for --AnnotatedEvent--")]
+			static event EventHandler AnnotatedEvent;
 
 			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--")]
 			[ExpectedWarning ("IL3002", "--EventToTestRemove.remove--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -167,6 +168,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				EventToTestRemove -= (sender, e) => { };
 				EventToTestAdd += (sender, e) => { };
+				var evt = AnnotatedEvent;
 			}
 		}
 
@@ -221,10 +223,20 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			[ExpectedWarning ("IL3002", "--EventRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", "--EventRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--RequiresOnEventLambda--")]
+			[ExpectedWarning ("IL3002", "--RequiresOnEventLambda--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--RequiresOnEventLambda--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestEvent ()
 			{
 				EventRequires += (object sender, EventArgs e) => throw new NotImplementedException ();
 				EventRequires -= (object sender, EventArgs e) => throw new NotImplementedException ();
+				EventRequires = (object sender, EventArgs e) => throw new NotImplementedException (); // no warning on field assignment
+				EventRequires =
+					[RequiresUnreferencedCode ("--RequiresOnEventLambda--")]
+					[RequiresAssemblyFiles ("--RequiresOnEventLambda--")]
+					[RequiresDynamicCode ("--RequiresOnEventLambda--")]
+					(object sender, EventArgs e) => throw new NotImplementedException ();
+				EventRequires (null, null); // no warning on invocation
 			}
 
 			[ExpectedWarning("IL3002", "--Requires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]

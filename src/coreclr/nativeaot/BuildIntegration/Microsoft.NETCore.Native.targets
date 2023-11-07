@@ -258,12 +258,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instruction-set:$(IlcInstructionSet)" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--reflectiondata:none" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection=false" />
       <IlcArg Condition="$(IlcMaxVectorTBitWidth) != ''" Include="--max-vectort-bitwidth:$(IlcMaxVectorTBitWidth)" />
       <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--parallelism:1" />
       <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
       <IlcArg Condition="'$(_targetOS)' == 'win' and $(IlcMultiModule) != 'true' and '$(IlcGenerateWin32Resources)' != 'false'" Include="--win32resourcemodule:%(ManagedBinary.Filename)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
-      <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)))"' />
+      <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)).Replace(`%0A`, ``).Replace(`%0D`, ``))"' />
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
       <IlcArg Condition="$(SuppressTrimAnalysisWarnings) == 'true'" Include="--notrimwarn" />
       <IlcArg Condition="$(SuppressAotAnalysisWarnings) == 'true'" Include="--noaotwarn" />
@@ -328,6 +329,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="-o &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win'" />
       <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' == 'win'" />
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' == 'win' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="/EXPORT:DotNetRuntimeDebugHeader,DATA" Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(_targetOS)' == 'win' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-exported_symbols_list /dev/null" Condition="'$(OutputType)' == 'exe' and '$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' == ''" />

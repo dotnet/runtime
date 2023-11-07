@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct BasicConstraintsAsn
     {
-        private static ReadOnlySpan<byte> DefaultCA => new byte[] { 0x01, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultCA => [0x01, 0x01, 0x00];
 
         internal bool CA;
         internal int? PathLengthConstraint;

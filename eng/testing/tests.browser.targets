@@ -24,13 +24,21 @@
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' != 'true'">false</WasmIgnoreNet6WorkloadInstallErrors>
     <!--<InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>-->
     <GetWorkloadInputsDependsOn>_GetWorkloadsToInstall;$(GetWorkloadInputsDependsOn)</GetWorkloadInputsDependsOn>
+    <!-- '/.dockerenv' - is to check if this is running in a codespace -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and
                                         ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
                                         '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
+    <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and
+                                        ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv')) and
+                                        ($([MSBuild]::IsOSPlatform('windows')) or $([MSBuild]::IsOSPlatform('linux')))"
+                                    >true</InstallV8ForTests>
 
     <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
+    <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
   </PropertyGroup>
 
   <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
@@ -59,11 +67,14 @@
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
   <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets"
-          Condition="'$(InstallChromeForTests)' == 'true' and ('$(ContinuousIntegrationBuild)' != 'true' or '$(IsBrowserWasmProject)' != 'true')" />
+          Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(IsBrowserWasmProject)' != 'true'" />
 
   <PropertyGroup>
     <_WasmBrowserPathForTests Condition="'$(BROWSER_PATH_FOR_TESTS)' != ''">$(BROWSER_PATH_FOR_TESTS)</_WasmBrowserPathForTests>
     <_WasmBrowserPathForTests Condition="'$(_WasmBrowserPathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmBrowserPathForTests>
+
+    <_WasmJSEnginePathForTests Condition="'$(V8_PATH_FOR_TESTS)' != ''">$(V8_PATH_FOR_TESTS)</_WasmJSEnginePathForTests>
+    <_WasmJSEnginePathForTests Condition="'$(_WasmJSEnginePathForTests)' == '' and '$(InstallV8ForTests)' == 'true'">$(V8BinaryPath)</_WasmJSEnginePathForTests>
   </PropertyGroup>
 
   <!--
@@ -75,6 +86,7 @@
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="export SCENARIO=$(Scenario)" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
+    <SetScriptCommands Condition="'$(_WasmJSEnginePathForTests)' != ''" Include="export V8_PATH_FOR_TESTS=${V8_PATH_FOR_TESTS:=$(_WasmJSEnginePathForTests)}" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="export MAIN_JS=--js-file=$(_WasmMainJSFileName)" />
     <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
     <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
@@ -264,6 +276,11 @@
                             Variant="latest"
                             Version="$(PackageVersionForWorkloadManifests)" />
 
+      <WorkloadIdForTesting Include="wasm-tools-net8;wasm-experimental-net8"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
+                            Variant="net8"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+
       <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
                             Variant="net7"
@@ -277,7 +294,7 @@
                             IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
                             Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
-      <WorkloadCombinationsToInstall Include="latest"        Variants="latest" />
+      <WorkloadCombinationsToInstall Include="latest"        Variants="latest;net8" />
       <WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->

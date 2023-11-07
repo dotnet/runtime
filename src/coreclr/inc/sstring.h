@@ -127,19 +127,20 @@ private:
     SString();
 
     explicit SString(const SString &s);
+    SString(SString&& string) = default;
 
     SString(const SString &s1, const SString &s2);
     SString(const SString &s1, const SString &s2, const SString &s3);
     SString(const SString &s1, const SString &s2, const SString &s3, const SString &s4);
     SString(const SString &s, const CIterator &i, COUNT_T length);
     SString(const SString &s, const CIterator &start, const CIterator &end);
-    SString(const WCHAR *string);
+    explicit SString(const WCHAR *string);
     SString(const WCHAR *string, COUNT_T count);
     SString(enum tagASCII dummyTag, const ASCII *string);
     SString(enum tagASCII dummyTag, const ASCII *string, COUNT_T count);
     SString(enum tagUTF8 dummytag, const UTF8 *string);
     SString(enum tagUTF8 dummytag, const UTF8 *string, COUNT_T count);
-    SString(WCHAR character);
+    explicit SString(WCHAR character);
 
     // NOTE: Literals MUST be read-only never-freed strings.
     SString(enum tagLiteral dummytag, const CHAR *literal);
@@ -192,7 +193,7 @@ private:
 
     // Normalizes the string representation to unicode.  This can be used to
     // make basic read-only operations non-failing.
-    void Normalize() const;
+    void Normalize();
 
     // Return the number of characters in the string (excluding the terminating NULL).
     COUNT_T GetCount() const;
@@ -301,10 +302,10 @@ private:
     void Replace(const Iterator &i, COUNT_T length, const SString &s);
 
     // Make sure that string buffer has room to grow
-    void Preallocate(COUNT_T characters) const;
+    void Preallocate(COUNT_T characters);
 
     // Shrink buffer size as much as possible (reallocate if necessary.)
-    void Trim() const;
+    void Trim();
 
     // ------------------------------------------------------------------
     // Iterators:
@@ -592,11 +593,9 @@ public:
 
     operator const WCHAR * () const { WRAPPER_NO_CONTRACT; return GetUnicode(); }
 
-    WCHAR operator[](int index) { WRAPPER_NO_CONTRACT; return Begin()[index]; }
     WCHAR operator[](int index) const { WRAPPER_NO_CONTRACT; return Begin()[index]; }
 
     SString &operator= (const SString &s) { WRAPPER_NO_CONTRACT; Set(s); return *this; }
-    SString &operator+= (const SString &s) { WRAPPER_NO_CONTRACT; Append(s); return *this; }
 
     // -------------------------------------------------------------------
     // Check functions
@@ -784,6 +783,13 @@ public:
         Set(string, count);
     }
 
+    FORCEINLINE InlineSString(enum tagLiteral, const WCHAR *string)
+      : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
+    {
+        WRAPPER_NO_CONTRACT;
+        Set(string);
+    }
+
     FORCEINLINE InlineSString(enum tagASCII, const CHAR *string)
       : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
     {
@@ -869,7 +875,7 @@ typedef InlineSString<2 * 260> LongPathString;
 //        s = SL("My literal String");
 // ================================================================================
 
-#define SL(_literal) SString(SString::Literal, _literal)
+#define SL(_literal) SString{ SString::Literal, _literal }
 
 // ================================================================================
 // Special contract definition - THROWS_UNLESS_NORMALIZED

@@ -478,6 +478,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_GenericsMask_SharedInst = 0x00000020; // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
         private const uint enum_flag_GenericsMask_TypicalInst = 0x00000030; // the type instantiated at its formal parameters, e.g. List<T>
         private const uint enum_flag_HasDefaultCtor = 0x00000200;
+        private const uint enum_flag_IsByRefLike = 0x00001000;
 
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
@@ -487,11 +488,12 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
+        private const uint enum_flag_Category_Interface = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
                                                              | 0x00400000 // enum_flag_ICastable;
-                                                             | 0x00200000 // enum_flag_IDynamicInterfaceCastable;
+                                                             | 0x10000000 // enum_flag_IDynamicInterfaceCastable;
                                                              | 0x00040000; // enum_flag_Category_ValueType
 
         private const int DebugClassNamePtr = // adjust for debug_m_szClassName
@@ -555,9 +557,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        public bool IsInterface => (Flags & enum_flag_Category_Mask) == enum_flag_Category_Interface;
+
         public bool IsValueType => (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 
         public bool IsNullable => (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable;
+
+        public bool IsByRefLike => (Flags & (enum_flag_HasComponentSize | enum_flag_IsByRefLike)) == enum_flag_IsByRefLike;
 
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 

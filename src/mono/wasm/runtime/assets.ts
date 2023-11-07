@@ -3,13 +3,13 @@
 
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
-import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { mono_log_info, mono_log_debug, mono_log_warn, parseSymbolMapFile } from "./logging";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntryInternal } from "./types/internal";
 import { AssetEntry } from "./types";
-import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
+import { VoidPtr } from "./types/emscripten";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
@@ -92,40 +92,6 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
     }
     endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++loaderHelpers.actual_instantiated_assets_count;
-}
-
-export async function instantiate_wasm_asset(
-    pendingAsset: AssetEntryInternal,
-    wasmModuleImports: WebAssembly.Imports,
-    successCallback: InstantiateWasmSuccessCallback,
-): Promise<void> {
-    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal && pendingAsset.pendingDownloadInternal.response, "Can't load dotnet.native.wasm");
-    const response = await pendingAsset.pendingDownloadInternal.response;
-    const contentType = response.headers && response.headers.get ? response.headers.get("Content-Type") : undefined;
-    let compiledInstance: WebAssembly.Instance;
-    let compiledModule: WebAssembly.Module;
-    if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {
-        mono_log_debug("instantiate_wasm_module streaming");
-        const streamingResult = await WebAssembly.instantiateStreaming(response, wasmModuleImports!);
-        compiledInstance = streamingResult.instance;
-        compiledModule = streamingResult.module;
-    } else {
-        if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
-            mono_log_warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
-        }
-        const arrayBuffer = await response.arrayBuffer();
-        mono_log_debug("instantiate_wasm_module buffered");
-        if (ENVIRONMENT_IS_SHELL) {
-            // workaround for old versions of V8 with https://bugs.chromium.org/p/v8/issues/detail?id=13823
-            compiledModule = new WebAssembly.Module(arrayBuffer);
-            compiledInstance = new WebAssembly.Instance(compiledModule, wasmModuleImports);
-        } else {
-            const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, wasmModuleImports!);
-            compiledInstance = arrayBufferResult.instance;
-            compiledModule = arrayBufferResult.module;
-        }
-    }
-    successCallback(compiledInstance, compiledModule);
 }
 
 export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal): Promise<void> {

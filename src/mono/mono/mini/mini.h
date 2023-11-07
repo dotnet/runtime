@@ -362,6 +362,7 @@ enum {
 	MONO_INST_MAX = 6
 };
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union MonoInstSpec { // instruction specification
 	struct {
 		char dest;
@@ -383,6 +384,7 @@ typedef union MonoInstSpec { // instruction specification
 	};
 	char bytes[MONO_INST_MAX];
 } MonoInstSpec;
+MONO_RESTORE_WARNING
 
 extern const char mini_ins_info[];
 extern const gint8 mini_ins_sreg_counts [];
@@ -753,6 +755,7 @@ struct MonoInst {
 		gpointer data;
 		gint shift_amount;
 		gboolean is_pinvoke; /* for variables in the unmanaged marshal format */
+		gboolean need_sext; /* for OP_BOUNDS_CHECK */
 		gboolean record_cast_details; /* For CEE_CASTCLASS */
 		MonoInst *spill_var; /* for OP_MOVE_I4_TO_F/F_TO_I4 and OP_FCONV_TO_R8_X */
 		guint16 source_opcode; /*OP_XCONV_R8_TO_I4 needs to know which op was used to do proper widening*/
@@ -2316,7 +2319,7 @@ void              mini_emit_memset (MonoCompile *cfg, int destreg, int offset, i
 void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native);
 void              mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
 void              mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype);
-int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index);
+int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index, gboolean *need_sext);
 MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck, gboolean bounded);
 MonoInst*         mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type);
 MonoInst*         mini_emit_get_rgctx_method (MonoCompile *cfg, int context_used,
@@ -2355,6 +2358,7 @@ MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
 MonoRgctxAccess   mini_get_rgctx_access_for_method (MonoMethod *method);
 
+CompRelation      mono_opcode_to_cond_unchecked (int opcode);
 CompRelation      mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);
 CompRelation      mono_negate_cond (CompRelation cond);

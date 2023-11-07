@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using ILCompiler.Dataflow;
 using ILLink.Shared.TypeSystemProxy;
-using Internal.TypeSystem;
 
 #nullable enable
 
@@ -14,7 +12,7 @@ namespace ILLink.Shared.TrimAnalysis
     /// <summary>
     /// A value that came from a method parameter - such as the result of a ldarg.
     /// </summary>
-    internal partial record MethodParameterValue : IValueWithStaticType
+    internal partial record MethodParameterValue
     {
         public MethodParameterValue(ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
         {
@@ -25,7 +23,5 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
-
-        public TypeDesc? StaticType { get; }
     }
 }

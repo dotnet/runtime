@@ -3,8 +3,8 @@
   "author": "Microsoft",
   "classifications": [ "Web", "WebAssembly", "Console" ],
   "groupIdentity": "WebAssembly.Console",
-  "precedence": 8000,
-  "identity": "WebAssembly.Console.8.0",
+  "precedence": 9000,
+  "identity": "WebAssembly.Console.9.0",
   "name": "WebAssembly Console App",
   "description": "A project template for creating a .NET app that runs on WebAssembly on Node JS or V8",
   "shortName": "wasmconsole",
@@ -21,12 +21,12 @@
       "datatype": "choice",
       "choices": [
         {
-          "choice": "net8.0",
-          "description": "Target net8.0",
-          "displayName": ".NET 8.0"
+          "choice": "net9.0",
+          "description": "Target net9.0",
+          "displayName": ".NET 9.0"
         }
       ],
-      "defaultValue": "net8.0",
+      "defaultValue": "net9.0",
       "replaces": "net7.0",
       "displayName": "framework"
     }

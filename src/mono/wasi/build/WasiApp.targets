@@ -4,9 +4,6 @@
 
   <!--
       Required public items/properties:
-      - $(WasmMainJSPath)
-
-      - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
       - $(WasmAppDir)        - AppBundle dir (Defaults to `$(OutputPath)\$(Configuration)\AppBundle`)
@@ -364,7 +361,7 @@
           Inputs="@(_WasmAssembliesInternal);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
-          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript">
+          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript;_WasmGenerateNodeScripts">
   </Target>
 
 
@@ -406,6 +403,47 @@
     </ItemGroup>
 
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(WasmRunWasmtimeScriptPath)&quot;" />
+  </Target>
+
+  <Target Name="_WasmGenerateNodeScripts">
+    <PropertyGroup>
+      <_WasmNodeJSPath>$(WasmAppDir)node.mjs</_WasmNodeJSPath>
+      <_WasmNodeJSContents><![CDATA[
+import { readFile } from 'node:fs/promises';
+import { WASI } from 'wasi';
+import { argv, env } from 'node:process';
+
+const wasi = new WASI({
+  version: 'preview1',
+  args: argv.slice(1),
+  env,
+  preopens: {
+    '/': '.',
+    '/managed': './managed',
+  },
+});
+
+const wasm = await WebAssembly.compile(
+  await readFile(new URL('./dotnet.wasm', import.meta.url)),
+);
+const instance = await WebAssembly.instantiate(wasm, wasi.getImportObject());
+
+wasi.start(instance);
+]]></_WasmNodeJSContents>
+      <_WasmNodeScriptPath>$(WasmAppDir)run-node.sh</_WasmNodeScriptPath>
+      <_WasmNodeScriptContents>node --experimental-modules --experimental-wasm-modules node.mjs $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))) $*</_WasmNodeScriptContents>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(_WasmNodeJSPath)"
+      Lines="$(_WasmNodeJSContents)"
+      Overwrite="true" />
+
+    <WriteLinesToFile
+      File="$(_WasmNodeScriptPath)"
+      Lines="$(_WasmNodeScriptContents)"
+      Overwrite="true" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(_WasmNodeScriptPath)&quot;" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">

@@ -306,7 +306,7 @@ namespace System.Net.WebSockets.Client.Tests
                     }
                     else
                     {
-                        Assert.True(false, "Unexpected exception: " + ex.Message);
+                        Assert.Fail("Unexpected exception: " + ex.Message);
                     }
                 }
             }

@@ -1250,10 +1250,10 @@ namespace System.Tests
                 if (expected != char.GetUnicodeCategory((char)i))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
-                    throw new AssertActualExpectedException(
+                    throw EqualException.ForMismatchedValues(
                         expected: expected,
                         actual: char.GetUnicodeCategory((char)i),
-                        userMessage: FormattableString.Invariant($@"char.GetUnicodeCategory('\u{i:X4}') returned wrong value."));
+                        banner: FormattableString.Invariant($@"char.GetUnicodeCategory('\u{i:X4}') returned wrong value."));
                 }
             }
         }
@@ -1270,10 +1270,10 @@ namespace System.Tests
                 if (UnicodeData.IsLetter((char)i) != char.IsLetter((char)i))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
-                    throw new AssertActualExpectedException(
+                    throw EqualException.ForMismatchedValues(
                         expected: UnicodeData.IsLetter((char)i),
                         actual: char.IsLetter((char)i),
-                        userMessage: FormattableString.Invariant($@"char.IsLetter('\u{i:X4}') returned wrong value."));
+                        banner: FormattableString.Invariant($@"char.IsLetter('\u{i:X4}') returned wrong value."));
                 }
             }
         }
@@ -1291,10 +1291,10 @@ namespace System.Tests
                 if (expected != char.IsLower((char)i))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
-                    throw new AssertActualExpectedException(
+                    throw EqualException.ForMismatchedValues(
                         expected: expected,
                         actual: char.IsLower((char)i),
-                        userMessage: FormattableString.Invariant($@"char.IsLower('\u{i:X4}') returned wrong value."));
+                        banner: FormattableString.Invariant($@"char.IsLower('\u{i:X4}') returned wrong value."));
                 }
             }
         }
@@ -1313,10 +1313,10 @@ namespace System.Tests
                 if (expected != char.IsUpper((char)i))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
-                    throw new AssertActualExpectedException(
+                    throw EqualException.ForMismatchedValues(
                         expected: expected,
                         actual: char.IsUpper((char)i),
-                        userMessage: FormattableString.Invariant($@"char.IsUpper('\u{i:X4}') returned wrong value."));
+                        banner: FormattableString.Invariant($@"char.IsUpper('\u{i:X4}') returned wrong value."));
                 }
             }
         }
@@ -1333,10 +1333,10 @@ namespace System.Tests
                 if (UnicodeData.IsWhiteSpace(i) != char.IsWhiteSpace((char)i))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
-                    throw new AssertActualExpectedException(
+                    throw EqualException.ForMismatchedValues(
                         expected: UnicodeData.IsWhiteSpace(i),
                         actual: char.IsWhiteSpace((char)i),
-                        userMessage: FormattableString.Invariant($@"char.IsWhiteSpace('\u{i:X4}') returned wrong value."));
+                        banner: FormattableString.Invariant($@"char.IsWhiteSpace('\u{i:X4}') returned wrong value."));
                 }
             }
         }

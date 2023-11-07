@@ -166,8 +166,24 @@ fi
       <BashCLRTestExecutionScriptArgument Include="debug">
         <HasParam>true</HasParam>
         <ParamText>=*</ParamText> <!-- Bash specific -->
+        <Separator>=</Separator>
         <ParamName>debuggerFullPath</ParamName>
-        <Command><![CDATA[        export _DebuggerFullPath="${i#*=}"
+        <Command><![CDATA[        export _DebuggerFullPath="${1#*=}"
+        if [ ! -f "$_DebuggerFullPath" ]
+        then
+            echo "The Debugger FullPath %5C%22${_DebuggerFullPath}%5C%22 does not exist"
+            usage
+        fi]]></Command>
+        <Description>Run testcases under debugger.</Description>
+      </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="debug">
+        <HasParam>true</HasParam>
+        <ParamText></ParamText> <!-- Bash specific -->
+        <Separator>%20</Separator>
+        <ParamName>debuggerFullPath</ParamName>
+        <Command><![CDATA[        export _DebuggerFullPath="$2"
+        shift
         if [ ! -f "$_DebuggerFullPath" ]
         then
             echo "The Debugger FullPath %5C%22${_DebuggerFullPath}%5C%22 does not exist"
@@ -179,16 +195,44 @@ fi
       <BashCLRTestExecutionScriptArgument Include="coreroot">
         <HasParam>true</HasParam>
         <ParamText>=*</ParamText> <!-- Bash specific -->
+        <Separator>=</Separator>
         <ParamName>coreRootFullPath</ParamName>
-        <Command><![CDATA[        export CORE_ROOT="${i#*=}"]]></Command>
+        <Command><![CDATA[        export CORE_ROOT="${1#*=}"]]></Command>
+        <Description>Set CORE_ROOT to the specified value before running the test.</Description>
+      </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="coreroot">
+        <HasParam>true</HasParam>
+        <ParamText></ParamText> <!-- Bash specific -->
+        <Separator>%20</Separator>
+        <ParamName>coreRootFullPath</ParamName>
+        <Command><![CDATA[        export CORE_ROOT="$2"
+        shift]]></Command>
         <Description>Set CORE_ROOT to the specified value before running the test.</Description>
       </BashCLRTestExecutionScriptArgument>
 
       <BashCLRTestExecutionScriptArgument Include="e;env">
         <HasParam>true</HasParam>
         <ParamText>=*</ParamText> <!-- Bash specific -->
+        <Separator>=</Separator>
         <ParamName>dotenvFullPath</ParamName>
-        <Command><![CDATA[        export __DotEnv="${i#*=}"
+        <Command><![CDATA[        export __DotEnv="${1#*=}"
+        if [ ! -f "$__DotEnv" ]
+        then
+            echo "The dotenv file FullPath %5C%22${__DotEnv}%5C%22 does not exist"
+            usage
+        fi
+        export __DotEnvArg=-e ${__DotEnv}]]></Command>
+        <Description>A dotenv file to pass to corerun to set environment variables for the test run.</Description>
+      </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="e;env">
+        <HasParam>true</HasParam>
+        <ParamText></ParamText> <!-- Bash specific -->
+        <Separator>%20</Separator>
+        <ParamName>dotenvFullPath</ParamName>
+        <Command><![CDATA[        export __DotEnv="$2"
+        shift
         if [ ! -f "$__DotEnv" ]
         then
             echo "The dotenv file FullPath %5C%22${__DotEnv}%5C%22 does not exist"
@@ -337,8 +381,6 @@ else
     LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
 
-$(BashIlrtTestLaunchCmds)
-
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
@@ -367,8 +409,6 @@ then
 else
     LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
-
-$(BashIlrtTestLaunchCmds)
 
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
@@ -490,7 +530,7 @@ usage()
     echo "Usage: $0  $(_CLRTestParamList)"
     echo
     echo "Arguments:"
-@(BashCLRTestExecutionScriptArgument -> '    echo "-%(Identity)=%(ParamName)"
+@(BashCLRTestExecutionScriptArgument -> '    echo "-%(Identity)%(Separator)%(ParamName)"
     echo      "%(Description)"', '
 ')
     echo "-?,-h,--help    show this message"
@@ -499,18 +539,19 @@ usage()
 
 # Parse Command Line
 
-for i in "$@"
+while [[ "$#" -gt 0 ]];
     do
-        case $i in
+        case $1 in
           -?|-h|--help|/?|/h|/help)
         usage
         %3B%3B
-@(BashCLRTestExecutionScriptArgument -> '        -%(Identity)%(ParamText)|/%(Identity)%(ParamText))
+        @(BashCLRTestExecutionScriptArgument -> '        -%(Identity)%(ParamText)|/%(Identity)%(ParamText))
 %(Command)
         %3B%3B')
         *)
-        CLRTestExecutionArguments+=("${i}")
+        CLRTestExecutionArguments+=("${1}")
     esac
+    shift
 done
 
 $(BashCLRTestArgPrep)

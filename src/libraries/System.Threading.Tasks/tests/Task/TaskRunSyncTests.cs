@@ -243,14 +243,14 @@ namespace System.Threading.Tasks.Tests
                     _task.RunSynchronously(ts);
 
                 if (ExpectRunSyncFailure)
-                    Assert.True(false, string.Format("Fail to throw expected InvalidOperationException"));
+                    Assert.Fail(string.Format("Fail to throw expected InvalidOperationException"));
                 if (_taskSchedulerType == TaskSchedulerType.Null)
-                    Assert.True(false, string.Format("Fail to throw expected ArgumentNullException"));
+                    Assert.Fail(string.Format("Fail to throw expected ArgumentNullException"));
             }
             catch (InvalidOperationException ex)
             {
                 if (!ExpectRunSyncFailure)
-                    Assert.True(false, string.Format("Caught un-expected InvalidOperationException - {0}", ex));
+                    Assert.Fail(string.Format("Caught un-expected InvalidOperationException - {0}", ex));
                 else
                 {
                     Debug.WriteLine("Caught expected InvalidOperationException");
@@ -261,7 +261,7 @@ namespace System.Threading.Tasks.Tests
             catch (ArgumentNullException ex)
             {
                 if (_taskSchedulerType != TaskSchedulerType.Null)
-                    Assert.True(false, string.Format("Caught un-expected ArgumentNullException - {0}", ex));
+                    Assert.Fail(string.Format("Caught un-expected ArgumentNullException - {0}", ex));
                 else
                 {
                     Debug.WriteLine("Caught expected ArgumentNullException");
@@ -283,15 +283,15 @@ namespace System.Threading.Tasks.Tests
             if (_workloadType == WorkloadType.ThrowException)
             {
                 if (_task.Status != TaskStatus.Faulted)
-                    Assert.True(false, string.Format("Wrong final task status on a faulty workload"));
+                    Assert.Fail(string.Format("Wrong final task status on a faulty workload"));
 
                 CheckExpectedAggregateException(_task.Exception);
-                //Assert.True(false, string.Format("Fail to record the test exception in Task.Exception"));
+                //Assert.Fail(string.Format("Fail to record the test exception in Task.Exception"));
             }
             else
             {
                 if (_task.Status != TaskStatus.RanToCompletion)
-                    Assert.True(false, string.Format("Wrong final task status on a regular workload"));
+                    Assert.Fail(string.Format("Wrong final task status on a regular workload"));
             }
 
             //
@@ -302,7 +302,7 @@ namespace System.Threading.Tasks.Tests
                 _taskSchedulerType == TaskSchedulerType.CustomWithoutInlineExecution)
             {
                 if (((TaskRunSyncTaskScheduler)ts).RunSyncCalledCount <= 0)
-                    Assert.True(false, string.Format("Task wasn't RunSynchronously with TaskScheduler specified"));
+                    Assert.Fail(string.Format("Task wasn't RunSynchronously with TaskScheduler specified"));
             }
 
             // Stage 5 -  follow with the post-action
@@ -314,7 +314,7 @@ namespace System.Threading.Tasks.Tests
                         if (_postRunSyncAction == PostRunSyncAction.Wait)
                             _task.Wait(0);
                         if (_workloadType == WorkloadType.ThrowException)
-                            Assert.True(false, string.Format("expected failure is not propagated out of Wait"));
+                            Assert.Fail(string.Format("expected failure is not propagated out of Wait"));
                     }
                     catch (AggregateException ae)
                     {
@@ -396,7 +396,7 @@ namespace System.Threading.Tasks.Tests
             if (_workloadType == WorkloadType.ThrowException)
                 ae.Flatten().Handle((e) => e is TPLTestException);
             else
-                Assert.True(false, string.Format("Caught un-expected exception - {0]. Fail to re-propagate the test exception via Wait", ae));
+                Assert.Fail(string.Format("Caught un-expected exception - {0]. Fail to re-propagate the test exception via Wait", ae));
         }
     }
 

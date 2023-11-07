@@ -5092,7 +5092,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
     GetExceptionMessage(throwable, result);
     UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
-    return result;
+    return SString{ result };
 }
 
 void STDMETHODCALLTYPE
@@ -11121,7 +11121,7 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     {
         resStr.LoadResource(CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
     }
-    msgStr += resStr;
+    msgStr.Append(resStr);
 
     if ((imageName != NULL) && (imageName[0] != 0))
     {
@@ -11129,19 +11129,19 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
         if (suffixResStr.LoadResource(CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
         {
             SString suffixMsgStr;
-            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, imageName);
-            msgStr.AppendASCII(" ");
-            msgStr += suffixMsgStr;
+            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, SString{ SString::Literal, imageName });
+            msgStr.Append(W(" "));
+            msgStr.Append(suffixMsgStr);
         }
     }
 
 #ifdef _DEBUG
     if (0 != strcmp(cond, "FALSE"))
     {
-        msgStr += W(" (Failed condition: "); // this is in DEBUG only - not going to localize it.
+        msgStr.Append(W(" (Failed condition: ")); // this is in DEBUG only - not going to localize it.
         SString condStr(SString::Ascii, cond);
-        msgStr += condStr;
-        msgStr += W(")");
+        msgStr.Append(condStr);
+        msgStr.Append(W(")"));
     }
 #endif
     ThrowHR(COR_E_BADIMAGEFORMAT, msgStr);

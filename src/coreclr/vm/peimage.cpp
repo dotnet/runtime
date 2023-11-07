@@ -186,7 +186,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         {
             // Drive path
             i++;
-            SString sDrivePath(SString::Literal, ":\\");
+            SString sDrivePath(SString::Literal, W(":\\"));
             CCHECK(path.Skip(i, sDrivePath));
         }
         else

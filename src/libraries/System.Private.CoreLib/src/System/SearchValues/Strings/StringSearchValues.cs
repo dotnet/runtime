@@ -311,23 +311,23 @@ namespace System.Buffers
             {
                 if (!ignoreCase)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseSensitive>(value);
+                    return new SingleStringSearchValuesThreeChars<CaseSensitive>(uniqueValues, value);
                 }
 
                 if (asciiLettersOnly)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAsciiLetters>(value);
+                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAsciiLetters>(uniqueValues, value);
                 }
 
                 if (allAscii)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAscii>(value);
+                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAscii>(uniqueValues, value);
                 }
 
                 // When ignoring casing, all anchor chars we search for must be ASCII.
                 if (char.IsAscii(value[0]) && value.AsSpan().LastIndexOfAnyInRange((char)0, (char)127) > 0)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveUnicode>(value);
+                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveUnicode>(uniqueValues, value);
                 }
             }
 

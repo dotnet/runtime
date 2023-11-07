@@ -183,4 +183,19 @@
   <data name="InvalidOperation_NoUnderlyingTypeOnEnum" xml:space="preserve">
     <value>Underlying type information on enumeration is not specified.</value>
   </data>
+  <data name="InvalidOperation_ShouldNotHaveMethodBody" xml:space="preserve">
+    <value>Method body should not exist.</value>
+  </data>
+  <data name="Argument_UnmatchedMethodForLocal" xml:space="preserve">
+    <value>Local passed in does not belong to this ILGenerator.</value>
+  </data>
+  <data name="Argument_InvalidLabel" xml:space="preserve">
+    <value>Invalid Label.</value>
+  </data>
+  <data name="Argument_MustBeSwitchOpCode" xml:space="preserve">
+    <value>Only 'OpCode.Switch' can be used.</value>
+  </data>
+  <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
+    <value>The specified opcode cannot be passed to EmitCall.</value>
+  </data>
 </root>

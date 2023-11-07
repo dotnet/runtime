@@ -67,6 +67,7 @@ internal static class ReflectionTest
         TestByRefTypeLoad.Run();
         TestGenericLdtoken.Run();
         TestAbstractGenericLdtoken.Run();
+        TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
 
         //
         // Mostly functionality tests
@@ -2454,6 +2455,35 @@ internal static class ReflectionTest
             catch (NullReferenceException)
             {
             }
+        }
+    }
+
+    class TestTypeHandlesVisibleFromIDynamicInterfaceCastable
+    {
+        class MyAttribute : Attribute { }
+
+        [My]
+        interface IUnusedInterface { }
+
+        class Foo : IDynamicInterfaceCastable
+        {
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+            {
+                Type t = Type.GetTypeFromHandle(interfaceType);
+                if (t.GetCustomAttribute<MyAttribute>() == null)
+                    throw new Exception();
+
+                return true;
+            }
+        }
+
+        public static void Run()
+        {
+            object myObject = new Foo();
+            if (myObject is not IUnusedInterface)
+                throw new Exception();
         }
     }
 

@@ -935,7 +935,7 @@ namespace System.Threading.Tasks.Tests
                     _cts.Cancel();
 
                     if (!_task.IsCanceled || _task.Status != TaskStatus.Canceled)
-                        Assert.True(false, string.Format("Task Token doesn't matched TokenSource's Token"));
+                        Assert.Fail(string.Format("Task Token doesn't matched TokenSource's Token"));
                 }
             }
 
@@ -1143,7 +1143,7 @@ namespace System.Threading.Tasks.Tests
                                     else if (_taskType == TaskType.FutureT)
                                         _task = new Task<double>(null);
 
-                                    Assert.True(false, string.Format("Able to pass null Action/Func to Constructor of {0}, when expecting exception", _taskType));
+                                    Assert.Fail(string.Format("Able to pass null Action/Func to Constructor of {0}, when expecting exception", _taskType));
                                 }
                                 catch (ArgumentNullException)
                                 {
@@ -1165,7 +1165,7 @@ namespace System.Threading.Tasks.Tests
                                 else if (_taskType == TaskType.Future)
                                     _task = Task.Factory.StartNew<double>(o2);
 
-                                Assert.True(false, string.Format("Able to pass null Action/Func to StartNew() of {0}, when expecting exception", _taskType));
+                                Assert.Fail(string.Format("Able to pass null Action/Func to StartNew() of {0}, when expecting exception", _taskType));
                             }
                             catch (ArgumentNullException)
                             {
@@ -1192,7 +1192,7 @@ namespace System.Threading.Tasks.Tests
                                     else if (_taskType == TaskType.FutureT)
                                         _task = new Task<double>(FutureWork, (TaskCreationOptions)invalidOption);
 
-                                    Assert.True(false, string.Format("Able to pass invalid TaskCreationOptions to Constructor of {0}, when expecting exception", _taskType));
+                                    Assert.Fail(string.Format("Able to pass invalid TaskCreationOptions to Constructor of {0}, when expecting exception", _taskType));
                                 }
                                 catch (ArgumentOutOfRangeException)
                                 {
@@ -1211,7 +1211,7 @@ namespace System.Threading.Tasks.Tests
                                 else if (_taskType == TaskType.Future)
                                     _task = Task.Factory.StartNew<double>(FutureWork, (TaskCreationOptions)invalidOption);
 
-                                Assert.True(false, string.Format("Able to pass invalid TaskCreationOptions to StartNew() of {0}, when expecting exception", _taskType));
+                                Assert.Fail(string.Format("Able to pass invalid TaskCreationOptions to StartNew() of {0}, when expecting exception", _taskType));
                             }
                             catch (ArgumentOutOfRangeException)
                             {
@@ -1232,7 +1232,7 @@ namespace System.Threading.Tasks.Tests
                             _task = CreateTaskHelper();
                             _task.Start();
                             _task.Start();
-                            Assert.True(false, string.Format("Able to Start {0} multiple times, when expecting exception", _taskType));
+                            Assert.Fail(string.Format("Able to Start {0} multiple times, when expecting exception", _taskType));
                         }
                         catch (InvalidOperationException)
                         {
@@ -1246,7 +1246,7 @@ namespace System.Threading.Tasks.Tests
                         {
                             TaskCompletionSource<double> f = new TaskCompletionSource<double>();
                             f.Task.Start();
-                            Assert.True(false, string.Format("Able to Start a Promise, when expecting exception"));
+                            Assert.Fail(string.Format("Able to Start a Promise, when expecting exception"));
                         }
                         catch (System.InvalidOperationException)
                         {
@@ -1260,7 +1260,7 @@ namespace System.Threading.Tasks.Tests
                         {
                             Task t = CreateTaskHelper().ContinueWith(delegate { Work(); });
                             t.Start();
-                            Assert.True(false, string.Format("Able to start task manually on ContinueWith Task, when expecting exception"));
+                            Assert.Fail(string.Format("Able to start task manually on ContinueWith Task, when expecting exception"));
                         }
                         catch (InvalidOperationException)
                         {
@@ -1268,7 +1268,7 @@ namespace System.Threading.Tasks.Tests
                         }
                         break;
                     default:
-                        Assert.True(false, string.Format("Invalid Exception Test Action given, {0}", _exceptionTestsAction));
+                        Assert.Fail(string.Format("Invalid Exception Test Action given, {0}", _exceptionTestsAction));
                         break;
                 }
             }
@@ -1291,7 +1291,7 @@ namespace System.Threading.Tasks.Tests
                             _task = CreateTaskHelper();
                             _task.Start(tm);
 
-                            Assert.True(false, string.Format("Able to pass {0} TaskManager to Start() on {1}, when expecting exception", tmInvalidMessage, _taskType));
+                            Assert.Fail(string.Format("Able to pass {0} TaskManager to Start() on {1}, when expecting exception", tmInvalidMessage, _taskType));
                         }
                         catch (ArgumentNullException)
                         {
@@ -1323,7 +1323,7 @@ namespace System.Threading.Tasks.Tests
                         else if (_taskType == TaskType.Future)
                             _task = Task.Factory.StartNew<double>(FutureWork, token, TaskCreationOptions.None, tm);
 
-                        Assert.True(false, string.Format("Able to pass {0} TaskManager to StartNew() on {1}, when expecting exception", tmInvalidMessage, _taskType));
+                        Assert.Fail(string.Format("Able to pass {0} TaskManager to StartNew() on {1}, when expecting exception", tmInvalidMessage, _taskType));
                     }
                     catch (ArgumentNullException)
                     {
@@ -1593,7 +1593,7 @@ namespace System.Threading.Tasks.Tests
                 if (actualResult > minLimit && actualResult < maxLimit)
                     Debug.WriteLine("Result matched");
                 else
-                    Assert.True(false, string.Format("Result mismatched, expecting to lie between {0} and {1} but got {2}", minLimit, maxLimit, actualResult));
+                    Assert.Fail(string.Format("Result mismatched, expecting to lie between {0} and {1} but got {2}", minLimit, maxLimit, actualResult));
             }
 
             #endregion

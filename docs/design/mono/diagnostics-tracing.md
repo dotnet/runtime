@@ -33,11 +33,11 @@ Depending on platform, there are different recommended and supported ways to inc
 
 ### Android
 
-Android is build using dynamic component support, meaning that components are included as shared objects and runtime will try to load them from the same location as `libmonosgen-2.0.so`. If runtime fails to load component, it will be disabled, if it successfully loads the component at runtime, it will be enabled and used. Enabling/disabling components is then a matter of including/excluding the needed shared library files in the APK (in same folder as `libmonosgen-2.0.so`). The same runtime build can be used to support any combination of components.
+Android is built using dynamic component support, meaning that components are included as shared objects and runtime will try to load them from the same location as `libmonosgen-2.0.so`. If runtime fails to load component, it will be disabled, if it successfully loads the component at runtime, it will be enabled and used. Enabling/disabling components is then a matter of including/excluding the needed shared library files in the APK (in same folder as `libmonosgen-2.0.so`). The same runtime build can be used to support any combination of components.
 
-If `AndroidAppBuilderTask` is used, there is a msbuild property, `RuntimeComponents` that can be used to include specific components in the generated application. By default, its empty, meaning all components will be disabled, using a `*` will enabled all components and by specify individual components, only those will be enabled. Enabling tracing would look like this, `RuntimeComponents="diagnostics_tracing"`, more components can be enabled by separating them with `;`.
+Android runtime pack has the following runtime components included: `debugger`, `hot_reload`, `diagnostics_tracing`, `marshal-ilgen`.
 
-Android runtime pack have the following component libraries included. For default scenarios, the dynamic versions should be used together with `libmonosgen-2.0.so`, but runtime pack also includes static versions of the components that can be used if runtime is built statically using `libmonosgen-2.0.a`. In case of static linking, using `libmono-component-*-stub-static.a` library will disable the component, using `libmono-component-*-static.a` will enable it.
+For default scenarios, the dynamic versions should be used together with `libmonosgen-2.0.so`, but runtime pack also includes static versions of the components that can be used if runtime is built statically using `libmonosgen-2.0.a`. In case of static linking, using `libmono-component-*-stub-static.a` library will disable the component, using `libmono-component-*-static.a` will enable it.
 
 ```
 libmono-component-diagnostics_tracing.so
@@ -45,13 +45,15 @@ libmono-component-diagnostics_tracing-static.a
 libmono-component-diagnostics_tracing-stub-static.a
 ```
 
+In order to enable the `diagnostic tracing` runtime component in your build, please take a look at [Enabling runtime components](#enabling-runtime-components) section.
+
 ### iOS
 
-iOS is build using static component support, meaning that components are included as static libraries that needs to be linked together with `libmonosgen-2.0.a` to produce final application. Static components come in two flavors, the component library, and a stub library. Linking the component library will enable the component in final application, while linking the stub library disables the component. Depending on linked component flavors it is possible to create a build that enables specific components while disabling others. All components needs to be linked in (using component or stub library) or there will be unresolved symbols in `libmonosgen-2.0.a`.
+iOS is built using static component support, meaning that components are included as static libraries that needs to be linked together with `libmonosgen-2.0.a` to produce final application. Static components come in two flavors, the component library, and a stub library. Linking the component library will enable the component in final application, while linking the stub library disables the component. Depending on linked component flavors it is possible to create a build that enables specific components while disabling others. All components needs to be linked in (using component or stub library) or there will be unresolved symbols in `libmonosgen-2.0.a`.
 
-If `AppleAppBuilderTask` is used, there is a msbuild property, `RuntimeComponents` that can be used to include specific components in the build application. By default, its empty, meaning all components will be disabled, using a `*` will enabled all components and by specify individual components, only those will be enabled. Enabling tracing would look like this, `RuntimeComponents="diagnostics_tracing"`, more components can be enabled by separating them with `;`.
+iOS runtime pack has the following runtime components included: `debugger`, `hot_reload`, `diagnostics_tracing`, `marshal-ilgen`.
 
-iOS runtime pack have the following component libraries included. Using `libmono-component-*-stub-static.a` library will disable the component, using `libmono-component-*-static.a` will enable it.
+Using `libmono-component-*-stub-static.a` library will disable the component, using `libmono-component-*-static.a` will enable it.
 
 ```
 libmono-component-diagnostics_tracing-static.a
@@ -60,6 +62,39 @@ libmono-component-diagnostics_tracing-stub-static.a
 
 NOTE, running on iOS simulator offers some additional capabilities, so runtime pack for iOS includes shared as well as static library builds, like the Android use case described above.
 
+In order to enable the `diagnostic tracing` runtime component in your build, please take a look at [Enabling runtime components](#enabling-runtime-components) section.
+
+### Enabling runtime components
+
+When using `AndroidAppBuilderTask` to target `Android`, or `AppleAppBuilderTask` to target `iOS` platforms, there is a MSBuild item: `RuntimeComponents` that can be used to include specific components in the generated application. By default, its empty, meaning all components will be disabled.
+To enable a single component (eg: `diagnostic tracing`), by adding the following to your project file:
+```xml
+<ItemGroup>
+    <RuntimeComponents Include="diagnostics_tracing" />
+</ItemGroup>
+```
+will enable only that runtime component.
+
+On the other hand, if it is desired to include all components, there are two options:
+1. Manually, include all supported components manually via:
+```xml
+<ItemGroup>
+    <RuntimeComponents Include="debugger" />
+    <RuntimeComponents Include="hot_reload" />
+    <RuntimeComponents Include="diagnostics_tracing" />
+    <RuntimeComponents Include="marshal-ilgen" />
+</ItemGroup>
+```
+2. Automatically, use provided MSBuild property that includes all the supported components for you, in the following way:
+    - Import `AndroidBuild.props/targets` in your project file (the file can be found [here](../../../src/mono/msbuild/android/build/AndroidBuild.targets))
+    - Set `UseAllRuntimeComponents` MSBuild property to `true` via:
+        - By adding: `-p:UseAllRuntimeComponents=true` to your build command, or
+        - By adding the following in your project file:
+        ```xml
+        <PropertyGroup>
+            <UseAllRuntimeComponents>true</UseAllRuntimeComponents>
+        </PropertyGroup>
+        ```
 ## Install diagnostic client tooling
 
 ```

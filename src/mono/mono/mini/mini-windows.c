@@ -17,7 +17,6 @@
 #include <conio.h>
 #include <assert.h>
 
-#include <mono/metadata/coree.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
@@ -455,8 +454,6 @@ mono_win32_runtime_tls_callback (HMODULE module_handle, DWORD reason, LPVOID res
 		mono_install_runtime_load (mini_init);
 		break;
 	case DLL_PROCESS_DETACH:
-		if (coree_module_handle)
-			FreeLibrary (coree_module_handle);
 		break;
 	case DLL_THREAD_DETACH:
 		mono_thread_info_detach ();

@@ -186,6 +186,7 @@ namespace System.Threading.Tasks
                     // If we're the last worker to complete, complete the operation.
                     if (state.SignalWorkerCompletedIterating())
                     {
+                        state.Dispose();
                         state.Complete();
                     }
                 }
@@ -745,7 +746,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Stores the state associated with an IAsyncEnumerable ForEachAsync operation, shared between all its workers.</summary>
         /// <typeparam name="T">Specifies the type of data being enumerated.</typeparam>
-        private sealed class ForEachState<T> : ForEachAsyncState<T>
+        private sealed class ForEachState<T> : ForEachAsyncState<T>, IDisposable
         {
             public T NextAvailable;
             public readonly T ToExclusive;
@@ -759,6 +760,8 @@ namespace System.Threading.Tasks
                 NextAvailable = fromExclusive;
                 ToExclusive = toExclusive;
             }
+
+            public void Dispose() => _registration.Dispose();
         }
     }
 }

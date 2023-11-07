@@ -42,7 +42,6 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/coree.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -1612,9 +1611,6 @@ mini_usage (void)
 #ifdef TARGET_OSX
 		"    --arch=[32,64]         Select architecture (runs mono32 or mono64)\n"
 #endif
-#ifdef HOST_WIN32
-	        "    --mixed-mode           Enable mixed-mode image support.\n"
-#endif
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
 		"    --path=DIR             Add DIR to the list of directories to search for assemblies.\n"
@@ -2074,9 +2070,6 @@ mono_main (int argc, char* argv[])
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
 #endif
-#ifdef HOST_WIN32
-	int mixed_mode = FALSE;
-#endif
 	ERROR_DECL (error);
 
 #ifdef MOONLIGHT
@@ -2197,10 +2190,6 @@ mono_main (int argc, char* argv[])
 				return 1;
 			}
 			++i;
-#ifdef HOST_WIN32
-		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
-			mixed_mode = TRUE;
-#endif
 #ifndef DISABLE_JIT
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			if (i + 1 >= argc){
@@ -2557,11 +2546,6 @@ mono_main (int argc, char* argv[])
 		return 1;
 	} else if (enable_debugging)
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-
-#ifdef HOST_WIN32
-	if (mixed_mode)
-		mono_load_coree (argv [i]);
-#endif
 
 	mono_set_defaults (mini_verbose_level, opt);
 

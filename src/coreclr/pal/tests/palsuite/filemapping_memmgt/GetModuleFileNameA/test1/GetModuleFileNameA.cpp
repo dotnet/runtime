@@ -44,7 +44,7 @@ PALTEST(filemapping_memmgt_GetModuleFileNameA_test1_paltest_getmodulefilenamea_t
 
 
     //load a module
-    ModuleHandle = LoadLibrary(ModuleName);
+    ModuleHandle = LoadLibraryExA(ModuleName, NULL, 0);
     if(!ModuleHandle)
     {
         Fail("Failed to call LoadLibrary API!\n");

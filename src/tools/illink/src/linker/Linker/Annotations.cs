@@ -272,7 +272,6 @@ namespace Mono.Linker
 
 		public bool MarkProcessed (IMetadataTokenProvider provider, in DependencyInfo reason)
 		{
-			Debug.Assert (!(reason.Kind == DependencyKind.AlreadyMarked));
 			Tracer.AddDirectDependency (provider, reason, marked: true);
 			// The item may or may not be pending.
 			marked_pending.Remove (provider);
