@@ -7,5 +7,6 @@
   <ItemGroup>
     <Compile Include="SelfContext.cs" />
     <Compile Include="ErrorHandling.cs" />
+    <Compile Include="InvalidCallingConv.cs" />
   </ItemGroup>
 </Project>

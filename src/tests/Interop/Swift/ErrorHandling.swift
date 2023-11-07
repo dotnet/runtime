@@ -4,24 +4,44 @@ public enum MyError: Error {
     case runtimeError(message: String)
 }
 
-public func someFuncThatMightThrow (willThrow: Bool, dummy: UnsafeRawPointer) throws -> Int {
-    if willThrow { throw MyError.runtimeError (message: "Catch me if you can!"); }
-    else { return 42; }
+var errorMessage: String = ""
+
+public func setMyErrorMessage(bytes: UnsafePointer<UInt8>, length: Int) {
+    let data = Data(bytes: bytes, count: length)
+    errorMessage = String(data: data, encoding: .utf8)!
 }
 
-public func handleError(from pointer: UnsafePointer<MyError>) {
+public func conditionallyThrowError(willThrow: Bool) throws -> Int {
+    if willThrow {
+        throw MyError.runtimeError(message: errorMessage)
+    } else {
+        return 42
+    }
+}
+
+public func getMyErrorMessage(from pointer: UnsafePointer<MyError>) -> UnsafePointer<UInt8>? {
     let pointerValue = UInt(bitPattern: pointer)
-    let offsetPointerValue = pointerValue + 0x48 // 0x20 on amd64
+    var offsetValue: UInt
+#if arch(arm64)
+    offsetValue = 0x48
+#elseif (x86_64)
+    offsetValue = 0x20
+#else
+    fatalError("Unsupported architecture")
+#endif
+    let offsetPointerValue = pointerValue + offsetValue
     let offsetPointer = UnsafeRawPointer(bitPattern: offsetPointerValue)
     
     if let offsetErrorPointer = offsetPointer?.assumingMemoryBound(to: MyError.self) {
         let errorInstance = offsetErrorPointer.pointee
         switch errorInstance {
         case .runtimeError(let message):
-            print(message)
+            let messageBytes: [UInt8] = Array(message.utf8)
+            let buffer = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: messageBytes.count)
+            _ = buffer.initialize(from: messageBytes)
+            return UnsafePointer(buffer.baseAddress!)
         }
     } else {
-        print("Pointer does not point to MyError.")
+        return nil
     }
-    
 }

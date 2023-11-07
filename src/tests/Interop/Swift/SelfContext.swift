@@ -1,18 +1,14 @@
-public class MathLibrary {
-    public var a: Double
-    public var b: Double
+public class SelfLibrary {
+    public var number: Int
+    public static let shared = SelfLibrary(number: 42)
 
-    public static let shared = MathLibrary(a: 40.0, b: 2.0)
-
-    private init(a: Double, b: Double) {
-        self.a = a
-        self.b = b
+    private init(number: Int) {
+        self.number = number
     }
 
-    public func getMagicNumber(dummy: UnsafeRawPointer) {
-        print(a + b)
+    public func getMagicNumber() -> Int {
+        return self.number
     }
-
 
     public static func getInstance() -> UnsafeMutableRawPointer {
         let unmanagedInstance = Unmanaged.passUnretained(shared)
