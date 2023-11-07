@@ -3726,6 +3726,35 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	int *call_args = create_call_args (td, num_args);
 
+	if (csignature->call_convention == MONO_CALL_SWIFTCALL) {
+		MonoClass *swift_error = mono_class_try_get_swift_error_class();
+		MonoClass *swift_self = mono_class_try_get_swift_self_class();
+		int swift_error_args = 0, swift_self_args = 0;
+		for (int i = 0; i < csignature->param_count; ++i) {
+			MonoClass *klass = mono_class_from_mono_type_internal (csignature->params [i]);
+			if (klass) {
+				// References cannot be retrieved directly. For SwiftError*, use strncmp since its length is predefined,
+				// allowing the trailing '*' character to be ignored.
+				if (swift_error &&
+					!strcmp (m_class_get_name_space (klass), m_class_get_name_space (swift_error)) && 
+					!strncmp (m_class_get_name (klass), m_class_get_name (swift_error), 10)) {
+					if (strcmp (m_class_get_name (klass), "SwiftError*")) {
+						swift_error_args = swift_self_args = 0;
+						mono_error_set_invalid_program (error, "SwiftError argument must be a reference.");
+						return FALSE;
+					}
+					swift_error_args++;
+				} else if (klass == swift_self) {
+					swift_self_args++;
+				}
+			}
+		}
+		if (swift_self_args > 1 || swift_error_args > 1) {
+			mono_error_set_invalid_program (error, "Method signature contains multiple SwiftSelf/SwiftError arguments.");
+			return FALSE;
+		}
+	}
+
 	// We overwrite it with the return local, save it for future use
 	if (csignature->param_count || csignature->hasthis)
 		first_sreg = td->sp [0].local;

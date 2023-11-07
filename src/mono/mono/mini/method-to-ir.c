@@ -7632,20 +7632,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
-			if (method->signature->call_convention == MONO_CALL_SWIFTCALL) {
-				int swift_error_args = 0;
-				int swift_self_args = 0;
-				for (int i = 0; i < method->signature->param_count; ++i) {
+			if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+				MonoClass *swift_error = mono_class_try_get_swift_error_class();
+				MonoClass *swift_self = mono_class_try_get_swift_self_class();
+				int swift_error_args = 0, swift_self_args = 0;
+				for (int i = 0; i < sig->param_count; ++i) {
 					MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 					if (klass) {
 						// References cannot be retrieved directly. For SwiftError*, use strncmp since its length is predefined,
 						// allowing the trailing '*' character to be ignored.
-						MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 						if (swift_error &&
 							!strcmp (m_class_get_name_space (klass), m_class_get_name_space (swift_error)) && 
 							!strncmp (m_class_get_name (klass), m_class_get_name (swift_error), 10)) {
+							if (strcmp (m_class_get_name (klass), "SwiftError*")) {
+								swift_error_args = swift_self_args = 0;
+								mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("SwiftError argument must be a reference."));
+								break;
+							}
 							swift_error_args++;
-						} else if (klass == mono_class_try_get_swift_self_class ()) {
+						} else if (klass == swift_self) {
 							swift_self_args++;
 						}
 					}

@@ -2020,6 +2020,10 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 			storage = ccontext->stack + ainfo->offset;
 			*(gpointer*)storage = interp_cb->frame_arg_to_storage (frame, sig, i);
 			continue;
+		} else if (ainfo->storage == ArgSwiftError) {
+			storage = arg_get_storage (ccontext, ainfo);
+			*(gpointer*)storage = 0;
+			continue;
 		}
 
 		int temp_size = arg_need_temp (ainfo);
@@ -2601,8 +2605,10 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 
 	/* r28 is reserved for cfg->arch.args_reg */
 	/* r27 is reserved for the imt argument */
-	for (i = ARMREG_R19; i <= ARMREG_R26; ++i)
-		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
+	for (i = ARMREG_R19; i <= ARMREG_R26; ++i) {
+		if (!(cfg->method->signature->call_convention == MONO_CALL_SWIFTCALL && (i == ARMREG_R20 || i == ARMREG_R21)))
+			regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
+	}
 
 	return regs;
 }
@@ -2705,6 +2711,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		g_assert (!(cfg->used_int_regs & (1 << ARMREG_R28)));
 		cfg->arch.args_reg = ARMREG_R28;
 		cfg->used_int_regs |= 1 << ARMREG_R28;
+	}
+
+	if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+		g_assert (!(cfg->used_int_regs & (1 << ARMREG_R20)));
+		cfg->used_int_regs |= 1 << ARMREG_R20;
+		g_assert (!(cfg->used_int_regs & (1 << ARMREG_R21)));
+		cfg->used_int_regs |= 1 << ARMREG_R21;
 	}
 
 	if (cfg->method->save_lmf) {
@@ -5809,6 +5822,10 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				if (i == 0 && sig->hasthis) {
 					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, GPTRDIFF_TO_INT (code - cfg->native_code));
 					mono_add_var_location (cfg, ins, FALSE, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset), GPTRDIFF_TO_INT (code - cfg->native_code), 0);
+				}
+
+				if (ainfo->storage == ArgSwiftError) {
+					code = emit_imm (code, ARMREG_R21, 0);
 				}
 				break;
 			case ArgInFReg:
