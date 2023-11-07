@@ -8035,6 +8035,14 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DV_3A;
             break;
 
+        case INS_sve_uzp1:
+            // TODO: This could also be SVE_BR_3B or SVE_CI_3A
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            fmt = IF_SVE_BR_3A;
+            break;
+
         default:
             unreached();
             break;
