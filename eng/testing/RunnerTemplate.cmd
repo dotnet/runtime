@@ -92,6 +92,13 @@ if %_exit_code%==1 (
     )
   )
 )
+
+echo ----- start ===============  XUnitLogChecker Output =====================================================
+%RUNTIME_PATH%\dotnet.exe --roll-forward Major %HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker.dll --dumps-path %HELIX_DUMP_FOLDER%
+set xunitlogchecker_exit_code=%ERRORLEVEL%
+if %xunitlogchecker_exit_code% NEQ 0 set _exit_code=%xunitlogchecker_exit_code%
+echo ----- end ===============  XUnitLogChecker Output - exit code %xunitlogchecker_exit_code% ===============
+
 exit /b %_exit_code%
 :: ========================= END Test Execution =================================
 
