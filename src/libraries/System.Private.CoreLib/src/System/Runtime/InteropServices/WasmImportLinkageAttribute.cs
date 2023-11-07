@@ -4,7 +4,7 @@
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Used to control WASM import module linkage for an associated P/Invoke.
+    /// Specifies that the P/Invoke marked with this attribute should be linked in as a WASM import.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class WasmImportLinkageAttribute : Attribute
