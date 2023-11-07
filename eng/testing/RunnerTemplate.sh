@@ -218,19 +218,19 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   
   echo ----- start ===============  XUnitLogChecker Output =====================================================
   xunitlogchecker_exit_code=0
-  if [ $total_dumps -gt 0 ]; then
-    
+  if [[ $total_dumps > 0 ]]; then
     echo "Total dumps found in $HELIX_DUMP_FOLDER: $total_dumps"
     xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll"
     dotnet_file_name="$RUNTIME_PATH/dotnet"
 
-    if [ ! -f $dotnet_file_name ]; then
+    if [[ ! -f $dotnet_file_name ]]; then
       echo "'$dotnet_file_name' was not found. Unable to run XUnitLogChecker."
       xunitlogchecker_exit_code=1
-    elif [ ! -f $xunitlogchecker_file_name ]; then 
+    elif [[ ! -f $xunitlogchecker_file_name ]]; then 
       echo "'$xunitlogchecker_file_name' was not found. Unable to print dump file contents."
       xunitlogchecker_exit_code=2
     else
+      echo "Executing XUnitLogChecker..."
       cmd="$dotnet_file_name --roll-forward Major $xunitlogchecker_file_name --dumps-path $HELIX_DUMP_FOLDER"
       echo "$cmd"
       $cmd
@@ -240,8 +240,8 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
     echo "No dumps found."
   fi
 
-  if [ $xunitlogchecker_exit_code -ne 0 ]; then
-    test_exitcode = $xunitlogchecker_exit_code
+  if [[ $xunitlogchecker_exit_code -ne 0 ]]; then
+    test_exitcode=$xunitlogchecker_exit_code
   fi
   echo ----- end ===============  XUnitLogChecker Output - exit code $xunitlogchecker_exit_code ===========================
 
