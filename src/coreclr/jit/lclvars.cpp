@@ -259,9 +259,9 @@ void Compiler::lvaInitTypeRef()
     LclVarDsc*              varDsc    = varDscInfo.varDsc;
     CORINFO_ARG_LIST_HANDLE localsSig = info.compMethodInfo->locals.args;
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     compHasSplitParam = varDscInfo.hasSplitParam;
-#endif
+#endif // TARGET_ARM || TARGET_RISCV64
 
     for (unsigned i = 0; i < info.compMethodInfo->locals.numArgs;
          i++, varNum++, varDsc++, localsSig = info.compCompHnd->getArgNext(localsSig))
@@ -1043,6 +1043,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         varDscInfo->setAllRegArgUsed(argRegTypeInStruct1);
 #if FEATURE_FASTTAILCALL
                         varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
+#endif
+#ifdef TARGET_RISCV64
+                        varDscInfo->hasSplitParam = true;
 #endif
                     }
                 }

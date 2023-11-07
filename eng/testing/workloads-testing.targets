@@ -28,6 +28,27 @@
     </InstallWorkloadUsingArtifactsDependsOn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <_DotNetInstallScriptName Condition="!$([MSBuild]::IsOSPlatform('windows'))">dotnet-install.sh</_DotNetInstallScriptName>
+    <_DotNetInstallScriptName Condition=" $([MSBuild]::IsOSPlatform('windows'))">dotnet-install.ps1</_DotNetInstallScriptName>
+
+    <_DotNetInstallScriptPath>$(ArtifactsObjDir)$(_DotNetInstallScriptName)</_DotNetInstallScriptPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
+    <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+    <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
+            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
+    <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 9.0</_DotNetInstallCommand>
+    <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
+            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 9.0</_DotNetInstallCommand>
+  </PropertyGroup>
+
   <ItemGroup>
     <!--<AdditionalSharedFrameworkToInstallArguments Include="-Version 8.0.0-rc.2.23457.7" />-->
     <!-- Required for running apps built with 9.0 sdk, but the sdk does
@@ -56,27 +77,6 @@
     </ItemGroup>
     <RemoveDir Directories="$(_SdkWithNoWorkloadPath)" />
     <MakeDir Directories="$(_SdkWithNoWorkloadPath)" />
-
-    <PropertyGroup>
-      <_DotNetInstallScriptName Condition="!$([MSBuild]::IsOSPlatform('windows'))">dotnet-install.sh</_DotNetInstallScriptName>
-      <_DotNetInstallScriptName Condition=" $([MSBuild]::IsOSPlatform('windows'))">dotnet-install.ps1</_DotNetInstallScriptName>
-
-      <_DotNetInstallScriptPath>$(ArtifactsObjDir)$(_DotNetInstallScriptName)</_DotNetInstallScriptPath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
-      <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
-      <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
-      <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 9.0</_DotNetInstallCommand>
-      <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 9.0</_DotNetInstallCommand>
-    </PropertyGroup>
 
     <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
                   DestinationFolder="$(ArtifactsObjDir)"

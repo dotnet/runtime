@@ -27,6 +27,7 @@ namespace System.Reflection.Emit
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal ParameterBuilderImpl[]? _parameters;
+        internal MethodDefinitionHandle _handle;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
@@ -51,6 +52,8 @@ namespace System.Reflection.Emit
             _methodImplFlags = MethodImplAttributes.IL;
             _initLocals = true;
         }
+
+        internal int ParameterCount => _parameterTypes == null? 0 : _parameterTypes.Length;
 
         internal ILGeneratorImpl? ILGeneratorImpl => _ilGenerator;
 
@@ -201,7 +204,7 @@ namespace System.Reflection.Emit
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;
         public override bool IsSecurityTransparent => false;
-        public override int MetadataToken { get => throw new NotImplementedException(); }
+        public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override Type? ReflectedType { get => throw new NotImplementedException(); }
         public override ParameterInfo ReturnParameter { get => throw new NotImplementedException(); }
@@ -224,8 +227,7 @@ namespace System.Reflection.Emit
         public override MethodImplAttributes GetMethodImplementationFlags()
             => _methodImplFlags;
 
-        public override ParameterInfo[] GetParameters()
-            => throw new NotImplementedException();
+        public override ParameterInfo[] GetParameters() => throw new NotImplementedException();
 
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
              => throw new NotSupportedException(SR.NotSupported_DynamicModule);
