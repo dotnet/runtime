@@ -567,7 +567,7 @@ protected:
 #include "emitfmts.h"
 #if defined(TARGET_ARM64)
 #define IF_DEF(en, op1, op2) IF_##en,
-#include "emitfmtsarm64_sve.h"
+#include "emitfmtsarm64sve.h"
 #endif
         IF_COUNT
     };

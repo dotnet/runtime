@@ -60,7 +60,7 @@ enum instruction : uint32_t
     #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) INS_sve_##id,
     #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) INS_sve_##id,
     #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) INS_sve_##id,
-    #include "instrsarm64_sve.h"
+    #include "instrsarm64sve.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 

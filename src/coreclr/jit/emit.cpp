@@ -132,7 +132,7 @@ const char* emitter::emitIfName(unsigned f)
 #include "emitfmts.h"
 #if defined(TARGET_ARM64)
 #define IF_DEF(en, op1, op2) "IF_" #en,
-#include "emitfmtsarm64_sve.h"
+#include "emitfmtsarm64sve.h"
 #endif
     };
 
@@ -3773,7 +3773,7 @@ const BYTE emitter::emitFmtToOps[] = {
 #include "emitfmts.h"
 #if defined(TARGET_ARM64)
 #define IF_DEF(en, op1, op2) ID_OP_##op2,
-#include "emitfmtsarm64_sve.h"
+#include "emitfmtsarm64sve.h"
 #endif
 };
 
