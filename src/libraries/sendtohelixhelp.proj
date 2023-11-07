@@ -175,7 +175,6 @@
     <HelixPostCommand Include="docker rmi -f grpc-server:latest" />
   </ItemGroup>
 
-
   <!-- Ensure that all HelixPreCommand items are ready before this -->
   <Target Name="BuildHelixCommand">
     <!-- setting DotNetCliVersion here to ensure that it is set to the intended value -->
@@ -232,6 +231,35 @@
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())" />
     </ItemGroup>
   </Target>
+
+  <PropertyGroup>
+    <IsTargetOSSupportedByXUnitLogChecker Condition="'$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsTargetOSSupportedByXUnitLogChecker>
+  </PropertyGroup>
+
+  <Target Name="BuildXUnitLogChecker" BeforeTargets="BuildHelixWorkItems" Condition="'$(IsTargetOSSupportedByXUnitLogChecker)' == 'true'">
+
+    <PropertyGroup>
+      <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)tests/Common/XUnitLogChecker'))</XUnitLogCheckerDirectory>
+    </PropertyGroup>
+    
+    <MSBuild Projects="$(MSBuildThisFileDirectory)../tests/Common/XUnitLogChecker/XUnitLogChecker.csproj" Targets="Restore;Build" Properties="Configuration=Release;OutDir=$(XUnitLogCheckerDirectory)" />
+    
+    <ItemGroup>
+      <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" />
+    </ItemGroup>
+
+  </Target>
+
+  <PropertyGroup Condition="'$(IsTargetOSSupportedByXUnitLogChecker)' == 'true'">
+    <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
+      $(HelixPreCommands);
+      set __TestArchitecture=$(TargetArchitecture)
+    </HelixPreCommands>
+    <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
+      $(HelixPreCommands);
+      export __TestArchitecture=$(TargetArchitecture)
+    </HelixPreCommands>
+  </PropertyGroup>
 
   <!--
     Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
