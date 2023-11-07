@@ -443,14 +443,14 @@ function importModules() {
         jsModuleRuntimePromise = jsModuleRuntimeAsset.moduleExports;
     } else {
         mono_log_debug(`Attempting to import '${jsModuleRuntimeAsset.resolvedUrl}' for ${jsModuleRuntimeAsset.name}`);
-        jsModuleRuntimePromise = import(/* webpackIgnore: true */jsModuleRuntimeAsset.resolvedUrl!);
+        jsModuleRuntimePromise = import(/*! webpackIgnore: true */jsModuleRuntimeAsset.resolvedUrl!);
     }
 
     if (typeof jsModuleNativeAsset.moduleExports === "object") {
         jsModuleNativePromise = jsModuleNativeAsset.moduleExports;
     } else {
         mono_log_debug(`Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
-        jsModuleNativePromise = import(/* webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
+        jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
 
     return [jsModuleRuntimePromise, jsModuleNativePromise];
