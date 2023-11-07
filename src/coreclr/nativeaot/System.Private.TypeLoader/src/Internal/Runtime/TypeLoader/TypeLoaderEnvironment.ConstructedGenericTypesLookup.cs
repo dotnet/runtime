@@ -217,7 +217,7 @@ namespace Internal.Runtime.TypeLoader
 
         public bool TryLookupConstructedLazyDictionaryForContext(IntPtr context, IntPtr signature, out IntPtr dictionary)
         {
-            Debug.Assert(_typeLoaderLock.IsAcquired);
+            Debug.Assert(_typeLoaderLock.IsHeldByCurrentThread);
             return _lazyGenericDictionaries.TryGetValue(new LazyDictionaryContext { _context = context, _signature = signature }, out dictionary);
         }
 
@@ -226,7 +226,7 @@ namespace Internal.Runtime.TypeLoader
         {
             runtimeTypeHandle = default(RuntimeTypeHandle);
 
-            using (LockHolder.Hold(_dynamicGenericsLock))
+            using (_dynamicGenericsLock.EnterScope())
             {
                 GenericTypeEntry entry;
                 if (!_dynamicGenericTypes.TryGetValue(lookupData, out entry))

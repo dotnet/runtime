@@ -1456,6 +1456,7 @@ private:
 
     static const int MAX_FORMAT_CHARS = 12;
     char             intervalNameFormat[MAX_FORMAT_CHARS];
+    char             smallLocalsIntervalNameFormat[MAX_FORMAT_CHARS]; // used for V01 to V09 (to match V%02u format)
     char             regNameFormat[MAX_FORMAT_CHARS];
     char             shortRefPositionFormat[MAX_FORMAT_CHARS];
     char             emptyRefPositionFormat[MAX_FORMAT_CHARS];
@@ -2012,6 +2013,7 @@ private:
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #ifdef TARGET_ARM64
     int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
+    void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2168,7 +2170,7 @@ public:
     //    is currently preferenced (e.g. because they are related by a copy)
     Interval* relatedInterval;
 
-    // The assignedReg is the RecRecord for the register to which this interval
+    // The assignedReg is the RegRecord for the register to which this interval
     // has been assigned at some point - if the interval is active, this is the
     // register it currently occupies.
     RegRecord* assignedReg;
@@ -2584,7 +2586,7 @@ public:
         return genRegNumFromMask(registerAssignment);
     }
 
-    // Returns true if it is a reference on a gentree node.
+    // Returns true if it is a reference on a GenTree node.
     bool IsActualRef()
     {
         switch (refType)

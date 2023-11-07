@@ -154,17 +154,17 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 
 ## Operating Systems
 
-| Operating System | Lead          | Owners (area experts to tag in PRs and issues)        | Description  |
-|------------------|---------------|-------------------------------------------------------|--------------|
-| os-alpine        |               |                                                       |              |
-| os-android       | @steveisok    | @akoeplinger                                          |              |
-| os-freebsd       |               |                                                       |              |
-| os-mac-os-x      |               |                                                       |              |
-| os-maccatalyst   | @steveisok    | @kotlarmilos                                          |              |
-| os-ios           | @steveisok    | @vargaz, @kotlarmilos                                 |              |
-| os-tizen         | @alpencolt    | @gbalykov, @hjleee, @wscho77, @clamp03, @JongHeonChoi |              |
-| os-tvos          | @steveisok    | @vargaz, @kotlarmilos                                 |              |
-| os-wasi          | @lewing       | @pavelsavara                                          |              |
+| Operating System | Lead          | Owners (area experts to tag in PRs and issues)          | Description  |
+|------------------|---------------|---------------------------------------------------------|--------------|
+| os-alpine        |               |                                                         |              |
+| os-android       | @steveisok    | @akoeplinger                                            |              |
+| os-freebsd       |               |                                                         |              |
+| os-mac-os-x      |               |                                                         |              |
+| os-maccatalyst   | @steveisok    | @kotlarmilos                                            |              |
+| os-ios           | @steveisok    | @vargaz, @kotlarmilos                                   |              |
+| os-tizen         | @gbalykov     | @hjleee, @wscho77, @clamp03, @JongHeonChoi, @t-mustafin |              |
+| os-tvos          | @steveisok    | @vargaz, @kotlarmilos                                   |              |
+| os-wasi          | @lewing       | @pavelsavara                                            |              |
 
 ## Architectures
 

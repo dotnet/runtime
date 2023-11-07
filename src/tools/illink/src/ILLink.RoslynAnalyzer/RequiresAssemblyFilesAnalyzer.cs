@@ -2,8 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using ILLink.Shared;
+using ILLink.Shared.TypeSystemProxy;
+using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -32,6 +36,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresAssemblyFilesAttribute;
 
+		internal override string FeatureName => "AssemblyFiles";
+
 		private protected override string RequiresAttributeFullyQualifiedName => RequiresAssemblyFilesAttributeFullyQualifiedName;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Property | DiagnosticTargets.Event;
@@ -42,20 +48,35 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresAssemblyFilesOnStaticCtor;
 
-		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation)
+		internal override bool IsAnalyzerEnabled (AnalyzerOptions options)
 		{
-			var isSingleFileAnalyzerEnabled = options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer, compilation);
+			var isSingleFileAnalyzerEnabled = options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer);
 			if (!string.Equals (isSingleFileAnalyzerEnabled?.Trim (), "true", StringComparison.OrdinalIgnoreCase))
 				return false;
 
-			var includesAllContent = options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.IncludeAllContentForSelfExtract, compilation);
+			var includesAllContent = options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.IncludeAllContentForSelfExtract);
 			if (string.Equals (includesAllContent?.Trim (), "true", StringComparison.OrdinalIgnoreCase))
 				return false;
 
 			return true;
 		}
 
-		protected override ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation)
+		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol)
+		{
+			// "IsAssemblyFilesSupported" is treated as a requires check for testing purposes only, and
+			// is not officially-supported product behavior.
+			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("ILLink.RoslynAnalyzer.TestFeatures");
+			if (runtimeFeaturesType == null)
+				return false;
+
+			var isDynamicCodeSupportedProperty = runtimeFeaturesType.GetMembers ("IsAssemblyFilesSupported").OfType<IPropertySymbol> ().FirstOrDefault ();
+			if (isDynamicCodeSupportedProperty == null)
+				return false;
+
+			return SymbolEqualityComparer.Default.Equals (propertySymbol, isDynamicCodeSupportedProperty);
+		}
+
+		internal override ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation)
 		{
 			var dangerousPatternsBuilder = ImmutableArray.CreateBuilder<ISymbol> ();
 
@@ -78,24 +99,27 @@ namespace ILLink.RoslynAnalyzer
 			return dangerousPatternsBuilder.ToImmutable ();
 		}
 
-		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> dangerousPatterns, ISymbol member)
+		protected override bool CreateSpecialIncompatibleMembersDiagnostic (
+			IOperation operation,
+			ImmutableArray<ISymbol> dangerousPatterns,
+			ISymbol member,
+			out Diagnostic? diagnostic)
 		{
+			diagnostic = null;
 			if (member is IMethodSymbol method) {
 				if (ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
-					operationContext.ReportDiagnostic (Diagnostic.Create (s_getFilesRule, operationContext.Operation.Syntax.GetLocation (), member.GetDisplayName ()));
+					diagnostic = Diagnostic.Create (s_getFilesRule, operation.Syntax.GetLocation (), member.GetDisplayName ());
 					return true;
 				}
 				else if (method.AssociatedSymbol is ISymbol associatedSymbol &&
 					ImmutableArrayOperations.Contains (dangerousPatterns, associatedSymbol, SymbolEqualityComparer.Default)) {
+					diagnostic = Diagnostic.Create (s_locationRule, operation.Syntax.GetLocation (), member.GetDisplayName ());
 					// The getters for CodeBase and EscapedCodeBase have RAF attribute on them
 					// so our caller will produce the RAF warning (IL3002) by default. Since we handle these properties specifically
 					// here and produce different warning (IL3000) we don't want the caller to produce IL3002.
 					// So we need to return true from here for the getters, to suppress the RAF warning.
 					return true;
 				}
-			} else if (member is IPropertySymbol && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
-				operationContext.ReportDiagnostic (Diagnostic.Create (s_locationRule, operationContext.Operation.Syntax.GetLocation (), member.GetDisplayName ()));
-				return true;
 			}
 
 			return false;

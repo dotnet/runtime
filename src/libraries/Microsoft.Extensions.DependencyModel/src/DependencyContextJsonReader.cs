@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyModel
     public class DependencyContextJsonReader : IDependencyContextReader
     {
         private const int UnseekableStreamInitialRentSize = 4096;
-        private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+        private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
 
         private readonly Dictionary<string, string> _stringPool = new Dictionary<string, string>();
 

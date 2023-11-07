@@ -42,13 +42,28 @@ namespace System.Runtime.InteropServices.JavaScript
         internal struct JSBindingType
         {
             internal MarshalerType Type;
+            internal MarshalerType __ReservedB1;
+            internal MarshalerType __ReservedB2;
+            internal MarshalerType __ReservedB3;
             internal IntPtr __Reserved;
             internal IntPtr JSCustomMarshallerCode;
             internal int JSCustomMarshallerCodeLength;
             internal MarshalerType ResultMarshalerType;
+            internal MarshalerType __ReservedB4;
+            internal MarshalerType __ReservedB5;
+            internal MarshalerType __ReservedB6;
             internal MarshalerType Arg1MarshalerType;
+            internal MarshalerType __ReservedB7;
+            internal MarshalerType __ReservedB8;
+            internal MarshalerType __ReservedB9;
             internal MarshalerType Arg2MarshalerType;
+            internal MarshalerType __ReservedB10;
+            internal MarshalerType __ReservedB11;
+            internal MarshalerType __ReservedB12;
             internal MarshalerType Arg3MarshalerType;
+            internal MarshalerType __ReservedB13;
+            internal MarshalerType __ReservedB14;
+            internal MarshalerType __ReservedB15;
         }
 
         internal unsafe int ArgumentCount

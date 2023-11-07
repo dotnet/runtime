@@ -11,6 +11,7 @@ using System.Reflection;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
+using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Configuration.Test;
 using Xunit;
 
@@ -752,23 +753,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void BindCanReadStaticProperty()
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {"StaticProperty", "other stuff"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var instance = new ComplexOptions();
-            config.Bind(instance);
-
-            Assert.Equal("other stuff", ComplexOptions.StaticProperty);
-        }
-
-        [Fact]
         public void CanGetComplexOptionsWhichHasAlsoHasValue()
         {
             var dic = new Dictionary<string, string>
@@ -1063,6 +1047,17 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("John", testOptions.ClassWhereParametersHaveDefaultValueProperty.Name);
             Assert.Equal("123, Abc St.", testOptions.ClassWhereParametersHaveDefaultValueProperty.Address);
             Assert.Equal(42, testOptions.ClassWhereParametersHaveDefaultValueProperty.Age);
+            Assert.Equal(42.0f, testOptions.ClassWhereParametersHaveDefaultValueProperty.F);
+            Assert.Equal(3.14159, testOptions.ClassWhereParametersHaveDefaultValueProperty.D);
+            Assert.Equal(3.1415926535897932384626433M, testOptions.ClassWhereParametersHaveDefaultValueProperty.M);
+            Assert.Equal(StringComparison.Ordinal, testOptions.ClassWhereParametersHaveDefaultValueProperty.SC);
+            Assert.Equal('q', testOptions.ClassWhereParametersHaveDefaultValueProperty.C);
+            Assert.Equal(42, testOptions.ClassWhereParametersHaveDefaultValueProperty.NAge);
+            Assert.Equal(42.0f, testOptions.ClassWhereParametersHaveDefaultValueProperty.NF);
+            Assert.Equal(3.14159, testOptions.ClassWhereParametersHaveDefaultValueProperty.ND);
+            Assert.Equal(3.1415926535897932384626433M, testOptions.ClassWhereParametersHaveDefaultValueProperty.NM);
+            Assert.Equal(StringComparison.Ordinal, testOptions.ClassWhereParametersHaveDefaultValueProperty.NSC);
+            Assert.Equal('q', testOptions.ClassWhereParametersHaveDefaultValueProperty.NC);
         }
 
         [Fact]
@@ -1401,6 +1396,24 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var options = config.Get<ClassWithPrimaryCtor>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindClassWithPrimaryCtorWithDefaultValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "-1"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithPrimaryCtorDefaultValues>();
+            Assert.Equal(-1, options.Length);
+            Assert.Equal("blue", options.Color);
+            Assert.Equal(5.946238490567943927384M, options.Height);
+            Assert.Equal(EditorBrowsableState.Never, options.EB);
         }
 
         [Fact]
@@ -1767,7 +1780,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(0, options.OtherCodeNullable);
             Assert.Equal("default", options.OtherCodeString);
             Assert.Null(options.OtherCodeNull);
-            Assert.Null(options.OtherCodeUri);            
+            Assert.Null(options.OtherCodeUri);
         }
 
         [Fact]
@@ -2238,7 +2251,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(GeolocationClass), key, new GeolocationClass()));
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key));
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, defaultValue: null));
-                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, default(Geolocation)));    
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, default(Geolocation)));
             }
         }
 
@@ -2324,6 +2337,25 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public static void TestBindingInitializedAbstractMember()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{ ""AbstractProp"": {""Value"":1} }");
+            ClassWithAbstractProp c = new();
+            c.AbstractProp = new Derived();
+            configuration.Bind(c);
+            Assert.Equal(1, c.AbstractProp.Value);
+        }
+
+        [Fact]
+        public static void TestBindingUninitializedAbstractMember()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{ ""AbstractProp"": {""Value"":1} }");
+            ClassWithAbstractProp c = new();
+            c.AbstractProp = null;
+            Assert.Throws<InvalidOperationException>(() => configuration.Bind(c));
+        }
+
+        [Fact]
         public void GetIConfigurationSection()
         {
             var configuration = TestHelpers.GetConfigurationFromJsonString("""
@@ -2403,6 +2435,39 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             // Binding to a new section should not set the value to null.
             config.GetSection("A").Bind(instance);
             Assert.Equal("localhost", instance.ConnectionString);
+        }
+
+        [Fact]
+        public void CanBindToMockConfigurationSection()
+        {
+            const string expectedA = "hello";
+
+            var configSource = new MemoryConfigurationSource()
+            {
+                InitialData = new Dictionary<string, string?>()
+                {
+                    [$":{nameof(SimplePoco.A)}"] = expectedA,
+                }
+            };
+            var configRoot = new MockConfigurationRoot(new[] { configSource.Build(null) });
+            var configSection = new ConfigurationSection(configRoot, string.Empty);
+
+            SimplePoco result = new();
+            configSection.Bind(result);
+
+            Assert.Equal(expectedA, result.A);
+            Assert.Equal(default(string), result.B);
+        }
+
+        // a mock configuration root that will return null for undefined Sections,
+        // as is common when Configuration interfaces are mocked
+        class MockConfigurationRoot : ConfigurationRoot, IConfigurationRoot
+        {
+            public MockConfigurationRoot(IList<IConfigurationProvider> providers) : base(providers)
+            { }
+
+            IConfigurationSection IConfiguration.GetSection(string key) =>
+                this[key] is null ? null : new ConfigurationSection(this, key);
         }
     }
 }

@@ -49,7 +49,7 @@ namespace System.Globalization.Tests
             yield return new object[] { frFRFormat, "ap J-C", -1 };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [MemberData(nameof(GetEra_TestData))]
         public void GetEra_Invoke_ReturnsExpected(DateTimeFormatInfo format, string eraName, int expected)
         {

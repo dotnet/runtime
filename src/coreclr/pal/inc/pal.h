@@ -1048,6 +1048,15 @@ CreateMutexExW(
     IN DWORD dwFlags,
     IN DWORD dwDesiredAccess);
 
+PALIMPORT
+HANDLE
+PALAPI
+PAL_CreateMutexW(
+    IN BOOL bInitialOwner,
+    IN LPCWSTR lpName,
+    IN LPSTR lpSystemCallErrors,
+    IN DWORD dwSystemCallErrorsBufferSize);
+
 // CreateMutexExW: dwFlags
 #define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
 
@@ -1060,6 +1069,14 @@ OpenMutexW(
        IN DWORD dwDesiredAccess,
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName);
+
+PALIMPORT
+HANDLE
+PALAPI
+PAL_OpenMutexW(
+       IN LPCWSTR lpName,
+       IN LPSTR lpSystemCallErrors,
+       IN DWORD dwSystemCallErrorsBufferSize);
 
 #ifdef UNICODE
 #define OpenMutex  OpenMutexW
@@ -2085,6 +2102,34 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
+typedef struct _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY {
+    DWORD BeginAddress;
+    union {
+        DWORD UnwindData;
+        struct {
+            DWORD Flag : 2;
+            DWORD FunctionLength : 11;
+            DWORD RegF : 3;
+            DWORD RegI : 4;
+            DWORD H : 1;
+            DWORD CR : 2;
+            DWORD FrameSize : 9;
+        };
+    };
+} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY, * PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY;
+
+typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
+    ULONG HeaderData;
+    struct {
+        ULONG FunctionLength : 18;      // in words (2 bytes)
+        ULONG Version : 2;
+        ULONG ExceptionDataPresent : 1;
+        ULONG EpilogInHeader : 1;
+        ULONG EpilogCount : 5;          // number of epilogs or byte index of the first unwind code for the one only epilog
+        ULONG CodeWords : 5;            // number of dwords with unwind codes
+    };
+} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA;
+
 #elif defined(HOST_LOONGARCH64)
 
 // Please refer to src/coreclr/pal/src/arch/loongarch64/asmconstants.h
@@ -2664,16 +2709,6 @@ PALAPI
 PAL_GetTotalCpuCount();
 
 PALIMPORT
-size_t
-PALAPI
-PAL_GetRestrictedPhysicalMemoryLimit();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetPhysicalMemoryUsed(size_t* val);
-
-PALIMPORT
 BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val);
@@ -3139,13 +3174,17 @@ enum {
 //
 // A function table entry is generated for each frame function.
 //
+#if defined(HOST_ARM64)
+typedef IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
+#else // HOST_ARM64
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
-#ifdef TARGET_AMD64
+#ifdef HOST_AMD64
     DWORD EndAddress;
 #endif
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
+#endif // HOST_ARM64
 
 #define STANDARD_RIGHTS_REQUIRED  (0x000F0000L)
 #define SYNCHRONIZE               (0x00100000L)

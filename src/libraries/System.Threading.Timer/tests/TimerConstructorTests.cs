@@ -11,7 +11,7 @@ namespace System.Threading.Tests
         public static IEnumerable<object[]> CallbacksForPeriodDueTimeOutOfRange()
         {
             yield return new object[] { null };
-            yield return new object[] { new TimerCallback(_ => Assert.False(true, "Callback should not have been invoked.")) };
+            yield return new object[] { new TimerCallback(_ => Assert.Fail("Callback should not have been invoked.")) };
         }
 
         [Theory]

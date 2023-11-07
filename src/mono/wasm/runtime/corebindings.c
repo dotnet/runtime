@@ -22,7 +22,7 @@ extern void mono_wasm_bind_js_function(MonoString **function_name, MonoString **
 extern void mono_wasm_invoke_bound_function(int function_js_handle, void *data);
 extern void mono_wasm_invoke_import(int fn_handle, void *data);
 extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int signature_hash, void* signatures, int *is_exception, MonoObject **result);
-extern void mono_wasm_marshal_promise(void *data);
+extern void mono_wasm_resolve_or_reject_promise(void *data);
 
 typedef void (*background_job_cb)(void);
 void mono_main_thread_schedule_background_job (background_job_cb cb);
@@ -67,7 +67,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function);
 	mono_add_internal_call ("Interop/Runtime::InvokeImport", mono_wasm_invoke_import);
 	mono_add_internal_call ("Interop/Runtime::BindCSFunction", mono_wasm_bind_cs_function);
-	mono_add_internal_call ("Interop/Runtime::MarshalPromise", mono_wasm_marshal_promise);
+	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromise", mono_wasm_resolve_or_reject_promise);
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);
 	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", mono_wasm_deregister_root);
 

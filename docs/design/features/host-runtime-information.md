@@ -84,10 +84,16 @@ List of directory paths corresponding to shared store paths and additional probi
 
 Hex string representation of a function pointer. It is set when running a single-file application. The function is called by the runtime to look for assemblies bundled into the application. The expected signature is defined as `BundleProbeFn` in [`coreclrhost.h`](/src/coreclr/hosts/inc/coreclrhost.h)
 
+**.NET 9 and above** This property is no longer set by the host. `host_runtime_contract.bundle_probe` is set when running a single-file application.
+
 `HOSTPOLICY_EMBEDDED`
 
 Indicates whether or not [`hostpolicy`](./host-components.md#host-policy) is embedded in the host executable. It is set to `true` when running a self-contained single-file application.
 
+**.NET 9 and above**  This property is no longer set by the host or read by the runtime. Self-contained single-file includes both host and runtime components in the executable, so the information is known at build-time.
+
 `PINVOKE_OVERRIDE`
 
 Hex string representation of a function pointer. It is set when running a self-contained single-file application. The function is called by the runtime to check for redirected p/invokes. The expected signature is defined as `PInvokeOverrideFn` in [`coreclrhost.h`](/src/coreclr/hosts/inc/coreclrhost.h) and [`mono-private-unstable-types.h`](/src/native/public/mono/metadata/details/mono-private-unstable-types.h).
+
+**.NET 9 and above** This property is no longer set by the host. `host_runtime_contract.pinvoke_override` is set when running a self-contained single-file application.

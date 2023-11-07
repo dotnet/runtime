@@ -5,12 +5,14 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Collections.Generic;
+using Xunit;
 
 namespace SafeHandleTests
 {
-    class Test
+    public class Test
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

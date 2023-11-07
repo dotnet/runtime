@@ -207,7 +207,7 @@
       <ActualWasiSdkVersion>%(_ActualVersionLines.Identity)</ActualWasiSdkVersion>
       <ExpectedWasiSdkVersion>%(_ExpectedVersionLines.Identity)</ExpectedWasiSdkVersion>
     </PropertyGroup>
-    <Error Text="Expected and actual version of WASI SDK does not match. Please delete $(WASI_SDK_PATH) folder to provision a new version." 
+    <Error Text="Expected and actual version of WASI SDK does not match. Please delete $(WASI_SDK_PATH) folder to provision a new version."
       Condition="'$(ActualWasiSdkVersion)' != '$(ExpectedWasiSdkVersion)'" />
   </Target>
 
@@ -254,9 +254,10 @@
 
   <!-- Mono runtime build -->
   <Target Name="BuildMonoRuntime">
-    <PropertyGroup>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm' and '$(MonoUseLLVMPackage)' == 'true'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(MonoUseLLVMPackage)' == 'true'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
+    <PropertyGroup Condition="'$(MonoUseLLVMPackage)' == 'true'">
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMHostArchitecture Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
     </PropertyGroup>
     <ItemGroup>
       <_MonoCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
@@ -304,6 +305,13 @@
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/lib/pkgconfig" />
+    </ItemGroup>
+
+    <!-- x64 Haiku cross build options -->
+    <ItemGroup Condition="'$(TargetsHaiku)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/boot/system/lib/pkgconfig" />
     </ItemGroup>
 
     <!-- x64 linux cross build options -->
@@ -359,6 +367,7 @@
       <_MonoCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
       <!--<_MonoCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-DUSE_SOFT_INTRINSICS" />
       <_MonoCPPFLAGS Condition="'$(Configuration)' == 'Release'" Include="-DNDEBUG" />
       <_MonoCPPFLAGS Condition="'$(Configuration)' == 'Debug'" Include="-D_DEBUG" />
       <!-- <_MonoCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->
@@ -416,10 +425,8 @@
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_WEBCIL=1"/>
-      <_MonoCFLAGS Include="-fexceptions"/>
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-pthread"/>
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
-      <_MonoCXXFLAGS Include="-fexceptions"/>
       <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-pthread"/>
       <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
     </ItemGroup>
@@ -433,8 +440,8 @@
     </ItemGroup>
     <!-- WASI specific options -->
     <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
-      <!-- TODOWASI 
-      use $(CrossToolchainFile) and eng/common/cross/toolchain.cmake ? 
+      <!-- TODOWASI
+      use $(CrossToolchainFile) and eng/common/cross/toolchain.cmake ?
       sockets,eventpipe, DENABLE_LLVM_RUNTIME
       -->
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include').Replace('\','/'))$(EscapedQuoteW)"/>
@@ -698,14 +705,14 @@
       <MonoAotOffsetsPrefix Condition="'$(Platform)' == 'arm64'">$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/5</MonoAotOffsetsPrefix>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <_MonoLLVMTargetArchitecture Condition="'$(MonoUseLLVMPackage)' == 'true'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(MonoUseLLVMPackage)' == 'true'">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
+    <PropertyGroup Condition="'$(MonoUseLLVMPackage)' == 'true'">
+      <_MonoLLVMTargetArchitecture>$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMHostArchitecture>$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')">
-      <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
-      <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
+      <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\include\c++\v1" />
+      <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\lib" />
       <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
       <MonoAOTCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
     </ItemGroup>
@@ -750,6 +757,7 @@
       <_MonoAOTCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
       <!--<_MonoAOTCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
       <_MonoAOTCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
+      <_MonoAOTCPPFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-DUSE_SOFT_INTRINSICS" />
       <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Release' or '$(_ForceRelease)' == 'true'" Include="-DNDEBUG" />
       <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Debug' and '$(_ForceRelease)' != 'true'" Include="-D_DEBUG" />
       <!-- <_MonoAOTCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->
@@ -854,7 +862,7 @@
       <!-- Link in only the components neeeded for AOT compilation -->
       <MonoAOTCMakeArgs Include="-DAOT_COMPONENTS=1 -DSTATIC_COMPONENTS=1;" />
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
-      <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)" />
+      <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
       <!-- thread suspend -->
@@ -946,8 +954,7 @@
       <_MonoAotCrossPdbFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossPdbFileName)</_MonoAotCrossPdbFilePath>
     </PropertyGroup>
     <PropertyGroup>
-      <_MonoLLVMTargetArchitecture>$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMHostArchitecture>$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->
@@ -987,25 +994,25 @@
       <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ('$(MonoBundleLLVMOptimizer)' == 'true' or '$(MonoEnableLLVM)' == 'true') and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
         <Destination>$(RuntimeBinDir)libc++abi.so.1</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\lib\libc++.so.1">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++.so.1</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\lib\libc++abi.so.1">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++abi.so.1</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossPdbFileName)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\llc$(ExeSuffix)">
+      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\llc$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)\llc$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\opt$(ExeSuffix)">
+      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\opt$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\llc$(ExeSuffix)">
+      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\llc$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\llc$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\opt$(ExeSuffix)">
+      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\opt$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />

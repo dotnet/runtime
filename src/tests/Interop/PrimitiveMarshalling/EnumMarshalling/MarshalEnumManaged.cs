@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using TestLibrary;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace EnumRoundtrip
 {
-    class MarshalEnumManaged
+    public class MarshalEnumManaged
     {
         [Flags]
         public enum DialogResult
@@ -36,7 +37,8 @@ namespace EnumRoundtrip
 
         #endregion
         [System.Security.SecuritySafeCritical]
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool result = true;
             int r = 0;
@@ -61,8 +63,7 @@ namespace EnumRoundtrip
                 TestFramework.LogError("04", "Main : Returned value of enum doesn't match with the value passed in to pinvoke call");
                 return 101;
             }
-
-            Console.WriteLine("PASS");
+            
             return 100;
         }
     }

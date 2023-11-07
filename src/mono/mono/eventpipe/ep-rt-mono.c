@@ -394,7 +394,6 @@ ep_rt_mono_system_timestamp_get (void)
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <utime.h>
 #include <time.h>
 
 #if HAVE_SYS_TIME_H

@@ -28,7 +28,6 @@
 #include "profiler-private.h"
 #include <mono/metadata/loader.h>
 #include "marshal.h"
-#include "coree.h"
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -1808,80 +1807,6 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	char *absfname;
 
 	g_return_val_if_fail (fname != NULL, NULL);
-
-#ifdef HOST_WIN32
-	// Win32 path: If we are running with mixed-mode assemblies enabled (ie have loaded mscoree.dll),
-	// then assemblies need to be loaded with LoadLibrary:
-	if (coree_module_handle) {
-		HMODULE module_handle;
-		gunichar2 *fname_utf16;
-
-		absfname = mono_path_resolve_symlinks (fname);
-		fname_utf16 = NULL;
-
-		/* There is little overhead because the OS loader lock is held by LoadLibrary. */
-		mono_images_lock ();
-		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
-		if (image) { // Image already loaded
-			g_assert (m_image_is_module_handle (image));
-			if (m_image_has_entry_point (image) && image->ref_count == 0) {
-				/* Increment reference count on images loaded outside of the runtime. */
-				fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
-				/* The image is already loaded because _CorDllMain removes images from the hash. */
-				module_handle = LoadLibrary (fname_utf16);
-				g_assert (module_handle == (HMODULE) image->raw_data);
-			}
-			mono_image_addref (image);
-			mono_images_unlock ();
-			if (fname_utf16)
-				g_free (fname_utf16);
-			g_free (absfname);
-			return image;
-		}
-
-		DWORD last_error = ERROR_SUCCESS;
-
-		// Image not loaded, load it now
-		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
-		module_handle = MonoLoadImage (fname_utf16);
-		if (status && module_handle == NULL)
-			last_error = GetLastError ();
-
-		/* mono_image_open_from_module_handle is called by _CorDllMain. */
-		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
-		if (image)
-			mono_image_addref (image);
-		mono_images_unlock ();
-
-		g_free (fname_utf16);
-
-		if (module_handle == NULL) {
-			g_assert (!image);
-			g_free (absfname);
-			if (status) {
-				if (last_error == ERROR_BAD_EXE_FORMAT || last_error == STATUS_INVALID_IMAGE_FORMAT) {
-					if (status)
-						*status = MONO_IMAGE_IMAGE_INVALID;
-				} else {
-					if (last_error == ERROR_FILE_NOT_FOUND || last_error == ERROR_PATH_NOT_FOUND)
-						mono_set_errno (ENOENT);
-					else
-						mono_set_errno (0);
-				}
-			}
-			return NULL;
-		}
-
-		if (image) {
-			g_assert (m_image_is_module_handle (image));
-			g_assert (m_image_has_entry_point (image));
-			g_free (absfname);
-			return image;
-		}
-
-		return mono_image_open_from_module_handle (alc, module_handle, absfname, FALSE, status);
-	}
-#endif
 
 	absfname = mono_path_resolve_symlinks (fname);
 

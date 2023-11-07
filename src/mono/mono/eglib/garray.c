@@ -226,7 +226,7 @@ g_array_set_size (GArray *array, gint length)
 	g_return_if_fail (array != NULL);
 	g_return_if_fail (length >= 0);
 
-	if (length == priv->capacity)
+	if (GINT_TO_UINT(length) == priv->capacity)
 		return; // nothing to be done
 
 	if (GINT_TO_UINT(length) > priv->capacity) {

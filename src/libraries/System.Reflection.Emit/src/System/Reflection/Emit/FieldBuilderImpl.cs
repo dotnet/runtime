@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Reflection.Emit
 {
@@ -23,6 +21,7 @@ namespace System.Reflection.Emit
         internal int _offset;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal object? _defaultValue = DBNull.Value;
+        internal FieldDefinitionHandle _handle;
 
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
@@ -107,7 +106,7 @@ namespace System.Reflection.Emit
                     return;
                 case "System.Runtime.InteropServices.MarshalAsAttribute":
                     _attributes |= FieldAttributes.HasFieldMarshal;
-                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField : true);
+                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField: true);
                     return;
             }
 
@@ -124,7 +123,7 @@ namespace System.Reflection.Emit
 
         #region MemberInfo Overrides
 
-        public override int MetadataToken => throw new NotImplementedException();
+        public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
 
         public override Module Module => _typeBuilder.Module;
 

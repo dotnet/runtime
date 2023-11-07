@@ -857,7 +857,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 canceledTask.Wait();
-                Assert.True(false, string.Format("    > FAILED!  Pre-canceled result did not throw from Wait()"));
+                Assert.Fail(string.Format("    > FAILED!  Pre-canceled result did not throw from Wait()"));
             }
             catch (AggregateException ae)
             {
@@ -866,11 +866,11 @@ namespace System.Threading.Tasks.Tests
                     var tce = e as TaskCanceledException;
                     if (tce == null)
                     {
-                        Assert.True(false, string.Format("    > FAILED!  Pre-canceled result threw non-TCE from Wait()"));
+                        Assert.Fail(string.Format("    > FAILED!  Pre-canceled result threw non-TCE from Wait()"));
                     }
                     else if (tce.CancellationToken != correctToken)
                     {
-                        Assert.True(false, string.Format("    > FAILED!  Pre-canceled result threw TCE w/ wrong token"));
+                        Assert.Fail(string.Format("    > FAILED!  Pre-canceled result threw TCE w/ wrong token"));
                     }
 
                     return true;

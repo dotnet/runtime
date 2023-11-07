@@ -185,7 +185,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find ComVisibleAttribute");
+            Assert.Fail("Expected to find ComVisibleAttribute");
         }
 
         public static IEnumerable<object[]> EqualityOperator_TestData()

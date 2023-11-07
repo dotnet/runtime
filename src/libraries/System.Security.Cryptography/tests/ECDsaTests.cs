@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.Tests
                 base.HashData(data, offset, count, hashAlgorithm);
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                (byte[])_ecdsa.GetType().GetMethod(
+                (byte[])typeof(ECDsa).GetMethod(
                     nameof(HashData),
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
                     null,
@@ -178,7 +178,7 @@ namespace System.Security.Cryptography.Tests
                 .Invoke(_ecdsa, new object[] { data, hashAlgorithm });
 
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                (byte[])_ecdsa.GetType().GetMethod(
+                (byte[])typeof(ECDsa).GetMethod(
                     nameof(HashData),
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
                     null,

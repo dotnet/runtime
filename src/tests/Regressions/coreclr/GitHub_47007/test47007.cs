@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 class Base<T1>
 {
@@ -13,12 +14,11 @@ class Derived<T1, T2> : Base<T1>
     public override Derived<T1, T2> Method() => null;
 }
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         _ = new Derived<string, int>();
-
-        return 100;
     }
 }

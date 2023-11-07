@@ -200,8 +200,6 @@ namespace Microsoft.Interop
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => _innerContext.AdditionalTemporaryStateLivesAcrossStages;
 
-        public override (TargetFramework framework, Version version) GetTargetFramework() => _innerContext.GetTargetFramework();
-
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
             var (managed, _) = _innerContext.GetIdentifiers(info);

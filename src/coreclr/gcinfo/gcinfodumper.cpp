@@ -226,7 +226,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
 #undef REG
 #elif defined(TARGET_RISCV64)
 #undef REG
-#define REG(reg, field) { offsetof(Riscv64VolatileContextPointer, field) }
+#define REG(reg, field) { offsetof(RiscV64VolatileContextPointer, field) }
         REG(zero, R0),
         REG(a0, A0),
         REG(a1, A1),

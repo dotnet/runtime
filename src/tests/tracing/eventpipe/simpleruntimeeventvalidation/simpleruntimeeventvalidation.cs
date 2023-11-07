@@ -11,12 +11,14 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
+using Xunit;
 
 namespace Tracing.Tests.SimpleRuntimeEventValidation
 {
     public class RuntimeEventValidation
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // This test validates GC and Exception events in the runtime
             var ret = IpcTraceTest.RunAndValidateEventCounts(

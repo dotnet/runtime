@@ -50,7 +50,7 @@ namespace System.Threading.Tasks.Tests
                                     if (useFutureFactory && !continuationIsFuture)
                                         continue;
 
-                                    //Assert.True(false, string.Format(" - Test Task{5}.Factory.ContinueWhenAny(Task{0}[]({1} completed), {2}, ct({3}), {4}, ts.Default)",
+                                    //Assert.Fail(string.Format(" - Test Task{5}.Factory.ContinueWhenAny(Task{0}[]({1} completed), {2}, ct({3}), {4}, ts.Default)",
                                     //    antecedentsAreFutures ? "<int>" : "",
                                     //    preCompletedTask ? 1 : 0,
                                     //    continuationIsFuture ? "func" : "action",
@@ -169,17 +169,17 @@ namespace System.Threading.Tasks.Tests
                                     {
                                         if (ex == null)
                                         {
-                                            Assert.True(false, string.Format("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (no exception thrown)"));
+                                            Assert.Fail(string.Format("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (no exception thrown)"));
                                             ;
                                         }
                                         else if (ex.GetType() != typeof(AggregateException))
                                         {
-                                            Assert.True(false, string.Format("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (didn't throw aggregate exception)"));
+                                            Assert.Fail(string.Format("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (didn't throw aggregate exception)"));
                                         }
                                         else if (((AggregateException)ex).InnerException.GetType() != typeof(TaskCanceledException))
                                         {
                                             ex = ((AggregateException)ex).InnerException;
-                                            Assert.True(false, string.Format("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (threw " + ex.GetType().Name + " instead of TaskCanceledException)"));
+                                            Assert.Fail(string.Format("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (threw " + ex.GetType().Name + " instead of TaskCanceledException)"));
                                         }
                                     }
 
@@ -490,7 +490,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 canceledTask.Wait();
-                Assert.True(false, string.Format("    > FAILED!  Pre-canceled result did not throw from Wait()"));
+                Assert.Fail(string.Format("    > FAILED!  Pre-canceled result did not throw from Wait()"));
             }
             catch (AggregateException ae)
             {
@@ -499,11 +499,11 @@ namespace System.Threading.Tasks.Tests
                     var tce = e as TaskCanceledException;
                     if (tce == null)
                     {
-                        Assert.True(false, string.Format("    > FAILED!  Pre-canceled result threw non-TCE from Wait()"));
+                        Assert.Fail(string.Format("    > FAILED!  Pre-canceled result threw non-TCE from Wait()"));
                     }
                     else if (tce.CancellationToken != correctToken)
                     {
-                        Assert.True(false, string.Format("    > FAILED!  Pre-canceled result threw TCE w/ wrong token"));
+                        Assert.Fail(string.Format("    > FAILED!  Pre-canceled result threw TCE w/ wrong token"));
                     }
 
                     return true;

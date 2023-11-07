@@ -103,7 +103,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
 				logFile: null,
 				new NoStackTraceEmissionPolicy (),
-				new NoDynamicInvokeThunkGenerationPolicy (),
+				new DefaultDynamicInvokeThunkGenerationPolicy (),
 				new FlowAnnotations (logger, ilProvider, compilerGeneratedState),
 				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
 				options: default,

@@ -125,7 +125,7 @@ namespace System.Reflection
 
         internal virtual Type[] GetParameterTypes()
         {
-            ParameterInfo[] paramInfo = GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> paramInfo = GetParametersAsSpan();
             if (paramInfo.Length == 0)
             {
                 return Type.EmptyTypes;

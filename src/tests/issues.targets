@@ -30,6 +30,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
+            <Issue>https://github.com/dotnet/runtime/issues/83658</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
@@ -251,9 +254,6 @@
 
     <!-- Windows all architecture excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84006</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x64 specific excludes -->
@@ -712,6 +712,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfig/*">
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfigTester/*">
+            <Issue>Test expects being run with corerun</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester/*">
             <Issue>Just-in-time compilation test</Issue>
         </ExcludeList>
@@ -1153,6 +1156,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Benchstones/MDBenchI/MDGeneralArray/MDGeneralArray/*" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/GitHub_93597/GitHub_93597/*" />
 
         <!-- Covariant returns -->
         <!-- https://github.com/dotnet/runtimelab/issues/205 -->
@@ -1203,12 +1207,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
             <Issue>https://github.com/dotnet/runtime/issues/74223</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54176</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54176</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42.X64/Crc32_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/54185</Issue>
@@ -2387,15 +2385,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case9/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/RefFields/Validate/**">
             <Issue>expected failure: unsupported type with ref field fails at AOT compile time, not runtime</Issue>
         </ExcludeList>
@@ -2455,10 +2444,6 @@
 
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DisabledRuntimeMarshalling/DisabledRuntimeMarshalling_Disabled_NativeAssemblyEnabled/**">
             <Issue>This test includes an intentionally-invalid UnmanagedCallersOnly method. Invalid UnmanagedCallersOnly methods cause failures at AOT-time.</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
@@ -2845,8 +2830,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92727</Issue>
+        </ExcludeList>
     </ItemGroup>
-
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/**">
@@ -3031,9 +3018,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlbigleakthd/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-2/**">
             <Issue>https://github.com/dotnet/runtime/issues/56814</Issue>
@@ -3233,6 +3217,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/pollingcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CircularCctors/CircularCctorTwoThreadsThreeCC/**">
+            <Issue>System.Threading.Thread.ThrowIfNoThreadStart: PlatformNotSupportedException</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
@@ -3283,6 +3270,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
             <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
+            <Issue>needs native libraries</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -3343,9 +3333,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/aliasing_retbuf/**/*">
             <Issue>https://github.com/dotnet/runtime/issues/73539</Issue>
@@ -3463,6 +3450,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/91388</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92723</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -3599,10 +3589,6 @@
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
         </ExcludeList>
 
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/*">
-            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
-        </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3699,6 +3685,12 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
@@ -3731,9 +3723,9 @@
     <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
         <ItemGroup>
             <FilteredExcludeList
-                Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/'))"
+                Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/')),%(ExcludeList.Issue)"
                 Condition="'%(ExcludeList.Extension)' == '.dll'" />
-            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.RootDir)%(ExcludeList.Directory)%(ExcludeList.FileName)'))', '.cmd').Replace('\', '/'))"
+            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.Identity)'))', '.cmd').Replace('\', '/')),%(ExcludeList.Issue)"
                 Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>

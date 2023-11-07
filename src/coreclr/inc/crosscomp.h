@@ -282,7 +282,8 @@ typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
 } T_CONTEXT, *PT_CONTEXT;
 
 // _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY (see ExternalAPIs\Win9CoreSystem\inc\winnt.h)
-typedef struct _T_RUNTIME_FUNCTION {
+#ifdef HOST_UNIX
+typedef struct _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY {
     DWORD BeginAddress;
     union {
         DWORD UnwindData;
@@ -294,12 +295,11 @@ typedef struct _T_RUNTIME_FUNCTION {
             DWORD H : 1;
             DWORD CR : 2;
             DWORD FrameSize : 9;
-        } PackedUnwindData;
+        };
     };
-} T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
+} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY, * PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY;
 
 
-#ifdef HOST_UNIX
 
 typedef
 EXCEPTION_DISPOSITION
@@ -310,6 +310,8 @@ EXCEPTION_DISPOSITION
     PVOID DispatcherContext
     );
 #endif
+
+typedef IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY T_RUNTIME_FUNCTION, * PT_RUNTIME_FUNCTION;
 //
 // Define exception dispatch context structure.
 //

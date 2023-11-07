@@ -10,7 +10,8 @@ using Xunit;
 
 public class RunInALC
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

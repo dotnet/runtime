@@ -165,4 +165,5 @@ mono_hwcap_arch_init (void)
 	mono_hwcap_s390x_has_gs   = facs.gs;
 	mono_hwcap_s390x_has_vef2 = facs.vef2;
 	mono_hwcap_s390x_has_eif  = facs.eif;
+	mono_hwcap_s390x_has_lsoc2 = facs.lsoc2;
 }

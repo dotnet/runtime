@@ -83,7 +83,7 @@ namespace System
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
         // needs to cause the process to exit. It is the classlib's opportunity to customize the
         // termination behavior in whatever way necessary.
-        [RuntimeExport("FailFast")]
+        [RuntimeExport("RuntimeFailFast")]
         internal static void RuntimeFailFast(RhFailFastReason reason, Exception exception, IntPtr pExAddress, IntPtr pExContext)
         {
             RuntimeImports.RhpFallbackFailFast();

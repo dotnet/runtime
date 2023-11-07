@@ -557,9 +557,6 @@ mono_init_native_crash_info (void)
 
 #endif
 
-// this points to System.Threading.TimerQueue.TimerHandler C# method
-static void *timer_handler;
-
 #ifdef HOST_BROWSER
 
 void
@@ -583,6 +580,9 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	return FALSE;
 }
 
+// this points to System.Threading.TimerQueue.TimerHandler C# method
+static void *timer_handler;
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_execute_timer (void)
 {
@@ -595,9 +595,7 @@ mono_wasm_execute_timer (void)
 	cb ();
 }
 
-
-#endif
-
+#ifdef DISABLE_THREADS
 void
 mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 {
@@ -605,23 +603,17 @@ mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 
 	g_assert (timerHandler);
 	timer_handler = timerHandler;
-#ifdef HOST_BROWSER
-#ifndef DISABLE_THREADS
-    if (!mono_threads_wasm_is_browser_thread ()) {
-        mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_wasm_schedule_timer, GINT_TO_POINTER(shortestDueTimeMs));
-        return;
-    }
-#endif
     mono_wasm_schedule_timer (shortestDueTimeMs);
-#endif
 }
+#endif
+#endif
 
 void
 mono_arch_register_icall (void)
 {
 #ifdef HOST_BROWSER
-	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
 #ifdef DISABLE_THREADS
+	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
 #else
 	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::TargetThreadScheduleBackgroundJob", mono_target_thread_schedule_background_job);
@@ -673,12 +665,6 @@ sigsuspend(const sigset_t *sigmask)
 {
 	g_error ("sigsuspend");
 	return 0;
-}
-
-int
-getdtablesize (void)
-{
-	return 256; //random constant that is the fd limit
 }
 
 int

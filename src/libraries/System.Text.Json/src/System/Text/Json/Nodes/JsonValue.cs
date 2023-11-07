@@ -90,11 +90,11 @@ namespace System.Text.Json.Nodes
             return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
         }
 
-        internal override void GetPath(List<string> path, JsonNode? child)
+        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
             Debug.Assert(child == null);
 
-            Parent?.GetPath(path, this);
+            Parent?.GetPath(ref path, this);
         }
 
         /// <summary>

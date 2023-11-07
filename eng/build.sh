@@ -524,6 +524,11 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+      -verbose)
+      arguments="$arguments /p:CoreclrVerbose=true"
+      shift 1
+      ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1

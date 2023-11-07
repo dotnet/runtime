@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public abstract class BaseProp
 {
@@ -102,17 +103,9 @@ public class Program {
         TestInstance (new DerivedVirtual32 ());
     }
 
-    public static int Main (string[] args)
+    [Fact]
+    public static void TestEntryPoint()
     {
-        try {
-            Test ();
-        } catch (Exception e) {
-            Console.WriteLine ("NOK");
-            Console.WriteLine (e);
-            return 1;
-        }
-        Console.WriteLine ("OK");
-        return 100;
+        Test ();
     }
 }
-
