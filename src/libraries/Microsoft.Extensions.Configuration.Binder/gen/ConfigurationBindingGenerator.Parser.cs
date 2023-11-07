@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (!_createdTypeSpecs.ContainsKey(typeSymbol))
                     {
                         _createdTypeSpecs.Add(typeSymbol, CreateTypeSpec(typeParseInfo));
-                    }
+                                            }
                 }
             }
 
@@ -506,7 +506,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
             }
 
-            private bool ConvertTo(ITypeSymbol source, ITypeSymbol dest)
+            private bool IsAssignableTo(ITypeSymbol source, ITypeSymbol dest)
             {
                 var conversion = _typeSymbols.Compilation.ClassifyConversion(source, dest);
                 return conversion.IsReference && conversion.IsImplicit;
@@ -517,8 +517,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (SymbolEqualityComparer.Default.Equals(_typeSymbols.IntPtr, type)  ||
                     SymbolEqualityComparer.Default.Equals(_typeSymbols.UIntPtr, type) ||
                     SymbolEqualityComparer.Default.Equals(_typeSymbols.SerializationInfo, type) ||
-                    ConvertTo(type, _typeSymbols.MemberInfo) ||
-                    ConvertTo(type, _typeSymbols.Delegate))
+                    IsAssignableTo(type, _typeSymbols.MemberInfo) ||
+                    IsAssignableTo(type, _typeSymbols.Delegate))
                 {
                     return true;
                 }
