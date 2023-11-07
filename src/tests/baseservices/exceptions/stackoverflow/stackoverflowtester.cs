@@ -16,6 +16,8 @@ namespace TestStackOverflow
     {
         const string EnableMiniDumpEnvVar = "DOTNET_DbgEnableMiniDump";
 
+        const string MainSignature = ".Main(System.String[])";
+
         public static int Main(string[] args)
         {
             if (args.Length > 0)
@@ -66,8 +68,7 @@ namespace TestStackOverflow
             List<string> lines = new List<string>();
 
             string thisAssemblyPath = typeof(Program).Assembly.Location;
-            // TestLibrary.Utilities.IsNativeAot brings in ~4mb on Linux, so we'll approximate with this for now. https://github.com/dotnet/runtime/issues/94313
-            bool IsNativeAot = string.IsNullOrEmpty(thisAssemblyPath) && !RuntimeFeature.IsDynamicCodeSupported;
+            bool isSingleFile = TestLibrary.Utilities.IsSingleFile;
 
             Process testProcess = new Process();
             // Always use whatever runner started this test, or the exe if we're running single file / NativeAOT
@@ -95,7 +96,7 @@ namespace TestStackOverflow
             stderrLines = lines.ToArray();
 
             // NativeAOT doesn't provide a stack trace on stack overflow
-            checkStackFrame = !IsNativeAot;
+            checkStackFrame = !isSingleFile;
 
             int[] expectedExitCodes;
             if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
@@ -120,7 +121,7 @@ namespace TestStackOverflow
             }
 
             string expectedMessage;
-            if (IsNativeAot)
+            if (isSingleFile)
             {
                 expectedMessage = "Process is terminating due to StackOverflowException.";
             }
@@ -156,7 +157,7 @@ namespace TestStackOverflow
                 return;
             }
 
-            AssertStackFramePresent(".Main()", lines[(lines.Length-1)..]);
+            AssertStackFramePresent(MainSignature, lines[(lines.Length-1)..]);
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.Run(System.String[])", lines);
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.Test(Boolean)", lines);
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionB()", lines);
@@ -172,11 +173,11 @@ namespace TestStackOverflow
                 return;
             }
 
-            if (!lines[lines.Length - 1].EndsWith(".Main()"))
+            if (!lines[lines.Length - 1].EndsWith(MainSignature))
             {
                 throw new Exception("Missing \"Main\" method frame at the last line");
             }
-            AssertStackFramePresent(".Main()", lines[(lines.Length-1)..]);
+            AssertStackFramePresent(MainSignature, lines[(lines.Length-1)..]);
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.Run(System.String[])", lines);
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.Test(Boolean)", lines);
             AssertStackFramePresent("at TestStackOverflow.StackOverflow.InfiniteRecursionA2()", lines);
@@ -223,7 +224,7 @@ namespace TestStackOverflow
                 return;
             }
 
-            AssertStackFramePresent(".Main()", lines);
+            AssertStackFramePresent(MainSignature, lines);
             AssertStackFramePresent("at TestStackOverflow.StackOverflow3.Run()", lines);
             AssertStackFramePresent("at TestStackOverflow.StackOverflow3.Execute(System.String)", lines);
         }
