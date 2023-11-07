@@ -7,7 +7,7 @@
 #include "pal_locale.h"
 #include "pal_compiler.h"
 
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MACCATALYST))
+#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MAC))
 #include <unicode/utypes.h>
 #include <unicode/uidna.h>
 #endif

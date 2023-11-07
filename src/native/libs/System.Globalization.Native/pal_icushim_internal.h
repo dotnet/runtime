@@ -22,7 +22,7 @@
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
 
-#if !defined(__APPLE__) || (defined(TARGET_OS_OSX) && !defined(TARGET_OS_MACCATALYST))
+#if !defined(__APPLE__) || (defined(TARGET_OS_OSX) && !defined(TARGET_OS_MAC))
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>

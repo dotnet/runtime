@@ -44,7 +44,7 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* lo
                                                                  int32_t* primaryGroupSize,
                                                                  int32_t* secondaryGroupSize);
 #endif
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MACCATALYST))
+#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MAC))
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName,
                                                              LocaleNumberData localeNumberData);
 

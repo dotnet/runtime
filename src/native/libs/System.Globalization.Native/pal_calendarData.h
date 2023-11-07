@@ -103,7 +103,7 @@ PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
                                                               int32_t* startMonth,
                                                               int32_t* startDay);
 #endif
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MACCATALYST))
+#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MAC))
 PALEXPORT const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName,
                                                                 CalendarId calendarId,
                                                                 CalendarDataType dataType);
