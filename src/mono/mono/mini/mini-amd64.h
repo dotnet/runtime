@@ -237,7 +237,6 @@ static const AMD64_XMM_Reg_No float_return_regs [] = { AMD64_XMM0 };
 #define RETURN_REGS 2
 #define FLOAT_RETURN_REGS 2
 #define CTX_REGS 2
-#define CTX_REGS_OFFSET 12
 
 static const AMD64_Reg_No param_regs [] = {AMD64_RDI, AMD64_RSI, AMD64_RDX,
 					   AMD64_RCX, AMD64_R8,  AMD64_R9};
@@ -247,6 +246,8 @@ static const AMD64_XMM_Reg_No float_param_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD6
 						     AMD64_XMM6, AMD64_XMM7};
 
 static const AMD64_Reg_No return_regs [] = {AMD64_RAX, AMD64_RDX};
+
+static const AMD64_Reg_No ctx_regs [] = {AMD64_R12, AMD64_R13};
 #endif
 
 typedef struct {
@@ -342,8 +343,6 @@ typedef struct {
 	host_mgreg_t gregs [AMD64_NREG];
 	/* Floating registers */
 	double fregs [AMD64_XMM_NREG];
-	/* Context registers */
-	host_mgreg_t cregs [CTX_REGS];
 	/* Stack usage, used for passing params on stack */
 	guint32 stack_size;
 	guint8 *stack;
