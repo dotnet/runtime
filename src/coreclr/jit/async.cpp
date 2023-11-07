@@ -629,8 +629,9 @@ void Async2Transformation::Transform(
             else
             {
                 assert((dsc->TypeGet() == TYP_STRUCT) || dsc->IsImplicitByRef());
-                ClassLayout* layout   = dsc->GetLayout();
-                unsigned     numSlots = layout->GetSlotCount();
+                ClassLayout* layout     = dsc->GetLayout();
+                unsigned     numSlots   = layout->GetSlotCount();
+                unsigned     gcRefIndex = 0;
                 for (unsigned i = 0; i < numSlots; i++)
                 {
                     var_types gcPtrType = layout->GetGCPtrType(i);
@@ -652,9 +653,12 @@ void Async2Transformation::Transform(
                     }
 
                     GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
-                    unsigned offset    = OFFSETOF__CORINFO_Array__data + ((inf.GCDataIndex + i) * TARGET_POINTER_SIZE);
-                    GenTree* store     = StoreAtOffset(objectArr, offset, value);
+                    unsigned offset =
+                        OFFSETOF__CORINFO_Array__data + ((inf.GCDataIndex + gcRefIndex) * TARGET_POINTER_SIZE);
+                    GenTree* store = StoreAtOffset(objectArr, offset, value);
                     LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+
+                    gcRefIndex++;
 
                     if (inf.DataSize > 0)
                     {
@@ -855,8 +859,9 @@ void Async2Transformation::Transform(
             else
             {
                 assert((dsc->TypeGet() == TYP_STRUCT) || dsc->IsImplicitByRef());
-                ClassLayout* layout   = dsc->GetLayout();
-                unsigned     numSlots = layout->GetSlotCount();
+                ClassLayout* layout     = dsc->GetLayout();
+                unsigned     numSlots   = layout->GetSlotCount();
+                unsigned     gcRefIndex = 0;
                 for (unsigned i = 0; i < numSlots; i++)
                 {
                     var_types gcPtrType = layout->GetGCPtrType(i);
@@ -867,8 +872,9 @@ void Async2Transformation::Transform(
                     }
 
                     GenTree* objectArr = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
-                    unsigned offset    = OFFSETOF__CORINFO_Array__data + ((inf.GCDataIndex + i) * TARGET_POINTER_SIZE);
-                    GenTree* value     = LoadFromOffset(objectArr, offset, TYP_REF);
+                    unsigned offset =
+                        OFFSETOF__CORINFO_Array__data + ((inf.GCDataIndex + gcRefIndex) * TARGET_POINTER_SIZE);
+                    GenTree* value = LoadFromOffset(objectArr, offset, TYP_REF);
                     GenTree* store;
                     if (dsc->IsImplicitByRef())
                     {
@@ -884,6 +890,8 @@ void Async2Transformation::Transform(
                     }
 
                     LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+
+                    gcRefIndex++;
                 }
             }
         }
