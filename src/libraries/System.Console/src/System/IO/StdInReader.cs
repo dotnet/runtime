@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -22,6 +23,7 @@ namespace System.IO
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
         private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
         private readonly Encoding _encoding;
+        private readonly Encoder? _terminalEncoder;
         private Encoder? _bufferReadEncoder;
         private readonly bool _isTerminal;
 
@@ -29,6 +31,8 @@ namespace System.IO
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
+
+        private SafeFileHandle StdInHandle => Interop.Sys.FileDescriptors.STDIN_FILENO;
 
         internal StdInReader(Encoding encoding, bool isTerminal)
         {
@@ -38,6 +42,10 @@ namespace System.IO
             _endIndex = 0;
             _readLineSB = new StringBuilder();
             _isTerminal = isTerminal;
+            if (_isTerminal)
+            {
+                _terminalEncoder = _encoding.GetEncoder();
+            }
         }
 
         /// <summary> Checks whether the unprocessed buffer is empty. </summary>
@@ -211,9 +219,9 @@ namespace System.IO
                                 s_clearToEol ??= ConsolePal.TerminalFormatStringsInstance.ClrEol ?? string.Empty;
 
                                 // Move to end of previous line
-                                ConsolePal.SetCursorPosition(Interop.Sys.FileDescriptors.STDIN_FILENO, ConsolePal.WindowWidth - 1, top - 1);
+                                ConsolePal.SetCursorPosition(StdInHandle, ConsolePal.WindowWidth - 1, top - 1);
                                 // Clear from cursor to end of the line
-                                ConsolePal.WriteStringToTerminal(Interop.Sys.FileDescriptors.STDIN_FILENO, s_clearToEol, mayChangeCursorPosition: false);
+                                ConsolePal.WriteTerminalAnsiString(StdInHandle, s_clearToEol, mayChangeCursorPosition: false);
                             }
                             else
                             {
@@ -223,7 +231,7 @@ namespace System.IO
                                     s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
                                 }
 
-                                WriteToTerminal(s_moveLeftString);
+                                ConsolePal.WriteTerminalAnsiString(StdInHandle, s_moveLeftString);
                             }
                         }
                     }
@@ -243,7 +251,7 @@ namespace System.IO
                         _readLineSB.Clear();
                         if (echo)
                         {
-                            WriteToTerminal(ConsolePal.TerminalFormatStringsInstance.Clear);
+                            ConsolePal.WriteTerminalAnsiString(StdInHandle, ConsolePal.TerminalFormatStringsInstance.Clear);
                         }
                     }
                     else if (keyInfo.KeyChar != '\0')
@@ -372,12 +380,22 @@ namespace System.IO
         /// <summary>Gets whether there's input waiting on stdin.</summary>
         internal static bool StdinReady => Interop.Sys.StdinReady();
 
-        private void WriteToTerminal(char c) => WriteToTerminal($"{c}");
-
-        private void WriteToTerminal(string? value)
+        private void WriteToTerminal(char c)
         {
-            Debug.Assert(_isTerminal);
-            ConsolePal.WriteStringToTerminal(Interop.Sys.FileDescriptors.STDIN_FILENO, value);
+            Debug.Assert(_terminalEncoder is not null);
+
+            ReadOnlySpan<char> chars = [ c ];
+            Span<byte> bytes = stackalloc byte[32]; // 32 bytes seems ample
+            int bytesWritten = _terminalEncoder.GetBytes(chars, bytes, flush: false);
+            if (bytesWritten == 0)
+            {
+                return;
+            }
+
+            lock (Console.Out) // synchronize with other writers
+            {
+                ConsolePal.Write(StdInHandle, bytes.Slice(0, bytesWritten));
+            }
         }
     }
 }

@@ -243,7 +243,7 @@ namespace System
                 if (!string.IsNullOrEmpty(cursorAddressFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
-                    WriteStringToTerminal(terminalHandle, ansiStr);
+                    WriteTerminalAnsiString(terminalHandle, ansiStr);
                 }
 
                 SetCachedCursorPosition(left, top);
@@ -1094,7 +1094,7 @@ namespace System
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
 
-        internal static void WriteStringToTerminal(SafeFileHandle terminalHandle, string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteTerminalAnsiString(SafeFileHandle terminalHandle, string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -1120,7 +1120,7 @@ namespace System
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-       internal static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
-            => WriteStringToTerminal(Interop.Sys.FileDescriptors.STDOUT_FILENO, value, mayChangeCursorPosition);
+       private static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
+            => WriteTerminalAnsiString(Interop.Sys.FileDescriptors.STDOUT_FILENO, value, mayChangeCursorPosition);
     }
 }

@@ -304,10 +304,7 @@ namespace System
             }
         }
 
-        /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
-        /// <param name="value">The string to write.</param>
-        /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteTerminalAnsiString(SafeFileHandle terminalHandle, string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -326,7 +323,7 @@ namespace System
 
             lock (Console.Out) // synchronize with other writers
             {
-                Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, mayChangeCursorPosition);
+                Write(terminalHandle, data, mayChangeCursorPosition);
             }
         }
     }
