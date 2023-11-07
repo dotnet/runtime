@@ -32,7 +32,7 @@ namespace System.IO
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
 
-        private SafeFileHandle StdInHandle => Interop.Sys.FileDescriptors.STDIN_FILENO;
+        private static SafeFileHandle StdInHandle => Interop.Sys.FileDescriptors.STDIN_FILENO;
 
         internal StdInReader(Encoding encoding, bool isTerminal)
         {
