@@ -205,11 +205,11 @@ get_method_image (MonoMethod *method)
 // must be extern "C".
 #ifndef DISABLE_JIT
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), #func))
 #else
 /* No need for the name/C symbol */
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (no_wrapper), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, NULL, (sig), (no_wrapper), NULL))
 #endif
 
 MonoMethodSignature*
@@ -5573,7 +5573,7 @@ mono_get_addr_compiled_method (gpointer arg, MonoDelegate *del)
 	if (m_type_is_byref (invoke_sig->params [0])) {
 		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
 	} else {
-		MonoObject *object = (MonoObject*)arg;
+		MonoObject *object = *(MonoObject**)arg;
 		arg_class = object->vtable->klass;
 	}
 

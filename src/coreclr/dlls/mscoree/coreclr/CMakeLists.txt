@@ -35,7 +35,7 @@ else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         add_linker_flag("-Wl,-Bsymbolic")
@@ -48,7 +48,7 @@ else(CLR_CMAKE_HOST_WIN32)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     if(CLR_CMAKE_TARGET_OSX)
         # These options are used to force every object to be included even if it's unused.
@@ -146,6 +146,10 @@ if(CLR_CMAKE_TARGET_LINUX)
 elseif(CLR_CMAKE_TARGET_SUNOS)
     list(APPEND CORECLR_LIBRARIES
         socket
+    )
+elseif(CLR_CMAKE_TARGET_HAIKU)
+    list(APPEND CORECLR_LIBRARIES
+        network
     )
 endif(CLR_CMAKE_TARGET_LINUX)
 

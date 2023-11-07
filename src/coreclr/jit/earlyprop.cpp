@@ -454,7 +454,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         nullCheckTree->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
 
         // Set this flag to prevent reordering
-        nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
+        nullCheckTree->SetHasOrderingSideEffect();
         nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
 
         if (nullCheckParent != nullptr)

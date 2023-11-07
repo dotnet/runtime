@@ -7614,7 +7614,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 #ifdef DEBUG
     // Mark the catch return
-    if (emitComp->compCurBB->bbJumpKind == BBJ_EHCATCHRET)
+    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
     {
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
@@ -8609,9 +8609,14 @@ void emitter::emitIns_SIMD_R_R_R_R(
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-        // Ensure we aren't overwriting op2 or oop3 (which should be REG_XMM0)
+        // Ensure we aren't overwriting op2 or op3 (which should be REG_XMM0)
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
-        assert(targetReg != REG_XMM0);
+
+        // If targetReg == REG_XMM0, it means that op3 was last use and we decided to
+        // reuse REG_XMM0 for destination i.e. targetReg. In such case, make sure
+        // that XMM0 value after the (op3Reg -> XMM0) move done above is not
+        // overwritten by op1Reg.
+        assert((targetReg != REG_XMM0) || (op1Reg == op3Reg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_R(ins, attr, targetReg, op2Reg);
@@ -9216,7 +9221,7 @@ void emitter::emitIns_J(instruction ins,
 
 #ifdef DEBUG
     // Mark the finally call
-    if (ins == INS_call && emitComp->compCurBB->bbJumpKind == BBJ_CALLFINALLY)
+    if (ins == INS_call && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
     {
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
@@ -10545,7 +10550,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         nsep = true;
     }
 
-    if ((id->idIsDspReloc()) && (id->idIns() != INS_i_jmp))
+    if (id->idIsDspReloc() && (id->idIns() != INS_i_jmp))
     {
         if (nsep)
         {
@@ -15839,20 +15844,38 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         // For forward jumps, record the address of the distance value
         id->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : nullptr;
 
-        dst += emitOutputLong(dst, distVal);
+        bool crossJump = emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
-#ifndef TARGET_AMD64 // all REL32 on AMD have to go through recordRelocation
+        int32_t encodedDisplacement;
+        if (emitComp->opts.compReloc && (!relAddr || crossJump))
+        {
+            // Cross jumps may not be encodable in a 32-bit displacement as the
+            // hot/cold code buffers may be allocated arbitrarily far away from
+            // each other. Similarly, absolute addresses when cross compiling
+            // for 32-bit may also not be representable. We simply encode a 0
+            // under the assumption that the relocations will take care of it.
+            encodedDisplacement = 0;
+        }
+        else
+        {
+            // For all other cases the displacement should be encodable in 32
+            // bits.
+            assert((distVal >= INT32_MIN) && (distVal <= INT32_MAX));
+            encodedDisplacement = static_cast<int32_t>(distVal);
+        }
+
+        dst += emitOutputLong(dst, encodedDisplacement);
+
         if (emitComp->opts.compReloc)
-#endif
         {
             if (!relAddr)
             {
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
             }
-            else if (emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
+            else if (crossJump)
             {
                 assert(id->idjKeepLong);
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), dst + distVal, IMAGE_REL_BASED_REL32);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), dst + distVal, IMAGE_REL_BASED_REL32);
             }
         }
     }

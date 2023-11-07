@@ -4100,7 +4100,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 			return;
 		}
 
-		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1) {
+		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1 && m_class_get_byval_arg (oklass)->type == MONO_TYPE_SZARRAY) {
 			if (mono_class_is_gtd (klass)) {
 				/* klass is an array special gtd like
 				 * IList`1<>, and oklass is X[] for some X.

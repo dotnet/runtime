@@ -663,7 +663,7 @@ namespace System.Net.Test.Common
                     default:
                         // Assert.Fail is already merged in xUnit but not released yet. Replace once available.
                         // https://github.com/xunit/xunit/issues/2105
-                        Assert.True(false, $"Unexpected frame type '{frame.Type}'");
+                        Assert.Fail($"Unexpected frame type '{frame.Type}'");
                         break;
                 }
             }

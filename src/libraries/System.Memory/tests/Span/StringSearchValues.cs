@@ -503,7 +503,7 @@ namespace System.Memory.Tests.Span
                 string readableHaystack = ReadableAsciiOrSerialized(haystack.ToString());
                 string readableNeedle = string.Join(", ", needle.Select(ReadableAsciiOrSerialized));
 
-                Assert.True(false, $"Expected {expected}, got {actual} for impl='{impl}' comparison={comparisonType} needle='{readableNeedle}', haystack='{readableHaystack}'");
+                Assert.Fail($"Expected {expected}, got {actual} for impl='{impl}' comparison={comparisonType} needle='{readableNeedle}', haystack='{readableHaystack}'");
 
                 static string ReadableAsciiOrSerialized(string value)
                 {

@@ -713,8 +713,6 @@ public sealed partial class QuicStream
             await valueTask.ConfigureAwait(false);
         }
         Debug.Assert(_startedTcs.IsCompleted);
-        Debug.Assert(_receiveTcs.IsCompleted);
-        Debug.Assert(_sendTcs.IsCompleted);
         _handle.Dispose();
 
         // TODO: memory leak if not disposed

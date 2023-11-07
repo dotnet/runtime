@@ -11,7 +11,6 @@ parameters:
   container: ''
   buildSteps: []
   dependsOn: []
-  dependsOnGlobalBuild: false
   dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []
@@ -19,7 +18,6 @@ parameters:
   displayName: ''
   runtimeVariant: ''
   pool: ''
-  pgoType: ''
   runOnlyIfDependenciesSucceeded: false
 
   # The target names here should match container names in the resources section in our pipelines, like runtime.yml
@@ -59,11 +57,10 @@ jobs:
 
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     disableClrTest: ${{ parameters.disableClrTest }}
-    pgoType: ${{ parameters.pgoType }}
 
     # Compute job name from template parameters
-    name: ${{ format('installer_{0}_{1}_{2}_{3}_{4}_', parameters.pgoType, parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-    displayName: ${{ format('{0} Installer Build and Test {1} {2} {3} {4}', parameters.pgoType, parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+    name: ${{ format('installer_{0}_{1}_{2}_{3}_', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+    displayName: ${{ format('Installer Build and Test {0} {1} {2} {3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -99,24 +96,17 @@ jobs:
           not(and(
             eq(parameters.osGroup, 'linux'),
             eq(parameters.osSubgroup, ''))
-          )),
-        eq(parameters.pgoType, 'PGO')) }}
+          ))) }}
 
     - name: BuildAction
       value: -test
 
-    - ${{ if eq(or(not(in(parameters.archType, 'x64', 'x86')), eq(parameters.runtimeFlavor, 'mono'), eq(parameters.isOfficialBuild, true), and(eq(parameters.crossBuild, true), not(and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '')))), eq(parameters.pgoType, 'PGO')), true) }}:
+    - ${{ if eq(or(not(in(parameters.archType, 'x64', 'x86')), eq(parameters.runtimeFlavor, 'mono'), eq(parameters.isOfficialBuild, true), and(eq(parameters.crossBuild, true), not(and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, ''))))), true) }}:
       - name: BuildAction
         value: ''
 
     - name: SignType
       value: test
-
-    - name: pgoInstrumentArg
-      value: ''
-    - ${{ if eq(parameters.pgoType, 'PGO' )}}:
-      - name: pgoInstrumentArg
-        value: '-pgoinstrument '
 
     # Set up non-PR build from internal project
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -153,7 +143,6 @@ jobs:
           build.cmd -subset host+packs -ci
           $(BuildAction)
           -configuration $(_BuildConfig)
-          $(pgoInstrumentArg)
           $(LiveOverridePathArgs)
           $(CommonMSBuildArgs)
           $(MsbuildSigningArguments)
@@ -225,7 +214,6 @@ jobs:
           /p:CrossBuild=${{ parameters.crossBuild }}
           /p:PortableBuild=$(_PortableBuild)
           /p:SkipTests=$(SkipTests)
-          $(pgoInstrumentArg)
           $(LiveOverridePathArgs)
           $(CommonMSBuildArgs)
 
@@ -265,7 +253,7 @@ jobs:
           /p:RuntimeArtifactsPath=$(buildCommandSourcesDirectory)$(RuntimeDownloadPath)
           /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
       - name: RuntimeArtifactName
-        value: $(runtimeFlavorName)Product_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(liveRuntimeLegName)
+        value: $(runtimeFlavorName)Product_${{ parameters.runtimeVariant }}_$(liveRuntimeLegName)
 
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
       - name: liveLibrariesLegName
@@ -286,14 +274,13 @@ jobs:
       - evaluate_paths
     - ${{ parameters.dependsOn }}
     - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-      - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}{6}',
+      - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
           parameters.runtimeFlavor,
           parameters.runtimeVariant,
           parameters.osGroup,
           parameters.osSubgroup,
           parameters.archType,
-          parameters.liveRuntimeBuildConfig,
-          parameters.pgoType) }}
+          parameters.liveRuntimeBuildConfig) }}
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
       - libraries_build_${{ format('{0}{1}_{2}_{3}',
           parameters.osGroup,
@@ -302,32 +289,7 @@ jobs:
           parameters.liveLibrariesBuildConfig) }}
     steps:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - powershell: |
-            schtasks /change /tn "\Microsoft\VisualStudio\VSIX Auto Update" /disable
-
-            $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-            if (-not (Test-Path -Path "$vswhere" -PathType Leaf))
-            {
-                Write-Error "Couldn't locate vswhere at $vswhere"
-                exit 1
-            }
-
-            $vsdir = &"$vswhere" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-            $vsregedit = "$vsdir\Common7\IDE\VsRegEdit.exe"
-
-            if (-not (Test-Path -Path "$vsregedit" ))
-            {
-                Write-Error "VSWhere returned path: $vsdir, but regedit $vsregedit doesn't exist."
-                exit 1
-            }
-
-            Write-Output "VSWhere returned path: $vsdir, using regedit $vsregedit"
-            Write-Output "Disabling updates through VS Registry:"
-
-            &"$vsdir\Common7\IDE\VsRegEdit.exe" set local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword 0
-            &"$vsdir\Common7\IDE\VsRegEdit.exe" read local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword
-          displayName: Disable VSIX updates
-          condition: always()
+        - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
       - checkout: self
         clean: true
         fetchDepth: $(checkoutFetchDepth)
@@ -376,38 +338,14 @@ jobs:
             df -h
           displayName: Disk Usage before Build
 
-    # Build the default subset non-MacOS platforms
-      - ${{ if ne(parameters.osGroup, 'osx') }}:
-        - script: $(BaseJobBuildCommand)
-          displayName: Build
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
-
-      # Build corehost, sign and add entitlements to MacOS binaries
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - script: $(BaseJobBuildCommand) -subset host.native
-          displayName: Build CoreHost
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
-
-        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
-            parameters:
-              filesToSign:
-              - name: dotnet
-                path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-                entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-              - name: apphost
-                path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-                entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-
-        - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.pretest+host.tests+packs
-          displayName: Build and Package
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
+      - script: $(BaseJobBuildCommand)
+        displayName: Build
+        continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
       - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
           displayName: Collect vslogs on exit
           condition: always()
-
 
       - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: |
@@ -416,7 +354,7 @@ jobs:
           displayName: Disk Usage after Build
 
       # Only in glibc leg, we produce RPMs and Debs
-      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), or(eq(parameters.platform, 'linux_x64'), eq(parameters.platform, 'linux_arm64')), eq(parameters.osSubgroup, ''), eq(parameters.pgoType, ''))}}:
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), or(eq(parameters.platform, 'linux_x64'), eq(parameters.platform, 'linux_arm64')), eq(parameters.osSubgroup, ''))}}:
         - ${{ each packageBuild in parameters.packageDistroList }}:
           # This leg's RID matches the build image. Build its distro-dependent packages, as well as
           # the distro-independent installers. (There's no particular reason to build the distro-
@@ -437,7 +375,6 @@ jobs:
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           runtimeVariant: ${{ parameters.runtimeVariant }}
           isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
-          pgoType: ${{ parameters.pgoType }}
           skipTests: ${{ eq(variables.SkipTests, true) }}
 
       - ${{ if ne(parameters.osGroup, 'windows') }}:

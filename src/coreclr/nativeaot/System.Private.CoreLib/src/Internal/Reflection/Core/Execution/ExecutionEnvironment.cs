@@ -25,25 +25,9 @@ namespace Internal.Reflection.Core.Execution
     public abstract class ExecutionEnvironment
     {
         //==============================================================================================
-        // Access to the underlying execution engine's object allocation routines.
-        //==============================================================================================
-        public abstract Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count);
-        public abstract Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds);
-
-        //==============================================================================================
         // Execution engine policies.
         //==============================================================================================
 
-        //
-        // This returns a generic type with one generic parameter (representing the array element type)
-        // whose base type and interface list determines what TypeInfo.BaseType and TypeInfo.ImplementedInterfaces
-        // return for types that return true for IsArray.
-        //
-        public abstract RuntimeTypeHandle ProjectionTypeForArrays { get; }
-        public abstract bool IsAssignableFrom(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType);
-        public abstract bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle);
-        public abstract IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle);
-        public abstract void VerifyInterfaceIsImplemented(RuntimeTypeHandle typeHandle, RuntimeTypeHandle ifaceHandle);
         public abstract void GetInterfaceMap(Type instanceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
 
         //==============================================================================================
@@ -53,18 +37,14 @@ namespace Internal.Reflection.Core.Execution
         public abstract bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle);
 
         public abstract bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle);
-        public abstract RuntimeTypeHandle GetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle);
 
         public abstract bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle);
 
         public abstract bool TryGetFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle functionPointerTypeHandle);
-        public abstract void GetFunctionPointerTypeComponents(RuntimeTypeHandle functionPointerHandle, out RuntimeTypeHandle returnTypeHandle, out RuntimeTypeHandle[] parameterHandles, out bool isUnmanaged);
 
         public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
-        public abstract RuntimeTypeHandle GetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle);
 
         public abstract bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle);
-        public abstract RuntimeTypeHandle GetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle);
 
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
         public abstract bool TryGetConstructedGenericTypeForComponentsNoConstraintCheck(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
@@ -97,6 +77,13 @@ namespace Internal.Reflection.Core.Execution
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
         public abstract void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags);
         public abstract IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker);
+        public abstract MethodInfo GetDelegateMethod(Delegate del);
+        public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
+        public abstract IntPtr GetStaticClassConstructionContext(RuntimeTypeHandle typeHandle);
+
+        public abstract AssemblyBinder AssemblyBinder { get; }
+        public abstract Exception CreateMissingMetadataException(Type pertainant);
+        public abstract Exception CreateNonInvokabilityException(MemberInfo pertainant);
 
         //==============================================================================================
         // Non-public methods
@@ -122,7 +109,7 @@ namespace Internal.Reflection.Core.Execution
             }
             MethodBaseInvoker methodInvoker = TryGetMethodInvoker(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodInvoker == null)
-                exception = ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(exceptionPertainant);
+                exception = ReflectionCoreExecution.ExecutionEnvironment.CreateNonInvokabilityException(exceptionPertainant);
             return methodInvoker;
         }
 

@@ -40,7 +40,7 @@ namespace System.Tests
                 return;
             }
 
-            throw new Xunit.Sdk.EqualException(expected, actual);
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual);
         }
 
         //

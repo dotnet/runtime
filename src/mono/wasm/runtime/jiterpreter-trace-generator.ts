@@ -28,7 +28,6 @@ import {
     getMemberOffset, isZeroPageReserved, CfgBranchType,
     append_safepoint, modifyCounter, simdFallbackCounters,
 } from "./jiterpreter-support";
-import { compileSimdFeatureDetect } from "./jiterpreter-feature-detect";
 import {
     sizeOfDataItem, sizeOfV128, sizeOfStackval,
 
@@ -57,7 +56,7 @@ import {
     simdLoadTable, simdStoreTable,
 } from "./jiterpreter-tables";
 import { mono_log_error, mono_log_info } from "./logging";
-import { mono_assert } from "./globals";
+import { mono_assert, runtimeHelpers } from "./globals";
 
 // indexPlusOne so that ip[1] in the interpreter becomes getArgU16(ip, 1)
 function getArgU16(ip: MintOpcodePtr, indexPlusOne: number) {
@@ -3268,15 +3267,9 @@ function getIsWasmSimdSupported(): boolean {
     if (wasmSimdSupported !== undefined)
         return wasmSimdSupported;
 
-    // Probe whether the current environment can handle wasm v128 opcodes.
-    try {
-        // Load and compile a test module that uses i32x4.splat. See wasm-simd-feature-detect.wat/wasm
-        const module = compileSimdFeatureDetect();
-        wasmSimdSupported = !!module;
-    } catch (exc) {
-        mono_log_info("Disabling WASM SIMD support due to JIT failure", exc);
-        wasmSimdSupported = false;
-    }
+    wasmSimdSupported = runtimeHelpers.featureWasmSimd === true;
+    if (!wasmSimdSupported)
+        mono_log_info("Disabling Jiterpreter SIMD");
 
     return wasmSimdSupported;
 }

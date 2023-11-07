@@ -299,7 +299,7 @@ and enabling support for running WPF on .NET Core (Windows Only).
 [mono-winforms]: http://www.mono-project.com/docs/gui/winforms/
 [xunit]: https://github.com/xunit
 [mc.dot.net]: https://mc.dot.net/
-[ECMA-355]: http://www.ecma-international.org/publications/standards/Ecma-335.htm
+[ECMA-355]: https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 [dotnet-tooling]: https://docs.microsoft.com/en-us/dotnet/core/tools/
 [dlr-architecture]: https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview#dlr-architecture
 [dlr-source]: https://github.com/IronLanguages/dlr

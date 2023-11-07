@@ -50,7 +50,7 @@ namespace System.Threading.Tasks.Tests
                 {
                     var testID = taskIDs[j];
                     if (id.Equals(testID) && i != j)
-                        Assert.True(false, string.Format("Found matching Task.ID for different tasks at index i [" + i + "] and j [" + j + "].  ID: " + id));
+                        Assert.Fail(string.Format("Found matching Task.ID for different tasks at index i [" + i + "] and j [" + j + "].  ID: " + id));
                 }
             }
         }
@@ -105,7 +105,7 @@ namespace System.Threading.Tasks.Tests
             {
                 if ((int)(tasks[i].CreationOptions) != i)
                 {
-                    Assert.True(false, string.Format("Task.CreationOptions failed at Option = {0}", i));
+                    Assert.Fail(string.Format("Task.CreationOptions failed at Option = {0}", i));
                 }
             }
         }

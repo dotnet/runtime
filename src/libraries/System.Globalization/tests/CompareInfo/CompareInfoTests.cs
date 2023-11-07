@@ -60,7 +60,7 @@ namespace System.Globalization.Tests
             new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
         [MemberData(nameof(GetHashCodeTestData))]
         public void GetHashCodeTest(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
         {
@@ -345,14 +345,14 @@ namespace System.Globalization.Tests
             Assert.Equal(lcid, ci.LCID);
         }
 
-        [ConditionalTheory(typeof(CompareInfoTests), nameof(IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm))]
+        [ConditionalTheory(typeof(CompareInfoTests), nameof(IsNotWindowsKanaRegressedVersionAndNotHybridGlobalization))]
         [MemberData(nameof(SortKey_Kana_TestData))]
         public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             SortKeyTest(compareInfo, string1, string2, options, expected);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalization))]
         public void SortKeyTestNotSupported()
         {
             try
@@ -385,7 +385,7 @@ namespace System.Globalization.Tests
             }
 
             string GetPNSEText(string funcName) => $"{funcName} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.";
-            void AssertNotReached() => Assert.True(false);
+            void AssertNotReached() => Assert.Fail();
         }
 
         [DllImport("kernel32", CharSet = CharSet.Unicode)]
@@ -395,7 +395,7 @@ namespace System.Globalization.Tests
         private static bool WindowsVersionHasTheCompareStringRegression =>
                     PlatformDetection.IsNlsGlobalization && CompareStringEx("", NORM_LINGUISTIC_CASING, "", 0, "\u200C", 1, IntPtr.Zero, IntPtr.Zero, 0) != 2;
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
         [MemberData(nameof(SortKey_TestData))]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
@@ -444,7 +444,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
         public void SortKeyMiscTest()
         {
             CompareInfo ci = new CultureInfo("en-US").CompareInfo;
@@ -518,7 +518,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected && !char.IsSurrogate(c), CompareInfo.IsSortable(c));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
         public void VersionTest()
         {
             SortVersion sv1 = CultureInfo.GetCultureInfo("en-US").CompareInfo.Version;
@@ -529,7 +529,7 @@ namespace System.Globalization.Tests
             Assert.NotEqual(sv1.SortId, sv2.SortId);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
         [MemberData(nameof(GetHashCodeTestData))]
         public void GetHashCode_Span(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expectSameHashCode)
         {
@@ -546,7 +546,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expectSameHashCode, hashOfSource1AsSpan == hashOfSource2AsSpan);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
         public void GetHashCode_NullAndEmptySpan()
         {
             // Ensure that null spans and non-null empty spans produce the same hash code.

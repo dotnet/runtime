@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     break;
 
                 default:
-                    Assert.False(true, "Unexpected Architecture.");
+                    Assert.Fail("Unexpected Architecture.");
                     break;
             }
 

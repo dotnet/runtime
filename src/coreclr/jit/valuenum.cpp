@@ -106,7 +106,7 @@ struct DoubleTraits
 template <typename TFp, typename TFpTraits>
 TFp FpAdd(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // If [value1] is negative infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is positive infinity and [value2] is negative infinity
@@ -124,7 +124,7 @@ TFp FpAdd(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     return value1 + value2;
 }
@@ -142,7 +142,7 @@ TFp FpAdd(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpSub(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // If [value1] is positive infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is negative infinity and [value2] is negative infinity
@@ -160,7 +160,7 @@ TFp FpSub(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     return value1 - value2;
 }
@@ -178,7 +178,7 @@ TFp FpSub(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpMul(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // From the ECMA standard:
     //
     // If [value1] is zero and [value2] is infinity
@@ -194,7 +194,7 @@ TFp FpMul(TFp value1, TFp value2)
     {
         return TFpTraits::NaN();
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     return value1 * value2;
 }
@@ -212,7 +212,7 @@ TFp FpMul(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpDiv(TFp dividend, TFp divisor)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // From the ECMA standard:
     //
     // If [dividend] is zero and [divisor] is zero
@@ -228,7 +228,7 @@ TFp FpDiv(TFp dividend, TFp divisor)
     {
         return TFpTraits::NaN();
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     return dividend / divisor;
 }
@@ -1634,6 +1634,13 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     {
         return false;
     }
+
+    if (IsVNHandle(vn))
+    {
+        assert(CoercedConstantValue<size_t>(vn) != 0);
+        return true;
+    }
+
     VNFuncApp funcAttr;
     return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
 }
@@ -2857,6 +2864,81 @@ ValueNum ValueNumStore::VNForMapPhysicalSelect(
     return result;
 }
 
+typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
+
+class SmallValueNumSet
+{
+    union {
+        ValueNum     m_inlineElements[4];
+        ValueNumSet* m_set;
+    };
+    unsigned m_numElements = 0;
+
+public:
+    unsigned Count()
+    {
+        return m_numElements;
+    }
+
+    template <typename Func>
+    void ForEach(Func func)
+    {
+        if (m_numElements <= ArrLen(m_inlineElements))
+        {
+            for (unsigned i = 0; i < m_numElements; i++)
+            {
+                func(m_inlineElements[i]);
+            }
+        }
+        else
+        {
+            for (ValueNum vn : ValueNumSet::KeyIteration(m_set))
+            {
+                func(vn);
+            }
+        }
+    }
+
+    void Add(Compiler* comp, ValueNum vn)
+    {
+        if (m_numElements <= ArrLen(m_inlineElements))
+        {
+            for (unsigned i = 0; i < m_numElements; i++)
+            {
+                if (m_inlineElements[i] == vn)
+                {
+                    return;
+                }
+            }
+
+            if (m_numElements < ArrLen(m_inlineElements))
+            {
+                m_inlineElements[m_numElements] = vn;
+                m_numElements++;
+            }
+            else
+            {
+                ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
+                for (ValueNum oldVn : m_inlineElements)
+                {
+                    set->Set(oldVn, true);
+                }
+
+                set->Set(vn, true);
+
+                m_set = set;
+                m_numElements++;
+                assert(m_numElements == set->GetCount());
+            }
+        }
+        else
+        {
+            m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
+            m_numElements = m_set->GetCount();
+        }
+    }
+};
+
 //------------------------------------------------------------------------------
 // VNForMapSelectInner: Select value from a map and record loop memory dependencies.
 //
@@ -2871,10 +2953,10 @@ ValueNum ValueNumStore::VNForMapPhysicalSelect(
 //
 ValueNum ValueNumStore::VNForMapSelectInner(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index)
 {
-    int                  budget          = m_mapSelectBudget;
-    bool                 usedRecursiveVN = false;
-    ArrayStack<ValueNum> memoryDependencies(m_alloc);
-    ValueNum result = VNForMapSelectWork(vnk, type, map, index, &budget, &usedRecursiveVN, &memoryDependencies);
+    int              budget          = m_mapSelectBudget;
+    bool             usedRecursiveVN = false;
+    SmallValueNumSet memoryDependencies;
+    ValueNum         result = VNForMapSelectWork(vnk, type, map, index, &budget, &usedRecursiveVN, memoryDependencies);
 
     // The remaining budget should always be between [0..m_mapSelectBudget]
     assert((budget >= 0) && (budget <= m_mapSelectBudget));
@@ -2885,11 +2967,9 @@ ValueNum ValueNumStore::VNForMapSelectInner(ValueNumKind vnk, var_types type, Va
     if ((m_pComp->compCurBB != nullptr) && (m_pComp->compCurTree != nullptr) &&
         m_pComp->compCurBB->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
     {
-        for (int i = 0; i < memoryDependencies.Height(); i++)
-        {
-            m_pComp->optRecordLoopMemoryDependence(m_pComp->compCurTree, m_pComp->compCurBB,
-                                                   memoryDependencies.Bottom(i));
-        }
+        memoryDependencies.ForEach([this](ValueNum vn) {
+            m_pComp->optRecordLoopMemoryDependence(m_pComp->compCurTree, m_pComp->compCurBB, vn);
+        });
     }
 
     return result;
@@ -2900,19 +2980,16 @@ ValueNum ValueNumStore::VNForMapSelectInner(ValueNumKind vnk, var_types type, Va
 // cache entry.
 //
 // Arguments:
-//    alloc      - Allocator to use if memory is required.
-//    deps       - Array stack containing the memory dependencies.
-//    startIndex - Start index into 'deps' of memory dependencies.
+//    comp - Compiler instance
+//    set  - Set of memory dependencies to store in the entry.
 //
-void ValueNumStore::MapSelectWorkCacheEntry::SetMemoryDependencies(CompAllocator         alloc,
-                                                                   ArrayStack<ValueNum>& deps,
-                                                                   unsigned              startIndex)
+void ValueNumStore::MapSelectWorkCacheEntry::SetMemoryDependencies(Compiler* comp, SmallValueNumSet& set)
 {
-    m_numMemoryDependencies = deps.Height() - startIndex;
+    m_numMemoryDependencies = set.Count();
     ValueNum* arr;
     if (m_numMemoryDependencies > ArrLen(m_inlineMemoryDependencies))
     {
-        m_memoryDependencies = new (alloc) ValueNum[m_numMemoryDependencies];
+        m_memoryDependencies = new (comp, CMK_ValueNumber) ValueNum[m_numMemoryDependencies];
 
         arr = m_memoryDependencies;
     }
@@ -2921,27 +2998,29 @@ void ValueNumStore::MapSelectWorkCacheEntry::SetMemoryDependencies(CompAllocator
         arr = m_inlineMemoryDependencies;
     }
 
-    for (unsigned i = 0; i < m_numMemoryDependencies; i++)
-    {
-        arr[i] = deps.Bottom(startIndex + i);
-    }
+    size_t i = 0;
+    set.ForEach([&i, arr](ValueNum vn) {
+        arr[i] = vn;
+        i++;
+    });
 }
 
 //------------------------------------------------------------------------------
 // GetMemoryDependencies: Push all of the memory dependencies cached in this
-// entry into the specified array stack.
+// entry into the specified set.
 //
 // Arguments:
-//    result - Array stack to push memory dependencies into.
+//    comp   - Compiler instance
+//    result - Set to add memory dependencies to.
 //
-void ValueNumStore::MapSelectWorkCacheEntry::GetMemoryDependencies(ArrayStack<ValueNum>& result)
+void ValueNumStore::MapSelectWorkCacheEntry::GetMemoryDependencies(Compiler* comp, SmallValueNumSet& result)
 {
     ValueNum* arr = m_numMemoryDependencies <= ArrLen(m_inlineMemoryDependencies) ? m_inlineMemoryDependencies
                                                                                   : m_memoryDependencies;
 
     for (unsigned i = 0; i < m_numMemoryDependencies; i++)
     {
-        result.Push(arr[i]);
+        result.Add(comp, arr[i]);
     }
 }
 
@@ -2956,7 +3035,7 @@ void ValueNumStore::MapSelectWorkCacheEntry::GetMemoryDependencies(ArrayStack<Va
 //    pBudget            - Remaining budget for the outer evaluation
 //    pUsedRecursiveVN   - Out-parameter that is set to true iff RecursiveVN was returned from this method
 //                         or from a method called during one of recursive invocations.
-//    memoryDependencies - Array stack that records VNs of memories that the result is dependent upon.
+//    memoryDependencies - Set that records VNs of memories that the result is dependent upon.
 //
 // Return Value:
 //    Value number for the result of the evaluation.
@@ -2966,13 +3045,13 @@ void ValueNumStore::MapSelectWorkCacheEntry::GetMemoryDependencies(ArrayStack<Va
 //    "select(m1, ind)", ..., "select(mk, ind)" to see if they agree.  It needs to know which kind of value number
 //    (liberal/conservative) to read from the SSA def referenced in the phi argument.
 //
-ValueNum ValueNumStore::VNForMapSelectWork(ValueNumKind          vnk,
-                                           var_types             type,
-                                           ValueNum              map,
-                                           ValueNum              index,
-                                           int*                  pBudget,
-                                           bool*                 pUsedRecursiveVN,
-                                           ArrayStack<ValueNum>* memoryDependencies)
+ValueNum ValueNumStore::VNForMapSelectWork(ValueNumKind      vnk,
+                                           var_types         type,
+                                           ValueNum          map,
+                                           ValueNum          index,
+                                           int*              pBudget,
+                                           bool*             pUsedRecursiveVN,
+                                           SmallValueNumSet& memoryDependencies)
 {
 TailCall:
     // This label allows us to directly implement a tail call by setting up the arguments, and doing a goto to here.
@@ -2994,13 +3073,12 @@ TailCall:
     assert(selLim == 0 || m_numMapSels < selLim);
 #endif
 
-    int                     firstMemoryDependency = memoryDependencies->Height();
     MapSelectWorkCacheEntry entry;
 
     VNDefFuncApp<2> fstruct(VNF_MapSelect, map, index);
     if (GetMapSelectWorkCache()->Lookup(fstruct, &entry))
     {
-        entry.GetMemoryDependencies(*memoryDependencies);
+        entry.GetMemoryDependencies(m_pComp, memoryDependencies);
         return entry.Result;
     }
 
@@ -3026,6 +3104,8 @@ TailCall:
         return RecursiveVN;
     }
 
+    SmallValueNumSet recMemoryDependencies;
+
     VNFuncApp funcApp;
     if (GetVNFunc(map, &funcApp))
     {
@@ -3044,7 +3124,7 @@ TailCall:
                             funcApp.m_args[0], map, funcApp.m_args[1], funcApp.m_args[2], index, funcApp.m_args[2]);
 #endif
 
-                    memoryDependencies->Push(funcApp.m_args[0]);
+                    memoryDependencies.Add(m_pComp, funcApp.m_args[0]);
 
                     return funcApp.m_args[2];
                 }
@@ -3188,7 +3268,7 @@ TailCall:
                         bool     allSame       = true;
                         ValueNum argRest       = phiFuncApp.m_args[1];
                         ValueNum sameSelResult = VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget,
-                                                                    pUsedRecursiveVN, memoryDependencies);
+                                                                    pUsedRecursiveVN, recMemoryDependencies);
 
                         // It is possible that we just now exceeded our budget, if so we need to force an early exit
                         // and stop calling VNForMapSelectWork
@@ -3230,7 +3310,7 @@ TailCall:
                             {
                                 bool     usedRecursiveVN = false;
                                 ValueNum curResult       = VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget,
-                                                                        &usedRecursiveVN, memoryDependencies);
+                                                                        &usedRecursiveVN, recMemoryDependencies);
 
                                 *pUsedRecursiveVN |= usedRecursiveVN;
                                 if (sameSelResult == ValueNumStore::RecursiveVN)
@@ -3258,10 +3338,13 @@ TailCall:
                             if (!*pUsedRecursiveVN)
                             {
                                 entry.Result = sameSelResult;
-                                entry.SetMemoryDependencies(m_alloc, *memoryDependencies, firstMemoryDependency);
+                                entry.SetMemoryDependencies(m_pComp, recMemoryDependencies);
 
                                 GetMapSelectWorkCache()->Set(fstruct, entry);
                             }
+
+                            recMemoryDependencies.ForEach(
+                                [this, &memoryDependencies](ValueNum vn) { memoryDependencies.Add(m_pComp, vn); });
 
                             return sameSelResult;
                         }
@@ -3291,10 +3374,12 @@ TailCall:
         fapp->m_args[1]                         = fstruct.m_args[1];
 
         entry.Result = c->m_baseVN + offsetWithinChunk;
-        entry.SetMemoryDependencies(m_alloc, *memoryDependencies, firstMemoryDependency);
+        entry.SetMemoryDependencies(m_pComp, recMemoryDependencies);
 
         GetMapSelectWorkCache()->Set(fstruct, entry);
     }
+
+    recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) { memoryDependencies.Add(m_pComp, vn); });
 
     return entry.Result;
 }
@@ -7708,10 +7793,38 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             }
 
 #ifdef TARGET_ARM64
-            case NI_AdvSimd_Multiply:
             case NI_AdvSimd_MultiplyByScalar:
-            case NI_AdvSimd_Arm64_Multiply:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
+            {
+                if (!varTypeIsFloating(baseType))
+                {
+                    // Handle `x * 0 == 0` and `0 * x == 0`
+                    // Not safe for floating-point when x == -0.0, NaN, +Inf, -Inf
+                    ValueNum zeroVN = VNZeroForType(TypeOfVN(cnsVN));
+
+                    if (cnsVN == zeroVN)
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+
+                assert((TypeOfVN(arg0VN) == type) && (TypeOfVN(arg1VN) == TYP_SIMD8));
+
+                // Handle x * 1 => x, but only if the scalar RHS is <1, ...>.
+                if (IsVNConstant(arg1VN))
+                {
+                    if (EvaluateSimdGetElement(this, TYP_SIMD8, baseType, arg1VN, 0) == VNOneForType(baseType))
+                    {
+                        return arg0VN;
+                    }
+                }
+                break;
+            }
+#endif
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Multiply:
+            case NI_AdvSimd_Arm64_Multiply:
 #else
             case NI_SSE_Multiply:
             case NI_SSE2_Multiply:
@@ -10425,13 +10538,11 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
             }
 
-            if (tree->IsCnsIntOrI() && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
-                (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+            if (tree->IsCnsIntOrI())
             {
-                // For now we're interested only in SimpleStaticKnownAddress
-                vnStore->AddToFieldAddressToFieldSeqMap(tree->AsIntCon()->gtVNPair.GetLiberal(),
-                                                        tree->AsIntCon()->gtFieldSeq);
+                fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
+
             break;
 
 #ifdef FEATURE_SIMD
@@ -10506,6 +10617,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 assert(doesMethodHaveFrozenObjects());
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+
+                fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
             break;
 
@@ -10522,6 +10635,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 {
                     tree->gtVNPair.SetBoth(
                         vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+
+                    fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
                 }
                 else
                 {
@@ -10533,6 +10648,29 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberRegisterConstFieldSeq: If a VN'd integer constant has a
+// field sequence we want to keep track of, then register it in the side table.
+//
+// Arguments:
+//   tree - the integer constant
+//
+void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
+{
+    if (tree->gtFieldSeq == nullptr)
+    {
+        return;
+    }
+
+    if (tree->gtFieldSeq->GetKind() != FieldSeq::FieldKind::SimpleStaticKnownAddress)
+    {
+        return;
+    }
+
+    // For now we're interested only in SimpleStaticKnownAddress
+    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(), tree->gtFieldSeq);
 }
 
 //------------------------------------------------------------------------
@@ -11494,25 +11632,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // For XADD and XCHG other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
                         fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
 
-                        assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
-
-                        GenTree* addr = tree->AsOp()->gtOp1; // op1
-                        GenTree* data = tree->AsOp()->gtOp2; // op2
-
                         ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+                        vnpExcSet              = vnStore->VNPUnionExcSet(tree->AsIndir()->Addr()->gtVNPair, vnpExcSet);
+                        vnpExcSet              = vnStore->VNPUnionExcSet(tree->AsIndir()->Data()->gtVNPair, vnpExcSet);
 
-                        vnpExcSet = vnStore->VNPUnionExcSet(data->gtVNPair, vnpExcSet);
-                        vnpExcSet = vnStore->VNPUnionExcSet(addr->gtVNPair, vnpExcSet);
-
-                        // The normal value is a new unique VN.
-                        ValueNumPair normalPair;
-                        normalPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-
-                        // Attach the combined exception set
-                        tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
-
-                        // add the null check exception for 'addr' to the tree's value number
-                        fgValueNumberAddExceptionSetForIndirection(tree, addr);
+                        // The normal value is a new unique VN. The null reference exception will be added below.
+                        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), vnpExcSet);
                         break;
                     }
 
@@ -11616,9 +11741,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
 
-                GenTree* location  = cmpXchg->gtOpLocation;  // arg1
-                GenTree* value     = cmpXchg->gtOpValue;     // arg2
-                GenTree* comparand = cmpXchg->gtOpComparand; // arg3
+                GenTree* location  = cmpXchg->Addr();
+                GenTree* value     = cmpXchg->Data();
+                GenTree* comparand = cmpXchg->Comparand();
 
                 ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
@@ -11628,16 +11753,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 vnpExcSet = vnStore->VNPUnionExcSet(comparand->gtVNPair, vnpExcSet);
 
                 // The normal value is a new unique VN.
-                ValueNumPair normalPair;
-                normalPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-
-                // Attach the combined exception set
-                tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
+                tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), vnpExcSet);
 
                 // add the null check exception for 'location' to the tree's value number
                 fgValueNumberAddExceptionSetForIndirection(tree, location);
-                // add the null check exception for 'comparand' to the tree's value number
-                fgValueNumberAddExceptionSetForIndirection(tree, comparand);
                 break;
             }
 
@@ -13470,6 +13589,11 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIntrinsic()->gtGetOp1());
                 break;
 
+            case GT_XAND:
+            case GT_XORR:
+            case GT_XADD:
+            case GT_XCHG:
+            case GT_CMPXCHG:
             case GT_IND:
             case GT_BLK:
             case GT_STOREIND:

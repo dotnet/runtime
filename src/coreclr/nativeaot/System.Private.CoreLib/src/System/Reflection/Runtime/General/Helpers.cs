@@ -29,21 +29,6 @@ namespace System.Reflection.Runtime.General
             return h.Equals(default(RuntimeTypeHandle));
         }
 
-        // Clones a Type[] array for the purpose of returning it from an api.
-        public static Type[] CloneTypeArray(this Type[] types)
-        {
-            int count = types.Length;
-            if (count == 0)
-                return Array.Empty<Type>();  // Ok not to clone empty arrays - those are immutable.
-
-            Type[] clonedTypes = new Type[count];
-            for (int i = 0; i < count; i++)
-            {
-                clonedTypes[i] = types[i];
-            }
-            return clonedTypes;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type[] GetGenericTypeParameters(this Type type)
         {
@@ -54,26 +39,40 @@ namespace System.Reflection.Runtime.General
         public static RuntimeTypeInfo[] ToRuntimeTypeInfoArray(this Type[] types)
         {
             int count = types.Length;
+            if (count == 0)
+                return Array.Empty<RuntimeTypeInfo>();
+
             RuntimeTypeInfo[] typeInfos = new RuntimeTypeInfo[count];
             for (int i = 0; i < count; i++)
             {
-                typeInfos[i] = types[i].CastToRuntimeTypeInfo();
+                typeInfos[i] = types[i].ToRuntimeTypeInfo();
             }
             return typeInfos;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeNamedTypeInfo CastToRuntimeNamedTypeInfo(this Type type)
+        public static Type[] ToTypeArray(this RuntimeTypeInfo[] typeInfos)
         {
-            Debug.Assert(type is RuntimeNamedTypeInfo);
-            return (RuntimeNamedTypeInfo)type;
+            int count = typeInfos.Length;
+            if (count == 0)
+                return Array.Empty<Type>();
+
+            Type[] types = new Type[count];
+            for (int i = 0; i < count; i++)
+            {
+                types[i] = typeInfos[i].ToType();
+            }
+            return types;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeTypeInfo CastToRuntimeTypeInfo(this Type type)
+        public static RuntimeTypeInfo ToRuntimeTypeInfo(this Type type)
         {
-            Debug.Assert(type == null || type is RuntimeTypeInfo);
-            return (RuntimeTypeInfo)type!;
+            if (type is RuntimeType runtimeType)
+            {
+                return runtimeType.GetRuntimeTypeInfo();
+            }
+            Debug.Assert(false);
+            return null;
         }
 
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
@@ -136,18 +135,18 @@ namespace System.Reflection.Runtime.General
 
         private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Delegates always generate metadata for the Invoke method")]
         public static RuntimeMethodInfo GetInvokeMethod(this RuntimeTypeInfo delegateType)
         {
             Debug.Assert(delegateType.IsDelegate);
 
-            MethodInfo? invokeMethod = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            MethodInfo? invokeMethod = delegateType.ToType().GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             if (invokeMethod == null)
             {
                 // No Invoke method found. Since delegate types are compiler constructed, the most likely cause is missing metadata rather than
                 // a missing Invoke method.
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(delegateType);
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(delegateType.ToType());
             }
             return (RuntimeMethodInfo)invokeMethod;
         }

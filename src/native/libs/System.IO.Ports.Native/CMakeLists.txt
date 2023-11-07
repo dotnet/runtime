@@ -9,13 +9,19 @@ if (HAVE_TERMIOS2)
     list (APPEND PORTS_SOURCES pal_termios2.c)
 endif ()
 
-
 if (GEN_SHARED_LIB)
     add_library(System.IO.Ports.Native
         SHARED
         ${PORTS_SOURCES}
         ${VERSION_FILE_PATH}
     )
+
+    if (CLR_CMAKE_TARGET_HAIKU)
+        target_link_libraries(System.IO.Ports.Native
+            PRIVATE
+            -lnetwork
+        )
+    endif()
 endif()
 
 add_library(System.IO.Ports.Native-Static

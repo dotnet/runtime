@@ -118,8 +118,8 @@ namespace System.Data
         /// <summary>Mapping from Operator to priorities.</summary>
         internal static int Priority(int op)
         {
-            ReadOnlySpan<byte> priorities = new byte[]
-            {
+            ReadOnlySpan<byte> priorities =
+            [
                 PriStart,  // Noop
                 PriNeg, PriNeg, PriNot, // Unary -, +, Not
                 PriBetweenAnd, PriBetweenInLike, PriBetweenInLike,
@@ -137,7 +137,7 @@ namespace System.Data
                 PriParen, PriProc, PriDot, PriDot,      // Proc, Iff, Qula, Dot..
 
                 // anything beyond is PriMax
-            };
+            ];
 
             return (uint)op < (uint)priorities.Length ? priorities[op] : PriMax;
         }

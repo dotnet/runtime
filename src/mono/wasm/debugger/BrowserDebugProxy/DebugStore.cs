@@ -440,30 +440,41 @@ namespace Microsoft.WebAssembly.Diagnostics
             var signature = methodDef.Signature;
             var sigReader = Assembly.asmMetadataReader.GetBlobReader(signature);
             var decoder = new SignatureDecoder<ElementType, object>(_signatureTypeProvider, Assembly.asmMetadataReader, genericContext: null);
-            var methodSignature = decoder.DecodeMethodSignature(ref sigReader);
+            MethodSignature<ElementType> methodSignature = decoder.DecodeMethodSignature(ref sigReader);
 
             var paramsHandles = methodDef.GetParameters().ToArray();
             var paramsCnt = paramsHandles.Length;
             var paramsInfo = new ParameterInfo[paramsCnt];
 
-            for (int i = 0; i < paramsCnt; i++)
+            int paramInx = 0;
+            foreach (var paramHandle in paramsHandles)
             {
-                var parameter = Assembly.asmMetadataReader.GetParameter(paramsHandles[i]);
+                var parameter = Assembly.asmMetadataReader.GetParameter(paramHandle);
                 var paramName = Assembly.EnCGetString(parameter.Name);
-                var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
-                if (!isOptional)
+                if (string.IsNullOrEmpty(paramName))
                 {
-                    paramsInfo[i] = new ParameterInfo(paramName, methodSignature.ParameterTypes[i]);
                     continue;
                 }
-                var constantHandle = parameter.GetDefaultValue();
-                var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
-                var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
-                paramsInfo[i] = new ParameterInfo(
-                    paramName,
-                    blobHandle.TypeCode,
-                    paramBytes
-                );
+                var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
+                if (isOptional)
+                {
+                    var constantHandle = parameter.GetDefaultValue();
+                    var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
+                    var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
+                    paramsInfo[paramInx] = new ParameterInfo(
+                        paramName,
+                        blobHandle.TypeCode,
+                        paramBytes
+                    );
+                }
+                else
+                {
+                    paramsInfo[paramInx] = new ParameterInfo(
+                        paramName,
+                        methodSignature.ParameterTypes[paramInx]
+                    );
+                }
+                paramInx++;
             }
             _parametersInfo = paramsInfo;
             return paramsInfo;

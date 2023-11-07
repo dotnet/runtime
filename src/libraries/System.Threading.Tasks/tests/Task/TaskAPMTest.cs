@@ -155,7 +155,7 @@ namespace System.Threading.Tasks.Tests
                 LongTask<int> lt = (LongTask<int>)ar.AsyncState;
                 int retValue = lt.EndDoTask(ar);
                 if (retValue != IntInput)
-                    Assert.True(false, string.Format("Mismatch: Return = {0} vs Expect = {1}", retValue, IntInput));
+                    Assert.Fail(string.Format("Mismatch: Return = {0} vs Expect = {1}", retValue, IntInput));
             }
             else
             {

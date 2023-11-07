@@ -65,17 +65,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         private void OldHost_LatestRuntime_ForwardCompatible(TestProjectFixture previousVersionFixture)
         {
-            TestProjectFixture fixture = sharedTestState.FixtureLatest.Copy();
-            string appExe = fixture.TestProject.AppExe;
+            TestApp app = sharedTestState.AppLatest.Copy();
+            string appExe = app.AppExe;
 
-            Assert.NotEqual(fixture.Framework, previousVersionFixture.Framework);
-            Assert.NotEqual(fixture.RepoDirProvider.MicrosoftNETCoreAppVersion, previousVersionFixture.RepoDirProvider.MicrosoftNETCoreAppVersion);
+            Assert.NotEqual(RepoDirectoriesProvider.Default.Tfm, previousVersionFixture.Framework);
+            Assert.NotEqual(RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion, previousVersionFixture.RepoDirProvider.MicrosoftNETCoreAppVersion);
 
             // Use the older apphost
             // This emulates the case when:
             //  1) Newer runtime installed
             //  2) App rolls forward to newer runtime
-            File.Copy(previousVersionFixture.TestProject.AppExe, fixture.TestProject.AppExe, true);
+            File.Copy(previousVersionFixture.TestProject.AppExe, appExe, true);
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //     Note that we don't have multi-level on hostfxr so we will always find the older\one-off hostfxr
             if (OperatingSystem.IsWindows())
             {
-                File.Copy(previousVersionFixture.TestProject.HostFxrDll, fixture.TestProject.HostFxrDll, true);
+                File.Copy(previousVersionFixture.TestProject.HostFxrDll, app.HostFxrDll, true);
                 Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
@@ -105,7 +105,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             private static RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public TestProjectFixture Fixture60 { get; }
-            public TestProjectFixture FixtureLatest { get; }
+            public TestApp AppLatest { get; }
+
+            private const string AppName = "HelloWorld";
 
             public SharedTestState()
             {
@@ -113,18 +115,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 Fixture60 = CreateTestFixture("StandaloneApp6x", "net6.0", "6.0");
 
-                var fixtureLatest = new TestProjectFixture("StandaloneApp", RepoDirectories);
-                fixtureLatest
-                    .EnsureRestoredForRid(fixtureLatest.CurrentRid)
-                    .PublishProject(runtime: fixtureLatest.CurrentRid, selfContained: true);
-
-                FixtureLatest = fixtureLatest;
+                AppLatest = TestApp.CreateFromBuiltAssets(AppName);
+                AppLatest.PopulateSelfContained(TestApp.MockedComponent.None);
             }
 
             public void Dispose()
             {
                 Fixture60.Dispose();
-                FixtureLatest.Dispose();
+                AppLatest?.Dispose();
             }
 
             private static TestProjectFixture CreateTestFixture(string testName, string netCoreAppFramework, string mnaVersion)
@@ -132,10 +130,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 var repoDirectories = new RepoDirectoriesProvider(microsoftNETCoreAppVersion: mnaVersion);
 
                 // Use standalone instead of framework-dependent for ease of deployment.
-                var publishFixture = new TestProjectFixture(testName, repoDirectories, framework: netCoreAppFramework, assemblyName: "StandaloneApp");
+                var publishFixture = new TestProjectFixture(testName, repoDirectories, framework: netCoreAppFramework, assemblyName: AppName);
                 publishFixture
                     .EnsureRestoredForRid(publishFixture.CurrentRid)
-                    .PublishProject(runtime: publishFixture.CurrentRid, selfContained: true);
+                    .PublishProject(runtime: publishFixture.CurrentRid, selfContained: true, extraArgs: $"/p:AssemblyName={AppName}");
 
                 return publishFixture;
             }

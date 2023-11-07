@@ -797,7 +797,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             else
             {
-                Assert.True(false, "Must be JsonElement");
+                Assert.Fail("Must be JsonElement");
             }
 
             using (var stream = new MemoryStream())
@@ -1300,7 +1300,7 @@ namespace System.Text.Json.Serialization.Tests
                 else if (propertyType == typeof(JsonNamingPolicy))
                 {
                     options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                    options.DictionaryKeyPolicy = new SimpleSnakeCasePolicy();
+                    options.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
                 }
                 else if (propertyType == typeof(ReferenceHandler))
                 {

@@ -60,8 +60,11 @@ namespace System.DirectoryServices.Protocols
                     }
                     temp.Append(scheme);
                     temp.Append(servers[i]);
-                    temp.Append(':');
-                    temp.Append(directoryIdentifier.PortNumber);
+                    if (!servers[i].Contains(':'))
+                    {
+                        temp.Append(':');
+                        temp.Append(directoryIdentifier.PortNumber);
+                    }
                 }
                 if (temp.Length != 0)
                 {

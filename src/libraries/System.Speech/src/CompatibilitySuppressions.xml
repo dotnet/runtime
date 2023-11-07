@@ -1,30 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- net6.0 and net7.0 aren't supported by the current package and any errors should be suppressed. -->
   <Suppression>
-    <DiagnosticId>CP0003</DiagnosticId>
-    <Target>System.Speech, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35</Target>
     <Left>lib/net6.0/System.Speech.dll</Left>
     <Right>lib/netstandard2.0/System.Speech.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0003</DiagnosticId>
-    <Target>System.Speech, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35</Target>
-    <Left>lib/net7.0/System.Speech.dll</Left>
-    <Right>lib/netstandard2.0/System.Speech.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net6.0/System.Speech.dll</Left>
-    <Right>lib/netstandard2.0/System.Speech.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
     <Left>lib/net7.0/System.Speech.dll</Left>
     <Right>lib/netstandard2.0/System.Speech.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>

@@ -681,7 +681,7 @@ namespace System.Reflection
                     int position = parinfo.Position;
                     if (position == -1)
                         return bmethod.ReturnParameter;
-                    return bmethod.GetParameters()[position];
+                    return bmethod.GetParametersAsSpan()[position];
                 }
             }
             /*

@@ -91,6 +91,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
         private ManualResetEventSlim manualResetEvent3;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94050", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestCancelAsync()
         {

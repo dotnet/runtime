@@ -1107,7 +1107,9 @@ create_provider (
 #if WCHAR_MAX == 0xFFFF
     provider_name_utf8 = g_utf16_to_utf8 ((const gunichar2 *)provider_name, -1, NULL, NULL, NULL);
 #else
-    provider_name_utf8 = g_ucs4_to_utf8 ((const gunichar *)provider_name, -1, NULL, NULL, NULL);
+    gunichar2 *provider_name_utf16 = g_ucs4_to_utf16 ((const gunichar *)provider_name, -1, NULL, NULL, NULL);
+    provider_name_utf8 = g_utf16_to_utf8 (provider_name_utf16, -1, NULL, NULL, NULL);
+    g_free (provider_name_utf16);
 #endif
 
     ep_return_null_if_nok (provider_name_utf8 != NULL);
@@ -1261,7 +1263,7 @@ def generateEventPipeImplFiles(
                     eventpipeImpl.write(getCoreCLREventPipeImplFileSuffix())
                 elif runtimeFlavor.mono:
                     eventpipeImpl.write(getMonoEventPipeImplFileSuffix())
-                elif runtimeFlavor.nativeaot:
+                elif runtimeFlavor.nativeaot and providerName=="Microsoft-Windows-DotNETRuntime":
                     eventpipeImpl.write(getAotEventPipeImplFileSuffix())
 
 def generateEventPipeFiles(

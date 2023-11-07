@@ -28,9 +28,10 @@ namespace System
         private const int maxRoundingDigits = 6;
 
         // This table is required for the Round function which can specify the number of digits to round to
-        private static ReadOnlySpan<float> RoundPower10Single => new float[] {
+        private static ReadOnlySpan<float> RoundPower10Single =>
+        [
             1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
-        };
+        ];
 
         private const float singleRoundLimit = 1e8f;
 

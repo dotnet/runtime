@@ -5,6 +5,7 @@
 // we couldn't load C3
 
 using System;
+using Xunit;
 
 class C2<T> { }
 class C1<T> : C2<C3> { }
@@ -12,7 +13,7 @@ class C3 : C1<C3> { }
 
                                        
 
-class Test_test188892
+public class Test_test188892
 {
 
 	public static void LoadTypes()
@@ -22,7 +23,8 @@ class Test_test188892
 		C1<C3> c3 = new C3();
 	}
 	
-    	public static int Main()
+    	[Fact]
+    	public static int TestEntryPoint()
     	{	
     		try
     		{

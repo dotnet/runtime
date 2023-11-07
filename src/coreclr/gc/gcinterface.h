@@ -15,7 +15,7 @@
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 1
+#define EE_INTERFACE_MAJOR_VERSION 2
 
 struct ScanContext;
 struct gc_alloc_context;

@@ -7186,8 +7186,7 @@ mono_lookup_icall_symbol (MonoMethod *m)
 //
 // mono_create_icall_signatures depends on this order. Handle with care.
 typedef enum ICallSigType {
-	ICALL_SIG_TYPE_bool     = 0x00,
-	ICALL_SIG_TYPE_boolean  = ICALL_SIG_TYPE_bool,
+	ICALL_SIG_TYPE_boolean  = 0x00,
 	ICALL_SIG_TYPE_double   = 0x01,
 	ICALL_SIG_TYPE_float    = 0x02,
 	ICALL_SIG_TYPE_int      = 0x03,
@@ -7265,7 +7264,7 @@ mono_create_icall_signatures (void)
 	typedef gsize G_MAY_ALIAS gsize_a;
 
 	MonoType * const lookup [ ] = {
-		m_class_get_byval_arg (mono_defaults.boolean_class), // ICALL_SIG_TYPE_bool
+		m_class_get_byval_arg (mono_defaults.boolean_class), // ICALL_SIG_TYPE_boolean
 		m_class_get_byval_arg (mono_defaults.double_class),	 // ICALL_SIG_TYPE_double
 		m_class_get_byval_arg (mono_defaults.single_class),  // ICALL_SIG_TYPE_float
 		m_class_get_byval_arg (mono_defaults.int32_class),	 // ICALL_SIG_TYPE_int

@@ -760,6 +760,16 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return copy.Extract();
 }
 
+REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
+{
+    return dlopen(moduleName, RTLD_LAZY);
+}
+
+REDHAWK_PALEXPORT void* PalGetProcAddress(HANDLE module, const char* functionName)
+{
+    return dlsym(module, functionName);
+}
+
 static int W32toUnixAccessControl(uint32_t flProtect)
 {
     int prot = 0;

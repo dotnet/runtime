@@ -80,7 +80,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         [OuterLoop]
         [Fact]
-        [OuterLoop]
         public async Task SendAsync_SlowServerAndCancel_ThrowsTaskCanceledException()
         {
             var handler = new WinHttpHandler();
@@ -97,19 +96,38 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/20675")]
         [OuterLoop]
         [Fact]
-        [OuterLoop]
-        public void SendAsync_SlowServerRespondsAfterDefaultReceiveTimeout_ThrowsHttpRequestException()
+        public async void SendAsync_SlowServerRespondsAfterDefaultReceiveTimeout_ThrowsHttpRequestException()
         {
             var handler = new WinHttpHandler();
             using (var client = new HttpClient(handler))
             {
-                Task<HttpResponseMessage> t = client.GetAsync(SlowServer);
+                var triggerResponseWrite = new TaskCompletionSource<bool>();
+                var triggerRequestWait = new TaskCompletionSource<bool>();
 
-                AggregateException ag = Assert.Throws<AggregateException>(() => t.Wait());
-                Assert.IsType<HttpRequestException>(ag.InnerException);
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    Task serverTask = server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.SendResponseAsync($"HTTP/1.1 200 OK\r\nContent-Length: 16000\r\n\r\n");
+
+                        triggerRequestWait.SetResult(true);
+                        await triggerResponseWrite.Task;
+                    });
+
+                    HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                    {
+                        Task<HttpResponseMessage> t = client.GetAsync(url);
+                        await triggerRequestWait.Task;
+                        var _ = await t;
+                    });
+                    Assert.IsType<IOException>(ex.InnerException);
+                    Assert.NotNull(ex.InnerException.InnerException);
+                    Assert.Contains("The operation timed out", ex.InnerException.InnerException.Message);
+
+                    triggerResponseWrite.SetResult(true);
+                });
             }
         }
 

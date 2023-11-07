@@ -389,10 +389,10 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 for (int i = 0; i < _allStats.Count; i++)
                 {
-                    if (_allStats[i].TryGetTarget(out Stats? stats) && stats == current)
+                    if (!_allStats[i].TryGetTarget(out Stats? stats))
                     {
                         _allStats.RemoveAt(i);
-                        break;
+                        i--;
                     }
                 }
 
