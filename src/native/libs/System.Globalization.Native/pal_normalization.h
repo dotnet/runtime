@@ -29,7 +29,7 @@ PALEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normaliz
                                                       int32_t cwDstLength);
 #endif
 
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MAC))
+#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_IPHONE))
 PALEXPORT int32_t GlobalizationNative_IsNormalizedNative(NormalizationForm normalizationForm,
                                                          const uint16_t* lpStr,
                                                          int32_t cwStrLength);

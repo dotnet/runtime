@@ -19,7 +19,7 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeNam
                                                           int32_t valueLength);
 #endif
 
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MAC))
+#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_IPHONE))
 #include <unicode/utypes.h>
 
 PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
