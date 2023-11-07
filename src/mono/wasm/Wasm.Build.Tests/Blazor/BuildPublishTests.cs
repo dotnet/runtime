@@ -84,8 +84,8 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
-            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
-            $"blz_no_aot_{config}_{GetRandomId()}";
+            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -172,5 +172,40 @@ public class BuildPublishTests : BlazorWasmTestBase
                 Assert.True(File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
             }
         }
+    }
+
+    [Fact]
+    public void Test_WasmStripILAfterAOT()
+    {
+        string id = $"blz_test_WasmStripILAfterAOT_Release_{GetRandomId()}";
+        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectDirectory = Path.GetDirectoryName(projectFile)!;
+
+        BlazorBuild(new BlazorBuildOptions(id, "Release", NativeFilesType.FromRuntimePack));
+        BlazorPublish(new BlazorBuildOptions(id, "Release", NativeFilesType.AOT, AssertAppBundle : false), "-p:RunAOTCompilation=true -p:WasmStripILAfterAOT=true -p:WasmEnableWebcil=false");
+
+        string frameworkDir = Path.Combine(projectDirectory, "bin", "Release", BuildTestBase.DefaultTargetFramework, "publish", "wwwroot", "_framework");
+        string objBuildDir = Path.Combine(projectDirectory, "obj", "Release", BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
+        string origAssemblyDir = Path.Combine(objBuildDir, "aot-in");
+        string strippedAssemblyDir = Path.Combine(objBuildDir, "stripped");
+        Assert.True(Directory.Exists(origAssemblyDir), $"Could not find the original AOT input assemblies dir: {origAssemblyDir}");
+        Assert.True(Directory.Exists(strippedAssemblyDir), $"Could not find the stripped assemblies dir: {strippedAssemblyDir}");
+
+        string assemblyToExam = "System.Private.CoreLib.dll";
+        string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExam);
+        string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExam);
+        string bundledAssembly = Path.Combine(frameworkDir, assemblyToExam);
+        Assert.True(File.Exists(originalAssembly));
+        Assert.True(File.Exists(strippedAssembly));
+        Assert.True(File.Exists(bundledAssembly));
+
+        string compressedOriginalAssembly = Compress(originalAssembly);
+        string compressedStrippedAssembly = Compress(strippedAssembly);
+        string compressedBundledAssembly = bundledAssembly + ".gz";
+        FileInfo compressedOriginalAssembly_fi = new FileInfo(compressedOriginalAssembly);
+        FileInfo compressedStrippedAssembly_fi = new FileInfo(compressedStrippedAssembly);
+        FileInfo compressedBundledAssembly_fi = new FileInfo(compressedBundledAssembly);
+        Assert.True(compressedOriginalAssembly_fi.Length > compressedBundledAssembly_fi.Length);
+        Assert.Equal(compressedBundledAssembly_fi.Length, compressedStrippedAssembly_fi.Length);
     }
 }
