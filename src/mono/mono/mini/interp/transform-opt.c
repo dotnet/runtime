@@ -3073,6 +3073,9 @@ interp_optimize_code (TransformData *td)
 	if (td->header->num_clauses)
 		return;
 
+	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
+		interp_optimize_bblocks (td);
+
 	interp_compute_ssa (td);
 
 	interp_exit_ssa (td);
