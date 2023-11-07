@@ -2311,7 +2311,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
  *  Returns the specific encoding of the given CPU instruction and format
  */
 
-emitter::code_t emitter::emitSveInsCode(instruction ins, insFormat fmt)
+emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
 {
     // clang-format off
     const static code_t insCodes1[] =
