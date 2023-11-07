@@ -29,7 +29,7 @@ namespace JIT.HardwareIntrinsics.Arm._AdvSimd
             if (test.IsSupported)
             {
                 Console.WriteLine("SVE is supported.");
-                test.Succeeded = true;
+                test.RunBasicScenario_Count16();
             }
             else
             {
@@ -49,5 +49,18 @@ namespace JIT.HardwareIntrinsics.Arm._AdvSimd
         public bool IsSupported => Sve.IsSupported && Sve.Arm64.IsSupported;
 
         public bool Succeeded { get; set; }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public ulong Count16()
+        {
+            return Sve.Count16BitElements();
+        }
+
+        public void RunBasicScenario_Count16()
+        {
+            Count16();
+            Console.WriteLine("Done");
+            Succeeded = true;
+        }
     }
 }

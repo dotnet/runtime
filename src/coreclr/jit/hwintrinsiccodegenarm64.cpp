@@ -419,6 +419,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                     break;
 
+                case 0:
+                    GetEmitter()->emitIns_R(ins, emitSize, targetReg);
+                    break;
+
                 default:
                     unreached();
             }

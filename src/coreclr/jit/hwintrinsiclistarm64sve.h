@@ -16,6 +16,8 @@
 // ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
 //  SVE Intrinsics
 
+HARDWARE_INTRINSIC(Sve,        Count16BitElements,                                                   8,      0,     false,  {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_mrs_tpid0,      INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_Scalar,                HW_Flag_NoFlag)
+
 #endif // FEATURE_HW_INTRINSIC
 
 #undef HARDWARE_INTRINSIC

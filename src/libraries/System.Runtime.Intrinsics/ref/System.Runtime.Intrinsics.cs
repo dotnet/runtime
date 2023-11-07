@@ -3968,6 +3968,7 @@ namespace System.Runtime.Intrinsics.Arm
             internal Arm64() { }
             public static new bool IsSupported { get { throw null; } }
         }
+        public static ulong Count16BitElements() { throw null; }
     }
 }
 namespace System.Runtime.Intrinsics.X86

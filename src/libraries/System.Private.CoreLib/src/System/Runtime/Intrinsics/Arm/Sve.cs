@@ -27,6 +27,9 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get => IsSupported; }
         }
 
-        // Methods go here
+        /// Count16BitElements : Count the number of 16-bit elements in a vector
+
+        /// uint64_t svcnth() : "CNTH Xresult, ALL"
+        public static unsafe ulong Count16BitElements() => Count16BitElements();
     }
 }

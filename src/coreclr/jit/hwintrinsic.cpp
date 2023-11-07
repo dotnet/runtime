@@ -1391,8 +1391,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             case 0:
             {
-                assert(!isScalar);
-                retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
+                retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, intrinsic)
+                                   : gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
                 break;
             }
 
