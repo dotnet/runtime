@@ -72,149 +72,9 @@ We can choose to first support Mono AOT either with or without LLVM according to
 
 ## Tasks
 
-Templates are used to set the definition of done (DoD) and contains of a set of unit tests that will be be implemented. Each unit test is designed to cover a specific invocation type using different input types. In the first iteration of the experiment, we want to focus on blittable types targeting MacCatalyst only. Later, we plan to include support for non-blittable types and other Apple targets.
+Progress on the implementation can be tracked at https://github.com/dotnet/runtime/issues/93631.
 
-Here's the flow for invoking a Swift function from .NET if a developer uses a direct P/Invoke and mangled names:
-1. Function parameters should be automatically marshalled without any wrappers
-2. A thunk should be emitted to handle the `self` and `error` registers
-3. The result should be retrieved from the register, stack, or indirectly
-4. An error should be thrown if the `error` register is set
-5. Cleanup may be required
-
-### Type marshalling and metadata conversions
-
-Type marshalling should ideally be automated, with an initial focus on supporting blittable types. Later, we can extend support to include non-blittable types. Here are some tasks (not a full list):
- - Create a mapping between C# and Swift types
- - Investigate and determine which types lack marshalling support
- - Investigate and determine how to generate types metadata
-
-
-This is the simplest case that should be implemented. It should be expanded with other types.
-
-```swift
-public static func add(_ a: Double, _ b: Double) -> Double {
-    return a + b
-}
-
-public static func subtract(_ a: Double, _ b: Double) -> Double {
-    return a - b
-}
-```
-
-### Self context
-
-In order to support Swift calling convention, it is necessary to implement register handling by emitting thunks in the above-mentioned cases.
-
-```swift
-public func factorial() -> Int {
-    guard _internalValue >= 0 else {
-        fatalError("Factorial is undefined for negative numbers")
-    }
-    return _internalValue == 0 ? 1 : _internalValue * MathLibrary(_internalValue: _internalValue - 1).factorial()
-}
-```
-
-### Error handling
-
-In order to support Swift calling convention, it is necessary to implement error handling by emitting thunks in the above-mentioned cases.
-
-### Async context
-
-When an async function is invoked, its context is stored into a register which points to an object that contains information about the current state of the asynchronous operation.
-
-### Update Binding Tools for Swift to work with latest version of Mono runtime
-
-We should update the Binding Tools for Swift to be compatible with the latest version of the Mono runtime and Xcode.
-
-## Other examples
-
-### Function with default params
-
-Nice to have. When Swift compiles them it leaves the initialization expression behind for the compiler to consume later. It's effectively a weak macro that gets expanded later so that the compiler can potentially optimize it.
-
-```swift
-public static func multiply(_ a: Double, _ b: Double = 1.0) -> Double {
-    return a * b
-}
-```
-
-### Function with varargs
-
-Nice to have. The semantics for parameters being `f(name0: type0, name1: type1, name2: type2)`, Swift lets you do `f(a: Int..., b: Float..., c: String...)` which gets turned into `f(a: Int[], b: Float[], c: String[])`
-
-```swift
-public static func average(numbers: Double...) -> Double {
-    let sum = numbers.reduce(0, +)
-    return sum / Double(numbers.count)
-}
-```
-
-### Function with closures
-```swift
-public static func applyOperation(a: Double, b: Double, operation: (Double, Double) -> Double) -> Double {
-    return operation(a, b)
-}
-```
-
-### Computed properties
-```swift
-public static var circleArea: (Double) -> Double = { radius in
-    return Double.pi * radius * radius
-}
-```
-
-### Initializers/Deinitializers
-```swift
-public init(_internalValue: Int) {
-    self._internalValue = _internalValue
-    print("MathLibrary initialized.")
-}
-
-deinit {
-    print("MathLibrary deinitialized.")
-}
-```
-
-### Getters/Setters
-```swift
-private var _internalValue: Int = 0
-
-public var value: Int {
-    get {
-        return _internalValue
-    }
-    set {
-        _internalValue = newValue
-    }
-}
-```
-
-### Delegates/Protocols
-```swift
-public protocol MathLibraryDelegate: AnyObject {
-    func mathLibraryDidInitialize()
-    func mathLibraryDidDeinitialize()
-}
-...
-public weak var delegate: MathLibraryDelegate?
-
-public init(_internalValue: Int) {
-    self._internalValue = _internalValue
-    print("MathLibrary initialized.")
-    
-    // Notify the delegate that the library was initialized
-    delegate?.mathLibraryDidInitialize()
-}
-
-deinit {
-    print("MathLibrary deinitialized.")
-    
-    // Notify the delegate that the library was deinitialized
-    delegate?.mathLibraryDidDeinitialize()
-}
-```
-
-## Build steps
+## Local build and testing
 
 Build the runtime:
 ```sh
@@ -232,6 +92,7 @@ Build the native library:
 ```sh
 swiftc -emit-library ./src/tests/Interop/Swift/ErrorHandling.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libErrorHandling.dylib
 swiftc -emit-library ./src/tests/Interop/Swift/SelfContext.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libSelfContext.dylib
+swiftc -emit-library ./src/tests/Interop/Swift/Dummy.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libDummy.dylib
 ```
 Run the tests:
 ```
