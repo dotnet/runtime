@@ -2893,6 +2893,13 @@ const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult
     ("SecureHashTernOpTest.template",     new Dictionary<string, string> { ["TestName"] = "ScheduleUpdate1_Vector128_UInt32",                                                                      ["Isa"] = "Sha256",        ["LoadIsa"] = "AdvSimd", ["Method"] = "ScheduleUpdate1",                                                      ["RetVectorType"] = "Vector128", ["RetBaseType"] = "UInt32",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "UInt32", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "UInt32", ["Op3VectorType"] = "Vector128", ["Op3BaseType"] = "UInt32", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "0x00112233",                               ["NextValueOp2"] = "0x44556677",                               ["NextValueOp3"] = "0x8899AABB",                               ["ExpectedResult"] = "{0x248F1BDF, 0x248F1BDF, 0xB303DDBA, 0xF74821FE}"}),
 };
 
+(string templateFileName, Dictionary<string, string> templateData)[] SveInputs = new []
+{
+    //TODO-SVE: Replace LoadUnOpTest with SVE tests
+    ("LoadUnOpTest.template",             new Dictionary<string, string> { ["TestName"] = "LoadVector64_Byte",                                                                                     ["Isa"] = "AdvSimd",                                ["Method"] = "LoadVector64",                                                         ["RetVectorType"] = "Vector64",  ["RetBaseType"] = "Byte",    ["Op1VectorType"] = "Vector64",  ["Op1BaseType"] = "Byte",                                                                                                                             ["LargestVectorSize"] = "8",  ["NextValueOp1"] = "TestLibrary.Generator.GetByte()",                                                                                                                                                        ["ValidateIterResult"] = "firstOp[i] != result[i]"}),
+};
+
+
 string projectName = args[0];
 string templateDirectory = args[1];
 string outputDirectory = args[2];
@@ -2910,6 +2917,7 @@ ProcessInputs("Rdm", RdmInputs);
 ProcessInputs("Rdm.Arm64", Rdm_Arm64Inputs);
 ProcessInputs("Sha1", Sha1Inputs);
 ProcessInputs("Sha256", Sha256Inputs);
+ProcessInputs("Sve", SveInputs);
 
 void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
@@ -2919,6 +2927,9 @@ void ProcessInputs(string groupName, (string templateFileName, Dictionary<string
     }
 
     Directory.CreateDirectory(outputDirectory);
+
+    Console.WriteLine($"{outputDirectory}");
+    Console.WriteLine($"{testListFileName}");
 
     using (var testListFile = new StreamWriter(testListFileName, append: false))
     {
@@ -2961,4 +2972,7 @@ void ProcessInput(StreamWriter testListFile, string groupName, (string templateF
 
     testListFile.WriteLine(fileName);
     File.WriteAllText(fileName, template);
+
+        Console.WriteLine($"{fileName}");
+
 }
