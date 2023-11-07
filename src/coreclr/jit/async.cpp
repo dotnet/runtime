@@ -397,7 +397,8 @@ void Async2Transformation::Transform(
     // (-1 in the tier0 version):
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
     {
-        JITDUMP("  Method %s; keeping an IL offset at the beginning of non-GC data\n", m_comp->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
+        JITDUMP("  Method %s; keeping an IL offset at the beginning of non-GC data\n",
+                m_comp->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
         dataSize += sizeof(int);
     }
 
@@ -416,7 +417,12 @@ void Async2Transformation::Transform(
         returnInGCData = varTypeIsGC(call->gtReturnType);
     }
 
-    JITDUMP("  Will store return of type %s, size %u in %sGC data\n", call->gtReturnType == TYP_STRUCT ? returnStructLayout->GetClassName() : varTypeName(call->gtReturnType), returnSize, returnInGCData ? "" : "non-");
+    if (returnSize > 0)
+    {
+        JITDUMP("  Will store return of type %s, size %u in %sGC data\n",
+                call->gtReturnType == TYP_STRUCT ? returnStructLayout->GetClassName() : varTypeName(call->gtReturnType),
+                returnSize, returnInGCData ? "" : "non-");
+    }
 
     assert((returnSize > 0) == (call->gtReturnType != TYP_VOID));
 
@@ -442,7 +448,8 @@ void Async2Transformation::Transform(
     if (block->hasTryIndex())
     {
         exceptionGCDataIndex = gcRefsCount++;
-        JITDUMP("  " FMT_BB " is in try region %u; exception will be at GC@+%02u in GC data\n", block->bbNum, exceptionGCDataIndex);
+        JITDUMP("  " FMT_BB " is in try region %u; exception will be at GC@+%02u in GC data\n", block->bbNum,
+                exceptionGCDataIndex);
     }
 
     for (LiveLocalInfo& inf : m_liveLocals)
@@ -1202,7 +1209,8 @@ void Async2Transformation::CreateResumptionSwitch()
     FlowEdge* edge = m_comp->fgAddRefPred(m_comp->fgFirstBB, newEntryBB);
     edge->setLikelihood(1);
 
-    JITDUMP("  Inserting new entry " FMT_BB " before old entry " FMT_BB "\n", newEntryBB->bbNum, m_comp->fgFirstBB->bbNum);
+    JITDUMP("  Inserting new entry " FMT_BB " before old entry " FMT_BB "\n", newEntryBB->bbNum,
+            m_comp->fgFirstBB->bbNum);
 
     m_comp->fgInsertBBbefore(m_comp->fgFirstBB, newEntryBB);
 
@@ -1218,7 +1226,8 @@ void Async2Transformation::CreateResumptionSwitch()
 
     if (m_resumptionBBs.size() == 1)
     {
-        JITDUMP("  Redirecting entry " FMT_BB " directly to " FMT_BB " as it is the only resumption block\n", newEntryBB->bbNum, m_resumptionBBs[0]->bbNum);
+        JITDUMP("  Redirecting entry " FMT_BB " directly to " FMT_BB " as it is the only resumption block\n",
+                newEntryBB->bbNum, m_resumptionBBs[0]->bbNum);
         newEntryBB->SetJumpKindAndTarget(BBJ_COND, m_resumptionBBs[0] DEBUGARG(m_comp));
         m_comp->fgAddRefPred(m_resumptionBBs[0], newEntryBB);
     }
@@ -1228,7 +1237,8 @@ void Async2Transformation::CreateResumptionSwitch()
         condBB->bbSetRunRarely();
         newEntryBB->SetJumpKindAndTarget(BBJ_COND, condBB DEBUGARG(m_comp));
 
-        JITDUMP("  Redirecting entry " FMT_BB " to BBJ_COND " FMT_BB " for resumption with 2 states\n", newEntryBB->bbNum, condBB->bbNum);
+        JITDUMP("  Redirecting entry " FMT_BB " to BBJ_COND " FMT_BB " for resumption with 2 states\n",
+                newEntryBB->bbNum, condBB->bbNum);
 
         m_comp->fgAddRefPred(condBB, newEntryBB);
         m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
@@ -1252,7 +1262,8 @@ void Async2Transformation::CreateResumptionSwitch()
         switchBB->bbSetRunRarely();
         newEntryBB->SetJumpKindAndTarget(BBJ_COND, switchBB DEBUGARG(m_comp));
 
-        JITDUMP("  Redirecting entry " FMT_BB " to BBJ_SWITCH " FMT_BB " for resumption with %zu states\n", newEntryBB->bbNum, switchBB->bbNum, m_resumptionBBs.size());
+        JITDUMP("  Redirecting entry " FMT_BB " to BBJ_SWITCH " FMT_BB " for resumption with %zu states\n",
+                newEntryBB->bbNum, switchBB->bbNum, m_resumptionBBs.size());
 
         m_comp->fgAddRefPred(switchBB, newEntryBB);
 
@@ -1295,7 +1306,8 @@ void Async2Transformation::CreateResumptionSwitch()
 
         BasicBlock* checkILOffsetBB = m_comp->fgNewBBbefore(BBJ_COND, newEntryBB->GetJumpDest(), true, callHelperBB);
 
-        JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n", checkILOffsetBB->bbNum);
+        JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n",
+                checkILOffsetBB->bbNum);
 
         m_comp->fgRemoveRefPred(newEntryBB->GetJumpDest(), newEntryBB);
         newEntryBB->SetJumpDest(checkILOffsetBB);
