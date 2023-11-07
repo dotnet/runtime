@@ -795,7 +795,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             await VerifyAgainstBaselineUsingFile("Primitives.generated.txt", source);
         }
-        
+
         [Fact]
         public async Task DefaultConstructorParameters()
         {
@@ -1108,7 +1108,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             Assert.Empty(result.Diagnostics);
             Assert.True(result.GeneratedSource.HasValue);
-            System.IO.File.WriteAllText(@$"c:\temp\out{DateTime.UtcNow.Hour}-{DateTime.UtcNow.Second}.txt", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain(result.GeneratedSource.Value.SourceText.ToString(), "SkipProp");
         }
     }
