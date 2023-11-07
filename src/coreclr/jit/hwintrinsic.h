@@ -175,6 +175,13 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic needs consecutive registers
     HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+
+    // The intrinsic uses scalable registers
+    HW_Flag_Scalable = 0x8000,
+
+    // The intrinsic uses a mask in arg1 to predicate the result
+    HW_Flag_Predicated = 0x10000,
+
 #else
 #error Unsupported platform
 #endif
@@ -845,6 +852,19 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_HasImmediateOperand) != 0;
+    }
+
+    static bool isScalable(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_Scalable) != 0;
+    }
+
+    // TODO-SVE: Check this flag when register allocating
+    static bool HasPredicatedResult(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_Predicated) != 0;
     }
 #endif // TARGET_ARM64
 

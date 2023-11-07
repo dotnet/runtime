@@ -4142,6 +4142,23 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get { throw null; } }
         }
     }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Sve : System.Runtime.Intrinsics.Arm.AdvSimd
+    {
+        internal Sve() { }
+        public static new bool IsSupported { get { throw null; } }
+
+        public static unsafe System.Numerics.Vector<sbyte> LoadVectorNonFaulting(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorNonFaulting(System.Numerics.Vector<short> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorNonFaulting(System.Numerics.Vector<int> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorNonFaulting(System.Numerics.Vector<long> mask, long* address) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> LoadVectorNonFaulting(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorNonFaulting(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorNonFaulting(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorNonFaulting(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
+        public static unsafe System.Numerics.Vector<float> LoadVectorNonFaulting(System.Numerics.Vector<float> mask, float* address) { throw null; }
+        public static unsafe System.Numerics.Vector<double> LoadVectorNonFaulting(System.Numerics.Vector<double> mask, double* address) { throw null; }
+    }
 }
 namespace System.Runtime.Intrinsics.X86
 {

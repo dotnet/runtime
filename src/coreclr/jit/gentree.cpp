@@ -25711,8 +25711,11 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-
                 addr = Op(3);
+                break;
+
+            case NI_Sve_LoadVectorNonFaulting:
+                addr = Op(2);
                 break;
 #endif // TARGET_ARM64
 

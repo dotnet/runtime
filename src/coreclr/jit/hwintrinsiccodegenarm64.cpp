@@ -265,6 +265,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitSize = EA_UNKNOWN;
         opt      = INS_OPTS_NONE;
     }
+    else if (HWIntrinsicInfo::isScalable(intrin.id))
+    {
+        emitSize = EA_SCALABLE;
+        // TODO-SVE: This shouldn't require GetEmitter()
+        opt = GetEmitter()->optGetSveInsOpt(emitTypeSize(intrin.baseType));
+    }
     else
     {
         emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
