@@ -74,6 +74,10 @@
 
     <!-- Normally run with HighAOT, but disabling there, and for AOT - https://github.com/dotnet/runtime/issues/86164 -->
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" /> -->
+
+    <!-- https://github.com/dotnet/runtime/issues/94225 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->

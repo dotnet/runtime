@@ -286,7 +286,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return RuntimeAugments.Callbacks.GetDelegateMethod(this);
+            return ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -352,20 +352,15 @@ namespace System
             return a.GetEETypePtr() == b.GetEETypePtr();
         }
 
-        // Returns a new delegate of the specified type whose implementation is provied by the
+        // Returns a new delegate of the specified type whose implementation is provided by the
         // provided delegate.
         internal static Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
         {
-            EETypePtr delegateEEType;
-            if (!t.TryGetEEType(out delegateEEType))
-            {
-                throw new InvalidOperationException();
-            }
+            RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            if (!delegateEEType.IsDefType || delegateEEType.IsGenericTypeDefinition)
-            {
-                throw new InvalidOperationException();
-            }
+            EETypePtr delegateEEType = typeHandle.ToEETypePtr();
+            Debug.Assert(!delegateEEType.IsNull);
+            Debug.Assert(delegateEEType.IsCanonical);
 
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 

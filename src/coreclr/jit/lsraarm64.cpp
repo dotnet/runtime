@@ -1632,6 +1632,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(intrinsicTree->OperIsMemoryLoadOrStore());
                 srcCount += BuildAddrUses(intrin.op3);
                 FALLTHROUGH;
+            case NI_AdvSimd_LoadVector64x2AndUnzip:
+            case NI_AdvSimd_LoadVector64x3AndUnzip:
+            case NI_AdvSimd_LoadVector64x4AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
             case NI_AdvSimd_LoadVector64x2:
             case NI_AdvSimd_LoadVector64x3:
             case NI_AdvSimd_LoadVector64x4:

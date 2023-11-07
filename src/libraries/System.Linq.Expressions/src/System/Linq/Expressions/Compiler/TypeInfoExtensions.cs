@@ -2,17 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler
 {
     internal static class TypeInfoExtensions
     {
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static Type MakeDelegateType(this DelegateHelpers.TypeInfo info, Type retType, params Expression[] args)
         {
             return info.MakeDelegateType(retType, (IList<Expression>)args);
         }
 
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static Type MakeDelegateType(this DelegateHelpers.TypeInfo info, Type retType, IList<Expression> args)
         {
             // nope, go ahead and create it and spend the

@@ -126,6 +126,7 @@ namespace System.Collections.Generic
         public void EnqueueRange(System.Collections.Generic.IEnumerable<TElement> elements, TPriority priority) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public TElement Peek() { throw null; }
+        public bool Remove(TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement removedElement, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority, System.Collections.Generic.IEqualityComparer<TElement>? equalityComparer = null) { throw null; }
         public void TrimExcess() { }
         public bool TryDequeue([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }

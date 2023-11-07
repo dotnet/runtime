@@ -11,7 +11,6 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public static void InitializeLibrary()
         {
-            RuntimeAugments.Initialize(new ReflectionExecutionDomainCallbacksImplementation());
             ReflectionAugments.Initialize(new ReflectionCoreCallbacksImplementation());
         }
     }

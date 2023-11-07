@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using ILLink.Shared;
 using ILLink.Shared.TypeSystemProxy;
 using ILLink.Shared.TrimAnalysis;
@@ -35,6 +36,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresAssemblyFilesAttribute;
 
+		internal override string FeatureName => "AssemblyFiles";
+
 		private protected override string RequiresAttributeFullyQualifiedName => RequiresAssemblyFilesAttributeFullyQualifiedName;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Property | DiagnosticTargets.Event;
@@ -56,6 +59,21 @@ namespace ILLink.RoslynAnalyzer
 				return false;
 
 			return true;
+		}
+
+		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol)
+		{
+			// "IsAssemblyFilesSupported" is treated as a requires check for testing purposes only, and
+			// is not officially-supported product behavior.
+			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("ILLink.RoslynAnalyzer.TestFeatures");
+			if (runtimeFeaturesType == null)
+				return false;
+
+			var isDynamicCodeSupportedProperty = runtimeFeaturesType.GetMembers ("IsAssemblyFilesSupported").OfType<IPropertySymbol> ().FirstOrDefault ();
+			if (isDynamicCodeSupportedProperty == null)
+				return false;
+
+			return SymbolEqualityComparer.Default.Equals (propertySymbol, isDynamicCodeSupportedProperty);
 		}
 
 		internal override ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation)

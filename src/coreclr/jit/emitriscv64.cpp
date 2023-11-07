@@ -1666,9 +1666,39 @@ void emitter::emitJumpDistBind()
     }
     if (EMIT_INSTLIST_VERBOSE)
     {
-        printf("\nInstruction list before jump distance binding:\n\n");
+        printf("\nInstruction list before the jump distance binding:\n\n");
         emitDispIGlist(true);
     }
+#endif
+
+#if DEBUG_EMIT
+    auto printJmpInfo = [this](const instrDescJmp* jmp, const insGroup* jmpIG, NATIVE_OFFSET extra,
+                               UNATIVE_OFFSET srcInstrOffs, UNATIVE_OFFSET srcEncodingOffs, UNATIVE_OFFSET dstOffs,
+                               NATIVE_OFFSET jmpDist, const char* direction) {
+        assert(jmp->idDebugOnlyInfo() != nullptr);
+        if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
+        {
+            const char* dirId = (strcmp(direction, "fwd") == 0) ? "[1]" : "[2]";
+            if (INTERESTING_JUMP_NUM == 0)
+            {
+                printf("%s Jump %u:\n", dirId, jmp->idDebugOnlyInfo()->idNum);
+            }
+            printf("%s Jump  block is at %08X\n", dirId, jmpIG->igOffs);
+            printf("%s Jump reloffset is %04X\n", dirId, jmp->idjOffs);
+            printf("%s Jump source is at %08X\n", dirId, srcEncodingOffs);
+            printf("%s Label block is at %08X\n", dirId, dstOffs);
+            printf("%s Jump  dist. is    %04X\n", dirId, jmpDist);
+            if (extra > 0)
+            {
+                printf("%s Dist excess [S] = %d  \n", dirId, extra);
+            }
+        }
+        if (EMITVERBOSE)
+        {
+            printf("Estimate of %s jump [%08X/%03u]: %04X -> %04X = %04X\n", direction, dspPtr(jmp),
+                   jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
+        }
+    };
 #endif
 
     instrDescJmp* jmp;
@@ -1869,28 +1899,7 @@ AGAIN:
             extra = jmpDist - psd;
 
 #if DEBUG_EMIT
-            assert(jmp->idDebugOnlyInfo() != nullptr);
-            if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
-            {
-                if (INTERESTING_JUMP_NUM == 0)
-                {
-                    printf("[1] Jump %u:\n", jmp->idDebugOnlyInfo()->idNum);
-                }
-                printf("[1] Jump  block is at %08X\n", jmpIG->igOffs);
-                printf("[1] Jump reloffset is %04X\n", jmp->idjOffs);
-                printf("[1] Jump source is at %08X\n", srcEncodingOffs);
-                printf("[1] Label block is at %08X\n", dstOffs);
-                printf("[1] Jump  dist. is    %04X\n", jmpDist);
-                if (extra > 0)
-                {
-                    printf("[1] Dist excess [S] = %d  \n", extra);
-                }
-            }
-            if (EMITVERBOSE)
-            {
-                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
-                       jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
-            }
+            printJmpInfo(jmp, jmpIG, extra, srcInstrOffs, srcEncodingOffs, dstOffs, jmpDist, "fwd");
 #endif // DEBUG_EMIT
 
             assert(jmpDist >= 0); // Forward jump
@@ -1900,8 +1909,9 @@ AGAIN:
             {
                 jmp->idAddr()->iiaSetJmpOffset(jmpDist);
             }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
+            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
+                // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
@@ -1966,28 +1976,7 @@ AGAIN:
             extra = jmpDist + nsd;
 
 #if DEBUG_EMIT
-            assert(jmp->idDebugOnlyInfo() != nullptr);
-            if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
-            {
-                if (INTERESTING_JUMP_NUM == 0)
-                {
-                    printf("[2] Jump %u:\n", jmp->idDebugOnlyInfo()->idNum);
-                }
-                printf("[2] Jump  block is at %08X\n", jmpIG->igOffs);
-                printf("[2] Jump reloffset is %04X\n", jmp->idjOffs);
-                printf("[2] Jump source is at %08X\n", srcEncodingOffs);
-                printf("[2] Label block is at %08X\n", dstOffs);
-                printf("[2] Jump  dist. is    %04X\n", jmpDist);
-                if (extra > 0)
-                {
-                    printf("[2] Dist excess [S] = %d  \n", extra);
-                }
-            }
-            if (EMITVERBOSE)
-            {
-                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
-                       jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
-            }
+            printJmpInfo(jmp, jmpIG, extra, srcInstrOffs, srcEncodingOffs, dstOffs, jmpDist, "bwd");
 #endif // DEBUG_EMIT
 
             assert(jmpDist >= 0); // Backward jump
@@ -1997,8 +1986,9 @@ AGAIN:
             {
                 jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
             }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
+            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
+                // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
@@ -2084,7 +2074,7 @@ AGAIN:
 #ifdef DEBUG
     if (EMIT_INSTLIST_VERBOSE)
     {
-        printf("\nLabels list after the jump dist binding:\n\n");
+        printf("\nLabels list after the jump distance binding:\n\n");
         emitDispIGlist(false);
     }
 

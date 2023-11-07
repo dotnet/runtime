@@ -162,7 +162,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void IsSuffix_UnassignedUnicode()
         {
-            bool result = PlatformDetection.IsIcuGlobalization ? false : true;
+            bool result = PlatformDetection.IsIcuGlobalization || PlatformDetection.IsHybridGlobalizationOnOSX ? false : true;
             int expectedMatchLength = (result) ? 6 : 0;
 
             IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result, expectedMatchLength);
