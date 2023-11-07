@@ -285,7 +285,8 @@ public class Simple
         EquivalentValueType inst = (EquivalentValueType)otherEquivalentValueTypeInstance;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!OperatingSystem.IsWindows())
         {

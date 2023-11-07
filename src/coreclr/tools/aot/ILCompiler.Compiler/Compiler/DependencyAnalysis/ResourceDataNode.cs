@@ -96,10 +96,9 @@ namespace ILCompiler.DependencyAnalysis
                             if (factory.MetadataManager.IsManifestResourceBlocked(factory, module, resourceName))
                                 continue;
 
-                            string assemblyName = module.GetName().FullName;
                             BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                             int length = (int)reader.ReadUInt32();
-                            ResourceIndexData indexData = new ResourceIndexData(assemblyName, resourceName, _totalLength, (int)resource.Offset + sizeof(int), module, length);
+                            ResourceIndexData indexData = new ResourceIndexData(module, resourceName, _totalLength, (int)resource.Offset + sizeof(int), module, length);
                             _indexData.Add(indexData);
                             _totalLength += length;
                         }
@@ -149,9 +148,9 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class ResourceIndexData
     {
-        public ResourceIndexData(string assemblyName, string resourceName, int nativeOffset, int ecmaOffset, EcmaModule ecmaModule, int length)
+        public ResourceIndexData(EcmaAssembly assembly, string resourceName, int nativeOffset, int ecmaOffset, EcmaModule ecmaModule, int length)
         {
-            AssemblyName = assemblyName;
+            Assembly = assembly;
             ResourceName = resourceName;
             NativeOffset = nativeOffset;
             EcmaOffset = ecmaOffset;
@@ -160,9 +159,9 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         /// <summary>
-        /// Full name of the assembly that contains the resource
+        /// Assembly that contains the resource
         /// </summary>
-        public string AssemblyName { get; }
+        public EcmaAssembly Assembly { get; }
 
         /// <summary>
         /// Name of the resource

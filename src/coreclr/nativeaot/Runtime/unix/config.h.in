@@ -2,6 +2,7 @@
 #define _PAL_CONFIG_H_INCLUDED 1
 
 #cmakedefine01 HAVE_AUXV_HWCAP_H
+#cmakedefine01 HAVE_UCONTEXT_H
 
 #cmakedefine01 HAVE_PRCTL_H
 #cmakedefine01 HAVE_PR_SET_PTRACER

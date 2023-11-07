@@ -162,7 +162,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEnumBuilder.cs" />
@@ -170,6 +169,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeFieldBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeGenericTypeParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeILGenerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeLocalBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeMethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeModuleBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeParameterBuilder.cs" />
@@ -264,8 +264,8 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs">
       <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
-      <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
+      <Link>Common\System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
     </Compile>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />

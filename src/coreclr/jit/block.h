@@ -440,6 +440,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(40), // BB has pred that has potential tail call
     BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(41), // Block has recursive tailcall that may turn into a loop
     BBF_NO_CSE_IN                      = MAKE_BBFLAG(42), // Block should kill off any incoming CSE
+    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(43), // Ok to add pred edge to this block, even when "safe" edge creation disabled
 
     // The following are sets of flags.
 
@@ -538,13 +539,10 @@ private:
     };
 
 public:
-#ifdef DEBUG
-    // When creating a block with a jump, we require its jump kind and target be initialized simultaneously.
-    // In a few edge cases (for example, in Compiler::impImportLeave), we don't know the jump target at block creation.
-    // In these cases, temporarily set the jump target to bbTempJumpDest, and update the jump target later.
-    // We won't check jump targets against bbTempJumpDest in Release builds.
-    static BasicBlock bbTempJumpDest;
-#endif // DEBUG
+    static BasicBlock* bbNewBasicBlock(Compiler* compiler);
+    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBswtDesc* jumpSwt);
+    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
 
     BBjumpKinds GetJumpKind() const
     {
@@ -633,10 +631,6 @@ public:
 
     void SetJumpDest(BasicBlock* jumpDest)
     {
-        // If bbJumpKind indicates this block has a jump,
-        // bbJumpDest should have previously been set in SetJumpKindAndTarget().
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
-
         // SetJumpKindAndTarget() nulls jumpDest for non-jump kinds,
         // so don't use SetJumpDest() to null bbJumpDest without updating bbJumpKind.
         bbJumpDest = jumpDest;

@@ -79,6 +79,16 @@ namespace ILCompiler
             return _nodeFactory.NecessaryTypeSymbol(type);
         }
 
+        public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
+        {
+            bool canPotentiallyConstruct = _devirtualizationManager == null
+                ? true : _devirtualizationManager.CanConstructType(type);
+            if (canPotentiallyConstruct && ConstructedEETypeNode.CreationAllowed(type))
+                return _nodeFactory.SerializedConstructedRuntimeTypeObject(type);
+
+            return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
+        }
+
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             _dependencyGraph.ComputeMarkedNodes();

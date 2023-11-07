@@ -730,7 +730,7 @@ const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
 
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // Contains: check if the range includes a particular hash
@@ -924,7 +924,7 @@ void ConfigMethodRange::Dump()
     }
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 

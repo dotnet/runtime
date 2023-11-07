@@ -160,7 +160,7 @@ int signum(T val)
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 // ConfigMethodRange describes a set of methods, specified via their
 // hash codes. This can be used for binary search and/or specifying an
@@ -241,7 +241,7 @@ private:
     Range*   m_ranges;    // ranges of functions to include
 };
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 class Compiler;
 

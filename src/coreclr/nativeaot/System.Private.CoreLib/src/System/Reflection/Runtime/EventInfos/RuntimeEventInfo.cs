@@ -47,7 +47,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return ContextTypeInfo;
+                return ContextTypeInfo.ToType();
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return ReflectedTypeInfo;
+                return ReflectedTypeInfo.ToType();
             }
         }
 

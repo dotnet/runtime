@@ -254,7 +254,7 @@ public:
         return false;
     }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Record observation for prior failure
     virtual void NotePriorFailure(InlineObservation obs) = 0;
@@ -304,16 +304,16 @@ public:
         return m_IsDataCollectionTarget;
     }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 protected:
     InlinePolicy(bool isPrejitRoot)
         : m_Decision(InlineDecision::UNDECIDED)
         , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
         , m_IsPrejitRoot(isPrejitRoot)
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
         , m_IsDataCollectionTarget(false)
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     {
         // empty
@@ -329,11 +329,11 @@ protected:
     InlineObservation m_Observation;
     bool              m_IsPrejitRoot;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     bool m_IsDataCollectionTarget;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 };
 
 // InlineResult summarizes what is known about the viability of a
@@ -439,7 +439,7 @@ public:
         m_Policy->NoteDouble(obs, value);
     }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Record observation from an earlier failure.
     void NotePriorFailure(InlineObservation obs)
@@ -448,7 +448,7 @@ public:
         assert(IsFailure());
     }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     // Determine if this inline is profitable
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
@@ -731,7 +731,7 @@ class InlineContext
     friend class InlineStrategy;
 
 public:
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Dump the full subtree, including failures
     void Dump(bool verbose, unsigned indent = 0);
@@ -741,7 +741,7 @@ public:
 
     // Dump full subtree in xml format
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     IL_OFFSET GetActualCallOffset()
     {
@@ -825,6 +825,7 @@ public:
         return m_Parent == nullptr;
     }
 
+#if defined(DEBUG)
     bool IsDevirtualized() const
     {
         return m_Devirtualized;
@@ -839,6 +840,7 @@ public:
     {
         return m_Unboxed;
     }
+#endif
 
     unsigned GetImportedILSize() const
     {
@@ -863,31 +865,31 @@ public:
 private:
     InlineContext(InlineStrategy* strategy);
 
-    InlineStrategy*        m_InlineStrategy;    // overall strategy
-    InlineContext*         m_Parent;            // logical caller (parent)
-    InlineContext*         m_Child;             // first child
-    InlineContext*         m_Sibling;           // next child of the parent
-    const BYTE*            m_Code;              // address of IL buffer for the method
-    CORINFO_METHOD_HANDLE  m_Callee;            // handle to the method
-    CORINFO_CONTEXT_HANDLE m_RuntimeContext;    // handle to the exact context
-    unsigned               m_ILSize;            // size of IL buffer for the method
-    unsigned               m_ImportedILSize;    // estimated size of imported IL
-    ILLocation             m_Location;          // inlining statement location within parent
-    IL_OFFSET              m_ActualCallOffset;  // IL offset of actual call instruction leading to the inline
-    InlineObservation      m_Observation;       // what lead to this inline success or failure
-    int                    m_CodeSizeEstimate;  // in bytes * 10
-    unsigned               m_Ordinal;           // Ordinal number of this inline
-    bool                   m_Success : 1;       // true if this was a successful inline
-    bool                   m_Devirtualized : 1; // true if this was a devirtualized call
-    bool                   m_Guarded : 1;       // true if this was a guarded call
-    bool                   m_Unboxed : 1;       // true if this call now invokes the unboxed entry
+    InlineStrategy*        m_InlineStrategy;   // overall strategy
+    InlineContext*         m_Parent;           // logical caller (parent)
+    InlineContext*         m_Child;            // first child
+    InlineContext*         m_Sibling;          // next child of the parent
+    const BYTE*            m_Code;             // address of IL buffer for the method
+    CORINFO_METHOD_HANDLE  m_Callee;           // handle to the method
+    CORINFO_CONTEXT_HANDLE m_RuntimeContext;   // handle to the exact context
+    unsigned               m_ILSize;           // size of IL buffer for the method
+    unsigned               m_ImportedILSize;   // estimated size of imported IL
+    ILLocation             m_Location;         // inlining statement location within parent
+    IL_OFFSET              m_ActualCallOffset; // IL offset of actual call instruction leading to the inline
+    InlineObservation      m_Observation;      // what lead to this inline success or failure
+    int                    m_CodeSizeEstimate; // in bytes * 10
+    unsigned               m_Ordinal;          // Ordinal number of this inline
+    bool                   m_Success : 1;      // true if this was a successful inline
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
-    InlinePolicy* m_Policy; // policy that evaluated this inline
-    unsigned      m_TreeID; // ID of the GenTreeCall in the parent
+    InlinePolicy* m_Policy;            // policy that evaluated this inline
+    unsigned      m_TreeID;            // ID of the GenTreeCall in the parent
+    bool          m_Devirtualized : 1; // true if this was a devirtualized call
+    bool          m_Guarded : 1;       // true if this was a guarded call
+    bool          m_Unboxed : 1;       // true if this call now invokes the unboxed entry
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #ifdef DEBUG
     FixedBitVect* m_ILInstsSet; // Set of offsets where instructions begin
@@ -1010,7 +1012,7 @@ public:
     // Check if inlining is disabled for the method being jitted
     bool IsInliningDisabled();
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Dump textual description of inlines done so far.
     void Dump(bool verbose);
@@ -1040,7 +1042,7 @@ public:
     // Set up or access random state (for use by RandomPolicy)
     CLRRandom* GetRandom(int optionalSeed = 0);
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     // Some inline limit values
     enum
@@ -1075,11 +1077,11 @@ private:
     // Estimate native code size change because of this inline.
     int EstimateSize(InlineContext* context);
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     static bool          s_HasDumpedDataHeader;
     static bool          s_HasDumpedXmlHeader;
     static CritSecObject s_XmlWriterLock;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     Compiler*         m_Compiler;
     InlineContext*    m_RootContext;
@@ -1106,10 +1108,10 @@ private:
     int               m_CurrentSizeEstimate;
     bool              m_HasForceViaDiscretionary;
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     long       m_MethodXmlFilePosition;
     CLRRandom* m_Random;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 };
 
 #endif // _INLINE_H_

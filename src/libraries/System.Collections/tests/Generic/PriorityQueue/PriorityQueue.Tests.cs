@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Collections.Tests
 {
-    public class PriorityQueue_NonGeneric_Tests : TestBase
+    public partial class PriorityQueue_NonGeneric_Tests : TestBase
     {
         protected PriorityQueue<string, int> CreateSmallPriorityQueue(out HashSet<(string, int)> items)
         {
@@ -168,6 +168,55 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public void PriorityQueue_Generic_Remove_MatchingElement()
+        {
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
+            queue.EnqueueRange([("value0", 0), ("value1", 1), ("value2", 2)]);
+
+            Assert.True(queue.Remove("value1", out string removedElement, out int removedPriority));
+            Assert.Equal("value1", removedElement);
+            Assert.Equal(1, removedPriority);
+            Assert.Equal(2, queue.Count);
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_Remove_MismatchElement()
+        {
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
+            queue.EnqueueRange([("value0", 0), ("value1", 1), ("value2", 2)]);
+
+            Assert.False(queue.Remove("value4", out string removedElement, out int removedPriority));
+            Assert.Null(removedElement);
+            Assert.Equal(0, removedPriority);
+            Assert.Equal(3, queue.Count);
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_Remove_DuplicateElement()
+        {
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
+            queue.EnqueueRange([("value0", 0), ("value1", 1), ("value0", 2)]);
+
+            Assert.True(queue.Remove("value0", out string removedElement, out int removedPriority));
+            Assert.Equal("value0", removedElement);
+            Assert.True(removedPriority is 0 or 2);
+            Assert.Equal(2, queue.Count);
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_Remove_CustomEqualityComparer()
+        {
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
+            queue.EnqueueRange([("value0", 0), ("value1", 1), ("value2", 2)]);
+            EqualityComparer<string> equalityComparer = EqualityComparer<string>.Create((left, right) => left[^1] == right[^1]);
+
+            Assert.True(queue.Remove("someOtherValue1", out string removedElement, out int removedPriority, equalityComparer));
+            Assert.Equal("value1", removedElement);
+            Assert.Equal(1, removedPriority);
+            Assert.Equal(2, queue.Count);
+        }
+
+        [Fact]
         public void PriorityQueue_Constructor_int_Negative_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCapacity", () => new PriorityQueue<int, int>(-1));
@@ -205,6 +254,16 @@ namespace System.Collections.Tests
 
             Assert.False(queue.TryPeek(out _, out _));
             Assert.Throws<InvalidOperationException>(() => queue.Peek());
+        }
+
+        [Fact]
+        public void PriorityQueue_EmptyCollection_Remove_ShouldReturnFalse()
+        {
+            var queue = new PriorityQueue<string, string>();
+
+            Assert.False(queue.Remove(element: "element", out string removedElement, out string removedPriority));
+            Assert.Null(removedElement);
+            Assert.Null(removedPriority);
         }
 
         #region EnsureCapacity, TrimExcess

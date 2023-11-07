@@ -2844,15 +2844,6 @@ CordbUnmanagedThread::~CordbUnmanagedThread()
     CONSISTENCY_CHECK_MSGF(!HasOOBEvent(), ("Deleting thread w/ outstanding OOB event:this=%p,event-code=%d\n", this, OOBEvent()->m_currentDebugEvent.dwDebugEventCode));
 }
 
-#define WINNT_TLS_OFFSET_X86    0xe10     // TLS[0] at fs:[WINNT_TLS_OFFSET]
-#define WINNT_TLS_OFFSET_AMD64  0x1480
-#define WINNT_TLS_OFFSET_ARM    0xe10
-#define WINNT_TLS_OFFSET_ARM64  0x1480
-#define WINNT5_TLSEXPANSIONPTR_OFFSET_X86   0xf94 // TLS[64] at [fs:[WINNT5_TLSEXPANSIONPTR_OFFSET]]
-#define WINNT5_TLSEXPANSIONPTR_OFFSET_AMD64 0x1780
-#define WINNT5_TLSEXPANSIONPTR_OFFSET_ARM   0xf94
-#define WINNT5_TLSEXPANSIONPTR_OFFSET_ARM64 0x1780
-
 HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
 {
     FAIL_IF_NEUTERED(this);
@@ -2860,20 +2851,9 @@ HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
     HRESULT hr = S_OK;
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
 
-
     // Just simple math on NT with a small tls index.
     // The TLS slots for 0-63 are embedded in the TIB.
-#if defined(TARGET_X86)
-    m_pTLSArray = (BYTE*) m_threadLocalBase + WINNT_TLS_OFFSET_X86;
-#elif defined(TARGET_AMD64)
-    m_pTLSArray = (BYTE*) m_threadLocalBase + WINNT_TLS_OFFSET_AMD64;
-#elif defined(TARGET_ARM)
-    m_pTLSArray = (BYTE*) m_threadLocalBase + WINNT_TLS_OFFSET_ARM;
-#elif defined(TARGET_ARM64)
-    m_pTLSArray = (BYTE*) m_threadLocalBase + WINNT_TLS_OFFSET_ARM64;
-#else
-    PORTABILITY_ASSERT("Implement OOP TLS on your platform");
-#endif
+    m_pTLSArray = (BYTE*) m_threadLocalBase + offsetof(TEB, TlsSlots);
 
     // Extended slot is lazily initialized, so check every time.
     if (m_pTLSExtendedArray == NULL)
@@ -2884,17 +2864,7 @@ HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
         // never move once we find it for a given thread, so we
         // cache it here so we don't always have to perform two
         // ReadProcessMemory's.
-#if defined(TARGET_X86)
-        void *ppTLSArray = (BYTE*) m_threadLocalBase + WINNT5_TLSEXPANSIONPTR_OFFSET_X86;
-#elif defined(TARGET_AMD64)
-        void *ppTLSArray = (BYTE*) m_threadLocalBase + WINNT5_TLSEXPANSIONPTR_OFFSET_AMD64;
-#elif defined(TARGET_ARM)
-        void *ppTLSArray = (BYTE*) m_threadLocalBase + WINNT5_TLSEXPANSIONPTR_OFFSET_ARM;
-#elif defined(TARGET_ARM64)
-        void *ppTLSArray = (BYTE*) m_threadLocalBase + WINNT5_TLSEXPANSIONPTR_OFFSET_ARM64;
-#else
-        PORTABILITY_ASSERT("Implement OOP TLS on your platform");
-#endif
+        void *ppTLSArray = (BYTE*) m_threadLocalBase + offsetof(TEB, TlsExpansionSlots);
 
         hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(ppTLSArray), &m_pTLSExtendedArray);
     }

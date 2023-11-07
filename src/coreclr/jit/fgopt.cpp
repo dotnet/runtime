@@ -1661,7 +1661,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                         // What follows is similar to fgNewBBInRegion, but we can't call that
                         // here as the oldTryEntry is no longer in the main bb list.
-                        newTryEntry = bbNewBasicBlock(BBJ_NONE);
+                        newTryEntry = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
                         newTryEntry->bbFlags |= (BBF_IMPORTED | BBF_INTERNAL);
                         newTryEntry->bbRefs = 0;
 
