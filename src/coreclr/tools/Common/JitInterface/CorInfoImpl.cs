@@ -1129,6 +1129,15 @@ namespace Internal.JitInterface
             {
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
+#if !READYTORUN
+            else if (method.OwningType is EcmaType ecmaOwningType
+                && ecmaOwningType.EcmaModule.EntryPoint == method)
+            {
+                // Mark entrypoint as NoInlining for better debugging. We don't want it to inline
+                // into startup code because breakpoints won't hit and stack traces won't have Main.
+                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
+            }
+#endif
 
             if (method.OwningType.IsDelegate && method.Name == "Invoke")
             {
