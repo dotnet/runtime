@@ -298,6 +298,8 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
     BYTE* pContext = (BYTE*)pRD->pCurrentContext;
 #elif defined(TARGET_RISCV64)
     assert(!"unimplemented on RISCV64 yet");
+    // TODO implement risc-v code, that should care about volatile registers (same as arm/arm64 architectures)
+    //      instead of default code.
     BYTE* pContext = (BYTE*)pRD->pCurrentContext;
 #else
     BYTE* pContext = (BYTE*)pRD->pCurrentContext;
@@ -397,7 +399,9 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
     assert(!"unimplemented on LOONGARCH yet");
                 pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
 #elif defined(TARGET_RISCV64)
-    assert(!"unimplemented on RISCV64 yet");
+                assert(!"unimplemented on RISCV64 yet");
+                // TODO implement risc-v code, that should care about volatile registers (same as arm/arm64 architectures)
+                //      instead of default code.
                 pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
 #else
                 pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
@@ -474,7 +478,12 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                     base = GC_SP_REL;
 #elif defined(TARGET_RISCV64)
                     assert(!"unimplemented on RISCV64 yet");
-                    base = GC_SP_REL;
+                    // TODO implement risc-v code, that should care about volatile registers (same as arm/arm64 architectures)
+                    //      instead of default code.
+                    if (0 == ctx)
+                        base = GC_SP_REL;
+                    else
+                        base = GC_CALLER_SP_REL;
 #else
                     if (0 == ctx)
                         base = GC_SP_REL;
@@ -507,7 +516,9 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
 #elif defined(TARGET_LOONGARCH64)
     assert(!"unimplemented on LOONGARCH yet");
 #elif defined(TARGET_RISCV64)
-    assert(!"unimplemented on RISCV64 yet");
+        assert(!"unimplemented on RISCV64 yet");
+        // TODO implement risc-v code, that should care about volatile registers (same as arm/arm64 architectures)
+        //      instead of default code.
         pContext = (BYTE*)pRD->pCallerContext;
 #else
         pContext = (BYTE*)pRD->pCallerContext;
