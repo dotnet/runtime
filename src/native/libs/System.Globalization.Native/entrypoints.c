@@ -19,7 +19,8 @@ typedef uint16_t UChar;
 
 static const Entry s_globalizationNative[] =
 {
-#if !defined(__APPLE__) || (defined(TARGET_OSX) && defined(__APPLE__) && !defined(TARGET_MACCAT))
+// #if !defined(__APPLE__) || (defined(TARGET_OSX) && !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST))
+#if !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
     DllImportEntry(GlobalizationNative_ChangeCase)
     DllImportEntry(GlobalizationNative_ChangeCaseInvariant)
     DllImportEntry(GlobalizationNative_ChangeCaseTurkish)
