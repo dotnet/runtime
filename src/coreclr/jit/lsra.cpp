@@ -11547,20 +11547,10 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 
     regType     = linearScan->getRegisterType(currentInterval, refPosition);
     candidates  = refPosition->registerAssignment;
-    preferences = currentInterval->registerPreferences;
-
-    regMaskTP updatedPreferences = (preferences & ~currentInterval->registerAversion);
-    if (updatedPreferences != RBM_NONE)
+    preferences = currentInterval->registerPreferences & ~currentInterval->registerAversion;
+    if (preferences == RBM_NONE)
     {
-        // registerAversion is the best-effort opportunity. Do not update the preference
-        // if registerAversion contains all the registers present in preferences.
-        preferences = updatedPreferences;
-    }
-    else
-    {
-        // TODO: Convert this to assert(updatedPreferences != RBM_NONE);
-        // Might hit this for certain JitStressRegs cases
-        assert(false);
+        preferences = linearScan->allRegs(regType) & ~currentInterval->registerAversion;
     }
 
     // This is not actually a preference, it's merely to track the lclVar that this
