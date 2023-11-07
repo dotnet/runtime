@@ -2931,6 +2931,43 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int CountMatches<T>(this Vector256<T> vector)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            }
+
+            Vector128<T> lower = vector._lower;
+            Vector128<T> upper = vector._upper;
+
+            int lowerCount = Vector128.CountMatches(lower);
+            int upperCount = Vector128.CountMatches(upper);
+
+            return lowerCount + upperCount;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfMatch<T>(this Vector256<T> vector)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                return BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+            }
+
+            Vector128<T> lower = vector._lower;
+            Vector128<T> upper = vector._upper;
+
+            int result = Vector128.IndexOfMatch(lower);
+            if (result >= Vector128<T>.Count)
+            {
+                return Vector128<T>.Count + Vector128.IndexOfMatch(upper);
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector256<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));

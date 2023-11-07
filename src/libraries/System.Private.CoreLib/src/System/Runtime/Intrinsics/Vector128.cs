@@ -3034,6 +3034,37 @@ namespace System.Runtime.Intrinsics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        internal static int CountMatches<T>(this Vector128<T> vector)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64
+                    .AddAcross(AdvSimd.PopCount(vector.AsByte()))
+                    .ToScalar() / (8 * Unsafe.SizeOf<T>());
+            }
+
+            return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        internal static int IndexOfMatch<T>(this Vector128<T> vector)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                ulong result = AdvSimd
+                    .ShiftRightLogicalNarrowingLower(vector.AsUInt16(), 4)
+                    .AsUInt64()
+                    .ToScalar();
+
+                return BitOperations.TrailingZeroCount(result) / (4 * Unsafe.SizeOf<T>());
+            }
+
+            return BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
         internal static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right)
         {
