@@ -356,6 +356,9 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
 
+    if (hwCap & HWCAP_SVE)
+        result |= ARM64IntrinsicConstants_Sve;
+
 #else // !HAVE_AUXV_HWCAP_H
 
 #if HAVE_SYSCTLBYNAME
