@@ -1079,16 +1079,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		}
 
 		if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+			MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ref_class ();
+			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (klass) {
-				// References cannot be retrieved directly. For SwiftError*, use strncmp since its length is predefined,
-				// allowing the trailing '*' character to be ignored.
-				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-				if (swift_error &&
-					!strcmp (m_class_get_name_space (klass), m_class_get_name_space (swift_error)) && 
-					!strncmp (m_class_get_name (klass), m_class_get_name (swift_error), 10)) {
+				if (klass == swift_error_ptr) {
 					ainfo->storage = ArgSwiftError;
-				} else if (klass == mono_class_try_get_swift_self_class ()) {
+				} else if (klass == swift_self) {
 					ainfo->storage = ArgSwiftSelf;
 				}
 			}
