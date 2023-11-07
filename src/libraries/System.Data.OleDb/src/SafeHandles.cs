@@ -675,7 +675,7 @@ namespace System.Data.OleDb
             finally
             {
                 Guid IID_IChapteredRowset = typeof(System.Data.Common.UnsafeNativeMethods.IChapteredRowset).GUID;
-                hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_IChapteredRowset, out var pChapteredRowset);
+                hr = (OleDbHResult)Marshal.QueryInterface(ptr, IID_IChapteredRowset, out var pChapteredRowset);
                 if (pChapteredRowset != IntPtr.Zero)
                 {
                     var chapteredRowset = (System.Data.Common.UnsafeNativeMethods.IChapteredRowset)Marshal.GetObjectForIUnknown(pChapteredRowset);
@@ -695,8 +695,7 @@ namespace System.Data.OleDb
             { }
             finally
             {
-                Guid IID_ITransactionLocal = typeof(ITransactionLocal).GUID;
-                hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_ITransactionLocal, out var pTransaction);
+                hr = (OleDbHResult)Marshal.QueryInterface(ptr, typeof(ITransactionLocal).GUID, out var pTransaction);
                 if (pTransaction != IntPtr.Zero)
                 {
                     ITransactionLocal transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);
@@ -716,8 +715,7 @@ namespace System.Data.OleDb
             { }
             finally
             {
-                Guid IID_ITransactionLocal = typeof(ITransactionLocal).GUID;
-                hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_ITransactionLocal, out var pTransaction);
+                hr = (OleDbHResult)Marshal.QueryInterface(ptr, typeof(ITransactionLocal).GUID, out var pTransaction);
                 if (pTransaction != IntPtr.Zero)
                 {
                     ITransactionLocal transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);

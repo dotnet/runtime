@@ -33,7 +33,7 @@ namespace System.Management
             if (IntPtr.Zero != pErrorInfo && new IntPtr(-1) != pErrorInfo)
             {
                 IntPtr pIWbemClassObject;
-                Marshal.QueryInterface(pErrorInfo, ref IWbemClassObjectFreeThreaded.IID_IWbemClassObject, out pIWbemClassObject);
+                Marshal.QueryInterface(pErrorInfo, IWbemClassObjectFreeThreaded.IID_IWbemClassObject, out pIWbemClassObject);
                 Marshal.Release(pErrorInfo);
 
                 // The IWbemClassObjectFreeThreaded instance will own reference count on pIWbemClassObject

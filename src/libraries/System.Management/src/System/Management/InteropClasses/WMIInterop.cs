@@ -1299,8 +1299,8 @@ namespace System.Management
         }
 
         // Interfaces that we need to use
-        private static Guid IID_IObjectContext = new Guid("51372AE0-CAE7-11CF-BE81-00AA00A2FA25");
-        private static Guid IID_IComThreadingInfo = new Guid("000001ce-0000-0000-C000-000000000046");
+        private static readonly Guid IID_IObjectContext = new Guid("51372AE0-CAE7-11CF-BE81-00AA00A2FA25");
+        private static readonly Guid IID_IComThreadingInfo = new Guid("000001ce-0000-0000-C000-000000000046");
 
         // A variable that is initialized once to tell us if we are on
         // a Win2k platform or above.
@@ -1343,7 +1343,7 @@ namespace System.Management
                     return false;
 
                 // If we CAN get to the IObjectContext interface, we have a 'context'
-                if (0 == Marshal.QueryInterface(pComThreadingInfo, ref IID_IObjectContext, out pObjectContext))
+                if (0 == Marshal.QueryInterface(pComThreadingInfo, IID_IObjectContext, out pObjectContext))
                     return false;
             }
             finally

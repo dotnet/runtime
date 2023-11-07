@@ -37,8 +37,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
 
-            Guid errorInfoIID = IID_IErrorInfo;
-            int hr = Marshal.QueryInterface(externalComObject, ref errorInfoIID, out IntPtr comObject);
+            int hr = Marshal.QueryInterface(externalComObject, IID_IErrorInfo, out IntPtr comObject);
             if (hr == S_OK)
             {
                 return new ErrorInfoWrapper(comObject);
