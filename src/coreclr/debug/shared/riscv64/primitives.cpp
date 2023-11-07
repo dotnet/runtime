@@ -54,8 +54,8 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
                          DT_CONTEXT_INTEGER);
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: T0: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->T0, pSrc->T0, DT_CONTEXT_INTEGER));
-        pDst->T0 = pSrc->T0;
+             pDst->R0, pSrc->R0, DT_CONTEXT_INTEGER));
+        pDst->R0 = pSrc->R0;
     }
 
     if ((dstFlags & srcFlags & DT_CONTEXT_FLOATING_POINT) == DT_CONTEXT_FLOATING_POINT)
@@ -87,6 +87,7 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     {
         memcpy(&pDRD->GP, &pContext->Gp, sizeof(pDRD->GP) * 5);
         memcpy(&pDRD->S1, &pContext->S1, sizeof(pDRD->S1) * 23);
+        pDRD->R0 = (SIZE_T)pContext->R0;
     }
 
     pDRD->SP = pRD->SP;
