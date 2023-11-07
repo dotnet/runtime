@@ -19,8 +19,7 @@ typedef uint16_t UChar;
 
 static const Entry s_globalizationNative[] =
 {
-// #if !defined(__APPLE__) || (defined(TARGET_OSX) && !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST))
-#if !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(__APPLE__) || (defined(TARGET_OS_OSX) && !defined(TARGET_OS_MACCATALYST))
     DllImportEntry(GlobalizationNative_ChangeCase)
     DllImportEntry(GlobalizationNative_ChangeCaseInvariant)
     DllImportEntry(GlobalizationNative_ChangeCaseTurkish)
@@ -57,11 +56,7 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_NormalizeString)
     DllImportEntry(GlobalizationNative_StartsWith)
     DllImportEntry(GlobalizationNative_WindowsIdToIanaId)
-#endif
-     DllImportEntry(GlobalizationNative_ToAscii)
-     DllImportEntry(GlobalizationNative_ToUnicode)
-     DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
-#if defined(TARGET_MACCAT) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#else
     DllImportEntry(GlobalizationNative_ChangeCaseInvariantNative)
     DllImportEntry(GlobalizationNative_ChangeCaseNative)
     DllImportEntry(GlobalizationNative_CompareStringNative)
@@ -84,6 +79,9 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_StartsWithNative)
     DllImportEntry(GlobalizationNative_GetDefaultLocaleNameNative)
 #endif
+     DllImportEntry(GlobalizationNative_ToAscii)
+     DllImportEntry(GlobalizationNative_ToUnicode)
+     DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
 };
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
