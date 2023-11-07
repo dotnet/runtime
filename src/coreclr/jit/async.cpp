@@ -272,7 +272,7 @@ void Async2Transformation::Transform(
 #ifdef DEBUG
     if (m_comp->verbose)
     {
-        printf("Processing call [%06u]\n", Compiler::dspTreeID(call));
+        printf("Processing call [%06u] in " FMT_BB "\n", Compiler::dspTreeID(call), block->bbNum);
         printf("  %zu live LIR edges\n", defs.size());
 
         if (defs.size() > 0)
@@ -397,6 +397,7 @@ void Async2Transformation::Transform(
     // (-1 in the tier0 version):
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
     {
+        JITDUMP("  Method %s; keeping an IL offset at the beginning of non-GC data\n", m_comp->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
         dataSize += sizeof(int);
     }
 
@@ -415,6 +416,8 @@ void Async2Transformation::Transform(
         returnInGCData = varTypeIsGC(call->gtReturnType);
     }
 
+    JITDUMP("  Will store return of type %s, size %u in %sGC data\n", call->gtReturnType == TYP_STRUCT ? returnStructLayout->GetClassName() : varTypeName(call->gtReturnType), returnSize, returnInGCData ? "" : "non-");
+
     assert((returnSize > 0) == (call->gtReturnType != TYP_VOID));
 
     // The return value is always stored:
@@ -431,11 +434,16 @@ void Async2Transformation::Transform(
     {
         returnValDataOffset = dataSize;
         dataSize += returnSize;
+
+        JITDUMP("  at offset %u\n", returnValDataOffset);
     }
 
     unsigned exceptionGCDataIndex = UINT_MAX;
     if (block->hasTryIndex())
+    {
         exceptionGCDataIndex = gcRefsCount++;
+        JITDUMP("  " FMT_BB " is in try region %u; exception will be at GC@+%02u in GC data\n", block->bbNum, exceptionGCDataIndex);
+    }
 
     for (LiveLocalInfo& inf : m_liveLocals)
     {
@@ -518,6 +526,8 @@ void Async2Transformation::Transform(
     BasicBlock* remainder = m_comp->fgSplitBlockAfterNode(block, jtrue);
     *pRemainder           = remainder;
 
+    JITDUMP("  Remainder is " FMT_BB "\n", remainder->bbNum);
+
     assert(block->KindIs(BBJ_NONE) && block->NextIs(remainder));
 
     if (m_lastSuspensionBB == nullptr)
@@ -530,6 +540,8 @@ void Async2Transformation::Transform(
     retBB->clearTryIndex();
     retBB->clearHndIndex();
     m_lastSuspensionBB = retBB;
+
+    JITDUMP("  Created suspension " FMT_BB " for state %u\n", retBB->bbNum, stateNum);
 
     block->SetJumpKindAndTarget(BBJ_COND, retBB DEBUGARG(m_comp));
 
@@ -733,23 +745,19 @@ void Async2Transformation::Transform(
     GenTree* ret    = m_comp->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
     LIR::AsRange(retBB).InsertAtEnd(newContinuation, ret);
 
-    JITDUMP("  Created suspension BB " FMT_BB "\n", retBB->bbNum);
-
-    BasicBlock* prevResumptionBB;
-    if (m_resumptionBBs.size() == 0)
+    if (m_lastResumptionBB == nullptr)
     {
-        prevResumptionBB = m_comp->fgLastBBInMainFunction();
-    }
-    else
-    {
-        prevResumptionBB = m_resumptionBBs[m_resumptionBBs.size() - 1];
+        m_lastResumptionBB = m_comp->fgLastBBInMainFunction();
     }
 
-    BasicBlock* resumeBB = m_comp->fgNewBBafter(BBJ_ALWAYS, prevResumptionBB, true, remainder);
+    BasicBlock* resumeBB = m_comp->fgNewBBafter(BBJ_ALWAYS, m_lastResumptionBB, true, remainder);
     resumeBB->bbSetRunRarely();
     resumeBB->clearTryIndex();
     resumeBB->clearHndIndex();
     resumeBB->bbFlags |= BBF_ASYNC_RESUMPTION;
+    m_lastResumptionBB = resumeBB;
+
+    JITDUMP("  Created resumption " FMT_BB " for state %u\n", resumeBB->bbNum, stateNum);
 
     m_comp->fgAddRefPred(remainder, resumeBB);
 
@@ -876,15 +884,22 @@ void Async2Transformation::Transform(
         BasicBlock* storeResultBB = resumeBB;
         if (exceptionGCDataIndex != UINT_MAX)
         {
+            JITDUMP("  We need to rethrow an exception\n");
             BasicBlock* rethrowExceptionBB = m_comp->fgNewBBinRegion(BBJ_THROW, block, /* jumpDest */ nullptr,
                                                                      /* runRarely */ true, /* insertAtEnd */ true);
+            JITDUMP("  Created " FMT_BB " to rethrow exception on resumption\n", rethrowExceptionBB->bbNum);
             resumeBB->SetJumpKindAndTarget(BBJ_COND, rethrowExceptionBB DEBUGARG(m_comp));
             m_comp->fgAddRefPred(rethrowExceptionBB, resumeBB);
             m_comp->fgRemoveRefPred(remainder, resumeBB);
 
+            JITDUMP("  Resumption " FMT_BB " becomes BBJ_COND to check for non-null exception\n", resumeBB->bbNum);
+
             storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true, remainder);
+            JITDUMP("  Created " FMT_BB " to store result when resuming with no exception\n", storeResultBB->bbNum);
             m_comp->fgAddRefPred(remainder, storeResultBB);
             m_comp->fgAddRefPred(storeResultBB, resumeBB);
+
+            m_lastResumptionBB = storeResultBB;
 
             // Check if we have an exception.
             unsigned exceptionLclNum = GetExceptionVar();
@@ -909,7 +924,7 @@ void Async2Transformation::Transform(
             LIR::AsRange(rethrowExceptionBB).InsertAtEnd(LIR::SeqTree(m_comp, rethrowException));
 
             storeResultBB->bbFlags |= BBF_ASYNC_RESUMPTION;
-            JITDUMP("Added " FMT_BB " to rethrow exception at suspension point\n", rethrowExceptionBB->bbNum);
+            JITDUMP("  Added " FMT_BB " to rethrow exception at suspension point\n", rethrowExceptionBB->bbNum);
         }
     }
 
@@ -1022,7 +1037,6 @@ void Async2Transformation::Transform(
     }
 
     m_resumptionBBs.push_back(resumeBB);
-    JITDUMP("  Created resumption BB " FMT_BB "\n", resumeBB->bbNum);
 }
 
 GenTreeIndir* Async2Transformation::LoadFromOffset(GenTree*     base,
@@ -1178,7 +1192,6 @@ void Async2Transformation::LiftLIREdges(BasicBlock*                    block,
 void Async2Transformation::CreateResumptionSwitch()
 {
     BasicBlock* newEntryBB = m_comp->bbNewBasicBlock(BBJ_NONE);
-    JITDUMP("New entry BB: " FMT_BB "\n", newEntryBB->bbNum);
 
     if (m_comp->fgFirstBB->hasProfileWeight())
     {
@@ -1188,6 +1201,8 @@ void Async2Transformation::CreateResumptionSwitch()
 
     FlowEdge* edge = m_comp->fgAddRefPred(m_comp->fgFirstBB, newEntryBB);
     edge->setLikelihood(1);
+
+    JITDUMP("  Inserting new entry " FMT_BB " before old entry " FMT_BB "\n", newEntryBB->bbNum, m_comp->fgFirstBB->bbNum);
 
     m_comp->fgInsertBBbefore(m_comp->fgFirstBB, newEntryBB);
 
@@ -1203,6 +1218,7 @@ void Async2Transformation::CreateResumptionSwitch()
 
     if (m_resumptionBBs.size() == 1)
     {
+        JITDUMP("  Redirecting entry " FMT_BB " directly to " FMT_BB " as it is the only resumption block\n", newEntryBB->bbNum, m_resumptionBBs[0]->bbNum);
         newEntryBB->SetJumpKindAndTarget(BBJ_COND, m_resumptionBBs[0] DEBUGARG(m_comp));
         m_comp->fgAddRefPred(m_resumptionBBs[0], newEntryBB);
     }
@@ -1212,7 +1228,7 @@ void Async2Transformation::CreateResumptionSwitch()
         condBB->bbSetRunRarely();
         newEntryBB->SetJumpKindAndTarget(BBJ_COND, condBB DEBUGARG(m_comp));
 
-        JITDUMP("New cond BB: " FMT_BB "\n", condBB->bbNum);
+        JITDUMP("  Redirecting entry " FMT_BB " to BBJ_COND " FMT_BB " for resumption with 2 states\n", newEntryBB->bbNum, condBB->bbNum);
 
         m_comp->fgAddRefPred(condBB, newEntryBB);
         m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
@@ -1236,7 +1252,7 @@ void Async2Transformation::CreateResumptionSwitch()
         switchBB->bbSetRunRarely();
         newEntryBB->SetJumpKindAndTarget(BBJ_COND, switchBB DEBUGARG(m_comp));
 
-        JITDUMP("New switch BB: " FMT_BB "\n", switchBB->bbNum);
+        JITDUMP("  Redirecting entry " FMT_BB " to BBJ_SWITCH " FMT_BB " for resumption with %zu states\n", newEntryBB->bbNum, switchBB->bbNum, m_resumptionBBs.size());
 
         m_comp->fgAddRefPred(switchBB, newEntryBB);
 
@@ -1268,13 +1284,19 @@ void Async2Transformation::CreateResumptionSwitch()
 
     if (m_comp->doesMethodHavePatchpoints())
     {
+        JITDUMP("  Method has patch points...\n");
         // If we have patchpoints then first check if we need to resume in the OSR version.
         BasicBlock* callHelperBB = m_comp->fgNewBBafter(BBJ_THROW, m_comp->fgLastBBInMainFunction(), false);
         callHelperBB->bbSetRunRarely();
         callHelperBB->clearTryIndex();
         callHelperBB->clearHndIndex();
 
+        JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", callHelperBB->bbNum);
+
         BasicBlock* checkILOffsetBB = m_comp->fgNewBBbefore(BBJ_COND, newEntryBB->GetJumpDest(), true, callHelperBB);
+
+        JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n", checkILOffsetBB->bbNum);
+
         m_comp->fgRemoveRefPred(newEntryBB->GetJumpDest(), newEntryBB);
         newEntryBB->SetJumpDest(checkILOffsetBB);
 
@@ -1310,6 +1332,7 @@ void Async2Transformation::CreateResumptionSwitch()
     }
     else if (m_comp->opts.IsOSR())
     {
+        JITDUMP("  Method is an OSR function\n");
         // If the tier-0 version resumed and then transitioned to the OSR
         // version by normal means then we will see a non-zero continuation
         // here that belongs to the tier0 method. In that case we should just
@@ -1318,6 +1341,8 @@ void Async2Transformation::CreateResumptionSwitch()
             m_comp->fgNewBBbefore(BBJ_COND, newEntryBB->GetJumpDest(), true, newEntryBB->Next());
         m_comp->fgRemoveRefPred(newEntryBB->GetJumpDest(), newEntryBB);
         newEntryBB->SetJumpDest(checkILOffsetBB);
+
+        JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkILOffsetBB->bbNum);
 
         m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
         m_comp->fgAddRefPred(checkILOffsetBB->Next(), checkILOffsetBB);
