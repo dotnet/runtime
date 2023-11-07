@@ -541,6 +541,33 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 
 void Compiler::optAssertionInit(bool isLocalProp)
 {
+    // See if we should disable cross-block local prop
+    //
+    if (optCrossBlockLocalAssertionProp)
+    {
+#ifdef DEBUG
+        // Disable via config
+        //
+        if (JitConfig.JitDoCrossBlockLocalAssertionProp() == 0)
+        {
+            JITDUMP("Disabling cross-block assertion prop by config setting\n");
+            optCrossBlockLocalAssertionProp = false;
+        }
+#endif
+
+        // Disable if too many locals
+        //
+        // The typical number of local assertions is roughly proportional
+        // to the number of locals. So when we have huge numbers of locals,
+        // just do within-block local assertion prop.
+        //
+        if (lvaCount > (unsigned)JitConfig.JitMaxLocalsToTrack())
+        {
+            JITDUMP("Disabling cross-block assertion prop: too many locals\n");
+            optCrossBlockLocalAssertionProp = false;
+        }
+    }
+
     // Use a function countFunc to determine a proper maximum assertion count for the
     // method being compiled. The function is linear to the IL size for small and
     // moderate methods. For large methods, considering throughput impact, we track no
