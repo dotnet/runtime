@@ -64,6 +64,7 @@ if(HAVE_SYS_ICU)
 
 if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     set(icu_shim_sources_base
+      ${icu_shim_sources_base}
       pal_calendarData.c
       pal_casing.c
       pal_collation.c
@@ -72,7 +73,6 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
       pal_localeStringData.c
       pal_normalization.c
       pal_timeZoneInfo.c
-      ${icu_shim_sources_base}
     )
 endif()
 

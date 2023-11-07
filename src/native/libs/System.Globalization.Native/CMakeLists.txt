@@ -63,6 +63,7 @@ set(NATIVEGLOBALIZATION_SOURCES
 )
 if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     set(NATIVEGLOBALIZATION_SOURCES
+        ${NATIVEGLOBALIZATION_SOURCES}
         pal_calendarData.c
         pal_casing.c
         pal_collation.c
@@ -70,7 +71,6 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
         pal_localeNumberData.c
         pal_localeStringData.c
         pal_normalization.c
-        ${NATIVEGLOBALIZATION_SOURCES}
     )
 endif()
 
