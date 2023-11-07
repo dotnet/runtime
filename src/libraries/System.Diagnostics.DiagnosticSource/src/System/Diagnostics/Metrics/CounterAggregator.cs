@@ -15,8 +15,10 @@ namespace System.Diagnostics.Metrics
         /// <remarks>
         /// Stored as an array of deltas rather than a single delta to reduce contention from
         /// highly-parallel updates. The elements are padded to reduce false sharing.
+        /// The array is limited to a semi-arbitrary limit of 8 in order to avoid excessive memory
+        /// consumption when many counters are being used.
         /// </remarks>
-        private readonly PaddedDouble[] _deltas = new PaddedDouble[Environment.ProcessorCount];
+        private readonly PaddedDouble[] _deltas = new PaddedDouble[Math.Min(Environment.ProcessorCount, 8)];
 
         public CounterAggregator(bool isMonotonic)
         {
@@ -27,7 +29,6 @@ namespace System.Diagnostics.Metrics
         {
             // Get the deltas array.
             PaddedDouble[] deltas = _deltas;
-            Debug.Assert(deltas.Length == Environment.ProcessorCount);
 
             // Get the delta best associated with the current thread, preferring to use core ID rather than
             // thread ID to reduce contention.
@@ -37,7 +38,7 @@ namespace System.Diagnostics.Metrics
 #else
                 Environment.CurrentManagedThreadId
 #endif
-                % Environment.ProcessorCount];
+                % deltas.Length];
 
             // We're not guaranteed uncontented access, so we still need to add the value
             // to the delta with synchronization. Contention could come from other threads
@@ -71,7 +72,10 @@ namespace System.Diagnostics.Metrics
             return new CounterStatistics(delta, _isMonotonic, aggregatedValue);
         }
 
-        [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE)]
+        // 64 bytes is the size of a cache line on many systems. We pad the double to false sharing.
+        // For the rare systems with a larger cache line, we may simply incur a little more false
+        // sharing. This is a trade-off between throughput and memory footprint.
+        [StructLayout(LayoutKind.Explicit, Size = 64)]
         private struct PaddedDouble
         {
             [FieldOffset(0)]
