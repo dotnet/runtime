@@ -13871,7 +13871,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         fgRenumberBlocks();
         EnsureBasicBlockEpoch();
         fgComputeEnterBlocksSet();
-        fgDfsReversePostorder();
+        const unsigned lastReachablePostorderNumber = fgDfsReversePostorderCore(fgEnterBlks);
 
         // Disallow general creation of new blocks or edges as it
         // would invalidate RPO.
@@ -13894,8 +13894,22 @@ PhaseStatus Compiler::fgMorphBlocks()
             fgFirstBB->Next()->bbFlags |= BBF_CAN_ADD_PRED;
         }
 
-        unsigned const bbNumMax = fgBBNumMax;
-        for (unsigned i = 1; i <= bbNumMax; i++)
+        // Remember this so we can sanity check that no new blocks will get created.
+        //
+        INDEBUG(unsigned const bbNumMax = fgBBNumMax;);
+
+        // Todo: verify enter block set is sufficient to allow actual removal here.
+        // Likely need to add genReturnBB, fgEntryBB (for OSR), and perhaps more.
+        //
+        if (lastReachablePostorderNumber < fgBBNumMax)
+        {
+            JITDUMP("Method has %u unreachable blocks, consider removing them\n",
+                    fgBBNumMax - lastReachablePostorderNumber);
+        }
+
+        // Morph the blocks in RPO.
+        //
+        for (unsigned i = 1; i <= fgBBNumMax; i++)
         {
             BasicBlock* const block = fgBBReversePostorder[i];
             fgMorphBlock(block);

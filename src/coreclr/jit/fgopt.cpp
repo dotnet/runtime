@@ -763,53 +763,69 @@ bool Compiler::fgRemoveDeadBlocks()
 
 //-------------------------------------------------------------
 // fgDfsReversePostorder: Depth first search to establish block
-//   preorder and reverse postorder numbers, plus a reverse postorder for blocks.
+//   preorder and reverse postorder numbers, plus a reverse postorder for blocks,
+//   using all entry blocks and blocks without preds as start lblocks.
 //
 // Notes:
-//   Assumes caller has computed the fgEnterBlks set.
-//
 //   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
-//
 //   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
-//
 //   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
 //
 void Compiler::fgDfsReversePostorder()
 {
-    assert(fgBBcount == fgBBNumMax);
-    assert(BasicBlockBitSetTraits::GetSize(this) == fgBBNumMax + 1);
-
     // Make sure fgEnterBlks are still there in startNodes, even if they participate in a loop (i.e., there is
     // an incoming edge into the block).
     assert(fgEnterBlksSetValid);
 
-    fgBBReversePostorder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
-
-    // visited   :  Once we run the DFS post order sort recursive algorithm, we mark the nodes we visited to avoid
-    //              backtracking.
-    BlockSet visited(BlockSetOps::MakeEmpty(this));
-
     // We begin by figuring out which basic blocks don't have incoming edges and mark them as
-    // start nodes.  Later on we run the recursive algorithm for each node that we
+    // start blocks.  Later on we run the recursive algorithm for each node that we
     // mark in this step.
-    BlockSet_ValRet_T startNodes = fgDomFindStartNodes();
+    BlockSet_ValRet_T startBlocks = fgDomFindStartBlocks();
+    BlockSetOps::UnionD(this, startBlocks, fgEnterBlks);
+    assert(BlockSetOps::IsMember(this, startBlocks, fgFirstBB->bbNum));
 
-    BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
-    assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
+    fgDfsReversePostorderCore(startBlocks);
+}
+
+//-------------------------------------------------------------
+// fgDfsReversePostorderCore: Depth first search to establish block
+//   preorder and reverse postorder numbers, plus a reverse postorder for blocks,
+//   using a specified set of start blocks.
+//
+// Arguments:
+//   startBlocks: set of blocks to consider as DFS roots
+//
+// Returns:
+//   postorder number of last block reachable from the root set. Any block
+//   with a postorder number higher than this was not reachable from the root set.
+//
+// Notes:
+//   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
+//   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
+//   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
+//
+unsigned Compiler::fgDfsReversePostorderCore(BlockSet_ValArg_T startBlocks)
+{
+    assert(fgBBcount == fgBBNumMax);
+    assert(BasicBlockBitSetTraits::GetSize(this) == fgBBNumMax + 1);
+    fgBBReversePostorder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
+    BlockSet visited(BlockSetOps::MakeEmpty(this));
 
     // Call the flowgraph DFS traversal helper.
     unsigned preorderIndex  = 1;
     unsigned postorderIndex = 1;
     for (BasicBlock* const block : Blocks())
     {
-        // If the block has no predecessors, and we haven't already visited it (because it's in fgEnterBlks but also
-        // reachable from the first block), go ahead and traverse starting from this block.
-        if (BlockSetOps::IsMember(this, startNodes, block->bbNum) &&
+        // Spawn a DFS from each unvisited start block.
+        //
+        if (BlockSetOps::IsMember(this, startBlocks, block->bbNum) &&
             !BlockSetOps::IsMember(this, visited, block->bbNum))
         {
             fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
         }
     }
+
+    const unsigned lastReachablePostorderNumber = postorderIndex;
 
     // If there are still unvisited blocks (say isolated cycles), visit them too.
     //
@@ -841,18 +857,20 @@ void Compiler::fgDfsReversePostorder()
         printf("\n");
     }
 #endif // DEBUG
+
+    return lastReachablePostorderNumber;
 }
 
 //-------------------------------------------------------------
-// fgDomFindStartNodes: Helper for dominance computation to find the start nodes block set.
+// fgDomFindStartBlocks: Helper for dominance computation to find the start block set.
 //
-// The start nodes is a set that represents which basic blocks in the flow graph don't have incoming edges.
+// The start block set represents basic blocks in the flow graph that do not have incoming edges.
 // We begin assuming everything is a start block and remove any block that is a successor of another.
 //
 // Returns:
-//    Block set of start nodes.
+//    Block set describing the start blocks.
 //
-BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
+BlockSet_ValRet_T Compiler::fgDomFindStartBlocks()
 {
     BlockSet startNodes(BlockSetOps::MakeFull(this));
 
