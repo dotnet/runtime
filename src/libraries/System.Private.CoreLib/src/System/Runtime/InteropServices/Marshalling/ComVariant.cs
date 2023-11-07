@@ -47,8 +47,13 @@ namespace System.Runtime.InteropServices.Marshalling
         [StructLayout(LayoutKind.Sequential)]
         private struct TypeUnion
         {
+#if BIGENDIAN
+            public ushort _wReserved1;
+            public ushort _vt;
+#else
             public ushort _vt;
             public ushort _wReserved1;
+#endif
             public ushort _wReserved2;
             public ushort _wReserved3;
 
