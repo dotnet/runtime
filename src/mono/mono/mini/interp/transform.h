@@ -184,6 +184,7 @@ typedef struct {
 	int indirects;
 	int offset;
 	int size;
+	int ext_index;
 	GSList *declare_bbs;
 	union {
 		// live_start and live_end are used by the offset allocator for optimized code
@@ -211,8 +212,19 @@ typedef struct {
 	guint unknown_use : 1;
 	guint local_only : 1;
 	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
-	guint ssa_global: 1;
+	guint no_ssa : 1; // Var is not in ssa form, not subject to optimizations
 } InterpVar;
+
+typedef struct {
+	int var_index;
+	GSList *ssa_stack;
+
+	// Var that is global and might take part in phi opcodes
+	guint ssa_global : 1;
+	// IL locals/args. Vars included in phi opcodes. All renamed vars are allocated
+	// to the same offset. Optimizations need to ensure there is no overlapping liveness
+	guint ssa_fixed : 1;
+} InterpRenamableVar;
 
 typedef struct
 {
@@ -246,6 +258,11 @@ typedef struct
 	InterpVar *vars;
 	unsigned int vars_size;
 	unsigned int vars_capacity;
+
+	// Additional information for vars that are renamable
+	InterpRenamableVar *renamable_vars;
+	unsigned int renamable_vars_size;
+	unsigned int renamable_vars_capacity;
 
 	int n_data_items;
 	int max_data_items;
@@ -463,6 +480,9 @@ interp_alloc_global_var_offset (TransformData *td, int var);
 
 int
 interp_create_var (TransformData *td, MonoType *type);
+
+int
+interp_create_renamable_var (TransformData *td, int var);
 
 void
 interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer));

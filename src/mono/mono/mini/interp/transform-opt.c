@@ -720,16 +720,29 @@ interp_compute_dominance (TransformData *td)
  * SSA TRANSFORMATION
  */
 
+static gboolean
+var_is_ssa_form (TransformData *td, int var)
+{
+	if (td->vars [var].no_ssa)
+		return FALSE;
+
+	return TRUE;
+}
+
 static void
 compute_global_var_cb (TransformData *td, int *pvar, gpointer data)
 {
 	int var = *pvar;
 	InterpBasicBlock *bb = (InterpBasicBlock*)data;
 	InterpVar *var_data = &td->vars [var];
+	if (!var_is_ssa_form (td, var))
+		return;
 	// If var is used in another block than the one that it is declared then mark it as global
 	if (var_data->declare_bbs) {
-		if (var_data->declare_bbs->data != bb || var_data->declare_bbs->next)
-			var_data->ssa_global = TRUE;
+		if (var_data->declare_bbs->data != bb || var_data->declare_bbs->next) {
+			int ext_index = interp_create_renamable_var (td, var);
+			td->renamable_vars [ext_index].ssa_global = TRUE;
+		}
 	}
 }
 
@@ -737,28 +750,39 @@ compute_global_var_cb (TransformData *td, int *pvar, gpointer data)
 static void
 interp_compute_global_vars (TransformData *td)
 {
+	for (int i = 0; i < td->vars_size; i++) {
+		if (td->vars [i].indirects > 0)
+			td->vars [i].no_ssa = TRUE;
+		else
+			td->vars [i].no_ssa = FALSE;
+	}
+
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			interp_foreach_ins_svar (td, ins, bb, compute_global_var_cb);
-			if (mono_interp_op_dregs [ins->opcode]) {
+			if (mono_interp_op_dregs [ins->opcode] && var_is_ssa_form (td, ins->dreg)) {
 				// Save the list of bblocks where a global var is defined in
 				InterpVar *var_data = &td->vars [ins->dreg];
-				if (!var_data->declare_bbs)
+				if (!var_data->declare_bbs) {
 					var_data->declare_bbs = g_slist_prepend (NULL, bb);
-				else if (!g_slist_find (var_data->declare_bbs, bb))
-					var_data->declare_bbs = g_slist_prepend (var_data->declare_bbs, bb);
+				} else {
+					interp_create_renamable_var (td, ins->dreg);
+					if (!g_slist_find (var_data->declare_bbs, bb))
+						var_data->declare_bbs = g_slist_prepend (var_data->declare_bbs, bb);
+				}
 			}
 		}
 	}
 
 	if (td->verbose_level) {
 		g_print ("\nSSA GLOBALS:\n");
-		for (unsigned int i = 0; i < td->vars_size; i++) {
-			if (td->vars [i].ssa_global) {
-				g_print ("DECLARE_BB (%d) = {", i);
-				GSList *l = td->vars [i].declare_bbs;
+		for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
+			if (td->renamable_vars [i].ssa_global) {
+				int var = td->renamable_vars [i].var_index;
+				g_print ("DECLARE_BB (%d) = {", var);
+				GSList *l = td->vars [var].declare_bbs;
 				while (l) {
 					g_print (" BB%d", ((InterpBasicBlock*)l->data)->index);
 					l = l->next;
@@ -806,13 +830,14 @@ insert_phi_nodes (TransformData *td)
 {
 	if (td->verbose_level)
 		g_print ("\nINSERT PHI NODES:\n");
-	for (int i = 0; i < td->vars_size; i++) {
-		if (!td->vars [i].ssa_global)
+	for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
+		if (!td->renamable_vars [i].ssa_global)
 			continue;
 
 		// For every definition of this var, we add a phi node at the start of
 		// all bblocks in the dominance frontier of the defining bblock.
-		GSList *workset = g_slist_copy (td->vars [i].declare_bbs);
+		int var = td->renamable_vars [i].var_index;
+		GSList *workset = g_slist_copy (td->vars [var].declare_bbs);
 		while (workset) {
 			GSList *old_head = workset;
 			InterpBasicBlock *bb = (InterpBasicBlock*)workset->data;
@@ -821,8 +846,9 @@ insert_phi_nodes (TransformData *td)
 			int j;
 			mono_bitset_foreach_bit (bb->dfrontier, j, td->bb_count) {
 				InterpBasicBlock *bd = td->bblocks [j];
-				if (!bb_has_phi (bd, i)) {
-					bb_insert_phi (td, bd, i);
+				if (!bb_has_phi (bd, var)) {
+					td->renamable_vars [i].ssa_fixed = TRUE;
+					bb_insert_phi (td, bd, var);
 					if (!g_slist_find (workset, bd))
 						workset = g_slist_prepend (workset, bd);
 				}
@@ -831,10 +857,104 @@ insert_phi_nodes (TransformData *td)
 	}
 }
 
-static void
-rename_vars ()
+static int
+get_renamed_var (TransformData *td, int var)
 {
-	// TODO
+	g_assert (td->vars [var].ext_index != -1);
+	int renamed_var = interp_create_var (td, td->vars [var].type);
+	// Renamed var reference the orignal var through the ext_index
+	int ext_index = td->vars [var].ext_index;
+	td->vars [renamed_var].ext_index = ext_index;
+	td->renamable_vars [ext_index].ssa_stack = g_slist_prepend (td->renamable_vars [ext_index].ssa_stack, (gpointer)(gsize)renamed_var);
+	return renamed_var;
+}
+
+static void
+rename_ins_var_cb (TransformData *td, int *pvar, gpointer data)
+{
+	int var = *pvar;
+	int ext_index = td->vars [var].ext_index;
+	if (ext_index != -1)
+		*pvar = (int)(gsize)td->renamable_vars [ext_index].ssa_stack->data;
+}
+
+static void
+rename_phi_args_in_out_bbs (TransformData *td, InterpBasicBlock *bb)
+{
+        for (int i = 0; i < bb->out_count; i++) {
+                InterpBasicBlock *bb_out = bb->out_bb [i];
+
+		int aindex;
+                for (aindex = 0; aindex < bb_out->in_count; aindex++)
+                        if (bb_out->in_bb [aindex] == bb)
+                                break;
+
+		for (InterpInst *ins = bb_out->first_ins; ins != NULL; ins = ins->next) {
+			if (ins->opcode == MINT_PHI) {
+				int var = ins->info.args [aindex];
+				int ext_index = td->vars [var].ext_index;
+				GSList *stack = td->renamable_vars [ext_index].ssa_stack;
+				ins->info.args [aindex] = (int)(gsize)stack->data;
+			} else {
+				break;
+			}
+                }
+        }
+}
+
+static void
+rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
+{
+	InterpInst *ins;
+
+	// Rename vars defined with MINT_PHI
+	for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+		if (ins->opcode == MINT_PHI)
+			ins->dreg = get_renamed_var (td, ins->dreg);
+		else
+			break;
+	}
+
+	// Use renamed definition for sources
+	for (; ins != NULL; ins = ins->next) {
+		interp_foreach_ins_svar (td, ins, NULL, rename_ins_var_cb);
+		if (mono_interp_op_dregs [ins->opcode] && td->vars [ins->dreg].ext_index != -1)
+			ins->dreg = get_renamed_var (td, ins->dreg);
+	}
+
+	rename_phi_args_in_out_bbs (td, bb);
+
+	// Rename recursively every successor of bb in the dominator tree
+	GSList *dominated = bb->dominated;
+	while (dominated) {
+		InterpBasicBlock *dominated_bb = (InterpBasicBlock*)dominated->data;
+		rename_vars_in_bb (td, dominated_bb);
+		dominated = dominated->next;
+	}
+
+	// Pop from the stack any new vars defined in this bblock
+	for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+		if (mono_interp_op_dregs [ins->opcode]) {
+			int ext_index = td->vars [ins->dreg].ext_index;
+			if (ext_index != -1) {
+				GSList *prev_head = td->renamable_vars [ext_index].ssa_stack;
+				td->renamable_vars [ext_index].ssa_stack = prev_head->next;
+				g_free (prev_head);
+			}
+		}
+	}
+}
+
+static void
+rename_vars (TransformData *td)
+{
+	for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
+		// Initialize the ssa_stack for entry_bb
+		int var_index = td->renamable_vars [i].var_index;
+		td->renamable_vars [i].ssa_stack = g_slist_prepend (td->renamable_vars [i].ssa_stack, (gpointer)(gsize)var_index);
+	}
+
+	rename_vars_in_bb (td, td->entry_bb);
 }
 
 static void
@@ -846,20 +966,36 @@ interp_compute_ssa (TransformData *td)
 
 	insert_phi_nodes (td);
 
-	rename_vars ();
+	rename_vars (td);
+
+	if (td->verbose_level) {
+		g_print ("\nIR after SSA compute:\n");
+		mono_interp_print_td_code (td);
+	}
+}
+
+static void
+revert_ssa_rename_cb (TransformData *td, int *pvar, gpointer data)
+{
+	int var = *pvar;
+	int ext_index = td->vars [var].ext_index;
+	if (ext_index == -1)
+		return;
+	if (td->renamable_vars [ext_index].ssa_fixed)
+		*pvar = td->renamable_vars [ext_index].var_index;
 }
 
 static void
 interp_exit_ssa (TransformData *td)
 {
-	// Remove all MINT_PHI opcodes
+	// Remove all MINT_PHI opcodes and revert ssa renaming
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			if (ins->opcode == MINT_PHI)
 				ins->opcode = MINT_NOP;
 			else
-				break;
+				interp_foreach_ins_var (td, ins, NULL, revert_ssa_rename_cb);
 		}
 	}
 
@@ -875,6 +1011,13 @@ interp_exit_ssa (TransformData *td)
 		if (bb->dominated) {
 			g_slist_free (bb->dominated);
 			bb->dominated = NULL;
+		}
+	}
+
+	for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
+		if (td->renamable_vars [i].ssa_stack) {
+			g_slist_free (td->renamable_vars [i].ssa_stack);
+			td->renamable_vars [i].ssa_stack = NULL;
 		}
 	}
 }
@@ -2933,5 +3076,10 @@ interp_optimize_code (TransformData *td)
 	interp_compute_ssa (td);
 
 	interp_exit_ssa (td);
+
+	if (td->verbose_level) {
+		g_print ("\nOptimized IR:\n");
+		mono_interp_print_td_code (td);
+	}
 }
 

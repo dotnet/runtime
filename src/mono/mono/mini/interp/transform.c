@@ -349,6 +349,33 @@ enum_type:
 	return -1;
 }
 
+// This doesn't allocate a new var, but marks the existing var as renamable,
+// allocating space for additional var data.
+int
+interp_create_renamable_var (TransformData *td, int var)
+{
+	// Check if already allocated
+	if (td->vars [var].ext_index != -1)
+		return td->vars [var].ext_index;
+
+	if (td->renamable_vars_size == td->renamable_vars_capacity) {
+		td->renamable_vars_capacity *= 2;
+		if (td->renamable_vars_capacity == 0)
+			td->renamable_vars_capacity = 2;
+		td->renamable_vars = (InterpRenamableVar*) g_realloc (td->renamable_vars, td->renamable_vars_capacity * sizeof (InterpRenamableVar));
+	}
+
+	int ext_index = td->renamable_vars_size;
+	InterpRenamableVar *ext = &td->renamable_vars [ext_index];
+	memset (ext, 0, sizeof (InterpRenamableVar));
+	ext->var_index = var;
+
+	td->vars [var].ext_index = ext_index;
+
+	td->renamable_vars_size++;
+
+	return ext_index;
+}
 
 /*
  * These are additional locals that can be allocated as we transform the code.
@@ -377,6 +404,7 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	local->size = size;
 	local->live_start = -1;
 	local->bb_index = -1;
+	local->ext_index = -1;
 	local->def = NULL;
 
 	td->vars_size++;
@@ -1514,7 +1542,6 @@ mono_interp_print_code (InterpMethod *imethod)
 void
 mono_interp_print_td_code (TransformData *td)
 {
-	g_print ("Unoptimized IR:\n");
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb)
 		interp_dump_bb (bb, td->data_items);
 }
@@ -4228,6 +4255,10 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->vars = (InterpVar*)g_malloc0 (num_locals * sizeof (InterpVar));
 	td->vars_size = num_locals;
 	td->vars_capacity = td->vars_size;
+
+	td->renamable_vars = (InterpRenamableVar*)g_malloc (num_locals * sizeof (InterpRenamableVar));
+	td->renamable_vars_size = 0;
+	td->renamable_vars_capacity = num_locals;
 	offset = 0;
 
 	/*
@@ -4247,10 +4278,15 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [i].indirects = 0;
 		td->vars [i].mt = mt;
 		td->vars [i].def = NULL;
+		td->vars [i].ext_index = -1;
 		size = mono_interp_type_size (type, mt, &align);
 		td->vars [i].size = size;
 		offset = ALIGN_TO (offset, align);
 		td->vars [i].offset = offset;
+		if (td->optimized) {
+			int ext_index = interp_create_renamable_var (td, i);
+			td->renamable_vars [ext_index].ssa_fixed = TRUE;
+		}
 		offset += size;
 	}
 	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
@@ -4274,7 +4310,12 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [index].indirects = 0;
 		td->vars [index].mt = mono_mint_type (header->locals [i]);
 		td->vars [index].def = NULL;
+		td->vars [index].ext_index = -1;
 		td->vars [index].size = size;
+		if (td->optimized) {
+			int ext_index = interp_create_renamable_var (td, index);
+			td->renamable_vars [ext_index].ssa_fixed = TRUE;
+		}
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
 		offset += size;
 	}
@@ -8807,8 +8848,10 @@ retry:
 	if (td->has_localloc)
 		interp_fix_localloc_ret (td);
 
-	if (td->verbose_level)
+	if (td->verbose_level) {
+		g_print ("\nUnoptimized IR:\n");
 		mono_interp_print_td_code (td);
+	}
 
 	if (td->optimized) {
 		interp_optimize_code (td);
