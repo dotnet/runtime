@@ -94,10 +94,31 @@ if %_exit_code%==1 (
 )
 
 echo ----- start ===============  XUnitLogChecker Output =====================================================
-%RUNTIME_PATH%\dotnet.exe --roll-forward Major %HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker.dll --dumps-path %HELIX_DUMP_FOLDER%
-set xunitlogchecker_exit_code=%ERRORLEVEL%
-if %xunitlogchecker_exit_code% NEQ 0 set _exit_code=%xunitlogchecker_exit_code%
-echo ----- end ===============  XUnitLogChecker Output - exit code %xunitlogchecker_exit_code% ===============
+
+set DOTNET_EXE=%RUNTIME_PATH%\dotnet.exe
+set XUNITLOGCHECKER_DLL=%HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker.dll
+set XUNITLOGCHECKER_COMMAND=%DOTNET_EXE% --roll-forward Major %XUNITLOGCHECKER_DLL% --dumps-path %HELIX_DUMP_FOLDER%
+set XUNITLOGCHECKER_EXIT_CODE=1
+
+if NOT EXIST %DOTNET_EXE% (
+  echo dotnet.exe does not exist in the expected location: %DOTNET_EXE%
+  GOTO XUNITLOGCHECKER_END
+) else if NOT EXIST %XUNITLOGCHECKER_DLL% (
+  echo XUnitLogChecker.dll does not exist in the expected location: %XUNITLOGCHECKER_DLL%
+  GOTO XUNITLOGCHECKER_END
+)
+
+echo %XUNITLOGCHECKER_COMMAND%
+%XUNITLOGCHECKER_COMMAND%
+set XUNITLOGCHECKER_EXIT_CODE=%ERRORLEVEL%
+
+:XUNITLOGCHECKER_END
+
+if %XUNITLOGCHECKER_EXIT_CODE% NEQ 0 (
+  set _exit_code=%XUNITLOGCHECKER_EXIT_CODE%
+)
+
+echo ----- end ===============  XUnitLogChecker Output - exit code %XUNITLOGCHECKER_EXIT_CODE% ===============
 
 exit /b %_exit_code%
 :: ========================= END Test Execution =================================
