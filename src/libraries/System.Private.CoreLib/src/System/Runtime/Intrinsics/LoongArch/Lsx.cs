@@ -3,16 +3,16 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.Intrinsics.LoongArch64
+namespace System.Runtime.Intrinsics.LoongArch
 {
     /// <summary>
     /// This class provides access to the LSX-128bits hardware instructions via intrinsics
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
-    public abstract class LA_LSX : LA64Base
+    public abstract class Lsx : LoongArchBase
     {
-        internal LA_LSX() { }
+        internal Lsx() { }
 
         public static new bool IsSupported { get => IsSupported; }
 

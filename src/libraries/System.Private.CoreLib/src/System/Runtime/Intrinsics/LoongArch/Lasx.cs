@@ -3,16 +3,16 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.Intrinsics.LoongArch64
+namespace System.Runtime.Intrinsics.LoongArch
 {
     /// <summary>
     /// This class provides access to the LASX-256bits hardware instructions via intrinsics
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
-    public abstract class LA_LASX : LA_LSX
+    public abstract class Lasx : Lsx
     {
-        internal LA_LASX() { }
+        internal Lasx() { }
 
         public static new bool IsSupported { get => IsSupported; }
 
