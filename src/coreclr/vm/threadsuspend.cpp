@@ -5110,7 +5110,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-static bool IsSpecialCaseAsyncRet(MethodDesc* pMD)
+bool IsSpecialCaseAsyncRet(MethodDesc* pMD)
 {
     // TODO: What's the right way to do this through CoreLibBinder without
     // causing loading to happen? Also, can we just mark them as async2 in SPC,

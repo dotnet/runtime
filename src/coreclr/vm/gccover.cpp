@@ -261,6 +261,8 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
     SetupAndSprinkleBreakpointsForJittedMethod(nativeCodeVersion, codeStart);
 }
 
+bool IsSpecialCaseAsyncRet(MethodDesc* pMD);
+
 void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 {
     ReturnKind returnKind = callMD->GetReturnKind(true);
@@ -274,6 +276,15 @@ void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 #endif
     }
     _ASSERTE(IsValidReturnKind(returnKind));
+
+    if (g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines())
+    {
+        if (callMD->IsAsync2Method() || (callMD->IsIntrinsic() && IsSpecialCaseAsyncRet(callMD)))
+        {
+            // Cannot encode requirement to protect async ret after call.
+            return;
+        }
+    }
 
     bool ispointerKind = IsPointerReturnKind(returnKind);
 #ifdef TARGET_ARM
