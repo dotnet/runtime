@@ -3418,7 +3418,7 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
                 }
                 dprintf (GTC_LOG, ("h%d: gen%d, frag is %zd, alloc effi: %d%%, unusable frag is %zd, ratio is %d",
                     heap_number, gen_number, dd_fragmentation (dd),
-                    (int)(100*generation_allocator_efficiency (generation_of (gen_number))),
+                    (int)(generation_allocator_efficiency_percent (generation_of (gen_number))),
                     fr, (int)(fragmentation_burden*100)));
             }
             break;
@@ -22420,7 +22420,7 @@ void gc_heap::gc1()
             }
         }
 
-        get_gc_data_per_heap()->maxgen_size_info.running_free_list_efficiency = (uint32_t)(generation_allocator_efficiency (generation_of (max_generation)) * 100);
+        get_gc_data_per_heap()->maxgen_size_info.running_free_list_efficiency = (uint32_t)(generation_allocator_efficiency_percent (generation_of (max_generation)));
 
         free_list_info (max_generation, "after computing new dynamic data");
     }
@@ -33143,7 +33143,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if ((free_list_allocated + rejected_free_space) != 0)
             free_list_efficiency = (int)(((float) (free_list_allocated) / (float)(free_list_allocated + rejected_free_space)) * (float)100);
 
-        int running_free_list_efficiency = (int)(generation_allocator_efficiency(older_gen)*100);
+        int running_free_list_efficiency = (int)(generation_allocator_efficiency_percent(older_gen));
 
         dprintf (1, ("gen%d free list alloc effi: %d%%, current effi: %d%%",
                     older_gen->gen_num,
