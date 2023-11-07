@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
+using ILLink.RoslynAnalyzer.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -17,6 +18,8 @@ namespace ILLink.RoslynAnalyzer
 	public abstract class RequiresAnalyzerBase : DiagnosticAnalyzer
 	{
 		private protected abstract string RequiresAttributeName { get; }
+
+		internal abstract string FeatureName { get; }
 
 		private protected abstract string RequiresAttributeFullyQualifiedName { get; }
 
@@ -291,13 +294,29 @@ namespace ILLink.RoslynAnalyzer
 		/// <returns>True if the requirements to run the analyzer are met; otherwise, returns false</returns>
 		internal abstract bool IsAnalyzerEnabled (AnalyzerOptions options);
 
+		// Check whether a given property serves as a check for the "feature" or "capability" associated with the attribute
+		// understood by this analyzer. For now, this is only designed to support checks like
+		// RuntimeFeatures.IsDynamicCodeSupported, where a true return value indicates that the feature is supported.
+		// This doesn't support more general cases such as:
+		// - false return value indicating that a feature is supported
+		// - feature settings supplied by the project
+		// - custom feature checks defined in library code
+		internal virtual bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) => false;
+
 		internal bool CheckAndCreateRequiresDiagnostic (
 			IOperation operation,
 			ISymbol member,
 			ISymbol owningSymbol,
 			DataFlowAnalyzerContext context,
+			FeatureContext featureContext,
 			[NotNullWhen (true)] out Diagnostic? diagnostic)
 		{
+			// Warnings are not emitted if the featureContext says the feature is available.
+			if (featureContext.IsEnabled (FeatureName)) {
+				diagnostic = null;
+				return false;
+			}
+
 			ISymbol containingSymbol = operation.FindContainingSymbol (owningSymbol);
 
 			var incompatibleMembers = context.GetSpecialIncompatibleMembers (this);
