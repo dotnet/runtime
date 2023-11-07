@@ -2366,9 +2366,9 @@ namespace System.Security.Authentication.ExtendedProtection
 }
 namespace System.Timers
 {
-    public partial class ElapsedEventArgs : System.EventArgs
+    public sealed partial class ElapsedEventArgs : System.EventArgs
     {
-        internal ElapsedEventArgs() { }
+        public ElapsedEventArgs(System.DateTime signalTime) { }
         public System.DateTime SignalTime { get { throw null; } }
     }
     public delegate void ElapsedEventHandler(object? sender, System.Timers.ElapsedEventArgs e);
