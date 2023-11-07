@@ -714,9 +714,9 @@ INST2(fcmlt,       "fcmlt",        0,      IF_EN2J,   0x0EA0E800,  0x5EA0E800)
                                    //  fcmlt   Vd,Vn,#0             DV_2A  0Q0011101X100000 111110nnnnnddddd   0EA0 E800   Vd,Vn,#0 (vector - with zero)
                                    //  fcmlt   Vd,Vn,#0             DV_2G  010111101X100000 111010nnnnnddddd   5EA0 E800   Vd,Vn,#0 (scalar - with zero)
 
-INST2(fcvtxn,      "fcvtxn",       NRW,    IF_EN2J,   0x2E216800,  0x7E216800)
-                                   //  fcvtxn  Vd,Vn                DV_2A  0010111000100001 011010nnnnnddddd   2E21 6800   Vd,Vn    (vector)
-                                   //  fcvtxn  Vd,Vn                DV_2G  0111111000100001 011010nnnnnddddd   7E21 6800   Vd,Vn    (scalar)
+INST2(fcvtxn,      "fcvtxn",       NRW,    IF_EN2J,   0x2E616800,  0x7E616800)
+                                   //  fcvtxn  Vd,Vn                DV_2A  0010111001100001 011010nnnnnddddd   2E61 6800   Vd,Vn    (vector)
+                                   //  fcvtxn  Vd,Vn                DV_2G  0111111001100001 011010nnnnnddddd   7E61 6800   Vd,Vn    (scalar)
 
 INST2(fneg,        "fneg",         0,      IF_EN2J,   0x2EA0F800,  0x1E214000)
                                    //  fneg    Vd,Vn                DV_2A  0Q1011101X100000 111110nnnnnddddd   2EA0 F800   Vd,Vn    (vector)
@@ -1782,8 +1782,8 @@ INST1(fcvtn,       "fcvtn",        NRW,    IF_DV_2A,  0x0E216800)
 INST1(fcvtn2,      "fcvtn2",       NRW,    IF_DV_2A,  0x4E216800)
                                    //  fcvtn2  Vd,Vn                DV_2A  040011100X100001 011010nnnnnddddd   4E21 6800   Vd,Vn    (vector)
 
-INST1(fcvtxn2,     "fcvtxn2",      NRW,    IF_DV_2A,  0x6E216800)
-                                   //  fcvtxn2 Vd,Vn                DV_2A  0110111000100001 011010nnnnnddddd   6E21 6800   Vd,Vn    (vector)
+INST1(fcvtxn2,     "fcvtxn2",      NRW,    IF_DV_2A,  0x6E616800)
+                                   //  fcvtxn2 Vd,Vn                DV_2A  0110111001100001 011010nnnnnddddd   6E61 6800   Vd,Vn    (vector)
 
 INST1(frecpx,      "frecpx",       0,      IF_DV_2G,  0x5EA1F800)
                                    //  frecpx  Vd,Vn                DV_2G  010111101X100001 111110nnnnnddddd   5EA1 F800   Vd,Vn    (scalar)
