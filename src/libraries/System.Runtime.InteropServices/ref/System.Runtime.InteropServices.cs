@@ -1712,8 +1712,9 @@ namespace System.Runtime.InteropServices
         public object? WrappedObject { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
-    public sealed class WasmImportAttribute : Attribute
+    public sealed class WasmImportLinkageAttribute : Attribute
     {
+        public WasmImportLinkageAttribute() { }
     }
 }
 namespace System.Runtime.InteropServices.ComTypes
