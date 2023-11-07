@@ -24,7 +24,7 @@ public func getMyErrorMessage(from pointer: UnsafePointer<MyError>) -> UnsafePoi
     var offsetValue: UInt
 #if arch(arm64)
     offsetValue = 0x48
-#elseif (x86_64)
+#elseif arch(x86_64)
     offsetValue = 0x20
 #else
     fatalError("Unsupported architecture")

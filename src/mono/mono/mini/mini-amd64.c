@@ -1260,6 +1260,10 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 			storage = arg_get_storage (ccontext, ainfo);
 			*(gpointer *)storage = interp_cb->frame_arg_to_storage (frame, sig, i);
 			continue;
+		} else if (ainfo->storage == ArgSwiftError) {
+			storage = arg_get_storage (ccontext, ainfo);
+			*(gpointer*)storage = 0;
+			continue;
 		}
 
 		int temp_size = arg_need_temp (ainfo);
@@ -1666,8 +1670,10 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 
 	/* We use the callee saved registers for global allocation */
 	regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
-	regs = g_list_prepend (regs, (gpointer)AMD64_R12);
-	regs = g_list_prepend (regs, (gpointer)AMD64_R13);
+	if (cfg->method->signature->call_convention != MONO_CALL_SWIFTCALL) {
+		regs = g_list_prepend (regs, (gpointer)AMD64_R12);
+		regs = g_list_prepend (regs, (gpointer)AMD64_R13);
+	}
 	regs = g_list_prepend (regs, (gpointer)AMD64_R14);
 	regs = g_list_prepend (regs, (gpointer)AMD64_R15);
 #ifdef TARGET_WIN32
@@ -1907,7 +1913,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ins = cfg->args [i];
-		if (ins->opcode != OP_REGVAR) {
+		/* We force the ArgSwiftError to be allocated to the stack slot because we need to retrieve it after the call */
+		if (ins->opcode != OP_REGVAR || cinfo->args [i].storage == ArgSwiftError) {
 			ArgInfo *ainfo = &cinfo->args [i];
 			gboolean inreg = TRUE;
 
@@ -8135,6 +8142,10 @@ MONO_RESTORE_WARNING
 					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, GPTRDIFF_TO_INT (code - cfg->native_code));
 					mono_add_var_location (cfg, ins, FALSE, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset), GPTRDIFF_TO_INT (code - cfg->native_code), 0);
 				}
+
+				if (ainfo->storage == ArgSwiftError) {
+					amd64_mov_reg_imm (code, AMD64_R12, 0);
+				}
 				break;
 			}
 			case ArgInFloatSSEReg:
@@ -8337,7 +8348,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 		switch (ainfo->storage) {
 		case ArgSwiftError:
-			amd64_mov_membase_reg (code, arg->dreg, 0, AMD64_R12, 8);
+			amd64_mov_reg_membase (code, AMD64_R11, arg->inst_basereg, arg->inst_offset, 8);
+			amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_R12, 8);
 			break;
 		default:
 			break;
