@@ -11,7 +11,7 @@
 #include <unicode/uversion.h>
 #include <unicode/localpointer.h>
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 #include <unicode/utrace.h>
 #endif
 
@@ -21,7 +21,7 @@
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #endif
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 

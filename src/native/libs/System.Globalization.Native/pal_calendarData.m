@@ -10,7 +10,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCAT) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 /*
 Function:

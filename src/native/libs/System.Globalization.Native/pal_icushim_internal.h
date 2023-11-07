@@ -21,7 +21,8 @@
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
-#if !defined(__APPLE__) || (defined(TARGET_OSX) && defined(__APPLE__) && !defined(TARGET_MACCATALYST))
+
+#if !defined(__APPLE__) || (defined(TARGET_OSX) && !defined(TARGET_MACCAT))
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
@@ -342,13 +343,13 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucal_getWindowsTimeZoneID_ptr ucal_getWindowsTimeZoneID
 #define ucal_getTimeZoneIDForWindowsID_ptr ucal_getTimeZoneIDForWindowsID
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCAT) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path);
 const char* GlobalizationNative_GetICUDataPathFallback(void);
 #endif
 
 #endif // !defined(STATIC_ICU)
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCAT) || defined(TARGET_MACCATALYST)  || defined(TARGET_IOS) || defined(TARGET_TVOS)
 /**
  * Append a code point to a string, overwriting 1 or 2 code units.
  * The offset points to the current end of the string contents

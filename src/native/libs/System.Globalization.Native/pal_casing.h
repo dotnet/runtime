@@ -3,7 +3,7 @@
 
 #include "pal_locale.h"
 #include "pal_compiler.h"
-#if !defined(__APPLE__) || (defined(TARGET_OSX) && defined(__APPLE__) && !defined(TARGET_MACCATALYST))
+#if !defined(__APPLE__) || (defined(TARGET_OSX) && defined(__APPLE__) && !defined(TARGET_MACCAT))
 PALEXPORT void GlobalizationNative_ChangeCase(const UChar* lpSrc,
                                               int32_t cwSrcLength,
                                               UChar* lpDst,
@@ -24,7 +24,7 @@ PALEXPORT void GlobalizationNative_ChangeCaseTurkish(const UChar* lpSrc,
 #endif
 PALEXPORT void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarget);
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCAT) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 PALEXPORT int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName,
                                                        int32_t lNameLength,
                                                        const uint16_t* lpSrc,

@@ -20,12 +20,12 @@ typedef enum
     TimeZoneDisplayName_ExemplarCity = 4,
     TimeZoneDisplayName_TimeZoneName = 5,
 } TimeZoneDisplayNameType;
-#if !defined(__APPLE__) || (defined(TARGET_OSX) && defined(__APPLE__) && !defined(TARGET_MACCATALYST))
+#if !defined(__APPLE__) || (defined(TARGET_OSX) && defined(__APPLE__) && !defined(TARGET_MACCAT))
 PALEXPORT int32_t GlobalizationNative_WindowsIdToIanaId(const UChar* windowsId, const char* region, UChar* ianaId, int32_t ianaIdLength);
 PALEXPORT int32_t GlobalizationNative_IanaIdToWindowsId(const UChar* ianaId, UChar* windowsId, int32_t windowsIdLength);
 PALEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName, const UChar* timeZoneId, TimeZoneDisplayNameType type, UChar* result, int32_t resultLength);
 #endif
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCAT) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 PALEXPORT int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* timeZoneId, int32_t timeZoneIdLength,
                                                                    TimeZoneDisplayNameType type, uint16_t* result, int32_t resultLength);
 #endif
