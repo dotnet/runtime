@@ -96,7 +96,7 @@ if %_exit_code%==1 (
 echo ----- start ===============  XUnitLogChecker Output =====================================================
 
 set DOTNET_EXE=%RUNTIME_PATH%\dotnet.exe
-set XUNITLOGCHECKER_DLL=%HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker.dll
+set XUNITLOGCHECKER_DLL=%HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker\XUnitLogChecker.dll
 set XUNITLOGCHECKER_COMMAND=%DOTNET_EXE% --roll-forward Major %XUNITLOGCHECKER_DLL% --dumps-path %HELIX_DUMP_FOLDER%
 set XUNITLOGCHECKER_EXIT_CODE=1
 
