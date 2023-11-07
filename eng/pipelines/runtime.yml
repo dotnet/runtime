@@ -292,7 +292,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -566,7 +566,7 @@ extends:
             - browser_wasm_win
           condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
           nameSuffix: MultiThreaded
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
           publishWBT: false
 
@@ -602,7 +602,7 @@ extends:
           platforms:
             - browser_wasm
           nameSuffix: _Threading_Smoke
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
@@ -924,9 +924,8 @@ extends:
           - linux_musl_x64
           - linux_arm64
           - linux_musl_arm64
+          - windows_arm64
           - windows_x64
-          # - windows_x86
-          # - windows_arm64
           jobParameters:
             runtimeVariant: crossaot
             dependsOn:

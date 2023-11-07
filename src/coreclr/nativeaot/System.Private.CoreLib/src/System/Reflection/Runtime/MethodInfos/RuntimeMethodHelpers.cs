@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.MethodInfos
         internal static RuntimeParameterInfo[] GetRuntimeParameters<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter)
             where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
         {
-            TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
+            TypeContext typeContext = contextMethod.DeclaringType.ToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
             QSignatureTypeHandle[] typeSignatures = runtimeMethodCommon.QualifiedMethodSignature;
             int count = typeSignatures.Length;

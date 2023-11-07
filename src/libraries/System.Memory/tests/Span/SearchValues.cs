@@ -524,7 +524,7 @@ namespace System.SpanTests
                 string readableHaystack = string.Join(", ", haystack.ToArray().Select(c => int.CreateChecked(c)));
                 string readableNeedle = string.Join(", ", needle.ToArray().Select(c => int.CreateChecked(c)));
 
-                Assert.True(false, $"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
+                Assert.Fail($"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
             }
         }
     }

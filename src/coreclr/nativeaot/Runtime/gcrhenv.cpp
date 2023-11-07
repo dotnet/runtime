@@ -732,10 +732,12 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     UNREFERENCED_PARAMETER(gen);
     UNREFERENCED_PARAMETER(reason);
 
+#ifdef FEATURE_EVENT_TRACE
     if (!fConcurrent)
     {
         ETW::GCLog::WalkHeap();
     }
+#endif // FEATURE_EVENT_TRACE
 }
 
 // Note on last parameter: when calling this for bgc, only ETW

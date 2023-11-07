@@ -343,7 +343,7 @@ namespace System.IO.Ports.Tests
                         }
                     }
 
-                    Assert.True(false, "Wait for event failure");
+                    Assert.Fail("Wait for event failure");
                 }
             }
 
@@ -368,7 +368,7 @@ namespace System.IO.Ports.Tests
                     }
                 }
 
-                Assert.True(false, $"Validate {eventType} failed");
+                Assert.Fail($"Validate {eventType} failed");
             }
 
             public int NumberOfOccurrencesOfType(SerialData eventType)

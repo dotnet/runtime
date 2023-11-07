@@ -35,7 +35,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                         //creating XmlC14NWriter with a null stream;
                         XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(Stream.Null);
                         writer.StartCanonicalization(null, true, new string[] { "p1", "p2" });
-                        Assert.False(true, "Error, creating XmlC14NWriter with a null stream should have thrown!");
+                        Assert.Fail("Error, creating XmlC14NWriter with a null stream should have thrown!");
                     }
                     catch (Exception ex)
                     {
@@ -61,7 +61,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                         writer.WriteEndElement();
                         writer.EndCanonicalization();
                         writer.WriteEndElement();
-                        Assert.False(true, "Error, creating XmlC14NWriter with null elements in include prefixes should have thrown!");
+                        Assert.Fail("Error, creating XmlC14NWriter with null elements in include prefixes should have thrown!");
                     }
                     catch (Exception ex)
                     {

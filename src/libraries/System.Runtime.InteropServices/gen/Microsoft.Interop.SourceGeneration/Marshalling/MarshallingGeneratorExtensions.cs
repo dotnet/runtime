@@ -40,11 +40,13 @@ namespace Microsoft.Interop
                 return null;
             }
 
-            if (!TryRehydrateMarshalAsAttribute(info, out AttributeSyntax marshalAsAttribute))
+            if (info.MarshallingAttributeInfo is IForwardedMarshallingInfo forwarded
+                && forwarded.TryCreateAttributeSyntax(out AttributeSyntax forwardedAttribute))
             {
-                return null;
+                return AttributeList(SingletonSeparatedList(forwardedAttribute));
             }
-            return AttributeList(SingletonSeparatedList(marshalAsAttribute));
+
+            return null;
         }
 
         private const string ParameterIdentifierSuffix = "param";
@@ -107,9 +109,10 @@ namespace Microsoft.Interop
                 .WithType(info.ManagedType.Syntax);
 
             List<AttributeSyntax> rehydratedAttributes = new();
-            if (TryRehydrateMarshalAsAttribute(info, out AttributeSyntax marshalAsAttribute))
+            if (info.MarshallingAttributeInfo is IForwardedMarshallingInfo forwardedMarshallingInfo
+                && forwardedMarshallingInfo.TryCreateAttributeSyntax(out AttributeSyntax forwardedAttribute))
             {
-                rehydratedAttributes.Add(marshalAsAttribute);
+                rehydratedAttributes.Add(forwardedAttribute);
             }
             if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.In))
             {
@@ -126,104 +129,6 @@ namespace Microsoft.Interop
             }
 
             return param;
-        }
-
-        private static bool TryRehydrateMarshalAsAttribute(TypePositionInfo info, out AttributeSyntax marshalAsAttribute)
-        {
-            marshalAsAttribute = null!;
-            // If the parameter has [MarshalAs] marshalling, we resurface that
-            // in the forwarding target since the built-in system understands it.
-            // ICustomMarshaller marshalling requires additional information that we throw away earlier since it's unsupported,
-            // so explicitly do not resurface a [MarshalAs(UnmanagdType.CustomMarshaler)] attribute.
-            if (info.MarshallingAttributeInfo is MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler } marshalAs)
-            {
-                marshalAsAttribute = Attribute(NameSyntaxes.System_Runtime_InteropServices_MarshalAsAttribute)
-                        .WithArgumentList(AttributeArgumentList(SingletonSeparatedList(AttributeArgument(
-                        CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
-                        LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                            Literal((int)marshalAs.UnmanagedType)))))));
-                return true;
-            }
-
-            if (info.ManagedType is SzArrayType)
-            {
-                CountInfo countInfo;
-                MarshallingInfo elementMarshallingInfo;
-                if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshalling
-                    && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo)
-                {
-                    CustomTypeMarshallerData defaultMarshallerData = collectionMarshalling.Marshallers.GetModeOrDefault(MarshalMode.Default);
-                    if ((defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_ArrayMarshaller}<")
-                        || defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller}<"))
-                        && defaultMarshallerData.CollectionElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo {  UnmanagedType: not UnmanagedType.CustomMarshaler })
-                    {
-                        countInfo = collectionMarshalling.ElementCountInfo;
-                        elementMarshallingInfo = defaultMarshallerData.CollectionElementMarshallingInfo;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else if (info.MarshallingAttributeInfo is MissingSupportCollectionMarshallingInfo missingSupport)
-                {
-                    countInfo = missingSupport.CountInfo;
-                    elementMarshallingInfo = missingSupport.ElementMarshallingInfo;
-                }
-                else
-                {
-                    // This condition can be hit in two ways:
-                    // 1. User uses the MarshalUsing attribute to provide count info or element marshalling information.
-                    // Since the MarshalUsing attribute doesn't exist on downlevel platforms where we don't support arrays,
-                    // this case is unlikely to come in supported scenarios, but could come up with a custom CoreLib implementation
-                    // 2. User provides a MarsalAs attribute with the ArraySubType field set to UnmanagedType.CustomMarshaler
-                    // As mentioned above, we don't support ICustomMarshaler in the generator so we fail to forward the attribute instead of partially forwarding it.
-                    return false;
-                }
-
-                List<AttributeArgumentSyntax> marshalAsArguments = new List<AttributeArgumentSyntax>
-                {
-                    AttributeArgument(
-                        CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
-                        LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                            Literal((int)UnmanagedType.LPArray))))
-                };
-
-                if (countInfo is SizeAndParamIndexInfo sizeParamIndex)
-                {
-                    if (sizeParamIndex.ConstSize != SizeAndParamIndexInfo.UnspecifiedConstSize)
-                    {
-                        marshalAsArguments.Add(
-                            AttributeArgument(NameEquals("SizeConst"), null,
-                                LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                    Literal(sizeParamIndex.ConstSize)))
-                        );
-                    }
-                    if (sizeParamIndex.ParamAtIndex is { ManagedIndex: int paramIndex })
-                    {
-                        marshalAsArguments.Add(
-                            AttributeArgument(NameEquals("SizeParamIndex"), null,
-                                LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                    Literal(paramIndex)))
-                        );
-                    }
-                }
-
-                if (elementMarshallingInfo is MarshalAsInfo elementMarshalAs)
-                {
-                    marshalAsArguments.Add(
-                        AttributeArgument(NameEquals("ArraySubType"), null,
-                            CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
-                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                Literal((int)elementMarshalAs.UnmanagedType))))
-                        );
-                }
-                marshalAsAttribute = Attribute(NameSyntaxes.System_Runtime_InteropServices_MarshalAsAttribute)
-                        .WithArgumentList(AttributeArgumentList(SeparatedList(marshalAsArguments)));
-                return true;
-            }
-
-            return false;
         }
 
         /// <summary>

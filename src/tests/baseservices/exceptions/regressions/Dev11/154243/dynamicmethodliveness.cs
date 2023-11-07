@@ -9,6 +9,7 @@ using System;
 using System.Threading;
 using System.Reflection;
 using System.Reflection.Emit;
+using Xunit;
 
 public class My {
 
@@ -63,7 +64,9 @@ public class My {
         ((Action)method.CreateDelegate(typeof(Action)))();
     }
 
-    static int Main() {
+    [Fact]
+    public static void TestEntryPoint()
+    {
         new Thread(Thrower).Start();
 
         new Thread(Dynamizer).Start();
@@ -93,6 +96,5 @@ public class My {
              }
         }
         Console.WriteLine("Test case Pass");
-        return 100;
     }
 }

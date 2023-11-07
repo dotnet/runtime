@@ -3623,7 +3623,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_InsertSelectedScalar},
 	{SN_LeadingSignCount, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_CLS},
 	{SN_LeadingZeroCount, OP_ARM64_CLZ},
-	{SN_LoadAndInsertScalar, OP_ARM64_LD1_INSERT},
+	{SN_LoadAndInsertScalar},
 	{SN_LoadAndReplicateToVector128, OP_ARM64_LD1R},
 	{SN_LoadAndReplicateToVector64, OP_ARM64_LD1R},
 	{SN_LoadPairScalarVector64, OP_ARM64_LDP_SCALAR},
@@ -4014,6 +4014,10 @@ emit_arm64_intrinsics (
 			ins->inst_c1 = arg0_type;
 			return ins;
 		}
+		case SN_LoadAndInsertScalar:
+			if (!is_intrinsics_vector_type (fsig->params [0]))
+				return NULL;
+			return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_LD1_INSERT, 0, arg0_type, fsig, args);
 		case SN_InsertSelectedScalar:
 		case SN_InsertScalar:
 		case SN_Insert: {

@@ -319,7 +319,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert(isTest);
 
     // Convert firstBlock to a switch block
-    firstBlock->SetJumpKindAndTarget(BBJ_SWITCH, new (this, CMK_BasicBlock) BBswtDesc);
+    firstBlock->SetSwitchKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc);
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 

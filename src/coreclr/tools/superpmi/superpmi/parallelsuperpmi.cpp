@@ -196,7 +196,7 @@ void ProcessChildStdErr(char* stderrFilename)
         if (buff[buffLen - 1] == '\n')
             buff[buffLen - 1] = 0;
 
-        LogPassThroughStderr(buff);
+        LogPassThroughStderr("%s", buff);
     }
 
 Cleanup:
@@ -234,7 +234,7 @@ void ProcessChildStdOut(const CommandLine::Options& o,
         if (strncmp(buff, g_SuperPMIUsageFirstLine, strlen(g_SuperPMIUsageFirstLine)) == 0)
         {
             *usageError = true; // Signals that we had a SuperPMI command line usage error
-            LogPassThroughStdout(buff);
+            LogPassThroughStdout("%s", buff);
         }
         else if (strncmp(buff, g_AllFormatStringFixedPrefix, strlen(g_AllFormatStringFixedPrefix)) == 0)
         {
@@ -272,7 +272,7 @@ void ProcessChildStdOut(const CommandLine::Options& o,
         {
             // Do output pass-through.
             // Note that the same logging verbosity level is passed to the child processes.
-            LogPassThroughStdout(buff);
+            LogPassThroughStdout("%s", buff);
         }
     }
 

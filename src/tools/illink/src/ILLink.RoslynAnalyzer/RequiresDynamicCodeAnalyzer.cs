@@ -1,7 +1,9 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Immutable;
+using System.Linq;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -23,6 +25,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresDynamicCodeAttribute;
 
+		internal override string FeatureName => "DynamicCode";
+
 		private protected override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresDynamicCodeAttribute;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Class;
@@ -33,8 +37,20 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresDynamicCodeOnStaticCtor;
 
-		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation) =>
-			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer, compilation);
+		internal override bool IsAnalyzerEnabled (AnalyzerOptions options) =>
+			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer);
+
+		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) {
+			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("System.Runtime.CompilerServices.RuntimeFeature");
+			if (runtimeFeaturesType == null)
+				return false;
+
+			var isDynamicCodeSupportedProperty = runtimeFeaturesType.GetMembers ("IsDynamicCodeSupported").OfType<IPropertySymbol> ().FirstOrDefault ();
+			if (isDynamicCodeSupportedProperty == null)
+				return false;
+
+			return SymbolEqualityComparer.Default.Equals (propertySymbol, isDynamicCodeSupportedProperty);
+		}
 
 		protected override bool VerifyAttributeArguments (AttributeData attribute) =>
 			attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments is [ { Type.SpecialType: SpecialType.System_String }, ..];

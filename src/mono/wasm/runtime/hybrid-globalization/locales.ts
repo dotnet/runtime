@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { wrap_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString } from "../strings";
 import { Int32Ptr } from "../types/emscripten";
@@ -15,6 +15,7 @@ export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isExcept
     try {
         const cultureName = monoStringToString(cultureRoot);
         const canonicalLocale = normalizeLocale(cultureName);
+        wrap_no_error_root(isException, exceptionRoot);
         return getFirstDayOfWeek(canonicalLocale);
     }
     catch (ex: any) {
@@ -34,6 +35,7 @@ export function mono_wasm_get_first_week_of_year(culture: MonoStringRef, isExcep
     try {
         const cultureName = monoStringToString(cultureRoot);
         const canonicalLocale = normalizeLocale(cultureName);
+        wrap_no_error_root(isException, exceptionRoot);
         return getFirstWeekOfYear(canonicalLocale);
     }
     catch (ex: any) {

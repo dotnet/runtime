@@ -856,7 +856,8 @@ BasicBlock* CodeGen::genCreateTempLabel()
     compiler->fgSafeBasicBlockCreation = true;
 #endif
 
-    BasicBlock* block = compiler->bbNewBasicBlock(BBJ_NONE);
+    // Label doesn't need a jump kind
+    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
 
 #ifdef DEBUG
     compiler->fgSafeBasicBlockCreation = false;
@@ -4584,7 +4585,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                NYI_RISCV64("genZeroInitFltRegs is not implemented");
+                GetEmitter()->emitIns_R_R(INS_fmv_w_x, EA_4BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4623,7 +4624,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_LOONGARCH64)
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                NYI_RISCV64("genZeroInitFltRegs is not implemented.");
+                GetEmitter()->emitIns_R_R(INS_fmv_d_x, EA_8BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -5885,6 +5886,13 @@ void CodeGen::genFnProlog()
     if (isRoot && compiler->opts.IsOSR())
     {
         initReg = REG_IP1;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    // For LoongArch64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH;
     }
 #endif
 

@@ -188,19 +188,9 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_NOP:
-            // A GT_NOP is either a passthrough (if it is void, or if it has
-            // a child), but must be considered to produce a dummy value if it
-            // has a type but no child.
             srcCount = 0;
-            if (tree->TypeGet() != TYP_VOID && tree->gtGetOp1() == nullptr)
-            {
-                assert(dstCount == 1);
-                BuildDef(tree);
-            }
-            else
-            {
-                assert(dstCount == 0);
-            }
+            assert(tree->TypeIs(TYP_VOID));
+            assert(dstCount == 0);
             break;
 
         case GT_KEEPALIVE:
@@ -369,15 +359,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* cas = tree->AsCmpXchg();
-            assert(!cas->gtOpComparand->isContained());
+            assert(!cas->Comparand()->isContained());
             srcCount = 3;
             assert(dstCount == 1);
 
             buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
             // Extend lifetimes of argument regs because they may be reused during retries
-            setDelayFree(BuildUse(cas->gtOpLocation));
-            setDelayFree(BuildUse(cas->gtOpValue));
-            setDelayFree(BuildUse(cas->gtOpComparand));
+            setDelayFree(BuildUse(cas->Addr()));
+            setDelayFree(BuildUse(cas->Data()));
+            setDelayFree(BuildUse(cas->Comparand()));
 
             // Internals may not collide with target
             setInternalRegsDelayFree = true;

@@ -94,6 +94,16 @@ export type MonoConfig = {
      */
     startupMemoryCache?: boolean,
     /**
+     * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
+     *  on future runs of the application
+     */
+    interpreterPgo?: boolean,
+    /**
+     * Configures how long to wait before saving the interpreter PGO list. If your application takes
+     *  a while to start you should adjust this value.
+     */
+    interpreterPgoSaveDelay?: number,
+    /**
      * application environment
      */
     applicationEnvironment?: string,
@@ -167,7 +177,7 @@ export type ResourceList = { [name: string]: string | null | "" };
  * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
  * @param integrity The integrity string representing the expected content in the response.
  * @param behavior The detailed behavior/type of the resource to be loaded.
- * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior. 
+ * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
 export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
@@ -195,7 +205,7 @@ export interface AssetEntry {
     /**
      * the integrity hash of the asset (if any)
      */
-    hash?: string | null | ""; // 
+    hash?: string | null | "";
     /**
      * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
      */
@@ -207,13 +217,13 @@ export interface AssetEntry {
     /**
      * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
      */
-    loadRemote?: boolean, // 
+    loadRemote?: boolean,
     /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
     isOptional?: boolean
     /**
-     * If provided, runtime doesn't have to fetch the data. 
+     * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
     buffer?: ArrayBuffer | Promise<ArrayBuffer>,

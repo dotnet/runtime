@@ -684,13 +684,13 @@ public:
     ValueNum VNForMapSelectInner(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     // A method that does the work for VNForMapSelect and may call itself recursively.
-    ValueNum VNForMapSelectWork(ValueNumKind          vnk,
-                                var_types             type,
-                                ValueNum              map,
-                                ValueNum              index,
-                                int*                  pBudget,
-                                bool*                 pUsedRecursiveVN,
-                                ArrayStack<ValueNum>* loopMemoryDependencies);
+    ValueNum VNForMapSelectWork(ValueNumKind            vnk,
+                                var_types               type,
+                                ValueNum                map,
+                                ValueNum                index,
+                                int*                    pBudget,
+                                bool*                   pUsedRecursiveVN,
+                                class SmallValueNumSet& loopMemoryDependencies);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
@@ -1821,8 +1821,8 @@ private:
     public:
         ValueNum Result;
 
-        void SetMemoryDependencies(CompAllocator alloc, ArrayStack<ValueNum>& deps, unsigned startIndex);
-        void GetMemoryDependencies(ArrayStack<ValueNum>& deps);
+        void SetMemoryDependencies(Compiler* comp, class SmallValueNumSet& deps);
+        void GetMemoryDependencies(Compiler* comp, class SmallValueNumSet& deps);
     };
 
     typedef JitHashTable<VNDefFuncApp<2>, VNDefFuncAppKeyFuncs<2>, MapSelectWorkCacheEntry> MapSelectWorkCache;

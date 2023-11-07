@@ -327,7 +327,7 @@ replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
-replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading DOTNET_")
+replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
 
 # common subparser for asmdiffs and throughput
 base_diff_parser = argparse.ArgumentParser(add_help=False)
@@ -335,9 +335,9 @@ base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. D
 base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
 base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
 base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
-base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading DOTNET_")
-base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading DOTNET_...")
-base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading DOTNET_...")
+base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
+base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
+base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
 
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -1448,7 +1448,10 @@ def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics)
             logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
         else:
             missing_diff = diff_metrics["Overall"]["Missing compiles"]
-            logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
+            if missing_base == missing_diff:
+                logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
+            else:
+                logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
 
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
@@ -4269,6 +4272,27 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set diff_jit_option.")
 
+        if coreclr_args.jitoption:
+            for o in coreclr_args.jitoption:
+                if o.startswith("DOTNET_"):
+                    logging.warning("")
+                    logging.warning("WARNING: `-jitoption` starts with DOTNET_ : " + o)
+                    logging.warning("")
+
+        if coreclr_args.base_jit_option:
+            for o in coreclr_args.base_jit_option:
+                if o.startswith("DOTNET_"):
+                    logging.warning("")
+                    logging.warning("WARNING: `-base_jit_option` starts with DOTNET_ : " + o)
+                    logging.warning("")
+
+        if coreclr_args.diff_jit_option:
+            for o in coreclr_args.diff_jit_option:
+                if o.startswith("DOTNET_"):
+                    logging.warning("")
+                    logging.warning("WARNING: `-diff_jit_option` starts with DOTNET_ : " + o)
+                    logging.warning("")
+
 
     if coreclr_args.mode == "collect":
 
@@ -4574,6 +4598,13 @@ def setup_args(args):
                                 "build_type",
                                 coreclr_args.check_build_type,
                                 "Invalid build_type")
+
+        if coreclr_args.jitoption:
+            for o in coreclr_args.jitoption:
+                if o.startswith("DOTNET_"):
+                    logging.warning("")
+                    logging.warning("WARNING: `-jitoption` starts with DOTNET_ : " + o)
+                    logging.warning("")
 
     elif coreclr_args.mode == "asmdiffs":
 

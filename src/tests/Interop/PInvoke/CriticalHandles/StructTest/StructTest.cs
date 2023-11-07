@@ -178,7 +178,8 @@ public class CriticalHandleStructTest
         internal static extern MyCriticalHandleStruct Ret(IntPtr handleValue);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

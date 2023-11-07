@@ -37,7 +37,7 @@
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:00:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
@@ -259,6 +259,14 @@
         $(HelixPostCommands);
         $HELIX_PYTHONPATH $HELIX_CORRELATION_PAYLOAD/gen-debug-dump-docs.py -buildid $(BUILD_BUILDID) -workitem $HELIX_WORKITEM_FRIENDLYNAME -jobid $HELIX_CORRELATION_ID -outdir $HELIX_WORKITEM_UPLOAD_ROOT -templatedir $HELIX_CORRELATION_PAYLOAD -dumpdir $HELIX_DUMP_FOLDER -productver $(ProductVersion)
       </HelixPostCommands>
+    </PropertyGroup>
+
+    <!-- ad-hoc sign createdump on the helix machine to allow us to collect dumps -->
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'osx'">
+      <HelixPreCommands>
+        $(HelixPreCommands);
+        find $HELIX_CORRELATION_PAYLOAD -name createdump | xargs -n 1 codesign -s - -f --preserve-metadata=entitlements
+      </HelixPreCommands>
     </PropertyGroup>
 
     <Error Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true' and ('$(SdkWithWorkloadForTestingPath)' == '' or !Exists($(SdkWithWorkloadForTestingPath)))"

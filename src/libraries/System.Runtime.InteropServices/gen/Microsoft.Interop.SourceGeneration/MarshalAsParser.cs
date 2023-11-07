@@ -4,8 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -14,21 +18,101 @@ namespace Microsoft.Interop
     /// </summary>
     public abstract record MarshalAsInfo(
         UnmanagedType UnmanagedType,
-        CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
+        CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding), IForwardedMarshallingInfo
     {
         // UnmanagedType.LPUTF8Str is not in netstandard2.0, so we define a constant for the value here.
         // See https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype
         internal const UnmanagedType UnmanagedType_LPUTF8Str = (UnmanagedType)0x30;
+
+        private protected abstract bool TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute);
+
+        bool IForwardedMarshallingInfo.TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute) => TryCreateAttributeSyntax(out attribute);
     }
 
     public sealed record MarshalAsScalarInfo(
         UnmanagedType UnmanagedType,
-        CharEncoding CharEncoding) : MarshalAsInfo(UnmanagedType, CharEncoding);
+        CharEncoding CharEncoding) : MarshalAsInfo(UnmanagedType, CharEncoding)
+    {
+        private protected override bool TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute)
+        {
+            if (UnmanagedType == UnmanagedType.CustomMarshaler)
+            {
+                attribute = null;
+                return false;
+            }
+
+            attribute = Attribute(
+                ParseName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute),
+                AttributeArgumentList(
+                    SingletonSeparatedList(
+                        AttributeArgument(
+                            CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
+                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                                Literal((int)UnmanagedType))))
+                    )
+                )
+            );
+            return true;
+        }
+    }
 
     public sealed record MarshalAsArrayInfo(
         UnmanagedType UnmanagedType,
         CharEncoding CharEncoding,
-        UnmanagedType ArraySubType): MarshalAsInfo(UnmanagedType, CharEncoding);
+        UnmanagedType ArraySubType,
+        CountInfo CountInfo) : MarshalAsInfo(UnmanagedType, CharEncoding)
+    {
+        private protected override bool TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute)
+        {
+            if (ArraySubType == UnmanagedType.CustomMarshaler)
+            {
+                attribute = null;
+                return false;
+            }
+
+            attribute = Attribute(
+                ParseName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute),
+                AttributeArgumentList(
+                    SingletonSeparatedList(
+                        AttributeArgument(
+                            CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
+                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                                Literal((int)UnmanagedType))))
+                    )
+                )
+            );
+
+            if (ArraySubType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
+            {
+                attribute = attribute.AddArgumentListArguments(
+                    AttributeArgument(CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
+                        LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                            Literal((int)ArraySubType))))
+                        .WithNameEquals(NameEquals(IdentifierName(nameof(ArraySubType)))));
+            }
+
+            if (CountInfo is SizeAndParamIndexInfo sizeParamIndex)
+            {
+                if (sizeParamIndex.ConstSize != SizeAndParamIndexInfo.UnspecifiedConstSize)
+                {
+                    attribute = attribute.AddArgumentListArguments(
+                        AttributeArgument(NameEquals("SizeConst"), null,
+                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                                Literal(sizeParamIndex.ConstSize)))
+                    );
+                }
+                if (sizeParamIndex.ParamAtIndex is { ManagedIndex: int paramIndex })
+                {
+                    attribute = attribute.AddArgumentListArguments(
+                        AttributeArgument(NameEquals("SizeParamIndex"), null,
+                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                                Literal(paramIndex)))
+                    );
+                }
+            }
+            return true;
+        }
+    }
 
     /// <summary>
     /// This class suppports parsing a System.Runtime.InteropServices.MarshalAsAttribute into a <see cref="MarshalAsInfo"/>.
@@ -104,9 +188,19 @@ namespace Microsoft.Interop
                 }
             }
 
-            return isArrayType
-                ? new MarshalAsArrayInfo(unmanagedType, _defaultInfo.CharEncoding, elementUnmanagedType)
-                : new MarshalAsScalarInfo(unmanagedType, _defaultInfo.CharEncoding);
+            if (!isArrayType)
+            {
+                return new MarshalAsScalarInfo(unmanagedType, _defaultInfo.CharEncoding);
+            }
+
+            CountInfo countInfo = NoCountInfo.Instance;
+
+            if (useSiteAttributes.TryGetUseSiteAttributeInfo(indirectionDepth, out UseSiteAttributeData useSiteAttributeData))
+            {
+                countInfo = useSiteAttributeData.CountInfo;
+            }
+
+            return new MarshalAsArrayInfo(unmanagedType, _defaultInfo.CharEncoding, elementUnmanagedType, countInfo);
         }
     }
 }

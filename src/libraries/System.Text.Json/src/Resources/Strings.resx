@@ -526,7 +526,7 @@
     <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
   </data>
   <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
-    <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'.</value>
+    <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'. Custom converters can add support for dictionary key serialization by overriding the 'ReadAsPropertyName' and 'WriteAsPropertyName' methods.</value>
   </data>
   <data name="IgnoreConditionOnValueTypeInvalid" xml:space="preserve">
     <value>The ignore condition 'JsonIgnoreCondition.WhenWritingNull' is not valid on value-type member '{0}' on type '{1}'. Consider using 'JsonIgnoreCondition.WhenWritingDefault'.</value>

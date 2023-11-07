@@ -1364,7 +1364,7 @@ void Compiler::compShutdown()
 
     emitter::emitDone();
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // Finish reading and/or writing inline xml
     if (JitConfig.JitInlineDumpXmlFile() != nullptr)
     {
@@ -1379,7 +1379,7 @@ void Compiler::compShutdown()
             InlineStrategy::FinalizeXml();
         }
     }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #if defined(DEBUG) || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
     if (genMethodCnt == 0)
@@ -1818,9 +1818,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     info.compMethodHashPrivate = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #ifdef DEBUG
     // Opt-in to jit stress based on method hash ranges.
@@ -1901,17 +1901,16 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         codeGen = nullptr;
     }
 
-    compJmpOpUsed                = false;
-    compLongUsed                 = false;
-    compTailCallUsed             = false;
-    compTailPrefixSeen           = false;
-    compMayConvertTailCallToLoop = false;
-    compLocallocSeen             = false;
-    compLocallocUsed             = false;
-    compLocallocOptimized        = false;
-    compQmarkRationalized        = false;
-    compQmarkUsed                = false;
-    compFloatingPointUsed        = false;
+    compJmpOpUsed         = false;
+    compLongUsed          = false;
+    compTailCallUsed      = false;
+    compTailPrefixSeen    = false;
+    compLocallocSeen      = false;
+    compLocallocUsed      = false;
+    compLocallocOptimized = false;
+    compQmarkRationalized = false;
+    compQmarkUsed         = false;
+    compFloatingPointUsed = false;
 
     compSuppressedZeroInit = false;
 
@@ -2738,9 +2737,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         // Optionally, disable use of profile data.
         //
-        else if (JitConfig.JitDisablePgo() > 0)
+        else if (JitConfig.JitDisablePGO() > 0)
         {
-            fgPgoFailReason  = "PGO data available, but JitDisablePgo > 0";
+            fgPgoFailReason  = "PGO data available, but JitDisablePGO > 0";
             fgPgoQueryResult = E_FAIL;
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
@@ -2751,16 +2750,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         else
         {
-            static ConfigMethodRange JitEnablePgoRange;
-            JitEnablePgoRange.EnsureInit(JitConfig.JitEnablePgoRange());
+            static ConfigMethodRange JitEnablePGORange;
+            JitEnablePGORange.EnsureInit(JitConfig.JitEnablePGORange());
 
             // Base this decision on the root method hash, so a method either sees all available
             // profile data (including that for inlinees), or none of it.
             //
             const unsigned hash = impInlineRoot()->info.compMethodHash();
-            if (!JitEnablePgoRange.Contains(hash))
+            if (!JitEnablePGORange.Contains(hash))
             {
-                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePgoRange";
+                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePGORange";
                 fgPgoQueryResult = E_FAIL;
                 fgPgoData        = nullptr;
                 fgPgoSchema      = nullptr;
@@ -4748,9 +4747,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
-    auto morphGlobalPhase = [this]() {
-        unsigned prevBBCount = fgBBcount;
-        fgMorphBlocks();
+    unsigned const preMorphBBCount = fgBBcount;
+    DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    auto postMorphPhase = [this]() {
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
@@ -4766,16 +4766,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         compCurBB = nullptr;
 #endif // DEBUG
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         // Enable IR checks
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
-    DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
+    DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
+
+    // If we needed to create any new BasicBlocks then renumber the blocks
+    //
+    if (fgBBcount > preMorphBBCount)
+    {
+        fgRenumberBlocks();
+    }
 
     // GS security checks for unsafe buffers
     //
@@ -5038,6 +5039,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
+    // Create any throw helper blocks that might be needed
+    //
+    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
+
     if (opts.OptimizationEnabled())
     {
         // Optimize boolean conditions
@@ -5083,13 +5088,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     rat.Run();
 
     fgNodeThreading = NodeThreading::LIR;
-
-    // Here we do "simple lowering".  When the RyuJIT backend works for all
-    // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
-    // pass of "final lowering."  We must do this before (final) liveness analysis, because this creates
-    // range check throw blocks, in which the liveness must be correct.
-    //
-    DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
 
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
@@ -6294,7 +6292,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         return param.result;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 //------------------------------------------------------------------------
 // compMethodHash: get hash code for currently jitted method
 //
@@ -6350,7 +6348,7 @@ unsigned Compiler::compMethodHash(CORINFO_METHOD_HANDLE methodHnd)
     return methodHash;
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 void Compiler::compCompileFinish()
 {
@@ -6414,7 +6412,7 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     m_inlineStrategy->DumpData();
 
@@ -9122,7 +9120,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 
 void Compiler::RecordStateAtEndOfInlining()
 {
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     m_compCyclesAtEndOfInlining    = 0;
     m_compTickCountAtEndOfInlining = 0;
@@ -9133,7 +9131,7 @@ void Compiler::RecordStateAtEndOfInlining()
     }
     m_compTickCountAtEndOfInlining = GetTickCount();
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }
 
 //------------------------------------------------------------------------
@@ -9142,7 +9140,7 @@ void Compiler::RecordStateAtEndOfInlining()
 
 void Compiler::RecordStateAtEndOfCompilation()
 {
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Common portion
     m_compCycles = 0;
@@ -9156,7 +9154,7 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }
 
 #if FUNC_INFO_LOGGING
@@ -10031,6 +10029,26 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->IsExpRuntimeLookup())
                     {
                         chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
+                    {
+                        chars += printf("[CALL_MD_STRESS_TAILCALL]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_DEVIRTUALIZED)
+                    {
+                        chars += printf("[CALL_MD_DEVIRTUALIZED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_GUARDED)
+                    {
+                        chars += printf("[CALL_MD_GUARDED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_UNBOXED)
+                    {
+                        chars += printf("[CALL_MD_UNBOXED]");
                     }
                 }
                 break;

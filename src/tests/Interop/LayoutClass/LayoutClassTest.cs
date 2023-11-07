@@ -137,7 +137,7 @@ namespace PInvokeTests
         public RecursiveTestClass c;
     }
 
-    class StructureTests
+    public class StructureTests
     {
         private const string SimpleBlittableSeqLayoutClass_UpdateField = nameof(SimpleBlittableSeqLayoutClass_UpdateField);
 
@@ -320,7 +320,8 @@ namespace PInvokeTests
             Assert.Throws<TypeLoadException>(() => RecursiveNativeLayoutInvalid(new RecursiveTestStruct()));
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-	ILLink.RoslynAnalyzer.RequiresDynamicCodeAnalyzer,
+	ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
 	ILLink.CodeFix.RequiresDynamicCodeCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests

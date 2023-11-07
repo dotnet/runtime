@@ -3,9 +3,10 @@
 
 #pragma warning disable CA1852 // DefaultBinder is derived from in some targets
 
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using CultureInfo = System.Globalization.CultureInfo;
 
@@ -788,12 +789,10 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types)
+        public static T? ExactBinding<T>(ReadOnlySpan<T> match, Type[] types) where T : MethodBase
         {
-            ArgumentNullException.ThrowIfNull(match);
-
-            MethodBase[] aExactMatches = new MethodBase[match.Length];
-            int cExactMatches = 0;
+            T singleMatch = default!;
+            using ValueListBuilder<T> exactMatches = new(new Span<T>(ref singleMatch));
 
             for (int i = 0; i < match.Length; i++)
             {
@@ -802,6 +801,7 @@ namespace System
                 {
                     continue;
                 }
+
                 int j;
                 for (j = 0; j < types.Length; j++)
                 {
@@ -811,29 +811,27 @@ namespace System
                     if (!pCls.Equals(types[j]))
                         break;
                 }
+
                 if (j < types.Length)
                     continue;
 
                 // Add the exact match to the array of exact matches.
-                aExactMatches[cExactMatches] = match[i];
-                cExactMatches++;
+                exactMatches.Append(match[i]);
             }
 
-            if (cExactMatches == 0)
+            if (exactMatches.Length == 0)
                 return null;
 
-            if (cExactMatches == 1)
-                return aExactMatches[0];
+            if (exactMatches.Length == 1)
+                return exactMatches[0];
 
-            return FindMostDerivedNewSlotMeth(aExactMatches, cExactMatches);
+            return FindMostDerivedNewSlotMeth(exactMatches.AsSpan());
         }
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types)
+        public static PropertyInfo? ExactPropertyBinding(ReadOnlySpan<PropertyInfo> match, Type? returnType, Type[]? types)
         {
-            ArgumentNullException.ThrowIfNull(match);
-
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
             for (int i = 0; i < match.Length; i++)
@@ -1126,12 +1124,12 @@ namespace System
             return depth;
         }
 
-        internal static MethodBase? FindMostDerivedNewSlotMeth(MethodBase[] match, int cMatches)
+        internal static T? FindMostDerivedNewSlotMeth<T>(ReadOnlySpan<T> match) where T : MethodBase
         {
             int deepestHierarchy = 0;
-            MethodBase? methWithDeepestHierarchy = null;
+            T? methodWithDeepestHierarchy = null;
 
-            for (int i = 0; i < cMatches; i++)
+            for (int i = 0; i < match.Length; i++)
             {
                 // Calculate the depth of the hierarchy of the declaring type of the
                 // current method.
@@ -1141,18 +1139,18 @@ namespace System
                 // This can only happen if at least one is vararg or generic.
                 if (currentHierarchyDepth == deepestHierarchy)
                 {
-                    throw ThrowHelper.GetAmbiguousMatchException(methWithDeepestHierarchy!);
+                    throw ThrowHelper.GetAmbiguousMatchException(methodWithDeepestHierarchy!);
                 }
 
                 // Check to see if this method is on the most derived class.
                 if (currentHierarchyDepth > deepestHierarchy)
                 {
                     deepestHierarchy = currentHierarchyDepth;
-                    methWithDeepestHierarchy = match[i];
+                    methodWithDeepestHierarchy = match[i];
                 }
             }
 
-            return methWithDeepestHierarchy;
+            return methodWithDeepestHierarchy;
         }
 
         // This method will sort the vars array into the mapping order stored

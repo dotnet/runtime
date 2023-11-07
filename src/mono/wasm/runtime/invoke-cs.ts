@@ -28,7 +28,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
     const mark = startMeasure();
     try {
         const version = get_signature_version(signature);
-        mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
+        mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
 
         const args_count = get_signature_argument_count(signature);
         const js_fqn = monoStringToString(fqn_root)!;

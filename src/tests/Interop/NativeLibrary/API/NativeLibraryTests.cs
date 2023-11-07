@@ -49,6 +49,7 @@ public class NativeLibraryTests : IDisposable
     [Fact]
     public void LoadLibraryRelativePaths_NameOnly()
     {
+        
         {
             string libName = Path.Combine("..", NativeLibraryToLoad.InvalidName, NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.InvalidName));
             EXPECT(LoadLibrary_NameOnly(libName), TestResult.DllNotFound);

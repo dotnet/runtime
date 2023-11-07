@@ -907,13 +907,15 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (displayBlockFlags)
             {
                 // Don't display the `[` `]` unless we're going to display something.
-                const BasicBlockFlags allDisplayedBlockFlags = BBF_TRY_BEG | BBF_FUNCLET_BEG | BBF_RUN_RARELY |
-                                                               BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
-                if (block->bbFlags & allDisplayedBlockFlags)
+                const bool            isTryEntryBlock = bbIsTryBeg(block);
+                const BasicBlockFlags allDisplayedBlockFlags =
+                    BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
+
+                if (isTryEntryBlock || ((block->bbFlags & allDisplayedBlockFlags) != 0))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
-                    if (block->bbFlags & BBF_TRY_BEG)
+                    if (isTryEntryBlock)
                     {
                         fprintf(fgxFile, "T");
                     }
@@ -2035,15 +2037,48 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_EHFINALLYRET:
-                printf("%*s        (finret)", maxBlockNumWidth - 2, "");
+            {
+                printf("->");
+
+                int                    ehfWidth = 0;
+                const BBehfDesc* const ehfDesc  = block->GetJumpEhf();
+                if (ehfDesc == nullptr)
+                {
+                    printf(" ????");
+                    ehfWidth = 5;
+                }
+                else
+                {
+                    // Very early in compilation, we won't have fixed up the BBJ_EHFINALLYRET successors yet.
+
+                    const unsigned     jumpCnt = ehfDesc->bbeCount;
+                    BasicBlock** const jumpTab = ehfDesc->bbeSuccs;
+
+                    for (unsigned i = 0; i < jumpCnt; i++)
+                    {
+                        printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                        ehfWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
+                    }
+                }
+
+                int singleBlockWidth = 1 /* space */ + 2 /* BB */ + maxBlockNumWidth;
+                if (ehfWidth < singleBlockWidth)
+                {
+                    // only if we didn't display anything or we displayeda small numbered block
+                    printf("%*s", singleBlockWidth - ehfWidth, "");
+                }
+
+                printf(" (finret)");
                 break;
+            }
 
             case BBJ_EHFAULTRET:
                 printf("%*s        (falret)", maxBlockNumWidth - 2, "");
                 break;
 
             case BBJ_EHFILTERRET:
-                printf("%*s        (fltret)", maxBlockNumWidth - 2, "");
+                printf("-> " FMT_BB "%*s (fltret)", block->GetJumpDest()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
                 break;
 
             case BBJ_EHCATCHRET:
@@ -2067,9 +2102,9 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             {
                 printf("->");
 
-                const BBswtDesc* const bbJumpSwt   = block->GetJumpSwt();
-                const unsigned         jumpCnt     = bbJumpSwt->bbsCount;
-                BasicBlock** const     jumpTab     = bbJumpSwt->bbsDstTab;
+                const BBswtDesc* const jumpSwt     = block->GetJumpSwt();
+                const unsigned         jumpCnt     = jumpSwt->bbsCount;
+                BasicBlock** const     jumpTab     = jumpSwt->bbsDstTab;
                 int                    switchWidth = 0;
 
                 for (unsigned i = 0; i < jumpCnt; i++)
@@ -2077,17 +2112,17 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                     printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
                     switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
 
-                    const bool isDefault = bbJumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                    const bool isDefault = jumpSwt->bbsHasDefault && (i == jumpCnt - 1);
                     if (isDefault)
                     {
                         printf("[def]");
                         switchWidth += 5;
                     }
 
-                    const bool isDominant = bbJumpSwt->bbsHasDominantCase && (i == bbJumpSwt->bbsDominantCase);
+                    const bool isDominant = jumpSwt->bbsHasDominantCase && (i == jumpSwt->bbsDominantCase);
                     if (isDominant)
                     {
-                        printf("[dom(" FMT_WT ")]", bbJumpSwt->bbsDominantFraction);
+                        printf("[dom(" FMT_WT ")]", jumpSwt->bbsDominantFraction);
                         switchWidth += 10;
                     }
                 }
@@ -2171,7 +2206,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         /* brace matching editor workaround to compensate for the preceding line: } */
     }
 
-    if (flags & BBF_TRY_BEG)
+    if (bbIsTryBeg(block))
     {
         // Output a brace for every try region that this block opens
 
@@ -2717,36 +2752,41 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 {
     // If the current block is a successor to a BBJ_EHFINALLYRET (return from finally),
     // then the lexically previous block should be a call to the same finally.
+    // Also, `block` should be in the explicit successors list of `blockPred`.
     // Verify all of that.
+
+    bool found = false;
+    for (BasicBlock* const succ : blockPred->EHFinallyRetSuccs())
+    {
+        if (block == succ)
+        {
+            assert(!found); // we should only find it once
+            found = true;
+        }
+    }
+    assert(found && "BBJ_EHFINALLYRET successor not found");
 
     unsigned    hndIndex = blockPred->getHndIndex();
     EHblkDsc*   ehDsc    = comp->ehGetDsc(hndIndex);
     BasicBlock* finBeg   = ehDsc->ebdHndBeg;
 
-    // Because there is no bbPrev, we have to search for the lexically previous
-    // block.  We can shorten the search by only looking in places where it is legal
-    // to have a call to the finally.
+    BasicBlock* firstBlock;
+    BasicBlock* lastBlock;
+    comp->ehGetCallFinallyBlockRange(hndIndex, &firstBlock, &lastBlock);
 
-    BasicBlock* begBlk;
-    BasicBlock* endBlk;
-    comp->ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
-
-    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
+    found = false;
+    for (BasicBlock* const bcall : comp->Blocks(firstBlock, lastBlock))
     {
-        if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
+        if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block))
         {
-            continue;
-        }
-
-        if (bcall->NextIs(block))
-        {
-            return true;
+            found = true;
+            break;
         }
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-    if (comp->fgFuncletsCreated)
+    if (!found && comp->fgFuncletsCreated)
     {
         // There is no easy way to search just the funclets that were pulled out of
         // the corresponding try body, so instead we search all the funclets, and if
@@ -2755,27 +2795,19 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
-            if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
+            if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block) &&
+                comp->ehCallFinallyInCorrectRegion(bcall, hndIndex))
             {
-                continue;
-            }
-
-            if (!bcall->NextIs(block))
-            {
-                continue;
-            }
-
-            if (comp->ehCallFinallyInCorrectRegion(bcall, hndIndex))
-            {
-                return true;
+                found = true;
+                break;
             }
         }
     }
 
 #endif // FEATURE_EH_FUNCLETS
 
-    assert(!"BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
-    return false;
+    assert(found && "BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
+    return found;
 }
 
 //------------------------------------------------------------------------------
@@ -2866,6 +2898,40 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         {
             // Check that bbNum is sequential
             assert(block->IsLast() || (block->bbNum + 1 == block->Next()->bbNum));
+        }
+
+        // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
+        // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
+        // dynamically create the unique switch list.
+        if (block->KindIs(BBJ_SWITCH))
+        {
+            for (BasicBlock* const succBlock : block->Succs())
+            {
+                assert(succBlock->bbTraversalStamp == curTraversalStamp);
+            }
+
+            // Also check the unique successor set, if it exists. Make sure to NOT allocate it if it doesn't exist!
+            BlockToSwitchDescMap* switchMap = GetSwitchDescMap(/* createIfNull */ false);
+            if (switchMap != nullptr)
+            {
+                SwitchUniqueSuccSet sd;
+                if (switchMap->Lookup(block, &sd))
+                {
+                    for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+                    {
+                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i];
+                        assert(nonDuplicateSucc != nullptr);
+                        assert(nonDuplicateSucc->bbTraversalStamp == curTraversalStamp);
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (BasicBlock* const succBlock : block->Succs(this))
+            {
+                assert(succBlock->bbTraversalStamp == curTraversalStamp);
+            }
         }
 
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
@@ -2971,6 +3037,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (block->hasTryIndex())
         {
             assert(block->getTryIndex() < compHndBBtabCount);
+        }
+
+        // Blocks with these jump kinds must have non-null jump targets
+        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE))
+        {
+            assert(block->HasJump());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
@@ -3080,12 +3152,13 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
 //------------------------------------------------------------------------
 // fgDebugCheckFlags: Validate various invariants related to the propagation
-//                    and setting of tree flags ("gtFlags").
+//                    and setting of tree, block, and method flags
 //
 // Arguments:
 //    tree - the tree to (recursively) check the flags for
+//    block - basic block containing the tree
 //
-void Compiler::fgDebugCheckFlags(GenTree* tree)
+void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 {
     GenTreeFlags actualFlags   = tree->gtFlags & GTF_ALL_EFFECT;
     GenTreeFlags expectedFlags = GTF_EMPTY;
@@ -3172,10 +3245,17 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             break;
 
         case GT_CALL:
+        {
+            GenTreeCall* const call = tree->AsCall();
 
-            GenTreeCall* call;
-
-            call = tree->AsCall();
+            // Before global morph, if there are recursive tail calls, we should have
+            // set the associated block and method flags.
+            //
+            if (!fgGlobalMorphDone && call->CanTailCall() && gtIsRecursiveCall(call))
+            {
+                assert(doesMethodHaveRecursiveTailcall());
+                assert((block->bbFlags & BBF_RECURSIVE_TAILCALL) != 0);
+            }
 
             for (CallArg& arg : call->gtArgs.Args())
             {
@@ -3191,8 +3271,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
                 }
             }
-
-            break;
+        }
+        break;
 
         case GT_CMPXCHG:
             expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
@@ -3268,7 +3348,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     }
 
     tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
-        fgDebugCheckFlags(operand);
+        fgDebugCheckFlags(operand, block);
         expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
         return GenTree::VisitResult::Continue;
@@ -3676,7 +3756,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
             gtDispTree(stmt->GetRootNode());
         }
 
-        fgDebugCheckFlags(stmt->GetRootNode());
+        fgDebugCheckFlags(stmt->GetRootNode(), block);
 
         // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
         // done by fgMorphTree()

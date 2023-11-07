@@ -43,10 +43,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     paramList + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureBinder}",
                     documentation);
 
-                EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder, _emitThrowIfNullMethod);
 
                 _writer.WriteLine($$"""
-                    {{Identifier.Configure}}<{{Identifier.TOptions}}>({{Identifier.optionsBuilder}}.{{Identifier.Services}}, {{Identifier.optionsBuilder}}.Name, {{Identifier.config}}, {{Identifier.configureBinder}});
+                    {{Identifier.Configure}}<{{Identifier.TOptions}}>({{Identifier.optionsBuilder}}.{{Identifier.Services}}, {{Identifier.optionsBuilder}}.{{Identifier.Name}}, {{Identifier.config}}, {{Identifier.configureBinder}});
                     return {{Identifier.optionsBuilder}};
                     """);
 
@@ -65,11 +65,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitMethodStartBlock(MethodsToGen.OptionsBuilderExt_BindConfiguration, "BindConfiguration", paramList, documentation);
 
-                EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configSectionPath);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder, _emitThrowIfNullMethod);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configSectionPath, _emitThrowIfNullMethod);
 
                 EmitStartBlock($"{Identifier.optionsBuilder}.{Identifier.Configure}<{Identifier.IConfiguration}>(({Identifier.instance}, {Identifier.config}) =>");
-                EmitCheckForNullArgument_WithBlankLine(Identifier.config);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.config, _emitThrowIfNullMethod);
                 _writer.WriteLine($$"""
                     {{Identifier.IConfiguration}} {{Identifier.section}} = string.Equals(string.Empty, {{Identifier.configSectionPath}}, StringComparison.OrdinalIgnoreCase) ? {{Identifier.config}} : {{Identifier.config}}.{{Identifier.GetSection}}({{Identifier.configSectionPath}});
                     {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.section}}, {{Identifier.instance}}, typeof({{Identifier.TOptions}}), {{Identifier.configureBinder}});
@@ -79,10 +79,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 _writer.WriteLine();
 
-                _writer.WriteLine($$"""
-                    {{Identifier.optionsBuilder}}.{{Identifier.Services}}.{{Identifier.AddSingleton}}<{{Identifier.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>, {{Identifier.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>>();
-                    return {{Identifier.optionsBuilder}};
-                    """);
+                EmitStartBlock($"{Identifier.optionsBuilder}.{Identifier.Services}.{Identifier.AddSingleton}<{Identifier.IOptionsChangeTokenSource}<{Identifier.TOptions}>, {Identifier.ConfigurationChangeTokenSource}<{Identifier.TOptions}>>({Identifier.sp} =>");
+
+                _writer.WriteLine($"return new {Identifier.ConfigurationChangeTokenSource}<{Identifier.TOptions}>({Identifier.optionsBuilder}.{Identifier.Name}, {Identifier.sp}.GetRequiredService<{Identifier.IConfiguration}>());");
+
+                EmitEndBlock(endBraceTrailingSource: ");");
+
+                _writer.WriteLine();
+
+                _writer.WriteLine($"return {Identifier.optionsBuilder};");
 
                 EmitEndBlock();
             }

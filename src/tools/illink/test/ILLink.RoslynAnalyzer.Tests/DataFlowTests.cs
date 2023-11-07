@@ -125,6 +125,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task DynamicObjects ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task EmptyArrayIntrinsicsDataFlow ()
 		{
 			// https://github.com/dotnet/linker/issues/2273
@@ -133,6 +139,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task EventDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task FeatureCheckDataFlow ()
 		{
 			return RunTest ();
 		}
@@ -157,6 +169,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task InlineArrayDataflow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task InterpolatedStringHandlerDataFlow ()
 		{
 			return RunTest ();
 		}

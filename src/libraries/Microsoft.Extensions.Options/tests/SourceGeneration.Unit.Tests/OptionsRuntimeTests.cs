@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -287,6 +288,12 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 P23 = new List<string>() { "1", "2", "3", "4" },
                 P24 = new FakeCount(4),
                 P25 = new FakeCountChild(4),
+                P27 = new List<string> { "1", "2" },
+                P28 = new HashSet<string> { "1", "2" },
+                P29 = new List<string> { "1", "2", "3" },
+                P30 = new HashSet<string> { "1", "2", "3" },
+                P31 = new List<int> { 1, 2, 3, 4 },
+                P32 = new HashSet<int> { 1, 2, 3, 4 },
 #endif // NET8_0_OR_GREATER
                 P1 = 2,
                 P2 = "12345",
@@ -325,6 +332,12 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 P23 = new List<string>() { "1", "2", "3", "4", "5" },
                 P24 = new FakeCount(5),
                 P25 = new FakeCountChild(5),
+                P27 = new List<string> { "1" },
+                P28 = new HashSet<string> { "1" },
+                P29 = new List<string> { "1", "2" },
+                P30 = new HashSet<string> { "1", "2" },
+                P31 = new List<int> { 1, 2, 3, 4, 5 },
+                P32 = new HashSet<int> { 1, 2, 3, 4, 5 },
 #endif // NET8_0_OR_GREATER
                 P1 = 4,
                 P2 = "1234",
@@ -349,7 +362,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.Equal(new [] {
 #if NET8_0_OR_GREATER
                 "P0: The field OptionsUsingGeneratedAttributes.P0 must be a string or collection type with a minimum length of '1' and maximum length of '3'.",
-                "P11: The field OptionsUsingGeneratedAttributes.P11 must be between 1/30/2023 12:00:00 AM and 12/30/2023 12:00:00 AM.",
+                string.Format(CultureInfo.CurrentCulture, "P11: The field OptionsUsingGeneratedAttributes.P11 must be between {0} and {1}.", new DateTime(2023, 1, 30), new DateTime(2023, 12, 30)),
                 "P12: The field OptionsUsingGeneratedAttributes.P12 must be between 5 exclusive and 10.",
                 "P13: The field OptionsUsingGeneratedAttributes.P13 must be between 5 and 10 exclusive.",
                 "P14: The field OptionsUsingGeneratedAttributes.P14 must be a string or collection type with a minimum length of '2' and maximum length of '10'.",
@@ -362,6 +375,12 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 "P23: The field OptionsUsingGeneratedAttributes.P23 must be a string or array type with a maximum length of '4'.",
                 "P24: The field OptionsUsingGeneratedAttributes.P24 must be a string or array type with a maximum length of '4'.",
                 "P25: The field OptionsUsingGeneratedAttributes.P25 must be a string or array type with a maximum length of '4'.",
+                "P27: The field OptionsUsingGeneratedAttributes.P27 must be a string or collection type with a minimum length of '2' and maximum length of '10'.",
+                "P28: The field OptionsUsingGeneratedAttributes.P28 must be a string or collection type with a minimum length of '2' and maximum length of '10'.",
+                "P29: The field OptionsUsingGeneratedAttributes.P29 must be a string or array type with a minimum length of '3'.",
+                "P30: The field OptionsUsingGeneratedAttributes.P30 must be a string or array type with a minimum length of '3'.",
+                "P31: The field OptionsUsingGeneratedAttributes.P31 must be a string or array type with a maximum length of '4'.",
+                "P32: The field OptionsUsingGeneratedAttributes.P32 must be a string or array type with a maximum length of '4'.",
 #endif // NET8_0_OR_GREATER
                 "P1: The field OptionsUsingGeneratedAttributes.P1 must be between 1 and 3.",
                 "P2: The field OptionsUsingGeneratedAttributes.P2 must be a string or array type with a minimum length of '5'.",
@@ -412,6 +431,9 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
         [LengthAttribute(2, 10)]
         public int[] P17 { get; set; }
 
+        // Although MinLength and MaxLength attributes defined in NETFX but the implementation there has a bug which can produce exception like the following when using types like List<string>:
+        // System.InvalidCastException : Unable to cast object of type 'System.Collections.Generic.List`1[System.String]' to type 'System.Array'.
+
         [MinLengthAttribute(3)]
         public List<string> P18 { get; set; }
 
@@ -429,6 +451,24 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 
         [MaxLengthAttribute(4)]
         public FakeCountChild P25 { get; set; }
+
+        [LengthAttribute(2, 10)]
+        public IList<string> P27 { get; set; }
+
+        [LengthAttribute(2, 10)]
+        public ICollection<string> P28 { get; set; }
+
+        [MinLengthAttribute(3)]
+        public IList<string> P29 { get; set; }
+
+        [MinLengthAttribute(3)]
+        public ICollection<string> P30 { get; set; }
+
+        [MaxLengthAttribute(4)]
+        public IList<int> P31 { get; set; }
+
+        [MaxLengthAttribute(4)]
+        public ICollection<int> P32 { get; set; }
 #endif // NET8_0_OR_GREATER
 
         [RangeAttribute(1, 3)]

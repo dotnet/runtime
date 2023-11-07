@@ -1905,14 +1905,6 @@ namespace System.Text.Json.Serialization.Tests
 #endif
     }
 
-    public class SimpleSnakeCasePolicy : JsonNamingPolicy
-    {
-        public override string ConvertName(string name)
-        {
-            return string.Concat(name.Select((x, i) => i > 0 && char.IsUpper(x) ? "_" + x.ToString() : x.ToString())).ToLower();
-        }
-    }
-
     public static class ReflectionExtensions
     {
 #if NET6_0_OR_GREATER

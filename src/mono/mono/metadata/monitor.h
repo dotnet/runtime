@@ -129,7 +129,7 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset);
 
 ICALL_EXPORT
 gint64
-ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void);
+ves_icall_System_Threading_Monitor_Monitor_get_lock_contention_count (void);
 
 #ifdef HOST_WASM
 void

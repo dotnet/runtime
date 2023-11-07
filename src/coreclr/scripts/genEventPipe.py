@@ -1263,7 +1263,7 @@ def generateEventPipeImplFiles(
                     eventpipeImpl.write(getCoreCLREventPipeImplFileSuffix())
                 elif runtimeFlavor.mono:
                     eventpipeImpl.write(getMonoEventPipeImplFileSuffix())
-                elif runtimeFlavor.nativeaot:
+                elif runtimeFlavor.nativeaot and providerName=="Microsoft-Windows-DotNETRuntime":
                     eventpipeImpl.write(getAotEventPipeImplFileSuffix())
 
 def generateEventPipeFiles(

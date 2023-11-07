@@ -34,7 +34,7 @@ internal static partial class Interop
         internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPUTF8Str)]string name, out MountPointInformation mpi);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFormatInfoForMountPoint", SetLastError = true)]
-        private static unsafe partial int GetFormatInfoForMountPoint(
+        internal static unsafe partial int GetFormatInfoForMountPoint(
             [MarshalAs(UnmanagedType.LPUTF8Str)]string name,
             byte* formatNameBuffer,
             int bufferLength,

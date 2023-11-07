@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetNetworkInformation_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\NetworkInformation\DuplicateAddressDetectionState.cs" />
     <Compile Include="System\Net\NetworkInformation\GatewayIPAddressInformation.cs" />
@@ -27,7 +31,7 @@
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformationCollection.cs" />
     <Compile Include="System\Net\NetworkInformation\NetBiosNodeType.cs" />
     <Compile Include="System\Net\NetworkInformation\NetEventSource.NetworkInformation.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.cs" Condition="'$(TargetPlatformIdentifier)' != 'illumos' and '$(TargetPlatformIdentifier)' != 'solaris'" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.cs" Condition="'$(TargetPlatformIdentifier)' != 'illumos' and '$(TargetPlatformIdentifier)' != 'solaris' and '$(TargetPlatformIdentifier)' != 'haiku'" />
     <Compile Include="System\Net\NetworkInformation\NetworkAvailabilityEventArgs.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkChangeDelegates.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterface.cs" />
@@ -53,6 +57,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <!-- Interop -->
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs" Link="Common\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs" />
@@ -95,6 +100,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAEventSelect.cs" Link="Common\Interop\Windows\WinSock\Interop.WSAEventSelect.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAIoctl.cs" Link="Common\Interop\Windows\WinSock\Interop.WSAIoctl.cs" />
   </ItemGroup>
+
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="System\Net\NetworkInformation\IPAddressUtil.cs" />
@@ -119,6 +125,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\CoreLib\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs" Link="Common\System\IO\RowConfigReader.cs" />
   </ItemGroup>
+
   <!-- Linux (other than Android) -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
     <Compile Include="System\Net\NetworkInformation\ExceptionHelper.Linux.cs" />
@@ -145,6 +152,7 @@
     <Compile Include="$(CommonPath)System\IO\StringParser.cs" Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\Interop.LinuxNetDeviceFlags.cs" Link="Common\Interop\Linux\Interop.LinuxNetDeviceFlags.cs" />
   </ItemGroup>
+
   <!-- Android -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Android.cs" />
@@ -157,6 +165,7 @@
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Android.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Android.cs" />
   </ItemGroup>
+
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'freebsd'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Bsd.cs" />
@@ -177,6 +186,7 @@
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.ProtocolStatistics.cs" Link="Common\Interop\BSD\System.Native\Interop.ProtocolStatistics.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs" Link="Common\Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.OSX.cs" />
     <!-- OSX Common -->
@@ -186,23 +196,29 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.SystemConfiguration.cs" Link="Common\Interop\OSX\Interop.SystemConfiguration.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'freebsd'">
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd'">
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs" Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
   </ItemGroup>
+
   <!-- Unknown Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris' or '$(TargetPlatformIdentifier)' == 'haiku'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <SupportedPlatform Include="illumos"/>
     <SupportedPlatform Include="Solaris "/>
+    <SupportedPlatform Include="Haiku"/>
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
@@ -216,7 +232,9 @@
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
+
 </Project>

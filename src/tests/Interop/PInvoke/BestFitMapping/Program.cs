@@ -6,37 +6,33 @@ using System.Text;
 using System.Runtime.InteropServices;
 using TestLibrary;
 
+using Xunit;
+
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         if (System.Globalization.CultureInfo.CurrentCulture.Name != "en-US")
         {
             Console.WriteLine("Non-US English platforms are not supported.\nPassing without running tests");
 
             Console.WriteLine("--- Success");
-            return 100;
+            return;
         }
 
-        try
-        {
-            Console.WriteLine("Validating char marshalling...");
-            Char.PInvoke_Default.RunTest();
-            Char.PInvoke_False_False.RunTest();
-            Char.PInvoke_False_True.RunTest();
-            Char.PInvoke_True_False.RunTest();
-            Char.PInvoke_True_True.RunTest();
+        Console.WriteLine("Validating char marshalling...");
+        Char.PInvoke_Default.RunTest();
+        Char.PInvoke_False_False.RunTest();
+        Char.PInvoke_False_True.RunTest();
+        Char.PInvoke_True_False.RunTest();
+        Char.PInvoke_True_True.RunTest();
 
-            Console.WriteLine("Validating LPStr marshalling...");
-            LPStr.PInvoke_Default.RunTest();
-            LPStr.PInvoke_False_False.RunTest();
-            LPStr.PInvoke_False_True.RunTest();
-            LPStr.PInvoke_True_False.RunTest();
-            LPStr.PInvoke_True_True.RunTest();
-            return 100;
-        } catch (Exception e){
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
+        Console.WriteLine("Validating LPStr marshalling...");
+        LPStr.PInvoke_Default.RunTest();
+        LPStr.PInvoke_False_False.RunTest();
+        LPStr.PInvoke_False_True.RunTest();
+        LPStr.PInvoke_True_False.RunTest();
+        LPStr.PInvoke_True_True.RunTest();
     }
 }

@@ -88,7 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool constructorHasSetsRequiredMembersAttribute =
                 typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
 
-            JsonTypeInfo.PropertyHierarchyResolutionState state = new();
+            JsonTypeInfo.PropertyHierarchyResolutionState state = new(typeInfo.Options);
 
             // Walk the type hierarchy starting from the current type up to the base type(s)
             foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())

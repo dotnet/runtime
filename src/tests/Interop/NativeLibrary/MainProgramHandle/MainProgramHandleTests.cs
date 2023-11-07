@@ -26,7 +26,8 @@ public static class MainProgramHandleTests
             return IntPtr.Zero;
         });
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

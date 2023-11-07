@@ -56,6 +56,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? ISet_Unbound { get; }
         public INamedTypeSymbol? ISet { get; }
         public INamedTypeSymbol? List { get; }
+        public INamedTypeSymbol Enum { get; }
+        public INamedTypeSymbol? ArgumentNullException { get; }
 
         public KnownTypeSymbols(CSharpCompilation compilation)
         {
@@ -113,6 +115,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             IReadOnlyList_Unbound = compilation.GetBestTypeByMetadataName(typeof(IReadOnlyList<>))?.ConstructUnboundGenericType();
             IReadOnlySet_Unbound = compilation.GetBestTypeByMetadataName("System.Collections.Generic.IReadOnlySet`1")?.ConstructUnboundGenericType();
             ISet_Unbound = ISet?.ConstructUnboundGenericType();
+
+            // needed to be able to know if a member exist inside the compilation unit
+            Enum = compilation.GetSpecialType(SpecialType.System_Enum);
+            ArgumentNullException = compilation.GetBestTypeByMetadataName(typeof(ArgumentNullException));
+
+            String = compilation.GetBestTypeByMetadataName(typeof(string));
         }
     }
 }

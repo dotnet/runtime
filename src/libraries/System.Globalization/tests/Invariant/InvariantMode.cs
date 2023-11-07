@@ -701,7 +701,7 @@ namespace System.Globalization.Tests
             // CompareInfo
             //
             Assert.Equal(ci.Name == "" ? 0x7F : 0x1000, ci.CompareInfo.LCID);
-            Assert.True(cultureName.Equals(ci.CompareInfo.Name, StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(cultureName, ci.CompareInfo.Name, StringComparer.OrdinalIgnoreCase);
         }
 
         [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
