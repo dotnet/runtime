@@ -2209,7 +2209,7 @@ public:
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
 
-    UNATIVE_OFFSET emitCurCodeOffs(BYTE* dst)
+    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst)
     {
         size_t distance;
         if ((dst >= emitCodeBlock) && (dst <= (emitCodeBlock + emitTotalHotCodeSize)))
