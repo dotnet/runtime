@@ -14,11 +14,11 @@ namespace System.Net.Security
     {
         private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate()
         {
-            ProtocolToken alertToken = default;
-            var isValid = VerifyRemoteCertificate(
+            X509Chain? chain = null;
+            bool isValid = VerifyRemoteCertificateCore(
                 _sslAuthenticationOptions.CertValidationDelegate,
                 _sslAuthenticationOptions.CertificateContext?.Trust,
-                ref alertToken,
+                ref chain,
                 out SslPolicyErrors sslPolicyErrors,
                 out X509ChainStatusFlags chainStatus);
 
@@ -27,7 +27,7 @@ namespace System.Net.Security
                 IsValid = isValid,
                 SslPolicyErrors = sslPolicyErrors,
                 ChainStatus = chainStatus,
-                AlertToken = alertToken,
+                Chain = chain,
             };
         }
 
@@ -37,7 +37,27 @@ namespace System.Net.Security
             sslPolicyErrors = validationResult?.SslPolicyErrors ?? default;
             chainStatus = validationResult?.ChainStatus ?? default;
             isValid = validationResult?.IsValid ?? default;
-            alertToken = validationResult?.AlertToken ?? default;
+
+            X509Chain? chain = validationResult?.Chain ?? default;
+            try
+            {
+                if (!isValid)
+                {
+                    CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
+                    if (chain != null)
+                    {
+                        foreach (X509ChainStatus status in chain.ChainStatus)
+                        {
+                            chainStatus |= status.Status;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                DisposeChain(chain);
+            }
+
             return validationResult is not null;
         }
 
@@ -103,7 +123,7 @@ namespace System.Net.Security
                 public bool IsValid { get; init; }
                 public SslPolicyErrors SslPolicyErrors { get; init; }
                 public X509ChainStatusFlags ChainStatus { get; init; }
-                public ProtocolToken? AlertToken { get; init; }
+                public X509Chain? Chain { get; init; }
             }
         }
     }
