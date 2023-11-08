@@ -233,7 +233,6 @@
   </Target>
 
   <PropertyGroup>
-    <IsTargetOSSupportedByXUnitLogChecker Condition="'$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsTargetOSSupportedByXUnitLogChecker>
     <HelixPreCommands Condition="'$(IsTargetOSSupportedByXUnitLogChecker)' == 'true' and '$(TargetOS)' == 'windows'">
       $(HelixPreCommands);
       set __TestArchitecture=$(TargetArchitecture)

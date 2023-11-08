@@ -705,7 +705,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <IsTargetOSSupportedByXUnitLogChecker Condition="'$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsTargetOSSupportedByXUnitLogChecker>
     <XUnitLogCheckerDirectory Condition="'$(IsTargetOSSupportedByXUnitLogChecker)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)XUnitLogChecker'))</XUnitLogCheckerDirectory>
   </PropertyGroup>
 
