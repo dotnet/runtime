@@ -12,7 +12,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_MACCATALYST))
+#if defined(__APPLE__) && !(defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
 
 /**
  * Is this code unit a lead surrogate (U+d800..U+dbff)?

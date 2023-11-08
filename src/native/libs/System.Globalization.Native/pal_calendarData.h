@@ -78,7 +78,7 @@ typedef enum
 
 // the function pointer definition for the callback used in EnumCalendarInfo
 typedef void (PAL_CALLBACK_CALLTYPE *EnumCalendarInfoCallback)(const UChar*, const void*);
-#if !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(__APPLE__) || (defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
 
 PALEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
                                                    CalendarId* calendars,
@@ -102,8 +102,7 @@ PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
                                                               int32_t* startYear,
                                                               int32_t* startMonth,
                                                               int32_t* startDay);
-#endif
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_IPHONE))
+#else
 PALEXPORT const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName,
                                                                 CalendarId calendarId,
                                                                 CalendarDataType dataType);

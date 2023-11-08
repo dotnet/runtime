@@ -12,7 +12,7 @@ typedef struct _Range {
     int32_t location;
     int32_t length;
 } Range;
-#if !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(__APPLE__) || (defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
 PALEXPORT ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle);
 
 PALEXPORT void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle);
@@ -65,9 +65,7 @@ PALEXPORT int32_t GlobalizationNative_GetSortKey(SortHandle* pSortHandle,
                                                  uint8_t* sortKey,
                                                  int32_t cbSortKeyLength,
                                                  int32_t options);
-#endif
-
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_IPHONE))
+#else
 PALEXPORT int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName,
                                                           int32_t lNameLength,
                                                           const uint16_t* lpTarget,

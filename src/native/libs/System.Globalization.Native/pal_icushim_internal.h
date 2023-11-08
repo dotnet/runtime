@@ -24,7 +24,7 @@
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #endif
-#if !defined(__APPLE__) || (defined(TARGET_OS_OSX) && !defined(TARGET_OS_IPHONE))
+#if !defined(__APPLE__) || (defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>

@@ -8,7 +8,7 @@
 #include <TargetConditionals.h>
 #endif
 
-#if !defined(TARGET_MACCAT) && !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(__APPLE__) || (defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
@@ -20,9 +20,7 @@ PALEXPORT int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,
                                                           int32_t valueLength);
-#endif
-
-#if defined(__APPLE__) && !(defined(TARGET_OS_OSX) && !defined(TARGET_OS_IPHONE))
+#else
 #include <unicode/utypes.h>
 
 PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
