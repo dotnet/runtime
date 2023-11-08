@@ -661,6 +661,7 @@ namespace System
         public static long Clamp(long value, long min, long max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long CopySign(long value, long sign)
         {
             if (value == long.MinValue && sign >= 0)
