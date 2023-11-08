@@ -149,7 +149,7 @@ struct _InterpBasicBlock {
 	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the
 	// optimized method we will map the bb_index to the corresponding native offset.
 	guint patchpoint_data: 1;
-	guint emit_patchpoint: 1;
+	guint patchpoint_bb: 1;
 	// used by jiterpreter
 	guint backwards_branch_target: 1;
 	guint contains_call_instruction: 1;
@@ -219,6 +219,7 @@ typedef struct {
 	guint local_only : 1;
 	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
 	guint no_ssa : 1; // Var is not in ssa form, not subject to optimizations
+	guint il_global : 1; // Args and IL locals
 } InterpVar;
 
 typedef struct {

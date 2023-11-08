@@ -687,8 +687,7 @@ handle_branch (TransformData *td, int long_op, int offset)
 	if (offset < 0 && td->sp == td->stack && !td->inlined_method) {
 		// Backwards branch inside unoptimized method where the IL stack is empty
 		// This is candidate for a patchpoint
-		if (!td->optimized)
-			target_bb->emit_patchpoint = TRUE;
+		target_bb->patchpoint_bb = TRUE;
 		if (mono_interp_tiering_enabled () && !target_bb->patchpoint_data && td->optimized) {
 			// The optimized imethod will store mapping from bb index to native offset so it
 			// can resume execution in the optimized method, once we tier up in patchpoint
@@ -4275,6 +4274,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		int mt = mono_mint_type (type);
 		td->vars [i].type = type;
 		td->vars [i].global = TRUE;
+		td->vars [i].il_global = TRUE;
 		td->vars [i].indirects = 0;
 		td->vars [i].mt = mt;
 		td->vars [i].def = NULL;
@@ -4283,10 +4283,6 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [i].size = size;
 		offset = ALIGN_TO (offset, align);
 		td->vars [i].offset = offset;
-		if (td->optimized) {
-			int ext_index = interp_create_renamable_var (td, i);
-			td->renamable_vars [ext_index].ssa_fixed = TRUE;
-		}
 		offset += size;
 	}
 	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
@@ -4307,15 +4303,12 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [index].type = header->locals [i];
 		td->vars [index].offset = offset;
 		td->vars [index].global = TRUE;
+		td->vars [index].il_global = TRUE;
 		td->vars [index].indirects = 0;
 		td->vars [index].mt = mono_mint_type (header->locals [i]);
 		td->vars [index].def = NULL;
 		td->vars [index].ext_index = -1;
 		td->vars [index].size = size;
-		if (td->optimized) {
-			int ext_index = interp_create_renamable_var (td, index);
-			td->renamable_vars [ext_index].ssa_fixed = TRUE;
-		}
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
 		offset += size;
 	}
@@ -8302,7 +8295,7 @@ interp_compute_native_offset_estimates (TransformData *td)
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
 		bb->native_offset_estimate = noe;
-		if (bb->emit_patchpoint)
+		if (!td->optimized && bb->patchpoint_bb)
 			noe += 2;
 
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
@@ -8648,7 +8641,7 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 
 		if (bb->patchpoint_data)
 			patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, bb->native_offset, bb->index);
-		if (bb->emit_patchpoint) {
+		if (!td->optimized && bb->patchpoint_bb) {
 			// Add patchpoint in unoptimized method
 			*ip++ = MINT_TIER_PATCHPOINT;
 			*ip++ = (guint16)bb->index;

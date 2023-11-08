@@ -757,6 +757,17 @@ interp_compute_global_vars (TransformData *td)
 			td->vars [i].no_ssa = FALSE;
 	}
 
+	// For locals (which are normally initlocal) and arguments, consider them already
+	// defined in entry_bb
+	for (unsigned int i = 0; i < td->vars_size; i++) {
+		if (td->vars [i].il_global) {
+			td->vars [i].declare_bbs = g_slist_prepend (NULL, td->entry_bb);
+		} else {
+			// IL globals are the first vars
+			break;
+		}
+	}
+
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
@@ -964,6 +975,23 @@ insert_phi_nodes (TransformData *td)
 	}
 }
 
+// Additional fixed vars, in addition to vars that are args to phi nodes
+static void
+compute_fixed_vars (TransformData *td)
+{
+	for (int i = 0; i < td->bblocks_count; i++) {
+		InterpBasicBlock *bb = td->bblocks [i];
+		if (!bb->patchpoint_bb)
+			continue;
+		// All IL locals live at entry to this bb have to be fixed
+		for (unsigned int k = 0; k < td->renamable_vars_size; k++) {
+			int var_index = td->renamable_vars [k].var_index;
+			if (td->vars [var_index].il_global && mono_bitset_test_fast (bb->live_in_set, k))
+				td->renamable_vars [k].ssa_fixed = TRUE;
+		}
+	}
+}
+
 static int
 get_renamed_var (TransformData *td, int var)
 {
@@ -1074,6 +1102,8 @@ interp_compute_ssa (TransformData *td)
 	interp_compute_pruned_ssa_liveness (td);
 
 	insert_phi_nodes (td);
+
+	compute_fixed_vars (td);
 
 	rename_vars (td);
 
