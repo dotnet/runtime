@@ -1714,13 +1714,6 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
 {
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
 
-    MetaSig asyncMsig(pAsyncOtherVariant);
-    SigBuilder targetSig;
-    CreateDerivedTargetSigWithExtraParams(asyncMsig, &targetSig);
-
-    DWORD cbTargetSig;
-    PCCOR_SIGNATURE pTargetSig = (PCCOR_SIGNATURE)targetSig.GetSignature(&cbTargetSig);
-
     unsigned continuationLocal = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__CONTINUATION)));
 
     TypeHandle thTaskRet = thunkMsig.GetRetTypeHandleThrowing();
@@ -1758,13 +1751,13 @@ void MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOth
             pCode->BeginTryBlock();
 
             DWORD localArg = 0;
-            if (asyncMsig.HasThis())
+            if (thunkMsig.HasThis())
             {
                 // Struct async thunks not yet implemented
                 _ASSERTE(!this->GetMethodTable()->IsValueType());
                 pCode->EmitLDARG(localArg++);
             }
-            for (UINT iArg = 0; iArg < asyncMsig.NumFixedArgs(); iArg++)
+            for (UINT iArg = 0; iArg < thunkMsig.NumFixedArgs(); iArg++)
             {
                 pCode->EmitLDARG(localArg++);
             }
