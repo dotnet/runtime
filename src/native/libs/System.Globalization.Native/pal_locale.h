@@ -4,11 +4,8 @@
 #pragma once
 
 #include "pal_compiler.h"
-#if defined(__APPLE__)
-#include <TargetConditionals.h>
-#endif
 
-#if !defined(__APPLE__) || (defined(__APPLE__) && !TARGET_OS_IPHONE)
+#if !defined(__APPLE__) || (defined(__APPLE__) && !(TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);

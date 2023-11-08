@@ -36,7 +36,7 @@ char* DetectDefaultAppleLocaleName(void)
     return strdup([localeName UTF8String]);
 }
 
-#if TARGET_OS_IPHONE
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
 
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {

@@ -12,7 +12,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if TARGET_OS_IPHONE
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
 
 /**
  * Is this code unit a lead surrogate (U+d800..U+dbff)?

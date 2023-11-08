@@ -7,7 +7,7 @@
 #include "pal_locale.h"
 #include "pal_compiler.h"
 
-#if defined(__APPLE__) && TARGET_OS_IPHONE
+#if defined(__APPLE__) && (TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
 #include <unicode/utypes.h>
 #include <unicode/uidna.h>
 #endif

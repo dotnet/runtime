@@ -11,7 +11,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if TARGET_OS_IPHONE
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
 
 /*
 Gets the localized display name that is currently in effect for the specified time zone.
