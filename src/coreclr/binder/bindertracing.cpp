@@ -13,7 +13,6 @@
 
 #include "common.h"
 #include "bindertracing.h"
-#include "bindresult.hpp"
 
 #include "activitytracker.h"
 

@@ -15,7 +15,6 @@
 #define __BINDER__ASSEMBLY_BINDER_COMMON_HPP__
 
 #include "bindertypes.hpp"
-#include "bindresult.hpp"
 #include "bundle.h"
 
 class AssemblyBinder;

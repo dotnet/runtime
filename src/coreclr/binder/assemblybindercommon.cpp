@@ -17,8 +17,6 @@
 #include "assembly.hpp"
 #include "assemblyhashtraits.hpp"
 #include "bindertracing.h"
-#include "bindresult.inl"
-#include "failurecache.hpp"
 #include "utils.hpp"
 #include "stringarraylist.h"
 #include "configuration.h"
