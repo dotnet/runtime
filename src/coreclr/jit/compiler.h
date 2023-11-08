@@ -6643,6 +6643,8 @@ protected:
     unsigned optCallCount;         // number of calls made in the method
     unsigned optIndirectCallCount; // number of virtual, interface and indirect calls made in the method
     unsigned optNativeCallCount;   // number of Pinvoke/Native calls made in the method
+    unsigned optFinallyCount;      // number of finally blocks considered for cloning in the current method
+    unsigned optFinallyCloned;     // number of finally blocks cloned in the current method
     unsigned optLoopsCloned;       // number of loops cloned in the current method.
 
 #ifdef DEBUG

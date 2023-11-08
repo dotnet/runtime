@@ -667,9 +667,10 @@ PhaseStatus Compiler::fgCloneFinally()
     // Note these cases potentially could be handled, but are less
     // obviously profitable and require modification of the handler
     // table.
-    unsigned  XTnum      = 0;
-    EHblkDsc* HBtab      = compHndBBtab;
-    unsigned  cloneCount = 0;
+    assert(optFinallyCount == 0);
+    assert(optFinallyCloned == 0);
+    unsigned  XTnum = 0;
+    EHblkDsc* HBtab = compHndBBtab;
     for (; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
         // Check if this is a try/finally
@@ -678,6 +679,9 @@ PhaseStatus Compiler::fgCloneFinally()
             JITDUMP("EH#%u is not a try-finally; skipping.\n", XTnum);
             continue;
         }
+
+        // We found another finally handler
+        optFinallyCount++;
 
         // Check if enclosed by another handler.
         const unsigned enclosingHandlerRegion = ehGetEnclosingHndIndex(XTnum);
@@ -1274,12 +1278,13 @@ PhaseStatus Compiler::fgCloneFinally()
 
         // Done!
         JITDUMP("\nDone with EH#%u\n\n", XTnum);
-        cloneCount++;
+        optFinallyCloned++;
     }
 
-    if (cloneCount > 0)
+    if (optFinallyCloned > 0)
     {
-        JITDUMP("fgCloneFinally() cloned %u finally handlers\n", cloneCount);
+        assert(optFinallyCloned <= optFinallyCount);
+        JITDUMP("fgCloneFinally() cloned %u finally handlers\n", optFinallyCloned);
         fgOptimizedFinally = true;
 
 #ifdef DEBUG
@@ -1293,9 +1298,11 @@ PhaseStatus Compiler::fgCloneFinally()
         fgDebugCheckTryFinallyExits();
 
 #endif // DEBUG
+
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
-    return (cloneCount > 0 ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING);
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG
