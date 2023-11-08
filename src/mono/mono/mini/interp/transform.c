@@ -8847,7 +8847,7 @@ retry:
 	}
 
 	if (td->optimized) {
-		interp_optimize_code (td);
+		MONO_TIME_TRACK (mono_interp_stats.optimize_time, interp_optimize_code (td));
 		interp_alloc_offsets (td);
 #if HOST_BROWSER
 		if (mono_interp_opt & INTERP_OPT_JITERPRETER)
