@@ -166,13 +166,13 @@ namespace System.Runtime
         internal static extern long RhGetLastGCDuration(int generation);
 
         [LibraryImport(RuntimeLibrary)]
-        internal static extern unsafe IntPtr RhRegisterFrozenSegment(void* pSegmentStart, nuint allocSize, nuint commitSize, nuint reservedSize);
+        internal static unsafe partial IntPtr RhRegisterFrozenSegment(void* pSegmentStart, nuint allocSize, nuint commitSize, nuint reservedSize);
 
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhUpdateFrozenSegment(IntPtr seg, void* allocated, void* committed);
 
         [LibraryImport(RuntimeLibrary)]
-        internal static extern void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
+        internal static partial void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterForFullGCNotification")]

@@ -40,16 +40,13 @@ namespace System.Runtime
             return h;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhRegisterFrozenSegment")]
+        [DllImport(RuntimeLibrary)]
         internal static extern unsafe IntPtr RhRegisterFrozenSegment(void* pSegmentStart, nuint allocSize, nuint commitSize, nuint reservedSize);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhUpdateFrozenSegment")]
+        [DllImport(RuntimeLibrary)]
         internal static extern unsafe void RhUpdateFrozenSegment(IntPtr seg, void* allocated, void* committed);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhUnregisterFrozenSegment")]
+        [DllImport(RuntimeLibrary)]
         internal static extern void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
         [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
