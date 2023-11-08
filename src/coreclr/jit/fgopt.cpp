@@ -764,74 +764,80 @@ bool Compiler::fgRemoveDeadBlocks()
 //-------------------------------------------------------------
 // fgDfsReversePostorder: Depth first search to establish block
 //   preorder and reverse postorder numbers, plus a reverse postorder for blocks,
-//   using all entry blocks and blocks without preds as start lblocks.
+//   using all entry blocks and EH handler blocks as start blocks.
 //
 // Notes:
 //   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
 //   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
 //   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
 //
-void Compiler::fgDfsReversePostorder()
-{
-    // Make sure fgEnterBlks are still there in startNodes, even if they participate in a loop (i.e., there is
-    // an incoming edge into the block).
-    assert(fgEnterBlksSetValid);
-
-    // We begin by figuring out which basic blocks don't have incoming edges and mark them as
-    // start blocks.  Later on we run the recursive algorithm for each node that we
-    // mark in this step.
-    BlockSet_ValRet_T startBlocks = fgDomFindStartBlocks();
-    BlockSetOps::UnionD(this, startBlocks, fgEnterBlks);
-    assert(BlockSetOps::IsMember(this, startBlocks, fgFirstBB->bbNum));
-
-    fgDfsReversePostorderCore(startBlocks);
-}
-
-//-------------------------------------------------------------
-// fgDfsReversePostorderCore: Depth first search to establish block
-//   preorder and reverse postorder numbers, plus a reverse postorder for blocks,
-//   using a specified set of start blocks.
+//   Unreachable blocks will have higher pre and post order numbers than reachable blocks.
+//   Hence they will appear at lower indices in the fgBBReversePostorder array.
 //
-// Arguments:
-//   startBlocks: set of blocks to consider as DFS roots
-//
-// Returns:
-//   postorder number of last block reachable from the root set. Any block
-//   with a postorder number higher than this was not reachable from the root set.
-//
-// Notes:
-//   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
-//   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
-//   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
-//
-unsigned Compiler::fgDfsReversePostorderCore(BlockSet_ValArg_T startBlocks)
+unsigned Compiler::fgDfsReversePostorder()
 {
     assert(fgBBcount == fgBBNumMax);
     assert(BasicBlockBitSetTraits::GetSize(this) == fgBBNumMax + 1);
     fgBBReversePostorder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
     BlockSet visited(BlockSetOps::MakeEmpty(this));
 
-    // Call the flowgraph DFS traversal helper.
     unsigned preorderIndex  = 1;
     unsigned postorderIndex = 1;
-    for (BasicBlock* const block : Blocks())
-    {
-        // Spawn a DFS from each unvisited start block.
-        //
-        if (BlockSetOps::IsMember(this, startBlocks, block->bbNum) &&
-            !BlockSetOps::IsMember(this, visited, block->bbNum))
-        {
-            fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
-        }
-    }
 
-    const unsigned lastReachablePostorderNumber = postorderIndex;
+    // Walk from our primary root.
+    //
+    fgDfsReversePostorderHelper(fgFirstBB, visited, preorderIndex, postorderIndex);
 
-    // If there are still unvisited blocks (say isolated cycles), visit them too.
+    // If we didn't end up visiting everything, try the EH roots.
     //
     if (preorderIndex != fgBBcount + 1)
     {
-        JITDUMP("DFS: flow graph has some isolated cycles, doing extra traversals\n");
+        for (EHblkDsc* const HBtab : EHClauses(this))
+        {
+            if (HBtab->HasFilter())
+            {
+                BasicBlock* const filterBlock = HBtab->ebdFilter;
+                if (!BlockSetOps::IsMember(this, visited, filterBlock->bbNum))
+                {
+                    fgDfsReversePostorderHelper(filterBlock, visited, preorderIndex, postorderIndex);
+                }
+            }
+
+            BasicBlock* const handlerBlock = HBtab->ebdHndBeg;
+            if (!BlockSetOps::IsMember(this, visited, handlerBlock->bbNum))
+            {
+                fgDfsReversePostorderHelper(handlerBlock, visited, preorderIndex, postorderIndex);
+            }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+            // For ARM code, prevent creating retless calls by visiting the call finally successors
+            //
+            if (HBtab->HasFinallyHandler())
+            {
+                for (BasicBlock* const finallyPredBlock : handlerBlock->Preds())
+                {
+                    assert(finallyPredBlock->KindIs(BBJ_CALLFINALLY));
+                    assert(finallyPredBlock->isBBCallAlwaysPair());
+
+                    if (!BlockSetOps::IsMember(this, visited, finallyPredBlock->bbNum))
+                    {
+                        fgDfsReversePostorderHelper(finallyPredBlock, visited, preorderIndex, postorderIndex);
+                    }
+                }
+            }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        }
+    }
+
+    // That's everything reachable from the roots.
+    //
+    const unsigned highestReachablePostorderNumber = postorderIndex - 1;
+
+    // If we still didn't end up visiting everything, visit what remains.
+    //
+    if (highestReachablePostorderNumber != fgBBcount)
+    {
+        JITDUMP("DFS: there are %u unreachable blocks\n", fgBBcount - highestReachablePostorderNumber);
         for (BasicBlock* const block : Blocks())
         {
             if (!BlockSetOps::IsMember(this, visited, block->bbNum))
@@ -858,49 +864,11 @@ unsigned Compiler::fgDfsReversePostorderCore(BlockSet_ValArg_T startBlocks)
     }
 #endif // DEBUG
 
-    return lastReachablePostorderNumber;
-}
-
-//-------------------------------------------------------------
-// fgDomFindStartBlocks: Helper for dominance computation to find the start block set.
-//
-// The start block set represents basic blocks in the flow graph that do not have incoming edges.
-// We begin assuming everything is a start block and remove any block that is a successor of another.
-//
-// Returns:
-//    Block set describing the start blocks.
-//
-BlockSet_ValRet_T Compiler::fgDomFindStartBlocks()
-{
-    BlockSet startNodes(BlockSetOps::MakeFull(this));
-
-    for (BasicBlock* const block : Blocks())
-    {
-        for (BasicBlock* const succ : block->Succs(this))
-        {
-            BlockSetOps::RemoveElemD(this, startNodes, succ->bbNum);
-        }
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nDominator computation start blocks (those blocks with no incoming edges):\n");
-        BlockSetOps::Iter iter(this, startNodes);
-        unsigned          bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            printf(FMT_BB " ", bbNum);
-        }
-        printf("\n");
-    }
-#endif // DEBUG
-
-    return startNodes;
+    return highestReachablePostorderNumber;
 }
 
 //------------------------------------------------------------------------
-// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks.
+// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks
 //
 // Arguments:
 //    block   - The starting entry block
