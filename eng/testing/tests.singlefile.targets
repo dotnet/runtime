@@ -107,6 +107,17 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="RemoveDebuggingBinariesFromTestR2R"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          BeforeTargets="__ExcludeAssembliesFromSingleFile">
+    <ItemGroup>
+      <FilesToRemove Include="$(OutDir)*.dbg" />
+      <FilesToRemove Include="$(PublishDir)*.dbg" />
+    </ItemGroup>
+
+    <Delete Files="@(FilesToRemove)" />
+  </Target>
+
   <Target Name="__UpdateExcludedAssembliesFromSingleFile"
           Inputs="ExcludeFromSingleFile"
           Outputs="ResolvedFileToPublish"
