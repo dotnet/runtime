@@ -262,7 +262,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withDebugging(level: number): DotnetHostBuilder {
         try {
-            mono_assert(level && typeof level === "number", "must be number");
+            mono_assert(level !== undefined && level !== null && typeof level === "number", "must be number");
             deep_merge_config(monoConfig, {
                 debugLevel: level
             });

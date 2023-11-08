@@ -24,6 +24,7 @@ Param(
     [switch] $iOSMono,
     [switch] $iOSNativeAOT,
     [switch] $NoDynamicPGO,
+    [switch] $NoR2R,
     [switch] $PhysicalPromotion,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
@@ -88,6 +89,10 @@ if ($NoDynamicPGO) {
     $Configurations += " PGOType=nodynamicpgo"
 }
 
+if ($NoR2R) {
+    $Configurations += " R2RType=nor2r"
+}
+
 if ($PhysicalPromotion) {
     $Configurations += " PhysicalPromotionType=physicalpromotion"
 }
@@ -116,6 +121,10 @@ $SetupArguments = "--repository https://github.com/$Repository --branch $Branch 
 
 if ($NoDynamicPGO) {
     $SetupArguments = "$SetupArguments --no-dynamic-pgo"
+}
+
+if ($NoR2R) {
+    $SetupArguments = "$SetupArguments --no-r2r"
 }
 
 if ($PhysicalPromotion) {
