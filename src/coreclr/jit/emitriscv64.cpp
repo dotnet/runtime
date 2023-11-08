@@ -3265,13 +3265,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 return;
 
             if (!emitComp->opts.disDiffable)
-            {
-                printf("%*s;; offset=0x%04X\n", MAX_LEN - len, "", emitCurCodeOffs(insAdr) + offset);
-            }
-            else
-            {
-                printf("\n");
-            }
+                printf("%*s;; offset=0x%04X", MAX_LEN - len, "", emitCurCodeOffs(insAdr) + offset);
+            printf("\n");
             return;
         }
         case 0x03:
