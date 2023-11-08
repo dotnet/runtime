@@ -1443,6 +1443,25 @@ const char* emitter::emitVectorRegName(regNumber reg)
     return vRegNames[index];
 }
 
+//------------------------------------------------------------------------
+// emitPredicateRegName: Returns a predicate register name.
+//
+// Arguments:
+//    reg - A predicate register.
+//
+// Return value:
+//    A string that represents a predicate register name.
+//
+const char* emitter::emitPredicateRegName(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert((reg >= REG_V0) && (reg <= REG_V31));
+
+    int index = (int)reg - (int)REG_V0;
+
+    return vRegNames[index];
+}
+
 /*****************************************************************************
  *
  *  Returns the base encoding of the given CPU instruction.
@@ -13942,6 +13961,20 @@ void emitter::emitDispVectorElemList(
 }
 
 //------------------------------------------------------------------------
+// emitDispPredicateReg: Display a predicate register name with with an arrangement suffix
+//
+void emitter::emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(isPredicateRegister(reg));
+    printf(emitVectorRegName(reg));
+    emitDispArrangement(opt);
+
+    if (addComma)
+        emitDispComma();
+}
+
+//------------------------------------------------------------------------
 // emitDispArrangement: Display a SIMD vector arrangement suffix
 //
 void emitter::emitDispArrangement(insOpts opt)
@@ -15534,6 +15567,24 @@ void emitter::emitDispInsHelp(
             {
                 emitDispReg(id->idReg1(), size, false);
             }
+            break;
+
+        case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), true); // nnnnn
+            emitDispVectorReg(id->idReg3(), id->idInsOpt(), true); // mmmmm
+            break;
+
+        case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), true); // nnnnn
+            emitDispVectorReg(id->idReg3(), id->idInsOpt(), true); // mmmmm
+            break;
+
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
+            emitDispPredicateReg(id->idReg1(), id->idInsOpt(), true); // DDDD
+            emitDispPredicateReg(id->idReg2(), id->idInsOpt(), true); // NNNN
+            emitDispPredicateReg(id->idReg3(), id->idInsOpt(), true); // MMMM
             break;
 
         default:
