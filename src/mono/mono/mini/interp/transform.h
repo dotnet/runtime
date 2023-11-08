@@ -49,11 +49,10 @@ typedef struct
 #define VAR_VALUE_I8 3
 #define VAR_VALUE_R4 4
 #define VAR_VALUE_NON_NULL 5
+#define VAR_VALUE_COUNT 6
 
-// LocalValue contains data to construct an InterpInst that is equivalent with the contents
-// of the stack slot / local / argument.
 typedef struct {
-	// Indicates the type of the stored information. It can be another local or a constant
+	// Indicates the type of the stored information. It can be another var or a constant
 	int type;
 	// Holds the local index or the actual constant value
 	union {
@@ -63,9 +62,9 @@ typedef struct {
 		float f;
 	};
 	// The instruction that writes this local.
-	InterpInst *ins;
-	int def_index;
-	// ref count for ins->dreg
+	InterpInst *def;
+	// The number of times this var is referenced. After optimizations
+	// this can become 0, in which case we can clear the def instruction.
 	int ref_count;
 } InterpVarValue;
 
@@ -300,6 +299,8 @@ typedef struct
 	unsigned int renamed_fixed_vars_size;
 	unsigned int renamed_fixed_vars_capacity;
 	InterpRenamedFixedVar *renamed_fixed_vars;
+
+	InterpVarValue *var_values;
 
 	int n_data_items;
 	int max_data_items;

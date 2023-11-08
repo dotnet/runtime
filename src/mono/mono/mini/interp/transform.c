@@ -6207,6 +6207,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 					// First arg is dummy var, it is null when passed to the ctor
 					call_args [0] = interp_create_var (td, get_type_from_stack (stack_type [ret_mt], NULL));
+					// Make sure this arg is defined for SSA optimizations
+					interp_add_ins (td, MINT_DEF);
+					td->last_ins->dreg = call_args [0];
 					for (int i = 0; i < csignature->param_count; i++) {
 						call_args [i + 1] = td->sp [i].var;
 					}
@@ -6347,6 +6350,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					push_type (td, stack_type [ret_mt], klass);
 					push_type (td, stack_type [ret_mt], klass);
 				}
+				// Make sure this arg is defined for SSA optimizations
+				interp_add_ins (td, MINT_DEF);
+				td->last_ins->dreg = td->sp [-1].var;
 				int dreg = td->sp [-2].var;
 
 				// Push back the params to top of stack. The original vars are maintained.
