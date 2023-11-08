@@ -538,9 +538,9 @@ namespace Wasm.Build.Tests
             Assert.True(Directory.Exists(strippedAssemblyDir), $"Could not find the stripped assemblies dir: {strippedAssemblyDir}");
 
             string assemblyToExamine = "System.Private.CoreLib.dll";
-            string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExam);
-            string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExam);
-            string bundledAssembly = Path.Combine(frameworkDir, assemblyToExam);
+            string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExamine);
+            string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExamine);
+            string bundledAssembly = Path.Combine(frameworkDir, assemblyToExamine);
             Assert.True(File.Exists(originalAssembly));
             Assert.True(File.Exists(strippedAssembly));
             Assert.True(File.Exists(bundledAssembly));
