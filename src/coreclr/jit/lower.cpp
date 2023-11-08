@@ -6584,7 +6584,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             unreached();
 #endif
         }
-        assert(divMod->MarkedDivideByConstOptimized());
 
         const bool     requiresDividendMultiuse = !isDiv;
         const weight_t curBBWeight              = m_block->getBBWeight(comp);
@@ -6913,9 +6912,6 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         return true;
 #elif defined(TARGET_ARM)
         // Currently there's no GT_MULHI for ARM32
-        return false;
-#elif defined(TARGET_RISCV64)
-        NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         return false;
 #else
 #error Unsupported or unset target architecture
