@@ -191,7 +191,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         Assert.True(Directory.Exists(origAssemblyDir), $"Could not find the original AOT input assemblies dir: {origAssemblyDir}");
         Assert.True(Directory.Exists(strippedAssemblyDir), $"Could not find the stripped assemblies dir: {strippedAssemblyDir}");
 
-        string assemblyToExam = "System.Private.CoreLib.dll";
+        string assemblyToExamine = "System.Private.CoreLib.dll";
         string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExam);
         string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExam);
         string bundledAssembly = Path.Combine(frameworkDir, assemblyToExam);
