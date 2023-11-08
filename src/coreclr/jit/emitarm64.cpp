@@ -1044,6 +1044,10 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
+
+        case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_EF_3A: // ...........mmmmm ......nnnnnddddd -- SVE two-way dot product
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
 
