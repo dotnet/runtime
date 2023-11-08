@@ -15,26 +15,60 @@ namespace System.Reflection.Emit
         {
             _methodBuilder = new MethodBuilderImpl(name, attributes, callingConvention, null, parameterTypes, mod, type);
 
-            type._methodDefStore!.Add(_methodBuilder);
+            type._methodDefinitions.Add(_methodBuilder);
         }
-        protected override bool InitLocalsCore { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
-        protected override ParameterBuilder DefineParameterCore(int iSequence, ParameterAttributes attributes, string strParamName) => throw new NotImplementedException();
-        protected override ILGenerator GetILGeneratorCore(int streamSize) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
-        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes) => throw new NotImplementedException();
+        protected override bool InitLocalsCore
+        {
+            get => _methodBuilder.InitLocals;
+            set => _methodBuilder.InitLocals = value;
+        }
+
+        protected override ParameterBuilder DefineParameterCore(int iSequence, ParameterAttributes attributes, string strParamName) =>
+            _methodBuilder.DefineParameter(iSequence, attributes, strParamName);
+
+        protected override ILGenerator GetILGeneratorCore(int streamSize)
+        {
+            if (_isDefaultConstructor)
+                throw new InvalidOperationException(SR.InvalidOperation_DefaultConstructorILGen);
+
+            return _methodBuilder.GetILGenerator(streamSize);
+        }
+
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute) =>
+            _methodBuilder.SetCustomAttribute(con, binaryAttribute);
+
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes) =>
+            _methodBuilder.SetImplementationFlags(attributes);
+
         public override string Name => _methodBuilder.Name;
+
         public override MethodAttributes Attributes => _methodBuilder.Attributes;
-        public override CallingConventions CallingConvention => throw new NotImplementedException();
+
+        public override CallingConventions CallingConvention
+        {
+            get
+            {
+                if (DeclaringType!.IsGenericType)
+                    return CallingConventions.HasThis;
+
+                return CallingConventions.Standard;
+            }
+        }
+
         public override TypeBuilder DeclaringType => _methodBuilder.DeclaringType;
+
         public override Module Module => _methodBuilder.Module;
+
         public override int MetadataToken => _methodBuilder.MetadataToken;
-        public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
+
         public override Type? ReflectedType => _methodBuilder.ReflectedType;
+
+        public override MethodImplAttributes GetMethodImplementationFlags() => _methodBuilder.GetMethodImplementationFlags();
+
+        public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
-        public override MethodImplAttributes GetMethodImplementationFlags() => throw new NotImplementedException();
         public override ParameterInfo[] GetParameters() => throw new NotImplementedException();
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
             => throw new NotSupportedException(SR.NotSupported_DynamicModule);

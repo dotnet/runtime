@@ -10,7 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class TypeBuilderImpl : TypeBuilder
+    internal sealed partial class TypeBuilderImpl : TypeBuilder
     {
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
@@ -110,9 +110,56 @@ namespace System.Reflection.Emit
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ConstructorNotAllowedOnInterface);
             }
+
+            return DefineDefaultConstructorInternal(attributes);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilderInstantiation which is not subject to trimming")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "GetConstructor is only called on a TypeBuilderInstantiation which is not subject to trimming")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "MakeGenericType is only called on a TypeBuilderInstantiation which is not subject to trimming")]
+        private ConstructorBuilderImpl DefineDefaultConstructorInternal(MethodAttributes attributes)
+        {
             // Get the parent class's default constructor and add it to the IL
-            //ConstructorInfo? con = _typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+            ConstructorInfo? con = null;
+
+            if (_typeParent is TypeBuilderInstantiation)
+            {
+                Type? genericTypeDefinition = _typeParent.GetGenericTypeDefinition();
+
+                if (genericTypeDefinition == null)
+                {
+                    throw new NotSupportedException(SR.NotSupported_DynamicModule);
+                }
+
+                Type inst = genericTypeDefinition.MakeGenericType(_typeParent.GetGenericArguments());
+
+                if (inst is TypeBuilderInstantiation)
+                {
+                    con = GetConstructor(inst, genericTypeDefinition.GetConstructor(
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
+                }
+                else
+                {
+                    con = inst.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+                }
+            }
+
+            con ??= _typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+
+            if (con == null)
+                throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
+
             ConstructorBuilderImpl constBuilder = (ConstructorBuilderImpl)DefineConstructorCore(attributes, CallingConventions.Standard, null, null, null);
+
+            // generate the code to call the parent's default constructor
+            ILGenerator il = constBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, con);
+            il.Emit(OpCodes.Ret);
+
             constBuilder._isDefaultConstructor = true;
             return constBuilder;
         }
@@ -298,6 +345,15 @@ namespace System.Reflection.Emit
         // Not returning a copy for compat with existing runtime behavior
         public override Type[] GenericTypeParameters => _typeParameters ?? EmptyTypes;
         public override Type[] GetGenericArguments() => _typeParameters ?? EmptyTypes;
+        public override Type GetGenericTypeDefinition()
+        {
+            if (IsGenericTypeDefinition)
+            {
+                return this;
+            }
+
+            throw new InvalidOperationException();
+        }
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();

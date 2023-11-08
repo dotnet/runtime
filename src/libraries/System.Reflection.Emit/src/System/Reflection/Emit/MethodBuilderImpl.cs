@@ -136,6 +136,9 @@ namespace System.Reflection.Emit
             return _ilGenerator ??= new ILGeneratorImpl(this, size);
         }
 
+        internal void SetCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute) =>
+            SetCustomAttributeCore(con, binaryAttribute);
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             // Handle pseudo custom attributes

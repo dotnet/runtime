@@ -651,6 +651,28 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void ReferenceConstructedMethodFieldTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                type.DefineGenericParameters("T");
+
+                MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+                GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+                genericMethod.SetSignature(null, null, null, new[] { methodParams[0] }, null, null);
+                MethodInfo createdGenericMethod = TypeBuilder.GetMethod(type, genericMethod);
+
+                Assert.True(createdGenericMethod.IsGenericMethodDefinition);
+                Assert.Equal("Type: U", createdGenericMethod.GetGenericArguments()[0].ToString());
+
+                //saveMethod.Invoke(assemblyBuilder, new[] { file.Path });
+
+                //TODO:
+            }
+        }
+
+        [Fact]
         public void EmitWriteLineMacroTest()
         {
             using (TempFile file = TempFile.Create())

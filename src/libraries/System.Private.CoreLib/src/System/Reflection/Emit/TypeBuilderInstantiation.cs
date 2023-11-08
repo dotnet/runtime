@@ -82,10 +82,12 @@ namespace System.Reflection.Emit
         {
             return SymbolType.FormCompoundType("&", this, 0)!;
         }
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return SymbolType.FormCompoundType("[]", this, 0)!;
         }
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             if (rank <= 0)
@@ -112,6 +114,8 @@ namespace System.Reflection.Emit
                             "Currently this is not supported by linker. Once it is supported the outercall (Type.MakeGenericType)" +
                             "will validate that the types fulfill the necessary requirements of annotations on type parameters." +
                             "As such the actual internals of the implementation are not interesting.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming.")]
         private Type Substitute(Type[] substitutes)
         {
             Type[] inst = GetGenericArguments();
@@ -204,7 +208,7 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type GetNestedType(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
+        [DynamicallyAccessedMembers(GetAllMemberTypes)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) { throw new NotSupportedException(); }
@@ -212,7 +216,7 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
+        [DynamicallyAccessedMembers(GetAllMemberTypes)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         protected override TypeAttributes GetAttributeFlagsImpl() { return _genericType.Attributes; }
@@ -251,6 +255,7 @@ namespace System.Reflection.Emit
         public override MethodBase? DeclaringMethod => null;
         public override Type GetGenericTypeDefinition() { return _genericType; }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) { throw new NotSupportedException(); }
@@ -268,5 +273,12 @@ namespace System.Reflection.Emit
 
         public override bool IsDefined(Type attributeType, bool inherit) { throw new NotSupportedException(); }
         #endregion
+
+        internal const DynamicallyAccessedMemberTypes GetAllMemberTypes = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes;
     }
 }

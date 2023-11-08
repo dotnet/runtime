@@ -15,6 +15,7 @@ namespace System.Reflection.Emit
         private readonly Assembly _coreAssembly;
         private readonly string _name;
         private readonly MetadataBuilder _metadataBuilder;
+        private readonly AssemblyBuilderImpl _assemblyBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeReferences = new();
         private readonly Dictionary<MemberInfo, MemberReferenceHandle> _memberReferences = new();
@@ -31,11 +32,12 @@ namespace System.Reflection.Emit
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
 
-        internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder)
+        internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder, AssemblyBuilderImpl assemblyBuilder)
         {
             _coreAssembly = coreAssembly;
             _name = name;
             _metadataBuilder = builder;
+            _assemblyBuilder = assemblyBuilder;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
@@ -558,6 +560,7 @@ namespace System.Reflection.Emit
         [RequiresAssemblyFiles("Returns <Unknown> for modules with no file path")]
         public override string Name => "<In Memory Module>";
         public override string ScopeName => _name;
+        public override Assembly Assembly => _assemblyBuilder;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
 
         public override int GetFieldMetadataToken(FieldInfo field)

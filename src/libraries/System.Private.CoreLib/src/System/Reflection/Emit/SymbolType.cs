@@ -209,6 +209,16 @@ namespace System.Reflection.Emit
             return null;
         }
 
+        private static string GetRankAsString(int rank)
+        {
+            if (rank <= 0)
+                throw new IndexOutOfRangeException();
+
+            return rank == 1 ?
+                "[*]" :
+                "[" + new string(',', rank - 1) + "]";
+        }
+
         #endregion
 
         #region Constructor
@@ -271,14 +281,16 @@ namespace System.Reflection.Emit
             return FormCompoundType(_format + "&", _baseType, 0)!;
         }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         public override Type MakeArrayType()
         {
             return FormCompoundType(_format + "[]", _baseType, 0)!;
         }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         public override Type MakeArrayType(int rank)
         {
-            string s = GetRankString(rank);
+            string s = GetRankAsString(rank);
             SymbolType? st = FormCompoundType(_format + s, _baseType, 0) as SymbolType;
             return st!;
         }
@@ -286,7 +298,7 @@ namespace System.Reflection.Emit
         public override int GetArrayRank()
         {
             if (!IsArray)
-                throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+                throw new ArgumentException(SR.Argument_HasToBeArrayClass);
 
             return _rank;
         }
@@ -440,13 +452,13 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
+        [DynamicallyAccessedMembers(TypeBuilderInstantiation.GetAllMemberTypes)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
+        [DynamicallyAccessedMembers(TypeBuilderInstantiation.GetAllMemberTypes)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);

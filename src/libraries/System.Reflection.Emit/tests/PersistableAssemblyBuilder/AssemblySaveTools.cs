@@ -64,7 +64,7 @@ namespace System.Reflection.Emit.Tests
         internal static AssemblyBuilder PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder typeBuilder, out MethodInfo saveMethod)
         {
             AssemblyBuilder ab = PopulateAssemblyBuilderAndSaveMethod(s_assemblyName, null, typeof(string), out saveMethod);
-            typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public);
+            typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
             return ab;
         }
         

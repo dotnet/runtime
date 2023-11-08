@@ -374,6 +374,49 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
+        [Fact]
+        public void TypeBuilder_GetMethod_ReturnsMethod()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            type.DefineGenericParameters("T");
+
+            MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+            GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+            genericMethod.SetParameters(new[] { methodParams[0] });
+
+            Type genericIntType = type.MakeGenericType(typeof(int));
+            MethodInfo createdConstructedTypeMethod = TypeBuilder.GetMethod(genericIntType, genericMethod);
+            MethodInfo createdGenericMethod = TypeBuilder.GetMethod(type, genericMethod);
+
+            Assert.True(createdConstructedTypeMethod.IsGenericMethodDefinition);
+            Assert.True(createdGenericMethod.IsGenericMethodDefinition);
+            Assert.Equal("Type: U", createdConstructedTypeMethod.GetGenericArguments()[0].ToString());
+            Assert.Equal("Type: U", createdGenericMethod.GetGenericArguments()[0].ToString());
+        }
+
+        [Fact]
+        public void TypeBuilder_GetField_DeclaringTypeOfFieldGeneric()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T");
+
+            FieldBuilder field = type.DefineField("Field", typeParams[0].AsType(), FieldAttributes.Public);
+            FieldBuilder field2 = type.DefineField("Field2", typeParams[0], FieldAttributes.Public);
+            Type genericIntType = type.MakeGenericType(typeof(int));
+
+            Assert.Equal("Field", TypeBuilder.GetField(type.AsType(), field).Name);
+            Assert.Equal("Field2", TypeBuilder.GetField(genericIntType, field2).Name);
+        }
+
+        [Fact]
+        public void GetField_TypeNotGeneric_ThrowsArgumentException()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            FieldBuilder field = type.DefineField("Field", typeof(int), FieldAttributes.Public);
+
+            AssertExtensions.Throws<ArgumentException>("field", () => TypeBuilder.GetField(type, field));
+        }
+
         private static void AssertGenericType(string stringRepresentation, Type paramType)
         {
             Assert.True(paramType.IsGenericType);
