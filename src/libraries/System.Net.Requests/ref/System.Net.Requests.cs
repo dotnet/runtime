@@ -453,7 +453,6 @@ namespace System.Net
         [System.ObsoleteAttribute("Serialization has been deprecated for WebResponse.")]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
-
     public delegate System.Net.IPEndPoint BindIPEndPoint(System.Net.ServicePoint servicePoint, System.Net.IPEndPoint remoteEndPoint, int retryCount);
     [System.FlagsAttribute]
     public enum SecurityProtocolType
