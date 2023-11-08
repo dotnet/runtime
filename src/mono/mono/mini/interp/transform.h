@@ -14,6 +14,14 @@
 #define INTERP_INST_FLAG_ACTIVE_CALL 64
 // This instruction is protected by a clause
 #define INTERP_INST_FLAG_PROTECTED_NEWOBJ 128
+// This instruction bumps the liveness index. Enables liveness checks as new instructions
+// are added in the code, since new instructions won't have this flag set.
+#define INTERP_INST_FLAG_LIVENESS_MARKER 256
+
+#define INTERP_LIVENESS_INS_INDEX_BITS 18
+#define INTERP_LIVENESS_BB_INDEX_BITS (8 * sizeof (gint32) - INTERP_LIVENESS_INS_INDEX_BITS)
+#define INTERP_LIVENESS_INS_INDEX_MASK ((1 << INTERP_LIVENESS_INS_INDEX_BITS) - 1)
+#define INTERP_LIVENESS_BB_INDEX_MASK (((1 << INTERP_LIVENESS_BB_INDEX_BITS) - 1) << INTERP_LIVENESS_INS_INDEX_BITS)
 
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
@@ -220,6 +228,7 @@ typedef struct {
 	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
 	guint no_ssa : 1; // Var is not in ssa form, not subject to optimizations
 	guint il_global : 1; // Args and IL locals
+	guint renamed_ssa_fixed : 1; // If true, ext_index points to InterpRenamedVar, otherwise to InterpRenamableVar
 } InterpVar;
 
 typedef struct {
@@ -232,6 +241,20 @@ typedef struct {
 	// to the same offset. Optimizations need to ensure there is no overlapping liveness
 	guint ssa_fixed : 1;
 } InterpRenamableVar;
+
+// In addition to InterpRenamableVar information, this stores liveness information that enables us
+// to ensure that the liveness of the corresponding var is not overlapping with the other renamed vars,
+// after optimization.
+typedef struct {
+	int var_index;
+	int renamable_var_ext_index;
+	// Bit set of bblocks where the renamed var is live at the bb end
+	// This means that within these bblocks we can freely increase the var liveness
+	MonoBitSet *live_out_bblocks;
+	// This is a list of (bb_index, inst_index), that indicates that in bblock with
+	// index bb_index, the var can have its liveness extended to at most inst_index
+	GSList *live_limit_bblocks;
+} InterpRenamedFixedVar;
 
 typedef struct
 {
@@ -270,6 +293,12 @@ typedef struct
 	InterpRenamableVar *renamable_vars;
 	unsigned int renamable_vars_size;
 	unsigned int renamable_vars_capacity;
+
+	// Newly created, renamed vars of fixed vars. We compute liveness on this subset
+	// of vars so we ensure we don't have conflicting liveness.
+	unsigned int renamed_fixed_vars_size;
+	unsigned int renamed_fixed_vars_capacity;
+	InterpRenamedFixedVar *renamed_fixed_vars;
 
 	int n_data_items;
 	int max_data_items;
@@ -490,6 +519,9 @@ interp_create_var (TransformData *td, MonoType *type);
 
 int
 interp_create_renamable_var (TransformData *td, int var);
+
+int
+interp_create_renamed_fixed_var (TransformData *td, int var_index, int renamable_var_index);
 
 void
 interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer));

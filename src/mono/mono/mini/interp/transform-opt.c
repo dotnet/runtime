@@ -995,11 +995,17 @@ compute_fixed_vars (TransformData *td)
 static int
 get_renamed_var (TransformData *td, int var)
 {
-	g_assert (td->vars [var].ext_index != -1);
-	int renamed_var = interp_create_var (td, td->vars [var].type);
-	// Renamed var reference the orignal var through the ext_index
 	int ext_index = td->vars [var].ext_index;
-	td->vars [renamed_var].ext_index = ext_index;
+	g_assert (ext_index != -1);
+	int renamed_var = interp_create_var (td, td->vars [var].type);
+
+	if (td->renamable_vars [ext_index].ssa_fixed) {
+		td->vars [renamed_var].renamed_ssa_fixed = TRUE;
+		interp_create_renamed_fixed_var (td, renamed_var, var);
+	} else {
+		// Renamed var reference the orignal var through the ext_index
+		td->vars [renamed_var].ext_index = ext_index;
+	}
 	td->renamable_vars [ext_index].ssa_stack = g_slist_prepend (td->renamable_vars [ext_index].ssa_stack, (gpointer)(gsize)renamed_var);
 	return renamed_var;
 }
@@ -1050,11 +1056,29 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 			break;
 	}
 
+	guint32 current_liveness = bb->index << INTERP_LIVENESS_INS_INDEX_BITS;
+
 	// Use renamed definition for sources
 	for (; ins != NULL; ins = ins->next) {
+		if (interp_ins_is_nop (ins))
+			continue;
+		ins->flags |= INTERP_INST_FLAG_LIVENESS_MARKER;
+		current_liveness++;
+
 		interp_foreach_ins_svar (td, ins, NULL, rename_ins_var_cb);
-		if (mono_interp_op_dregs [ins->opcode] && td->vars [ins->dreg].ext_index != -1)
+		if (mono_interp_op_dregs [ins->opcode] && td->vars [ins->dreg].ext_index != -1) {
+			g_assert (!td->vars [ins->dreg].renamed_ssa_fixed);
+			int renamable_ext_index = td->vars [ins->dreg].ext_index;
+			if (td->renamable_vars [renamable_ext_index].ssa_fixed &&
+					td->renamable_vars [renamable_ext_index].ssa_stack) {
+				// Mark the exact liveness end limit for the ssa fixed var that is overwritten (the old entry on the stack)
+				int renamed_var = (int)(gsize)td->renamable_vars [renamable_ext_index].ssa_stack->data;
+				g_assert (td->vars [renamed_var].renamed_ssa_fixed);
+				int renamed_var_ext = td->vars [renamed_var].ext_index;
+				td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks = g_slist_prepend (td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks, (gpointer)(gsize)current_liveness);
+			}
 			ins->dreg = get_renamed_var (td, ins->dreg);
+		}
 	}
 
 	rename_phi_args_in_out_bbs (td, bb);
@@ -1067,15 +1091,33 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 		dominated = dominated->next;
 	}
 
+	// All vars currently on the ssa stack are live until the end of the bblock
+	for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
+		if (td->renamable_vars [i].ssa_fixed && td->renamable_vars [i].ssa_stack) {
+			int renamed_var = (int)(gsize)td->renamable_vars [i].ssa_stack->data;
+			g_assert (td->vars [renamed_var].renamed_ssa_fixed);
+			int renamed_var_ext = td->vars [renamed_var].ext_index;
+			if (!td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks) {
+				gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (td->bb_count, 0));
+				td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks = mono_bitset_mem_new (mem, td->bb_count, 0);
+			}
+
+			mono_bitset_set_fast (td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks, bb->index);
+		}
+	}
+
 	// Pop from the stack any new vars defined in this bblock
 	for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		if (mono_interp_op_dregs [ins->opcode]) {
 			int ext_index = td->vars [ins->dreg].ext_index;
-			if (ext_index != -1) {
-				GSList *prev_head = td->renamable_vars [ext_index].ssa_stack;
-				td->renamable_vars [ext_index].ssa_stack = prev_head->next;
-				g_free (prev_head);
-			}
+			if (ext_index == -1)
+				continue;
+			if (td->vars [ins->dreg].renamed_ssa_fixed)
+				ext_index = td->renamed_fixed_vars [ext_index].renamable_var_ext_index;
+
+			GSList *prev_head = td->renamable_vars [ext_index].ssa_stack;
+			td->renamable_vars [ext_index].ssa_stack = prev_head->next;
+			g_free (prev_head);
 		}
 	}
 }
@@ -1083,18 +1125,56 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 static void
 rename_vars (TransformData *td)
 {
+	// Initialize the ssa_stack for entry_bb
 	for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
-		// Initialize the ssa_stack for entry_bb
+		// Initialize the ssa_stack for entry_bb. If var is fixed, then we need to create a new
+		// InterpRenamedFixedVar, since we will have to track liveness. Otherwise just push the
+		// original var directly.
 		int var_index = td->renamable_vars [i].var_index;
-		td->renamable_vars [i].ssa_stack = g_slist_prepend (td->renamable_vars [i].ssa_stack, (gpointer)(gsize)var_index);
+		if (td->renamable_vars [i].ssa_fixed)
+			get_renamed_var (td, var_index);
+		else
+			td->renamable_vars [i].ssa_stack = g_slist_prepend (td->renamable_vars [i].ssa_stack, (gpointer)(gsize)var_index);
 	}
 
 	rename_vars_in_bb (td, td->entry_bb);
+
+	if (td->verbose_level) {
+		g_print ("\nFIXED SSA VARS LIVENESS LIMIT:\n");
+		for (unsigned int i = 0; i < td->renamed_fixed_vars_size; i++) {
+			g_print ("FIXED VAR %d\n\tNO LIVE LIMIT BBLOCKS: {", td->renamed_fixed_vars [i].var_index);
+			MonoBitSet *live_out_bblocks = td->renamed_fixed_vars [i].live_out_bblocks;
+			if (live_out_bblocks) {
+				int j;
+				mono_bitset_foreach_bit (live_out_bblocks, j, td->bb_count) {
+					g_print (" BB%d", j);
+				}
+			}
+			g_print (" }\n");
+			g_print ("\tLIVE LIMIT BBLOCKS: {");
+			GSList *live_limit_bblocks = td->renamed_fixed_vars [i].live_limit_bblocks;
+			while (live_limit_bblocks) {
+				guint32 live_limit = (guint32)(gsize)live_limit_bblocks->data;
+				int bb_index = live_limit >> INTERP_LIVENESS_INS_INDEX_BITS;
+				int inst_index = live_limit & INTERP_LIVENESS_INS_INDEX_MASK;
+
+				g_print (" (BB%d, %d)", bb_index, inst_index);
+
+				live_limit_bblocks = live_limit_bblocks->next;
+			}
+			g_print (" }\n");
+		}
+	}
 }
 
 static void
 interp_compute_ssa (TransformData *td)
 {
+	if (td->verbose_level) {
+		g_print ("\nIR before SSA compute:\n");
+		mono_interp_print_td_code (td);
+	}
+
 	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_dominance_time, interp_compute_dominance (td));
 
 	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_global_vars_time, interp_compute_global_vars (td));
@@ -1120,8 +1200,11 @@ revert_ssa_rename_cb (TransformData *td, int *pvar, gpointer data)
 	int ext_index = td->vars [var].ext_index;
 	if (ext_index == -1)
 		return;
-	if (td->renamable_vars [ext_index].ssa_fixed)
-		*pvar = td->renamable_vars [ext_index].var_index;
+
+	if (td->vars [var].renamed_ssa_fixed) {
+		int renamable_var_ext_index = td->renamed_fixed_vars [ext_index].renamable_var_ext_index;
+		*pvar = td->renamable_vars [renamable_var_ext_index].var_index;
+	}
 }
 
 static void
@@ -1157,6 +1240,13 @@ interp_exit_ssa (TransformData *td)
 		if (td->renamable_vars [i].ssa_stack) {
 			g_slist_free (td->renamable_vars [i].ssa_stack);
 			td->renamable_vars [i].ssa_stack = NULL;
+		}
+	}
+
+	for (unsigned int i = 0; i < td->renamed_fixed_vars_size; i++) {
+		if (td->renamed_fixed_vars [i].live_limit_bblocks) {
+			g_slist_free (td->renamed_fixed_vars [i].live_limit_bblocks);
+			td->renamed_fixed_vars [i].live_limit_bblocks = NULL;
 		}
 	}
 }
@@ -3210,6 +3300,10 @@ void
 interp_optimize_code (TransformData *td)
 {
 	if (td->header->num_clauses)
+		return;
+
+	// Give up on huge methods. We can easily work around this if decide to care.
+	if (td->bb_count > ((1 << INTERP_LIVENESS_BB_INDEX_BITS) - 1))
 		return;
 
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
