@@ -793,6 +793,113 @@ interp_compute_global_vars (TransformData *td)
 	}
 }
 
+static void
+compute_gen_set_cb (TransformData *td, int *pvar, gpointer data)
+{
+	int var = *pvar;
+	InterpBasicBlock *bb = (InterpBasicBlock*)data;
+
+	int ext_index = td->vars [var].ext_index;
+	if (ext_index == -1)
+		return;
+
+	if (!td->renamable_vars [ext_index].ssa_global)
+		return;
+
+	if (!mono_bitset_test_fast (bb->kill_set, ext_index))
+		mono_bitset_set_fast (bb->gen_set, ext_index);
+}
+
+// For each bblock, computes the kill set (the set of vars defined by the bblock)
+// and gen set (the set of vars used by the bblock, with the definition not being
+// in the bblock).
+static void
+compute_gen_kill_sets (TransformData *td)
+{
+	int bitsize = mono_bitset_alloc_size (td->renamable_vars_size, 0);
+	char *mem = (char *)mono_mempool_alloc0 (td->mempool, bitsize * td->bb_count * 4);
+
+	for (int i = 0; i < td->bblocks_count; i++) {
+		InterpBasicBlock *bb = td->bblocks [i];
+
+		bb->gen_set = mono_bitset_mem_new (mem, td->renamable_vars_size, 0);
+		mem += bitsize;
+		bb->kill_set = mono_bitset_mem_new (mem, td->renamable_vars_size, 0);
+		mem += bitsize;
+		bb->live_in_set = mono_bitset_mem_new (mem, td->renamable_vars_size, 0);
+		mem += bitsize;
+		bb->live_out_set = mono_bitset_mem_new (mem, td->renamable_vars_size, 0);
+		mem += bitsize;
+
+		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			interp_foreach_ins_svar (td, ins, bb, compute_gen_set_cb);
+			if (mono_interp_op_dregs [ins->opcode]) {
+				int ext_index = td->vars [ins->dreg].ext_index;
+				if (ext_index != -1 && td->renamable_vars [ext_index].ssa_global)
+					mono_bitset_set_fast (bb->kill_set, ext_index);
+			}
+		}
+	}
+}
+
+// Compute live_in and live_out sets
+// For a bblock, live_in contains all vars that are live at exit of bblock and not redefined,
+// together with all vars used in the bblock without being defined. For a bblock, live_out set
+// contains all vars that are live_in any successor. This computation starts with empty sets
+// (starting to generate live vars from the gen sets) and it is run iteratively until the
+// computation converges.
+static void
+recompute_live_out (TransformData *td, InterpBasicBlock *bb)
+{
+	for (int i = 0; i < bb->out_count; i++) {
+		InterpBasicBlock *sbb = bb->out_bb [i];
+
+		// Recompute live_in_set for each successor of bb
+		mono_bitset_copyto_fast (sbb->live_out_set, sbb->live_in_set);
+		mono_bitset_sub_fast (sbb->live_in_set, sbb->kill_set);
+		mono_bitset_union_fast (sbb->live_in_set, sbb->gen_set);
+
+		// Recompute live_out_set of bb, by adding the live_in_set of each successor
+		mono_bitset_union_fast (bb->live_out_set, sbb->live_in_set);
+	}
+}
+
+// For each bblock, compute LiveIn, LiveOut sets tracking liveness for the previously computed global vars
+static void
+interp_compute_pruned_ssa_liveness (TransformData *td)
+{
+	compute_gen_kill_sets (td);
+
+	gboolean changed = TRUE;
+	while (changed) {
+		changed = FALSE;
+		for (int i = 0; i < td->bblocks_count; i++) {
+			InterpBasicBlock *bb = td->bblocks [i];
+			guint32 prev_count = mono_bitset_count (bb->live_out_set);
+			recompute_live_out (td, bb);
+			if (prev_count != mono_bitset_count (bb->live_out_set))
+				changed = TRUE;
+		}
+	}
+
+	if (td->verbose_level) {
+		InterpBasicBlock *bb;
+		g_print ("\nBASIC BLOCK LIVENESS:\n");
+		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+			unsigned int i;
+			g_print ("BB%d\n\tLIVE_IN = {", bb->index);
+			mono_bitset_foreach_bit (bb->live_in_set, i, td->renamable_vars_size) {
+				g_print (" %d", td->renamable_vars [i].var_index);
+			}
+			g_print (" }\n\tLIVE_OUT = {", bb->index);
+			mono_bitset_foreach_bit (bb->live_out_set, i, td->renamable_vars_size) {
+				g_print (" %d", td->renamable_vars [i].var_index);
+			}
+			g_print (" }\n");
+		}
+	}
+}
+
 static gboolean
 bb_has_phi (InterpBasicBlock *bb, int var)
 {
@@ -846,7 +953,7 @@ insert_phi_nodes (TransformData *td)
 			int j;
 			mono_bitset_foreach_bit (bb->dfrontier, j, td->bb_count) {
 				InterpBasicBlock *bd = td->bblocks [j];
-				if (!bb_has_phi (bd, var)) {
+				if (!bb_has_phi (bd, var) && mono_bitset_test_fast (bd->live_in_set, i)) {
 					td->renamable_vars [i].ssa_fixed = TRUE;
 					bb_insert_phi (td, bd, var);
 					if (!g_slist_find (workset, bd))
@@ -963,6 +1070,8 @@ interp_compute_ssa (TransformData *td)
 	interp_compute_dominance (td);
 
 	interp_compute_global_vars (td);
+
+	interp_compute_pruned_ssa_liveness (td);
 
 	insert_phi_nodes (td);
 
