@@ -20,15 +20,35 @@ namespace System.Text.Tests
         protected abstract bool Equals(ReadOnlySpan<TLeft> left, ReadOnlySpan<TRight> right);
         protected abstract bool EqualsIgnoreCase(ReadOnlySpan<TLeft> left, ReadOnlySpan<TRight> right);
 
+        private static readonly int[] BufferLengths =
+        [
+            1,
+            (sizeof(long) / sizeof(short)) - 1,
+            (sizeof(long) / sizeof(short)),
+            (sizeof(long) / sizeof(short)) + 1,
+            Vector128<short>.Count - 1,
+            Vector128<short>.Count,
+            Vector128<short>.Count + 1,
+            Vector256<short>.Count - 1,
+            Vector256<short>.Count,
+            Vector256<short>.Count + 1,
+            Vector512<short>.Count - 1,
+            Vector512<short>.Count,
+            Vector512<short>.Count + 1
+        ];
+
         public static IEnumerable<object[]> ValidAsciiInputs
         {
             get
             {
                 yield return new object[] { "test" };
 
-                for (char textLength = (char)0; textLength <= 127; textLength++)
+                foreach (int textLength in BufferLengths)
                 {
-                    yield return new object[] { new string(textLength, textLength) };
+                    for (char chr = (char)0; chr <= 127; chr++)
+                    {
+                        yield return new object[] { new string(chr, textLength) };
+                    }
                 }
             }
         }
@@ -55,15 +75,18 @@ namespace System.Text.Tests
             {
                 yield return new object[] { "tak", "nie" };
 
-                for (char i = (char)1; i <= 127; i++)
+                foreach (int textLength in BufferLengths)
                 {
-                    if (i != '?') // ASCIIEncoding maps invalid ASCII to ?
+                    for (char chr = (char)0; chr <= 127; chr++)
                     {
-                        yield return new object[] { new string(i, i), string.Create(i, i, (destination, iteration) =>
+                        if (chr != '?')
                         {
-                            destination.Fill(iteration);
-                            destination[iteration / 2] = (char)128;
-                        })};
+                            yield return new object[] { new string(chr, textLength), string.Create(textLength, chr, (destination, character) =>
+                            {
+                                destination.Fill(character);
+                                destination[destination.Length / 2] = (char)128;
+                            })};
+                        }
                     }
                 }
             }
@@ -91,11 +114,14 @@ namespace System.Text.Tests
             {
                 yield return new object[] { "aBc", "AbC" };
 
-                for (char i = (char)0; i <= 127; i++)
+                foreach (int textLength in BufferLengths)
                 {
-                    char left = i;
-                    char right = char.IsAsciiLetterUpper(left) ? char.ToLower(left) : char.IsAsciiLetterLower(left) ? char.ToUpper(left) : left;
-                    yield return new object[] { new string(left, i), new string(right, i) };
+                    for (char chr = (char)0; chr <= 127; chr++)
+                    {
+                        char left = chr;
+                        char right = char.IsAsciiLetterUpper(left) ? char.ToLower(left) : char.IsAsciiLetterLower(left) ? char.ToUpper(left) : left;
+                        yield return new object[] { new string(left, textLength), new string(right, textLength) };
+                    }
                 }
             }
         }
@@ -112,7 +138,7 @@ namespace System.Text.Tests
         {
             get
             {
-                foreach (int length in new[] { 1, Vector128<byte>.Count - 1, Vector128<byte>.Count, Vector256<byte>.Count + 1 })
+                foreach (int length in BufferLengths)
                 {
                     for (int index = 0; index < length; index++)
                     {
