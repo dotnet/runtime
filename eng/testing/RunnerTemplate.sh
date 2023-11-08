@@ -89,21 +89,6 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     ulimit -c 0
   fi
 
-elif [[ "$(uname -s)" == "Linux" ]]; then
-  # On Linux, we'll enable core file generation unconditionally, and if a dump
-  # is generated, we will print some useful information from it and delete the
-  # dump immediately.
-
-  if [ -e /proc/self/coredump_filter ]; then
-      # Include memory in private and shared file-backed mappings in the dump.
-      # This ensures that we can see disassembly from our shared libraries when
-      # inspecting the contents of the dump. See 'man core' for details.
-      echo -n 0x3F > /proc/self/coredump_filter
-  fi
-
-  ulimit -c unlimited
-fi
-
 export DOTNET_DbgEnableMiniDump=1
 export DOTNET_EnableCrashReport=1
 export DOTNET_DbgMiniDumpName=$HELIX_DUMP_FOLDER/coredump.%d.dmp
