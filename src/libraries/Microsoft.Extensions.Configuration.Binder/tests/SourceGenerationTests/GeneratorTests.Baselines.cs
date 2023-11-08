@@ -742,6 +742,68 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             await VerifyAgainstBaselineUsingFile("Primitives.generated.txt", source);
         }
+        
+        [Fact]
+        public async Task DefaultConstructorParameters()
+        {
+            string source = """
+                        using System;
+                        using System.Globalization;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+
+                                ClassWhereParametersHaveDefaultValue obj = new(default, "");
+                                config.Bind(obj);
+                            }
+
+                            public class ClassWhereParametersHaveDefaultValue
+                            {
+                                public string? Name { get; }
+                                public string Address { get; }
+                                public int Age { get; }
+                                public float F { get; }
+                                public double D { get; }
+                                public decimal M { get; }
+                                public StringComparison SC { get; }
+                                public char C { get; }
+                                public int? NAge { get; }
+                                public float? NF { get; }
+                                public double? ND { get; }
+                                public decimal? NM { get; }
+                                public StringComparison? NSC { get; }
+                                public char? NC { get; }
+
+                                public ClassWhereParametersHaveDefaultValue(string? name = "John Doe", string address = "1 Microsoft Way",
+                                    int age = 42, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M, StringComparison sc = StringComparison.Ordinal, char c = 'q',
+                                    int? nage = 42, float? nf = 42.0f, double? nd = 3.14159, decimal? nm = 3.1415926535897932384626433M, StringComparison? nsc = StringComparison.Ordinal, char? nc = 'q')
+                                {
+                                    Name = name;
+                                    Address = address;
+                                    Age = age;
+                                    F = f;
+                                    D = d;
+                                    M = m;
+                                    SC = sc;
+                                    C = c;
+                                    NAge = nage;
+                                    NF = nf;
+                                    ND = nd;
+                                    NM = nm;
+                                    NSC = nsc;
+                                    NC = nc;
+                                }
+                            }
+                        }
+                        """;
+
+            await VerifyAgainstBaselineUsingFile("DefaultConstructorParameters.generated.txt", source);
+        }
 
         [Fact]
         public async Task Collections()

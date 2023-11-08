@@ -582,9 +582,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
 
-                            PropertySpec spec = new(property)
+                            PropertySpec spec = new(property, propertyTypeRef)
                             {
-                                TypeRef = propertyTypeRef,
                                 ConfigurationKeyName = configKeyName
                             };
 
@@ -616,9 +615,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                         else
                         {
-                            ParameterSpec paramSpec = new ParameterSpec(parameter)
+                            ParameterSpec paramSpec = new ParameterSpec(parameter, propertySpec.TypeRef)
                             {
-                                TypeRef = propertySpec.TypeRef,
                                 ConfigurationKeyName = propertySpec.ConfigurationKeyName,
                             };
 
