@@ -353,10 +353,8 @@ namespace ILVerify
         private string GetFullClassName(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle)
         {
             var typeDef = metadataReader.GetTypeDefinition(typeDefinitionHandle);
-            var typeName = metadataReader.GetString(typeDef.Name);
 
             var fullName = new StringBuilder();
-            var namespaceName = metadataReader.GetString(typeDef.Namespace);
 
             var declaringType = typeDef.GetDeclaringType();
             if (!declaringType.IsNil)
@@ -365,13 +363,16 @@ namespace ILVerify
                 fullName.Append('+');
             }
             
+            var namespaceName = metadataReader.GetString(typeDef.Namespace);
             if (!string.IsNullOrEmpty(namespaceName))
             {
                 fullName.Append(namespaceName);
                 fullName.Append('.');
             }
 
+            var typeName = metadataReader.GetString(typeDef.Name);
             fullName.Append(typeName);
+            
             return fullName.ToString();
         }
 
