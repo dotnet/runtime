@@ -449,7 +449,7 @@ void Async2Transformation::Transform(
     {
         exceptionGCDataIndex = gcRefsCount++;
         JITDUMP("  " FMT_BB " is in try region %u; exception will be at GC@+%02u in GC data\n", block->bbNum,
-                exceptionGCDataIndex);
+                block->getTryIndex(), exceptionGCDataIndex);
     }
 
     for (LiveLocalInfo& inf : m_liveLocals)
