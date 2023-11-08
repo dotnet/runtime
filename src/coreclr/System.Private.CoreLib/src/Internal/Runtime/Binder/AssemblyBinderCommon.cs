@@ -901,7 +901,7 @@ namespace Internal.Runtime.Binder
                     // Only perform costly validation if other binds succeeded before us
                     if (kContextVersion != applicationContext.Version)
                     {
-                        hr = OtherBindInterferred(applicationContext, bindResult);
+                        hr = OtherBindInterfered(applicationContext, bindResult);
                         if (hr < 0) return hr;
 
                         if (hr == HResults.S_FALSE)
@@ -925,7 +925,7 @@ namespace Internal.Runtime.Binder
             return hr;
         }
 
-        private static int OtherBindInterferred(ApplicationContext applicationContext, BindResult bindResult)
+        private static int OtherBindInterfered(ApplicationContext applicationContext, BindResult bindResult)
         {
             Debug.Assert(bindResult.Assembly != null);
             Debug.Assert(bindResult.Assembly.AssemblyName != null);
