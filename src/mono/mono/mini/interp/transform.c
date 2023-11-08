@@ -4858,6 +4858,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			g_free (name);
 		}
 
+		if (td->optimized) {
+			// Add arg defining instructions for SSA machinery
+			for (int i = 0; i < num_args; i++) {
+				interp_add_ins (td, MINT_DEF_ARG);
+				interp_ins_set_dreg (td->last_ins, i);
+			}
+		}
+
 		if (rtm->vararg) {
 			// vararg calls are identical to normal calls on the call site. However, the
 			// first instruction in a vararg method needs to copy the variable arguments
@@ -4871,23 +4879,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			// locals
 			td->last_ins->data [0] = GUINT_TO_UINT16 (td->il_locals_offset);
 			td->has_localloc = TRUE;
-		}
-
-		/*
-		 * We initialize the locals regardless of the presence of the init_locals
-		 * flag. Locals holding references need to be zeroed so we don't risk
-		 * crashing the GC if they end up being stored in an object.
-		 *
-		 * FIXME
-		 * Track values of locals over multiple basic blocks. This would enable
-		 * us to kill the MINT_INITLOCALS instruction if all locals are initialized
-		 * before use. We also don't need this instruction if the init locals flag
-		 * is not set and there are no locals holding references.
-		 */
-		if (header->num_locals) {
-			interp_add_ins (td, MINT_INITLOCALS);
-			td->last_ins->data [0] = GUINT_TO_UINT16 (td->il_locals_offset);
-			td->last_ins->data [1] = GUINT_TO_UINT16 (td->il_locals_size);
 		}
 
 		guint16 enter_profiling = 0;
@@ -4933,9 +4924,30 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 
 		local_locals = (guint32*) g_malloc (header->num_locals * sizeof (guint32));
-		/* Allocate locals to store inlined method args from stack */
 		for (int i = 0; i < header->num_locals; i++)
 			local_locals [i] = interp_create_var (td, header->locals [i]);
+	}
+
+	/*
+	 * We initialize the locals regardless of the presence of the init_locals
+	 * flag. Locals holding references need to be zeroed so we don't risk
+	 * crashing the GC if they end up being stored in an object.
+	 */
+	if (header->num_locals) {
+		if (td->optimized) {
+			// Add individual initlocal for each IL local. These should
+			// all be optimized out by SSA cprop/deadce optimizations.
+			for (int i = 0; i < header->num_locals; i++) {
+				interp_add_ins (td, MINT_INITLOCAL);
+				int local_var = inlining ? local_locals [i] : (num_args + i);
+				td->last_ins->dreg = local_var;
+				td->last_ins->data [0] = GINT_TO_UINT16 (td->vars [local_var].size);
+			}
+		} else {
+			interp_add_ins (td, MINT_INITLOCALS);
+			td->last_ins->data [0] = GUINT_TO_UINT16 (td->il_locals_offset);
+			td->last_ins->data [1] = GUINT_TO_UINT16 (td->il_locals_size);
+		}
 	}
 
 	td->dont_inline = g_list_prepend (td->dont_inline, method);
@@ -8419,7 +8431,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		g_array_append_val (td->line_numbers, lne);
 	}
 
-	if (opcode == MINT_NOP || opcode == MINT_DEF || opcode == MINT_DUMMY_USE)
+	if (opcode == MINT_NOP || opcode == MINT_DEF || opcode == MINT_DEF_ARG || opcode == MINT_DUMMY_USE)
 		return ip;
 
 	*ip++ = opcode;

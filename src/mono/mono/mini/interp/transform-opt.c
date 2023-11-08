@@ -757,17 +757,6 @@ interp_compute_global_vars (TransformData *td)
 			td->vars [i].no_ssa = FALSE;
 	}
 
-	// For locals (which are normally initlocal) and arguments, consider them already
-	// defined in entry_bb
-	for (unsigned int i = 0; i < td->vars_size; i++) {
-		if (td->vars [i].il_global) {
-			td->vars [i].declare_bbs = g_slist_prepend (NULL, td->entry_bb);
-		} else {
-			// IL globals are the first vars
-			break;
-		}
-	}
-
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
@@ -993,11 +982,12 @@ compute_fixed_vars (TransformData *td)
 }
 
 static int
-get_renamed_var (TransformData *td, int var)
+get_renamed_var (TransformData *td, int var, gboolean def_arg)
 {
 	int ext_index = td->vars [var].ext_index;
 	g_assert (ext_index != -1);
 	int renamed_var = interp_create_var (td, td->vars [var].type);
+	td->vars [renamed_var].def_arg = def_arg;
 
 	if (td->renamable_vars [ext_index].ssa_fixed) {
 		td->vars [renamed_var].renamed_ssa_fixed = TRUE;
@@ -1051,7 +1041,7 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 	// Rename vars defined with MINT_PHI
 	for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		if (ins->opcode == MINT_PHI)
-			ins->dreg = get_renamed_var (td, ins->dreg);
+			ins->dreg = get_renamed_var (td, ins->dreg, FALSE);
 		else
 			break;
 	}
@@ -1066,7 +1056,12 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 		current_liveness++;
 
 		interp_foreach_ins_svar (td, ins, NULL, rename_ins_var_cb);
-		if (mono_interp_op_dregs [ins->opcode] && td->vars [ins->dreg].ext_index != -1) {
+		if (!mono_interp_op_dregs [ins->opcode] || td->vars [ins->dreg].ext_index == -1)
+			continue;
+
+		if (ins->opcode == MINT_DEF_ARG) {
+			ins->dreg = get_renamed_var (td, ins->dreg, TRUE);
+		} else if (mono_interp_op_dregs [ins->opcode]) {
 			g_assert (!td->vars [ins->dreg].renamed_ssa_fixed);
 			int renamable_ext_index = td->vars [ins->dreg].ext_index;
 			if (td->renamable_vars [renamable_ext_index].ssa_fixed &&
@@ -1077,7 +1072,7 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 				int renamed_var_ext = td->vars [renamed_var].ext_index;
 				td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks = g_slist_prepend (td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks, (gpointer)(gsize)current_liveness);
 			}
-			ins->dreg = get_renamed_var (td, ins->dreg);
+			ins->dreg = get_renamed_var (td, ins->dreg, FALSE);
 		}
 	}
 
@@ -1125,18 +1120,6 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 static void
 rename_vars (TransformData *td)
 {
-	// Initialize the ssa_stack for entry_bb
-	for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
-		// Initialize the ssa_stack for entry_bb. If var is fixed, then we need to create a new
-		// InterpRenamedFixedVar, since we will have to track liveness. Otherwise just push the
-		// original var directly.
-		int var_index = td->renamable_vars [i].var_index;
-		if (td->renamable_vars [i].ssa_fixed)
-			get_renamed_var (td, var_index);
-		else
-			td->renamable_vars [i].ssa_stack = g_slist_prepend (td->renamable_vars [i].ssa_stack, (gpointer)(gsize)var_index);
-	}
-
 	rename_vars_in_bb (td, td->entry_bb);
 
 	if (td->verbose_level) {
@@ -1204,6 +1187,8 @@ revert_ssa_rename_cb (TransformData *td, int *pvar, gpointer data)
 	if (td->vars [var].renamed_ssa_fixed) {
 		int renamable_var_ext_index = td->renamed_fixed_vars [ext_index].renamable_var_ext_index;
 		*pvar = td->renamable_vars [renamable_var_ext_index].var_index;
+	} else if (td->vars [var].def_arg) {
+		*pvar = td->renamable_vars [ext_index].var_index;
 	}
 }
 
