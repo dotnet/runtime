@@ -111,6 +111,30 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        public async Task ClientAsyncAuthenticate_RejectedCertificate_Fails()
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+            using (client)
+            using (server)
+            {
+                Task serverTask = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = TestConfiguration.ServerCertificate,
+                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck });
+
+                await Assert.ThrowsAsync<AuthenticationException>(async () =>
+                {
+                    await client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                        {
+                            RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => false, // reject any certificate
+                        })
+                        .WaitAsync(TestConfiguration.PassingTestTimeout);
+                });
+            }
+        }
+
         #region Helpers
 
         private Task ClientAsyncSslHelper(EncryptionPolicy encryptionPolicy)
