@@ -1095,17 +1095,17 @@ rename_vars (TransformData *td)
 static void
 interp_compute_ssa (TransformData *td)
 {
-	interp_compute_dominance (td);
+	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_dominance_time, interp_compute_dominance (td));
 
-	interp_compute_global_vars (td);
+	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_global_vars_time, interp_compute_global_vars (td));
 
-	interp_compute_pruned_ssa_liveness (td);
+	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_pruned_liveness_time, interp_compute_pruned_ssa_liveness (td));
 
 	insert_phi_nodes (td);
 
 	compute_fixed_vars (td);
 
-	rename_vars (td);
+	MONO_TIME_TRACK (mono_interp_stats.ssa_rename_vars_time, rename_vars (td));
 
 	if (td->verbose_level) {
 		g_print ("\nIR after SSA compute:\n");
@@ -3213,9 +3213,9 @@ interp_optimize_code (TransformData *td)
 		return;
 
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
-		interp_optimize_bblocks (td);
+		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
 
-	interp_compute_ssa (td);
+	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_time, interp_compute_ssa (td));
 
 	interp_exit_ssa (td);
 
