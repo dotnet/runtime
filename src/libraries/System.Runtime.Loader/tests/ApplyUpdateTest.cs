@@ -938,5 +938,47 @@ namespace System.Reflection.Metadata
                 Assert.Equal(dt, z.GetIt());
             });
         }
-    }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestNewMethodThrows()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows();
+
+                Assert.Equal("abcd", x.ExistingMethod("abcd"));
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+            
+                InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => x.ExistingMethod("spqr"));
+
+                Assert.Equal("spqr", exn.Message);
+
+                var stackTrace = new System.Diagnostics.StackTrace(exn, fNeedFileInfo: true);
+
+                var frames = stackTrace.GetFrames();
+
+                // the throwing method and its caller and a few frames of XUnit machinery for Assert.Throws, above
+                Assert.True(frames.Length >= 2);
+
+                var throwingMethod = frames[0].GetMethod();
+
+                var newMethod = typeof (System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows).GetMethod("NewMethod");
+
+                Assert.Equal(newMethod, throwingMethod);
+
+                Assert.Contains("NewMethodThrows.cs", frames[0].GetFileName());
+
+                var existingMethod = typeof (System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows).GetMethod("ExistingMethod");
+
+                var throwingMethodCaller = frames[1].GetMethod();
+
+                Assert.Equal(existingMethod, throwingMethodCaller);
+
+                Assert.Contains("NewMethodThrows.cs", frames[1].GetFileName());
+            });
+        }
+    }       
 }
