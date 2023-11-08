@@ -11,6 +11,7 @@ namespace System.Timers
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Timers.ElapsedEventArgs'/> class.
         /// </summary>
+        /// <param name="signalTime">Time when the timer elapsed</param>
         public ElapsedEventArgs(DateTime signalTime)
         {
             SignalTime = signalTime;
