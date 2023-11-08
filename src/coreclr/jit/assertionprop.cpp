@@ -554,7 +554,6 @@ void Compiler::optAssertionInit(bool isLocalProp)
         //
         if (optCrossBlockLocalAssertionProp)
         {
-#ifdef DEBUG
             // Disable via config
             //
             if (JitConfig.JitDoCrossBlockLocalAssertionProp() == 0)
@@ -562,7 +561,6 @@ void Compiler::optAssertionInit(bool isLocalProp)
                 JITDUMP("Disabling cross-block assertion prop by config setting\n");
                 optCrossBlockLocalAssertionProp = false;
             }
-#endif
 
             // Disable if too many locals
             //

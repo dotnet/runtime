@@ -13782,7 +13782,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
     {
         if (!optCrossBlockLocalAssertionProp)
         {
-            // For now, each block starts with an empty table, and no available assertions
+            // Each block starts with an empty table, and no available assertions
             //
             optAssertionReset(0);
             apLocal = BitVecOps::MakeEmpty(apTraits);
