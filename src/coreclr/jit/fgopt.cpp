@@ -814,7 +814,7 @@ unsigned Compiler::fgDfsReversePostorder()
             //
             if (HBtab->HasFinallyHandler())
             {
-                for (BasicBlock* const finallyPredBlock : handlerBlock->Preds())
+                for (BasicBlock* const finallyPredBlock : handlerBlock->PredBlocks())
                 {
                     assert(finallyPredBlock->KindIs(BBJ_CALLFINALLY));
                     assert(finallyPredBlock->isBBCallAlwaysPair());
