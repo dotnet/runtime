@@ -1084,7 +1084,9 @@ namespace System.Collections.Generic
 #if TARGET_64BIT
             _fastModMultiplier = source._fastModMultiplier;
 #endif
-            if (!IsTrimNeeded())
+            // Check if copied collection needs trimming
+            // If not - just copy it's array's data or arrays itself
+            if (!source.IsTrimNeeded())
             {
                 if (_buckets != null && _entries != null &&
                     _buckets.Length >= source._buckets!.Length && _entries.Length >= source._entries!.Length)
