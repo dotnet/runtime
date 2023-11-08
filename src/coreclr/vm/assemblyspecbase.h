@@ -15,7 +15,8 @@
 #ifndef __ASSEMBLY_SPEC_BASE_H__
 #define __ASSEMBLY_SPEC_BASE_H__
 
-#include "../binder/inc/assembly.hpp"
+#include "../binder/inc/assemblyname.hpp"
+#include "assemblybinder.h"
 
 #include "baseassemblyspec.h"
 #include "baseassemblyspec.inl"

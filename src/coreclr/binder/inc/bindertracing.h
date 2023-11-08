@@ -13,7 +13,6 @@ class PEAssembly;
 
 namespace BINDER_SPACE
 {
-    class Assembly;
     class AssemblyName;
 }
 

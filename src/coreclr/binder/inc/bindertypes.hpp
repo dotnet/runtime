@@ -21,7 +21,6 @@ namespace BINDER_SPACE
 {
     class AssemblyVersion;
     class AssemblyName;
-    class Assembly;
 };
 
 typedef enum __AssemblyContentType

@@ -13,6 +13,7 @@
 
 #include "common.h"
 #include "bindertracing.h"
+#include "assemblybinder.h"
 
 #include "activitytracker.h"
 

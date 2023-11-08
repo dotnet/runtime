@@ -15,7 +15,6 @@
 #include "assemblybindercommon.hpp"
 #include "assemblyname.hpp"
 #include "assembly.hpp"
-#include "assemblyhashtraits.hpp"
 #include "bindertracing.h"
 #include "utils.hpp"
 #include "stringarraylist.h"

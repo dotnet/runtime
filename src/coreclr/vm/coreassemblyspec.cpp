@@ -22,7 +22,6 @@
 #include "strongnameholders.h"
 
 #include "../binder/inc/assemblyidentity.hpp"
-#include "../binder/inc/assembly.hpp"
 #include "../binder/inc/assemblyname.hpp"
 
 #include "../binder/inc/assemblybindercommon.hpp"
