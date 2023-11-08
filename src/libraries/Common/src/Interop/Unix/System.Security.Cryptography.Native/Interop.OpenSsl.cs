@@ -799,7 +799,6 @@ internal static partial class Interop
         {
             Debug.Assert(s_fileStream != null);
             ReadOnlySpan<byte> data = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)line);
-
             if (data.Length > 0)
             {
                 lock (s_fileStream)
