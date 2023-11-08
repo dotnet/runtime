@@ -950,12 +950,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));  // nnnnn
             assert(isVectorRegister(id->idReg3()));  // mmmmm
             assert(isValidVectorElemsize(elemsize)); // xx
+            break;
 
         case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
             assert(insOptsNone(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
+            break;
 
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
             elemsize = id->idOpSize();
@@ -17769,26 +17771,26 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     break;
 
-                case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-
-                case IF_SVE_BR_3B: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-
-                case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
+
+        case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_BR_3B: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         default:
