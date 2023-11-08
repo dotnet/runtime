@@ -9,6 +9,7 @@
     <ExpectedExitCode>42</ExpectedExitCode>
     <SelfContained>true</SelfContained>
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <HybridGlobalization>true</HybridGlobalization>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
   </PropertyGroup>
 
