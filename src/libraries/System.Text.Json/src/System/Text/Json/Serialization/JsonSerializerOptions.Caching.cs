@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -24,7 +25,13 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
+                return _cachingContext ?? GetOrCreate();
+
+                CachingContext GetOrCreate()
+                {
+                    CachingContext ctx = TrackedCachingContexts.GetOrCreate(this);
+                    return Interlocked.CompareExchange(ref _cachingContext, ctx, null) ?? ctx;
+                }
             }
         }
 
