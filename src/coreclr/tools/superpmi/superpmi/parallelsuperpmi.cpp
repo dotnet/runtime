@@ -426,6 +426,14 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
         bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %s", arg, s);         \
     }
 
+    // Only pass through an integer argument if it is not the same as the default (which must be specified here).
+    // (This is a proxy for "did the command-line parser actually parse something for this argument".)
+#define ADDARG_INT(i, arg, defaultValue)                                                                               \
+    if (i != defaultValue)                                                                                             \
+    {                                                                                                                  \
+        bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %d", arg, i);         \
+    }
+
     // We don't pass through:
     //
     //    -parallel
@@ -438,7 +446,6 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     //    -diffMetricsSummary
     //    -failingMCList
     //    -diffMCList
-    //    -failureLimit
     //
     // Everything else we need to reconstruct and pass through.
     //
@@ -457,6 +464,8 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     ADDARG_STRING(o.hash, "-matchHash");
     ADDARG_STRING(o.targetArchitecture, "-target");
     ADDARG_STRING(o.compileList, "-compile");
+    ADDARG_INT(o.failureLimit, "-failureLimit", -1);
+    ADDARG_INT(o.repeatCount, "-repeatCount", 1);
 
     addJitOptionArgument(o.forceJitOptions, bytesWritten, spmiArgs, "jitoption force");
     addJitOptionArgument(o.forceJit2Options, bytesWritten, spmiArgs, "jit2option force");
@@ -471,6 +480,7 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
 #undef ADDSTRING
 #undef ADDARG_BOOL
 #undef ADDARG_STRING
+#undef ADDARG_INT
 
     return spmiArgs;
 }
@@ -582,12 +592,6 @@ int doParallelSuperPMI(CommandLine::Options& o)
         {
             bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -details %s",
                                       wd.detailsPath);
-        }
-
-        if (o.failureLimit > 0)
-        {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -failureLimit %d",
-                                      o.failureLimit);
         }
 
         bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -v ewmin %s", spmiArgs);
