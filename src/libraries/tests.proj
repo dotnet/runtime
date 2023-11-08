@@ -709,10 +709,9 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsTargetOSSupportedByXUnitLogChecker)' == 'true'">
-    <XUnitLogCheckerProject
+    <ProjectReference
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
       AdditionalProperties="%(AdditionalProperties);Configuration=Release;OutDir=$(XUnitLogCheckerDirectory)" />
-    <ProjectReference Include="@(XUnitLogCheckerProject)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
