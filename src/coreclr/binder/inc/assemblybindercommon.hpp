@@ -34,7 +34,7 @@ namespace BINDER_SPACE
                                     /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindToSystem(/* in */ SString    &systemDirectory,
-                                    /* out */ Assembly **ppSystemAssembly);
+                                    /* out */ PEImage   **ppPEImage);
 
         static HRESULT BindToSystemSatellite(/* in */ SString   &systemDirectory,
                                              /* in */ SString   &simpleName,

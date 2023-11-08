@@ -251,13 +251,13 @@ namespace BINDER_SPACE
 
     /* static */
     HRESULT AssemblyBinderCommon::BindToSystem(SString   &systemDirectory,
-                                               Assembly **ppSystemAssembly)
+                                               PEImage   **ppPEImage)
     {
         HRESULT hr = S_OK;
 
-        _ASSERTE(ppSystemAssembly != NULL);
+        _ASSERTE(ppPEImage != NULL);
 
-        ReleaseHolder<Assembly> pSystemAssembly;
+        ReleaseHolder<PEImage> pSystemAssembly;
 
         // System.Private.CoreLib.dll is expected to be found at one of the following locations:
         //   * Non-single-file app: In systemDirectory, beside coreclr.dll
@@ -279,14 +279,11 @@ namespace BINDER_SPACE
         sCoreLib.Set(systemDirectory);
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
-        hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
-                                         TRUE /* fIsInTPA */,
-                                         &pSystemAssembly,
-                                         bundleFileLocation);
+        hr = BinderAcquirePEImage(sCoreLib.GetUnicode(), &pSystemAssembly, bundleFileLocation);
 
         BinderTracing::PathProbed(sCoreLib, pathSource, hr);
 
-        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+        if ((FAILED(hr)) && IsFileNotFound(hr))
         {
             // Try to find corelib in the TPA
             StackSString sCoreLibSimpleName(CoreLibName_W);
@@ -318,18 +315,15 @@ namespace BINDER_SPACE
             {
                 GO_WITH_HRESULT(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
             }
-
-            hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
-                TRUE /* fIsInTPA */,
-                &pSystemAssembly,
-                bundleFileLocation);
+            
+            hr = BinderAcquirePEImage(sCoreLib.GetUnicode(), &pSystemAssembly, bundleFileLocation);
 
             BinderTracing::PathProbed(sCoreLib, BinderTracing::PathSource::ApplicationAssemblies, hr);
         }
 
         IF_FAIL_GO(hr);
 
-        *ppSystemAssembly = pSystemAssembly.Extract();
+        *ppPEImage = pSystemAssembly.Extract();
 
     Exit:
         return hr;

@@ -842,14 +842,16 @@ PEAssembly *PEAssembly::DoOpenSystem()
     CONTRACT_END;
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
-    ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
-    IfFailThrow(((DefaultAssemblyBinder*)NULL)->BindToSystem(&pBoundAssembly));
+    ReleaseHolder<PEImage> pBoundAssembly;
+    
+    StackSString systemPath(SystemDomain::System()->SystemDirectory());
+    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(systemPath, &pBoundAssembly));
 
     {
         GCX_COOP();
 
         // HostAssembly is set afterwards for CoreLib
-        RETURN new PEAssembly(NULL, NULL, TRUE, pBoundAssembly->GetPEImage());
+        RETURN new PEAssembly(NULL, NULL, TRUE, pBoundAssembly);
     }
 }
 
