@@ -13,7 +13,6 @@
 #endif
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-
 /**
  * Is this code unit a lead surrogate (U+d800..U+dbff)?
  * @param c 16-bit code unit

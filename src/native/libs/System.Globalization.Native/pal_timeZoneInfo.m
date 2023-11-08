@@ -12,7 +12,6 @@
 #endif
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-
 /*
 Gets the localized display name that is currently in effect for the specified time zone.
 */

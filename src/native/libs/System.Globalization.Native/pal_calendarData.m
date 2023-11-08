@@ -11,7 +11,6 @@
 #endif
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-
 /*
 Function:
 GetCalendarIdentifier

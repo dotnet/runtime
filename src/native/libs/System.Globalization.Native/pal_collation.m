@@ -12,7 +12,6 @@
 #endif
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-
 // Enum that corresponds to C# CompareOptions
 typedef enum
 {

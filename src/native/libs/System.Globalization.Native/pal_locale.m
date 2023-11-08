@@ -37,7 +37,6 @@ char* DetectDefaultAppleLocaleName(void)
 }
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
     @autoreleasepool

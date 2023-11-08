@@ -16,6 +16,7 @@ typedef uint16_t UChar;
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
+
 static const Entry s_globalizationNative[] =
 {
 #if !defined(__APPLE__) || (defined(__APPLE__) && !(TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
@@ -59,6 +60,7 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_ChangeCaseInvariantNative)
     DllImportEntry(GlobalizationNative_ChangeCaseNative)
     DllImportEntry(GlobalizationNative_CompareStringNative)
+    DllImportEntry(GlobalizationNative_GetDefaultLocaleNameNative)
     DllImportEntry(GlobalizationNative_EndsWithNative)
     DllImportEntry(GlobalizationNative_GetCalendarInfoNative)
     DllImportEntry(GlobalizationNative_GetCalendarsNative)
@@ -76,7 +78,6 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_IsNormalizedNative)
     DllImportEntry(GlobalizationNative_NormalizeStringNative)
     DllImportEntry(GlobalizationNative_StartsWithNative)
-    DllImportEntry(GlobalizationNative_GetDefaultLocaleNameNative)
 #endif
      DllImportEntry(GlobalizationNative_ToAscii)
      DllImportEntry(GlobalizationNative_ToUnicode)

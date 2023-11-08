@@ -21,10 +21,6 @@
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
-#if defined(__APPLE__)
-#include <TargetConditionals.h>
-#endif
-// #if !defined(__APPLE__) || (defined(__APPLE__) && !TARGET_OS_IPHONE)
 #if !defined(__APPLE__) || (defined(__APPLE__) && !(TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
