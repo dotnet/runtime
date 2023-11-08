@@ -362,7 +362,7 @@ namespace ILVerify
             if (string.IsNullOrEmpty(namespaceName) && !declaringType.IsNil)
             {
                 fullName.Append(GetFullClassName(metadataReader, declaringType));
-                fullName.Append("/");
+                fullName.Append("+");
             }
             else
             {
