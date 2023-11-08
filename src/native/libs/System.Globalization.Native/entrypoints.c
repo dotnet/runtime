@@ -16,7 +16,9 @@ typedef uint16_t UChar;
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
-
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 static const Entry s_globalizationNative[] =
 {
 #if !defined(__APPLE__) || (defined(TARGET_OS_OSX) && !defined(TARGET_OS_IPHONE))
