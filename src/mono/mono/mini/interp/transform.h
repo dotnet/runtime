@@ -108,6 +108,12 @@ struct _InterpBasicBlock {
 	/* List of bblocks that are immediately dominated by this bblock */
 	GSList *dominated;
 
+	/* Live variable analysis, for vars in locals_ext */
+	MonoBitSet *gen_set;
+	MonoBitSet *kill_set;
+	MonoBitSet *live_in_set;
+	MonoBitSet *live_out_set;
+
 	/* The real native offset of this bblock, computed when emitting the instructions in the code stream */
 	int native_offset;
 	/*
