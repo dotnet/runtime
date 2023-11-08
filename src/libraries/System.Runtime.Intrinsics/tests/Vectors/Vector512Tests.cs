@@ -5111,5 +5111,21 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             MethodInfo methodInfo = typeof(Vector512<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.False((bool)methodInfo.Invoke(null, null));
         }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Double), MemberType = typeof(VectorTestMemberData))]
+        public void Log2DoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector512<double> actualResult = Vector512.Log2(Vector512.Create(value));
+            AssertExtensions.Equal(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Single), MemberType = typeof(VectorTestMemberData))]
+        public void Log2SingleTest(float value, float expectedResult, float variance)
+        {
+            Vector512<float> actualResult = Vector512.Log2(Vector512.Create(value));
+            AssertExtensions.Equal(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
     }
 }

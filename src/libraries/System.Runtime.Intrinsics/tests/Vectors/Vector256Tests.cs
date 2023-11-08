@@ -5679,5 +5679,21 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             MethodInfo methodInfo = typeof(Vector256<T>).GetProperty("One", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.Equal((Vector256<T>)methodInfo.Invoke(null, null), Vector256.Create(T.One));
         }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Double), MemberType = typeof(VectorTestMemberData))]
+        public void Log2DoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector256<double> actualResult = Vector256.Log2(Vector256.Create(value));
+            AssertExtensions.Equal(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Single), MemberType = typeof(VectorTestMemberData))]
+        public void Log2SingleTest(float value, float expectedResult, float variance)
+        {
+            Vector256<float> actualResult = Vector256.Log2(Vector256.Create(value));
+            AssertExtensions.Equal(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
+        }
     }
 }

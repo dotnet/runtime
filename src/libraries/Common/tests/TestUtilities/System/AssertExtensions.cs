@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET6_0_OR_GREATER
+using System.Runtime.Intrinsics;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -1118,6 +1121,98 @@ namespace System
                     return $"{value,5:G5}";
                 }
             }
+        }
+
+        /// <summary>Verifies that two <see cref="Vector64{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Vector64<float> expected, Vector64<float> actual, Vector64<float> variance)
+        {
+            for (int i = 0; i < Vector64<float>.Count; i++)
+            {
+                Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
+        /// <summary>Verifies that two <see cref="Vector128{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Vector128<float> expected, Vector128<float> actual, Vector128<float> variance)
+        {
+            Equal(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Equal(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
+        /// <summary>Verifies that two <see cref="Vector256{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Vector256<float> expected, Vector256<float> actual, Vector256<float> variance)
+        {
+            Equal(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Equal(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
+        /// <summary>Verifies that two <see cref="Vector512{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Vector512<float> expected, Vector512<float> actual, Vector512<float> variance)
+        {
+            Equal(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Equal(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
+        /// <summary>Verifies that two <see cref="Vector64{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Vector64<double> expected, Vector64<double> actual, Vector64<double> variance)
+        {
+            for (int i = 0; i < Vector64<double>.Count; i++)
+            {
+                Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
+        /// <summary>Verifies that two <see cref="Vector128{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Vector128<double> expected, Vector128<double> actual, Vector128<double> variance)
+        {
+            Equal(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Equal(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
+        /// <summary>Verifies that two <see cref="Vector256{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Vector256<double> expected, Vector256<double> actual, Vector256<double> variance)
+        {
+            Equal(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Equal(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
+        /// <summary>Verifies that two <see cref="Vector512{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Vector512<double> expected, Vector512<double> actual, Vector512<double> variance)
+        {
+            Equal(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Equal(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
         }
 #endif
     }

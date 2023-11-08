@@ -4077,5 +4077,23 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             MethodInfo methodInfo = typeof(Vector64<T>).GetProperty("One", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.Equal((Vector64<T>)methodInfo.Invoke(null, null), Vector64.Create(T.One));
         }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Double), MemberType = typeof(VectorTestMemberData))]
+        public void Log2DoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector64<double> actualResult = Vector64.Log2(Vector64.Create(value));
+            AssertExtensions.Equal(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Single), MemberType = typeof(VectorTestMemberData))]
+        public void Log2SingleTest(float value, float expectedResult, float variance)
+        {
+            AssertExtensions.Equal(0.0f, 0.0f, 0.0f);
+
+            Vector64<float> actualResult = Vector64.Log2(Vector64.Create(value));
+            AssertExtensions.Equal(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
     }
 }
