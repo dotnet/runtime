@@ -1,0 +1,9 @@
+DOTNET_RuntimeAsyncViaJitGeneratedStateMachines=0:
+* Loader\async\async2-returns\async2-returns.dll  (retbuffers)
+* Loader\async\simple-eh\simple-eh.dll (EH unsupported)
+* Loader\async\async2-eh-microbench\async2-eh-microbench.cmd (EH unsupported)
+* Loader\async\async2object\async2object.cmd (this one probably should be passing?)
+* Loader\async\async2sharedgeneric\async2sharedgeneric.dll (generics unsupported)
+
+DOTNET_RuntimeAsyncViaJitGeneratedStateMachines=1:
+* Loader\async\async2sharedgeneric\async2sharedgeneric.dll (generics unsupported)
