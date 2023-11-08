@@ -1829,8 +1829,6 @@ enum CorInfoContinuationFlags
 {
     // Whether or not the continuation expects the result to be boxed and
     // placed in the GCData array at index 0. Not set if the callee is void.
-    // TODO: In the future, for value types without any GC refs in them, we can
-    // place them at the beginning of the Data array instead to avoid a box.
     CORINFO_CONTINUATION_RESULT_IN_GCDATA = 1,
     // If this bit is set the continuation resumes inside a try block and thus
     // if an exception is being propagated, needs to be resumed. The exception
