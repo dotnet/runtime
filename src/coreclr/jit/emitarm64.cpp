@@ -10573,6 +10573,47 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns an encoding for the specified register used in the 'Vd' position
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_Pd(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(emitter::isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg;
+}
+
+/*****************************************************************************
+ *
+ *  Returns an encoding for the specified register used in the 'Vn' position
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_Pn(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(emitter::isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 5;
+}
+
+/*****************************************************************************
+ *
+ *  Returns an encoding for the specified register used in the 'Vm' position
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_Pm(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(emitter::isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 16;
+}
+/*****************************************************************************
+ *
  *  Returns an encoding for the specified condition code.
  */
 
@@ -13308,6 +13349,34 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(insOptsNone(id->idInsOpt()));
             code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+            code     = emitInsCodeSve(ins, fmt);
+            elemsize = id->idOpSize();
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
+            code |= insEncodeElemsize(elemsize);    // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
+            code     = emitInsCodeSve(ins, fmt);
+            elemsize = id->idOpSize();
+            code |= insEncodeReg_Pd(id->idReg1()); // DDDD
+            code |= insEncodeReg_Pn(id->idReg2()); // NNNN
+            code |= insEncodeReg_Pm(id->idReg3()); // MMMM
+            code |= insEncodeElemsize(elemsize);    // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
