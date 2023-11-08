@@ -47,6 +47,7 @@ namespace System.Runtime.InteropServices.Marshalling
         [StructLayout(LayoutKind.Sequential)]
         private struct TypeUnion
         {
+            // The layout of _wReserved1 and _vt fields needs to match Decimal._flags
 #if BIGENDIAN
             public ushort _wReserved1;
             public ushort _vt;
