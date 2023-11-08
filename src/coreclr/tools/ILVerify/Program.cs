@@ -359,15 +359,16 @@ namespace ILVerify
             var namespaceName = metadataReader.GetString(typeDef.Namespace);
 
             var declaringType = typeDef.GetDeclaringType();
-            if (string.IsNullOrEmpty(namespaceName) && !declaringType.IsNil)
+            if (!declaringType.IsNil)
             {
                 fullName.Append(GetFullClassName(metadataReader, declaringType));
-                fullName.Append("+");
+                fullName.Append('+');
             }
-            else
+            
+            if (!string.IsNullOrEmpty(namespaceName))
             {
                 fullName.Append(namespaceName);
-                fullName.Append(".");
+                fullName.Append('.');
             }
 
             fullName.Append(typeName);
