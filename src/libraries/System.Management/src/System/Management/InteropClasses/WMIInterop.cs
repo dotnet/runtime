@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Runtime.Serialization;
@@ -1343,7 +1344,9 @@ namespace System.Management
                     return false;
 
                 // If we CAN get to the IObjectContext interface, we have a 'context'
-                if (0 == Marshal.QueryInterface(pComThreadingInfo, IID_IObjectContext, out pObjectContext))
+#pragma warning disable CS9191 // The 'ref' modifier for argument 1 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
+                if (0 == Marshal.QueryInterface(pComThreadingInfo, ref Unsafe.AsRef(in IID_IObjectContext), out pObjectContext))
+#pragma warning restore CS9191
                     return false;
             }
             finally
