@@ -988,6 +988,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         var w = new Options();
                         configuration.Bind(w);
                         configuration.Get<Options>(_ => { });
+
+                        // Should generate a diagnostics
+                        configuration.Get<List<IntPtr>>(_ => { });
                 	}
                 }
 
@@ -999,40 +1002,40 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     public string[] Array { get; set; }
 
                     public Action<string> SkipProp1 { get; set; }
-                    public Container<Action<string>> SkipProp2 { get; set; }
-                    public Container<Dictionary<string, Action<string>>> SkipProp3 { get; set; }
+                    public List<Action<string>> SkipProp2 { get; set; }
+                    public List<Dictionary<string, Action<string>>> SkipProp3 { get; set; }
 
                     public Func<int> SkipProp4 { get; set; }
-                    public Container<Func<int>> SkipProp5 { get; set; }
-                    public Container<Dictionary<string, Func<string>>> SkipProp6 { get; set; }
+                    public List<Func<int>> SkipProp5 { get; set; }
+                    public List<Dictionary<string, Func<string>>> SkipProp6 { get; set; }
 
                     public myMethodDelegate SkipProp7 { get; set; }
-                    public Container<myMethodDelegate> SkipProp8 { get; set; }
-                    public Container<Dictionary<string, myMethodDelegate>> SkipProp9 { get; set; }
+                    public List<myMethodDelegate> SkipProp8 { get; set; }
+                    public List<Dictionary<string, myMethodDelegate>> SkipProp9 { get; set; }
 
                     public IntPtr SkipProp10 { get; set; }
-                    public Container<IntPtr> SkipProp11 { get; set; }
-                    public Container<Dictionary<string, IntPtr>> SkipProp12 { get; set; }
+                    public List<IntPtr> SkipProp11 { get; set; }
+                    public List<Dictionary<string, IntPtr>> SkipProp12 { get; set; }
 
                     public UIntPtr SkipProp13 { get; set; }
-                    public Container<UIntPtr> SkipProp14 { get; set; }
-                    public Container<Dictionary<string, UIntPtr>> SkipProp15 { get; set; }
+                    public List<UIntPtr> SkipProp14 { get; set; }
+                    public List<Dictionary<string, UIntPtr>> SkipProp15 { get; set; }
 
                     public SerializationInfo SkipProp16 { get; set; }
-                    public Container<SerializationInfo> SkipProp17 { get; set; }
-                    public Container<Dictionary<string, SerializationInfo>> SkipProp18 { get; set; }
+                    public List<SerializationInfo> SkipProp17 { get; set; }
+                    public List<Dictionary<string, SerializationInfo>> SkipProp18 { get; set; }
 
                     public MethodInfo SkipProp19 { get; set; }
-                    public Container<MethodInfo> SkipProp20 { get; set; }
-                    public Container<Dictionary<string, MethodInfo>> SkipProp21 { get; set; }
+                    public List<MethodInfo> SkipProp20 { get; set; }
+                    public List<Dictionary<string, MethodInfo>> SkipProp21 { get; set; }
 
                     public ConstructorInfo SkipProp22 { get; set; }
-                    public Container<ConstructorInfo> SkipProp23 { get; set; }
-                    public Container<Dictionary<string, ConstructorInfo>> SkipProp24 { get; set; }
+                    public List<ConstructorInfo> SkipProp23 { get; set; }
+                    public List<Dictionary<string, ConstructorInfo>> SkipProp24 { get; set; }
 
                     public string[,] SkipProp25 { get; set; }
-                    public Container<string[,]> SkipProp26 { get; set; }
-                    public Container<Dictionary<string, string[,]>> SkipProp27 { get; set; }
+                    public List<string[,]> SkipProp26 { get; set; }
+                    public List<Dictionary<string, string[,]>> SkipProp27 { get; set; }
 
                     public Func<string>[] SkipProp28 { get; set; }
                     public Action<string>[] SkipProp29 { get; set; }
@@ -1048,40 +1051,40 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     //
 
                     public Action<string>? SkipProp36 { get; set; }
-                    public Container<Action<string>?> SkipProp37 { get; set; }
-                    public Container<Dictionary<string, Action<string>?>> SkipProp38 { get; set; }
+                    public List<Action<string>?> SkipProp37 { get; set; }
+                    public List<Dictionary<string, Action<string>?>> SkipProp38 { get; set; }
 
                     public Func<int>? SkipProp39 { get; set; }
-                    public Container<Func<int>?> SkipProp40 { get; set; }
-                    public Container<Dictionary<string, Func<string>?>> SkipProp41 { get; set; }
+                    public List<Func<int>?> SkipProp40 { get; set; }
+                    public List<Dictionary<string, Func<string>?>> SkipProp41 { get; set; }
 
                     public myMethodDelegate? SkipProp42 { get; set; }
-                    public Container<myMethodDelegate?> SkipProp43 { get; set; }
-                    public Container<Dictionary<string, myMethodDelegate?>> SkipProp44 { get; set; }
+                    public List<myMethodDelegate?> SkipProp43 { get; set; }
+                    public List<Dictionary<string, myMethodDelegate?>> SkipProp44 { get; set; }
 
                     public IntPtr? SkipProp45 { get; set; }
-                    public Container<IntPtr?> SkipProp46 { get; set; }
-                    public Container<Dictionary<string, IntPtr?>> SkipProp47 { get; set; }
+                    public List<IntPtr?> SkipProp46 { get; set; }
+                    public List<Dictionary<string, IntPtr?>> SkipProp47 { get; set; }
 
                     public UIntPtr? SkipProp48 { get; set; }
-                    public Container<UIntPtr?> SkipProp49 { get; set; }
-                    public Container<Dictionary<string, UIntPtr?>> SkipProp50 { get; set; }
+                    public List<UIntPtr?> SkipProp49 { get; set; }
+                    public List<Dictionary<string, UIntPtr?>> SkipProp50 { get; set; }
 
                     public SerializationInfo? SkipProp51 { get; set; }
-                    public Container<SerializationInfo?> SkipProp52 { get; set; }
-                    public Container<Dictionary<string, SerializationInfo?>> SkipProp53 { get; set; }
+                    public List<SerializationInfo?> SkipProp52 { get; set; }
+                    public List<Dictionary<string, SerializationInfo?>> SkipProp53 { get; set; }
 
                     public MethodInfo? SkipProp54 { get; set; }
-                    public Container<MethodInfo?> SkipProp55 { get; set; }
-                    public Container<Dictionary<string, MethodInfo?>> SkipProp56 { get; set; }
+                    public List<MethodInfo?> SkipProp55 { get; set; }
+                    public List<Dictionary<string, MethodInfo?>> SkipProp56 { get; set; }
 
                     public ConstructorInfo? SkipProp57 { get; set; }
-                    public Container<ConstructorInfo?> SkipProp58 { get; set; }
-                    public Container<Dictionary<string, ConstructorInfo?>> SkipProp59 { get; set; }
+                    public List<ConstructorInfo?> SkipProp58 { get; set; }
+                    public List<Dictionary<string, ConstructorInfo?>> SkipProp59 { get; set; }
 
                     public string[,]? SkipProp60 { get; set; }
-                    public Container<string[,]?> SkipProp61 { get; set; }
-                    public Container<Dictionary<string, string[,]?>> SkipProp62 { get; set; }
+                    public List<string[,]?> SkipProp61 { get; set; }
+                    public List<Dictionary<string, string[,]?>> SkipProp62 { get; set; }
 
                     public Func<string>?[] SkipProp63 { get; set; }
                     public Action<string>?[] SkipProp64 { get; set; }
@@ -1092,21 +1095,21 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     public IntPtr?[] SkipProp69 { get; set; }
                     public UIntPtr?[] SkipProp70 { get; set; }
 
-                    public delegate string myMethodDelegate( int myInt );
-                }
+                    public ParameterInfo SkipProp71 { get; set; }
+                    public ParameterInfo? SkipProp72 { get; set; }
+                    public List<ParameterInfo> SkipProp73 { get; set; }
+                    public List<ParameterInfo?> SkipProp74 { get; set; }
+                    public ParameterInfo[] SkipProp75 { get; set; }
 
-                public class Container<T>
-                {
-                    public Container() {}
-                    public T? Value { get; set; }
+                    public delegate string myMethodDelegate( int myInt );
                 }
                 """;
 
             ConfigBindingGenRunResult result = await VerifyAgainstBaselineUsingFile(
                 "UnsupportedTypes.generated.txt",
-                source);
+                source, expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
 
-            Assert.Empty(result.Diagnostics);
+            Assert.Equal(1, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
             Assert.True(result.GeneratedSource.HasValue);
             Assert.DoesNotContain(result.GeneratedSource.Value.SourceText.ToString(), "SkipProp");
         }

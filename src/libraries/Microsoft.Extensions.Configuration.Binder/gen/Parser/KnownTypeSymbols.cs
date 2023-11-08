@@ -62,6 +62,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? IntPtr { get; }
         public INamedTypeSymbol? UIntPtr { get; }
         public INamedTypeSymbol? MemberInfo  { get; }
+        public INamedTypeSymbol? ParameterInfo { get; }
         public INamedTypeSymbol? Delegate   { get; }
 
         public KnownTypeSymbols(CSharpCompilation compilation)
@@ -127,6 +128,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             SerializationInfo = compilation.GetBestTypeByMetadataName(typeof(System.Runtime.Serialization.SerializationInfo));
             MemberInfo = compilation.GetBestTypeByMetadataName(typeof(System.Reflection.MemberInfo));
+            ParameterInfo = compilation.GetBestTypeByMetadataName(typeof(System.Reflection.ParameterInfo));
             IntPtr = Compilation.GetSpecialType(SpecialType.System_IntPtr);
             UIntPtr = Compilation.GetSpecialType(SpecialType.System_UIntPtr);
             Delegate = Compilation.GetSpecialType(SpecialType.System_Delegate);
