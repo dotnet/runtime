@@ -3259,6 +3259,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     return;
             }
             static const int MAX_LEN = 32;
+
             int len = printf("           %s, %s, %d", rs1, rs2, offset);
             if (len <= 0 || len > MAX_LEN)
                 return;
