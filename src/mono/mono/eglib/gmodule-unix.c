@@ -315,20 +315,3 @@ g_module_close (GModule *module)
 	return FALSE;
 }
 #endif
-
-gchar *
-g_module_build_path (const gchar *directory, const gchar *module_name)
-{
-	const char *lib_prefix = "";
-
-	if (module_name == NULL)
-		return NULL;
-
-	if (strncmp (module_name, "lib", 3) != 0)
-		lib_prefix = LIBPREFIX;
-
-	if (directory && *directory)
-		return g_strdup_printf ("%s/%s%s" LIBSUFFIX, directory, lib_prefix, module_name);
-	return g_strdup_printf ("%s%s" LIBSUFFIX, lib_prefix, module_name);
-}
-

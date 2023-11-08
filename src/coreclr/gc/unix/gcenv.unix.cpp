@@ -168,6 +168,17 @@ enum membarrier_cmd
 
 bool CanFlushUsingMembarrier()
 {
+
+#ifdef TARGET_ANDROID
+    // Avoid calling membarrier on older Android versions where membarrier
+    // may be barred by seccomp causing the process to be killed.
+    int apiLevel = android_get_device_api_level();
+    if (apiLevel < __ANDROID_API_Q__)
+    {
+        return false;
+    }
+#endif
+
     // Starting with Linux kernel 4.14, process memory barriers can be generated
     // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
 

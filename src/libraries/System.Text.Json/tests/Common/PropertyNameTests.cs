@@ -494,5 +494,34 @@ namespace System.Text.Json.Serialization.Tests
             [JsonPropertyName("\uA000_2")] // Valid C# property name: \uA000_2
             public int YiIt_2 { get; set; }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ClassWithIgnoredCaseInsensitiveConflict_RespectsIgnoredMember(bool propertyNameCaseInsensitive)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/93903
+            // specifically for propertyNameCaseInsensitive := true
+
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.PropertyNameCaseInsensitive = propertyNameCaseInsensitive;
+
+            var value = new ClassWithIgnoredCaseInsensitiveConflict { name = "lowercase", Name = "uppercase" };
+            string json = await Serializer.SerializeWrapper(value, options);
+
+            Assert.Equal("""{"name":"lowercase"}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithIgnoredCaseInsensitiveConflict>(json, options);
+            Assert.Equal("lowercase", value.name);
+            Assert.Null(value.Name);
+        }
+
+        public class ClassWithIgnoredCaseInsensitiveConflict
+        {
+            public string name { get; set; }
+
+            [JsonIgnore]
+            public string Name { get; set; }
+        }
     }
 }

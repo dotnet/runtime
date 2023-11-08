@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using Xunit;
 //test case for delegate Remove(System.Delegate,System.Delegate) method.
 namespace DelegateTest
 {
@@ -13,7 +14,8 @@ namespace DelegateTest
 
         booldelegate starkWork;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             DelegateRemove delegateRemoveImpl = new DelegateRemove();
 

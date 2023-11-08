@@ -76,6 +76,11 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
         }
 
+        protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
+        {
+            return factory.SerializedConstructedRuntimeTypeObject(_type);
+        }
+
         protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
         {
             return factory.ConstructedTypeSymbol(((ArrayType)_type).ElementType);

@@ -200,7 +200,7 @@ namespace System
                         {
                             // it's an open one, need to fetch the first arg of the instantiation
                             MethodInfo invoke = this.GetType().GetMethod("Invoke")!;
-                            declaringType = (RuntimeType)invoke.GetParameters()[0].ParameterType;
+                            declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
                         }
                     }
                 }

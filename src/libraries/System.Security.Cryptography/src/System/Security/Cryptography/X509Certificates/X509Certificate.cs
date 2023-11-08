@@ -348,7 +348,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[] GetCertHash(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
         {
-            return HashOneShotHelpers.HashData(hashAlgorithm, certPal.RawData);
+            return CryptographicOperations.HashData(hashAlgorithm, certPal.RawData);
         }
 
         public virtual bool TryGetCertHash(
@@ -358,7 +358,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return HashOneShotHelpers.TryHashData(hashAlgorithm, Pal.RawData, destination, out bytesWritten);
+            return CryptographicOperations.TryHashData(hashAlgorithm, Pal.RawData, destination, out bytesWritten);
         }
 
         public virtual string GetCertHashString()

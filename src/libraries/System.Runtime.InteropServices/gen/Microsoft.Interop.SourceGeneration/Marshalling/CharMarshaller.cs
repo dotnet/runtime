@@ -15,12 +15,6 @@ namespace Microsoft.Interop
     {
         private static readonly ManagedTypeInfo s_nativeType = new SpecialTypeInfo("ushort", "ushort", SpecialType.System_UInt16);
 
-        public Utf16CharMarshaller()
-        {
-        }
-
-        public bool IsSupported(TargetFramework target, Version version) => true;
-
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))

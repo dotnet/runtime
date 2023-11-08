@@ -14,7 +14,6 @@ namespace BundleTests.Helpers
 {
     public static class BundleHelper
     {
-        public const string DotnetBundleExtractBaseEnvVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
         public const string CoreServicingEnvVariable = "CORE_SERVICING";
 
         public static string GetHostPath(TestProjectFixture fixture)

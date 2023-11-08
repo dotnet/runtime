@@ -103,9 +103,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             var builder = NetCoreAppBuilder.ForNETCoreApp(Name, RepoDirectoriesProvider.Default.TargetRID);
 
-            // Update the .runtimeconfig.json
+            // Update the .runtimeconfig.json - add included framework and remove any existing NETCoreApp framework
             builder.WithRuntimeConfig(c =>
-                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion));
+                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion)
+                    .RemoveFramework(Constants.MicrosoftNETCoreApp));
 
             // Add main project assembly
             builder.WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()));

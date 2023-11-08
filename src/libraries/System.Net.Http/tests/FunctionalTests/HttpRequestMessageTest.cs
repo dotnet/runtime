@@ -274,7 +274,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, uri);
-                    request.Content = new StringContent("Hello World", null, ((MediaTypeHeaderValue)null)!);
+                    request.Content = new StringContent("", null, ((MediaTypeHeaderValue)null)!);
 
                     Task<HttpResponseMessage> requestTask = client.SendAsync(request);
                     await server.AcceptConnectionAsync(async connection =>

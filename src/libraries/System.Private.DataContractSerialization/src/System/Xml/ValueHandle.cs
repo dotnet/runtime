@@ -865,8 +865,7 @@ namespace System.Xml
             if (ch > char.MaxValue)
             {
                 SurrogateChar surrogate = new SurrogateChar(ch);
-                Span<char> chars = stackalloc char[2] { surrogate.HighChar, surrogate.LowChar };
-                return new string(chars);
+                return new string([surrogate.HighChar, surrogate.LowChar]);
             }
 
             return ((char)ch).ToString();

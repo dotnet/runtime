@@ -239,7 +239,7 @@ namespace System.Xml
             if (XmlCharType.IsHighSurrogate(invChar) && nextChar != 0)
             {
                 int combinedChar = XmlCharType.CombineSurrogateChar(nextChar, invChar);
-                aStringList[0] = new string(stackalloc char[] { invChar, nextChar });
+                aStringList[0] = new string([invChar, nextChar]);
                 aStringList[1] = $"0x{combinedChar:X2}";
             }
             else

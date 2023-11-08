@@ -32,8 +32,8 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, CHAR* guid)
         PRECONDITION(guid != nullptr);
     } CONTRACTL_END;
 
-    SString value;
-    const SString& path = pPEAssembly->GetPath();
+    // Nothing to log if the assembly path isn't present.
+    SString path{ pPEAssembly->GetPath() };
     if (path.IsEmpty())
     {
         return;
@@ -49,12 +49,11 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, CHAR* guid)
         }
     }
 
+    SString value;
     value.Printf("%s%c%s%c%p", path.GetUTF8(), sDelimiter, guid, sDelimiter, baseAddr);
 
-    SString command;
-    command.Printf("%s", "ImageLoad");
+    SString command{ SString::Literal, "ImageLoad" };
     WriteLine(command, value);
-
 }
 
 // Writes a command line, with "type" being the type of command, with "value" as the command's corresponding instructions/values. This is to be used to log specific information, e.g. LogImage

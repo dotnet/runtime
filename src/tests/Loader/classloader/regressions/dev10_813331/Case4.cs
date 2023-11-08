@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 //generic classes A and B
 
 public class HelloWorld
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try { B<string> b = new B<string>(GetName()); }
         catch (System.Exception)

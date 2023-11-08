@@ -137,9 +137,6 @@ gint main(gint argc, gchar **argv)
 			case 'h':
 				print_help(argv[0]);
 				return 1;
-			case 't':
-				report_time = TRUE;
-				break;
 			case 'i':
 				iterations = atoi(optarg);
 				break;
@@ -220,7 +217,7 @@ gint main(gint argc, gchar **argv)
 			}
 
 			passed = run_group(&(test_groups[j]),
-				iterations, quiet, report_time, tests);
+				iterations, quiet, tests);
 
 			if (tests != NULL) {
 				g_free(tests);

@@ -40,7 +40,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(uri);
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(TestAsync, uri);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);

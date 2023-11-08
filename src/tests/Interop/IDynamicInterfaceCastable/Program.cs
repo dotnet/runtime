@@ -73,7 +73,7 @@ namespace IDynamicInterfaceCastableTests
 
         public int GetNumberHelper()
         {
-            Assert.True(false, "Calling a public interface method with a default implementation should go through IDynamicInterfaceCastable for interface dispatch.");
+            Assert.Fail("Calling a public interface method with a default implementation should go through IDynamicInterfaceCastable for interface dispatch.");
             return 0;
         }
 
@@ -558,7 +558,8 @@ namespace IDynamicInterfaceCastableTests
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

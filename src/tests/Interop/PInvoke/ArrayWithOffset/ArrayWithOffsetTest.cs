@@ -6,9 +6,10 @@ using System.Text;
 using System.Runtime.InteropServices;
 using Xunit;
 
-unsafe class ArrayWithOffsetTest
+public unsafe class ArrayWithOffsetTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

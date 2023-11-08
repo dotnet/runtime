@@ -2,6 +2,8 @@
 
 #ifdef ENABLE_PERFTRACING
 
+#include "ds-types.h"
+
 // Option to include all internal source files into ds-sources.c.
 #ifdef DS_INCLUDE_SOURCE_FILES
 #ifndef DS_FORCE_INCLUDE_SOURCE_FILES

@@ -289,7 +289,7 @@ namespace Internal.Reflection.Execution
 
             foreach (var ctor in type.GetConstructors())
             {
-                if (!ctor.IsStatic && ctor.IsPublic && ctor.GetParametersNoCopy().Length == 0)
+                if (!ctor.IsStatic && ctor.IsPublic && ctor.GetParametersAsSpan().Length == 0)
                     return true;
             }
             return false;

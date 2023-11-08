@@ -3,10 +3,12 @@
 
 using System;
 using System.IO;
+using Xunit;
 
-internal class Program
+public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         byte[] file1 = File.ReadAllBytes("crossgen2smoke1.ildll");
         byte[] file2 = File.ReadAllBytes("crossgen2smoke2.ildll");

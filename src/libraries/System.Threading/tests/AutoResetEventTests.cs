@@ -205,7 +205,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void PingPong()
         {
             using (AutoResetEvent are1 = new AutoResetEvent(true), are2 = new AutoResetEvent(false))

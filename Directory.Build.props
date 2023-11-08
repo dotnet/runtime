@@ -58,12 +58,11 @@
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
+        - dotnet/installer repo > src/redist/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
     <iOSVersionMin>11.0</iOSVersionMin>
     <tvOSVersionMin>11.0</tvOSVersionMin>
-    <watchOSVersionMin>2.0</watchOSVersionMin>
-    <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
     <macOSVersionMin>10.15</macOSVersionMin>
     <macOSVersionMin Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
   </PropertyGroup>
@@ -89,8 +88,9 @@
 
     <!-- The previous supported .NET version. -->
     <NetCoreAppPreviousVersion>8.0</NetCoreAppPreviousVersion>
-    <NetCoreAppPrevious>net$(NetCoreAppPreviousVersion)</NetCoreAppPrevious>
-    <NetCoreAppPrevious Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
+    <!-- For the .NET 9 release, set NetCoreAppPrevious to empty as NuGet has issues
+         with duplicate TFMs (when using both NetCoreAppPrevious and NetCoreAppMinimum). -->
+    <NetCoreAppPrevious />
 
     <!-- The minimum supported .NET version. -->
     <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
@@ -471,4 +471,11 @@
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
     <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
+    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Microsoft.NETCore.Platforms', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+  </PropertyGroup>
+
 </Project>

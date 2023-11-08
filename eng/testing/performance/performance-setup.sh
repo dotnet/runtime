@@ -41,6 +41,7 @@ iosnativeaot=false
 runtimetype=""
 iosllvmbuild=""
 iosstripsymbols=""
+hybridglobalization=""
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
@@ -188,6 +189,10 @@ while (($# > 0)); do
       iosstripsymbols=$2
       shift 2
       ;;
+    --hybridglobalization)
+      hybridglobalization=$2
+      shift 2
+      ;;
     --mauiversion)
       maui_version=$2
       shift 2
@@ -234,10 +239,12 @@ while (($# > 0)); do
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
+      echo "  --llvm                         Set LLVM for Mono runs"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosnativeaot                 Set for ios Native AOT runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --iosstripsymbols              Set STRIP_DEBUG_SYMBOLS for iOS Mono/Maui runs"
+      echo "  --hybridglobalization          Set hybrid globalization for iOS Mono/Maui/Wasm runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
@@ -364,6 +371,10 @@ if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
 
+if [[ "$(echo "$hybridglobalization" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then # convert to lowercase to test
+    configurations="$configurations HybridGlobalization=True" # Force True for consistency
+fi
+
 
 
 cleaned_branch_name="main"
@@ -410,7 +421,7 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     using_wasm=true
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
-    wasm_args="--experimental-wasm-eh --expose_wasm"
+    wasm_args="--expose_wasm"
     if [ "$javascript_engine" == "v8" ]; then
         # for es6 module support
         wasm_args="$wasm_args --module"
@@ -509,9 +520,11 @@ Write-PipelineSetVariable -name "Kind" -value "$kind" -is_multi_job_variable fal
 Write-PipelineSetVariable -name "_BuildConfig" -value "$_BuildConfig" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
+Write-PipelineSetVariable -name "MonoAOT" -value "$monoaot" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'hybridGlobalization' -Value "$hybridglobalization" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'RuntimeType' -Value "$runtimetype" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
 Write-PipelineSetVariable -name "V8Version" -value "$v8_version" -is_multi_job_variable false

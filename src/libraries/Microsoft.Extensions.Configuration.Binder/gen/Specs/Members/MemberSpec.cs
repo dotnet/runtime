@@ -3,22 +3,24 @@
 
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal abstract record MemberSpec
+    public abstract record MemberSpec
     {
-        public MemberSpec(ISymbol member)
+        public MemberSpec(ISymbol member, TypeRef typeRef)
         {
             Debug.Assert(member is IPropertySymbol or IParameterSymbol);
             Name = member.Name;
             DefaultValueExpr = "default";
+            TypeRef = typeRef;
         }
 
         public string Name { get; }
         public string DefaultValueExpr { get; protected set; }
 
-        public required TypeSpec Type { get; init; }
+        public TypeRef TypeRef { get; }
         public required string ConfigurationKeyName { get; init; }
 
         public abstract bool CanGet { get; }

@@ -62,12 +62,12 @@ namespace System.Runtime
         [RuntimeExport("RhCollect")]
         internal static void RhCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false)
         {
-            RhpCollect(generation, mode, lowMemoryP);
+            RhpCollect(generation, mode, lowMemoryP ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
         }
 
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        private static extern void RhpCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP);
+        private static extern void RhpCollect(int generation, InternalGCCollectionMode mode, Interop.BOOL lowMemoryP);
 
         [RuntimeExport("RhGetGcTotalMemory")]
         internal static long RhGetGcTotalMemory()

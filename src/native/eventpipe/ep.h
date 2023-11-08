@@ -106,6 +106,42 @@ ep_volatile_store_allow_write (uint64_t allow_write)
 }
 
 /*
+* EventPipeSessionOptions.
+*/
+
+typedef struct EventPipeSessionOptions {
+	const EventPipeProviderConfiguration *providers;
+	IpcStream *stream;
+	const ep_char8_t *output_path;
+	void *callback_additional_data;
+	EventPipeSessionSynchronousCallback sync_callback;
+	uint32_t circular_buffer_size_in_mb;
+	uint32_t providers_len;
+	EventPipeSessionType session_type;
+	EventPipeSerializationFormat format;
+	bool rundown_requested;
+	bool stackwalk_requested;
+} EventPipeSessionOptions;
+
+void
+ep_session_options_init (
+	EventPipeSessionOptions *options,
+	const ep_char8_t *output_path,
+	uint32_t circular_buffer_size_in_mb,
+	const EventPipeProviderConfiguration *providers,
+	uint32_t providers_len,
+	EventPipeSessionType session_type,
+	EventPipeSerializationFormat format,
+	bool rundown_requested,
+	bool stackwalk_requested,
+	IpcStream *stream,
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
+
+void
+ep_session_options_fini (EventPipeSessionOptions* options);
+
+/*
  * EventPipe.
  */
 
@@ -144,6 +180,11 @@ ep_enable_2 (
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data);
+
+EventPipeSessionID
+ep_enable_3 (
+	const EventPipeSessionOptions *options
+);
 
 void
 ep_disable (EventPipeSessionID id);

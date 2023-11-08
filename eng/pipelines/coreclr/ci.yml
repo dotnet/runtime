@@ -184,4 +184,5 @@ extends:
           jobParameters:
             buildArgs: -s clr.paltests+clr.paltestlist
             nameSuffix: PALTests
-            extraStepsTemplate: /eng/pipelines/coreclr/templates/run-paltests-step.yml
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/run-paltests-step.yml

@@ -1689,6 +1689,22 @@ mono_throw_invalid_program (const char *msg)
 }
 
 void
+mono_throw_type_load (MonoClass* klass)
+{
+	ERROR_DECL (error);
+
+	if (G_UNLIKELY(!klass)) {
+		mono_error_set_generic_error (error, "System", "TypeLoadException", "");
+	} else {
+		char* klass_name = mono_type_get_full_name (klass);
+		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
+		g_free (klass_name);
+	}
+	
+	mono_error_set_pending_exception (error);
+}
+
+void
 mono_dummy_jit_icall (void)
 {
 }

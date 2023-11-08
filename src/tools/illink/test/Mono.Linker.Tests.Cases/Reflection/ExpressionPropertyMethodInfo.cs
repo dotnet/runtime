@@ -224,8 +224,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		// https://github.com/dotnet/linker/issues/2670
-		[ExpectedWarning ("IL2103", nameof (Expression) + "." + nameof (Expression.Property), ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2103", nameof (Expression) + "." + nameof (Expression.Property))]
 		static void TestUnknownMethod (MethodInfo mi)
 		{
 			Expression.Property (null, mi);

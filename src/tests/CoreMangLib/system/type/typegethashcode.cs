@@ -6,13 +6,15 @@ using System.Text;
 using System.Reflection;
 using System.Globalization;
 using System.Collections;
+using Xunit;
 
 /// <summary>
 /// Type.GetHashCode()
 /// </summary>
 public class TypeGetHashCode
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TypeGetHashCode tghc = new TypeGetHashCode();
         TestLibrary.TestFramework.BeginTestCase("TypeGetHashCode");

@@ -26,8 +26,8 @@ namespace System.Configuration
 
         // Offset from where the reader reports the LinePosition of an Xml Node to
         // the start of that representation in text.
-        private static ReadOnlySpan<int> PositionOffset => new int[]
-        {
+        private static ReadOnlySpan<int> PositionOffset =>
+        [
             0,  // None,
             1,  // Element,                 <elem
             -1, // Attribute,               N/A
@@ -46,7 +46,7 @@ namespace System.Configuration
             2,  // EndElement,              />
             -1, // EndEntity,               N/A
             2,  // XmlDeclaration           <?xml
-        };
+        ];
 
         private StringWriter _cachedStringWriter;
         private int _lastLineNumber;

@@ -52,6 +52,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
             source._copies.Add(this);
         }
 
+        public static TestArtifact Create(string name)
+        {
+            var (location, parentPath) = GetNewTestArtifactPath(name);
+            return new TestArtifact(location)
+            {
+                DirectoryToDelete = parentPath
+            };
+        }
+
         protected void RegisterCopy(TestArtifact artifact)
         {
             _copies.Add(artifact);

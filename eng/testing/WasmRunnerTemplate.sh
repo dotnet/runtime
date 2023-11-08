@@ -34,14 +34,6 @@ if [[ -z "$XHARNESS_COMMAND" ]]; then
 fi
 
 if [[ "$XHARNESS_COMMAND" == "test" ]]; then
-	if [[ -z "$JS_ENGINE" ]]; then
-		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
-			JS_ENGINE="--engine=NodeJS"
-		else
-			JS_ENGINE="--engine=V8"
-		fi
-	fi
-
 	if [[ -z "$MAIN_JS" ]]; then
 		MAIN_JS="--js-file=test-main.js"
 	fi
@@ -53,6 +45,17 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 		fi
 		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
 			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--experimental-wasm-eh"
+		fi
+	fi
+
+	if [[ -z "$JS_ENGINE" ]]; then
+		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
+			JS_ENGINE="--engine=NodeJS"
+		else
+			JS_ENGINE="--engine=V8"
+			if [[ -n "$V8_PATH_FOR_TESTS" ]]; then
+				JS_ENGINE_ARGS="$JS_ENGINE_ARGS --js-engine-path=$V8_PATH_FOR_TESTS"
+			fi
 		fi
 	fi
 fi

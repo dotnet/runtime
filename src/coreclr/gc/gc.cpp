@@ -10097,7 +10097,6 @@ void gc_heap::update_ro_segment (heap_segment* seg, uint8_t* allocated, uint8_t*
 {
     enter_spin_lock (&gc_heap::gc_lock);
 
-    assert (use_frozen_segments_p);
     assert (heap_segment_read_only_p (seg));
     assert (allocated <= committed);
     assert (committed <= heap_segment_reserved (seg));
@@ -19073,9 +19072,9 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
 #ifdef MULTIPLE_HEAPS
 void gc_heap::balance_heaps (alloc_context* acontext)
 {
-    if (acontext->alloc_count < 4)
+    if (acontext->get_alloc_count() < 4)
     {
-        if (acontext->alloc_count == 0)
+        if (acontext->get_alloc_count() == 0)
         {
             int home_hp_num = heap_select::select_heap (acontext);
             acontext->set_home_heap (GCHeap::GetHeap (home_hp_num));
@@ -19124,12 +19123,12 @@ void gc_heap::balance_heaps (alloc_context* acontext)
 #endif //HEAP_BALANCE_INSTRUMENTATION
                 set_home_heap = TRUE;
             }
-            else if ((acontext->alloc_count & 15) == 0)
+            else if ((acontext->get_alloc_count() & 15) == 0)
                 set_home_heap = TRUE;
         }
         else
         {
-            if ((acontext->alloc_count & 3) == 0)
+            if ((acontext->get_alloc_count() & 3) == 0)
                 set_home_heap = TRUE;
         }
 
@@ -19159,7 +19158,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
                 dprintf (HEAP_BALANCE_TEMP_LOG, ("TEMP[p%3d] ph h%3d, hh: %3d, ah: %3d (%dmb-%dmb), ac: %5d(%s)",
                     proc_no, proc_hp_num, home_hp->heap_number,
                     org_hp_num, (total_size / 1024 / 1024), (org_size / 1024 / 1024),
-                    acontext->alloc_count,
+                    acontext->get_alloc_count(),
                     ((proc_hp_num == home_hp->heap_number) ? "AC" : "H")));
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
@@ -19173,7 +19172,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
 
                 if (((size_t)org_size + 2 * delta) >= (size_t)total_size)
                 {
-                    acontext->alloc_count++;
+                    acontext->inc_alloc_count();
                     return;
                 }
 
@@ -19257,10 +19256,10 @@ void gc_heap::balance_heaps (alloc_context* acontext)
                         // alloc_count often increases by multiples of 16 (due to logic at top of routine),
                         // and we want to advance the starting point by 4 between successive calls,
                         // therefore the shift right by 2 bits
-                        int heap_num = start + ((acontext->alloc_count >> 2) + new_home_hp_num) % count;
+                        int heap_num = start + ((acontext->get_alloc_count() >> 2) + new_home_hp_num) % count;
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
-                        dprintf(HEAP_BALANCE_TEMP_LOG, ("TEMP starting at h%d (home_heap_num = %d, alloc_count = %d)", heap_num, new_home_hp_num, acontext->alloc_count));
+                        dprintf(HEAP_BALANCE_TEMP_LOG, ("TEMP starting at h%d (home_heap_num = %d, alloc_count = %d)", heap_num, new_home_hp_num, acontext->get_alloc_count()));
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
                         for (int tries = max_tries; --tries >= 0; heap_num++)
@@ -19376,7 +19375,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
             }
         }
     }
-    acontext->alloc_count++;
+    acontext->inc_alloc_count();
 }
 
 ptrdiff_t gc_heap::get_balance_heaps_uoh_effective_budget (int generation_num)
@@ -31644,6 +31643,12 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
     dprintf (REGIONS_LOG, ("after going through the rest of regions - regions in g2: %d, g1: %d, g0: %d, to be empty %d now",
         planned_regions_per_gen[2], planned_regions_per_gen[1], planned_regions_per_gen[0], to_be_empty_regions));
+
+    // We may not have gone through the while loop above so we could get an alloc region that's SIP (which normally would be
+    // filtered out by get_next_alloc_seg in allocate_in_condemned_generations. But we are not allocating in condemned anymore
+    // so make sure we skip if it's SIP.
+    current_region = heap_segment_non_sip (current_region);
+    dprintf (REGIONS_LOG, ("now current region is %p", (current_region ? heap_segment_mem (current_region) : 0)));
 
     if (current_region)
     {
@@ -49361,7 +49366,7 @@ GCHeap::FixAllocContext (gc_alloc_context* context, void* arg, void *heap)
 #ifdef MULTIPLE_HEAPS
 
     if (arg != 0)
-        acontext->alloc_count = 0;
+        acontext->init_alloc_count();
 
     uint8_t * alloc_ptr = acontext->alloc_ptr;
 
@@ -50565,6 +50570,7 @@ void GCHeap::AssignHeap (alloc_context* acontext)
     // Assign heap based on processor
     acontext->set_alloc_heap(GetHeap(heap_select::select_heap(acontext)));
     acontext->set_home_heap(acontext->get_alloc_heap());
+    acontext->init_handle_info();
 }
 
 GCHeap* GCHeap::GetHeap (int n)

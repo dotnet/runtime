@@ -321,6 +321,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             assert(comp->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicName));
             break;
 
+        case GT_CAST:
+            if (node->AsCast()->CastOp()->OperIsSimple())
+            {
+                comp->fgSimpleLowerCastOfSmpOp(BlockRange(), node->AsCast());
+            }
+            break;
+
         default:
             // Check that we don't have nodes not allowed in HIR here.
             assert((node->DebugOperKind() & DBK_NOTHIR) == 0);
@@ -342,24 +349,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     }
     else
     {
-        if (((node->gtFlags & GTF_ASG) != 0) && !node->OperRequiresAsgFlag())
-        {
-            // Clear the GTF_ASG flag for all nodes that do not require it
-            node->gtFlags &= ~GTF_ASG;
-        }
-
-        if (!node->IsCall())
-        {
-            // Clear the GTF_CALL flag for all nodes but calls
-            node->gtFlags &= ~GTF_CALL;
-        }
-
         if (node->IsValue() && use.IsDummyUse())
         {
             node->SetUnusedValue();
         }
 
-        if (node->TypeGet() == TYP_LONG)
+        if (node->TypeIs(TYP_LONG))
         {
             comp->compLongUsed = true;
         }

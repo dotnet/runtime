@@ -98,8 +98,6 @@ namespace Microsoft.Interop
                 return ValueBoundaryBehavior.NativeIdentifier;
             }
 
-            public bool IsSupported(TargetFramework target, Version version) => target == TargetFramework.Net && version.Major >= 8;
-
             public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
                 => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
 

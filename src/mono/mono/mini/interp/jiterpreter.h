@@ -5,12 +5,8 @@
 
 #ifdef DISABLE_THREADS
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 1
-// enables specialized mono_llvm_cpp_catch_exception replacement (see jiterpreter-jit-call.ts)
-// works even if the jiterpreter is otherwise disabled.
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 1
 #else
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 0
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 0
 #endif // DISABLE_THREADS
 
 // mono_interp_tier_prepare_jiterpreter will return these special values if it doesn't
@@ -49,9 +45,8 @@ __attribute__ ((__packed__, __aligned__(2)))
 // Keep in sync with JiterpreterTable in jiterpreter-enums.ts
 enum {
 	JITERPRETER_TABLE_TRACE = 0,
-	JITERPRETER_TABLE_DO_JIT_CALL = 1,
-	JITERPRETER_TABLE_JIT_CALL = 2,
-	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_0 = 3,
+	JITERPRETER_TABLE_JIT_CALL = 1,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_0 = 2,
 	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_1,
 	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_2,
 	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_3,
@@ -165,11 +160,6 @@ mono_interp_invoke_wasm_jit_call_trampoline (
 	void *ftndesc, gboolean *thrown
 );
 
-extern void
-mono_jiterp_do_jit_call_indirect (
-	gpointer cb, gpointer arg, gboolean *out_thrown
-);
-
 #ifdef __MONO_MINI_INTERPRETER_INTERNALS_H__
 
 extern void
@@ -246,8 +236,6 @@ void
 mono_jiterp_tlqueue_purge_all (gpointer item);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
-
-extern WasmDoJitCall jiterpreter_do_jit_call;
 
 #endif // HOST_BROWSER
 

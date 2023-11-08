@@ -1126,8 +1126,7 @@ namespace System.Xml
 
             if (_attributeValue != null)
             {
-                Span<char> chars = stackalloc char[2] { highChar, lowChar };
-                WriteAttributeText(new string(chars));
+                WriteAttributeText(new string([highChar, lowChar]));
             }
 
             if (!_isXmlnsAttribute)

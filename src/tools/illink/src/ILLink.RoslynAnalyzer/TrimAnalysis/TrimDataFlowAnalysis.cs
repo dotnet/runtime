@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
@@ -26,6 +27,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			: base (context, operationBlock)
 		{
 			TrimAnalysisPatterns = new TrimAnalysisPatternStore (Lattice.Lattice.ValueLattice);
+		}
+
+		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext dataFlowAnalyzerContext)
+		{
+			return TrimAnalysisPatterns.CollectDiagnostics (dataFlowAnalyzerContext);
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (
@@ -100,7 +106,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			switch (tracingMechanism) {
 			case TracingType.Console:
+// Analyzers should not be writing to the console,
+// but this is only used for debugging purposes and is off by default.
+#pragma warning disable RS1035
 				Console.WriteLine (tracingInfo);
+#pragma warning restore RS1035
 				break;
 			case TracingType.Debug:
 				Debug.WriteLine (tracingInfo);
@@ -114,7 +124,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			switch (tracingMechanism) {
 			case TracingType.Console:
+// Analyzers should not be writing to the console,
+// but this is only used for debugging purposes and is off by default.
+#pragma warning disable RS1035
 				Console.Write (tracingInfo);
+#pragma warning restore RS1035
 				break;
 			case TracingType.Debug:
 				Debug.Write (tracingInfo);

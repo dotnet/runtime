@@ -7,6 +7,7 @@
 // POSITIVE tests
 
 using System;
+using Xunit;
 
 public class C : IMinusT<int> { }
 public class D : IMinusT<string[]> { }
@@ -172,7 +173,8 @@ public class TestClass
 		}
 	}
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 
 		if (RunTests())
