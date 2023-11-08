@@ -2883,7 +2883,6 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
             GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
             if ((strcmp(name, *pIsValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
             {
-                *pIsValueTask = name[0] == 'V';
                 if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
                     return AsyncTaskMethod::TaskReturningMethod;
             }
@@ -2895,9 +2894,8 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
         *pIsValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
         // This might be System.Threading.Tasks.Task or ValueTask
         GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-        if ((strcmp(name, *pIsValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+        if ((strcmp(name, *pIsValueTask ? "ValueTask" : "Task") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
         {
-            *pIsValueTask = name[0] == 'V';
             if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
                 return AsyncTaskMethod::TaskNonGenericReturningMethod;
         }
