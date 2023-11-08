@@ -1,15 +1,15 @@
 <Project>
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>8.0.0</ProductVersion>
+    <ProductVersion>8.0.1</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>8</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <PatchVersion>1</PatchVersion>
     <SdkBandVersion>8.0.100</SdkBandVersion>
-    <PackageVersionNet7>7.0.12</PackageVersionNet7>
+    <PackageVersionNet7>7.0.14</PackageVersionNet7>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet7)').Build),11))</PackageVersionNet6>
-    <PreReleaseVersionLabel>rtm</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>
     </PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
@@ -186,7 +186,7 @@
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>8.0.0-prerelease.23407.2</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>8.0.0-prerelease.23407.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>8.0.0-prerelease.23407.2</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>8.0.0-alpha.0.23518.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>8.0.0-alpha.0.23523.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.2</XUnitVersion>
     <XUnitAnalyzersVersion>1.0.0</XUnitAnalyzersVersion>
     <XUnitRunnerVisualStudioVersion>2.4.5</XUnitRunnerVisualStudioVersion>
@@ -217,7 +217,7 @@
     <!-- ILCompiler -->
     <MicrosoftDotNetILCompilerVersion>8.0.0-rc.1.23406.6</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-rtm.23511.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-rtm.23523.2</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicVersion>2.2.3</MicrosoftNativeQuicMsQuicVersion>
     <SystemNetMsQuicTransportVersion>8.0.0-alpha.1.23468.1</SystemNetMsQuicTransportVersion>
