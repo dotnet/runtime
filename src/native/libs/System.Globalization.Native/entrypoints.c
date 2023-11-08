@@ -16,12 +16,12 @@ typedef uint16_t UChar;
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
-#if defined(__APPLE__)
+#if __APPLE__
 #include <TargetConditionals.h>
 #endif
 static const Entry s_globalizationNative[] =
 {
-#if !defined(__APPLE__) || (defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
+#if !__APPLE__ || (__APPLE__ && !TARGET_OS_IPHONE)
     DllImportEntry(GlobalizationNative_ChangeCase)
     DllImportEntry(GlobalizationNative_ChangeCaseInvariant)
     DllImportEntry(GlobalizationNative_ChangeCaseTurkish)

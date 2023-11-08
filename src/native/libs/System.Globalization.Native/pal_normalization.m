@@ -11,7 +11,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(__APPLE__) && !(defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
+#if TARGET_OS_IPHONE
 static NSString* GetNormalizedStringForForm(NormalizationForm normalizationForm, NSString* sourceString)
 {
     switch (normalizationForm)

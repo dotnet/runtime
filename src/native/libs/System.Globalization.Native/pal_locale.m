@@ -36,7 +36,7 @@ char* DetectDefaultAppleLocaleName(void)
     return strdup([localeName UTF8String]);
 }
 
-#if defined(__APPLE__) && !(defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
+#if TARGET_OS_IPHONE
 
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {

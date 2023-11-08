@@ -17,7 +17,7 @@ typedef enum
     FormKC = 0x5,
     FormKD = 0x6
 } NormalizationForm;
-#if !defined(__APPLE__) || (defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
+#if !__APPLE__ || (__APPLE__ && !TARGET_OS_IPHONE)
 PALEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
                                                    const UChar* lpStr,
                                                    int32_t cwStrLength);

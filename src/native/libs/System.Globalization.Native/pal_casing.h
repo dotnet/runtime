@@ -6,7 +6,7 @@
 
 PALEXPORT void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarget);
 
-#if !defined(__APPLE__) || (defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
+#if !__APPLE__ || (__APPLE__ && !TARGET_OS_IPHONE)
 PALEXPORT void GlobalizationNative_ChangeCase(const UChar* lpSrc,
                                               int32_t cwSrcLength,
                                               UChar* lpDst,

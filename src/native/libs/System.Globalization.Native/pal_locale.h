@@ -8,7 +8,7 @@
 #include <TargetConditionals.h>
 #endif
 
-#if !defined(__APPLE__) || (defined(__APPLE__) && !defined(TARGET_OS_IPHONE))
+#if !__APPLE__ || (__APPLE__ && !TARGET_OS_IPHONE)
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
