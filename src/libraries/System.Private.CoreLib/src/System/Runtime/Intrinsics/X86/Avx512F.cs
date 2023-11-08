@@ -1337,7 +1337,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m512d _mm512_add_pd (__m512d a, __m512d b)
         ///   VADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
-        public static Vector512<double> Add(Vector512<double> left, Vector512<double> right) => Add(left, right, FloatRoundingMode.ToEven);
+        public static Vector512<double> Add(Vector512<double> left, Vector512<double> right) => Add(left, right);
         /// <summary>
         /// __m512d _mm512_add_pd (__m512d a, __m512d b)
         ///   VADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
