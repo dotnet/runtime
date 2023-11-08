@@ -1472,19 +1472,19 @@ namespace System
         // >= 0: returns 1
         // < 0: returns -1
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int SignZeroToOne(int value)
+        internal static int SignOrOneIfZero(int value)
         {
             return (value >> (32 - 2)) | 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int SignZeroToOne(nint value)
+        internal static int SignOrOneIfZero(nint value)
         {
             return (int)(value >> (8 * nint.Size - 2)) | 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int SignZeroToOne(long value)
+        internal static int SignOrOneIfZero(long value)
         {
             return (int)(value >> (64 - 2)) | 1;
         }

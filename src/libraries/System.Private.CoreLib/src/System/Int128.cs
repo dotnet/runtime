@@ -1315,7 +1315,7 @@ namespace System
             {
                 Math.ThrowNegateTwosCompOverflow();
             }
-            return value * Math.SignZeroToOne((long)value._upper ^ (long)sign._upper);
+            return value * Math.SignOrOneIfZero((long)value._upper ^ (long)sign._upper);
 #endif
         }
 
