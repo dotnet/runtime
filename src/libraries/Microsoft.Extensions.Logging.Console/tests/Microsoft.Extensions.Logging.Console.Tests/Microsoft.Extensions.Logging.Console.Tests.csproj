@@ -5,7 +5,7 @@
     <TestRuntime>true</TestRuntime>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">64</_WasmPThreadPoolSize>
+    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">100</_WasmPThreadPoolSize>
   </PropertyGroup>
 
   <ItemGroup>
