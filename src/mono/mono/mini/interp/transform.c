@@ -377,6 +377,36 @@ interp_create_renamable_var (TransformData *td, int var)
 	return ext_index;
 }
 
+// This doesn't allocate a new var, rather additional information for fixed renamed vars
+int
+interp_create_renamed_fixed_var (TransformData *td, int var_index, int renamable_var_index)
+{
+	g_assert (td->vars [renamable_var_index].ext_index != -1);
+	g_assert (td->vars [var_index].ext_index == -1);
+	g_assert (td->vars [var_index].renamed_ssa_fixed);
+
+	if (td->renamed_fixed_vars_size == td->renamed_fixed_vars_capacity) {
+		td->renamed_fixed_vars_capacity *= 2;
+		if (td->renamed_fixed_vars_capacity == 0)
+			td->renamed_fixed_vars_capacity = 2;
+		td->renamed_fixed_vars = (InterpRenamedFixedVar*) g_realloc (td->renamed_fixed_vars, td->renamed_fixed_vars_capacity * sizeof (InterpRenamedFixedVar));
+	}
+
+	int ext_index = td->renamed_fixed_vars_size;
+	InterpRenamedFixedVar *ext = &td->renamed_fixed_vars [ext_index];
+
+	ext->var_index = var_index;
+	ext->renamable_var_ext_index = td->vars [renamable_var_index].ext_index;
+	ext->live_out_bblocks = NULL;
+	ext->live_limit_bblocks = NULL;
+
+	td->vars [var_index].ext_index = ext_index;
+
+	td->renamed_fixed_vars_size++;
+
+	return ext_index;
+}
+
 /*
  * These are additional locals that can be allocated as we transform the code.
  * They are allocated past the method locals so they are accessed in the same
