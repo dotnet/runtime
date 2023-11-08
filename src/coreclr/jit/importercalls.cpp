@@ -3245,16 +3245,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
-                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
-                if ((retType == TYP_REF) && impStackTop(1).val->IsIntegralConst(0))
+
+                if ((retType == TYP_REF) &&
+                    (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
                 }
-                else if ((retType != TYP_INT) && (retType != TYP_LONG))
+                else if (!varTypeIsIntegral(retType))
                 {
                     break;
                 }
@@ -3265,7 +3267,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* op3 = impPopStack().val; // comparand
                 GenTree* op2 = impPopStack().val; // value
                 GenTree* op1 = impPopStack().val; // location
-                retNode      = gtNewAtomicNode(GT_CMPXCHG, genActualType(callType), op1, op2, op3);
+                retNode      = gtNewAtomicNode(GT_CMPXCHG, callType, op1, op2, op3);
                 break;
             }
 
@@ -3276,17 +3278,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 2);
 
                 var_types retType = JITtype2varType(sig->retType);
-                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
-                if ((retType == TYP_REF) && impStackTop().val->IsIntegralConst(0))
+
+                if ((retType == TYP_REF) &&
+                    (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
                     assert(ni == NI_System_Threading_Interlocked_Exchange);
                 }
-                else if ((retType != TYP_INT) && (retType != TYP_LONG))
+                else if (!varTypeIsIntegral(retType))
                 {
                     break;
                 }
@@ -3300,7 +3304,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 //   field_addr (for example)
                 //
                 retNode = gtNewAtomicNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
-                                          genActualType(callType), op1, op2);
+                                          callType, op1, op2);
                 break;
             }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)

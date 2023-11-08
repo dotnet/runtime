@@ -278,7 +278,7 @@
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
-      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
+      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=0" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Condition="'$(_EmccExportedLibraryFunction)' != ''" Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />

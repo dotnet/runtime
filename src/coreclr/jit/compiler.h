@@ -3215,10 +3215,11 @@ public:
 //=========================================================================
 // BasicBlock functions
 #ifdef DEBUG
-    // This is a debug flag we will use to assert when creating block during codegen
-    // as this interferes with procedure splitting. If you know what you're doing, set
-    // it to true before creating the block. (DEBUG only)
+    // When false, assert when creating a new basic block.
     bool fgSafeBasicBlockCreation;
+
+    // When false, assert when creating a new flow edge
+    bool fgSafeFlowEdgeCreation;
 #endif
 
     /*
@@ -4797,8 +4798,9 @@ public:
 
     FoldResult fgFoldConditional(BasicBlock* block);
 
+    PhaseStatus fgMorphBlocks();
+    void fgMorphBlock(BasicBlock* block);
     void fgMorphStmts(BasicBlock* block);
-    void fgMorphBlocks();
 
     void fgMergeBlockReturn(BasicBlock* block);
 
@@ -5979,7 +5981,6 @@ private:
     bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
 
 #endif
-    bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
     bool fgCanTailCallViaJitHelper(GenTreeCall* call);
     void fgMorphTailCallViaJitHelper(GenTreeCall* call);
@@ -6063,6 +6064,7 @@ public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 
 private:
+    void fgAssertionGen(GenTree* tree);
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgMorphTreeDone(GenTree* tree);
@@ -7353,6 +7355,7 @@ public:
     // Data structures for assertion prop
     BitVecTraits* apTraits;
     ASSERT_TP     apFull;
+    ASSERT_TP     apLocal;
 
     enum optAssertionKind
     {
@@ -7637,6 +7640,7 @@ protected:
     AssertionDsc*  optAssertionTabPrivate;      // table that holds info about value assignments
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
     bool           optCanPropEqual;
     bool           optCanPropNonNull;
@@ -7742,6 +7746,7 @@ public:
     GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
     GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
+    GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
@@ -10352,7 +10357,7 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     bool compHasSplitParam;
 #endif
 

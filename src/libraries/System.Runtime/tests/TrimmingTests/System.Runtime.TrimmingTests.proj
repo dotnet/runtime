@@ -6,22 +6,26 @@
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
       <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" />
-    <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" />
+    <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" >
+      <EnabledProperties>DebuggerSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" >
+      <EnabledProperties>DebuggerSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
-      <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
-      <EnabledFeatureSwitches>System.Globalization.Hybrid</EnabledFeatureSwitches>
+      <DisabledProperties>InvariantGlobalization</DisabledProperties>
+      <EnabledProperties>HybridGlobalization</EnabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
-      <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
+      <DisabledProperties>InvariantGlobalization</DisabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
-      <DisabledFeatureSwitches>System.Globalization.Hybrid</DisabledFeatureSwitches>
-      <EnabledFeatureSwitches>System.Globalization.Invariant;System.Globalization.PredefinedCulturesOnly</EnabledFeatureSwitches>
+      <DisabledProperties>HybridGlobalization</DisabledProperties>
+      <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly</EnabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
@@ -39,16 +43,16 @@
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the trimmer
       as this test will ensure exceptions are using Resource keys -->
-      <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
+      <EnabledProperties>UseSystemResourceKeys</EnabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
-      <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
+      <DisabledProperties>BuiltInComInteropSupport</DisabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
-      <DisabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</DisabledFeatureSwitches>
+      <DisabledProperties>NullabilityInfoContextSupport</DisabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
-      <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
+      <EnabledProperties>NullabilityInfoContextSupport</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

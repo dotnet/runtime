@@ -324,10 +324,14 @@ namespace System.Xml.Xsl.Runtime
         #region Comparisons
         internal enum ComparisonOperator
         {
-            /*Equality  */
-            Eq, Ne,
-            /*Relational*/
-            Lt, Le, Gt, Ge,
+            /* Equality */
+            Eq,
+            Ne,
+            /* Relational */
+            Lt,
+            Le,
+            Gt,
+            Ge,
         }
 
         // Returns TypeCode of the given atomic value

@@ -9,6 +9,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILLink.Shared.DataFlow.ConditionKind</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.DefaultValueDictionary`2</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
@@ -21,7 +27,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:ILLink.Shared.DataFlow.ForwardDataFlowAnalysis`7</Target>
+    <Target>T:ILLink.Shared.DataFlow.ForwardDataFlowAnalysis`8</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILLink.Shared.DataFlow.IBlock`1</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
@@ -51,13 +63,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILLink.Shared.DataFlow.INegate`1</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.IRegion`1</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:ILLink.Shared.DataFlow.ITransfer`4</Target>
+    <Target>T:ILLink.Shared.DataFlow.ITransfer`5</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
@@ -904,12 +922,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.types_relevant_to_variant_casting</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:Mono.Linker.LinkContext.KeepMembersForDebugger</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>

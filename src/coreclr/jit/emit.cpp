@@ -130,6 +130,10 @@ const char* emitter::emitIfName(unsigned f)
     static const char* const ifNames[] = {
 #define IF_DEF(en, op1, op2) "IF_" #en,
 #include "emitfmts.h"
+#if defined(TARGET_ARM64)
+#define IF_DEF(en, op1, op2) "IF_" #en,
+#include "emitfmtsarm64sve.h"
+#endif
     };
 
     static char errBuff[32];
@@ -3767,6 +3771,10 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 const BYTE emitter::emitFmtToOps[] = {
 #define IF_DEF(en, op1, op2) ID_OP_##op2,
 #include "emitfmts.h"
+#if defined(TARGET_ARM64)
+#define IF_DEF(en, op1, op2) ID_OP_##op2,
+#include "emitfmtsarm64sve.h"
+#endif
 };
 
 #ifdef DEBUG
