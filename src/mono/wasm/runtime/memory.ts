@@ -419,7 +419,7 @@ export function forceThreadMemoryViewRefresh() {
     // this condition should be eliminated by rollup on non-threading builds and it would become empty method.
     if (!MonoWasmThreads) return;
 
-    const wasmMemory = Module.getMemory();
+    const wasmMemory = runtimeHelpers.getMemory();
 
     /*
     Normally when wasm memory grows in v8, this size change is broadcast to other web workers via an 'interrupt', which works by setting a thread-local flag that needs to be checked. 
