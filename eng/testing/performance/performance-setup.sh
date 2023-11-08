@@ -153,6 +153,10 @@ while (($# > 0)); do
       nodynamicpgo=true
       shift 1
       ;;
+    --nor2r)
+      nor2r=true
+      shift 1
+      ;;
     --physicalpromotion)
       physicalpromotion=true
       shift 1
@@ -248,6 +252,7 @@ while (($# > 0)); do
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
+      echo "  --nor2r                        Set for No R2R runs"
       echo "  --physicalpromotion            Set for runs with physical promotion"
       echo ""
       exit 1
@@ -367,6 +372,10 @@ if [[ "$nodynamicpgo" == "true" ]]; then
     configurations="$configurations PGOType=nodynamicpgo"
 fi
 
+if [[ "$nor2r" == "true" ]]; then
+    configurations="$configurations R2RType=nor2r"
+fi
+
 if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
@@ -460,6 +469,10 @@ fi
 
 if [[ "$nodynamicpgo" == "true" ]]; then
     setup_arguments="$setup_arguments --no-dynamic-pgo"
+fi
+
+if [[ "$nor2r" == "true" ]]; then
+    setup_arguments="$setup_arguments --no-r2r"
 fi
 
 if [[ "$physicalpromotion" == "true" ]]; then
