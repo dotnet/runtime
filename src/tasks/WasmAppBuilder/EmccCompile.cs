@@ -217,10 +217,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
                         return false;
                     }
 
-                    if (!Utils.CopyIfDifferent(tmpObjFile, objFile, useHash: true))
-                        Log.LogMessage(MessageImportance.Low, $"Did not overwrite {objFile} as the contents are unchanged");
-                    else
-                        Log.LogMessage(MessageImportance.Low, $"Copied {tmpObjFile} to {objFile}");
+                    File.Copy(tmpObjFile, objFile, true);
+                    Log.LogMessage(MessageImportance.Low, $"Copied {tmpObjFile} to {objFile}");
 
                     outputItems.Add(CreateOutputItemFor(srcFile, objFile));
 

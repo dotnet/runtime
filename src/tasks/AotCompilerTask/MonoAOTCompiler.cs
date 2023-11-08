@@ -316,14 +316,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (File.Exists(monoAotPropertyValuesFilePath))
         {
-            string? text = File.ReadAllText(monoAotPropertyValuesFilePath);
-            if (!string.IsNullOrEmpty(text))
-            {
-                Dictionary<string, bool>? properties = JsonSerializer.Deserialize<Dictionary<string, bool>>(text);
-                if ((properties != null) && properties.ContainsKey("CollectTrimmingEligibleMethods"))
-                    if (properties.TryGetValue("CollectTrimmingEligibleMethods", out bool value))
-                        _collectTrimmingEligibleMethodsValueFromPreviousBuild = value;
-            }
+            Dictionary<string, bool> properties = ParseMonoAotPropertyValuesFile(monoAotPropertyValuesFilePath);
+            if (properties.ContainsKey(nameof(CollectTrimmingEligibleMethods)))
+                if (properties.TryGetValue(nameof(CollectTrimmingEligibleMethods), out bool value))
+                    _collectTrimmingEligibleMethodsValueFromPreviousBuild = value;
             if (_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)
                 File.Delete(monoAotPropertyValuesFilePath);
         }
@@ -331,21 +327,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!File.Exists(monoAotPropertyValuesFilePath) || ((_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)))
         {
             Dictionary<string, bool> monoAotPropertyValuesToSave = new();
-            monoAotPropertyValuesToSave.Add("CollectTrimmingEligibleMethods", CollectTrimmingEligibleMethods);
-            string jsonString = JsonSerializer.Serialize(monoAotPropertyValuesToSave);
-            File.WriteAllText(monoAotPropertyValuesFilePath, jsonString);
-            Log.LogMessage(MessageImportance.High, $"Logged the value of CollectTrimmingEligibleMethods in {monoAotPropertyValuesFilePath}");
+            monoAotPropertyValuesToSave.Add(nameof(CollectTrimmingEligibleMethods), CollectTrimmingEligibleMethods);
+            SaveMonoAotPropertyValuesToFile(monoAotPropertyValuesFilePath, monoAotPropertyValuesToSave);
         }
 
         if (_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)
         {
             DirectoryInfo di = new DirectoryInfo(IntermediateOutputPath);
             foreach (FileInfo file in di.GetFiles("*.bc"))
-            {
-                Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
-                file.Delete();
-            }
-            foreach (FileInfo file in di.GetFiles("*.o"))
             {
                 Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
                 file.Delete();
@@ -516,6 +505,33 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         return !Log.HasLoggedErrors;
+    }
+
+    private Dictionary<string, bool> ParseMonoAotPropertyValuesFile(string filePath)
+    {
+        string? text = File.ReadAllText(filePath);
+        Dictionary<string, bool> properties = new();
+        if (!string.IsNullOrEmpty(text))
+        {
+            try
+            {
+                Dictionary<string, bool>? jsonData = JsonSerializer.Deserialize<Dictionary<string, bool>>(text);
+                if (jsonData != null)
+                    properties = jsonData;
+            }
+            catch (Exception e)
+            {
+                Log.LogError(e.Message);
+            }
+        }
+        return properties;
+    }
+
+    private void SaveMonoAotPropertyValuesToFile(string filePath, Dictionary<string, bool> properties)
+    {
+        string jsonString = JsonSerializer.Serialize(properties);
+        File.WriteAllText(filePath, jsonString);
+        Log.LogMessage(MessageImportance.High, $"Logged Mono AOT Properties in {filePath}");
     }
 
     public override bool Execute()
