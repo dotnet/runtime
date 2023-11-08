@@ -677,7 +677,7 @@ inline static bool isFloatReg(regNumber reg)
 
 inline static bool isPredicateRegister(regNumber reg)
 {
-    //TODO-SVE: Fix once we add predicate registers
+    // TODO-SVE: Fix once we add predicate registers
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
 }
 

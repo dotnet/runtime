@@ -946,24 +946,24 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
             elemsize = id->idOpSize();
             assert(insOptsNone(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1())); // ddddd
-            assert(isVectorRegister(id->idReg2())); // nnnnn
-            assert(isVectorRegister(id->idReg3())); // mmmmm
+            assert(isVectorRegister(id->idReg1()));  // ddddd
+            assert(isVectorRegister(id->idReg2()));  // nnnnn
+            assert(isVectorRegister(id->idReg3()));  // mmmmm
             assert(isValidVectorElemsize(elemsize)); // xx
 
-        case IF_SVE_BR_3B:   // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
             assert(insOptsNone(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
 
-        case IF_SVE_CI_3A:   // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
             elemsize = id->idOpSize();
             assert(insOptsNone(id->idInsOpt()));
             assert(isPredicateRegister(id->idReg1())); // DDDD
             assert(isPredicateRegister(id->idReg2())); // NNNN
             assert(isPredicateRegister(id->idReg3())); // MMMM
-            assert(isValidVectorElemsize(elemsize));    // xx
+            assert(isValidVectorElemsize(elemsize));   // xx
             break;
 
         default:
@@ -13404,7 +13404,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Vd(id->idReg1()); // ddddd
             code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
-            code |= insEncodeElemsize(elemsize);    // xx
+            code |= insEncodeElemsize(elemsize);   // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13422,7 +13422,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Pd(id->idReg1()); // DDDD
             code |= insEncodeReg_Pn(id->idReg2()); // NNNN
             code |= insEncodeReg_Pm(id->idReg3()); // MMMM
-            code |= insEncodeElemsize(elemsize);    // xx
+            code |= insEncodeElemsize(elemsize);   // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
