@@ -6,6 +6,7 @@ using System.Security.Authentication;
 namespace System.Net
 {
     [Flags]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Net.ServicePoint, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
     public enum SecurityProtocolType
     {
         SystemDefault = 0,

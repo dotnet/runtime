@@ -9,6 +9,7 @@ using System.Threading;
 
 namespace System.Net
 {
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Net.ServicePoint, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
     public class ServicePointManager
     {
         public const int DefaultNonPersistentConnectionLimit = 4;
