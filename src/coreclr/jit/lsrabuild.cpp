@@ -377,14 +377,14 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 
     Interval* theInterval = rp->getInterval();
 
-    if ((theInterval->firstRefPosition != nullptr) && RefTypeIsUse(rp->refType) && !theInterval->isWriteThru &&
-        !theInterval->isLocalVar)
-    {
-        if (theInterval->firstRefPosition->nodeLocation < recentKillLocation)
-        {
-            theInterval->preferCalleeSave = true;
-        }
-    }
+    //if ((theInterval->recentDefRefPosition != nullptr) && RefTypeIsUse(rp->refType) && !theInterval->isWriteThru &&
+    //    !theInterval->isLocalVar)
+    //{
+    //    if (theInterval->recentDefRefPosition->nodeLocation < recentKillLocation)
+    //    {
+    //        theInterval->preferCalleeSave = true;
+    //    }
+    //}
 
 #ifdef DEBUG
     if (!doReverseCallerCallee())
@@ -491,6 +491,16 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
         if (prevRP != nullptr)
         {
             prevRP->nextRefPosition = rp;
+            if (rp->isIntervalRef() && RefTypeIsDef(rp->refType))
+            {
+                Interval* theInterval = rp->getInterval();
+                if (theInterval->recentDefRefPosition != nullptr && theInterval->recentDefRefPosition->nodeLocation <
+                        recentKillLocation &&
+                    recentKillLocation < prevRP->nodeLocation)
+                {
+                    theInterval->preferCalleeSave = true;
+                }
+            }
         }
         else
         {
@@ -648,6 +658,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     {
         assert(theInterval != nullptr);
         theInterval->isSingleDef = theInterval->firstRefPosition == newRP;
+        theInterval->recentDefRefPosition = newRP;
     }
 
     DBEXEC(VERBOSE, newRP->dump(this));

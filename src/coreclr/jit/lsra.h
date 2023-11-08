@@ -449,6 +449,7 @@ public:
         firstRefPosition  = nullptr;
         recentRefPosition = nullptr;
         lastRefPosition   = nullptr;
+        recentDefRefPosition = nullptr;
     }
 
     // A linked list of RefPositions.  These are only traversed in the forward
@@ -458,6 +459,7 @@ public:
     RefPosition* firstRefPosition;
     RefPosition* recentRefPosition;
     RefPosition* lastRefPosition;
+    RefPosition* recentDefRefPosition;
 
     // Get the position of the next reference which is at or greater than
     // the current location (relies upon recentRefPosition being updated
