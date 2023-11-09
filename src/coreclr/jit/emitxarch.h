@@ -157,6 +157,8 @@ bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
 
+insOpts GetEmbRoundingMode(uint8_t mode) const;
+
 bool hasRexPrefix(code_t code)
 {
 #ifdef TARGET_AMD64

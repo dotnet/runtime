@@ -774,9 +774,10 @@ protected:
         unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
-        unsigned _idEvexbContext : 2;        // does EVEX.b need to be set.
-        unsigned _idEvexEmbeddedRounding : 2 // indicate the rounding mode when embedded rounding is enabled.
-#endif                                       //  TARGET_XARCH
+        unsigned _idIsEmbBroadcast : 1; // does EVEX.b need to be set for embedded broadcast.
+        unsigned _idIsEmbRounding : 1;  // does EVEX.b need to be set for embedded rounding.
+        unsigned _idEmbRoundingMode : 2 // indicate the rounding mode when embedded rounding is enabled.
+#endif                                  //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
 
@@ -1539,45 +1540,50 @@ protected:
         }
 
 #ifdef TARGET_XARCH
+        bool idIsEmbBroadcast() const
+        {
+            return _idIsEmbBroadcast != 0;
+        }
+
+        void idSetEmbBroadcast()
+        {
+            assert(_idIsEmbBroadcast == 0);
+            _idIsEmbBroadcast = 1;
+        }
+
+        bool idIsEmbRounding() const
+        {
+            return _idIsEmbRounding != 0;
+        }
+
+        void idSetEmbRounding()
+        {
+            assert(_idIsEmbBroadcast == 0);
+            _idIsEmbRounding = 1;
+        }
+
         bool idIsEvexbContext() const
         {
-            return _idEvexbContext != 0;
-        }
-        void idSetEvexbContext(insOpts instOptions = INS_OPTS_EVEX_b)
-        {
-            assert(_idEvexbContext == 0);
-            assert(instOptions != INS_OPTS_NONE);
-            if (instOptions == INS_OPTS_EVEX_b)
-            {
-                _idEvexbContext = 1; // EVEX.b context: embedded broadcast
-            }
-            else
-            {
-                _idEvexbContext = 2; // EVEX.b context: embedded rounding
-            }
-        }
-        unsigned idGetEvexbContext() const
-        {
-            return _idEvexbContext;
+            return idIsEmbBroadcast() || idIsEmbRounding();
         }
 
         void idSetEvexRoundingControl(insOpts instOptions)
         {
             if (instOptions == INS_OPTS_EVEX_er_rn)
             {
-                _idEvexEmbeddedRounding = 0;
+                _idEmbRoundingMode = 0;
             }
             else if (instOptions == INS_OPTS_EVEX_er_rd)
             {
-                _idEvexEmbeddedRounding = 1;
+                _idEmbRoundingMode = 1;
             }
             else if (instOptions == INS_OPTS_EVEX_er_ru)
             {
-                _idEvexEmbeddedRounding = 2;
+                _idEmbRoundingMode = 2;
             }
             else if (instOptions == INS_OPTS_EVEX_er_rz)
             {
-                _idEvexEmbeddedRounding = 3;
+                _idEmbRoundingMode = 3;
             }
             else
             {
@@ -1587,7 +1593,7 @@ protected:
 
         unsigned idGetEvexRoundingControl() const
         {
-            return _idEvexEmbeddedRounding;
+            return _idEmbRoundingMode;
         }
 #endif
 

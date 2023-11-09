@@ -1140,6 +1140,31 @@ static bool isLowSimdReg(regNumber reg)
 }
 
 //------------------------------------------------------------------------
+// GetEmbRoudingMode: Get the rounding mode for embedded rounding
+//
+// Arguments:
+//     mode -- the flag from the correspoding gentree node indicating the mode.
+//
+// Return Value:
+//   the instruction option carrying the rounding mode information.
+insOpts emitter::GetEmbRoundingMode(uint8_t mode) const
+{
+    switch (mode)
+    {
+        case 0:
+            return INS_OPTS_EVEX_er_rn;
+        case 1:
+            return INS_OPTS_EVEX_er_rd;
+        case 2:
+            return INS_OPTS_EVEX_er_ru;
+        case 3:
+            return INS_OPTS_EVEX_er_rz;
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // encodeRegAsIval: Encodes a register as an ival for use by a SIMD instruction
 //
 // Arguments
@@ -1323,7 +1348,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         code |= EVEX_B_BIT;
     }
 
-    if (id->idGetEvexbContext() == 2) // Evex.b context: embedded rounding, need to set Evex.L'L accordingly
+    if (id->idIsEmbRounding()) // Evex.b context: embedded rounding, need to set Evex.L'L accordingly
     {
         unsigned roundingMode = id->idGetEvexRoundingControl();
         if (roundingMode == 0)
@@ -6762,7 +6787,7 @@ void emitter::emitIns_R_R_A(
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
-        id->idSetEvexbContext();
+        id->idSetEmbBroadcast();
     }
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
@@ -6891,7 +6916,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
-        id->idSetEvexbContext();
+        id->idSetEmbBroadcast();
     }
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
@@ -6922,7 +6947,9 @@ void emitter::emitIns_R_R_R(
     if (instOptions != INS_OPTS_NONE)
     {
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
-        id->idSetEvexbContext(instOptions);
+        assert(instOptions != INS_OPTS_EVEX_b);
+        assert(UseEvexEncoding());
+        id->idSetEmbRounding();
         id->idSetEvexRoundingControl(instOptions);
     }
 
@@ -6950,7 +6977,7 @@ void emitter::emitIns_R_R_S(
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
-        id->idSetEvexbContext();
+        id->idSetEmbBroadcast();
     }
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;

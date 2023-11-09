@@ -755,7 +755,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
         }
 
         uint8_t mode        = node->GetEmbRoundingMode();
-        insOpts instOptions = (insOpts)(mode);
+        insOpts instOptions = GetEmitter()->GetEmbRoundingMode(mode);
         GetEmitter()->emitIns_SIMD_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
         return;
     }
