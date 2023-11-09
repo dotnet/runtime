@@ -2652,8 +2652,12 @@ mono_test_interp_cprop (TransformData *td)
 static gboolean
 get_sreg_imm (TransformData *td, int sreg, gint16 *imm, int result_mt)
 {
-	InterpInst *def = td->vars [sreg].def;
-	if (def != NULL && td->local_ref_count [sreg] == 1) {
+	if (!var_is_ssa_form (td, sreg))
+		return FALSE;
+	InterpVarValue *sreg_val = &td->var_values [sreg];
+	InterpInst *def = sreg_val->def;
+	g_assert (def);
+	if (sreg_val->ref_count == 1) {
 		gint64 ct;
 		if (MINT_IS_LDC_I4 (def->opcode))
 			ct = interp_get_const_from_ldc_i4 (def);
@@ -2764,39 +2768,32 @@ get_unop_condbr_sp (int opcode)
 static void
 interp_super_instructions (TransformData *td)
 {
-	InterpBasicBlock *bb;
-	int *local_ref_count = td->local_ref_count;
-
 	interp_compute_native_offset_estimates (td);
 
 	// Add some actual super instructions
-	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
-		InterpInst *ins;
-		int noe;
+	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count; bb_dfs_index++) {
+		InterpBasicBlock *bb = td->bblocks [bb_dfs_index];
 
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
-		noe = bb->native_offset_estimate;
-		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+		int noe = bb->native_offset_estimate;
+		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
 			if (MINT_IS_NOP (opcode))
 				continue;
-			if (mono_interp_op_dregs [opcode] && !td->vars [ins->dreg].global)
-				td->vars [ins->dreg].def = ins;
 
 			if (opcode == MINT_RET || (opcode >= MINT_RET_I1 && opcode <= MINT_RET_U2)) {
 				// ldc + ret -> ret.imm
 				int sreg = ins->sregs [0];
 				gint16 imm;
 				if (get_sreg_imm (td, sreg, &imm, (opcode == MINT_RET) ? MINT_TYPE_I2 : opcode - MINT_RET_I1)) {
-					InterpInst *def = td->vars [sreg].def;
+					InterpInst *def = td->var_values [sreg].def;
 					int ret_op = MINT_IS_LDC_I4 (def->opcode) ? MINT_RET_I4_IMM : MINT_RET_I8_IMM;
 					InterpInst *new_inst = interp_insert_ins (td, ins, ret_op);
 					new_inst->data [0] = imm;
 					interp_clear_ins (def);
 					interp_clear_ins (ins);
-					local_ref_count [sreg]--;
-
+					td->var_values [sreg].ref_count--; // 0
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						interp_dump_ins (new_inst, td->data_items);
@@ -2827,9 +2824,10 @@ interp_super_instructions (TransformData *td)
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = sreg;
 					new_inst->data [0] = imm;
-					interp_clear_ins (td->vars [sreg_imm].def);
+					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
-					local_ref_count [sreg_imm]--;
+					td->var_values [sreg_imm].ref_count--; // 0
+					td->var_values [new_inst->dreg].def = new_inst;
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						interp_dump_ins (new_inst, td->data_items);
@@ -2845,9 +2843,10 @@ interp_super_instructions (TransformData *td)
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = ins->sregs [0];
 					new_inst->data [0] = -imm;
-					interp_clear_ins (td->vars [sreg_imm].def);
+					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
-					local_ref_count [sreg_imm]--;
+					td->var_values [sreg_imm].ref_count--; // 0
+					td->var_values [new_inst->dreg].def = new_inst;
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						interp_dump_ins (new_inst, td->data_items);
@@ -2855,8 +2854,8 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (opcode == MINT_MUL_I4_IMM || opcode == MINT_MUL_I8_IMM) {
 				int sreg = ins->sregs [0];
-				InterpInst *def = td->vars [sreg].def;
-				if (def != NULL && td->local_ref_count [sreg] == 1) {
+				InterpInst *def = td->var_values [sreg].def;
+				if (def != NULL && td->var_values [sreg].ref_count == 1) {
 					gboolean is_i4 = opcode == MINT_MUL_I4_IMM;
 					if ((is_i4 && def->opcode == MINT_ADD_I4_IMM) ||
 							(!is_i4 && def->opcode == MINT_ADD_I8_IMM)) {
@@ -2867,7 +2866,8 @@ interp_super_instructions (TransformData *td)
 						new_inst->data [1] = ins->data [0];
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
-						local_ref_count [sreg]--;
+						td->var_values [sreg].ref_count--; // 0
+						td->var_values [new_inst->dreg].def = new_inst;
 						if (td->verbose_level) {
 							g_print ("superins: ");
 							interp_dump_ins (new_inst, td->data_items);
@@ -2884,17 +2884,18 @@ interp_super_instructions (TransformData *td)
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = ins->sregs [0];
 					new_inst->data [0] = imm;
-					interp_clear_ins (td->vars [sreg_imm].def);
+					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
-					local_ref_count [sreg_imm]--;
+					td->var_values [sreg_imm].ref_count--; // 0
+					td->var_values [new_inst->dreg].def = new_inst;
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						interp_dump_ins (new_inst, td->data_items);
 					}
 				} else if (opcode == MINT_SHL_I4 || opcode == MINT_SHL_I8) {
 					int amount_var = ins->sregs [1];
-					InterpInst *amount_def = td->vars [amount_var].def;
-					if (amount_def != NULL && td->local_ref_count [amount_var] == 1 && amount_def->opcode == MINT_AND_I4) {
+					InterpInst *amount_def = td->var_values [amount_var].def;
+					if (amount_def != NULL && td->var_values [amount_var].ref_count == 1 && amount_def->opcode == MINT_AND_I4) {
 						int mask_var = amount_def->sregs [1];
 						if (get_sreg_imm (td, mask_var, &imm, MINT_TYPE_I2)) {
 							// ldc + and + shl -> shl_and_imm
@@ -2910,10 +2911,11 @@ interp_super_instructions (TransformData *td)
 								new_inst->sregs [0] = ins->sregs [0];
 								new_inst->sregs [1] = amount_def->sregs [0];
 
-								local_ref_count [amount_var]--;
-								local_ref_count [mask_var]--;
+								td->var_values [amount_var].ref_count--; // 0
+								td->var_values [mask_var].ref_count--; // 0
+								td->var_values [new_inst->dreg].def = new_inst;
 
-								interp_clear_ins (td->vars [mask_var].def);
+								interp_clear_ins (td->var_values [mask_var].def);
 								interp_clear_ins (amount_def);
 								interp_clear_ins (ins);
 								if (td->verbose_level) {
@@ -2927,8 +2929,8 @@ interp_super_instructions (TransformData *td)
 			} else if (opcode == MINT_DIV_UN_I4 || opcode == MINT_DIV_UN_I8) {
 				// ldc + div.un -> shr.imm
 				int sreg_imm = ins->sregs [1];
-				InterpInst *def = td->vars [sreg_imm].def;
-				if (def != NULL && td->local_ref_count [sreg_imm] == 1) {
+				InterpInst *def = td->var_values [sreg_imm].def;
+				if (def != NULL && td->var_values [sreg_imm].ref_count == 1) {
 					int power2 = -1;
 					if (MINT_IS_LDC_I4 (def->opcode)) {
 						guint32 ct = interp_get_const_from_ldc_i4 (def);
@@ -2950,7 +2952,8 @@ interp_super_instructions (TransformData *td)
 
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
-						local_ref_count [sreg_imm]--;
+						td->var_values [sreg_imm].ref_count--;
+						td->var_values [new_inst->dreg].def = new_inst;
 						if (td->verbose_level) {
 							g_print ("lower div.un: ");
 							interp_dump_ins (new_inst, td->data_items);
@@ -2959,8 +2962,8 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (MINT_IS_LDIND_INT (opcode)) {
 				int sreg_base = ins->sregs [0];
-				InterpInst *def = td->vars [sreg_base].def;
-				if (def != NULL && td->local_ref_count [sreg_base] == 1) {
+				InterpInst *def = td->var_values [sreg_base].def;
+				if (def != NULL && td->var_values [sreg_base].ref_count == 1) {
 					InterpInst *new_inst = NULL;
 					if (def->opcode == MINT_ADD_P) {
 						int ldind_offset_op = MINT_LDIND_OFFSET_I1 + (opcode - MINT_LDIND_I1);
@@ -2978,7 +2981,8 @@ interp_super_instructions (TransformData *td)
 					if (new_inst) {
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
-						local_ref_count [sreg_base]--;
+						td->var_values [sreg_base].ref_count--;
+						td->var_values [new_inst->dreg].def = new_inst;
 						if (td->verbose_level) {
 							g_print ("superins: ");
 							interp_dump_ins (new_inst, td->data_items);
@@ -2987,8 +2991,8 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (MINT_IS_LDIND_OFFSET (opcode)) {
 				int sreg_off = ins->sregs [1];
-				InterpInst *def = td->vars [sreg_off].def;
-				if (def != NULL && td->local_ref_count [sreg_off] == 1) {
+				InterpInst *def = td->var_values [sreg_off].def;
+				if (def != NULL && td->var_values [sreg_off].ref_count == 1) {
 					if (def->opcode == MINT_MUL_P_IMM || def->opcode == MINT_ADD_P_IMM || def->opcode == MINT_ADD_MUL_P_IMM) {
 						int ldind_offset_op = MINT_LDIND_OFFSET_ADD_MUL_IMM_I1 + (opcode - MINT_LDIND_OFFSET_I1);
 						InterpInst *new_inst = interp_insert_ins (td, ins, ldind_offset_op);
@@ -3014,17 +3018,18 @@ interp_super_instructions (TransformData *td)
 
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
-						local_ref_count [sreg_off]--;
+						td->var_values [sreg_off].ref_count--; // 0
+						td->var_values [new_inst->dreg].def = new_inst;
 						if (td->verbose_level) {
-							g_print ("method %s:%s, superins: ", m_class_get_name (td->method->klass), td->method->name);
+							g_print ("superins: ");
 							interp_dump_ins (new_inst, td->data_items);
 						}
 					}
 				}
 			} else if (MINT_IS_STIND_INT (opcode)) {
 				int sreg_base = ins->sregs [0];
-				InterpInst *def = td->vars [sreg_base].def;
-				if (def != NULL && td->local_ref_count [sreg_base] == 1) {
+				InterpInst *def = td->var_values [sreg_base].def;
+				if (def != NULL && td->var_values [sreg_base].ref_count == 1) {
 					InterpInst *new_inst = NULL;
 					if (def->opcode == MINT_ADD_P) {
 						int stind_offset_op = MINT_STIND_OFFSET_I1 + (opcode - MINT_STIND_I1);
@@ -3042,7 +3047,7 @@ interp_super_instructions (TransformData *td)
 					if (new_inst) {
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
-						local_ref_count [sreg_base]--;
+						td->var_values [sreg_base].ref_count--;
 						if (td->verbose_level) {
 							g_print ("superins: ");
 							interp_dump_ins (new_inst, td->data_items);
@@ -3055,16 +3060,16 @@ interp_super_instructions (TransformData *td)
 				// when inlining property accessors. We should have more advanced cknull removal
 				// optimzations, so we can catch cases where instructions are not next to each other.
 				int obj_sreg = ins->sregs [0];
-				InterpInst *def = td->vars [obj_sreg].def;
+				InterpInst *def = td->var_values [obj_sreg].def;
 				if (def != NULL && def->opcode == MINT_CKNULL && interp_prev_ins (ins) == def &&
-						def->dreg == obj_sreg && local_ref_count [obj_sreg] == 1) {
+						def->dreg == obj_sreg && td->var_values [obj_sreg].ref_count == 1) {
 					if (td->verbose_level) {
-						g_print ("remove redundant cknull (%s): ", td->method->name);
+						g_print ("remove redundant cknull: ");
 						interp_dump_ins (def, td->data_items);
 					}
 					ins->sregs [0] = def->sregs [0];
 					interp_clear_ins (def);
-					local_ref_count [obj_sreg]--;
+					td->var_values [obj_sreg].ref_count--;
 				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode) && interp_is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
 				gint16 imm;
@@ -3080,9 +3085,9 @@ interp_super_instructions (TransformData *td)
 						new_ins->sregs [0] = ins->sregs [0];
 						new_ins->data [0] = imm;
 						new_ins->info.target_bb = ins->info.target_bb;
-						interp_clear_ins (td->vars [sreg_imm].def);
+						interp_clear_ins (td->var_values [sreg_imm].def);
 						interp_clear_ins (ins);
-						local_ref_count [sreg_imm]--;
+						td->var_values [sreg_imm].ref_count--; // 0
 						if (td->verbose_level) {
 							g_print ("superins: ");
 							interp_dump_ins (new_ins, td->data_items);
@@ -3106,8 +3111,8 @@ interp_super_instructions (TransformData *td)
 				if (opcode == MINT_BRFALSE_I4 || opcode == MINT_BRTRUE_I4) {
 					gboolean negate = opcode == MINT_BRFALSE_I4;
 					int cond_sreg = ins->sregs [0];
-					InterpInst *def = td->vars [cond_sreg].def;
-					if (def != NULL && local_ref_count [cond_sreg] == 1) {
+					InterpInst *def = td->var_values [cond_sreg].def;
+					if (def != NULL && td->var_values [cond_sreg].ref_count == 1) {
 						int replace_opcode = -1;
 						switch (def->opcode) {
 							case MINT_CEQ_I4: replace_opcode = negate ? MINT_BNE_UN_I4 : MINT_BEQ_I4; break;
@@ -3141,7 +3146,7 @@ interp_super_instructions (TransformData *td)
 							if (def->opcode != MINT_CEQ0_I4)
 								ins->sregs [1] = def->sregs [1];
 							interp_clear_ins (def);
-							local_ref_count [cond_sreg]--;
+							td->var_values [cond_sreg].ref_count--;
 							if (td->verbose_level) {
 								g_print ("superins: ");
 								interp_dump_ins (ins, td->data_items);
@@ -3166,8 +3171,8 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (opcode == MINT_STOBJ_VT_NOREF) {
 				int sreg_src = ins->sregs [1];
-				InterpInst *def = td->vars [sreg_src].def;
-				if (def != NULL && interp_prev_ins (ins) == def && def->opcode == MINT_LDOBJ_VT && ins->data [0] == def->data [0] && td->local_ref_count [sreg_src] == 1) {
+				InterpInst *def = td->var_values [sreg_src].def;
+				if (def != NULL && interp_prev_ins (ins) == def && def->opcode == MINT_LDOBJ_VT && ins->data [0] == def->data [0] && td->var_values [sreg_src].ref_count == 1) {
 					InterpInst *new_inst = interp_insert_ins (td, ins, MINT_CPOBJ_VT_NOREF);
 					new_inst->sregs [0] = ins->sregs [0]; // dst
 					new_inst->sregs [1] = def->sregs [0]; // src
@@ -3175,7 +3180,7 @@ interp_super_instructions (TransformData *td)
 
 					interp_clear_ins (def);
 					interp_clear_ins (ins);
-					local_ref_count [sreg_src]--;
+					td->var_values [sreg_src].ref_count--;
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						interp_dump_ins (new_inst, td->data_items);
@@ -3206,6 +3211,12 @@ interp_optimize_code (TransformData *td)
 		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
 
 	interp_var_deadce (td);
+
+	// We run this after var deadce to detect more single use vars. This pass will clear
+	// unnecessary instruction on the fly so deadce is no longer needed to run.
+	if ((mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS) &&
+			(mono_interp_opt & INTERP_OPT_CPROP))
+		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
 
 	interp_exit_ssa (td);
 

@@ -435,7 +435,6 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	local->live_start = -1;
 	local->bb_index = -1;
 	local->ext_index = -1;
-	local->def = NULL;
 
 	td->vars_size++;
 	return td->vars_size - 1;
@@ -4308,7 +4307,6 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [i].il_global = TRUE;
 		td->vars [i].indirects = 0;
 		td->vars [i].mt = mt;
-		td->vars [i].def = NULL;
 		td->vars [i].ext_index = -1;
 		size = mono_interp_type_size (type, mt, &align);
 		td->vars [i].size = size;
@@ -4337,7 +4335,6 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [index].il_global = TRUE;
 		td->vars [index].indirects = 0;
 		td->vars [index].mt = mono_mint_type (header->locals [i]);
-		td->vars [index].def = NULL;
 		td->vars [index].ext_index = -1;
 		td->vars [index].size = size;
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals

@@ -212,9 +212,6 @@ typedef struct {
 		// If var is INTERP_LOCAL_FLAG_CALL_ARGS, this is the call instruction using it.
 		// Only used during var offset allocator
 		InterpInst *call;
-		// For local vars, this represents the instruction declaring it.
-		// Only used during super instruction pass.
-		InterpInst *def;
 	};
 
 	guint execution_stack : 1;
