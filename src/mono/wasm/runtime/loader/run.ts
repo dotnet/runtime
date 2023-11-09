@@ -17,6 +17,7 @@ import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { initCacheToUseIfEnabled } from "./assetsCache";
+import { SideCarMessageCreate, SideCarMessageType, dispatchToSideCar } from "./sidecar";
 
 
 export class HostBuilder implements DotnetHostBuilder {
@@ -364,6 +365,18 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withSidecar(value: boolean): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                sidecar: value
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     async create(): Promise<RuntimeAPI> {
         try {
             if (!this.instance) {
@@ -392,13 +405,21 @@ export class HostBuilder implements DotnetHostBuilder {
 }
 
 export async function createApi(): Promise<RuntimeAPI> {
-    if (ENVIRONMENT_IS_WEB && (loaderHelpers.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
-        setup_proxy_console("main", globalThis.console, globalThis.location.origin);
+    if (!monoConfig.sidecar) {
+        if (ENVIRONMENT_IS_WEB && (loaderHelpers.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+            setup_proxy_console("main", globalThis.console, globalThis.location.origin);
+        }
+        mono_assert(emscriptenModule, "Null moduleConfig");
+        mono_assert(loaderHelpers.config, "Null moduleConfig.config");
+        await createEmscripten(emscriptenModule);
+        return globalObjectsRoot.api;
+    } else {
+        const createMessage: SideCarMessageCreate = {
+            type: SideCarMessageType.Create,
+            config: loaderHelpers.config!
+        };
+        return dispatchToSideCar<RuntimeAPI>(createMessage);
     }
-    mono_assert(emscriptenModule, "Null moduleConfig");
-    mono_assert(loaderHelpers.config, "Null moduleConfig.config");
-    await createEmscripten(emscriptenModule);
-    return globalObjectsRoot.api;
 }
 
 export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI | EmscriptenModuleInternal> {

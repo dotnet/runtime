@@ -4,6 +4,11 @@
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">64</_WasmPThreadPoolSize>
+    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\src\LogLevelAttribute.cs"
              Link="tests\DI.Common\Common\src\LogLevelAttribute.cs" />

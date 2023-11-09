@@ -160,6 +160,10 @@ type MonoConfig = {
      */
     startupMemoryCache?: boolean;
     /**
+     * If true, the runtime will be initialized in separate web worker. Default is false. It requires COOP headers.
+     */
+    sidecar?: boolean;
+    /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
      */

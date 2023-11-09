@@ -10,6 +10,7 @@ function displayMeaning(meaning) {
 try {
     const { setModuleImports } = await dotnet
         .withElementOnExit()
+        .withSidecar(true)
         .create();
 
     setModuleImports("main.js", {

@@ -9,7 +9,7 @@
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(WasmAppDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
     <!-- so that SharedArrayBuffer is enabled -->
-    <_ServeHeaders    Condition="'$(WasmEnableThreads)' == 'true'">$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
+    <_ServeHeaders>$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
 
     <!-- For streaming instantiation of WASM module and browser cache -->
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .wasm=application/wasm</_ServeMimeTypes>

@@ -119,7 +119,7 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
       # NOTE - Since threading is experimental, we don't want to block mainline work
-      shouldContinueOnError: true
+      # TODO put back shouldContinueOnError: true
       scenarios:
         - WasmTestOnBrowser
         #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592

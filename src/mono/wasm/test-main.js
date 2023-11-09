@@ -151,6 +151,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.interpreterPgo = true;
         } else if (currentArg == "--no-interpreter-pgo") {
             runArgs.interpreterPgo = false;
+        } else if (currentArg == "--multithreaded") {
+            runArgs.sidecar = true;
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
             const arg = currentArg.substring("--fetch-random-delay=".length);
             if (ENVIRONMENT_IS_WEB) {
@@ -295,8 +297,12 @@ function configureRuntime(dotnet, runArgs) {
         }
     }
     if (ENVIRONMENT_IS_WEB) {
-        if (runArgs.memorySnapshot)
+        if (runArgs.memorySnapshot) {
             dotnet.withStartupMemoryCache(true);
+        }
+        if (runArgs.sideCar) {
+            dotnet.withSideCar(true);
+        }
         if (runArgs.interpreterPgo)
             dotnet.withInterpreterPgo(true);
         dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
