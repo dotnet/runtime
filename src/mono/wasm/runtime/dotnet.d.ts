@@ -160,6 +160,16 @@ type MonoConfig = {
      */
     startupMemoryCache?: boolean;
     /**
+     * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
+     *  on future runs of the application
+     */
+    interpreterPgo?: boolean;
+    /**
+     * Configures how long to wait before saving the interpreter PGO list. If your application takes
+     *  a while to start you should adjust this value.
+     */
+    interpreterPgoSaveDelay?: number;
+    /**
      * application environment
      */
     applicationEnvironment?: string;

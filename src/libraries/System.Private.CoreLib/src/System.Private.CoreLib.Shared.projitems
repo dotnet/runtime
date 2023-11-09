@@ -4,11 +4,15 @@
     <SharedGUID>c5ed3c1d-b572-46f1-8f96-522a85ce1179</SharedGUID>
     <StringResourcesName Condition="'$(StringResourcesName)' == ''">System.Private.CoreLib.Strings</StringResourcesName>
     <GenerateResourcesSubstitutions>true</GenerateResourcesSubstitutions>
+
+    <!-- CA2252: Opt in to preview features before using them (for System.Threading.Lock) -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <Import_RootNamespace />
   </PropertyGroup>
   <PropertyGroup>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <Nullable>enable</Nullable>
     <IsOSXLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsOSXLike>
     <IsiOSLike Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsiOSLike>
@@ -183,6 +187,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\CollectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Dictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\DebugViewDictionaryItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\HashSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\HashSetEqualityComparer.cs" />
@@ -227,7 +232,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IStructuralComparable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IStructuralEquatable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\KeyValuePairs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ListDictionaryInternal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\CollectionHelpers.cs" />

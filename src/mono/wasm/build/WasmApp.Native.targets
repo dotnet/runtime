@@ -416,7 +416,7 @@
     </ItemGroup>
 
     <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
-    <Exec Command="llvm-size$(_ExeExt) -d --format=sysv @(_AOTObjectFile, ' ')"
+    <Exec Command="llvm-size$(_ExeExt) -d --format=sysv @(_AOTObjectFile->'&quot;%(Identity)&quot;', ' ')"
           Condition="'$(_WasmShouldAOT)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           ConsoleToMsBuild="true"

@@ -148,9 +148,11 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
     [true, "mono_jiterp_begin_catch", "void", ["number"]],
     [true, "mono_jiterp_end_catch", "void", []],
+    [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
+    [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
 
     ...diagnostics_cwraps,
-    ...legacy_interop_cwraps
+    ...legacy_interop_cwraps,
 ];
 
 export interface t_LegacyCwraps {
@@ -293,6 +295,8 @@ export interface t_Cwraps {
     mono_jiterp_tlqueue_clear(queue: number): void;
     mono_jiterp_begin_catch(ptr: number): void;
     mono_jiterp_end_catch(): void;
+    mono_interp_pgo_load_table(buffer: VoidPtr, bufferSize: number): number;
+    mono_interp_pgo_save_table(buffer: VoidPtr, bufferSize: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

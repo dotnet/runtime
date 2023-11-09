@@ -137,7 +137,7 @@ namespace System.Net.Sockets.Tests
         [InlineData("[::ffff:1.1.1.1]", true, false)]
         public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns, bool owning)
         {
-            if (UsesSync && !PlatformDetection.IsWindows)
+            if (UsesSync && PlatformDetection.IsLinux)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
                 return;

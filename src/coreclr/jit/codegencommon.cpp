@@ -4585,7 +4585,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                NYI_RISCV64("genZeroInitFltRegs is not implemented");
+                GetEmitter()->emitIns_R_R(INS_fmv_w_x, EA_4BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4624,7 +4624,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_LOONGARCH64)
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                NYI_RISCV64("genZeroInitFltRegs is not implemented.");
+                GetEmitter()->emitIns_R_R(INS_fmv_d_x, EA_8BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif

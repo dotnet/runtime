@@ -8764,8 +8764,6 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 {
     if (UsesDivideByConstOptimized(comp))
     {
-        gtFlags |= GTF_DIV_BY_CNS_OPT;
-
         // Now set DONT_CSE on the GT_CNS_INT divisor, note that
         // with ValueNumbering we can have a non GT_CNS_INT divisor
         GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
@@ -11138,18 +11136,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 if (tree->gtFlags & GTF_MUL_64RSLT)
                 {
                     printf("L");
-                    --msgLength;
-                    break;
-                }
-                goto DASH;
-
-            case GT_DIV:
-            case GT_MOD:
-            case GT_UDIV:
-            case GT_UMOD:
-                if (tree->gtFlags & GTF_DIV_BY_CNS_OPT)
-                {
-                    printf("M"); // We will use a Multiply by reciprical
                     --msgLength;
                     break;
                 }

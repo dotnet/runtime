@@ -95,11 +95,9 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(90, 3, data);
         }
 
-#pragma warning disable CA2252 // Opt in to preview features before using them (Lock)
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void ContentionLockCreated(Lock lockObj) => ContentionLockCreated(lockObj.LockIdForEvents, lockObj.ObjectIdForEvents);
-#pragma warning restore CA2252
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
@@ -131,7 +129,6 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(81, 3, data);
         }
 
-#pragma warning disable CA2252 // Opt in to preview features before using them (Lock)
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void ContentionStart(Lock lockObj) =>
@@ -141,7 +138,6 @@ namespace System.Diagnostics.Tracing
                 lockObj.LockIdForEvents,
                 lockObj.ObjectIdForEvents,
                 lockObj.OwningThreadId);
-#pragma warning restore CA2252
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(91, Level = EventLevel.Informational, Message = Messages.ContentionStop, Task = Tasks.Contention, Opcode = EventOpcode.Stop, Version = 1, Keywords = Keywords.ContentionKeyword)]

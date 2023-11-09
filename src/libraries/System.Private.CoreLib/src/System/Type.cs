@@ -31,7 +31,7 @@ namespace System
         {
             get
             {
-#if CORECLR
+#if !MONO
                 if (this is RuntimeType rt)
                     return rt.IsInterface;
 #endif

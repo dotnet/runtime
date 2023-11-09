@@ -391,6 +391,12 @@ namespace ILCompiler
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.GenericMethodsHashtableEntry(method), "Reflection visible dictionary");
             }
+
+            if (method.Signature.IsStatic && method.IsSynchronized)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.GenericMethodsHashtableEntry(method), "Will need to look up owning type from dictionary");
+            }
         }
 
         public IEnumerable<CombinedDependencyListEntry> GetConditionalDependenciesDueToGenericDictionary(NodeFactory factory, MethodDesc method)

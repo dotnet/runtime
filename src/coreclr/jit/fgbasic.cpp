@@ -84,6 +84,7 @@ void Compiler::fgInit()
 
 #ifdef DEBUG
     fgSafeBasicBlockCreation = true;
+    fgSafeFlowEdgeCreation   = true;
 #endif // DEBUG
 
     fgLocalVarLivenessDone = false;

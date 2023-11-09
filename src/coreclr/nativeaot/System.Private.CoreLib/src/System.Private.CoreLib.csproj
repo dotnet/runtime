@@ -3,8 +3,6 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
     <NoWarn>$(NoWarn);AD0001</NoWarn>
-    <!-- CA2252: Opt in to preview features before using them (Lock) -->
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
 
   <ItemGroup>
@@ -122,7 +120,6 @@
     <Compile Include="Internal\Runtime\TypeLoaderExceptionHelper.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
-    <Compile Include="Internal\Runtime\Augments\ReflectionExecutionDomainCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\StackTraceMetadataCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
@@ -313,9 +310,6 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\EnumerableExtensions.cs">
-      <Link>System\Collections\Generic\EnumerableExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
@@ -488,7 +482,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
-    <Compile Include="Internal\Reflection\Core\ReflectionDomainSetup.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ExecutionDomain.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ExecutionEnvironment.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
