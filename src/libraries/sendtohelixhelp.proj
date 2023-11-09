@@ -244,6 +244,10 @@
     </HelixPreCommands>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true'">  
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutputDirectory)XUnitLogChecker.zip" />  
+  </ItemGroup>  
+
   <!--
     Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
     test assembly. All will have the same command line. Note that this target is listed in the
