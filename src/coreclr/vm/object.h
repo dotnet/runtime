@@ -1469,6 +1469,11 @@ public:
     DomainAssembly* m_pDomainAssembly;
     CLR_BOOL m_isInTPA;
     CLR_BOOL m_isCoreLib;
+
+    PTR_AssemblyBinder GetBinder()
+    {
+        return (PTR_AssemblyBinder)((ASSEMBLYLOADCONTEXTREF)m_binder)->GetNativeAssemblyBinder();
+    }
 };
 
 // AssemblyLoadContextBaseObject
@@ -1486,23 +1491,23 @@ class AssemblyLoadContextBaseObject : public Object
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
 #ifdef TARGET_64BIT
-    OBJECTREF     _assemblyBinder;
     OBJECTREF     _unloadLock;
     OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
     OBJECTREF     _unloading;
     OBJECTREF     _name;
+    INT_PTR       _nativeAssemblyLoadContext;
     int64_t       _id; // On 64-bit platforms this is a value type so it is placed after references and pointers
     DWORD         _state;
     CLR_BOOL      _isCollectible;
 #else // TARGET_64BIT
     int64_t       _id; // On 32-bit platforms this 64-bit value type is larger than a pointer so JIT places it first
-    OBJECTREF     _assemblyBinder;
     OBJECTREF     _unloadLock;
     OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
     OBJECTREF     _unloading;
     OBJECTREF     _name;
+    INT_PTR       _nativeAssemblyLoadContext;
     DWORD         _state;
     CLR_BOOL      _isCollectible;
 #endif // TARGET_64BIT
@@ -1512,7 +1517,7 @@ class AssemblyLoadContextBaseObject : public Object
    ~AssemblyLoadContextBaseObject() { LIMITED_METHOD_CONTRACT; }
 
   public:
-    OBJECTREF GetNativeAssemblyBinder() { LIMITED_METHOD_CONTRACT; return _assemblyBinder; }
+    INT_PTR GetNativeAssemblyBinder() { LIMITED_METHOD_CONTRACT; return _nativeAssemblyLoadContext; }
 };
 #if defined(TARGET_X86) && !defined(TARGET_UNIX)
 #include "poppack.h"
