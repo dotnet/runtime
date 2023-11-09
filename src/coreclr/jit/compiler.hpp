@@ -167,6 +167,11 @@ inline unsigned genCountBits(uint64_t bits)
     return BitOperations::PopCount(bits);
 }
 
+inline unsigned genCountBits(regMaskTP mask)
+{
+    return genCountBits(mask.low);
+}
+
 /*****************************************************************************
  *
  *  A rather simple routine that counts the number of bits in a given number.
@@ -935,7 +940,7 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)genLog2(mask);
+    regNumber regNum = (regNumber)regMaskTP::BitScanForwardRegMask(mask);
 
     /* Make sure we got it right */
 
@@ -961,7 +966,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+    regNumber regNum = (regNumber)regMaskTP::BitScanForwardRegMask(mask);
     mask ^= genRegMask(regNum);
 
     return regNum;
@@ -983,7 +988,7 @@ inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+    regNumber regNum = (regNumber)regMaskTP::BitScanForwardRegMask(mask);
 
     return regNum;
 }
@@ -4702,7 +4707,7 @@ inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 
 inline void printRegMask(regMaskTP mask)
 {
-    printf(REG_MASK_ALL_FMT, mask);
+    printf(REG_MASK_ALL_FMT, mask.low);
 }
 
 inline char* regMaskToString(regMaskTP mask, Compiler* context)
@@ -4710,14 +4715,14 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
 
-    sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask);
+    sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask.low);
 
     return regmask;
 }
 
 inline void printRegMaskInt(regMaskTP mask)
 {
-    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT));
+    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT).low);
 }
 
 inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
@@ -4725,7 +4730,7 @@ inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
 
-    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT));
+    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT).low);
 
     return regmask;
 }

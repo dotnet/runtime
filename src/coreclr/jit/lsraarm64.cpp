@@ -177,7 +177,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
                                                   unsigned int registersNeeded,
                                                   regMaskTP*   allConsecutiveCandidates)
 {
-    if (BitOperations::PopCount(candidates) < registersNeeded)
+    if (regMaskTP::PopCountRegMask(candidates) < registersNeeded)
     {
         // There is no way the register demanded can be satisfied for this RefPosition
         // based on the candidates from which it can allocate a register.
@@ -367,7 +367,7 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
             // In the given range, there are some free registers available. Calculate how many registers
             // will need spilling if this range is picked.
 
-            int curSpillRegs = registersNeeded - BitOperations::PopCount(maskForCurRange);
+            int curSpillRegs = registersNeeded - regMaskTP::PopCountRegMask(maskForCurRange);
             if (curSpillRegs < maxSpillRegs)
             {
                 consecutiveResultForBusy = 1ULL << regAvailableStartIndex;

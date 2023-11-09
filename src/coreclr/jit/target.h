@@ -209,8 +209,146 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
+#elif defined(TARGET_ARM64)
+typedef struct __regMaskTP regMaskTP;
+struct __regMaskTP
+{
+    unsigned __int64 low;
+
+    __regMaskTP() : low(0) {}
+    __regMaskTP(unsigned __int64 _low) : low(_low) {}
+    //// Move constructor
+    //__regMaskTP(__regMaskTP&& other) noexcept
+    //{
+    //    low      = other.low;
+    //}
+
+    //unsigned __int64 operator&(const unsigned __int64& b)
+    //{
+    //    return low & b;
+    //}
+
+    //unsigned __int64 operator&(const regMaskTP& b)
+    //{
+    //    return low & b.low;
+    //}
+
+
+    FORCEINLINE static uint32_t BitScanForwardRegMask(regMaskTP mask)
+    {
+        return BitOperations::BitScanForward(mask.low);
+    }
+
+    FORCEINLINE static unsigned PopCountRegMask(regMaskTP mask)
+    {
+        return BitOperations::PopCount(mask.low);
+    }
+
+    FORCEINLINE regMaskTP operator&(const unsigned __int64 b) const
+    {
+        regMaskTP result(low & b);
+        return result;
+    }
+
+    FORCEINLINE regMaskTP operator&(const regMaskTP& b) const
+    {
+        regMaskTP result(low & b.low);
+        return result;
+    }
+
+    FORCEINLINE regMaskTP operator|(const unsigned __int64 b) const
+    {
+        regMaskTP result(low | b);
+        return result;
+    }
+    
+    //unsigned __int64 operator|(const regMaskTP& b)
+    //{
+    //    return low | b.low;
+    //}
+
+    FORCEINLINE regMaskTP operator|(const regMaskTP& b) const
+    {
+        regMaskTP result(low | b.low);
+        return result;
+    }
+
+    FORCEINLINE regMaskTP operator<<(const unsigned value) const
+    {
+        regMaskTP result(low << value);
+        return result;
+    }
+
+    FORCEINLINE regMaskTP& operator=(const unsigned __int64& value)
+    {
+        low = value;
+        return *this;
+    }
+
+    FORCEINLINE regMaskTP& operator=(const unsigned& value)
+    {
+        low = value;
+        return *this;
+    }
+
+    FORCEINLINE regMaskTP& operator^=(const regMaskTP& value)
+    {
+        low ^= value.low;
+        return *this;
+    }
+
+    FORCEINLINE regMaskTP& operator&=(const regMaskTP& value)
+    {
+        low &= value.low;
+        return *this;
+    }
+
+    FORCEINLINE regMaskTP& operator|=(const regMaskTP& value)
+    {
+        low |= value.low;
+        return *this;
+    }
+
+    FORCEINLINE regMaskTP& operator<<=(const unsigned value)
+    {
+        low <<= value;
+        return *this;
+    }
+
+    FORCEINLINE bool operator==(const regMaskTP& value) const
+    {
+        return low != value.low;
+    }
+
+    FORCEINLINE bool operator!=(const regMaskTP& value) const
+    {
+        return low != value.low;
+    }
+
+    //FORCEINLINE bool operator||(const regMaskTP& value) const
+    //{
+    //    return low != 0 || value.low != 0;
+    //}
+
+    FORCEINLINE regMaskTP operator~()
+    {
+        regMaskTP result(~low);
+        return result;
+    }
+
+    FORCEINLINE operator regMaskTP() const
+    {
+        return regMaskTP{static_cast<uint64_t>(low)};
+    }
+
+    FORCEINLINE explicit operator bool() const
+    {
+        return low != 0;
+    }
+};
+    //typedef unsigned __int64 regMaskTP;
 #else
 typedef unsigned       regMaskTP;
 #endif
@@ -479,7 +617,7 @@ inline regMaskTP fullIntArgRegMask()
 {
     if (hasFixedRetBuffReg())
     {
-        return RBM_ARG_REGS | theFixedRetBuffMask();
+        return theFixedRetBuffMask() | RBM_ARG_REGS;
     }
     else
     {
