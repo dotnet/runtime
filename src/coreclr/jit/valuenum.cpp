@@ -9854,7 +9854,7 @@ struct ValueNumberState
         assert(lastTree->OperIs(GT_JTRUE));
 
         GenTree* cond     = lastTree->gtGetOp1();
-        ValueNum normalVN = m_comp->vnStore->VNNormalValue(cond->GetVN(VNK_Liberal));
+        ValueNum normalVN = m_comp->vnStore->VNNormalValue(cond->GetVN(VNK_Conservative));
         if (!m_comp->vnStore->IsVNConstant(normalVN))
         {
             return true;
@@ -10052,8 +10052,6 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 {
     compCurBB = blk;
 
-    bool isReachableBlock = !vnVisitState->GetVisitBit(blk->bbNum, ValueNumberState::BVB_provenUnreachable);
-
     Statement* stmt = blk->firstStmt();
 
     // First: visit phis and check to see if all phi args have the same value.
@@ -10067,12 +10065,17 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         for (GenTreePhi::Use& use : phiNode->Uses())
         {
             GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-            if (isReachableBlock &&
-                vnVisitState->GetVisitBit(phiArg->gtPredBB->bbNum, ValueNumberState::BVB_provenUnreachable))
+            if (vnVisitState->GetVisitBit(phiArg->gtPredBB->bbNum, ValueNumberState::BVB_provenUnreachable))
             {
-                JITDUMP("  Skipping phi arg [%06u]; pred " FMT_BB " was proven unreachable\n", dspTreeID(phiArg),
+                JITDUMP("  Phi arg [%06u] refers to proven unreachable pred " FMT_BB "\n", dspTreeID(phiArg),
                         phiArg->gtPredBB->bbNum);
-                continue;
+
+                if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
+                {
+                    continue;
+                }
+
+                JITDUMP("  ..but it looks like all preds are unreachable, so we are using it anyway\n");
             }
 
             ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
@@ -10103,9 +10106,6 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
 
         // We should have visited at least one phi arg in the loop above
-        // 1. For reachable blocks, at least one pred should be reachable or we would have proven this block to be
-        // unreachable too
-        // 2. For unreachable blocks we build for all phi args.
         assert(phiVNP.GetLiberal() != ValueNumStore::NoVN);
         assert(phiVNP.GetConservative() != ValueNumStore::NoVN);
 
@@ -10170,8 +10170,6 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
             else
             {
                 // Are all the VN's the same?
-                // TODO-CQ: Skip proven unreachable blocks. Do we have any way to look up the pred block for memory
-                // PHIs?
                 BasicBlock::MemoryPhiArg* phiArgs = blk->bbMemorySsaPhiFunc[memoryKind];
                 assert(phiArgs != BasicBlock::EmptyMemoryPhiDef);
                 // There should be > 1 args to a phi.
