@@ -328,8 +328,6 @@ public:
 
 #endif //!DACCESS_COMPILE
 
-    ULONG HashIdentity();
-
     PTR_AssemblyBinder GetFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;

@@ -161,12 +161,6 @@ public:
         return m_fCollectible;
     }
 
-    ULONG HashIdentity()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->HashIdentity();
-    }
-
     // ------------------------------------------------------------
     // Loading state checks
     // ------------------------------------------------------------
