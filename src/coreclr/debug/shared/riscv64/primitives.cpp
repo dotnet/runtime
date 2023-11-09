@@ -87,7 +87,6 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     {
         memcpy(&pDRD->GP, &pContext->Gp, sizeof(pDRD->GP) * 5);
         memcpy(&pDRD->S1, &pContext->S1, sizeof(pDRD->S1) * 23);
-        pDRD->R0 = (SIZE_T)pContext->R0;
     }
 
     pDRD->SP = pRD->SP;

@@ -4050,8 +4050,7 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_RISCV64_F28,
         REGISTER_RISCV64_F29,
         REGISTER_RISCV64_F30,
-        REGISTER_RISCV64_F31,
-        REGISTER_RISCV64_X0, // TODO-RISCV64-CQ: Add X0 for an use in debug. Need to check.
+        REGISTER_RISCV64_F31
 
         // other architectures here
 

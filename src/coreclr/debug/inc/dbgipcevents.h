@@ -1173,7 +1173,6 @@ struct MSLAYOUT DebuggerREGDISPLAY
     SIZE_T  PC;
 #elif defined(TARGET_RISCV64)
     #define DebuggerIPCE_FloatCount 32
-    SIZE_T  R0;
     SIZE_T  RA;
     SIZE_T  SP;
     SIZE_T  GP;
