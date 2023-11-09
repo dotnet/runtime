@@ -804,12 +804,6 @@ PEAssembly::~PEAssembly()
         DestroyHandle(m_pHostAssembly);
         m_pHostAssembly = NULL;
     }
-
-    if (m_pFallbackBinder != NULL)
-    {
-        DestroyHandle(m_pFallbackBinder);
-        m_pFallbackBinder = NULL;
-    }
 }
 
 /* static */
@@ -1113,22 +1107,17 @@ TADDR PEAssembly::GetMDInternalRWAddress()
 #endif
 
 // Returns the AssemblyBinder* instance associated with the PEAssembly
-ASSEMBLYBINDERREF PEAssembly::GetAssemblyBinder()
+PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
 {
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END
+    LIMITED_METHOD_CONTRACT;
 
-    ASSEMBLYBINDERREF pBinder = NULL;
+    PTR_AssemblyBinder pBinder = NULL;
 
     OBJECTHANDLE pHostAssembly = GetHostAssembly();
     if (pHostAssembly)
     {
-        pBinder = (ASSEMBLYBINDERREF)((BINDERASSEMBLYREF)ObjectFromHandle(pHostAssembly))->m_binder;
+        GCX_COOP();
+        pBinder = ((BINDERASSEMBLYREF)ObjectFromHandle(pHostAssembly))->GetBinder();
     }
     else
     {
@@ -1137,7 +1126,7 @@ ASSEMBLYBINDERREF PEAssembly::GetAssemblyBinder()
         // binder reference.
         if (IsDynamic())
         {
-            pBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(GetFallbackBinder());
+            pBinder = GetFallbackBinder();
         }
     }
 

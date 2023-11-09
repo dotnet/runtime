@@ -317,10 +317,10 @@ public:
     // Returns the AssemblyBinder* instance associated with the PEAssembly
     // which owns the context into which the current PEAssembly was loaded.
     // For Dynamic assemblies this is the fallback binder.
-    ASSEMBLYBINDERREF GetAssemblyBinder();
+    PTR_AssemblyBinder GetAssemblyBinder();
 
 #ifndef DACCESS_COMPILE
-    void SetFallbackBinder(OBJECTHANDLE pFallbackBinder)
+    void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
         m_pFallbackBinder = pFallbackBinder;
@@ -330,7 +330,7 @@ public:
 
     ULONG HashIdentity();
 
-    OBJECTHANDLE GetFallbackBinder()
+    PTR_AssemblyBinder GetFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -443,7 +443,7 @@ private:
     // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    OBJECTHANDLE m_pFallbackBinder;
+    PTR_AssemblyBinder m_pFallbackBinder;
 
 };  // class PEAssembly
 
