@@ -835,8 +835,7 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
     // Set the binding context to the assembly load context.
     if (m_pBinder != NULL)
     {
-        // TODO: support
-        // spec.SetBinder(m_pBinder);
+        spec.SetBinder(m_pBinder);
     }
 
     // Bind and load the assembly.

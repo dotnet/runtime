@@ -22,7 +22,7 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
-        private static partial void LoadFromStream(ObjectHandleOnStack ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
+        private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalSetProfileRoot(string directoryPath);
@@ -32,7 +32,7 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LoadFromPath(ObjectHandleOnStack ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
+        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Assembly[] GetLoadedAssemblies();
@@ -60,8 +60,7 @@ namespace System.Runtime.Loader
         private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             RuntimeAssembly? loadedAssembly = null;
-            Internal.Runtime.Binder.AssemblyBinder assemblyBinder = _assemblyBinder;
-            LoadFromPath(ObjectHandleOnStack.Create(ref assemblyBinder), assemblyPath, nativeImagePath, ObjectHandleOnStack.Create(ref loadedAssembly));
+            LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, nativeImagePath, ObjectHandleOnStack.Create(ref loadedAssembly));
             return loadedAssembly!;
         }
 
@@ -69,11 +68,10 @@ namespace System.Runtime.Loader
         internal unsafe Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
         {
             RuntimeAssembly? loadedAssembly = null;
-            Internal.Runtime.Binder.AssemblyBinder assemblyBinder = _assemblyBinder;
 
             fixed (byte* ptrAssembly = arrAssembly, ptrSymbols = arrSymbols)
             {
-                LoadFromStream(ObjectHandleOnStack.Create(ref assemblyBinder), new IntPtr(ptrAssembly), arrAssembly.Length,
+                LoadFromStream(_nativeAssemblyLoadContext, new IntPtr(ptrAssembly), arrAssembly.Length,
                     new IntPtr(ptrSymbols), arrSymbols.Length, ObjectHandleOnStack.Create(ref loadedAssembly));
             }
 
@@ -82,7 +80,7 @@ namespace System.Runtime.Loader
 
 #if TARGET_WINDOWS
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromInMemoryModule")]
-        private static partial IntPtr LoadFromInMemoryModuleInternal(ObjectHandleOnStack ptrNativeAssemblyBinder, IntPtr hModule, ObjectHandleOnStack retAssembly);
+        private static partial IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyBinder, IntPtr hModule, ObjectHandleOnStack retAssembly);
 
 
         /// <summary>
@@ -97,9 +95,8 @@ namespace System.Runtime.Loader
                 VerifyIsAlive();
 
                 RuntimeAssembly? loadedAssembly = null;
-                Internal.Runtime.Binder.AssemblyBinder assemblyBinder = _assemblyBinder;
                 LoadFromInMemoryModuleInternal(
-                    ObjectHandleOnStack.Create(ref assemblyBinder),
+                    _nativeAssemblyLoadContext,
                     moduleHandle,
                     ObjectHandleOnStack.Create(ref loadedAssembly));
                 return loadedAssembly!;
@@ -188,9 +185,7 @@ namespace System.Runtime.Loader
         // Start profile optimization for the specified profile name.
         public void StartProfileOptimization(string? profile)
         {
-            // AssemblyBinder isn't supported in profiler implementation yet.
-            // See MulticoreJitProfilePlayer::LoadAssembly
-            InternalStartProfile(profile, IntPtr.Zero);
+            InternalStartProfile(profile, _nativeAssemblyLoadContext);
         }
 
         internal static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
