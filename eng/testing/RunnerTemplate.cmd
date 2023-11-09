@@ -93,10 +93,10 @@ if %_exit_code%==1 (
   )
 )
 
-if NOT DEFINED __TestTargetFrameworkIdentifier (
+if NOT DEFINED __IsXUnitLogCheckerSupported (
   GOTO SKIP_XUNITLOGCHECKER
 )
-if NOT %__TestTargetFrameworkIdentifier% == ".NETCoreApp" (
+if NOT %__IsXUnitLogCheckerSupported%==1 (
   GOTO SKIP_XUNITLOGCHECKER
 )
 

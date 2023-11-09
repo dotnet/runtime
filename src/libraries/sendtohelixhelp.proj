@@ -233,10 +233,12 @@
   </Target>
 
   <PropertyGroup Condition="$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">
+    <_IsXUnitLogCheckerSupported Condition="$(TargetFrameworkIdentifier) == '.NETCoreApp'">1</_IsXUnitLogCheckerSupported>
+    <_IsXUnitLogCheckerSupported Condition="$(TargetFrameworkIdentifier) != '.NETCoreApp'">0</_IsXUnitLogCheckerSupported>
     <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
       $(HelixPreCommands);
       set __TestArchitecture=$(TargetArchitecture);
-      set __TestTargetFrameworkIdentifier=$(TargetFrameworkIdentifier)
+      set __IsXUnitLogCheckerSupported=$(_IsXUnitLogCheckerSupported)
     </HelixPreCommands>
     <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
       $(HelixPreCommands);
