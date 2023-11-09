@@ -247,7 +247,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">  
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesHelixDirectory)XUnitLogChecker.zip" />  
+    <HelixCorrelationPayload Include="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'helix', 'tests', 'XUnitLogChecker', 'XUnitLogChecker.zip'))" />  
   </ItemGroup>  
 
   <!--
