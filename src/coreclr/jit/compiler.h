@@ -5057,6 +5057,7 @@ public:
 
     // The value numbers for this compilation.
     ValueNumStore* vnStore;
+    struct ValueNumberState* vnVisitState;
 
 public:
     ValueNumStore* GetValueNumStore()
