@@ -3220,6 +3220,9 @@ interp_optimize_code (TransformData *td)
 
 	interp_exit_ssa (td);
 
+	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
+		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
+
 	if (td->verbose_level) {
 		g_print ("\nOptimized IR:\n");
 		mono_interp_print_td_code (td);
