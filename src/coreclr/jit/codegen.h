@@ -14,7 +14,11 @@
 #include "regset.h"
 #include "jitgcinfo.h"
 
+#ifdef LATE_DISASM
+class CodeGen : public CodeGenInterface
+#else // LATE_DISASM
 class CodeGen final : public CodeGenInterface
+#endif // !LATE_DISASM
 {
     friend class emitter;
     friend class DisAssembler;
@@ -33,6 +37,11 @@ public:
     // move it to Lower
     virtual bool genCreateAddrMode(
         GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
+
+#ifdef LATE_DISASM
+    virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs);
+    virtual const char* siRegVarName(size_t offs, size_t size, unsigned reg);
+#endif // LATE_DISASM
 
 private:
 #if defined(TARGET_XARCH)
