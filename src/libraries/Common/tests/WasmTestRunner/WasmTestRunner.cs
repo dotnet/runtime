@@ -64,6 +64,7 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             IncludedMethods = includedMethods
         };
 
+        await Task.Yield();
         return await runner.Run();
     }
 }

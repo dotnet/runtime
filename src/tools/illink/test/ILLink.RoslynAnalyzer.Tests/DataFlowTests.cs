@@ -144,6 +144,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task FeatureCheckDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task FieldDataFlow ()
 		{
 			return RunTest (nameof (FieldDataFlow));

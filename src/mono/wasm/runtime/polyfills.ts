@@ -146,7 +146,7 @@ export async function init_polyfills_async(): Promise<void> {
         }
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        INTERNAL.process = await import(/* webpackIgnore: true */"process");
+        INTERNAL.process = await import(/*! webpackIgnore: true */"process");
 
         if (!globalThis.crypto) {
             globalThis.crypto = <any>{};

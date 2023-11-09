@@ -3,7 +3,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
-    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">64</_WasmPThreadPoolSize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ThreadPoolTests.cs" />
