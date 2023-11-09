@@ -209,8 +209,14 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
+#elif defined(TARGET_ARM64)
+#if defined(HOST_UNIX)
+typedef unsigned __int128 regMaskTP;
+#else
+typedef unsigned __int64 regMaskTP;
+#endif // HOST_UNIX
 #else
 typedef unsigned       regMaskTP;
 #endif
