@@ -9854,8 +9854,9 @@ struct ValueNumberState
         assert(lastTree->OperIs(GT_JTRUE));
 
         GenTree* cond = lastTree->gtGetOp1();
-        // TODO-Cleanup: Using liberal VNs here is a bit questionable as it add
-        // a cross-phase dependency on RBO to definitely fold this branch away.
+        // TODO-Cleanup: Using liberal VNs here is a bit questionable as it
+        // adds a cross-phase dependency on RBO to definitely fold this branch
+        // away.
         ValueNum normalVN = m_comp->vnStore->VNNormalValue(cond->GetVN(VNK_Liberal));
         if (!m_comp->vnStore->IsVNConstant(normalVN))
         {
