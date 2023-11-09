@@ -44,9 +44,9 @@
       Any tools that contribute to the design-time experience should use the MicrosoftCodeAnalysisVersion_LatestVS property above to ensure
       they do not break the local dev experience.
     -->
-    <MicrosoftCodeAnalysisCSharpVersion>4.8.0-3.23518.7</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisVersion>4.8.0-3.23518.7</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.8.0-3.23518.7</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.8.0-7.23558.1</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisVersion>4.8.0-7.23558.1</MicrosoftCodeAnalysisVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.8.0-7.23558.1</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
@@ -87,21 +87,21 @@
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>8.0.100-rtm.23520.8</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23516.4</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23516.4</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>8.0.0-beta.23516.4</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.23516.4</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>8.0.0-beta.23516.4</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.23516.4</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>8.0.0-beta.23516.4</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>8.0.0-beta.23516.4</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>8.0.0-beta.23516.4</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>8.0.0-beta.23516.4</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
-    <MicrosoftDotNetBuildTasksTemplatingVersion>8.0.0-beta.23516.4</MicrosoftDotNetBuildTasksTemplatingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>8.0.0-beta.23516.4</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>8.0.0-beta.23516.4</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>8.0.0-beta.23516.4</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageTestingVersion>8.0.0-beta.23516.4</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23556.5</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23556.5</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>8.0.0-beta.23556.5</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.23556.5</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>8.0.0-beta.23556.5</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.23556.5</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>8.0.0-beta.23556.5</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>8.0.0-beta.23556.5</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>8.0.0-beta.23556.5</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>8.0.0-beta.23556.5</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
+    <MicrosoftDotNetBuildTasksTemplatingVersion>8.0.0-beta.23556.5</MicrosoftDotNetBuildTasksTemplatingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>8.0.0-beta.23556.5</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>8.0.0-beta.23556.5</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>8.0.0-beta.23556.5</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetPackageTestingVersion>8.0.0-beta.23556.5</MicrosoftDotNetPackageTestingVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
@@ -143,20 +143,20 @@
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>8.0.0-rc.1.23406.6</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>8.0.0-beta.23421.1</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>8.0.0-beta.23421.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>8.0.0-beta.23421.1</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>8.0.0-beta.23421.1</SystemDrawingCommonTestDataVersion>
-    <SystemFormatsTarTestDataVersion>8.0.0-beta.23421.1</SystemFormatsTarTestDataVersion>
-    <SystemIOCompressionTestDataVersion>8.0.0-beta.23421.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>8.0.0-beta.23421.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>8.0.0-beta.23421.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>8.0.0-beta.23421.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>8.0.0-beta.23421.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>8.0.0-beta.23421.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemTextRegularExpressionsTestDataVersion>8.0.0-beta.23421.1</SystemTextRegularExpressionsTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>8.0.0-beta.23421.1</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>8.0.0-beta.23421.1</MicrosoftDotNetCilStripSourcesVersion>
+    <SystemRuntimeNumericsTestDataVersion>8.0.0-beta.23558.5</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>8.0.0-beta.23558.5</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>8.0.0-beta.23558.5</SystemDataCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>8.0.0-beta.23558.5</SystemDrawingCommonTestDataVersion>
+    <SystemFormatsTarTestDataVersion>8.0.0-beta.23558.5</SystemFormatsTarTestDataVersion>
+    <SystemIOCompressionTestDataVersion>8.0.0-beta.23558.5</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>8.0.0-beta.23558.5</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>8.0.0-beta.23558.5</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>8.0.0-beta.23558.5</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>8.0.0-beta.23558.5</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>8.0.0-beta.23558.5</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemTextRegularExpressionsTestDataVersion>8.0.0-beta.23558.5</SystemTextRegularExpressionsTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>8.0.0-beta.23558.5</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>8.0.0-beta.23558.5</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.23525.5</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.23525.5</optimizationwindows_ntx86MIBCRuntimeVersion>
