@@ -372,7 +372,6 @@ GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_
 {
     ASSERT(allocSize <= commitSize);
     ASSERT(commitSize <= reservedSize);
-    ASSERT(allocSize >= MIN_OBJECT_SIZE);
 
 #ifdef FEATURE_BASICFREEZE
     segment_info seginfo;

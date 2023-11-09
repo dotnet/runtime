@@ -15,7 +15,6 @@ namespace Internal.Runtime
         public static readonly FrozenObjectHeapManager Instance = new FrozenObjectHeapManager();
 
         private readonly LowLevelLock m_Crst = new LowLevelLock();
-        private readonly LowLevelLock m_SegmentRegistrationCrst = new LowLevelLock();
         private FrozenObjectSegment m_CurrentSegment;
 
         // Default size to reserve for a frozen segment
@@ -32,9 +31,6 @@ namespace Internal.Runtime
         private object? TryAllocateObject(MethodTable* type, nuint objectSize)
         {
             HalfBakedObject* obj = null;
-            FrozenObjectSegment? curSeg = null;
-            byte* curSegmentCurrent = null;
-            nuint curSegSizeCommitted = 0;
 
             m_Crst.Acquire();
 
@@ -85,30 +81,11 @@ namespace Internal.Runtime
                     // This time it's not expected to be null
                     Debug.Assert(obj != null);
                 }
-
-                curSeg = m_CurrentSegment;
-                curSegSizeCommitted = curSeg.m_SizeCommitted;
-                curSegmentCurrent = curSeg.m_pCurrent;
             } // end of m_Crst lock
             finally
             {
                 m_Crst.Release();
             }
-
-            // Let GC know about the new segment or changes in it.
-            // We do it under a new lock because the main one (m_Crst) can be used by Profiler in a GC's thread
-            // and that might cause deadlocks since RegisterFrozenSegment may stuck on GC's lock.
-            m_SegmentRegistrationCrst.Acquire();
-            try
-            {
-                curSeg.RegisterOrUpdate(curSegmentCurrent, curSegSizeCommitted);
-            }
-            finally
-            {
-                m_SegmentRegistrationCrst.Release();
-            }
-
-            //PublishFrozenObject(obj);
 
             IntPtr result = (IntPtr)obj;
 
@@ -120,19 +97,11 @@ namespace Internal.Runtime
             // Start of the reserved memory, the first object starts at "m_pStart + sizeof(ObjHeader)" (its pMT)
             private byte* m_pStart;
 
-            // NOTE: To handle potential race conditions, only m_[x]Registered fields should be accessed
-            // externally as they guarantee that GC is aware of the current state of the segment.
-
             // Pointer to the end of the current segment, ready to be used as a pMT for a new object
             // meaning that "m_pCurrent - sizeof(ObjHeader)" is the actual start of the new object (header).
             //
             // m_pCurrent <= m_SizeCommitted
             public byte* m_pCurrent;
-
-            // Last known value of m_pCurrent that GC is aware of.
-            //
-            // m_pCurrentRegistered <= m_pCurrent
-            private byte* m_pCurrentRegistered;
 
             // Memory committed in the current segment
             //
@@ -170,49 +139,23 @@ namespace Internal.Runtime
                 }
 
                 // Commit a chunk in advance
-                void* committedAlloc = ClrVirtualCommit(alloc, FOH_COMMIT_SIZE);
-                if (committedAlloc == null)
+                m_pStart = (byte*)ClrVirtualCommit(alloc, FOH_COMMIT_SIZE);
+                if (m_pStart == null)
                 {
                     ClrVirtualFree(alloc, m_Size);
                     throw new OutOfMemoryException();
                 }
 
-                m_pStart = (byte*)committedAlloc;
                 m_pCurrent = m_pStart + sizeof(ObjHeader);
+
+                m_SegmentHandle = RuntimeImports.RhRegisterFrozenSegment(m_pStart, (nuint)m_pCurrent - (nuint)m_pStart, FOH_COMMIT_SIZE, m_Size);
+                if (m_SegmentHandle == IntPtr.Zero)
+                {
+                    ClrVirtualFree(alloc, m_Size);
+                    throw new OutOfMemoryException();
+                }
+
                 m_SizeCommitted = FOH_COMMIT_SIZE;
-
-                // ClrVirtualAlloc is expected to be PageSize-aligned so we can expect
-                // DATA_ALIGNMENT alignment as well
-                // _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
-            }
-
-            public void RegisterOrUpdate(byte* current, nuint sizeCommited)
-            {
-                if (m_pCurrentRegistered == null)
-                {
-                    Debug.Assert(current >= m_pStart);
-
-                    // NOTE: RegisterFrozenSegment may take a GC lock inside.
-                    m_SegmentHandle = RuntimeImports.RhRegisterFrozenSegment(m_pStart, (nuint)current - (nuint)m_pStart, sizeCommited, m_Size);
-                    if (m_SegmentHandle == IntPtr.Zero)
-                    {
-                        throw new OutOfMemoryException();
-                    }
-                    m_pCurrentRegistered = current;
-                }
-                else
-                {
-                    if (current > m_pCurrentRegistered)
-                    {
-                        RuntimeImports.RhUpdateFrozenSegment(
-                            m_SegmentHandle, current, m_pStart + sizeCommited);
-                        m_pCurrentRegistered = current;
-                    }
-                    else
-                    {
-                        // Some other thread already advanced it.
-                    }
-                }
             }
 
             public HalfBakedObject* TryAllocateObject(MethodTable* type, nuint objectSize)
@@ -252,6 +195,8 @@ namespace Internal.Runtime
                 obj->SetMethodTable(type);
 
                 m_pCurrent += objectSize;
+
+                RuntimeImports.RhUpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommitted);
 
                 return obj;
             }
