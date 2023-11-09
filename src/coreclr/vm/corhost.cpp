@@ -620,7 +620,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     {
         GCX_COOP();
 
-        ASSEMBLYLOADCONTEXTREF pBinder = pDomain->GetDefaultBinder()->GetManagedAssemblyLoadContextObject();
+        ASSEMBLYLOADCONTEXTREF pBinder = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)pDomain->GetDefaultBinder()->GetManagedAssemblyLoadContext());
         _ASSERTE(pBinder != NULL);
 
         GCPROTECT_BEGIN(pBinder);

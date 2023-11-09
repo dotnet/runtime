@@ -53,7 +53,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
     } gc;
 
     // Have a default binding context setup
-    gc.pBinder = GetBinderFromParentAssembly(pAppDomain)->GetManagedAssemblyLoadContextObject();
+    gc.pBinder = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)GetBinderFromParentAssembly(pAppDomain)->GetManagedAssemblyLoadContext());
     gc.pPrivAsm = NULL;
 
     _ASSERTE(gc.pBinder != NULL);

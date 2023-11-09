@@ -47,10 +47,6 @@ public:
         m_ptrManagedAssemblyLoadContext = ptrManagedDefaultBinderInstance;
     }
 
-#ifndef DACCESS_COMPILE
-    ASSEMBLYLOADCONTEXTREF GetManagedAssemblyLoadContextObject();
-#endif
-
     NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
     void AddLoadedAssembly(Assembly* loadedAssembly);
 

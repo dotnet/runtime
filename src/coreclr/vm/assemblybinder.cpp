@@ -8,19 +8,6 @@
 
 #ifndef DACCESS_COMPILE
 
-ASSEMBLYLOADCONTEXTREF AssemblyBinder::GetManagedAssemblyLoadContextObject()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_ptrManagedAssemblyLoadContext != NULL);
-    OBJECTHANDLE alcHandle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
-    return (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle(alcHandle);
-}
-
 HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
     BINDER_SPACE::Assembly** ppAssembly)
 {
