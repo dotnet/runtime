@@ -6,7 +6,7 @@ using Xunit;
 
 public class InvalidCallingConvTests
 {
-    private const string SwiftLib = "dummy.dylib";
+    private const string SwiftLib = "libDummy.dylib";
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s5Dummy9dummyFuncyyF")]
