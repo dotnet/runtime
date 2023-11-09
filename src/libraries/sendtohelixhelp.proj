@@ -247,7 +247,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">  
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutputDirectory)XUnitLogChecker.zip" />  
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesHelixDirectory)XUnitLogChecker.zip" />  
   </ItemGroup>  
 
   <!--

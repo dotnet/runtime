@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <XUnitLogCheckerLibrariesHelixDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'helix', 'tests', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesHelixDirectory>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,9 +27,11 @@
     <!-- TODO: This project gets excluded from the libraries ones, preventing it from getting zipped and uploaded along
          with the others, so we need to have a copy of the target here. This may be removed once we consolidate coreclr with libraries
          in a common location that will work for both. -->
-    <MakeDir Directories="$(XUnitLogCheckerLibrariesOutputDirectory)" />
+    <MakeDir Directories="$(XUnitLogCheckerLibrariesHelixDirectory)" />
+    <Message Importance="High" Text="XUnitLogCheckerLibrariesHelixDirectory: $(XUnitLogCheckerLibrariesHelixDirectory)" />
+    <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
     <ZipDirectory SourceDirectory="$(OutDir)"
-                  DestinationFile="$([MSBuild]::NormalizePath('$(XUnitLogCheckerLibrariesOutputDirectory)', '$(MSBuildProjectName).zip'))"
+                  DestinationFile="$(XUnitLogCheckerLibrariesHelixDirectory)$(MSBuildProjectName).zip"
                   Overwrite="true" />
   </Target>
 

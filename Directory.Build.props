@@ -179,8 +179,7 @@
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
     <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
     <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</CoreCLRToolPath>
-    <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
-    
+    <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>    
     <WasmtimeDir Condition="'$(WasmtimeDir)' == '' and '$(WASMTIME_PATH)' != '' and Exists($(WASMTIME_PATH))">$(WASMTIME_PATH)</WasmtimeDir>
     <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
@@ -336,9 +335,8 @@
     <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
     <IsXUnitLogCheckerSupported Condition="'$(IsXUnitLogCheckerSupported)' == ''">false</IsXUnitLogCheckerSupported>
     <IsXUnitLogCheckerSupported Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsXUnitLogCheckerSupported>
-    <!-- TODO: coreclr uses XUnitLogCheckerDirectory. Consolidate it with this property. -->
-    <XUnitLogCheckerLibrariesOutputDirectory Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'helix', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesOutputDirectory>
-
+    <!-- TODO: Consolidate these directory properties with the ones used by coreclr. -->
+    <XUnitLogCheckerLibrariesOutputDirectory Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesOutputDirectory>
   </PropertyGroup>
 
   <!-- Packaging -->
