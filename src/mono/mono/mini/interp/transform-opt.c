@@ -1672,64 +1672,53 @@ interp_optimize_bblocks (TransformData *td)
 	return needs_cprop;
 }
 
-static gboolean
-interp_local_deadce (TransformData *td)
+static void
+decrement_ref_count (TransformData *td, int *varp, gpointer data)
 {
-	int *local_ref_count = td->local_ref_count;
-	gboolean needs_dce = FALSE;
-	gboolean needs_cprop = FALSE;
+	int var = *varp;
+	if (!var_is_ssa_form (td, var))
+		return;
+	td->var_values [var].ref_count--;
+	// FIXME we could clear recursively
+	if (!td->var_values [var].ref_count)
+		*(gboolean*)data = TRUE;
+}
 
-	for (unsigned int i = 0; i < td->vars_size; i++) {
-		g_assert (local_ref_count [i] >= 0);
-		g_assert (td->vars [i].indirects >= 0);
-		if (td->vars [i].indirects || td->vars [i].dead)
-			continue;
-		if (!local_ref_count [i]) {
-			needs_dce = TRUE;
-			td->vars [i].dead = TRUE;
-		} else if (!td->vars [i].unknown_use) {
-			if (!td->vars [i].local_only) {
-				// The value of this var is not passed between multiple basic blocks
-				td->vars [i].local_only = TRUE;
-				if (td->verbose_level)
-					g_print ("Var %d is local only\n", i);
-				needs_cprop = TRUE;
-			}
-		}
-		td->vars [i].unknown_use = FALSE;
-	}
+static void
+interp_var_deadce (TransformData *td)
+{
+	gboolean need_retry;
 
-	// Return early if all locals are alive
-	if (!needs_dce)
-		return needs_cprop;
+retry:
+	need_retry = FALSE;
 
-	// Kill instructions that don't use stack and are storing into dead locals
+	// Kill instructions that are storing into unreferenced vars
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			if (MINT_NO_SIDE_EFFECTS (ins->opcode) ||
 					ins->opcode == MINT_LDLOCA_S) {
 				int dreg = ins->dreg;
-				if (td->vars [dreg].dead) {
+				if (!var_is_ssa_form (td, dreg))
+					continue;
+
+				if (!td->var_values [dreg].ref_count) {
 					if (td->verbose_level) {
 						g_print ("kill dead ins:\n\t");
 						interp_dump_ins (ins, td->data_items);
 					}
-
-					if (ins->opcode == MINT_LDLOCA_S) {
+					if (ins->opcode == MINT_LDLOCA_S)
 						td->vars [ins->sregs [0]].indirects--;
-						if (!td->vars [ins->sregs [0]].indirects) {
-							// We can do cprop now through this local. Run cprop again.
-							needs_cprop = TRUE;
-						}
-					}
+
+					interp_foreach_ins_svar (td, ins, &need_retry, decrement_ref_count);
+
 					interp_clear_ins (ins);
-					// FIXME This is lazy. We should update the ref count for the sregs and redo deadce.
-					needs_cprop = TRUE;
 				}
 			}
 		}
 	}
-	return needs_cprop;
+
+	if (need_retry)
+		goto retry;
 }
 
 static InterpInst*
@@ -1881,7 +1870,7 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 
 	td->var_values [sreg].ref_count--;
 	result.def = ins;
-	result.ref_count = 0;
+	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -2068,7 +2057,7 @@ interp_fold_binop (TransformData *td, InterpInst *ins, gboolean *folded)
 	td->var_values [sreg1].ref_count--;
 	td->var_values [sreg2].ref_count--;
 	result.def = ins;
-	result.ref_count = 0;
+	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -2263,7 +2252,10 @@ interp_cprop (TransformData *td)
 	if (td->verbose_level)
 		g_print ("\nCPROP:\n");
 
-	td->var_values = (InterpVarValue*) mono_mempool_alloc (td->mempool, td->vars_size * sizeof (InterpVarValue));
+	// FIXME
+	// There is no need to zero, if we pay attention to phi args vars. They
+	// can be used before the definition.
+	td->var_values = (InterpVarValue*) mono_mempool_alloc0 (td->mempool, td->vars_size * sizeof (InterpVarValue));
 
 	// Traverse in dfs order. This guarantees that we always reach the definition first before the
 	// use of the var. Exception is only for phi nodes, where we don't care about the definition
@@ -2323,7 +2315,6 @@ interp_cprop (TransformData *td)
 				InterpVarValue *dval = &td->var_values [dreg];
 				dval->type = VAR_VALUE_NONE;
 				dval->def = ins;
-				dval->ref_count = 0;
 			}
 
 			// We always store to the full i4, except as part of STIND opcodes. These opcodes can be
@@ -3213,6 +3204,8 @@ interp_optimize_code (TransformData *td)
 
 	if (mono_interp_opt & INTERP_OPT_CPROP)
 		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
+
+	interp_var_deadce (td);
 
 	interp_exit_ssa (td);
 

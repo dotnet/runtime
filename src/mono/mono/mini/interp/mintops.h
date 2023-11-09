@@ -234,7 +234,7 @@ typedef enum {
 #define MINT_IS_RETURN(op) (((op) >= MINT_RET && (op) <= MINT_RET_U2) || (op) == MINT_RET_I4_IMM || (op) == MINT_RET_I8_IMM)
 
 // TODO Add more
-#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDC_R4 || op == MINT_LDC_R8 || op == MINT_LDPTR || op == MINT_BOX)
+#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDC_R4 || op == MINT_LDC_R8 || op == MINT_LDPTR || op == MINT_BOX || op == MINT_INITLOCAL)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2

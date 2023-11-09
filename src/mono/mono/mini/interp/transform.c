@@ -1938,7 +1938,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			!strcmp (tm, "ClearWithReferences")) {
 		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
-		if (!strcmp (tm, "Block")) {
+		// FIXME
+		if (!strcmp (tm, "Block") && 0) {
 			InterpInst *ldloca2 = td->last_ins;
 			if (ldloca2 != NULL && ldloca2->opcode == MINT_LDLOCA_S) {
 				InterpInst *ldloca1 = interp_prev_ins (ldloca2);

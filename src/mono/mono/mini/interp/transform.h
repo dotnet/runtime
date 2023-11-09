@@ -217,13 +217,10 @@ typedef struct {
 		InterpInst *def;
 	};
 
-	guint dead : 1;
 	guint execution_stack : 1;
 	guint call_args : 1;
 	guint global : 1;
 	guint no_call_args : 1;
-	guint unknown_use : 1;
-	guint local_only : 1;
 	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
 	guint no_ssa : 1; // Var is not in ssa form, not subject to optimizations
 	guint il_global : 1; // Args and IL locals
