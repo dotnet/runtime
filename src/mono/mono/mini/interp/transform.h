@@ -63,6 +63,8 @@ typedef struct {
 	};
 	// The instruction that writes this local.
 	InterpInst *def;
+	// Liveness marker of the definition
+	guint32 liveness;
 	// The number of times this var is referenced. After optimizations
 	// this can become 0, in which case we can clear the def instruction.
 	int ref_count;
@@ -228,6 +230,10 @@ typedef struct {
 typedef struct {
 	int var_index;
 	GSList *ssa_stack;
+	// This liveness is bblock only. It is used during cprop to determine whether we
+	// can move the definition of a renamed fixed var earlier (if there are no conflicts with
+	// other renamed vars from the same var)
+	guint32 last_use_liveness;
 
 	// Var that is global and might take part in phi opcodes
 	guint ssa_global : 1;
