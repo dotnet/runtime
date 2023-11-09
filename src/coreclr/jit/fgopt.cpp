@@ -6729,69 +6729,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     // If return value is true, retry.
     // May also add to retryBlocks.
     //
-    auto tailMerge = [&](BasicBlock* block) -> bool {
-
-        if (block->countOfInEdges() < 2)
-        {
-            // Nothing to merge here
-            return false;
-        }
-
-        predInfo.Reset();
-
-        // Find the subset of preds that reach along non-critical edges
-        // and populate predInfo.
-        //
-        for (BasicBlock* const predBlock : block->PredBlocks())
-        {
-            if (predBlock->GetUniqueSucc() != block)
-            {
-                continue;
-            }
-
-            if (!BasicBlock::sameEHRegion(block, predBlock))
-            {
-                continue;
-            }
-
-            Statement* lastStmt = predBlock->lastStmt();
-
-            // Block might be empty.
-            //
-            if (lastStmt == nullptr)
-            {
-                continue;
-            }
-
-            // Walk back past any GT_NOPs.
-            //
-            Statement* const firstStmt = predBlock->firstStmt();
-            while (lastStmt->GetRootNode()->OperIs(GT_NOP))
-            {
-                if (lastStmt == firstStmt)
-                {
-                    // predBlock is evidently all GT_NOP.
-                    //
-                    lastStmt = nullptr;
-                    break;
-                }
-
-                lastStmt = lastStmt->GetPrevStmt();
-            }
-
-            // Block might be effectively empty.
-            //
-            if (lastStmt == nullptr)
-            {
-                continue;
-            }
-
-            // We don't expect to see PHIs but watch for them anyways.
-            //
-            assert(!lastStmt->IsPhiDefnStmt());
-            predInfo.Emplace(predBlock, lastStmt);
-        }
-
+    auto tailMergePreds = [&](BasicBlock* commSucc) -> bool {
         // Are there enough preds to make it interesting?
         //
         if (predInfo.Height() < 2)
@@ -6842,9 +6780,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // We have some number of preds that have identical last statements.
             // If all preds of block have a matching last stmt, move that statement to the start of block.
             //
-            if (matchedPredInfo.Height() == (int)block->countOfInEdges())
+            if ((commSucc != nullptr) && (matchedPredInfo.Height() == (int)commSucc->countOfInEdges()))
             {
-                JITDUMP("All preds of " FMT_BB " end with the same tree, moving\n", block->bbNum);
+                JITDUMP("All preds of " FMT_BB " end with the same tree, moving\n", commSucc->bbNum);
                 JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
                 for (int j = 0; j < matchedPredInfo.Height(); j++)
@@ -6860,8 +6798,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     //
                     if (j == 0)
                     {
-                        fgInsertStmtAtBeg(block, stmt);
-                        block->bbFlags |= predBlock->bbFlags & BBF_COPY_PROPAGATE;
+                        fgInsertStmtAtBeg(commSucc, stmt);
+                        commSucc->bbFlags |= predBlock->bbFlags & BBF_COPY_PROPAGATE;
                     }
 
                     madeChanges = true;
@@ -6876,7 +6814,16 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // Pick one block as the victim -- preferably a block with just one
             // statement or one that falls through to block (or both).
             //
-            JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(), block->bbNum);
+            if (commSucc != nullptr)
+            {
+                JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(),
+                        commSucc->bbNum);
+            }
+            else
+            {
+                JITDUMP("A set of %d return blocks end with the same tree\n", matchedPredInfo.Height());
+            }
+
             JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
             BasicBlock* crossJumpVictim       = nullptr;
@@ -6977,7 +6924,10 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 //
                 predBlock->SetJumpKindAndTarget(BBJ_ALWAYS, crossJumpTarget DEBUG_ARG(this));
 
-                fgRemoveRefPred(block, predBlock);
+                if (commSucc != nullptr)
+                {
+                    fgRemoveRefPred(commSucc, predBlock);
+                }
                 fgAddRefPred(crossJumpTarget, predBlock);
             }
 
@@ -7001,6 +6951,71 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         return false;
     };
 
+    auto tailMerge = [&](BasicBlock* block) -> bool {
+        if (block->countOfInEdges() < 2)
+        {
+            // Nothing to merge here
+            return false;
+        }
+
+        predInfo.Reset();
+
+        // Find the subset of preds that reach along non-critical edges
+        // and populate predInfo.
+        //
+        for (BasicBlock* const predBlock : block->PredBlocks())
+        {
+            if (predBlock->GetUniqueSucc() != block)
+            {
+                continue;
+            }
+
+            if (!BasicBlock::sameEHRegion(block, predBlock))
+            {
+                continue;
+            }
+
+            Statement* lastStmt = predBlock->lastStmt();
+
+            // Block might be empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // Walk back past any GT_NOPs.
+            //
+            Statement* const firstStmt = predBlock->firstStmt();
+            while (lastStmt->GetRootNode()->OperIs(GT_NOP))
+            {
+                if (lastStmt == firstStmt)
+                {
+                    // predBlock is evidently all GT_NOP.
+                    //
+                    lastStmt = nullptr;
+                    break;
+                }
+
+                lastStmt = lastStmt->GetPrevStmt();
+            }
+
+            // Block might be effectively empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // We don't expect to see PHIs but watch for them anyways.
+            //
+            assert(!lastStmt->IsPhiDefnStmt());
+            predInfo.Emplace(predBlock, lastStmt);
+        }
+
+        return tailMergePreds(block);
+    };
+
     auto iterateTailMerge = [&](BasicBlock* block) -> void {
 
         int numOpts = 0;
@@ -7016,12 +7031,29 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     };
 
+    ArrayStack<BasicBlock*> retBlocks(getAllocator(CMK_ArrayStack));
+
     // Visit each block
     //
     for (BasicBlock* const block : Blocks())
     {
         iterateTailMerge(block);
+
+        // TODO: consider removing hasSingleStmt(), it should find more opportunities
+        // (with size and TP regressions)
+        if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block != genReturnBB))
+        {
+            retBlocks.Push(block);
+        }
     }
+
+    predInfo.Reset();
+    for (int i = 0; i < retBlocks.Height(); i++)
+    {
+        predInfo.Push(PredInfo(retBlocks.Bottom(i), retBlocks.Bottom(i)->lastStmt()));
+    }
+
+    tailMergePreds(nullptr);
 
     // Work through any retries
     //
