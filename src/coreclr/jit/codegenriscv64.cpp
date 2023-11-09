@@ -6075,14 +6075,6 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
 }
 
-// Generate code for a load from some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
-{
-    NYI_RISCV64("genCodeForLoadOffset-----unimplemented on RISCV64 yet----");
-}
-
 //------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
