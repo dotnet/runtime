@@ -73,7 +73,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
 #if defined(_DEBUG)
         m_methName = ::eeGetMethodFullName(comp, methInfo->ftn, &clsName);
 #else
-        m_methName = comp->getMethodName(methInfo->ftn, &clsName);
+        m_methName = comp->getMethodNameFromMetadata(methInfo->ftn, &clsName, NULL, NULL);
 #endif
         char* myClsName = new char[strlen(clsName) + 1];
         strcpy(myClsName, clsName);
@@ -752,7 +752,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     if (!jmpCall)
     {
         const char* clsName;
-        const char* methName = comp->getMethodName(info->ftn, &clsName);
+        const char* methName = comp->getMethodNameFromMetadata(info->ftn, &clsName, NULL, NULL);
         if (   !s_InterpretMeths.contains(methName, clsName, info->args.pSig)
             || s_InterpretMethsExclude.contains(methName, clsName, info->args.pSig))
         {
@@ -1766,7 +1766,7 @@ inline ARG_SLOT Interpreter::InterpretMethodBody(struct InterpreterMethodInfo* i
             CORINFO_METHOD_INFO methInfo;
 
             GCX_PREEMP();
-            jitInfo->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo);
+            jitInfo->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo, NULL);
             GenerateInterpreterStub(jitInfo, &methInfo, NULL, 0, &interpMethInfo, true);
         }
     }
@@ -5978,7 +5978,7 @@ void Interpreter::NewObj()
 
     {
         GCX_PREEMP();
-        clsName = m_interpCeeInfo.getClassName(methTok.hClass);
+        clsName = m_interpCeeInfo.getClassNameFromMetadata(methTok.hClass, NULL);
     }
 #endif // _DEBUG
 
@@ -6084,7 +6084,7 @@ void Interpreter::NewObj()
             {
                 GCX_PREEMP();
                 bool sideEffect;
-                newHelper = m_interpCeeInfo.getNewHelper(methTok.hClass, m_methInfo->m_method, &sideEffect);
+                newHelper = m_interpCeeInfo.getNewHelper(methTok.hClass, &sideEffect);
             }
 
             MethodTable * pNewObjMT = GetMethodTableFromClsHnd(methTok.hClass);
@@ -9603,7 +9603,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     const char* methToCallName = NULL;
     {
         GCX_PREEMP();
-        methToCallName = m_interpCeeInfo.getMethodName(CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName);
+        methToCallName = m_interpCeeInfo.getMethodNameFromMetadata(CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName, NULL, NULL);
     }
 #if INTERP_TRACING
     if (strncmp(methToCallName, "get_", 4) == 0)
@@ -10583,7 +10583,7 @@ bool Interpreter::IsDeadSimpleGetter(CEEInfo* info, MethodDesc* pMD, size_t* off
     CORINFO_METHOD_INFO methInfo;
     {
         GCX_PREEMP();
-        bool b = info->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo);
+        bool b = info->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo, NULL);
         if (!b) return false;
     }
 
@@ -11636,7 +11636,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     const char* returnType = NULL;
 
     const char* className;
-    const char* methodName = info->getMethodName(hnd, &className);
+    const char* methodName = info->getMethodNameFromMetadata(hnd, &className, NULL, NULL);
     if (clsName != NULL)
     {
         *clsName = className;
@@ -11958,7 +11958,7 @@ void Interpreter::PrintValue(InterpreterType it, BYTE* valAddr)
     case CORINFO_TYPE_VALUECLASS:
         {
             GCX_PREEMP();
-            fprintf(GetLogFile(), "<%s>: [", m_interpCeeInfo.getClassName(it.ToClassHandle()));
+            fprintf(GetLogFile(), "<%s>: [", m_interpCeeInfo.getClassNameFromMetadata(it.ToClassHandle(), NULL));
             unsigned sz = getClassSize(it.ToClassHandle());
             for (unsigned i = 0; i < sz; i++)
             {
