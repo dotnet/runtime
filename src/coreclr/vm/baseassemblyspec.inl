@@ -14,11 +14,6 @@
 #ifndef __BASE_ASSEMBLY_SPEC_INL__
 #define __BASE_ASSEMBLY_SPEC_INL__
 
-#include <clrex.h>
-#include <util.hpp>
-#include <gchandleutilities.h>
-#include <threads.h>
-
 inline int BaseAssemblySpec::CompareStrings(LPCUTF8 string1, LPCUTF8 string2)
 {
     WRAPPER_NO_CONTRACT;
@@ -284,18 +279,7 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
     // If the assemblySpec contains the binding context, then check if they match.
     if (pSpec->m_pBinder != m_pBinder)
     {
-        if (pSpec->m_pBinder != NULL && m_pBinder != NULL)
-        {
-            GCX_COOP();
-            if (ObjectFromHandle(pSpec->m_pBinder) != ObjectFromHandle(m_pBinder))
-            {
-                return FALSE;
-            }
-        }
-        else
-        {
-            return FALSE;
-        }
+        return FALSE;
     }
 
     return TRUE;

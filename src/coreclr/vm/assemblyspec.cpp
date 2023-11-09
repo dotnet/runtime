@@ -205,15 +205,13 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     InitializeSpec(a, pImport, NULL);
 
     // Set the binding context for the AssemblySpec
-    OBJECTHANDLE pCurrentBinder = GetBinder();
+    AssemblyBinder* pCurrentBinder = GetBinder();
     if (pCurrentBinder == NULL)
     {
-        // unblock CoreLib bootstrap
-
-        //ASSEMBLYBINDERREF pExpectedBinder = pFile->GetAssemblyBinder();
-        //// We should always have the binding context in the PEAssembly.
-        //_ASSERTE(pExpectedBinder != NULL);
-        //SetBinder(GetAppDomain()->CreateHandle(pExpectedBinder));
+        AssemblyBinder* pExpectedBinder = pFile->GetAssemblyBinder();
+        // We should always have the binding context in the PEAssembly.
+        _ASSERTE(pExpectedBinder != NULL);
+        SetBinder(pExpectedBinder);
     }
 }
 
@@ -367,18 +365,18 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFil
     return pDomainAssembly->GetAssembly();
 }
 
-ASSEMBLYBINDERREF AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
+AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_ANY;
         PRECONDITION(pDomain != NULL);
     }
     CONTRACTL_END;
 
-    ASSEMBLYBINDERREF pParentAssemblyBinder = NULL;
+    AssemblyBinder *pParentAssemblyBinder = NULL;
     DomainAssembly *pParentDomainAssembly = GetParentAssembly();
 
     if(pParentDomainAssembly != NULL)
@@ -410,7 +408,7 @@ ASSEMBLYBINDERREF AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
         //
         // For (3), fetch the fallback load context binder reference.
 
-        pParentAssemblyBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(GetFallbackBinderForRequestingAssembly());
+        pParentAssemblyBinder = GetFallbackBinderForRequestingAssembly();
     }
 
     if (!pParentAssemblyBinder)
@@ -420,7 +418,7 @@ ASSEMBLYBINDERREF AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.
-        pParentAssemblyBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(pDomain->GetDefaultBinder());
+        pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetDefaultBinder());
     }
 
     return pParentAssemblyBinder;
@@ -513,10 +511,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     if (!pILImage->CheckILFormat())
         THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
-    {
-        GCX_COOP();
-        RETURN AssemblyNative::LoadFromPEImage((ASSEMBLYBINDERREF)ObjectFromHandle(AppDomain::GetCurrentDomain()->GetDefaultBinder()), pILImage, true /* excludeAppPaths */);
-    }
+    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage, true /* excludeAppPaths */);
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()
@@ -692,18 +687,14 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     }
     CONTRACTL_END;
 
-    GCX_COOP();
-
     UPTR key = (UPTR)pSpec->Hash();
 
-    ASSEMBLYBINDERREF pBinderForLookup = NULL;
+    AssemblyBinder *pBinderForLookup = NULL;
     bool fGetBindingContextFromParent = true;
 
     // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
     // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
-    OBJECTHANDLE pBinderHandle = pSpec->GetBinder();
-    if (pBinderHandle != NULL)
-        pBinderForLookup = ObjectFromHandle(pSpec->GetBinder());
+    pBinderForLookup = pSpec->GetBinder();
 
     if (pBinderForLookup != NULL)
     {
@@ -715,12 +706,12 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     if (fGetBindingContextFromParent)
     {
         pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
-        pSpec->SetBinder(GetAppDomain()->CreateHandle(pBinderForLookup));
+        pSpec->SetBinder(pBinderForLookup);
     }
 
-    if (pBinderForLookup != NULL)
+    if (pBinderForLookup)
     {
-        key = key ^ (UPTR)(pBinderForLookup->GetHeader()->GetBits() | MASK_HASHCODE);
+        key = key ^ (UPTR)pBinderForLookup;
     }
 
     AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
@@ -929,17 +920,12 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
 
     UPTR key = (UPTR)pSpec->Hash();
 
+    AssemblyBinder* pBinderContextForLookup = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+    key = key ^ (UPTR)pBinderContextForLookup;
+
+    if (!pSpec->GetBinder())
     {
-        GCX_COOP();
-
-        ASSEMBLYBINDERREF pBinderContextForLookup = pAssembly->GetPEAssembly()->GetAssemblyBinder();
-
-        key = key ^ (UPTR)(pBinderContextForLookup->GetHeader()->GetBits() | MASK_HASHCODE);
-
-        if (!pSpec->GetBinder())
-        {
-            pSpec->SetBinder(GetAppDomain()->CreateHandle(pBinderContextForLookup));
-        }
+        pSpec->SetBinder(pBinderContextForLookup);
     }
 
     AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
@@ -1008,20 +994,14 @@ BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *
     }
     CONTRACT_END;
 
-    GCX_COOP();
-
     UPTR key = (UPTR)pSpec->Hash();
 
-    ASSEMBLYBINDERREF pBinderContextForLookup = pPEAssembly->GetAssemblyBinder();
-
-    if (pBinderContextForLookup != NULL)
-    {
-        key = key ^ (UPTR)(pBinderContextForLookup->GetHeader()->GetBits() | MASK_HASHCODE);
-    }
+    AssemblyBinder* pBinderContextForLookup = pPEAssembly->GetAssemblyBinder();
+    key = key ^ (UPTR)pBinderContextForLookup;
 
     if (!pSpec->GetBinder())
     {
-        pSpec->SetBinder(GetAppDomain()->CreateHandle(pBinderContextForLookup));
+        pSpec->SetBinder(pBinderContextForLookup);
     }
 
     AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
@@ -1034,20 +1014,14 @@ BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *
 
         if (pBinderContextForLookup != NULL)
         {
-            GCPROTECT_BEGIN(pBinderContextForLookup);
+            LoaderAllocator* pLoaderAllocator = pBinderContextForLookup->GetLoaderAllocator();
 
-            MethodDescCallSite getLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR, &pBinderContextForLookup);
-            ARG_SLOT arg = ObjToArgSlot(pBinderContextForLookup);
-            LOADERALLOCATORREF pLoaderAllocator = (LOADERALLOCATORREF)getLoaderAllocator.Call_RetOBJECTREF(&arg);
-            
             // Assemblies loaded with AssemblyLoadContext need to use a different heap if
             // marked as collectible
-            if (pLoaderAllocator != NULL)
+            if (pLoaderAllocator)
             {
-                pHeap = pLoaderAllocator->GetNativeLoaderAllocator()->GetHighFrequencyHeap();
+                pHeap = pLoaderAllocator->GetHighFrequencyHeap();
             }
-
-            GCPROTECT_END();
         }
 
         entry = abHolder.CreateAssemblyBinding(pHeap);
@@ -1105,15 +1079,12 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         //
         // Since no entry was found for this assembly in any binding context, save the failure
         // in the DefaultBinder context
-        GCX_COOP();
-
-        ASSEMBLYBINDERREF pBinderToSaveException = NULL;
-        pBinderToSaveException = ObjectFromHandle(pSpec->GetBinder());
+        AssemblyBinder* pBinderToSaveException = NULL;
+        pBinderToSaveException = pSpec->GetBinder();
         if (pBinderToSaveException == NULL)
         {
             pBinderToSaveException = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
-
-            key = key ^ (UPTR)(pBinderToSaveException->GetHeader()->GetBits() | MASK_HASHCODE);
+            key = key ^ (UPTR)pBinderToSaveException;
         }
     }
 
