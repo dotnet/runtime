@@ -827,6 +827,13 @@ public:
 #endif
     }
 
+#ifdef HOST_UNIX
+    FORCEINLINE static uint32_t BitScanForward(unsigned __int128 value)
+    {
+        return BitScanForward(static_cast<uint64_t>(value));
+    }
+#endif
+
     //------------------------------------------------------------------------
     // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
     // (MSB) for a set bit (1)
@@ -880,6 +887,10 @@ public:
     static uint32_t PopCount(uint32_t value);
 
     static uint32_t PopCount(uint64_t value);
+
+#ifdef HOST_UNIX
+    static uint32_t PopCount(unsigned __int128 value);
+#endif
 
     static uint32_t ReverseBits(uint32_t value);
 

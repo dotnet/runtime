@@ -3332,6 +3332,22 @@ uint32_t BitOperations::PopCount(uint64_t value)
 #endif
 }
 
+#ifdef HOST_UNIX
+//------------------------------------------------------------------------
+// BitOperations::PopCount: Returns the population count (number of bits set) of a mask.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The population count (number of bits set) of value
+//
+uint32_t BitOperations::PopCount(unsigned __int128 value)
+{
+    return BitOperations::PopCount(static_cast<uint64_t>(value));
+}
+#endif
+
 //------------------------------------------------------------------------
 // BitOperations::ReverseBits: Reverses the bits in an integer value
 //

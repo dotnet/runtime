@@ -136,6 +136,14 @@ inline unsigned genLog2(unsigned __int64 value)
     return BitOperations::BitScanForward(value);
 }
 
+#ifdef HOST_UNIX
+inline unsigned genLog2(unsigned __int128 value)
+{
+    // assert(genExactlyOneBit(value));
+    return BitOperations::BitScanForward(value);
+}
+#endif
+
 #ifdef __APPLE__
 inline unsigned genLog2(size_t value)
 {
@@ -156,6 +164,18 @@ inline unsigned uhi32(unsigned __int64 value)
 {
     return static_cast<unsigned>(value >> 32);
 }
+
+#ifdef HOST_UNIX
+/*****************************************************************************
+ *
+ *  A rather simple routine that counts the number of bits in a given number.
+ */
+
+inline unsigned genCountBits(unsigned __int128 bits)
+{
+    return BitOperations::PopCount(static_cast<uint64_t>(bits));
+}
+#endif
 
 /*****************************************************************************
  *

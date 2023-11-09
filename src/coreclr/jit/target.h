@@ -80,7 +80,11 @@ inline bool compUnixX86Abi()
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
+#ifdef HOST_UNIX
+#define REGMASK_BITS 128
+#else
 #define REGMASK_BITS 64
+#endif
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_LOONGARCH64)
@@ -139,7 +143,11 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
+#ifdef HOST_UNIX
+enum _regMask_enum : unsigned __int128
+#else
 enum _regMask_enum : unsigned __int64
+#endif
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
@@ -234,7 +242,11 @@ typedef unsigned regMaskSmall;
 #define REG_MASK_INT_FMT "%08X"
 #define REG_MASK_ALL_FMT "%08X"
 #else
+#if defined(HOST_UNIX) && defined(TARGET_ARM64)
+typedef unsigned __int128 regMaskSmall;
+#else
 typedef unsigned __int64 regMaskSmall;
+#endif
 #define REG_MASK_INT_FMT "%04llX"
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
