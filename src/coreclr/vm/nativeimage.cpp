@@ -41,7 +41,7 @@ NativeImageIndexTraits::count_t NativeImageIndexTraits::Hash(LPCUTF8 a)
     return SString(SString::Utf8Literal, a).HashCaseInsensitive();
 }
 
-NativeImage::NativeImage(OBJECTHANDLE pAssemblyBinder, PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
+NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
     : m_eagerFixupsLock(CrstNativeImageEagerFixups)
 {
     CONTRACTL
@@ -111,7 +111,7 @@ NativeImage::~NativeImage()
 NativeImage *NativeImage::Open(
     Module *componentModule,
     LPCUTF8 nativeImageFileName,
-    OBJECTHANDLE pAssemblyBinder,
+    AssemblyBinder *pAssemblyBinder,
     LoaderAllocator *pLoaderAllocator,
     /* out */ bool *isNewNativeImage)
 {
@@ -120,10 +120,8 @@ NativeImage *NativeImage::Open(
     NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
     if (pExistingImage != nullptr)
     {
-        GCX_COOP();
-
         *isNewNativeImage = false;
-        if (ObjectFromHandle(pExistingImage->GetAssemblyBinder()) == ObjectFromHandle(pAssemblyBinder))
+        if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
         {
             return pExistingImage;
         }

@@ -331,18 +331,15 @@ namespace
         }
 #endif // !TARGET_UNIX
 
-        GCX_COOP();
-
         NATIVE_LIBRARY_HANDLE hmod = NULL;
         PEAssembly *pManifestFile = pAssembly->GetPEAssembly();
-        ASSEMBLYBINDERREF pBinder = pManifestFile->GetAssemblyBinder();
+        PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
-        ASSEMBLYBINDERREF pCurrentBinder = pBinder;
+        AssemblyBinder *pCurrentBinder = pBinder;
 
         // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
-        // Binder can be null during CoreLib bootstrap.
-        if (pCurrentBinder == NULL || pCurrentBinder->m_isDefault)
+        if (pCurrentBinder->IsDefault())
         {
             return NULL;
         }
@@ -351,13 +348,15 @@ namespace
         //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll to give
         //        The custom assembly context a chance to load the unmanaged dll.
 
+        GCX_COOP();
+
         STRINGREF pUnmanagedDllName;
         pUnmanagedDllName = StringObject::NewString(wszLibName);
 
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->m_managedALC;
+        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
@@ -378,10 +377,8 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        GCX_COOP();
-
-        ASSEMBLYBINDERREF pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
-        return pBinder->m_managedALC;
+        PTR_AssemblyBinder pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+        return pBinder->GetManagedAssemblyLoadContext();
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)

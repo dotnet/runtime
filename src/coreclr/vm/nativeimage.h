@@ -80,7 +80,7 @@ private:
     // Points to the OwnerCompositeExecutable section content within the component MSIL module
     LPCUTF8 m_fileName;
 
-    OBJECTHANDLE m_pAssemblyBinder;
+    AssemblyBinder *m_pAssemblyBinder;
     ReadyToRunInfo *m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
     PEImageLayout *m_pImageLayout;
@@ -97,7 +97,7 @@ private:
     bool m_readyToRunCodeDisabled;
 
 private:
-    NativeImage(OBJECTHANDLE pAssemblyBinder, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
+    NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
 
 protected:
     void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator, AllocMemTracker *pamTracker);
@@ -108,7 +108,7 @@ public:
     static NativeImage *Open(
         Module *componentModule,
         LPCUTF8 nativeImageFileName,
-        OBJECTHANDLE pAssemblyBinder,
+        AssemblyBinder *pAssemblyBinder,
         LoaderAllocator *pLoaderAllocator,
         /* out */ bool *isNewNativeImage);
 
@@ -122,7 +122,7 @@ public:
     IMDInternalImport *GetManifestMetadata() const { return m_pManifestMetadata; }
     uint32_t GetManifestAssemblyCount() const { return m_manifestAssemblyCount; }
     PTR_Assembly *GetManifestMetadataAssemblyRefMap() { return m_pNativeMetadataAssemblyRefMap; }
-    OBJECTHANDLE GetAssemblyBinder() const { return m_pAssemblyBinder; }
+    AssemblyBinder *GetAssemblyBinder() const { return m_pAssemblyBinder; }
 
     Assembly *LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly);
     
