@@ -651,7 +651,7 @@ mono_wasm_invoke_method_bound (MonoMethod *method, void* args /*JSMarshalerArgum
 
 	// this failure is unlikely because it would be runtime error, not application exception.
 	// the application exception is passed inside JSMarshalerArguments `args`
-	if (temp_exc) {
+	if (temp_exc && out_exc) {
 		PVOLATILE(MonoObject) exc2 = NULL;
 		store_volatile((MonoObject**)out_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
 		if (exc2)

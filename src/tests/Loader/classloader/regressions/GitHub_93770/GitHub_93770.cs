@@ -20,12 +20,11 @@ namespace ReproGH93770;
 public class ReproGH93770
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         C c = new C();
         I1 i1 = c;
         Helper(i1);
-        return 100;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Helper(I1 i1)
