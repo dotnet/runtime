@@ -16,6 +16,7 @@
 #include "peimagelayout.inl"
 #include "invokeutil.h"
 #include "strongnameinternal.h"
+#include "object.h"
 
 #include "../binder/inc/applicationcontext.hpp"
 #include "../binder/inc/assemblybindercommon.hpp"

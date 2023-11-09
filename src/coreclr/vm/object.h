@@ -1451,31 +1451,6 @@ public:
     INT_PTR m_managedALC;
 };
 
-#ifdef USE_CHECKED_OBJECTREFS
-
-#else
-
-#endif
-
-class PEImage;
-
-// managed Internal.Runtime.Binder.Assembly
-class BinderAssemblyObject : public Object
-{
-public:
-    OBJECTREF m_binder;
-    OBJECTREF m_assemblyName;
-    PEImage* m_peImage;
-    DomainAssembly* m_pDomainAssembly;
-    CLR_BOOL m_isInTPA;
-    CLR_BOOL m_isCoreLib;
-
-    PTR_AssemblyBinder GetBinder()
-    {
-        return (PTR_AssemblyBinder)((ASSEMBLYLOADCONTEXTREF)m_binder)->GetNativeAssemblyBinder();
-    }
-};
-
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
 //
@@ -1621,6 +1596,25 @@ typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 #define ArgSlotToString(s)    ((STRINGREF)(SIZE_T)(s))
 
 #endif //USE_CHECKED_OBJECTREFS
+
+class PEImage;
+
+// managed Internal.Runtime.Binder.Assembly
+class BinderAssemblyObject : public Object
+{
+public:
+    ASSEMBLYLOADCONTEXTREF m_binder;
+    OBJECTREF m_assemblyName;
+    PEImage* m_peImage;
+    DomainAssembly* m_pDomainAssembly;
+    CLR_BOOL m_isInTPA;
+    CLR_BOOL m_isCoreLib;
+
+    PTR_AssemblyBinder GetBinder()
+    {
+        return (PTR_AssemblyBinder)m_binder->GetNativeAssemblyBinder();
+    }
+};
 
 #define PtrToArgSlot(ptr) ((ARG_SLOT)(SIZE_T)(ptr))
 #define ArgSlotToPtr(s)   ((LPVOID)(SIZE_T)(s))
