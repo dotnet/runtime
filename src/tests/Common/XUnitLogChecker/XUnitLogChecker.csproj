@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestArchiveTestsDir>$(XUnitLogCheckerLibrariesOutputDirectory)</TestArchiveTestsDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,5 +16,21 @@
     <Compile Include="../Coreclr.TestWrapper/CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
     <Compile Include="../Coreclr.TestWrapper/MobileAppHandler.cs" Link="MobileAppHandler.cs" />
   </ItemGroup>
+
+  <Target Name="Test">
+    <!-- This avoids attempting to run tests on this assembly because it is being included in libs.tests.
+         TODO: Build XUnitLogChecker once, in a common location for coreclr and libraries, then zip and upload it once,
+         and then consume the same payload in both the coreclr and libraries tests. -->
+  </Target>
+ 
+  <Target Name="ZipTestArchive" AfterTargets="PrepareForRun">
+    <!-- TODO: This project gets excluded from the libraries ones, preventing it from getting zipped and uploaded along
+         with the others, so we need to have a copy of the target here. This may be removed once we consolidate coreclr with libraries
+         in a common location that will work for both. -->
+    <MakeDir Directories="$(TestArchiveTestsDir)" />
+    <ZipDirectory SourceDirectory="$(OutDir)"
+                  DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(MSBuildProjectName).zip'))"
+                  Overwrite="true" />
+  </Target>
 
 </Project>
