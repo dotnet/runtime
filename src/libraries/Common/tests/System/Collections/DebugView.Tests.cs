@@ -202,8 +202,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(TestDebuggerAttributes_Inputs))]
         public static void TestDebuggerAttributes_Null(object obj)
         {
-            Type proxyType = DebuggerAttributes.GetProxyType(obj);
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(obj.GetType()));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
     }
