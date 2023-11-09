@@ -1213,6 +1213,96 @@ extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyH
 
     END_QCALL;
 }
+/*static*/
+
+extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PTR ptrManagedAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible)
+{
+    QCALL_CONTRACT;
+
+    INT_PTR ptrNativeAssemblyBinder = NULL;
+
+    BEGIN_QCALL;
+
+    // We do not need to take a lock since this method is invoked from the ctor of AssemblyLoadContext managed type and
+    // only one thread is ever executing a ctor for a given instance.
+    //
+
+    // Initialize the assembly binder instance in the VM
+    PTR_AppDomain pCurDomain = AppDomain::GetCurrentDomain();
+    DefaultAssemblyBinder *pDefaultBinder = pCurDomain->GetDefaultBinder();
+    if (!fRepresentsTPALoadContext)
+    {
+        // Initialize a custom assembly binder
+        CustomAssemblyBinder *pCustomBinder = NULL;
+
+        AssemblyLoaderAllocator* loaderAllocator = NULL;
+        OBJECTHANDLE loaderAllocatorHandle = NULL;
+
+        if (fIsCollectible)
+        {
+            // Create a new AssemblyLoaderAllocator for an AssemblyLoadContext
+            loaderAllocator = new AssemblyLoaderAllocator();
+
+            GCX_COOP();
+            LOADERALLOCATORREF pManagedLoaderAllocator = NULL;
+            GCPROTECT_BEGIN(pManagedLoaderAllocator);
+            {
+                GCX_PREEMP();
+                // Some of the initialization functions are not virtual. Call through the derived class
+                // to prevent calling the base class version.
+                loaderAllocator->Init(pCurDomain);
+                loaderAllocator->InitVirtualCallStubManager(pCurDomain);
+
+                // Setup the managed proxy now, but do not actually transfer ownership to it.
+                // Once everything is setup and nothing can fail anymore, the ownership will be
+                // atomically transferred by call to LoaderAllocator::ActivateManagedTracking().
+                loaderAllocator->SetupManagedTracking(&pManagedLoaderAllocator);
+            }
+
+            // Create a strong handle to the LoaderAllocator
+            loaderAllocatorHandle = pCurDomain->CreateHandle(pManagedLoaderAllocator);
+
+            GCPROTECT_END();
+
+            loaderAllocator->ActivateManagedTracking();
+        }
+
+        IfFailThrow(CustomAssemblyBinder::SetupContext(pDefaultBinder, loaderAllocator, loaderAllocatorHandle, ptrManagedAssemblyLoadContext, &pCustomBinder));
+        ptrNativeAssemblyBinder = reinterpret_cast<INT_PTR>(pCustomBinder);
+    }
+    else
+    {
+        // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
+        // First, confirm we do not have an existing managed ALC attached to the TPA binder.
+        _ASSERTE(pDefaultBinder->GetManagedAssemblyLoadContext() == NULL);
+
+        // Attach the managed TPA binding context with the native one.
+        pDefaultBinder->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
+        ptrNativeAssemblyBinder = reinterpret_cast<INT_PTR>(pDefaultBinder);
+    }
+
+    END_QCALL;
+
+    return ptrNativeAssemblyBinder;
+}
+
+/*static*/
+extern "C" void QCALLTYPE AssemblyNative_PrepareForAssemblyLoadContextRelease(INT_PTR ptrNativeAssemblyBinder, INT_PTR ptrManagedStrongAssemblyLoadContext)
+{
+    QCALL_CONTRACT;
+
+    BOOL fDestroyed = FALSE;
+
+    BEGIN_QCALL;
+
+
+    {
+        GCX_COOP();
+        reinterpret_cast<CustomAssemblyBinder *>(ptrNativeAssemblyBinder)->PrepareForLoadContextRelease(ptrManagedStrongAssemblyLoadContext);
+    }
+
+    END_QCALL;
+}
 
 extern "C" INT_PTR QCALLTYPE AssemblyNative_GetDefaultAssemblyBinder()
 {

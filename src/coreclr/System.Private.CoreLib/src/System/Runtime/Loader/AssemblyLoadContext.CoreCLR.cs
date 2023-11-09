@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
@@ -12,48 +11,14 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InitializeAssemblyLoadContext")]
+        private static partial IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, [MarshalAs(UnmanagedType.Bool)] bool fRepresentsTPALoadContext, [MarshalAs(UnmanagedType.Bool)] bool isCollectible);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_PrepareForAssemblyLoadContextRelease")]
+        private static partial void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong);
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetDefaultAssemblyBinder")]
         internal static partial IntPtr GetDefaultAssemblyBinder();
-
-        private static Internal.Runtime.Binder.AssemblyBinder InitializeAssemblyLoadContext(GCHandle ptrAssemblyLoadContext, bool representsTPALoadContext, bool isCollectible)
-        {
-            // We do not need to take a lock since this method is invoked from the ctor of AssemblyLoadContext managed type and
-            // only one thread is ever executing a ctor for a given instance.
-
-            // Initialize the assembly binder instance in the VM
-            GCHandle pDefaultBinder = GCHandle.FromIntPtr(GetDefaultAssemblyBinder());
-            var defaultBinder = pDefaultBinder.Target as Internal.Runtime.Binder.DefaultAssemblyBinder;
-            Debug.Assert(defaultBinder != null);
-            if (!representsTPALoadContext)
-            {
-                // Initialize a custom assembly binder
-
-                LoaderAllocator? loaderAllocator = null;
-                GCHandle loaderAllocatorHandle = default;
-
-                if (isCollectible)
-                {
-                    // Create a new AssemblyLoaderAllocator for an AssemblyLoadContext
-                }
-
-                return new Internal.Runtime.Binder.CustomAssemblyBinder(defaultBinder, loaderAllocator, loaderAllocatorHandle, ptrAssemblyLoadContext);
-            }
-            else
-            {
-                // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
-                // First, confirm we do not have an existing managed ALC attached to the TPA binder.
-                Debug.Assert(!defaultBinder.ManagedAssemblyLoadContext.IsAllocated);
-
-                // Attach the managed TPA binding context with the native one.
-                defaultBinder.ManagedAssemblyLoadContext = ptrAssemblyLoadContext;
-                return defaultBinder;
-            }
-        }
-
-        private static void PrepareForAssemblyLoadContextRelease(Internal.Runtime.Binder.AssemblyBinder ptrNativeAssemblyBinder, GCHandle ptrAssemblyLoadContextStrong)
-        {
-            ((Internal.Runtime.Binder.CustomAssemblyBinder)ptrNativeAssemblyBinder).PrepareForLoadContextRelease(ptrAssemblyLoadContextStrong);
-        }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
