@@ -816,9 +816,13 @@ unsigned Compiler::fgDfsReversePostorder()
             {
                 for (BasicBlock* const finallyPredBlock : handlerBlock->PredBlocks())
                 {
-                    assert(finallyPredBlock->KindIs(BBJ_CALLFINALLY));
+                    // In some rare cases the finally is a loop entry.
+                    //
+                    if (!finallyPredBlock->KindIs(BBJ_CALLFINALLY))
+                    {
+                        continue;
+                    }
                     assert(finallyPredBlock->isBBCallAlwaysPair());
-
                     BasicBlock* const pairTailBlock = finallyPredBlock->Next();
 
                     if (!BlockSetOps::IsMember(this, visited, pairTailBlock->bbNum))
