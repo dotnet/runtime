@@ -571,8 +571,8 @@ BaseDomain::BaseDomain()
         FORBID_FAULT;
     }
     CONTRACTL_END;
-
-    m_pManagedDefaultBinder = NULL;
+    
+    m_pDefaultBinder = NULL;
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
     m_pPinnedHeapHandleTable = NULL;
@@ -682,11 +682,11 @@ void BaseDomain::ClearBinderContext()
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
-
-    if (m_pManagedDefaultBinder != NULL)
+    
+    if (m_pDefaultBinder)
     {
-        DestroyHandle(m_pManagedDefaultBinder);
-        m_pManagedDefaultBinder = NULL;
+        delete m_pDefaultBinder;
+        m_pDefaultBinder = NULL;
     }
 }
 
@@ -1803,7 +1803,7 @@ void AppDomain::Create()
     pDomain->InitThreadStaticBlockTypeMap();
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
-    // pDomain->CreateDefaultBinder(); // Should be delayed after CoreLib loaded
+    pDomain->CreateDefaultBinder();
 
     pDomain.SuppressRelease();
 
@@ -2688,18 +2688,16 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
         Exception* pEx = GET_EXCEPTION();
         if (!pEx->IsTransient())
         {
-            GCX_COOP();
-
             // Setup the binder reference in AssemblySpec from the PEAssembly if one is not already set.
-            ASSEMBLYBINDERREF pCurrentBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(pSpec->GetBinder());
-            ASSEMBLYBINDERREF pBinderFromPEAssembly = pPEAssembly->GetAssemblyBinder();
+            AssemblyBinder* pCurrentBinder = pSpec->GetBinder();
+            AssemblyBinder* pBinderFromPEAssembly = pPEAssembly->GetAssemblyBinder();
 
             if (pCurrentBinder == NULL)
             {
                 // Set the binding context we got from the PEAssembly if AssemblySpec does not
                 // have that information
                 _ASSERTE(pBinderFromPEAssembly != NULL);
-                pSpec->SetBinder(CreateHandle(pBinderFromPEAssembly));
+                pSpec->SetBinder(pBinderFromPEAssembly);
             }
 #if defined(_DEBUG)
             else
@@ -2757,37 +2755,15 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
     if (result == NULL)
     {
-
         LoaderAllocator *pLoaderAllocator = NULL;
 
+        AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
+        // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
+        // marked as collectible
+        pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
+        if (pLoaderAllocator == NULL)
         {
-            if (!pPEAssembly->IsSystem())
-            {
-                GCX_COOP();
-                ASSEMBLYBINDERREF pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
-
-                // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
-                // marked as collectible
-
-                GCPROTECT_BEGIN(pAssemblyBinder);
-                MethodDescCallSite methGetLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR, &pAssemblyBinder);
-                ARG_SLOT args[1] =
-                {
-                    ObjToArgSlot(pAssemblyBinder)
-                };
-
-                LOADERALLOCATORREF pManagedLA = (LOADERALLOCATORREF)methGetLoaderAllocator.Call_RetOBJECTREF(args);
-                if (pManagedLA != NULL)
-                {
-                    pLoaderAllocator = pManagedLA->GetNativeLoaderAllocator();
-                }
-                GCPROTECT_END();
-            }
-
-            if (pLoaderAllocator == NULL)
-            {
-                pLoaderAllocator = this->GetLoaderAllocator();
-            }
+            pLoaderAllocator = this->GetLoaderAllocator();
         }
 
         // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
@@ -3611,11 +3587,11 @@ PEAssembly * AppDomain::BindAssemblySpec(
                         // IsSystem on the PEAssembly should be false, even for CoreLib satellites
                         result = PEAssembly::Open(boundAssembly);
                     }
-
+                    
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
-                    ASSEMBLYBINDERREF pBinder = result->GetAssemblyBinder();
+                    AssemblyBinder* pBinder = result->GetAssemblyBinder();
                     _ASSERTE(pBinder != NULL);
-                    pSpec->SetBinder(CreateHandle(pBinder));
+                    pSpec->SetBinder(pBinder);
 
                     // Failure to add simply means someone else beat us to it. In that case
                     // the FindCachedFile call below (after catch block) will update result
@@ -3945,9 +3921,9 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 }
 
 
-OBJECTHANDLE AppDomain::CreateDefaultBinder()
+DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
 {
-    CONTRACT(OBJECTHANDLE)
+    CONTRACT(DefaultAssemblyBinder *)
     {
         GC_TRIGGERS;
         THROWS;
@@ -3957,26 +3933,17 @@ OBJECTHANDLE AppDomain::CreateDefaultBinder()
     }
     CONTRACT_END;
 
-    if (!m_pManagedDefaultBinder)
+    if (!m_pDefaultBinder)
     {
         ETWOnStartup (FusionAppCtx_V1, FusionAppCtxEnd_V1);
 
-        GCX_COOP();
+        GCX_PREEMP();
 
-        OBJECTREF managedBinder = AllocateObject(CoreLibBinder::GetClass(CLASS__BINDER_DEFAULTASSEMBLYBINDER));
-
-        GCPROTECT_BEGIN(managedBinder);
-
-        MethodDescCallSite ctor(METHOD__BINDER_DEFAULTASSEMBLYBINDER__CTOR);
-        ARG_SLOT arg = ObjToArgSlot(managedBinder);
-        ctor.Call(&arg);
-
-        m_pManagedDefaultBinder = CreateHandle(managedBinder);
-
-        GCPROTECT_END();
+        // Initialize the assembly binder for the default context loads for CoreCLR.
+        IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::CreateDefaultBinder(&m_pDefaultBinder));
     }
 
-    RETURN m_pManagedDefaultBinder;
+    RETURN m_pDefaultBinder;
 }
 
 
