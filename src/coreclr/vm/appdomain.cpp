@@ -1162,7 +1162,7 @@ void SystemDomain::Init()
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
 
-        ASSEMBLYBINDERREF defaultBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(GetAppDomain()->CreateDefaultBinder());
+        ASSEMBLYLOADCONTEXTREF defaultBinder = (ASSEMBLYLOADCONTEXTREF)GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContextObject();
 
         {
             // AdHoc setup for corelib PEAssembly
@@ -2821,7 +2821,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
             MethodDescCallSite methAddLoadedAssem(METHOD__BINDER_ASSEMBLYBINDER__ADDLOADEDASSEMBLY);
             ARG_SLOT args[2] =
             {
-                ObjToArgSlot(pPEAssembly->GetAssemblyBinder()),
+                ObjToArgSlot(pPEAssembly->GetAssemblyBinder()->GetManagedAssemblyLoadContextObject()),
                 PtrToArgSlot(pDomainAssembly->GetAssembly())
             };
             methAddLoadedAssem.Call(args);

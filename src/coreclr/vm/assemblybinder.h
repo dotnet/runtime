@@ -47,6 +47,21 @@ public:
         m_ptrManagedAssemblyLoadContext = ptrManagedDefaultBinderInstance;
     }
 
+#ifndef DACCESS_COMPILE
+    ASSEMBLYLOADCONTEXTREF GetManagedAssemblyLoadContextObject()
+    {
+        CONTRACTL
+        {
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(m_ptrManagedAssemblyLoadContext != NULL);
+        OBJECTHANDLE alcHandle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
+        return (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle(alcHandle);
+    }
+#endif
+
     NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
     void AddLoadedAssembly(Assembly* loadedAssembly);
 
