@@ -5937,8 +5937,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_MARVIN_BLOCK) {
-			interp_intrins_marvin_block ((guint32*)(locals + ip [1]), (guint32*)(locals + ip [2]));
-			ip += 3;
+			guint32 *pp0 = (guint32*)(locals + ip [1]);
+			guint32 *pp1 = (guint32*)(locals + ip [2]);
+			guint32 *dest0 = (guint32*)(locals + ip [3]);
+			guint32 *dest1 = (guint32*)(locals + ip [4]);
+
+			interp_intrins_marvin_block (pp0, pp1, dest0, dest1);
+			ip += 5;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE) {
