@@ -1937,29 +1937,46 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			!strcmp (tm, "ClearWithReferences")) {
 		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
-		// FIXME
-		if (!strcmp (tm, "Block") && 0) {
+		if (!strcmp (tm, "Block")) {
 			InterpInst *ldloca2 = td->last_ins;
 			if (ldloca2 != NULL && ldloca2->opcode == MINT_LDLOCA_S) {
 				InterpInst *ldloca1 = interp_prev_ins (ldloca2);
 				if (ldloca1 != NULL && ldloca1->opcode == MINT_LDLOCA_S) {
-					interp_add_ins (td, MINT_INTRINS_MARVIN_BLOCK);
-					td->last_ins->sregs [0] = ldloca1->sregs [0];
-					td->last_ins->sregs [1] = ldloca2->sregs [0];
+					int var1 = ldloca1->sregs [0];
+					int var2 = ldloca2->sregs [0];
+					if (!td->optimized) {
+						interp_add_ins (td, MINT_INTRINS_MARVIN_BLOCK);
+						td->last_ins->sregs [0] = var1;
+						td->last_ins->sregs [1] = var2;
+						td->last_ins->data [0] = GINT_TO_UINT16 (var1);
+						td->last_ins->data [1] = GINT_TO_UINT16 (var2);
+					} else {
+						// Convert this instruction to SSA form by splitting it into 2 different
+						// single dreg instructions. When we generate final code, we will couple them
+						// together.
+						int result1 = interp_create_var (td, m_class_get_byval_arg (mono_defaults.uint32_class));
+						int result2 = interp_create_var (td, m_class_get_byval_arg (mono_defaults.uint32_class));
+						interp_add_ins (td, MINT_INTRINS_MARVIN_BLOCK_SSA1);
+						td->last_ins->sregs [0] = var1;
+						td->last_ins->sregs [1] = var2;
+						td->last_ins->dreg = result1;
 
-					// This intrinsic would normally receive two local refs, however, we try optimizing
-					// away both ldlocas for better codegen. This means that this intrinsic will instead
-					// modify the values of both sregs. In order to not overcomplicate the optimization
-					// passes and offset allocator with support for modifiable sregs or multi dregs, we
-					// just redefine both sregs after the intrinsic.
-					interp_add_ins (td, MINT_DEF);
-					td->last_ins->dreg = ldloca1->sregs [0];
-					interp_add_ins (td, MINT_DEF);
-					td->last_ins->dreg = ldloca2->sregs [0];
+						interp_add_ins (td, MINT_INTRINS_MARVIN_BLOCK_SSA2);
+						td->last_ins->sregs [0] = var1;
+						td->last_ins->sregs [1] = var2;
+						td->last_ins->dreg = result2;
+
+						interp_add_ins (td, MINT_MOV_4);
+						td->last_ins->sregs [0] = result1;
+						td->last_ins->dreg = var1;
+						interp_add_ins (td, MINT_MOV_4);
+						td->last_ins->sregs [0] = result2;
+						td->last_ins->dreg = var2;
+					}
 
 					// Remove the ldlocas
-					td->vars [ldloca1->sregs [0]].indirects--;
-					td->vars [ldloca2->sregs [0]].indirects--;
+					td->vars [var1].indirects--;
+					td->vars [var2].indirects--;
 					interp_clear_ins (ldloca1);
 					interp_clear_ins (ldloca2);
 					td->sp -= 2;
@@ -8604,6 +8621,43 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		*ip++ = GINT_TO_UINT16 (td->param_area_offset + ins->data [0]);
 		*ip++ = GINT_TO_UINT16 (ins->data [1]);
 		*ip++ = GINT_TO_UINT16 (ins->data [2]);
+	} else if (opcode == MINT_INTRINS_MARVIN_BLOCK) {
+		// Generated only in unoptimized code
+		int var0 = ins->sregs [0];
+		int var1 = ins->sregs [1];
+		g_assert (var0 == ins->data [0]);
+		g_assert (var1 == ins->data [1]);
+
+		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var0));
+		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var1));
+		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var0));
+		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var1));
+	} else if (opcode == MINT_INTRINS_MARVIN_BLOCK_SSA1) {
+		int var0 = ins->sregs [0];
+		int var1 = ins->sregs [1];
+		g_assert (ins->next->opcode == MINT_INTRINS_MARVIN_BLOCK_SSA2);
+		g_assert (var0 == ins->next->sregs [0]);
+		g_assert (var1 == ins->next->sregs [1]);
+		int dvar0 = ins->dreg;
+		int dvar1 = ins->next->dreg;
+		ip [-1] = MINT_INTRINS_MARVIN_BLOCK;
+		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var0));
+		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var1));
+		*ip++ = GINT_TO_UINT16 (get_local_offset (td, dvar0));
+		*ip++ = GINT_TO_UINT16 (get_local_offset (td, dvar1));
+
+		ins->next->opcode = MINT_NOP;
+		InterpInst *next = interp_next_ins (ins);
+		// We ensure that next->sregs [0] is not used again, it will no longer be set by intrinsic
+		if (next->opcode == MINT_MOV_4 && td->var_values && td->var_values [next->sregs [0]].ref_count == 1) {
+			if (next->sregs [0] == dvar0) {
+				ip [-2] = GINT_TO_UINT16 (get_local_offset (td, next->dreg));
+				next->opcode = MINT_NOP;
+			} else if (next->sregs [0] == dvar1) {
+				ip [-1] = GINT_TO_UINT16 (get_local_offset (td, next->dreg));
+				next->opcode = MINT_NOP;
+			}
+		}
 	} else {
 opcode_emit:
 		if (mono_interp_op_dregs [opcode])
