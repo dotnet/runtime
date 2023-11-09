@@ -13797,62 +13797,55 @@ void Compiler::fgMorphBlock(BasicBlock* block)
 
             // Validate all preds have valid info
             //
-            if (canUsePredAssertions)
+            if (!canUsePredAssertions)
             {
-                bool hasPred = false;
-
-                for (BasicBlock* const pred : block->PredBlocks())
-                {
-                    // A higher postorder number means the block appears earlier in
-                    // the postorder. Use this to detect if a pred's assertion info is available.
-                    //
-                    if (pred->bbPostorderNum > block->bbPostorderNum)
-                    {
-                        // Yes, available. If this is the first pred, copy.
-                        // If this is a subsequent pred, intersect.
-                        //
-                        if (!hasPred)
-                        {
-                            apLocal = BitVecOps::MakeCopy(apTraits, pred->bbAssertionOut);
-                            hasPred = true;
-                        }
-                        else
-                        {
-                            BitVecOps::IntersectionD(apTraits, apLocal, pred->bbAssertionOut);
-                        }
-
-                        continue;
-                    }
-
-                    // No, not available.
-                    //
-                    JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
-                            pred->bbNum);
-                    canUsePredAssertions = false;
-                }
-
-                // If there were no preds, there are no asserions in.
-                //
-                if (!hasPred)
-                {
-                    JITDUMP(FMT_BB " has no preds, so no assertions in\n", block->bbNum);
-                    canUsePredAssertions = false;
-                }
-
-                if (canUsePredAssertions)
-                {
-                    JITDUMPEXEC(optDumpAssertionIndices("Assertions in: ", apLocal));
-                }
+                JITDUMP(FMT_BB " ineligible for cross-block\n", block->bbNum);
             }
             else
             {
-                JITDUMP(FMT_BB " ineligible for cross-block; clearing assertions in\n", block->bbNum);
+                bool hasPredAssertions = false;
+
+                for (BasicBlock* const pred : block->PredBlocks())
+                {
+                    // A smaller pred postorder number means the pred appears later in the postorder.
+                    // An equal number means pred == block (block is a self-loop).
+                    // Either way the assertion info is not available, and we must assume the worst.
+                    //
+                    if (pred->bbPostorderNum <= block->bbPostorderNum)
+                    {
+                        JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
+                                pred->bbNum);
+                        break;
+                    }
+
+                    // Yes, pred assertions are available. If this is the first pred, copy.
+                    // If this is a subsequent pred, intersect.
+                    //
+                    if (!hasPredAssertions)
+                    {
+                        apLocal           = BitVecOps::MakeCopy(apTraits, pred->bbAssertionOut);
+                        hasPredAssertions = true;
+                    }
+                    else
+                    {
+                        BitVecOps::IntersectionD(apTraits, apLocal, pred->bbAssertionOut);
+                    }
+                }
+
+                if (!hasPredAssertions)
+                {
+                    // Either no preds, or some preds w/o assertions.
+                    //
+                    canUsePredAssertions = false;
+                }
             }
 
             if (!canUsePredAssertions)
             {
                 apLocal = BitVecOps::MakeEmpty(apTraits);
             }
+
+            JITDUMPEXEC(optDumpAssertionIndices("Assertions in: ", apLocal));
         }
     }
 
@@ -13898,16 +13891,18 @@ PhaseStatus Compiler::fgMorphBlocks()
     //
     fgGlobalMorph = true;
 
-    // Local assertion prop is enabled if we are optimized
-    //
-    optLocalAssertionProp           = opts.OptimizationEnabled();
-    optCrossBlockLocalAssertionProp = optLocalAssertionProp;
-
-    if (optLocalAssertionProp)
+    if (opts.OptimizationEnabled())
     {
-        // Initialize for local assertion prop
+        // Local assertion prop is enabled if we are optimizing.
         //
-        optAssertionInit(true);
+        optAssertionInit(/* isLocalProp*/ true);
+    }
+    else
+    {
+        // Not optimizing. No assertion prop.
+        //
+        optLocalAssertionProp           = false;
+        optCrossBlockLocalAssertionProp = false;
     }
 
     if (!compEnregLocals())
@@ -13933,10 +13928,6 @@ PhaseStatus Compiler::fgMorphBlocks()
     if (!optLocalAssertionProp)
     {
         // If we aren't optimizing, we just morph in normal bbNext order.
-        //
-        // Note morph can add blocks downstream from the current block,
-        // and alter (but not null out) the current block's bbNext;
-        // this iterator ensures they all get visited.
         //
         for (BasicBlock* block : Blocks())
         {

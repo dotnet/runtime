@@ -548,36 +548,32 @@ void Compiler::optAssertionInit(bool isLocalProp)
     //
     if (isLocalProp)
     {
-        optLocalAssertionProp = true;
+        optLocalAssertionProp           = true;
+        optCrossBlockLocalAssertionProp = true;
 
-        // See if we should disable cross-block local prop
+        // Disable via config
         //
-        if (optCrossBlockLocalAssertionProp)
+        if (JitConfig.JitEnableCrossBlockLocalAssertionProp() == 0)
         {
-            // Disable via config
-            //
-            if (JitConfig.JitDoCrossBlockLocalAssertionProp() == 0)
-            {
-                JITDUMP("Disabling cross-block assertion prop by config setting\n");
-                optCrossBlockLocalAssertionProp = false;
-            }
+            JITDUMP("Disabling cross-block assertion prop by config setting\n");
+            optCrossBlockLocalAssertionProp = false;
+        }
 
-            // Disable if too many locals
-            //
-            // The typical number of local assertions is roughly proportional
-            // to the number of locals. So when we have huge numbers of locals,
-            // just do within-block local assertion prop.
-            //
-            if (lvaCount > maxTrackedLocals)
-            {
-                JITDUMP("Disabling cross-block assertion prop: too many locals\n");
-                optCrossBlockLocalAssertionProp = false;
-            }
+        // Disable if too many locals
+        //
+        // The typical number of local assertions is roughly proportional
+        // to the number of locals. So when we have huge numbers of locals,
+        // just do within-block local assertion prop.
+        //
+        if (lvaCount > maxTrackedLocals)
+        {
+            JITDUMP("Disabling cross-block assertion prop: too many locals\n");
+            optCrossBlockLocalAssertionProp = false;
         }
 
         if (optCrossBlockLocalAssertionProp)
         {
-            // We know lvaCount is less than the tracked limit.
+            // We may need a fairly large table.
             // Allow for roughly one assertion per local, up to the tracked limit.
             // (empirical studies show about 0.6 asserions/local)
             //
@@ -585,11 +581,13 @@ void Compiler::optAssertionInit(bool isLocalProp)
         }
         else
         {
-            // The table will be reset for each block, so can be smaller.
+            // The assertion table will be reset for each block, so it can be smaller.
             //
             optMaxAssertionCount = 64;
         }
 
+        // Local assertion prop keeps mappings from each local var to the assertions about that var.
+        //
         optAssertionDep =
             new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
     }
