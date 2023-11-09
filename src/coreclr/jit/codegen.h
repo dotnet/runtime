@@ -14,11 +14,7 @@
 #include "regset.h"
 #include "jitgcinfo.h"
 
-#ifdef LATE_DISASM
-class CodeGen : public CodeGenInterface
-#else // LATE_DISASM
 class CodeGen final : public CodeGenInterface
-#endif // !LATE_DISASM
 {
     friend class emitter;
     friend class DisAssembler;
