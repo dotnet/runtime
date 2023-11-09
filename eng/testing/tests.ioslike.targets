@@ -77,7 +77,7 @@
                    Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(HybridGlobalization)' == 'false'" >
+    <!-- <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(HybridGlobalization)' == 'false'" >
       <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat"
                                                                 TargetDir="publish" />
       <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicudata.a"
@@ -86,7 +86,7 @@
                                                                 TargetDir="publish" />
       <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicui18n.a"
                                                                 TargetDir="publish" />
-    </ItemGroup>
+    </ItemGroup> -->
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
       <!-- Add any pdb files, if available -->
