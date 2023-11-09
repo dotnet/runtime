@@ -356,17 +356,17 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutp
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }
 
-COOP_PINVOKE_HELPER(void*, RhRegisterFrozenSegment, (void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize))
+EXTERN_C NATIVEAOT_API void* __cdecl RhRegisterFrozenSegment(void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
 {
     return RedhawkGCInterface::RegisterFrozenSegment(pSection, allocSize, commitSize, reservedSize);
 }
 
-COOP_PINVOKE_HELPER(void, RhUpdateFrozenSegment, (void* pSegmentHandle, uint8_t* allocated, uint8_t* committed))
+EXTERN_C NATIVEAOT_API void __cdecl RhUpdateFrozenSegment(void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)
 {
     RedhawkGCInterface::UpdateFrozenSegment((GcSegmentHandle)pSegmentHandle, allocated, committed);
 }
 
-COOP_PINVOKE_HELPER(void, RhUnregisterFrozenSegment, (void* pSegmentHandle))
+EXTERN_C NATIVEAOT_API void __cdecl RhUnregisterFrozenSegment(void* pSegmentHandle)
 {
     RedhawkGCInterface::UnregisterFrozenSegment((GcSegmentHandle)pSegmentHandle);
 }

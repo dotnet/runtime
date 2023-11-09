@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 
 namespace Internal.Runtime
 {
@@ -15,7 +15,7 @@ namespace Internal.Runtime
                 size,
                 Interop.Sys.MemoryMappedProtections.PROT_NONE,
                 Interop.Sys.MemoryMappedFlags.MAP_PRIVATE | Interop.Sys.MemoryMappedFlags.MAP_ANONYMOUS,
-                new SafeFileHandle(-1, false),
+                -1,
                 0);
 
         }
@@ -32,6 +32,7 @@ namespace Internal.Runtime
 
         static void ClrVirtualFree(void* pBase, nuint size)
         {
+            Debug.Assert(size != 0);
             Interop.Sys.MUnmap((nint)pBase, size);
         }
     }

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace Internal.Runtime
 {
     internal unsafe partial class FrozenObjectHeapManager
@@ -17,7 +19,13 @@ namespace Internal.Runtime
 
         static void ClrVirtualFree(void* pBase, nuint size)
         {
-            Interop.Kernel32.VirtualFree(pBase, size, Interop.Kernel32.MemOptions.MEM_RELEASE);
+            // We require the size parameter for Unix implementation sake.
+            // The Win32 API ignores this parameter because we must pass zero.
+            // If the caller passed zero, this is going to be broken on Unix
+            // so let's at least assert that.
+            Debug.Assert(size != 0);
+
+            Interop.Kernel32.VirtualFree(pBase, 0, Interop.Kernel32.MemOptions.MEM_RELEASE);
         }
     }
 }

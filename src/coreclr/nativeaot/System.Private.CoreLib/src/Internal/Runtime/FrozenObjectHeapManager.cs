@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -13,11 +12,10 @@ namespace Internal.Runtime
 {
     internal unsafe partial class FrozenObjectHeapManager
     {
-        public static FrozenObjectHeapManager Instance = new FrozenObjectHeapManager();
+        public static readonly FrozenObjectHeapManager Instance = new FrozenObjectHeapManager();
 
         private readonly LowLevelLock m_Crst = new LowLevelLock();
         private readonly LowLevelLock m_SegmentRegistrationCrst = new LowLevelLock();
-        private ArrayBuilder<FrozenObjectSegment> m_FrozenSegments;
         private FrozenObjectSegment m_CurrentSegment;
 
         // Default size to reserve for a frozen segment
@@ -80,7 +78,6 @@ namespace Internal.Runtime
                     }
 
                     m_CurrentSegment = new FrozenObjectSegment(newSegmentSize);
-                    m_FrozenSegments.Add(m_CurrentSegment);
 
                     // Try again
                     obj = m_CurrentSegment.TryAllocateObject(type, objectSize);
@@ -121,7 +118,7 @@ namespace Internal.Runtime
         private class FrozenObjectSegment
         {
             // Start of the reserved memory, the first object starts at "m_pStart + sizeof(ObjHeader)" (its pMT)
-            byte* m_pStart;
+            private byte* m_pStart;
 
             // NOTE: To handle potential race conditions, only m_[x]Registered fields should be accessed
             // externally as they guarantee that GC is aware of the current state of the segment.
@@ -135,7 +132,7 @@ namespace Internal.Runtime
             // Last known value of m_pCurrent that GC is aware of.
             //
             // m_pCurrentRegistered <= m_pCurrent
-            byte* m_pCurrentRegistered;
+            private byte* m_pCurrentRegistered;
 
             // Memory committed in the current segment
             //
@@ -145,7 +142,7 @@ namespace Internal.Runtime
             // Total memory reserved for the current segment
             public nuint m_Size;
 
-            IntPtr m_SegmentHandle;
+            private IntPtr m_SegmentHandle;
 
             public FrozenObjectSegment(nuint sizeHint)
             {
@@ -176,7 +173,7 @@ namespace Internal.Runtime
                 void* committedAlloc = ClrVirtualCommit(alloc, FOH_COMMIT_SIZE);
                 if (committedAlloc == null)
                 {
-                    ClrVirtualFree(alloc, 0);
+                    ClrVirtualFree(alloc, m_Size);
                     throw new OutOfMemoryException();
                 }
 
