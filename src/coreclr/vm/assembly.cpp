@@ -368,7 +368,7 @@ Assembly * Assembly::Create(
     return pAssembly;
 } // Assembly::Create
 
-Assembly *Assembly::CreateDynamic(OBJECTHANDLE pBinder, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, LOADERALLOCATORREF* pKeepAlive)
+Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, LOADERALLOCATORREF* pKeepAlive)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -446,21 +446,13 @@ Assembly *Assembly::CreateDynamic(OBJECTHANDLE pBinder, NativeAssemblyNameParts*
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
     {
+        GCX_PREEMP();
+
         AssemblyLoaderAllocator* pBinderLoaderAllocator = nullptr;
         if (pBinder != nullptr)
         {
-            ASSEMBLYBINDERREF binderObj = (ASSEMBLYBINDERREF)ObjectFromHandle(pBinder);
-            MethodDescCallSite methGetLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR);
-            ARG_SLOT args[1] =
-            {
-                ObjToArgSlot(binderObj)
-            };
-            LOADERALLOCATORREF managedLA = (LOADERALLOCATORREF)methGetLoaderAllocator.Call_RetOBJECTREF(args);
-
-            pBinderLoaderAllocator = (AssemblyLoaderAllocator*)managedLA->GetNativeLoaderAllocator();
+            pBinderLoaderAllocator = pBinder->GetLoaderAllocator();
         }
-
-        GCX_PREEMP();
 
         // Create a new LoaderAllocator if appropriate
         if ((access & ASSEMBLY_ACCESS_COLLECT) != 0)

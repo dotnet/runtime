@@ -543,7 +543,7 @@ public:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
-            OBJECTHANDLE        pBinderForLoadedAssembly = NULL
+            AssemblyBinder      *pBinderForLoadedAssembly = NULL
             )
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1169,7 +1169,7 @@ public:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
-            OBJECTHANDLE        pBinderForLoadedAssembly = NULL
+            AssemblyBinder      *pBinderForLoadedAssembly = NULL
             ) final;
 
 protected:

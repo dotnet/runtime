@@ -189,24 +189,26 @@ HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssem
 
 HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly)
 {
-    HRESULT hr = S_OK;
-    _ASSERTE(ppSystemAssembly != NULL);
+    //HRESULT hr = S_OK;
+    //_ASSERTE(ppSystemAssembly != NULL);
 
-    EX_TRY
-    {
-        ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        StackSString systemPath(SystemDomain::System()->SystemDirectory());
-        hr = AssemblyBinderCommon::BindToSystem(systemPath, &pAsm);
-        if (SUCCEEDED(hr))
-        {
-            _ASSERTE(pAsm != NULL);
-            *ppSystemAssembly = pAsm.Extract();
-            (*ppSystemAssembly)->SetBinder(this);
-        }
+    //EX_TRY
+    //{
+    //    ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
+    //    StackSString systemPath(SystemDomain::System()->SystemDirectory());
+    //    hr = AssemblyBinderCommon::BindToSystem(systemPath, &pAsm);
+    //    if (SUCCEEDED(hr))
+    //    {
+    //        _ASSERTE(pAsm != NULL);
+    //        *ppSystemAssembly = pAsm.Extract();
+    //        (*ppSystemAssembly)->SetBinder(this);
+    //    }
 
-    }
-    EX_CATCH_HRESULT(hr);
+    //}
+    //EX_CATCH_HRESULT(hr);
 
-    return hr;
+    //return hr;
+
+    return E_FAIL; // unused
 }
 

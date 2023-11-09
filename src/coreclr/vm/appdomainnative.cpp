@@ -26,9 +26,10 @@ extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnS
 
     _ASSERTE(assemblyLoadContext.Get() != NULL);
 
-    OBJECTREF pBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+    INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+    AssemblyBinder* pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
 
-    Assembly* pAssembly = Assembly::CreateDynamic(GetAppDomain()->CreateHandle(pBinder), pAssemblyNameParts, hashAlgorithm, access, &keepAlive);
+    Assembly* pAssembly = Assembly::CreateDynamic(pBinder, pAssemblyNameParts, hashAlgorithm, access, &keepAlive);
 
     retAssembly.Set(pAssembly->GetExposedObject());
 

@@ -43,14 +43,15 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
-    ASSEMBLYBINDERREF pBinder = NULL;
-
-    GCX_COOP();
+    AssemblyBinder *pBinder = NULL;
 
     {
+        GCX_COOP();
+
         if (assemblyLoadContext.Get() != NULL)
         {
-            pBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+            INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+            pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
         }
 
         // Compute parent assembly
@@ -99,7 +100,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     // If so, then use it to set the fallback load context binder.
     if (pBinder != NULL)
     {
-        spec.SetFallbackBinderForRequestingAssembly(GetAppDomain()->CreateHandle(pBinder));
+        spec.SetFallbackBinderForRequestingAssembly(pBinder);
         spec.SetPreferFallbackBinder();
     }
     else if (pRefAssembly != NULL)

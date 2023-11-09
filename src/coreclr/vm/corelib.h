@@ -884,7 +884,7 @@ DEFINE_FIELD_U(_resolvingUnmanagedDll,      AssemblyLoadContextBaseObject, _reso
 DEFINE_FIELD_U(_resolving,                  AssemblyLoadContextBaseObject, _resolving)
 DEFINE_FIELD_U(_unloading,                  AssemblyLoadContextBaseObject, _unloading)
 DEFINE_FIELD_U(_name,                       AssemblyLoadContextBaseObject, _name)
-DEFINE_FIELD_U(_assemblyBinder,             AssemblyLoadContextBaseObject, _assemblyBinder)
+DEFINE_FIELD_U(_nativeAssemblyLoadContext,  AssemblyLoadContextBaseObject, _nativeAssemblyLoadContext)
 DEFINE_FIELD_U(_id,                         AssemblyLoadContextBaseObject, _id)
 DEFINE_FIELD_U(_state,                      AssemblyLoadContextBaseObject, _state)
 DEFINE_FIELD_U(_isCollectible,              AssemblyLoadContextBaseObject, _isCollectible)
