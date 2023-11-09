@@ -337,7 +337,7 @@
     <IsXUnitLogCheckerSupported Condition="'$(IsXUnitLogCheckerSupported)' == ''">false</IsXUnitLogCheckerSupported>
     <IsXUnitLogCheckerSupported Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsXUnitLogCheckerSupported>
     <!-- TODO: coreclr uses XUnitLogCheckerDirectory. Consolidate it with this property. -->
-    <XUnitLogCheckerLibrariesOutputDirectory Condition="$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'helix', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesOutputDirectory>
+    <XUnitLogCheckerLibrariesOutputDirectory Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'helix', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesOutputDirectory>
 
   </PropertyGroup>
 
