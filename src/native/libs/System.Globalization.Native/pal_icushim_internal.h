@@ -342,13 +342,13 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucal_getWindowsTimeZoneID_ptr ucal_getWindowsTimeZoneID
 #define ucal_getTimeZoneIDForWindowsID_ptr ucal_getTimeZoneIDForWindowsID
 
-#if defined(TARGET_MACCAT) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path);
 const char* GlobalizationNative_GetICUDataPathFallback(void);
 #endif
 
 #endif // !defined(STATIC_ICU)
-#if defined(TARGET_MACCAT) || defined(TARGET_MACCATALYST)  || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCATALYST)  || defined(TARGET_IOS) || defined(TARGET_TVOS)
 /**
  * Append a code point to a string, overwriting 1 or 2 code units.
  * The offset points to the current end of the string contents
