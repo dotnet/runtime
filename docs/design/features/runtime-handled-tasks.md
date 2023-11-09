@@ -115,11 +115,10 @@ Async2 shall integrate with `TaskScheduler.Current`.
 Async2 IL is broadly similar to the existing IL semantics with the following restrictions.
 
 1. Usage of the `localloc` instruction is forbidden
-3. The `ldloca` and `ldarga` instructions are redefined to return managed pointers instead of pointers.
-4. A pinning local cannot be validly used with a local variable.
-5. As an initial restriction that is not fundamental, the `tail.` prefix is not permitted
-
-Notably, the design permits byrefs and ref structs to be used within async2 methods.
+2. The `ldloca` and `ldarga` instructions are redefined to return managed pointers instead of pointers.
+3. A pinning local cannot be validly used with a local variable.
+. As an initial restriction that is not fundamental, the `tail.` prefix is not permitted
+4. Use of byrefs and ref structs within async2 methods may or may not be acceptable. The currently JIT focussed prototype is designed with the same limitations as the existing async model, and thus does not work with byref data. However, the unwinder approach is able to tolerate byrefs.
 
 #### EH Semantics
 No call to a method with an async2 modreq will be permitted in a finally, fault, filter, or catch clause. If such a thing exists, the program is invalid.
@@ -461,10 +460,97 @@ Major identified concerns are
 
 1. Async computation of fibonacci via recursive algorithm, with and without various amounts of yielding
 2. Suspension with stacks of various depths
-3. Suspension with stacks where the operation of the task operates in a sawtooth pattern. For instance, suspend first at depth 20, then reach depth 30, return to depth 10 and suspend, reach depth 30, return to depth 10 and suspend, etc. Measure the impact of suspending with greater and lesser depths.
+3. Suspension with stacks where the operation of the task operates in a sawtooth pattern.
+For instance, suspend first at depth 20, then reach depth 30, return to depth 10 and suspend, reach depth 30, return to depth 10 and suspend, etc.
+Measure the impact of suspending with greater and lesser depths.
 4. Measure the performance of thunks to async2 functions which do effectively nothing.
 5. Benchmark the effect of long lived suspended state vs short lived suspended state
-6. Benchmark the performance of EH at various depths.
+# Benchmark the performance of EH at various depths.
+
+The performance of EH within the existing async programming model is highly problematic, and has caused customers issues.
+In particular, the impact of async EH performance tends to interfere with responsive performance of applications when failures start ocurring suddenly.
+Since EH is so much slower than standard execution performance, it is known to cause additional downtime as a server which may be capable of handling the load of succesful requests, may run out of available CPU time handling failed requests.
+In addition, EH is commonly used to implement cancellation in async code.
+Thus improving the performance of EH can dramatically improve codebases which make significant use of cancellation.
+The runtime generated async state machine model is showing some substantial improvements to performance.
+
+All of these figures are gathered by using the async-eh-microbench test located at `src/tests/Loader/async/async2-eh-microbench.csproj`.
+This benchmark works by looping until 250 ms has passed and measuring the number of iterations in that time.
+Each iteration works by recursively calling a function until the specified stack depth is achieved (optionally calling through a try/finally block), and then suspending the async method by awaiting `Task.Yield()` or not, and then finally finishing each iteration either by returning or throwing a newly created exception.
+In addition, these experiments use the JIT focused implementation of `async2`. The unwinder based implementation is both significantly slower, and does not support EH.
+
+## Notes on the following graphs
+These benchmarks are gathered by running the async2-eh-microbench in varying configurations.
+- NoSuspend vs Suspend - Suspend indicates that the async function awaits `Task.Yield()` before completing.
+- `Return` vs `Throw` - `Return` indicates that the iteration finishes by returning up the call stack via return instructions, and `Throw` indicates that each iteration terminated via a `throw new Exception()`.
+- `Task` vs `ValueTask` vs `Async2` - The benchmark has 3 functions which are written with the same C# code, but with different syntax using different async implementation strategies.
+With `Task`, the function signature is `async Task<long> RunTask(int depth)`
+With `ValueTask`, the function signature is `async ValueTask<long> RunTask(int depth)`
+With `Task`, the function signature is `async2 long RunTask(int depth)`
+
+When a graph does not specify one of the config options, the graph is a relative performance gathered by dividing the iters/250ms that the benchmark produces between the two options, and then multiplying by 100 to produce a percentage. 
+
+## Relative performance of throwing vs returning cleanly from a function at varying stack depths
+
+![RelativePerf](throwing-relative-performance.svg)
+This graph shows the performance of throwing relative to the performance of returning cleanly from a function with varying stack depths.
+There are 2 remarkable bits of data presented here.
+1. The cost of throwing is extraordinary if the application would otherwise be able to complete synchronously.
+2. The overhead of suspending an async function and transitioning to the thread pool is rather high.
+3. The performance of runtime handled async with regards to throwing is much faster than normal EH. In fact as the stack becomes deeper, the EH model presented by runtime generated async functions does not suffer as much of a performance penalty for walking the stack as our normal EH stack walker does.
+
+## Performance of normal async `async Task<T>` code vs runtime generated async functions
+![PerfOfThrowing](perf-of-throwing.svg)
+In this graph the raw performance of throwing at various stack depths is shown.
+We can see that the performance of `ValueTask` and `Task` is nearly identical, and differs only between whether or not the function suspended or not before throwing.
+In addition, we can see the different performance of throwing with `Async2`.
+Since the design of EH in `Async2` is able to avoid doing expensive operations as it walks a suspended stack, the performance of throwing with various stack depths while suspended is extremely fast, and dominated by the cost of the suspend operation.
+In constrast the non-suspended performance follows the same curve as the `Task` and `ValueTask` model, but is a constant factor faster, as `Async2` produces a smaller call stack, so the runtime's stack walker has substantially less work to do.
+
+![RelativePerf2](async-vs-async2-relative-performance.svg)
+
+In this graph, the performance of runtime async vs classic async is presented for the particular code in use.
+What we can see is that the performance of the new runtime generated async code is always faster for this code than the traditional code generation.
+Numbers above 100% indicate speedups.
+This higher performance is likely due to the relatively large size of the async function used in this benchmark.
+In addition, in this graph, only data out to a depth of 16 is presented, as the performance of throwing with new async at higher stack depths would make looking at the data for other depths difficult.
+(It reaches a level of 3851% of the performance of the traditional async function at a stack depth of 64). Not shown is the performance of `ValueTask` based async code. It is extremely close to that of the `Task` based variant.
+
+
+## Impact of try/finally regions on throw performance
+![ThrowPerfDifferingFinallys](throw-perf-with-different-number-of-finally-on-stack.svg)
+
+Much of the extraordinary performance of EH the runtime generated async prototype depends on the very fast stack walk that occurs when dispatching exceptions.
+Notably, in the runtime generated model we are able to easily skip frames which do not have any handlers in them with a simple flag check.
+This is contrary to IL compiler generated async, where the implementation generates a catch, even if the frame has no try block written in C#.
+
+We can see some very interesting details.
+1. In IL based async the cost of suspending once is dominated by the cost of throwing an exception, and so whether or not the function suspends, does not change the performance.
+2. In the NoSuspend case, for async2 we can see that the presence or abscence of a finally has a fairly small impact on throw performance.
+Most of the cost is taken up by other tasks such as stackwalking, creating the exception object, and the like.
+3. In the case where we DO suspend, the performance is quite different with async2.
+Without many finally blocks, we can see that the performance is really extraordinary, but as each frame gets a finally block, the cost of handling EH approaches that of the traditional async model.
+4. The performance of Task Throw NoSuspend and Task Throw Suspend is effectively the same.
+
+## Raw data from EH microbenchmark
+| Stack Depth | Task Return NoSuspend | ValueTask Return NoSuspend | Async2 Return NoSuspend | Task Throw NoSuspend | ValueTask Throw NoSuspend | Async2 Throw NoSuspend | Task Return Suspend | ValueTask Return Suspend | Async2 Return Suspend | Task Throw Suspend | ValueTask Throw Suspend | Async2 Throw Suspend |
+| ----- | --------------------- | -------------------------- | ----------------------- | -------------------- | ------------------------- | ---------------------- | ------------------- | ------------------------ | --------------------- | ------------------ | ----------------------- | -------------------- |
+| 1     | 7,976,995.00          | 7,994,790.00               | 13,966,110.00           | 21,630.00            | 21,789.00                 | 46,434.00              | 589,057.00          | 574,660.00               | 629,310.00            | 15,563.00          | 15,584.00               | 21,208.00            |
+| 2     | 4,738,359.00          | 5,036,613.00               | 11,573,294.00           | 13,781.00            | 13,359.00                 | 38,975.00              | 390,167.00          | 349,900.00               | 617,464.00            | 9,806.00           | 9,740.00                | 21,514.00            |
+| 4     | 2,884,153.00          | 2,924,123.00               | 8,340,047.00            | 7,717.00             | 7,477.00                  | 29,887.00              | 276,584.00          | 265,590.00               | 577,707.00            | 5,778.00           | 5,495.00                | 21,288.00            |
+| 8     | 1,274,335.00          | 1,324,960.00               | 5,308,395.00            | 4,068.00             | 4,001.00                  | 20,358.00              | 217,067.00          | 198,172.00               | 474,723.00            | 3,476.00           | 3,376.00                | 20,877.00            |
+| 16    | 536,064.00            | 533,731.00                 | 2,888,828.00            | 2,104.00             | 2,063.00                  | 12,941.00              | 132,636.00          | 106,605.00               | 315,191.00            | 1,912.00           | 1,909.00                | 20,496.00            |
+| 32    | 263,823.00            | 249,821.00                 | 1,157,832.00            | 1,032.00             | 989.00                    | 7,319.00               | 71,989.00           | 55,860.00                | 184,699.00            | 973.00             | 949.00                  | 19,379.00            |
+| 64    | 113,187.00            | 114,845.00                 | 488,245.00              | 484.00               | 473.00                    | 3,936.00               | 37,086.00           | 28,365.00                | 98,769.00             | 458.00             | 456.00                  | 17,565.00            |
+
+| Finally blocks on stack | Task Throw NoSuspend | Async2 Throw NoSuspend | Task Throw Suspend | Async2 Throw Suspend |
+| ----------------------- | -------------------- | ---------------------- | ------------------ | -------------------- |
+| 1                       | 1067                 | 7504                   | 965                | 20107                |
+| 2                       | 1032                 | 7441                   | 965                | 12140                |
+| 4                       | 1034                 | 7392                   | 959                | 7306                 |
+| 8                       | 1006                 | 7287                   | 928                | 4268                 |
+| 16                      | 972                  | 7045                   | 912                | 2307                 |
+| 32                      | 872                  | 6961                   | 857                | 1194                 |
 
 ## Scenario benchmarks
 

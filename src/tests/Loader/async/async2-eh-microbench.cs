@@ -39,7 +39,11 @@ public class Async2EHMicrobench
         int finallyRate = args.Length > 3 ? int.Parse(args[3]) : 1000;
         Console.WriteLine("With a try/finally block every {0} frames", finallyRate);
 
-        Benchmark warmupBm = new Benchmark(5, 5, 2);
+        // Throw or return
+        bool throwOrReturn = args.Length > 4 ? String.Equals(args[4], "throw", StringComparison.OrdinalIgnoreCase) : true;
+        Console.WriteLine($"Which will {(throwOrReturn ? "throw" : "return")} when finished yielding");
+
+        Benchmark warmupBm = new Benchmark(5, 5, 2, throwOrReturn);
         warmupBm.Warmup = true;
         for (int i = 0; i < 4; i++)
         {
@@ -55,22 +59,22 @@ public class Async2EHMicrobench
         }
 
         Console.WriteLine("Warmup done, running benchmark");
-        await RunBench(yieldFrequency, depth, finallyRate, "Async2");
-        await RunBench(yieldFrequency, depth, finallyRate, "Task");
-        await RunBench(yieldFrequency, depth, finallyRate, "ValueTask");
+        await RunBench(yieldFrequency, depth, finallyRate, throwOrReturn, "Async2");
+        await RunBench(yieldFrequency, depth, finallyRate, throwOrReturn, "Task");
+        await RunBench(yieldFrequency, depth, finallyRate, throwOrReturn, "ValueTask");
     }
 
-    private static async Task RunBench(int yieldCount, int depth, int finallyRate, string type)
+    private static async Task RunBench(int yieldCount, int depth, int finallyRate, bool throwOrReturn, string type)
     {
 
-        Benchmark bm = new(yieldCount, depth, finallyRate);
+        Benchmark bm = new(yieldCount, depth, finallyRate, throwOrReturn);
         Console.WriteLine($"Running benchmark on '{type}' methods");
 
         List<long> results = new();
         for (int i = 0; i < 16; i++)
         {
             long numIters = await bm.Run(type);
-            Console.WriteLine($"iters={numIters}");
+//            Console.WriteLine($"iters={numIters}");
             results.Add(numIters);
         }
 
@@ -84,14 +88,16 @@ public class Async2EHMicrobench
         private readonly int _yieldCount;
         private readonly int _depth;
         private readonly int _finallyRate;
+        private readonly bool _throwOrReturn;
         public int Sink;
         public bool Warmup;
 
-        public Benchmark(int yieldCount, int depth, int finallyRate)
+        public Benchmark(int yieldCount, int depth, int finallyRate, bool throwOrReturn)
         {
             _yieldCount = yieldCount;
             _depth = depth;
             _finallyRate = finallyRate;
+            _throwOrReturn = throwOrReturn;
         }
 
         public async2 long Run(string type)
@@ -121,14 +127,16 @@ public class Async2EHMicrobench
                     await Task.Yield();
                 }
 
-                throw new Exception();
+                if (_throwOrReturn)
+                    throw new Exception();
+                return 8375983;
             }
 
             long result = 0;
 
             if (depth == _depth)
             {
-                int time = Warmup ? 5 : 500;
+                int time = Warmup ? 5 : 250;
 
                 Stopwatch timer = Stopwatch.StartNew();
 
@@ -184,14 +192,16 @@ public class Async2EHMicrobench
                     await Task.Yield();
                 }
 
-                throw new Exception();
+                if (_throwOrReturn)
+                    throw new Exception();
+                return 8375983;
             }
 
             long result = 0;
 
             if (depth == _depth)
             {
-                int time = Warmup ? 5 : 500;
+                int time = Warmup ? 5 : 250;
 
                 Stopwatch timer = Stopwatch.StartNew();
 
@@ -248,14 +258,16 @@ public class Async2EHMicrobench
                     await Task.Yield();
                 }
 
-                throw new Exception();
+                if (_throwOrReturn)
+                    throw new Exception();
+                return 8375983;
             }
 
             long result = 0;
 
             if (depth == _depth)
             {
-                int time = Warmup ? 5 : 500;
+                int time = Warmup ? 5 : 250;
 
                 Stopwatch timer = Stopwatch.StartNew();
 
