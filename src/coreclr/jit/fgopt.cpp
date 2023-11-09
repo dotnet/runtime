@@ -819,9 +819,11 @@ unsigned Compiler::fgDfsReversePostorder()
                     assert(finallyPredBlock->KindIs(BBJ_CALLFINALLY));
                     assert(finallyPredBlock->isBBCallAlwaysPair());
 
-                    if (!BlockSetOps::IsMember(this, visited, finallyPredBlock->bbNum))
+                    BasicBlock* const pairTailBlock = finallyPredBlock->Next();
+
+                    if (!BlockSetOps::IsMember(this, visited, pairTailBlock->bbNum))
                     {
-                        fgDfsReversePostorderHelper(finallyPredBlock, visited, preorderIndex, postorderIndex);
+                        fgDfsReversePostorderHelper(pairTailBlock, visited, preorderIndex, postorderIndex);
                     }
                 }
             }
