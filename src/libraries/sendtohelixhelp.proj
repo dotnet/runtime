@@ -232,12 +232,13 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup>
-    <HelixPreCommands Condition="'$(IsTargetOSSupportedByXUnitLogChecker)' == 'true' and '$(TargetOS)' == 'windows'">
+  <PropertyGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true'">
+    <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
       $(HelixPreCommands);
-      set __TestArchitecture=$(TargetArchitecture)
+      set __TestArchitecture=$(TargetArchitecture);
+      set __TestTargetFrameworkIdentifier=$(TargetFrameworkIdentifier)
     </HelixPreCommands>
-    <HelixPreCommands Condition="'$(IsTargetOSSupportedByXUnitLogChecker)' == 'true' and '$(TargetOS)' != 'windows'">
+    <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
       $(HelixPreCommands);
       export __TestArchitecture=$(TargetArchitecture)
     </HelixPreCommands>

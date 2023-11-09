@@ -93,6 +93,13 @@ if %_exit_code%==1 (
   )
 )
 
+if NOT DEFINED __TestTargetFrameworkIdentifier (
+  GOTO SKIP_XUNITLOGCHECKER
+)
+if NOT %__TestTargetFrameworkIdentifier% == ".NETCoreApp" (
+  GOTO SKIP_XUNITLOGCHECKER
+)
+
 echo ----- start ===============  XUnitLogChecker Output =====================================================
 
 set DOTNET_EXE=%RUNTIME_PATH%\dotnet.exe
@@ -119,6 +126,8 @@ if %XUNITLOGCHECKER_EXIT_CODE% NEQ 0 (
 )
 
 echo ----- end ===============  XUnitLogChecker Output - exit code %XUNITLOGCHECKER_EXIT_CODE% ===============
+
+:SKIP_XUNITLOGCHECKER
 
 exit /b %_exit_code%
 :: ========================= END Test Execution =================================
