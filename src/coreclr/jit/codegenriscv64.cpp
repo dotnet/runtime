@@ -2798,9 +2798,6 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                     ins = INS_fdiv_d;
                 }
                 break;
-            case GT_NEG:
-                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
-                break;
 
             default:
                 NYI_RISCV64("Unhandled oper in genGetInsForOper() - float");
@@ -2914,14 +2911,6 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 {
                     ins = INS_mulw;
                 }
-                break;
-
-            case GT_NEG:
-                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
-                break;
-
-            case GT_NOT:
-                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
                 break;
 
             case GT_AND:
