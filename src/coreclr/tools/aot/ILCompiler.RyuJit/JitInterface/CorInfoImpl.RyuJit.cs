@@ -13,6 +13,7 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -798,6 +799,14 @@ namespace Internal.JitInterface
             if (!fIsTailPrefix)
             {
                 MethodDesc caller = HandleToObject(callerHnd);
+
+                if (caller.OwningType is EcmaType ecmaOwningType
+                    && ecmaOwningType.EcmaModule.EntryPoint == caller)
+                {
+                    // We don't want to tailcall the entrypoint for an application; It results in a rather
+                    // confusing debugging experience.
+                    result = false;
+                }
 
                 if (caller.IsNoInlining)
                 {
