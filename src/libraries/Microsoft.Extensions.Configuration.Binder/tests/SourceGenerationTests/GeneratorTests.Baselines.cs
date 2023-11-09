@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Xunit;
@@ -966,10 +967,108 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Equal(2, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
         }
 
+        private readonly static string [] s_typesToSkip = new string []
+        {
+            "Action<string>",
+            "List<Action<string>>",
+            "List<Dictionary<string, Action<string>>>",
+            "Func<int>",
+            "List<Func<int>>",
+            "List<Dictionary<string, Func<string>>>",
+            "myMethodDelegate",
+            "List<myMethodDelegate>",
+            "List<Dictionary<string, myMethodDelegate>>",
+            "IntPtr",
+            "List<IntPtr>",
+            "List<Dictionary<string, IntPtr>>",
+            "UIntPtr",
+            "List<UIntPtr>",
+            "List<Dictionary<string, UIntPtr>>",
+            "SerializationInfo",
+            "List<SerializationInfo>",
+            "List<Dictionary<string, SerializationInfo>>",
+            "MethodInfo",
+            "List<MethodInfo>",
+            "List<Dictionary<string, MethodInfo>>",
+            "ConstructorInfo",
+            "List<ConstructorInfo>",
+            "List<Dictionary<string, ConstructorInfo>>",
+            "string[,]",
+            "List<string[,]>",
+            "List<Dictionary<string, string[,]>>",
+            "Func<string>[]",
+            "Action<string>[]",
+            "myMethodDelegate[]",
+            "MethodInfo[]",
+            "ConstructorInfo[]",
+            "SerializationInfo[]",
+            "IntPtr[]",
+            "UIntPtr[]",
+            "Action<string>?",
+            "List<Action<string>?>",
+            "List<Dictionary<string, Action<string>?>>",
+            "Func<int>?",
+            "List<Func<int>?>",
+            "List<Dictionary<string, Func<string>?>>",
+            "myMethodDelegate?",
+            "List<myMethodDelegate?>",
+            "List<Dictionary<string, myMethodDelegate?>>",
+            "IntPtr?",
+            "List<IntPtr?>",
+            "List<Dictionary<string, IntPtr?>>",
+            "UIntPtr?",
+            "List<UIntPtr?>",
+            "List<Dictionary<string, UIntPtr?>>",
+            "SerializationInfo?",
+            "List<SerializationInfo?>",
+            "List<Dictionary<string, SerializationInfo?>>",
+            "MethodInfo?",
+            "List<MethodInfo?>",
+            "List<Dictionary<string, MethodInfo?>>",
+            "ConstructorInfo?",
+            "List<ConstructorInfo?>",
+            "List<Dictionary<string, ConstructorInfo?>>",
+            "string[,]?",
+            "List<string[,]?>",
+            "List<Dictionary<string, string[,]?>>",
+            "Func<string>?[]",
+            "Action<string>?[]",
+            "myMethodDelegate?[]",
+            "MethodInfo?[]",
+            "ConstructorInfo?[]",
+            "SerializationInfo?[]",
+            "IntPtr?[]",
+            "UIntPtr?[]",
+            "ParameterInfo",
+            "ParameterInfo?",
+            "List<ParameterInfo>",
+            "List<ParameterInfo?>",
+            "ParameterInfo[]",
+            "MyDictionary"
+        };
+
+        private readonly static string [] s_rootCollectionTypesToGenerateDiagnostics = new string []
+        {
+            "List<IntPtr>",
+            "MyDictionary",
+        };
+
         [Fact]
         public async Task UnsupportedTypes()
         {
-            string source = """
+            StringBuilder sb1 = new();
+            for (int i = 0; i < s_typesToSkip.Length; i++)
+            {
+                sb1.AppendLine($"public {s_typesToSkip[i]} SkipProp{i} {{ get; set; }}");
+            }
+
+            StringBuilder sb2 = new();
+            for (int i = 0; i < s_rootCollectionTypesToGenerateDiagnostics.Length; i++)
+            {
+                sb2.AppendLine($"configuration.Get<{s_rootCollectionTypesToGenerateDiagnostics[i]}>(_ => {{ }});");
+            }
+
+            string source = $$"""
                 using System;
                 using System.Collections.Generic;
                 using System.Reflection;
@@ -990,7 +1089,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         configuration.Get<Options>(_ => { });
 
                         // Should generate a diagnostics
-                        configuration.Get<List<IntPtr>>(_ => { });
+                        {{sb2}}
                 	}
                 }
 
@@ -1000,118 +1099,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     public int Age { get; set; }
                     public List<string> List { get; set; }
                     public string[] Array { get; set; }
-
-                    public Action<string> SkipProp1 { get; set; }
-                    public List<Action<string>> SkipProp2 { get; set; }
-                    public List<Dictionary<string, Action<string>>> SkipProp3 { get; set; }
-
-                    public Func<int> SkipProp4 { get; set; }
-                    public List<Func<int>> SkipProp5 { get; set; }
-                    public List<Dictionary<string, Func<string>>> SkipProp6 { get; set; }
-
-                    public myMethodDelegate SkipProp7 { get; set; }
-                    public List<myMethodDelegate> SkipProp8 { get; set; }
-                    public List<Dictionary<string, myMethodDelegate>> SkipProp9 { get; set; }
-
-                    public IntPtr SkipProp10 { get; set; }
-                    public List<IntPtr> SkipProp11 { get; set; }
-                    public List<Dictionary<string, IntPtr>> SkipProp12 { get; set; }
-
-                    public UIntPtr SkipProp13 { get; set; }
-                    public List<UIntPtr> SkipProp14 { get; set; }
-                    public List<Dictionary<string, UIntPtr>> SkipProp15 { get; set; }
-
-                    public SerializationInfo SkipProp16 { get; set; }
-                    public List<SerializationInfo> SkipProp17 { get; set; }
-                    public List<Dictionary<string, SerializationInfo>> SkipProp18 { get; set; }
-
-                    public MethodInfo SkipProp19 { get; set; }
-                    public List<MethodInfo> SkipProp20 { get; set; }
-                    public List<Dictionary<string, MethodInfo>> SkipProp21 { get; set; }
-
-                    public ConstructorInfo SkipProp22 { get; set; }
-                    public List<ConstructorInfo> SkipProp23 { get; set; }
-                    public List<Dictionary<string, ConstructorInfo>> SkipProp24 { get; set; }
-
-                    public string[,] SkipProp25 { get; set; }
-                    public List<string[,]> SkipProp26 { get; set; }
-                    public List<Dictionary<string, string[,]>> SkipProp27 { get; set; }
-
-                    public Func<string>[] SkipProp28 { get; set; }
-                    public Action<string>[] SkipProp29 { get; set; }
-                    public myMethodDelegate[] SkipProp30 { get; set; }
-                    public MethodInfo[] SkipProp31 { get; set; }
-                    public ConstructorInfo[] SkipProp32 { get; set; }
-                    public SerializationInfo[] SkipProp33 { get; set; }
-                    public IntPtr[] SkipProp34 { get; set; }
-                    public UIntPtr[] SkipProp35 { get; set; }
-
-                    //
-                    // Repeat the above properties, but with a nullability annotation.
-                    //
-
-                    public Action<string>? SkipProp36 { get; set; }
-                    public List<Action<string>?> SkipProp37 { get; set; }
-                    public List<Dictionary<string, Action<string>?>> SkipProp38 { get; set; }
-
-                    public Func<int>? SkipProp39 { get; set; }
-                    public List<Func<int>?> SkipProp40 { get; set; }
-                    public List<Dictionary<string, Func<string>?>> SkipProp41 { get; set; }
-
-                    public myMethodDelegate? SkipProp42 { get; set; }
-                    public List<myMethodDelegate?> SkipProp43 { get; set; }
-                    public List<Dictionary<string, myMethodDelegate?>> SkipProp44 { get; set; }
-
-                    public IntPtr? SkipProp45 { get; set; }
-                    public List<IntPtr?> SkipProp46 { get; set; }
-                    public List<Dictionary<string, IntPtr?>> SkipProp47 { get; set; }
-
-                    public UIntPtr? SkipProp48 { get; set; }
-                    public List<UIntPtr?> SkipProp49 { get; set; }
-                    public List<Dictionary<string, UIntPtr?>> SkipProp50 { get; set; }
-
-                    public SerializationInfo? SkipProp51 { get; set; }
-                    public List<SerializationInfo?> SkipProp52 { get; set; }
-                    public List<Dictionary<string, SerializationInfo?>> SkipProp53 { get; set; }
-
-                    public MethodInfo? SkipProp54 { get; set; }
-                    public List<MethodInfo?> SkipProp55 { get; set; }
-                    public List<Dictionary<string, MethodInfo?>> SkipProp56 { get; set; }
-
-                    public ConstructorInfo? SkipProp57 { get; set; }
-                    public List<ConstructorInfo?> SkipProp58 { get; set; }
-                    public List<Dictionary<string, ConstructorInfo?>> SkipProp59 { get; set; }
-
-                    public string[,]? SkipProp60 { get; set; }
-                    public List<string[,]?> SkipProp61 { get; set; }
-                    public List<Dictionary<string, string[,]?>> SkipProp62 { get; set; }
-
-                    public Func<string>?[] SkipProp63 { get; set; }
-                    public Action<string>?[] SkipProp64 { get; set; }
-                    public myMethodDelegate?[] SkipProp65 { get; set; }
-                    public MethodInfo?[] SkipProp66 { get; set; }
-                    public ConstructorInfo?[] SkipProp67 { get; set; }
-                    public SerializationInfo?[] SkipProp68 { get; set; }
-                    public IntPtr?[] SkipProp69 { get; set; }
-                    public UIntPtr?[] SkipProp70 { get; set; }
-
-                    public ParameterInfo SkipProp71 { get; set; }
-                    public ParameterInfo? SkipProp72 { get; set; }
-                    public List<ParameterInfo> SkipProp73 { get; set; }
-                    public List<ParameterInfo?> SkipProp74 { get; set; }
-                    public ParameterInfo[] SkipProp75 { get; set; }
-
+                    public Record<Action> Record { get; set; }
+                    {{sb1}}
                     public delegate string myMethodDelegate( int myInt );
                 }
+
+                public class MyDictionary : Dictionary<string, Action> { }
+
+                public record Record<T>(int x = 10);
+
+                namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
                 """;
 
             ConfigBindingGenRunResult result = await VerifyAgainstBaselineUsingFile(
                 "UnsupportedTypes.generated.txt",
                 source, expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
 
-            Assert.Equal(1, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+            Assert.Equal(s_rootCollectionTypesToGenerateDiagnostics.Length, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
             Assert.True(result.GeneratedSource.HasValue);
-            Assert.DoesNotContain(result.GeneratedSource.Value.SourceText.ToString(), "SkipProp");
+            string generatedSource = result.GeneratedSource.Value.SourceText.ToString();
+            Assert.DoesNotContain(generatedSource, "SkipProp");
+            Assert.Contains("global::Record<global::System.Action>", generatedSource);
         }
     }
 }

@@ -37,6 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
         [InterceptsLocation(@"src-0.cs", 18, 23)]
         [InterceptsLocation(@"src-0.cs", 21, 23)]
+        [InterceptsLocation(@"src-0.cs", 22, 15)]
         public static T? Get<T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions) => (T?)(GetCore(configuration, typeof(T), configureOptions) ?? default(T));
 
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
@@ -59,7 +60,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_Options = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Age", "List", "Array" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_RecordAction = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_Options = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Age", "List", "Array", "Record" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -82,6 +84,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return instance;
             }
             else if (type == typeof(global::System.Collections.Generic.List<global::System.IntPtr>))
+            {
+            }
+            else if (type == typeof(global::MyDictionary))
             {
             }
 
@@ -114,6 +119,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             int originalCount = instance.Length;
             Array.Resize(ref instance, originalCount + temp1.Count);
             temp1.CopyTo(instance, originalCount);
+        }
+
+        public static void BindCore(IConfiguration configuration, ref global::Record<global::System.Action> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
+        {
+            ValidateConfigurationKeys(typeof(global::Record<global::System.Action>), s_configKeys_RecordAction, configuration, binderOptions);
         }
 
         public static void BindCore(IConfiguration configuration, ref global::Options instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
@@ -149,6 +159,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
                 instance.Array = temp9;
             }
+
+            if (AsConfigWithChildren(configuration.GetSection("Record")) is IConfigurationSection section10)
+            {
+                global::Record<global::System.Action>? temp12 = instance.Record;
+                temp12 ??= InitializeRecordAction(section10, binderOptions);
+                BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
+                instance.Record = temp12;
+            }
+        }
+
+        public static global::Record<global::System.Action> InitializeRecordAction(IConfiguration configuration, BinderOptions? binderOptions)
+        {
+            int x = (int)(10);
+            if (configuration["x"] is string value13)
+            {
+                x = ParseInt(value13, () => configuration.GetSection("x").Path);
+            }
+
+            return new global::Record<global::System.Action>(x)
+            {
+                x = x,
+            };
         }
 
 

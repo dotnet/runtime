@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (!_createdTypeSpecs.ContainsKey(typeSymbol))
                     {
                         _createdTypeSpecs.Add(typeSymbol, CreateTypeSpec(typeParseInfo));
-                                            }
+                    }
                 }
             }
 
