@@ -226,7 +226,7 @@ typedef unsigned __int128 regMaskTP;
 typedef unsigned __int64 regMaskTP;
 #endif // HOST_UNIX
 #else
-typedef unsigned       regMaskTP;
+typedef unsigned regMaskTP;
 #endif
 
 #if REGMASK_BITS == 8
@@ -234,7 +234,7 @@ typedef unsigned char regMaskSmall;
 #define REG_MASK_INT_FMT "%02X"
 #define REG_MASK_ALL_FMT "%02X"
 #elif REGMASK_BITS == 16
-typedef unsigned short regMaskSmall;
+typedef unsigned short    regMaskSmall;
 #define REG_MASK_INT_FMT "%04X"
 #define REG_MASK_ALL_FMT "%04X"
 #elif REGMASK_BITS == 32
