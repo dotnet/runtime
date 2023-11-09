@@ -264,32 +264,6 @@ extern "C" void QCALLTYPE LoaderAllocator_EnsureReference(QCall::LoaderAllocator
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE LoaderAllocator_IsCollectible(QCall::LoaderAllocatorHandle pLA)
-{
-    QCALL_CONTRACT;
-
-    BOOL result = FALSE;
-
-    BEGIN_QCALL;
-
-    result = pLA->IsCollectible();
-
-    END_QCALL;
-
-    return result;
-}
-
-extern "C" void QCALLTYPE LoaderAllocator_RegisterBinder(AssemblyLoaderAllocator* pLA, OBJECTHANDLE handle)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    pLA->RegisterBinder(handle);
-
-    END_QCALL;
-}
-
 BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation inst)
 {
     CONTRACTL
@@ -1752,11 +1726,17 @@ void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
 
 AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
 {
+    if (m_binderToRelease != NULL)
+    {
+        delete m_binderToRelease;
+        m_binderToRelease = NULL;
+    }
+
     delete m_pShuffleThunkCache;
     m_pShuffleThunkCache = NULL;
 }
 
-void AssemblyLoaderAllocator::RegisterBinder(OBJECTHANDLE binderToRelease)
+void AssemblyLoaderAllocator::RegisterBinder(CustomAssemblyBinder* binderToRelease)
 {
     // When the binder is registered it will be released by the destructor
     // of this instance
@@ -2061,11 +2041,7 @@ void AssemblyLoaderAllocator::ReleaseManagedAssemblyLoadContext()
     if (m_binderToRelease != NULL)
     {
         // Release the managed ALC
-        // Depends on the destructor of managed binder
-
-        // m_binderToRelease->ReleaseLoadContext();
-        DestroyHandle(m_binderToRelease);
-        m_binderToRelease = NULL;
+        m_binderToRelease->ReleaseLoadContext();
     }
 }
 

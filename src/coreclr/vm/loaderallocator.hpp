@@ -838,7 +838,6 @@ typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
 
 extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 extern "C" void QCALLTYPE LoaderAllocator_EnsureReference(QCall::LoaderAllocatorHandle pLA, QCall::LoaderAllocatorHandle pOtherLA);
-extern "C" BOOL QCALLTYPE LoaderAllocator_IsCollectible(QCall::LoaderAllocatorHandle pLA);
 
 class GlobalLoaderAllocator : public LoaderAllocator
 {
@@ -900,8 +899,12 @@ public:
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
+    CustomAssemblyBinder* GetBinder()
+    {
+        return m_binderToRelease;
+    }
     virtual ~AssemblyLoaderAllocator();
-    void RegisterBinder(OBJECTHANDLE binderToRelease);
+    void RegisterBinder(CustomAssemblyBinder* binderToRelease);
     virtual void ReleaseManagedAssemblyLoadContext();
 #endif // !defined(DACCESS_COMPILE)
 
@@ -919,7 +922,7 @@ private:
 
     SList<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
-    OBJECTHANDLE m_binderToRelease;
+    CustomAssemblyBinder* m_binderToRelease;
 #endif
 
 private:

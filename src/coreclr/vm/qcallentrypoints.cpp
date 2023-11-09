@@ -214,7 +214,6 @@ static const Entry s_QCall[] =
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
     DllImportEntry(LoaderAllocator_EnsureReference)
-    DllImportEntry(LoaderAllocator_IsCollectible)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_InformThreadNameChange)

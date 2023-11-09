@@ -65,16 +65,5 @@ namespace System.Reflection
         internal static partial void EnsureReference(IntPtr nativeLoaderAllocator, IntPtr otherNativeLoaderAllocator);
 
         internal void EnsureReference(IntPtr otherNativeLA) => EnsureReference(m_scout.m_nativeLoaderAllocator, otherNativeLA);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_IsCollectible")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool IsCollectible(IntPtr nativeLoaderAllocator);
-
-        internal bool IsCollectible() => IsCollectible(m_scout.m_nativeLoaderAllocator);
-
-        internal void RegisterBinder(GCHandle handle) => RegisterBinder(m_scout.m_nativeLoaderAllocator, handle);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_RegisterBinder")]
-        private static partial void RegisterBinder(IntPtr pNativeLA, GCHandle handle);
     }
 }

@@ -3,97 +3,16 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.Binder
 {
     internal sealed class CustomAssemblyBinder : AssemblyBinder
     {
-        private readonly DefaultAssemblyBinder _defaultBinder;
         private System.Reflection.LoaderAllocator? _loaderAllocator;
-        private GCHandle _loaderAllocatorHandle;
-
-        // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
-        // to keep the managed AssemblyLoadContext alive until the unload is finished.
-        // We still keep the weak handle pointing to the same managed AssemblyLoadContext so that native code can use the handle above
-        // to refer to it during the whole lifetime of the AssemblyLoadContext.
-        private GCHandle _ptrManagedStrongAssemblyLoadContext;
 
         public override bool IsDefault => false;
 
         public override System.Reflection.LoaderAllocator? GetLoaderAllocator() => _loaderAllocator;
-
-        public CustomAssemblyBinder(
-            DefaultAssemblyBinder defaultBinder,
-            System.Reflection.LoaderAllocator? loaderAllocator,
-            GCHandle loaderAllocatorHandle,
-            GCHandle ptrAssemblyLoadContext)
-        {
-            // Save reference to the DefaultBinder that is required to be present.
-            _defaultBinder = defaultBinder;
-
-            // Save the reference to the IntPtr for GCHandle for the managed
-            // AssemblyLoadContext instance
-            ManagedAssemblyLoadContext = ptrAssemblyLoadContext;
-
-            if (loaderAllocator != null)
-            {
-                // Link to LoaderAllocator, keep a reference to it
-                // VERIFY(pLoaderAllocator->AddReferenceIfAlive());
-
-                // ((AssemblyLoaderAllocator*)pLoaderAllocator)->RegisterBinder(pBinder);
-                var thisHandle = GCHandle.Alloc(this);
-                loaderAllocator.RegisterBinder(thisHandle);
-            }
-
-            _loaderAllocator = loaderAllocator;
-            _loaderAllocatorHandle = loaderAllocatorHandle;
-        }
-
-        public void PrepareForLoadContextRelease(GCHandle ptrManagedStrongAssemblyLoadContext)
-        {
-            // Add a strong handle so that the managed assembly load context stays alive until the
-            // CustomAssemblyBinder::ReleaseLoadContext is called.
-            // We keep the weak handle as well since this method can be running on one thread (e.g. the finalizer one)
-            // and other thread can be using the weak handle.
-            _ptrManagedStrongAssemblyLoadContext = ptrManagedStrongAssemblyLoadContext;
-
-            Debug.Assert(_loaderAllocator != null);
-            Debug.Assert(_loaderAllocatorHandle.IsAllocated);
-
-            // We cannot delete the binder here as it is used indirectly when comparing assemblies with the same binder
-            // It will be deleted when the LoaderAllocator will be deleted
-            // We need to keep the LoaderAllocator pointer set as it still may be needed for creating references between the
-            // native LoaderAllocators of two collectible contexts in case the AssemblyLoadContext.Unload was called on the current
-            // context before returning from its AssemblyLoadContext.Load override or the context's Resolving event.
-            // But we need to release the LoaderAllocator so that it doesn't prevent completion of the final phase of unloading in
-            // some cases. It is safe to do as the AssemblyLoaderAllocator is guaranteed to be alive at least until the
-            // CustomAssemblyBinder::ReleaseLoadContext is called, where we NULL this pointer.
-
-            _loaderAllocator = null!;
-
-            // Destroy the strong handle to the LoaderAllocator in order to let it reach its finalizer
-            _loaderAllocatorHandle.Free();
-            _loaderAllocatorHandle = default;
-        }
-
-        ~CustomAssemblyBinder()
-        {
-            // CustomAssemblyBinder::ReleaseLoadContext
-
-            Debug.Assert(ManagedAssemblyLoadContext.IsAllocated);
-            Debug.Assert(_ptrManagedStrongAssemblyLoadContext.IsAllocated);
-
-            // This method is called to release the weak and strong handles on the managed AssemblyLoadContext
-            // once the Unloading event has been fired
-            ManagedAssemblyLoadContext.Free();
-            _ptrManagedStrongAssemblyLoadContext.Free();
-            ManagedAssemblyLoadContext = default;
-
-            // The AssemblyLoaderAllocator is in a process of shutdown and should not be used
-            // after this point.
-            _ptrManagedStrongAssemblyLoadContext.Free();
-        }
 
         private int BindAssemblyByNameWorker(AssemblyName assemblyName, out Assembly? coreCLRFoundAssembly)
         {
