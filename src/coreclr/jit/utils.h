@@ -828,9 +828,25 @@ public:
     }
 
 #ifdef HOST_UNIX
+    static void print128x(unsigned __int128 n)
+    {
+        printf("%lx : ", static_cast<uint64_t>(n));
+        uint64_t lo = n;
+        uint64_t hi = (n >> 64);
+        if (hi)
+        {
+            printf("%lx", hi);
+            printf("%lx", lo);
+        }
+        printf("%lx", lo);
+    }
+    
     FORCEINLINE static uint32_t BitScanForward(unsigned __int128 value)
     {
-        return BitScanForward(static_cast<uint64_t>(value));
+        uint32_t result = BitScanForward(static_cast<uint64_t>(value));
+        print128x(value);
+        printf(", answer= %u\n", value, result);
+        return result;
     }
 #endif
 
