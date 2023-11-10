@@ -51,17 +51,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
 }
 
 /*****************************************************************************
-* Look up the jump kind for an instruction. It better be a conditional
-* branch instruction with a jump kind!
-*/
-
-/*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
-{
-    NYI_RISCV64("emitInsToJumpKind-----unimplemented on RISCV64 yet----");
-    return EJ_NONE;
-}
-
-/*****************************************************************************
  * Reverse the conditional jump
  */
 
