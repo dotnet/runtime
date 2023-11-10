@@ -5786,15 +5786,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 			goto jit_call;
 		}
-		MINT_IN_CASE(MINT_NEWOBJ_VT_INLINED) {
-			guint16 ret_size = ip [3];
-			gpointer this_vt = locals + ip [2];
-
-			memset (this_vt, 0, ret_size);
-			LOCAL_VAR (ip [1], gpointer) = this_vt;
-			ip += 4;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_NEWOBJ_SLOW) {
 			guint32 const token = ip [3];
 			return_offset = ip [1];
