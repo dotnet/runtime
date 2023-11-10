@@ -4958,26 +4958,6 @@ ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitIntern
 	mono_lifo_semaphore_asyncwait_prepare_wait (sem, timeout_ms, (LifoSemaphoreAsyncWaitCallbackFn)success_cb, (LifoSemaphoreAsyncWaitCallbackFn)timedout_cb, user_data);
 }
 
-void
-ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
-{
-	emscripten_runtime_keepalive_push();
-}
-
-void
-ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
-{
-	emscripten_runtime_keepalive_pop();
-}
-
-extern int mono_wasm_eventloop_has_unsettled_interop_promises(void);
-
-MonoBoolean
-ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
-{
-	return !!mono_wasm_eventloop_has_unsettled_interop_promises();
-}
-
 #endif /* HOST_BROWSER && !DISABLE_THREADS */
 
 /* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
@@ -4995,22 +4975,5 @@ ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitIntern
 	g_assert_not_reached ();
 }
 
-void
-ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
-{
-	g_assert_not_reached();
-}
-
-void
-ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
-{
-	g_assert_not_reached();
-}
-
-MonoBoolean
-ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
-{
-	g_assert_not_reached();
-}
 #endif /* defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP) */
 
