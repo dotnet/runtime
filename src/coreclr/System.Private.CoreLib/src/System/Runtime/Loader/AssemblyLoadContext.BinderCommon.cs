@@ -39,6 +39,12 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquirePEImage", StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_Release")]
+        internal static partial void PEImage_Release(IntPtr pPEImage);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_GetMVID")]
+        internal static partial void PEImage_GetMVID(IntPtr pPEImage, out Guid mvid);
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_AppIsBundle")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool AppIsBundle();
@@ -844,7 +850,7 @@ namespace System.Runtime.Loader
             {
                 // SAFE_RELEASE(pPEImage);
                 if (pPEImage != IntPtr.Zero)
-                    AssemblyLoadContext.PEImage_Release(pPEImage);
+                    PEImage_Release(pPEImage);
             }
         }
 
@@ -984,8 +990,8 @@ namespace System.Runtime.Loader
 
                         try
                         {
-                            AssemblyLoadContext.PEImage_GetMVID(pPEImage, out incomingMVID);
-                            AssemblyLoadContext.PEImage_GetMVID(bindResult.Assembly.PEImage, out boundMVID);
+                            PEImage_GetMVID(pPEImage, out incomingMVID);
+                            PEImage_GetMVID(bindResult.Assembly.PEImage, out boundMVID);
                         }
                         catch (Exception ex)
                         {

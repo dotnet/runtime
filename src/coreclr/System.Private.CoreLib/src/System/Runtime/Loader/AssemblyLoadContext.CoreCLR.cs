@@ -17,9 +17,6 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_PrepareForAssemblyLoadContextRelease")]
         private static partial void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetDefaultAssemblyBinder")]
-        internal static partial IntPtr GetDefaultAssemblyBinder();
-
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
         private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
@@ -122,12 +119,6 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]
         private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_Release")]
-        internal static partial void PEImage_Release(IntPtr pPEImage);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_GetMVID")]
-        internal static partial void PEImage_GetMVID(IntPtr pPEImage, out Guid mvid);
-
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
@@ -168,7 +159,7 @@ namespace System.Runtime.Loader
             InternalStartProfile(profile, _nativeAssemblyLoadContext);
         }
 
-        internal static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
+        private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
         {
             return
                 asm == null ? null :

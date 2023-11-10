@@ -609,7 +609,7 @@ namespace System.Runtime.Loader
 #if !NATIVEAOT
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        internal static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 

@@ -1306,21 +1306,6 @@ extern "C" void QCALLTYPE AssemblyNative_PrepareForAssemblyLoadContextRelease(IN
     END_QCALL;
 }
 
-extern "C" INT_PTR QCALLTYPE AssemblyNative_GetDefaultAssemblyBinder()
-{
-    QCALL_CONTRACT;
-
-    INT_PTR ptrDefaultAssemblyBinder = NULL;
-
-    BEGIN_QCALL;
-
-    ptrDefaultAssemblyBinder = (INT_PTR)GetAppDomain()->GetDefaultBinder();
-
-    END_QCALL;
-
-    return ptrDefaultAssemblyBinder;
-}
-
 /*static*/
 extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::AssemblyHandle pAssembly)
 {
