@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Debug = System.Diagnostics.Debug;
+// Rewrite of src\coreclr\vm\frozenobjectheap.cpp in C#
 
 namespace Internal.Runtime
 {
