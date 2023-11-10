@@ -191,6 +191,7 @@ export type RuntimeHelpers = {
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    isDeputyThread: boolean,
     jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 
@@ -201,8 +202,11 @@ export type RuntimeHelpers = {
     afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
+    afterStartMonoVM: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
+
+    runMainResult: PromiseAndController<number>,
 
     featureWasmEh: boolean,
     featureWasmSimd: boolean,

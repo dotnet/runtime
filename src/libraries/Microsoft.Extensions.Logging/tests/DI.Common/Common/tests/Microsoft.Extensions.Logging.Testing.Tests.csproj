@@ -4,6 +4,10 @@
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\src\LogLevelAttribute.cs"
              Link="tests\DI.Common\Common\src\LogLevelAttribute.cs" />

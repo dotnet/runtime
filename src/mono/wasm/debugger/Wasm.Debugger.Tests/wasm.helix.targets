@@ -12,19 +12,6 @@
   <Target Name="_AddWorkItemsForWasmDebuggerTests">
     <!-- remove the existing item -->
     <HelixWorkItem Remove="@(HelixWorkItem)" Condition="'%(HelixWorkItem.Identity)' == 'Wasm.Debugger.Tests'" />
-
-    <ReadLinesFromFile File="$(TestArchiveTestsDir)DebuggerTestSuite.tests.list">
-      <Output TaskParameter="Lines" ItemName="_DebuggerTestsClassName" />
-    </ReadLinesFromFile>
-
-    <ItemGroup>
-      <HelixWorkItem Include="@(_DebuggerTestsClassName -> '$(DebuggerHost)-%(Identity)')">
-        <PayloadArchive>$(TestArchiveTestsDir)Wasm.Debugger.Tests.zip</PayloadArchive>
-        <Command>$(HelixCommand)</Command>
-        <Timeout>$(_DebuggerTestsWorkItemTimeout)</Timeout>
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;TEST_ARGS=--filter category^^!=failing^&amp;FullyQualifiedName~%(Identity)&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;TEST_ARGS=--filter category!=failing&amp;FullyQualifiedName~%(Identity)&quot;</PreCommands>
-      </HelixWorkItem>
-    </ItemGroup>
+    <!-- TODO not ready for deputy yet -->
   </Target>
 </Project>

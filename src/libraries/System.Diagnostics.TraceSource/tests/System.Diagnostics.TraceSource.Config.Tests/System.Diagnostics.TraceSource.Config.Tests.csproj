@@ -3,6 +3,9 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>

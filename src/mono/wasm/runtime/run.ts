@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { ENVIRONMENT_IS_NODE, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
@@ -8,6 +10,7 @@ import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { mono_log_info } from "./logging";
 import { assert_bindings } from "./invoke-js";
+import { deputy_run_main } from "./pthreads/browser/deputy";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
@@ -54,6 +57,15 @@ export async function mono_run_main(main_assembly_name: string, args?: string[])
         mono_log_info("waiting for debugger...");
         await mono_wasm_wait_for_debugger();
     }
+    if (MonoWasmThreads) {
+        return deputy_run_main(main_assembly_name, args);
+    }
+    else {
+        return mono_run_main_impl(main_assembly_name, args);
+    }
+}
+
+export async function mono_run_main_impl(main_assembly_name: string, args: string[]) {
     const method = find_entry_point(main_assembly_name);
 
     const res = await runtimeHelpers.javaScriptExports.call_entry_point(method, args);

@@ -18,7 +18,7 @@ import {
     WorkerThreadEventTarget
 } from "./events";
 import { postRunWorker, preRunWorker } from "../../startup";
-import { mono_log_debug } from "../../logging";
+import { mono_log_debug, mono_log_info } from "../../logging";
 import { mono_set_thread_id } from "../../logging";
 import { jiterpreter_allocate_tables } from "../../jiterpreter-support";
 
@@ -85,23 +85,36 @@ function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
 
 /// This is an implementation detail function.
 /// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
+let inter: number | undefined;
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void {
     const self = pthread_self;
     mono_assert(self !== null && self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
-    mono_set_thread_id("0x" + pthread_id.toString(16));
-    mono_log_debug("attaching pthread to mono runtime 0x" + pthread_id.toString(16));
+    const id = "0x" + pthread_id.toString(16);
+    mono_set_thread_id(id);
+    mono_log_info("attaching pthread to mono runtime " + id);
     preRunWorker();
-    set_thread_info(pthread_id, true, false, false);
+    set_thread_info(pthread_id, true, false, false, false);
     jiterpreter_allocate_tables(Module);
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
+    if (globalThis.setInterval) {
+        const info = (globalThis as any).monoThreadInfo ?
+            (globalThis as any).monoThreadInfo() : "" + id;
+        inter = globalThis.setInterval(() => {
+            mono_log_info("Worker is alive! " + info);
+        }, 3000); // keep the worker alive
+    }
 }
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
 export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
-    mono_log_debug("detaching pthread from mono runtime 0x" + pthread_id.toString(16));
+    mono_log_info("detaching pthread from mono runtime 0x" + pthread_id.toString(16));
     postRunWorker();
-    set_thread_info(pthread_id, false, false, false);
+    set_thread_info(pthread_id, false, false, false, false);
     mono_set_thread_id("");
+    if (inter && (globalThis as any).clearInterval) {
+        clearInterval(inter);
+        inter = undefined;
+    }
 }
 
 /// This is an implementation detail function.

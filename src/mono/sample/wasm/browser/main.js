@@ -3,22 +3,14 @@
 
 import { dotnet, exit } from './_framework/dotnet.js'
 
-function displayMeaning(meaning) {
-    document.getElementById("out").innerHTML = `${meaning}`;
-}
+setInterval(() => {
+    console.log("UI thread is alive!");
+}, 1000);
 
 try {
-    const { setModuleImports } = await dotnet
+    await dotnet
         .withElementOnExit()
         .create();
-
-    setModuleImports("main.js", {
-        Sample: {
-            Test: {
-                displayMeaning
-            }
-        }
-    });
 
     await dotnet.run();
 }

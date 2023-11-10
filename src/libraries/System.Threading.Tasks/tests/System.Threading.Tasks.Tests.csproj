@@ -5,6 +5,9 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">64</_WasmPThreadPoolSize>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers.cs" />
     <Compile Include="Task\TaskArgumentValidationTests.cs" />

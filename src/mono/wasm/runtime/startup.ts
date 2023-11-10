@@ -6,7 +6,8 @@ import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
 import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
-import cwraps, { init_c_exports } from "./cwraps";
+import { init_c_exports } from "./cwraps";
+import { threads_c_functions as cwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
@@ -18,17 +19,15 @@ import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
 import { wait_for_all_assets } from "./assets";
-import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { checkMemorySnapshotSize, getMemorySnapshot, storeMemorySnapshot } from "./snapshot";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
-import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
 // threads
-import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
+import { mono_wasm_init_threads, preAllocatePThreadWorkerPool } from "./pthreads/browser";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
-import { getBrowserThreadID } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 
 // legacy
@@ -145,6 +144,9 @@ function preInit(userPreInit: (() => void)[]) {
         mono_wasm_pre_init_essential(false);
         mono_log_debug("preInit");
         runtimeHelpers.beforePreInit.promise_control.resolve();
+        if (!ENVIRONMENT_IS_WORKER) {
+            Module.runtimeKeepalivePush();
+        }
         // all user Module.preInit callbacks
         userPreInit.forEach(fn => fn());
     } catch (err) {
@@ -237,56 +239,26 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         await wait_for_all_assets();
 
-        // Threads early are not supported with memory snapshot. See below how we enable them later.
-        // Please disable startupMemoryCache in order to be able to diagnose or pause runtime startup.
-        if (MonoWasmThreads && !runtimeHelpers.config.startupMemoryCache) {
-            await mono_wasm_init_threads();
-        }
-
-        // load runtime and apply environment settings (if necessary)
-        await mono_wasm_before_memory_snapshot();
-
-        if (runtimeHelpers.config.interpreterPgo) {
-            await interp_pgo_load_data();
-        }
-
-        if (runtimeHelpers.config.exitAfterSnapshot) {
-            const reason = runtimeHelpers.ExitStatus
-                ? new runtimeHelpers.ExitStatus(0)
-                : new Error("Snapshot taken, exiting because exitAfterSnapshot was set.");
-            reason.silent = true;
-
-            loaderHelpers.mono_exit(0, reason);
-            return;
-        }
-
-        if (!ENVIRONMENT_IS_WORKER) {
-            Module.runtimeKeepalivePush();
-        }
-        runtimeHelpers.runtimeReady = true;
-
-        if (runtimeHelpers.config.virtualWorkingDirectory) {
-            const FS = Module.FS;
-            const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-            const wds = FS.stat(cwd);
-            if (!wds) {
-                Module.FS_createPath("/", cwd, true, true);
-            }
-            mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
-            FS.chdir(cwd);
-        }
-
-        if (MonoWasmThreads && runtimeHelpers.config.startupMemoryCache) {
-            await mono_wasm_init_threads();
-        }
-
-        bindings_init();
-        jiterpreter_allocate_tables(Module);
+        mono_assert(!MonoWasmThreads || !runtimeHelpers.config.startupMemoryCache, "Threads are not supported with memory snapshot.");
 
         if (MonoWasmThreads) {
-            runtimeHelpers.javaScriptExports.install_synchronization_context();
-            runtimeHelpers.jsSynchronizationContextInstalled = true;
+            await mono_wasm_init_threads();
+        } else {
+            await start_mono_vm();
+
+            if (runtimeHelpers.config.exitAfterSnapshot) {
+                const reason = runtimeHelpers.ExitStatus
+                    ? new runtimeHelpers.ExitStatus(0)
+                    : new Error("Snapshot taken, exiting because exitAfterSnapshot was set.");
+                reason.silent = true;
+
+                loaderHelpers.mono_exit(0, reason);
+                return;
+            }
         }
+
+        runtimeHelpers.runtimeReady = true;
+
 
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
@@ -348,16 +320,6 @@ export function postRunWorker() {
     runtimeHelpers.afterPreRun = createPromiseController<void>();
 }
 
-async function mono_wasm_init_threads() {
-    if (!MonoWasmThreads) {
-        return;
-    }
-    const tid = getBrowserThreadID();
-    mono_set_thread_id(`0x${tid.toString(16)}-main`);
-    await instantiateWasmPThreadWorkerPool();
-    await mono_wasm_init_diagnostics();
-}
-
 function mono_wasm_pre_init_essential(isWorker: boolean): void {
     if (!isWorker)
         Module.addRunDependency("mono_wasm_pre_init_essential");
@@ -377,11 +339,6 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
         cwraps_mono_api(MONO);
         cwraps_binding_api(BINDING);
     }
-    // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
-    // emscripten - on a worker since we don't have any other dependencies that causes run() to get
-    // called too soon; and then it will get called a second time when dotnet.native.js calls it directly.
-    // on a worker run() short-cirtcuits and just calls   readyPromiseResolve, initRuntime and postMessage.
-    // sending postMessage twice will break instantiateWasmPThreadWorkerPool on the main thread.
     if (!isWorker)
         Module.removeRunDependency("mono_wasm_pre_init_essential");
 }
@@ -512,7 +469,7 @@ async function ensureUsedWasmFeatures() {
     }
 }
 
-async function mono_wasm_before_memory_snapshot() {
+export async function start_mono_vm() {
     const mark = startMeasure();
     if (runtimeHelpers.loadedMemorySnapshotSize) {
         // get the bytes after we re-sized the memory, so that we don't have too much memory in use at the same time
@@ -550,13 +507,30 @@ async function mono_wasm_before_memory_snapshot() {
         runtimeHelpers.storeMemorySnapshotPending = false;
     }
 
-    if (runtimeHelpers.config.interpreterPgo)
-        setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
+    if (runtimeHelpers.config.interpreterPgo) {
+        await interp_pgo_load_data();
 
-    endMeasure(mark, MeasuredBlock.memorySnapshot);
+        setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
+    }
+
+    if (runtimeHelpers.config.virtualWorkingDirectory) {
+        const FS = Module.FS;
+        const cwd = runtimeHelpers.config.virtualWorkingDirectory;
+        const wds = FS.stat(cwd);
+        if (!wds) {
+            Module.FS_createPath("/", cwd, true, true);
+        }
+        mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
+        FS.chdir(cwd);
+    }
+
+    bindings_init();
+    jiterpreter_allocate_tables(Module);
+
+    endMeasure(mark, MeasuredBlock.startMonoVM);
 }
 
-async function maybeSaveInterpPgoTable () {
+async function maybeSaveInterpPgoTable() {
     // If the application exited abnormally, don't save the table. It probably doesn't contain useful data,
     //  and saving would overwrite any existing table from a previous successful run.
     // We treat exiting with a code of 0 as equivalent to if the app is still running - it's perfectly fine

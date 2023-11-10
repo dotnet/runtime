@@ -472,6 +472,30 @@ mono_threads_wasm_ui_thread_tid (void)
 }
 
 #ifndef DISABLE_THREADS
+static pthread_t deputy_thread_tid;
+#endif
+
+gboolean
+mono_threads_wasm_is_deputy_thread (void)
+{
+#ifdef DISABLE_THREADS
+	return TRUE;
+#else
+	return pthread_self () == deputy_thread_tid;
+#endif
+}
+
+MonoNativeThreadId
+mono_threads_wasm_deputy_thread_tid (void)
+{
+#ifdef DISABLE_THREADS
+	return (MonoNativeThreadId)1;
+#else
+	return (MonoNativeThreadId) deputy_thread_tid;
+#endif
+}
+
+#ifndef DISABLE_THREADS
 extern void mono_wasm_pthread_on_pthread_attached (MonoNativeThreadId pthread_id);
 extern void mono_wasm_pthread_on_pthread_detached (MonoNativeThreadId pthread_id);
 #endif
@@ -547,6 +571,47 @@ void
 mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
 {
 	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VII, func, NULL, user_data1, user_data2);
+}
+
+extern void mono_wasm_setup_deputy_thread (void);
+
+// this is running in deputy thread
+static void*
+deputy_thread_fn (void* unused_arg G_GNUC_UNUSED)
+{
+	mono_wasm_setup_deputy_thread();
+	
+	// "exit" from server_thread, but keep the pthread alive and responding to events
+	emscripten_exit_with_live_runtime ();
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_create_deputy_thread (pthread_t *out_thread_id)
+{
+	if (!pthread_create (&deputy_thread_tid, NULL, deputy_thread_fn, NULL)) {
+		*out_thread_id = deputy_thread_tid;
+		return TRUE;
+	}
+	memset(out_thread_id, 0, sizeof(pthread_t));
+	return FALSE;
+}
+
+void
+mono_threads_wasm_async_run_in_deputy_thread (void (*func) (void))
+{
+	mono_threads_wasm_async_run_in_target_thread (deputy_thread_tid, func);
+}
+
+void
+mono_threads_wasm_async_run_in_deputy_thread_vi (void (*func) (gpointer), gpointer user_data)
+{
+	mono_threads_wasm_async_run_in_target_thread_vi (deputy_thread_tid, func, user_data);
+}
+
+void
+mono_threads_wasm_async_run_in_deputy_thread_vii (void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	mono_threads_wasm_async_run_in_target_thread_vii (deputy_thread_tid, func, user_data1, user_data2);
 }
 
 

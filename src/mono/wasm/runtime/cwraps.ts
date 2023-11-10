@@ -41,6 +41,7 @@ const threading_cwraps: SigLine[] = MonoWasmThreads ? [
     [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
     [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
     [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
+    [true, "mono_wasm_create_deputy_thread", "bool", ["number"]],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -181,6 +182,7 @@ export interface t_ThreadingCwraps {
     mono_wasm_diagnostic_server_thread_attach_to_runtime(): void;
     mono_wasm_diagnostic_server_post_resume_runtime(): void;
     mono_wasm_diagnostic_server_create_stream(): VoidPtr;
+    mono_wasm_create_deputy_thread(threadIdOutPtr: VoidPtr): boolean;
 }
 
 export interface t_ProfilerCwraps {

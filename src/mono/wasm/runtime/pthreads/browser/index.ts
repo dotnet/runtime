@@ -1,13 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig, isMonoWorkerMessagePreload, MonoWorkerMessage } from "../shared";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
+import { isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig, isMonoWorkerMessagePreload, MonoWorkerMessage, getBrowserThreadID } from "../shared";
 import { pthreadPtr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import Internals from "../shared/emscripten-internals";
 import { createPromiseController, runtimeHelpers } from "../../globals";
 import { PromiseController } from "../../types/internal";
-import { mono_log_debug } from "../../logging";
+import { mono_log_debug, mono_set_thread_id } from "../../logging";
+import { mono_wasm_init_diagnostics } from "../../diagnostics";
+import { startDeputyThread } from "./deputy";
 
 const threads: Map<pthreadPtr, Thread> = new Map();
 
@@ -80,8 +84,23 @@ export function getThread(pthreadPtr: pthreadPtr): Thread | undefined {
 export const getThreadIds = (): IterableIterator<pthreadPtr> => threads.keys();
 
 function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown>, thread: Thread): void {
-    // TODO: add callbacks that will be called from here
-    mono_log_debug("got message from worker on the dedicated channel", event.data, thread);
+    const data = event.data as MonoThreadMessage;
+    if (data.type == "deputy") {
+        if (data.cmd == "ready") {
+            runtimeHelpers.afterStartMonoVM.promise_control.resolve();
+            return;
+        } else if (data.cmd == "abort") {
+            runtimeHelpers.afterStartMonoVM.promise_control.reject((data as any).reason);
+            return;
+        } else if (data.cmd == "run_main_result") {
+            runtimeHelpers.runMainResult.promise_control.resolve((data as any).result);
+            return;
+        } else if (data.cmd == "run_main_error") {
+            runtimeHelpers.runMainResult.promise_control.reject((data as any).reason);
+            return;
+        }
+    }
+    mono_log_debug("got unexpected message from worker on the dedicated channel", event.data, thread);
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
@@ -131,4 +150,18 @@ export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
         const promises = workers.map(Internals.loadWasmModuleToWorker);
         await Promise.all(promises);
     }
+}
+
+export async function mono_wasm_init_threads() {
+    if (!MonoWasmThreads) {
+        return;
+    }
+    const tid = getBrowserThreadID();
+    mono_set_thread_id(`0x${tid.toString(16)}-UI`);
+
+    await instantiateWasmPThreadWorkerPool();
+
+    await mono_wasm_init_diagnostics();
+
+    await startDeputyThread();
 }
