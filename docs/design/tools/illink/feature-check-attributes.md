@@ -6,11 +6,70 @@
 - RuntimHostConfigurationOption MSBuild ItemGroup
 - `runtimeconfig.json` setting
 - AppContext feature setting
-- ILLink.Substitutions.xml
-- static boolean property
-- Requries attributes
+- **ILLink.Substitutions.xml**
+- **static boolean property**
+- **Requries attributes**
 
-[Feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switches.md) describes how settings flow from the MSBuild property through the AppContext (for runtime feature checks) or `ILLink.Substitutions.xml` (for feature settings baked-in when trimming). This document aims to describe an attribute-based model to replace some of the functionality currently implemented via ILLink.Substitutions.xml.
+The bold pieces are the focus of this document. [Feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switches.md) describes how settings flow from the MSBuild property through the AppContext (for runtime feature checks) or `ILLink.Substitutions.xml` (for feature settings baked-in when trimming). This document aims to describe an attribute-based model to replace some of the functionality currently implemented via ILLink.Substitutions.xml, used for branch elimination in ILLink and ILCompiler to remove branches that call into `Requires`-annotated code when trimming.
+
+## Backgrounnd
+
+### Terminology
+
+We'll use the following terms to describe specific bits of functionality related to feature switches:
+- Feature switch property: the IL property whose value indicates whether a feature is enabled/supported
+  - For example: `RuntimeFeature.IsDynamicCodeSupported`
+- Feature attribute: an attribute associated with a feature, used to annotate code that is related to, or depends on, the feature.
+  - For example: `RequiresDynamicCodeAttribute`
+- Feature guard property: an IL property whose value _depends_ on a feature being enabled, but doesn't necessarily _define_ the availability of that feature.
+  - For example: `RuntimeFeature.IsDynamicCodeCompiled` depends on `IsDynamicCodeSupported`. It should return `false` when `IsDynamicCodeSupported` returns `false`, but it may return `false` even if `IsDynamicCodeSupported` is `true`.
+
+We'll say that a "feature switch property" is also necessarily a "feature guard property", but not all "feature guard properties" are "feature switch properties".
+
+`IsDynamicCodeSupported` is an example of a feature that has an attribute, a feature switch, and a separate feature guard (`IsDynamicCodeCompiled`), but not all features have all of these bits of functionality.
+
+### Warning behavior
+
+Typically, feature switches come with support (via XML substitutions) for treating feature properties and feature guards as constants when publishing. These tools will eliminate guarded branches. This is useful as a code size optimization, and also as a way to prevent producing warnings for features that have attributes designed to produce warnings at callsites:
+
+```csharp
+UseDynamicCode(); // warns
+
+if (RuntimeFeature.IsDynamicCodeSupported)
+  UseDynamicCode(); // OK, no warning
+
+if (RuntimeFeature.IsDynamicCodeCompiled)
+  UseDynamicCode(); // OK, no warning in ILCompiler, but warns in analyzer
+
+[RequiresDynamicCode("Uses dynamically generated code")]
+static void UseDynamicCode() { }
+```
+
+The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSupported` as a guard for `RequiresDynamicCodeAttribute`, but has no other built-in support.
+
+## Goals
+
+- Teach the ILLink Roslyn analyzer to treat `IsDynamicCodeCompiled` as a guard for `RequiresDynamicCodeAttribute`
+- Allow libraries to define their own feature guard properties for `RequiresDynamicCodeAttribute` and other features that might produce warnings in the analyzer
+
+### Non-goals
+
+- Support branch elimination in the analyzer for all feature switches
+
+  The most important use case for the analyzer is analyzing libraries. Libraries typically don't bake in constants for feature switches, so the analyzer needs to consider all branches. It should support feature guards for features that produce warnings, but doesn't need to consider feature settings passed in from the project file to treat some branches as dead code.
+
+## Analogy with `DefineConstants`
+
+Feature switches serve a similar purpose to `DefineConstants`. They behave similarly, except that they are substituted by ILLink/ILCompiler at publish time, instead of by Roslyn at build time.
+
+| Preprocessor symbols | Feature switches |
+| - | - |
+| `DefineConstants` | `RuntimeHostConfigurationOption` |
+| - abc |oe |
+
+
+For
+
 
 ## Feature check relationship with feature switches
 
