@@ -168,7 +168,7 @@
 
   <Target Name="IncludeTestAssemblyInVFS" BeforeTargets="PrepareForWasmBuildApp">
     <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="'%(PublishItemsOutputGroupOutputs.FileName)' == '$(AssemblyName)' and '%(PublishItemsOutputGroupOutputs.Extension)' == '.dll'" />
+      <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" Exclude="@(WasmFilesToIncludeFromPublishDir)" />
     </ItemGroup>
   </Target>
 
