@@ -119,14 +119,6 @@
 
   <!-- Sources -->
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\ApplicationContext.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\Assembly.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyIdentity.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyName.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyVersion.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\BindResult.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\TextualIdentityParser.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\Tracing\ResolutionAttemptedOperation.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
@@ -240,6 +232,14 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CustomBinder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.DefaultBinder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\ApplicationContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\Assembly.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyIdentity.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyName.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyVersion.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\BindResult.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\TextualIdentityParser.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\Tracing\ResolutionAttemptedOperation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
