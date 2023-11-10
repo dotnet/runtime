@@ -1550,6 +1550,7 @@ extends:
           - linux_arm64
           - windows_x86
           - linux_musl_x64
+          - linux_musl_arm
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
           jobParameters:
