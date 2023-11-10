@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Loader;
+using Internal.Runtime.Binder;
 
-namespace Internal.Runtime.Binder
+namespace System.Runtime.Loader
 {
     // System.Reflection.TypeLoading.AssemblyNameData
     internal readonly unsafe struct AssemblyNameData
@@ -30,7 +29,7 @@ namespace Internal.Runtime.Binder
         public readonly AssemblyIdentityFlags IdentityFlags;
     }
 
-    internal abstract partial class AssemblyBinder
+    public partial class AssemblyLoadContext
     {
         // fields used by VM
         private GCHandle m_managedALC;
@@ -42,23 +41,12 @@ namespace Internal.Runtime.Binder
             _ = GetHashCode(); // Calculate hashcode for AssemblySpecBindingCache usage
         }
 
-        public unsafe int BindAssemblyByName(void* pAssemblyNameData, out Assembly? assembly)
+        private protected unsafe int BindAssemblyByName(void* pAssemblyNameData, out Assembly? assembly)
         {
             return BindUsingAssemblyName(new AssemblyName((AssemblyNameData*)pAssemblyNameData), out assembly);
         }
 
-        public abstract int BindUsingPEImage(IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly);
-
-        public abstract int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly);
-
-        /// <summary>
-        /// Get LoaderAllocator for binders that contain it. For other binders, return NULL.
-        /// </summary>
-        public abstract System.Reflection.LoaderAllocator? GetLoaderAllocator();
-
-        public abstract bool IsDefault { get; }
-
-        public ApplicationContext AppContext { get; } = new ApplicationContext();
+        internal ApplicationContext AppContext { get; } = new ApplicationContext();
 
         // A GC handle to the managed AssemblyLoadContext.
         // It is a long weak handle for collectible AssemblyLoadContexts and strong handle for non-collectible ones.
@@ -67,7 +55,7 @@ namespace Internal.Runtime.Binder
         // NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
 
         // called by vm
-        public void AddLoadedAssembly(IntPtr loadedAssembly)
+        private void AddLoadedAssembly(IntPtr loadedAssembly)
         {
             // BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
             // TODO: is the lock shared outside this type?
@@ -81,9 +69,9 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        public string GetNameForDiagnostics() => IsDefault ? "Default" : GetNameForDiagnosticsFromManagedALC(ManagedAssemblyLoadContext);
+        private string GetNameForDiagnostics() => IsDefault ? "Default" : GetNameForDiagnosticsFromManagedALC(ManagedAssemblyLoadContext);
 
-        public static string GetNameForDiagnosticsFromManagedALC(GCHandle managedALC)
+        private static string GetNameForDiagnosticsFromManagedALC(GCHandle managedALC)
         {
             AssemblyLoadContext? alc = managedALC.IsAllocated ? (AssemblyLoadContext?)managedALC.Target : null;
 
@@ -117,11 +105,11 @@ namespace Internal.Runtime.Binder
         }
 
         // used by vm
-        internal unsafe void DeclareDependencyOnMvid(byte* simpleName, in Guid mvid, bool compositeComponent, byte* imageName)
+        private unsafe void DeclareDependencyOnMvid(byte* simpleName, in Guid mvid, bool compositeComponent, byte* imageName)
             => DeclareDependencyOnMvid(new MdUtf8String(simpleName).ToString(), mvid, compositeComponent, new MdUtf8String(imageName).ToString());
 
         // Must be called under the LoadLock
-        public void DeclareDependencyOnMvid(string simpleName, Guid mvid, bool compositeComponent, string imageName)
+        private void DeclareDependencyOnMvid(string simpleName, Guid mvid, bool compositeComponent, string imageName)
         {
             // If the table is empty, then we didn't fill it with all the loaded assemblies as they were loaded. Record this detail, and fix after adding the dependency
             bool addAllLoadedModules = false;

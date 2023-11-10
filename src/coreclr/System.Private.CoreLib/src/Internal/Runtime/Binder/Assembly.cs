@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.Loader;
 
 namespace Internal.Runtime.Binder
 {
@@ -12,7 +13,7 @@ namespace Internal.Runtime.Binder
     {
         // fields used by VM
 #pragma warning disable CA1823, 414, 169
-        private AssemblyBinder? m_binder;
+        private AssemblyLoadContext? m_binder;
         private AssemblyName m_assemblyName;
         private IntPtr m_peImage;
         private IntPtr m_pDomainAssembly;
@@ -20,7 +21,7 @@ namespace Internal.Runtime.Binder
         private bool m_isCoreLib;
 #pragma warning restore CA1823, 414, 169
 
-        public AssemblyBinder? Binder
+        public AssemblyLoadContext? Binder
         {
             get => m_binder;
             set => m_binder = value;

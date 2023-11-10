@@ -1,19 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.Runtime.Loader;
+using Internal.Runtime.Binder;
 using Internal.Runtime.Binder.Tracing;
 
-namespace Internal.Runtime.Binder
+namespace System.Runtime.Loader
 {
+
     internal enum CorPEKind
     {
         peNot = 0x00000000,   // not a PE file
@@ -207,7 +206,7 @@ namespace Internal.Runtime.Binder
         public const int CLR_E_BIND_TYPE_NOT_FOUND = unchecked((int)0x80132005);
         public const int CLR_E_BIND_ARCHITECTURE_MISMATCH = unchecked((int)0x80132006);
 
-        public static int BindAssembly(AssemblyBinder binder, AssemblyName assemblyName, bool excludeAppPaths, out Assembly? result)
+        public static int BindAssembly(AssemblyLoadContext binder, AssemblyName assemblyName, bool excludeAppPaths, out Assembly? result)
         {
             int kContextVersion = 0;
             BindResult bindResult = default;
@@ -948,8 +947,8 @@ namespace Internal.Runtime.Binder
         public static int BindUsingHostAssemblyResolver(
             GCHandle pManagedAssemblyLoadContextToBindWithin,
             AssemblyName assemblyName,
-            DefaultAssemblyBinder? defaultBinder,
-            AssemblyBinder binder,
+            AssemblyLoadContext? defaultBinder,
+            AssemblyLoadContext binder,
             out Assembly? loadedAssembly)
         {
             int hr = HResults.E_FAIL;
@@ -1157,7 +1156,7 @@ namespace Internal.Runtime.Binder
             return hr;
         }
 
-        public static int BindUsingPEImage(AssemblyBinder binder, AssemblyName assemblyName, IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly)
+        public static int BindUsingPEImage(AssemblyLoadContext binder, AssemblyName assemblyName, IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly)
         {
             int hr = HResults.S_OK;
 

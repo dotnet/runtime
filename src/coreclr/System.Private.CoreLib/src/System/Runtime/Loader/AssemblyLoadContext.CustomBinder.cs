@@ -1,18 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
+using Internal.Runtime.Binder;
 
-namespace Internal.Runtime.Binder
+namespace System.Runtime.Loader
 {
-    internal sealed class CustomAssemblyBinder : AssemblyBinder
+    public partial class AssemblyLoadContext
     {
-        private System.Reflection.LoaderAllocator? _loaderAllocator;
+        private Reflection.LoaderAllocator _loaderAllocator;
 
-        public override bool IsDefault => false;
-
-        public override System.Reflection.LoaderAllocator? GetLoaderAllocator() => _loaderAllocator;
+        internal virtual Reflection.LoaderAllocator? GetLoaderAllocator() => _loaderAllocator;
 
         private int BindAssemblyByNameWorker(AssemblyName assemblyName, out Assembly? coreCLRFoundAssembly)
         {
@@ -30,7 +28,7 @@ namespace Internal.Runtime.Binder
             return hr;
         }
 
-        public override int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly)
+        internal virtual int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly)
         {
             int hr;
             Assembly? coreCLRFoundAssembly;
@@ -62,7 +60,7 @@ namespace Internal.Runtime.Binder
                     // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
                     // that has been loaded.
 
-                    hr = AssemblyBinderCommon.BindUsingHostAssemblyResolver(ManagedAssemblyLoadContext, assemblyName, _defaultBinder, this, out coreCLRFoundAssembly);
+                    hr = AssemblyBinderCommon.BindUsingHostAssemblyResolver(ManagedAssemblyLoadContext, assemblyName, Default, this, out coreCLRFoundAssembly);
 
                     if (hr >= 0)
                     {
@@ -79,7 +77,7 @@ namespace Internal.Runtime.Binder
             return hr;
         }
 
-        public override int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out Assembly? assembly)
+        internal virtual int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out Assembly? assembly)
         {
             assembly = null;
             int hr;

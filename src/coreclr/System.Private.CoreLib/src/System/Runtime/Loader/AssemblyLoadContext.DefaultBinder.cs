@@ -1,21 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.Loader;
+using Internal.Runtime.Binder;
 
-namespace Internal.Runtime.Binder
+namespace System.Runtime.Loader
 {
-    internal sealed class DefaultAssemblyBinder : AssemblyBinder
+    internal partial class DefaultAssemblyLoadContext
     {
-        public override bool IsDefault => true;
-
         // Not supported by this binder
-        public override System.Reflection.LoaderAllocator? GetLoaderAllocator() => null;
+        internal override Reflection.LoaderAllocator? GetLoaderAllocator() => null;
 
-        public Assembly CreateCoreLib(IntPtr pCoreLibPEImage) => new Assembly(pCoreLibPEImage, true) { Binder = this };
+        // called by vm
+        private Assembly CreateCoreLib(IntPtr pCoreLibPEImage) => new Assembly(pCoreLibPEImage, true) { Binder = this };
 
         // Helper functions
         private int BindAssemblyByNameWorker(AssemblyName assemblyName, out Assembly? coreCLRFoundAssembly, bool excludeAppPaths)
@@ -34,7 +32,7 @@ namespace Internal.Runtime.Binder
             return hr;
         }
 
-        public override int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly)
+        internal override int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly)
         {
             assembly = null;
 
@@ -60,7 +58,7 @@ namespace Internal.Runtime.Binder
                     if (!assemblyName.IsNeutralCulture)
                     {
                         // Make sure the managed default ALC is initialized.
-                        AssemblyLoadContext.InitializeDefaultContext();
+                        InitializeDefaultContext();
                     }
 
                     pManagedAssemblyLoadContext = ManagedAssemblyLoadContext;
@@ -88,7 +86,7 @@ namespace Internal.Runtime.Binder
             return hr;
         }
 
-        public override int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out Assembly? assembly)
+        internal override int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out Assembly? assembly)
         {
             assembly = null;
             int hr;
@@ -144,17 +142,10 @@ namespace Internal.Runtime.Binder
             return hr;
         }
 
-        public void SetupBindingPaths(string trustedPlatformAssemblies, string platformResourceRoots, string appPaths)
-        {
-            AppContext.SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, acquireLock: true);
-        }
-
         // called by VM
-        public unsafe void SetupBindingPaths(char* trustedPlatformAssemblies, char* platformResourceRoots, char* appPaths)
+        private unsafe void SetupBindingPaths(char* trustedPlatformAssemblies, char* platformResourceRoots, char* appPaths)
         {
-            SetupBindingPaths(new string(trustedPlatformAssemblies), new string(platformResourceRoots), new string(appPaths));
+            AppContext.SetupBindingPaths(new string(trustedPlatformAssemblies), new string(platformResourceRoots), new string(appPaths), acquireLock: true);
         }
-
-        // BindToSystem
     }
 }
