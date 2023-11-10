@@ -5,7 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <XUnitLogCheckerLibrariesHelixDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'helix', 'tests', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesHelixDirectory>
+    <XUnitLogCheckerLibrariesHelixDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'helix', 'tests', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesHelixDirectory>
   </PropertyGroup>
 
   <ItemGroup>
