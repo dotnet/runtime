@@ -139,6 +139,8 @@ namespace System.Collections.Tests
             yield return new object[] { new Dictionary<float, double> { { 1.0f, 1.0 }, { 2.0f, 2.0 } }.Values };
             yield return new object[] { new SortedDictionary<Guid, string> { { Guid.NewGuid(), "One" }, { Guid.NewGuid(), "Two" } }.Keys };
             yield return new object[] { new SortedDictionary<long, Guid> { { 1L, Guid.NewGuid() }, { 2L, Guid.NewGuid() } }.Values };
+            yield return new object[] { new ReadOnlyDictionary<double, float>(new Dictionary<double, float> { { 1.0, 1.0f }, { 2.0, 2.0f } }).Keys };
+            yield return new object[] { new ReadOnlyDictionary<float, double>(new Dictionary<float, double> { { 1.0f, 1.0 }, { 2.0f, 2.0 } }).Values };
         }
 
         public static IEnumerable<object[]> TestDebuggerAttributes_InputsPresentedAsDictionary()
