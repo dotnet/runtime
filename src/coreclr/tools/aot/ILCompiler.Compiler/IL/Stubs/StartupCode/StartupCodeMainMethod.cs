@@ -288,7 +288,7 @@ namespace Internal.IL.Stubs.StartupCode
                     codeStream.MarkDebuggerStepInPoint();
 
                 // This would be tail call eligible but we don't do tail calls
-                // if the method is marked NoOptimization and we just did it above.
+                // if the method is marked NoInlining and we just did it above.
                 codeStream.Emit(ILOpcode.tail);
                 codeStream.Emit(ILOpcode.call, emit.NewToken(WrappedMethod));
 
