@@ -169,7 +169,7 @@ extern "C" void QCALLTYPE PEImage_GetMVID(PEImage * pPEImage, GUID* pMVID);
 
 extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly);
 
-extern "C" LoaderAllocator * QCALLTYPE DomainAssembly_GetLoaderAllocator(DomainAssembly * pDomainAssembly);
+extern "C" void QCALLTYPE DomainAssembly_EnsureReferenceBinder(DomainAssembly * pDomainAssembly, AssemblyBinder * pBinder);
 
 extern "C" INT_PTR QCALLTYPE PEAssembly_GetHostAssembly(PEAssembly * pPEAssembly);
 

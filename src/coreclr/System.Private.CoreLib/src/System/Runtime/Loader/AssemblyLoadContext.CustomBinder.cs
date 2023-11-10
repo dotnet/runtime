@@ -8,10 +8,6 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
-        private Reflection.LoaderAllocator _loaderAllocator;
-
-        internal virtual Reflection.LoaderAllocator? GetLoaderAllocator() => _loaderAllocator;
-
         private int BindAssemblyByNameWorker(AssemblyName assemblyName, out Assembly? coreCLRFoundAssembly)
         {
             // CoreLib should be bound using BindToSystem

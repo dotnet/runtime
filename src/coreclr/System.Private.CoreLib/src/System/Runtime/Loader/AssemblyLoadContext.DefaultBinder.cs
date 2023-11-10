@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Internal.Runtime.Binder;
 
 namespace System.Runtime.Loader
 {
     internal partial class DefaultAssemblyLoadContext
     {
-        // Not supported by this binder
-        internal override Reflection.LoaderAllocator? GetLoaderAllocator() => null;
-
         // called by vm
         private Assembly CreateCoreLib(IntPtr pCoreLibPEImage) => new Assembly(pCoreLibPEImage, true) { Binder = this };
 

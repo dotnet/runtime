@@ -44,7 +44,7 @@ namespace System.Reflection
         }
     }
 
-    internal sealed partial class LoaderAllocator
+    internal sealed class LoaderAllocator
     {
         private LoaderAllocator()
         {
@@ -60,10 +60,5 @@ namespace System.Reflection
         internal CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> m_methodInstantiations;
         private int m_slotsUsed;
 #pragma warning restore CA1823, 414, 169
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_EnsureReference")]
-        internal static partial void EnsureReference(IntPtr nativeLoaderAllocator, IntPtr otherNativeLoaderAllocator);
-
-        internal void EnsureReference(IntPtr otherNativeLA) => EnsureReference(m_scout.m_nativeLoaderAllocator, otherNativeLA);
     }
 }

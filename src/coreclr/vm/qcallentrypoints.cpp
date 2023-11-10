@@ -203,7 +203,7 @@ static const Entry s_QCall[] =
     DllImportEntry(PEImage_Release)
     DllImportEntry(PEImage_GetMVID)
     DllImportEntry(DomainAssembly_GetPEAssembly)
-    DllImportEntry(DomainAssembly_GetLoaderAllocator)
+    DllImportEntry(DomainAssembly_EnsureReferenceBinder)
     DllImportEntry(PEAssembly_GetHostAssembly)
     DllImportEntry(Bundle_AppIsBundle)
     DllImportEntry(Bundle_ProbeAppBundle)
@@ -213,7 +213,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
-    DllImportEntry(LoaderAllocator_EnsureReference)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_InformThreadNameChange)

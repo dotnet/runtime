@@ -12,7 +12,6 @@ using Internal.Runtime.Binder.Tracing;
 
 namespace System.Runtime.Loader
 {
-
     internal enum CorPEKind
     {
         peNot = 0x00000000,   // not a PE file
@@ -46,8 +45,8 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEAssembly_GetHostAssembly")]
         private static partial IntPtr PEAssembly_GetHostAssembly(IntPtr pPEAssembly);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_GetLoaderAllocator")]
-        private static partial IntPtr DomainAssembly_GetLoaderAllocator(IntPtr pDomainAssembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_EnsureReferenceBinder")]
+        private static partial IntPtr DomainAssembly_EnsureReferenceBinder(IntPtr pDomainAssembly, IntPtr pBinder);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_AppIsBundle")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -1114,16 +1113,7 @@ namespace System.Runtime.Loader
                     // alive for all its lifetime.
                     if (rtAssembly.IsCollectible)
                     {
-                        IntPtr resultAssemblyLoaderAllocator = DomainAssembly_GetLoaderAllocator(pDomainAssembly);
-                        System.Reflection.LoaderAllocator? parentLoaderAllocator = binder.GetLoaderAllocator();
-                        if (parentLoaderAllocator == null)
-                        {
-                            // The AssemblyLoadContext for which we are resolving the Assembly is not collectible.
-                            throw new NotSupportedException(SR.NotSupported_CollectibleBoundNonCollectible);
-                        }
-
-                        Debug.Assert(resultAssemblyLoaderAllocator != IntPtr.Zero);
-                        parentLoaderAllocator.EnsureReference(resultAssemblyLoaderAllocator);
+                        DomainAssembly_EnsureReferenceBinder(pDomainAssembly, binder._nativeAssemblyLoadContext);
                     }
 
                     resolvedAssembly = GCHandle.FromIntPtr(PEAssembly_GetHostAssembly(pLoadedPEAssembly)).Target as Assembly;

@@ -253,17 +253,6 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
     return CheckAddReference_Unlocked(pOtherLA);
 }
 
-extern "C" void QCALLTYPE LoaderAllocator_EnsureReference(QCall::LoaderAllocatorHandle pLA, QCall::LoaderAllocatorHandle pOtherLA)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    pLA->EnsureReference(pOtherLA);
-
-    END_QCALL;
-}
-
 BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation inst)
 {
     CONTRACTL

@@ -1660,19 +1660,24 @@ extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * 
     return result;
 }
 
-extern "C" LoaderAllocator * QCALLTYPE DomainAssembly_GetLoaderAllocator(DomainAssembly * pDomainAssembly)
+extern "C" void QCALLTYPE DomainAssembly_EnsureReferenceBinder(DomainAssembly * pDomainAssembly, AssemblyBinder * pBinder)
 {
     QCALL_CONTRACT;
-
-    LoaderAllocator * result = NULL;
-
+    
     BEGIN_QCALL;
 
-    result = pDomainAssembly->GetLoaderAllocator();
+    LoaderAllocator *pResultAssemblyLoaderAllocator = pDomainAssembly->GetLoaderAllocator();
+    LoaderAllocator *pParentLoaderAllocator = pBinder->GetLoaderAllocator();
+    if (pParentLoaderAllocator == NULL)
+    {
+        // The AssemblyLoadContext for which we are resolving the Assembly is not collectible.
+        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
+    }
+
+    _ASSERTE(pResultAssemblyLoaderAllocator);
+    pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
 
     END_QCALL;
-
-    return result;
 }
 
 extern "C" INT_PTR QCALLTYPE PEAssembly_GetHostAssembly(PEAssembly * pPEAssembly)
