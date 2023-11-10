@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System.Reflection.PortableExecutable;
-using System.Text.Json.Serialization;
 
 public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 {
@@ -296,6 +295,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     private IList<ITaskItem>? _assembliesToCompile;
     private ConcurrentDictionary<string, ITaskItem> compiledAssemblies = new();
+    private BuildPropertiesTable? _propertiesTable;
 
     private MonoAotMode parsedAotMode;
     private MonoAotOutputType parsedOutputType;
@@ -305,52 +305,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private FileCache? _cache;
     private int _numCompiled;
     private int _totalNumAssemblies;
-    private bool _collectTrimmingEligibleMethodsValueFromPreviousBuild;
 
     private readonly Dictionary<string, string> _symbolNameFixups = new();
     private static readonly char[] s_semicolon = new char[]{ ';' };
 
     private bool ProcessAndValidateArguments()
     {
-        string monoAotPropertyValuesFilePath = Path.Combine(IntermediateOutputPath, "monoAotPropertyValues.txt");
-
-        if (File.Exists(monoAotPropertyValuesFilePath))
-        {
-            Dictionary<string, bool> properties = ParseMonoAotPropertyValuesFile(monoAotPropertyValuesFilePath);
-            if (properties.ContainsKey(nameof(CollectTrimmingEligibleMethods)))
-                if (properties.TryGetValue(nameof(CollectTrimmingEligibleMethods), out bool value))
-                    _collectTrimmingEligibleMethodsValueFromPreviousBuild = value;
-            if (_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)
-                File.Delete(monoAotPropertyValuesFilePath);
-        }
-
-        if (!File.Exists(monoAotPropertyValuesFilePath) || ((_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)))
-        {
-            Dictionary<string, bool> monoAotPropertyValuesToSave = new();
-            monoAotPropertyValuesToSave.Add(nameof(CollectTrimmingEligibleMethods), CollectTrimmingEligibleMethods);
-            SaveMonoAotPropertyValuesToFile(monoAotPropertyValuesFilePath, monoAotPropertyValuesToSave);
-        }
-
-        if (_collectTrimmingEligibleMethodsValueFromPreviousBuild != CollectTrimmingEligibleMethods)
-        {
-            DirectoryInfo di = new DirectoryInfo(IntermediateOutputPath);
-            foreach (FileInfo file in di.GetFiles("*.bc"))
-            {
-                Log.LogMessage(MessageImportance.High, $"Deleting {file.Name} to force a new AOT compilation, because the value of CollectTrimmingEligibleMethods has changed");
-                file.Delete();
-            }
-            foreach (DirectoryInfo dir in di.GetDirectories("stripped"))
-            {
-                Log.LogMessage(MessageImportance.High, $"Deleting folder {dir.Name} from previous AOT, because the value of CollectTrimmingEligibleMethods has changed");
-                dir.Delete(true);
-            }
-            foreach (DirectoryInfo dir in di.GetDirectories("tokens"))
-            {
-                Log.LogMessage(MessageImportance.High, $"Deleting folder {dir.Name} from previous AOT, because the value of CollectTrimmingEligibleMethods has changed");
-                dir.Delete(true);
-            }
-        }
-
         if (!File.Exists(CompilerBinaryPath))
         {
             Log.LogError($"{nameof(CompilerBinaryPath)}='{CompilerBinaryPath}' doesn't exist.");
@@ -507,32 +467,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private Dictionary<string, bool> ParseMonoAotPropertyValuesFile(string filePath)
-    {
-        string? text = File.ReadAllText(filePath);
-        Dictionary<string, bool> properties = new();
-        if (!string.IsNullOrEmpty(text))
-        {
-            try
-            {
-                Dictionary<string, bool>? jsonData = JsonSerializer.Deserialize<Dictionary<string, bool>>(text);
-                if (jsonData != null)
-                    properties = jsonData;
-            }
-            catch (Exception e)
-            {
-                Log.LogError(e.Message);
-            }
-        }
-        return properties;
-    }
-
-    private void SaveMonoAotPropertyValuesToFile(string filePath, Dictionary<string, bool> properties)
-    {
-        string jsonString = JsonSerializer.Serialize(properties);
-        File.WriteAllText(filePath, jsonString);
-        Log.LogMessage(MessageImportance.High, $"Logged Mono AOT Properties in {filePath}");
-    }
 
     public override bool Execute()
     {
@@ -557,6 +491,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         if (!ProcessAndValidateArguments())
             return false;
+
+        string propertiesTableFilePath = Path.Combine(IntermediateOutputPath, "monoAotPropertyValues.txt");
+        _propertiesTable = new BuildPropertiesTable(propertiesTableFilePath);
 
         IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
         managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);
@@ -634,6 +571,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         CheckExportSymbolsFile(_assembliesToCompile);
+        _propertiesTable.Table[nameof(CollectTrimmingEligibleMethods)] = CollectTrimmingEligibleMethods.ToString();
+        _propertiesTable.Save(propertiesTableFilePath, Log);
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
         return !Log.HasLoggedErrors;
     }
@@ -1338,6 +1277,45 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         public string                       WorkingDir           { get; private set; }
         public ITaskItem                    AOTAssembly          { get; private set; }
         public IList<ProxyFile>             ProxyFiles           { get; private set; }
+    }
+
+    private sealed class BuildPropertiesTable
+    {
+        public Dictionary<string, string> Table { get; private set; }
+
+        public BuildPropertiesTable(string propertiesFilePath)
+        {
+            Table = Read(propertiesFilePath) ?? new();
+        }
+
+        public bool GetBool(string propertyName, bool defaultValue)
+            => bool.TryParse(Table[propertyName], out bool outValue) ? outValue : defaultValue;
+
+        private static Dictionary<string, string>? Read(string propertiesFilePath)
+        {
+            if (!File.Exists(propertiesFilePath))
+                return null;
+
+            string text = File.ReadAllText(propertiesFilePath);
+            if (text.Length == 0)
+                return null;
+
+            try
+            {
+                return JsonSerializer.Deserialize<Dictionary<string, string>>(text);
+            }
+            catch (Exception e)
+            {
+                throw new LogAsErrorException($"Failed to parse properties table from {propertiesFilePath}: {e}");
+            }
+        }
+
+        public void Save(string filePath, TaskLoggingHelper log)
+        {
+            string jsonString = JsonSerializer.Serialize(Table);
+            File.WriteAllText(filePath, jsonString);
+            log.LogMessage(MessageImportance.Low, $"Logged Mono AOT Properties in {filePath}");
+        }
     }
 }
 
