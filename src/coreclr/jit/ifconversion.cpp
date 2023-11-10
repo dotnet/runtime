@@ -708,6 +708,7 @@ bool OptIfConversionDsc::optIfConvert()
 
     GenTree* select = nullptr;
 
+#ifdef TARGET_XARCH
     // For SELECT(COND, CNS1, CNS2) check if we can fold it into ADD(COND, MIN(CNS1, CNS2)) if
     // the difference between CNS1 and CNS2 is exactly 1. E.g.:
     //
@@ -715,15 +716,18 @@ bool OptIfConversionDsc::optIfConvert()
     // SELECT(COND, 1, 2) -> ADD(REVERSED_COND, 1)
     //
     // Conservatively give up on relops with NaNs (we won't be able to reverse them).
+    // ARM has conditional instructions so this optimization is not needed there.
     if (selectTrueInput->IsCnsIntOrI() && selectFalseInput->IsCnsIntOrI() &&
         ((m_cond->gtFlags & GTF_RELOP_NAN_UN) == 0))
     {
         const ssize_t selectTrueVal  = selectTrueInput->AsIntConCommon()->IconValue();
         const ssize_t selectFalseVal = selectFalseInput->AsIntConCommon()->IconValue();
-        if (abs(selectTrueVal - selectFalseVal) == 1)
+        const ssize_t min            = min(selectTrueVal, selectFalseVal);
+        const ssize_t max            = max(selectTrueVal, selectFalseVal);
+        if (((max - min) == 1) && ((min + 1) == max))
         {
             GenTree* cns = selectFalseInput;
-            if (selectTrueVal < selectFalseVal)
+            if (min == selectTrueVal)
             {
                 m_cond->ChangeOper(GenTree::ReverseRelop(m_cond->OperGet()));
                 cns = selectTrueInput;
@@ -740,6 +744,7 @@ bool OptIfConversionDsc::optIfConvert()
             }
         }
     }
+#endif
 
     if (select == nullptr)
     {
