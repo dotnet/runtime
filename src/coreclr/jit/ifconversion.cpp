@@ -727,7 +727,16 @@ bool OptIfConversionDsc::optIfConvert()
                 m_cond->ChangeOper(GenTree::ReverseRelop(m_cond->OperGet()));
                 cns = selectTrueInput;
             }
-            select = m_comp->gtNewOperNode(GT_ADD, selectType, m_cond, cns);
+
+            if (!cns->IsIntegralConst(0))
+            {
+                select = m_comp->gtNewOperNode(GT_ADD, selectType, m_cond, cns);
+            }
+            else
+            {
+                // ADD(COND, 0) -> COND
+                select = m_cond;
+            }
         }
     }
 
