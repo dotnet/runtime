@@ -93,7 +93,7 @@ if %_exit_code%==1 (
   )
 )
 
-if NOT %__IsXUnitLogCheckerSupported%==1 (
+if NOT "%__IsXUnitLogCheckerSupported%"=="1" (
   echo XUnitLogChecker not supported for this test case. Skipping.
   GOTO SKIP_XUNITLOGCHECKER
 )
