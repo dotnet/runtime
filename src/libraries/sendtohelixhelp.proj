@@ -241,21 +241,11 @@
     <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
       $(HelixPreCommands);
       set __TestArchitecture=$(TargetArchitecture)
-    </HelixPreCommands>
-    <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
-      $(HelixPreCommands);
-      export __TestArchitecture=$(TargetArchitecture)
-    </HelixPreCommands>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- The IsXUnitLogCheckerSupported property should always be set. -->
-    <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
-      $(HelixPreCommands);
       set __IsXUnitLogCheckerSupported=$(_ShouldSetXUnitLogCheckerEnvVar)
     </HelixPreCommands>
     <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
       $(HelixPreCommands);
+      export __TestArchitecture=$(TargetArchitecture)
       export __IsXUnitLogCheckerSupported=$(_ShouldSetXUnitLogCheckerEnvVar)
     </HelixPreCommands>
   </PropertyGroup>
