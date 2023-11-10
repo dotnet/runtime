@@ -68,7 +68,9 @@ namespace System.Runtime.Serialization
                 // Only JIT if dynamic code is supported.
                 if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
                 {
-#pragma warning disable IL3050 // AOT compiling should recognize that this call is gated by RuntimeFeature.IsDynamicCodeSupported.
+#pragma warning disable IL3050 // AOT compiling should recognize that this call is either
+                                // gated by RuntimeFeature.IsDynamicCodeSupported, or
+                                // only passing reference types to MakeGenericMethod.
                     var createGetterGeneric = s_createGetterInternal.MakeGenericMethod(declaringType, propertyType).CreateDelegate<Func<PropertyInfo, Getter>>();
 #pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
                     return createGetterGeneric(propInfo);
@@ -125,7 +127,9 @@ namespace System.Runtime.Serialization
                     // Only JIT if dynamic code is supported.
                     if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
                     {
-#pragma warning disable IL3050 // AOT compiling should recognize that this call is gated by RuntimeFeature.IsDynamicCodeSupported.
+#pragma warning disable IL3050 // AOT compiling should recognize that this call is either
+                               // gated by RuntimeFeature.IsDynamicCodeSupported, or
+                               // only passing reference types to MakeGenericMethod
                         var createSetterGeneric = s_createSetterInternal.MakeGenericMethod(propInfo.DeclaringType!, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Setter>>();
 #pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
                         return createSetterGeneric(propInfo);

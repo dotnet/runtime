@@ -250,9 +250,7 @@ namespace Internal.Runtime.InteropServices
             if (!Marshal.IsBuiltInComSupported)
                 throw new NotSupportedException(SR.NotSupported_COM);
 
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             return GetClassFactoryForTypeImpl(pCxtInt, isolatedContext: true);
-#pragma warning restore IL2026
         }
 
         /// <summary>

@@ -41,10 +41,7 @@ namespace System.Dynamic.Utils
         {
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
-#pragma warning disable IL3050
-                // Analyzer doesn't yet understand feature switches
                 return GetNullableType(type);
-#pragma warning restore IL3050
             }
             if (!type.IsValueType || IsNullableType(type))
             {

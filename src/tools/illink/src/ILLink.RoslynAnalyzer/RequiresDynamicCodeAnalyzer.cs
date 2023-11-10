@@ -41,15 +41,7 @@ namespace ILLink.RoslynAnalyzer
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer);
 
 		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) {
-			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("System.Runtime.CompilerServices.RuntimeFeature");
-			if (runtimeFeaturesType == null)
-				return false;
-
-			var isDynamicCodeSupportedProperty = runtimeFeaturesType.GetMembers ("IsDynamicCodeSupported").OfType<IPropertySymbol> ().FirstOrDefault ();
-			if (isDynamicCodeSupportedProperty == null)
-				return false;
-
-			return SymbolEqualityComparer.Default.Equals (propertySymbol, isDynamicCodeSupportedProperty);
+			return IsAnnotatedFeatureCheck (compilation, propertySymbol);
 		}
 
 		protected override bool VerifyAttributeArguments (AttributeData attribute) =>

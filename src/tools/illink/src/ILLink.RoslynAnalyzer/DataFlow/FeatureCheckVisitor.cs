@@ -40,13 +40,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override FeatureChecksValue? VisitPropertyReference (IPropertyReferenceOperation operation, StateValue state)
 		{
+			// A single property may serve as a feature check for multiple features.
+			FeatureChecksValue? featureChecks = null;
 			foreach (var analyzer in _dataFlowAnalyzerContext.EnabledRequiresAnalyzers) {
 				if (analyzer.IsRequiresCheck (_dataFlowAnalyzerContext.Compilation, operation.Property)) {
-					return new FeatureChecksValue (analyzer.FeatureName);
+					var featureCheck = new FeatureChecksValue (analyzer.FeatureName);
+					featureChecks = featureChecks == null
+						? featureCheck
+						: featureChecks.Value.And (featureCheck);
 				}
 			}
 
-			return null;
+			return featureChecks;
 		}
 
 		public override FeatureChecksValue? VisitUnaryOperator (IUnaryOperation operation, StateValue state)

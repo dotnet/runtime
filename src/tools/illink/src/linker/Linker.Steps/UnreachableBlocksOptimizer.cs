@@ -260,7 +260,11 @@ namespace Mono.Linker.Steps
 			MethodResult? value;
 
 			MethodDefinition method = callee.Method;
+			if (method.ToString().Contains("IsUnreferencedCode"))
+				Console.WriteLine("Hey!");
 			if (!method.HasMetadataParameters () || callee.HasUnknownArguments) {
+				var b = _cache_method_results.TryGetValue (method, out var valueResult);
+
 				if (!_cache_method_results.TryGetValue (method, out value) && !IsDeepStack (callStack)) {
 					value = AnalyzeMethodForConstantResult (callee, callStack);
 					_cache_method_results.Add (method, value);

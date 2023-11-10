@@ -29,6 +29,7 @@ namespace Internal.Runtime.InteropServices
         // To indicate the specific error when IsSupported is false
         private const int HostFeatureDisabled = unchecked((int)0x800080a7);
 
+        [FeatureCheck<RequiresUnreferencedCodeAttribute>]
         private static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
@@ -258,10 +259,8 @@ namespace Internal.Runtime.InteropServices
                 ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 // Create the function pointer.
                 *(IntPtr*)functionHandle = InternalGetFunctionPointer(AssemblyLoadContext.Default, typeName, methodName, delegateTypeNative);
-#pragma warning restore IL2026
             }
             catch (Exception e)
             {

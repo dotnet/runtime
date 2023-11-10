@@ -303,6 +303,49 @@ namespace ILLink.RoslynAnalyzer
 		// - custom feature checks defined in library code
 		internal virtual bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) => false;
 
+		internal bool IsAnnotatedFeatureCheck (Compilation compilation, IPropertySymbol propertySymbol)
+		{
+			if (propertySymbol.ToString().Contains("AreDynamicAndUn")) {
+				Console.WriteLine("Here");
+			}
+			// Get attributes on the property symbol
+			var attributes = propertySymbol.GetAttributes ();
+			if (attributes.Length == 0)
+				return false;
+
+			// Get "System.Diagnostics.CodeAnalysis" in the compilation? Or just use string?
+			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureCheckAttribute`1");
+			if (featureCheckType == null)
+				return false;
+
+			var requiresAttributeType = compilation.GetTypeByMetadataName (RequiresAttributeFullyQualifiedName);
+			if (requiresAttributeType == null)
+				return false;
+
+			foreach (var attributeData in attributes) {
+				if (IsRequiresFeatureCheck (attributeData))
+					return true;
+			}
+
+			return false;
+
+			bool IsRequiresFeatureCheck (AttributeData attributeData) {
+				var attributeType = attributeData.AttributeClass;
+				if (attributeType == null)
+					return false;
+
+				// Check if attribute type is the same.
+				if (!SymbolEqualityComparer.Default.Equals (attributeType.OriginalDefinition, featureCheckType))
+					return false;
+
+				// Check if the generic argument to the attribute is the Requires attribute.
+				var genericType = attributeType.TypeArguments[0];
+				if (!SymbolEqualityComparer.Default.Equals (genericType, requiresAttributeType))
+					return false;
+				return true;
+			}
+		}
+
 		internal bool CheckAndCreateRequiresDiagnostic (
 			IOperation operation,
 			ISymbol member,

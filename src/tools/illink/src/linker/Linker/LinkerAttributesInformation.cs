@@ -62,6 +62,9 @@ namespace Mono.Linker
 					attributeValue = new RemoveAttributeInstancesAttribute (customAttribute.ConstructorArguments);
 					allowMultiple = true;
 					break;
+				case "FeatureCheckAttribute`1":
+					attributeValue = ProcessFeatureCheckAttribute (context, provider, customAttribute);
+					break;
 				default:
 					continue;
 				}
@@ -126,6 +129,38 @@ namespace Mono.Linker
 			}
 
 			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (RequiresUnreferencedCodeAttribute).FullName ?? "");
+			return null;
+		}
+
+		static FeatureCheckAttribute<RequiresUnreferencedCodeAttribute>? ProcessFeatureCheckAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
+		{
+			if (provider is not PropertyDefinition)
+				return null;
+
+			// First get the attribute type.
+			var attributeType = customAttribute.AttributeType;
+			if (attributeType.Namespace is not "System.Diagnostics.CodeAnalysis")
+				return null;
+
+			// TODO: remove this check. It was already done in the caller.
+			Console.WriteLine("Attribute type name: "  + attributeType);
+			if (attributeType.Name is not "FeatureCheckAttribute`1")
+				return null;
+
+			// If it's not a generic instantiation, we're done
+			if (attributeType is not GenericInstanceType genericInstance)
+				return null;
+
+			if (genericInstance.GenericArguments.Count != 1)
+				return null;
+
+			var requiresAttributeType = genericInstance.GenericArguments[0];
+			// For now, only support RequiresUnreferencedCode.
+			if (requiresAttributeType.Namespace is not "System.Diagnostics.CodeAnalysis")
+				return null;
+			if (requiresAttributeType.Name is "RequiresUnreferencedCodeAttribute")
+				return new FeatureCheckAttribute<RequiresUnreferencedCodeAttribute> ();
+
 			return null;
 		}
 	}

@@ -9,6 +9,7 @@
     <AnalysisLevel>Latest</AnalysisLevel>
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <NoWarn>$(NoWarn);RS1035</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

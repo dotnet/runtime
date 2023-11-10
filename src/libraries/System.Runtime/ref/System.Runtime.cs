@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
@@ -8402,6 +8404,19 @@ namespace System.Diagnostics.CodeAnalysis
         public string DiagnosticId { get { throw null; } }
         public string? UrlFormat { get; set; }
     }
+    // TODO: make this minimal. avoid introducing any unnecessary API.
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false)] 
+    public class FeatureCheckAttribute : Attribute
+    {
+        public FeatureCheckAttribute(Type requiresAttributeType) { }
+        public Type RequiresAttributeType { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
+    public sealed class FeatureCheckAttribute<T> : FeatureCheckAttribute
+        where T : Attribute
+    {
+        public FeatureCheckAttribute() : base (default(System.Type)) { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
     {
@@ -13088,6 +13103,7 @@ namespace System.Runtime.CompilerServices
         public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
         public const string VirtualStaticsInInterfaces = "VirtualStaticsInInterfaces";
         public static bool IsDynamicCodeCompiled { get { throw null; } }
+        [FeatureCheck<RequiresDynamicCodeAttribute>]
         public static bool IsDynamicCodeSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }

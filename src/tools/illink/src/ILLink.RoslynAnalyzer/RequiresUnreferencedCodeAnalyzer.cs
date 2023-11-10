@@ -68,17 +68,7 @@ namespace ILLink.RoslynAnalyzer
 
 		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol)
 		{
-			// "IsUnreferencedCodeSupported" is treated as a requires check for testing purposes only, and
-			// is not officially-supported product behavior.
-			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("ILLink.RoslynAnalyzer.TestFeatures");
-			if (runtimeFeaturesType == null)
-				return false;
-
-			var isDynamicCodeSupportedProperty = runtimeFeaturesType.GetMembers ("IsUnreferencedCodeSupported").OfType<IPropertySymbol> ().FirstOrDefault ();
-			if (isDynamicCodeSupportedProperty == null)
-				return false;
-
-			return SymbolEqualityComparer.Default.Equals (propertySymbol, isDynamicCodeSupportedProperty);
+			return IsAnnotatedFeatureCheck (compilation, propertySymbol);
 		}
 
 		protected override bool CreateSpecialIncompatibleMembersDiagnostic (

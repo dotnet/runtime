@@ -14,6 +14,7 @@ namespace System.Dynamic.Utils
     internal static class DelegateHelpers
     {
         // This can be flipped to false using feature switches at publishing time
+        [FeatureCheck<RequiresDynamicCode>]
         internal static bool CanEmitObjectArrayDelegate => true;
 
         // Separate class so that the it can be trimmed away and doesn't get conflated
@@ -56,10 +57,7 @@ namespace System.Dynamic.Utils
         {
             if (CanEmitObjectArrayDelegate)
             {
-#pragma warning disable IL3050
-                // Suppress analyzer warnings since they don't currently support feature flags
                 return CreateObjectArrayDelegateRefEmit(delegateType, handler);
-#pragma warning restore IL3050
             }
             else
             {

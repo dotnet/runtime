@@ -14,10 +14,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
-	// Note: the XML must be passed as an embedded resource named ILLink.Substitutions.xml,
-	// not as a separate substitution file, for it to work with NativeAot.
-	// Related: https://github.com/dotnet/runtime/issues/88647
-	[SetupCompileResource ("FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)]
 	public class FeatureCheckDataFlow
 	{
@@ -490,14 +486,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequiresUnreferencedCode ();
 			}
 
-			static void CallTestRequiresDynamicCodeGuarded ()
+			static void CallTestDynamicCodeGuarded ()
+			{
+				if (TestFeatures.IsDynamicCodeSupported)
+					RequiresDynamicCode ();
+			}
+
+			static void CallTestDynamicCodeGuarded_RuntimeFeature ()
 			{
 				if (RuntimeFeature.IsDynamicCodeSupported)
 					RequiresDynamicCode ();
 			}
 
 			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			static void CallTestRequiresDynamicCodeUnguarded ()
+			static void CallTestDynamicCodeUnguarded ()
 			{
 				RequiresDynamicCode ();
 			}
@@ -515,14 +517,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequiresAssemblyFiles ();
 			}
 
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void CallTestDynamicAndUnreferencedCodeGuarded ()
+			{
+				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
+			}
+
+			static void CallTestDynamicAndUnreferencedCodeUnguarded ()
+			{
+				if (TestFeatures.AreDynamicAndUnreferencedCodeSupported) {
+					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
+				}
+			}
+
 			public static void Test ()
 			{
 				CallTestUnreferencedCodeGuarded ();
 				CallTestUnreferencedCodeUnguarded ();
-				CallTestRequiresDynamicCodeGuarded ();
-				CallTestRequiresDynamicCodeUnguarded ();
+				CallTestDynamicCodeGuarded ();
+				CallTestDynamicCodeGuarded_RuntimeFeature ();
+				CallTestDynamicCodeUnguarded ();
 				CallTestAssemblyFilesGuarded ();
 				CallTestAssemblyFilesUnguarded ();
+				CallTestDynamicAndUnreferencedCodeGuarded ();
+				CallTestDynamicAndUnreferencedCodeUnguarded ();
 			}
 		}
 
@@ -1067,11 +1088,41 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	}
 }
 
+namespace System.Diagnostics.CodeAnalysis
+{
+	[AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+	internal sealed class FeatureCheckAttribute<T> : Attribute
+		where T : Attribute
+	{
+		public FeatureCheckAttribute()
+		{
+		}
+	}
+}
+
+namespace System.Runtime.CompilerServices
+{
+	class RuntimeFeature
+	{
+		[FeatureCheck<RequiresDynamicCodeAttribute>]
+		public static bool IsDynamicCodeSupported => true;
+	}
+}
+
 namespace ILLink.RoslynAnalyzer
 {
 	class TestFeatures
 	{
+		[FeatureCheck<RequiresUnreferencedCodeAttribute>]
 		public static bool IsUnreferencedCodeSupported => true;
+		[FeatureCheck<RequiresAssemblyFilesAttribute>]
 		public static bool IsAssemblyFilesSupported => true;
+
+		[FeatureCheck<RequiresDynamicCodeAttribute>]
+		public static bool IsDynamicCodeSupported => true;
+
+		[FeatureCheck<RequiresDynamicCodeAttribute>]
+		[FeatureCheck<RequiresUnreferencedCodeAttribute>]
+		public static bool AreDynamicAndUnreferencedCodeSupported => true;
 	}
 }
