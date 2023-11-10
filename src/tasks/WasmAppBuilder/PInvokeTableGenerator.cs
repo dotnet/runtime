@@ -63,34 +63,22 @@ internal sealed class PInvokeTableGenerator
         return signatures;
     }
 
-    private static bool HasAttribute(MemberInfo element, params string[] attributeNames)
-    {
-        foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(element))
-        {
-            try
-            {
-                for (int i = 0; i < attributeNames.Length; ++i)
-                {
-                    if (cattr.AttributeType.FullName == attributeNames [i] ||
-                        cattr.AttributeType.Name == attributeNames[i])
-                    {
-                        return true;
-                    }
-                }
-            }
-            catch
-            {
-                // Assembly not found, ignore
-            }
-        }
-        return false;
-    }
 
     private void EmitPInvokeTable(StreamWriter w, Dictionary<string, string> modules, List<PInvoke> pinvokes)
     {
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
         w.WriteLine();
 
+        // create a module for WasmLinkage
+        foreach (var pinvoke in pinvokes)
+        {
+            // WasmImportLinkage is intended to end up as a wasm import so we include those modules directly
+            if (pinvoke.WasmLinkage)
+            {
+                Log.LogMessage(MessageImportance.Low, $"Adding module {pinvoke.Module} for WasmImportLinkage");
+                modules[pinvoke.Module] = pinvoke.Module;
+            }
+        }
         var pinvokesGroupedByEntryPoint = pinvokes
                                             .Where(l => modules.ContainsKey(l.Module))
                                             .OrderBy(l => l.EntryPoint)
@@ -245,6 +233,9 @@ internal sealed class PInvokeTableGenerator
             return null;
         }
 
+        if (pinvoke.WasmLinkage) {
+            sb.Append($" __attribute__((import_module(\"{pinvoke.Module}\"), import_name(\"{pinvoke.EntryPoint}\")))\nextern ");
+        }
         sb.Append(MapType(method.ReturnType));
         sb.Append($" {_fixupSymbolName(pinvoke.EntryPoint)} (");
         int pindex = 0;

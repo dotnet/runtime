@@ -15,17 +15,20 @@ using Microsoft.Build.Tasks;
 internal sealed class PInvoke : IEquatable<PInvoke>
 #pragma warning restore CA1067
 {
-    public PInvoke(string entryPoint, string module, MethodInfo method)
+    public PInvoke(string entryPoint, string module, MethodInfo method, bool wasmLinkage)
     {
         EntryPoint = entryPoint;
         Module = module;
         Method = method;
+        WasmLinkage = wasmLinkage;
     }
 
     public string EntryPoint;
     public string Module;
     public MethodInfo Method;
     public bool Skip;
+    public bool WasmLinkage;
+
 
     public bool Equals(PInvoke? other)
         => other != null &&
@@ -100,9 +103,10 @@ internal sealed class PInvokeCollector {
             if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
             {
                 var dllimport = method.CustomAttributes.First(attr => attr.AttributeType.Name == "DllImportAttribute");
+                var wasmLinkage = method.CustomAttributes.Any(attr => attr.AttributeType.Name == "WasmImportLinkageAttribute");
                 var module = (string)dllimport.ConstructorArguments[0].Value!;
                 var entrypoint = (string)dllimport.NamedArguments.First(arg => arg.MemberName == "EntryPoint").TypedValue.Value!;
-                pinvokes.Add(new PInvoke(entrypoint, module, method));
+                pinvokes.Add(new PInvoke(entrypoint, module, method, wasmLinkage));
 
                 string? signature = SignatureMapper.MethodToSignature(method);
                 if (signature == null)
