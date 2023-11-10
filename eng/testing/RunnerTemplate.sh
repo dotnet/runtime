@@ -88,6 +88,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     #   https://github.com/dotnet/core-eng/issues/15597
     ulimit -c 0
   fi
+fi
 
 export DOTNET_DbgEnableMiniDump=1
 export DOTNET_EnableCrashReport=1
