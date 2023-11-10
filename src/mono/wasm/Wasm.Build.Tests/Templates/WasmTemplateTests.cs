@@ -493,8 +493,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData("", true)] // Default case
-        [InlineData("false", false)] // the other case
+        [InlineData("", false)] // Default case
+        [InlineData("true", true)] // the other case
         public void Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
         {
             string config = "Release";
@@ -545,6 +545,8 @@ namespace Wasm.Build.Tests
             Assert.True(Directory.Exists(origAssemblyDir), $"Could not find the original AOT input assemblies dir: {origAssemblyDir}");
             if (expectILStripping)
                 Assert.True(Directory.Exists(strippedAssemblyDir), $"Could not find the stripped assemblies dir: {strippedAssemblyDir}");
+            else
+                Assert.False(Directory.Exists(strippedAssemblyDir), $"Expected {strippedAssemblyDir} to not exist");
 
             string assemblyToExamine = "System.Private.CoreLib.dll";
             string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExamine);
@@ -554,6 +556,8 @@ namespace Wasm.Build.Tests
             Assert.True(File.Exists(bundledAssembly), $"Expected {nameof(bundledAssembly)} {bundledAssembly} to exist");
             if (expectILStripping)
                 Assert.True(File.Exists(strippedAssembly), $"Expected {nameof(strippedAssembly)} {strippedAssembly} to exist");
+            else
+                Assert.False(File.Exists(strippedAssembly), $"Expected {strippedAssembly} to not exist");
 
             string compressedOriginalAssembly = Utils.GZipCompress(originalAssembly);
             string compressedBundledAssembly = Utils.GZipCompress(bundledAssembly);
@@ -565,14 +569,15 @@ namespace Wasm.Build.Tests
 
             if (expectILStripping)
             {
-                string compressedStrippedAssembly = Utils.GZipCompress(strippedAssembly);
-                FileInfo compressedStrippedAssembly_fi = new FileInfo(compressedStrippedAssembly);
-                testOutput.WriteLine ($"compressedStrippedAssembly_fi: {compressedStrippedAssembly_fi.Length}, {compressedStrippedAssembly}");
-                if (compressedOriginalAssembly_fi.Length <= compressedStrippedAssembly_fi.Length)
+                if (!UseWebcil)
                 {
-                    throw new XunitException(
-                            $"Expected original assembly({compressedOriginalAssembly}) size ({compressedOriginalAssembly_fi.Length}) " +
-                            $"to be bigger than the stripped assembly ({compressedStrippedAssembly}) size ({compressedStrippedAssembly_fi.Length})");
+                    string compressedStrippedAssembly = Utils.GZipCompress(strippedAssembly);
+                    FileInfo compressedStrippedAssembly_fi = new FileInfo(compressedStrippedAssembly);
+                    testOutput.WriteLine ($"compressedStrippedAssembly_fi: {compressedStrippedAssembly_fi.Length}, {compressedStrippedAssembly}");
+                    Assert.True(compressedOriginalAssembly_fi.Length > compressedStrippedAssembly_fi.Length, $"Expected original assembly({compressedOriginalAssembly}) size ({compressedOriginalAssembly_fi.Length}) " +
+                                $"to be bigger than the stripped assembly ({compressedStrippedAssembly}) size ({compressedStrippedAssembly_fi.Length})");
+                    Assert.True(compressedBundledAssembly_fi.Length == compressedStrippedAssembly_fi.Length, $"Expected bundled assembly({compressedBundledAssembly}) size ({compressedBundledAssembly_fi.Length}) " +
+                                $"to be the same as the stripped assembly ({compressedStrippedAssembly}) size ({compressedStrippedAssembly_fi.Length})");
                 }
             }
             else
@@ -582,8 +587,6 @@ namespace Wasm.Build.Tests
                     // FIXME: The bundled file would be .wasm in case of webcil, so can't compare size
                     Assert.True(compressedOriginalAssembly_fi.Length == compressedBundledAssembly_fi.Length);
                 }
-                Assert.False(Directory.Exists(strippedAssemblyDir), $"Expected {strippedAssemblyDir} to not exist");
-                Assert.False(File.Exists(strippedAssembly), $"Expected {strippedAssembly} to not exist");
             }
         }
     }
