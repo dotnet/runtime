@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.Binder;
@@ -31,26 +30,12 @@ namespace System.Runtime.Loader
 
     public partial class AssemblyLoadContext
     {
-        // fields used by VM
-        private GCHandle m_managedALC;
-        private bool m_isDefault;
-
-        protected AssemblyBinder()
-        {
-            m_isDefault = IsDefault;
-            _ = GetHashCode(); // Calculate hashcode for AssemblySpecBindingCache usage
-        }
-
         private protected unsafe int BindAssemblyByName(void* pAssemblyNameData, out Assembly? assembly)
         {
             return BindUsingAssemblyName(new AssemblyName((AssemblyNameData*)pAssemblyNameData), out assembly);
         }
 
         internal ApplicationContext AppContext { get; } = new ApplicationContext();
-
-        // A GC handle to the managed AssemblyLoadContext.
-        // It is a long weak handle for collectible AssemblyLoadContexts and strong handle for non-collectible ones.
-        public GCHandle ManagedAssemblyLoadContext { get => m_managedALC; set => m_managedALC = value; }
 
         // NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
 
@@ -67,21 +52,6 @@ namespace System.Runtime.Loader
                 DeclareLoadedAssembly(loadedAssembly);
                 // #endif // FEATURE_READYTORUN
             }
-        }
-
-        private string GetNameForDiagnostics() => IsDefault ? "Default" : GetNameForDiagnosticsFromManagedALC(ManagedAssemblyLoadContext);
-
-        private static string GetNameForDiagnosticsFromManagedALC(GCHandle managedALC)
-        {
-            AssemblyLoadContext? alc = managedALC.IsAllocated ? (AssemblyLoadContext?)managedALC.Target : null;
-
-            if (alc == null || alc == GCHandle.FromIntPtr(AssemblyLoadContext.GetDefaultAssemblyBinder()).Target)
-            {
-                return "Default";
-            }
-
-            Debug.Assert(alc != null);
-            return alc.ToString();
         }
 
         // static void GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString& alcName);

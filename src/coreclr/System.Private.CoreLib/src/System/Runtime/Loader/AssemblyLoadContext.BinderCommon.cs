@@ -215,7 +215,7 @@ namespace System.Runtime.Loader
             ApplicationContext applicationContext = binder.AppContext;
 
             // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, pManagedALC: default, ref hr);
+            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, ref hr);
 
         Retry:
             lock (applicationContext.ContextCriticalSection)
@@ -945,7 +945,6 @@ namespace System.Runtime.Loader
         }
 
         public static int BindUsingHostAssemblyResolver(
-            GCHandle pManagedAssemblyLoadContextToBindWithin,
             AssemblyName assemblyName,
             AssemblyLoadContext? defaultBinder,
             AssemblyLoadContext binder,
@@ -955,12 +954,10 @@ namespace System.Runtime.Loader
             loadedAssembly = null;
             Assembly? resolvedAssembly = null;
 
-            Debug.Assert(pManagedAssemblyLoadContextToBindWithin.IsAllocated);
-
             // body of RuntimeInvokeHostAssemblyResolver
             bool fResolvedAssembly = false;
             System.Reflection.Assembly? refLoadedAssembly = null;
-            using var tracer = new ResolutionAttemptedOperation(assemblyName, null, pManagedAssemblyLoadContextToBindWithin, ref hr);
+            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, ref hr);
 
             // Allocate an AssemblyName managed object
             System.Reflection.AssemblyName refAssemblyName;
@@ -1016,7 +1013,7 @@ namespace System.Runtime.Loader
                     // This is not invoked for TPA Binder since it always returns NULL.
                     tracer.GoToStage(ResolutionAttemptedOperation.Stage.AssemblyLoadContextLoad);
 
-                    refLoadedAssembly = AssemblyLoadContext.Resolve((IntPtr)pManagedAssemblyLoadContextToBindWithin, refAssemblyName);
+                    refLoadedAssembly = AssemblyLoadContext.Resolve(binder, refAssemblyName);
                     if (refLoadedAssembly != null)
                     {
                         fResolvedAssembly = true;
@@ -1049,7 +1046,7 @@ namespace System.Runtime.Loader
                     // Attempt to resolve it using the ResolveSatelliteAssembly method.
                     tracer.GoToStage(ResolutionAttemptedOperation.Stage.ResolveSatelliteAssembly);
 
-                    refLoadedAssembly = AssemblyLoadContext.ResolveSatelliteAssembly((IntPtr)pManagedAssemblyLoadContextToBindWithin, refAssemblyName);
+                    refLoadedAssembly = AssemblyLoadContext.ResolveSatelliteAssembly(binder, refAssemblyName);
                     if (refLoadedAssembly != null)
                     {
                         // Set the flag indicating we found the assembly
@@ -1067,7 +1064,7 @@ namespace System.Runtime.Loader
                     // attempt to resolve it using the Resolving event.
                     tracer.GoToStage(ResolutionAttemptedOperation.Stage.AssemblyLoadContextResolvingEvent);
 
-                    refLoadedAssembly = AssemblyLoadContext.ResolveUsingResolvingEvent((IntPtr)pManagedAssemblyLoadContextToBindWithin, refAssemblyName);
+                    refLoadedAssembly = AssemblyLoadContext.ResolveUsingResolvingEvent(binder, refAssemblyName);
                     if (refLoadedAssembly != null)
                     {
                         // Set the flag indicating we found the assembly
@@ -1168,7 +1165,7 @@ namespace System.Runtime.Loader
             ApplicationContext applicationContext = binder.AppContext;
 
             // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, pManagedALC: default, ref hr);
+            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, ref hr);
 
         Retry:
             bool mvidMismatch = false;
