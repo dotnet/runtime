@@ -16,12 +16,6 @@
     <Compile Include="../Coreclr.TestWrapper/CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
     <Compile Include="../Coreclr.TestWrapper/MobileAppHandler.cs" Link="MobileAppHandler.cs" />
   </ItemGroup>
-
-  <Target Name="Test">
-    <!-- This avoids attempting to run tests on this assembly because it is being included in libs.tests.
-         TODO: Build XUnitLogChecker once, in a common location for coreclr and libraries, then zip and upload it once,
-         and then consume the same payload in both the coreclr and libraries tests. -->
-  </Target>
  
   <Target Name="ZipTestArchive" AfterTargets="PrepareForRun" Condition="'$(IsXUnitLogCheckerSupported)' == 'true'">
     <!-- TODO: This project gets excluded from the libraries ones, preventing it from getting zipped and uploaded along
