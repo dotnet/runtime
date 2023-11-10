@@ -13814,6 +13814,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     {
                         JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
                                 pred->bbNum);
+                        hasPredAssertions = false;
                         break;
                     }
 
