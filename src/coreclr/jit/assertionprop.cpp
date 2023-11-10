@@ -3752,7 +3752,10 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
     noway_assert((op1Kind == O1K_LCLVAR) || (op1Kind == O1K_EXACT_TYPE) || (op1Kind == O1K_SUBTYPE));
     noway_assert((op2Kind == O2K_CONST_INT) || (op2Kind == O2K_IND_CNS_INT) || (op2Kind == O2K_ZEROOBJ));
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    assert(optLocalAssertionProp);
+    ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+    BitVecOps::Iter iter(apTraits, apDependent);
     unsigned        bvIndex = 0;
     while (iter.NextElem(&bvIndex))
     {
