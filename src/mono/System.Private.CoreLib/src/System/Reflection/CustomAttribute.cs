@@ -110,13 +110,7 @@ namespace System.Reflection
         // FIXME: Callers are explicitly passing in null for attributeType, but GetCustomAttributes prohibits null attributeType arguments
         internal static object[] GetCustomAttributesBase(ICustomAttributeProvider obj, Type? attributeType, bool inheritedOnly)
         {
-            object[] attrs;
-
-            if (IsUserCattrProvider(obj))
-                attrs = obj.GetCustomAttributes(attributeType!, true);
-            else
-                attrs = GetCustomAttributesInternal(obj, attributeType!, false);
-
+            object[] attrs = GetCustomAttributesInternal(obj, attributeType!, pseudoAttrs: false);
             //
             // All pseudo custom attributes are Inherited = false hence we can avoid
             // building attributes array which would be discarded by inherited checks
@@ -143,6 +137,9 @@ namespace System.Reflection
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
                 && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute) && attributeType != typeof(object))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
+
+            if (IsUserCattrProvider(obj))
+                return obj.GetCustomAttributes(attributeType, inherit);
 
             // FIXME: GetCustomAttributesBase doesn't like being passed a null attributeType
             if (attributeType == typeof(CustomAttribute))
@@ -298,6 +295,9 @@ namespace System.Reflection
         internal static object[] GetCustomAttributes(ICustomAttributeProvider obj, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(obj);
+
+            if (IsUserCattrProvider(obj))
+                return obj.GetCustomAttributes(typeof(Attribute), inherit);
 
             if (!inherit)
                 return (object[])GetCustomAttributesBase(obj, null, false).Clone();
