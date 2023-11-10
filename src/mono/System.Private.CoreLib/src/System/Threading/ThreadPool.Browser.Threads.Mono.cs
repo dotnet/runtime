@@ -8,6 +8,6 @@ namespace System.Threading
         // Indicates that the threadpool should yield the thread from the dispatch loop to the
         // runtime periodically.  We use this to return back to the JS event loop so that the JS
         // event queue can be drained
-        internal static bool YieldFromDispatchLoop => true;
+        internal static bool YieldFromDispatchLoop => false;
     }
 }
