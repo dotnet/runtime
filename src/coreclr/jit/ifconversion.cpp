@@ -713,26 +713,20 @@ bool OptIfConversionDsc::optIfConvert()
     //
     // SELECT(COND, 10, 11) -> ADD(COND, 10)
     //
-    if (selectTrueInput->IsCnsIntOrI() && selectFalseInput->IsCnsIntOrI() && m_cond->TypeIs(TYP_INT))
+    if (selectTrueInput->IsCnsIntOrI() && selectFalseInput->IsCnsIntOrI() &&
+        ((m_cond->gtFlags & GTF_RELOP_NAN_UN) == 0))
     {
         const ssize_t selectTrueVal  = selectTrueInput->AsIntConCommon()->IconValue();
         const ssize_t selectFalseVal = selectFalseInput->AsIntConCommon()->IconValue();
         if (abs(selectTrueVal - selectFalseVal) == 1)
         {
+            GenTree* cns = selectFalseInput;
             if (selectTrueVal < selectFalseVal)
             {
-                // if selectTrueVal is less than selectFalseVal then we need to reverse the condition
-                if (m_cond->OperIsCompare() && ((m_cond->gtFlags & GTF_RELOP_NAN_UN) == 0))
-                {
-                    m_cond->ChangeOper(GenTree::ReverseRelop(m_cond->OperGet()));
-                    select = m_comp->gtNewOperNode(GT_ADD, m_cond->TypeGet(), m_cond, selectTrueInput);
-                }
-                // or wrap it with GT_NEG but that seems to lead to worse diffs
+                m_cond->ChangeOper(GenTree::ReverseRelop(m_cond->OperGet()));
+                cns = selectTrueInput;
             }
-            else
-            {
-                select = m_comp->gtNewOperNode(GT_ADD, m_cond->TypeGet(), m_cond, selectFalseInput);
-            }
+            select = m_comp->gtNewOperNode(GT_ADD, m_cond->TypeGet(), m_cond, cns);
         }
     }
 
