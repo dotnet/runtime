@@ -2689,12 +2689,19 @@ interp_cprop (TransformData *td)
 						// This stores just to part of the dest valuetype
 						ins = interp_insert_ins (td, ins, MINT_MOV_DST_OFF);
 						interp_ins_set_dreg (ins, local);
-						interp_ins_set_sreg (ins, sregs [1]);
+						interp_ins_set_sregs2 (ins, sregs [1], local);
 						ins->data [0] = GINT_TO_UINT16 (foffset);
 						ins->data [1] = GINT_TO_UINT16 (mt);
 						ins->data [2] = vtsize;
 
 						interp_clear_ins (ins->prev);
+
+						// MINT_MOV_DST_OFF doesn't work if dreg is allocated at the same location as the
+						// field value to be stored, because its behavior is not atomic in nature. We first
+						// copy the original whole vt, potentially overwritting the new field value.
+						ins = interp_insert_ins (td, ins, MINT_DUMMY_USE);
+						interp_ins_set_sreg (ins, sregs [1]);
+						td->var_values [sregs [1]].ref_count++;
 					}
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", (void *)(uintptr_t) ldloca->il_offset);

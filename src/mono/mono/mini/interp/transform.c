@@ -3042,11 +3042,9 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 
 		dreg = interp_create_var (td, get_type_from_stack (stack_type [ret_mt], klass));
 
-		// For valuetypes, we need to control the lifetime of the valuetype.
-		// MINT_NEWOBJ_VT_INLINED takes the address of this reg and we should keep
-		// the vt alive until the inlining is completed.
-		interp_add_ins (td, MINT_DEF);
+		interp_add_ins (td, MINT_INITLOCAL);
 		interp_ins_set_dreg (td->last_ins, dreg);
+		td->last_ins->data [0] = GINT_TO_UINT16 (vtsize);
 	} else {
 		dreg = interp_create_var (td, get_type_from_stack (stack_type [ret_mt], klass));
 	}
@@ -3065,11 +3063,10 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	td->sp += csignature->param_count;
 
 	if (is_vt) {
-		// Receives the valuetype allocated with MINT_DEF, and returns its address
-		newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT_INLINED);
+		newobj_fast = interp_add_ins (td, MINT_LDLOCA_S);
 		interp_ins_set_dreg (newobj_fast, this_reg);
 		interp_ins_set_sreg (newobj_fast, dreg);
-		newobj_fast->data [0] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
+		td->vars [dreg].indirects++;
 	} else {
 		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		goto_if_nok (error, fail);
@@ -3086,11 +3083,6 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 
 	if (!interp_inline_method (td, target_method, mheader, error))
 		goto fail;
-
-	if (is_vt) {
-		interp_add_ins (td, MINT_DUMMY_USE);
-		interp_ins_set_sreg (td->last_ins, dreg);
-	}
 
 	push_var (td, dreg);
 	return TRUE;
@@ -8553,6 +8545,16 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		guint16 foff = ins->data [0];
 		guint16 mt = ins->data [1];
 		guint16 fsize = ins->data [2];
+		ip--;
+
+		if (opcode == MINT_MOV_DST_OFF && get_local_offset (td, ins->dreg) != get_local_offset (td, ins->sregs [1])) {
+			// We are no longer storing a field into the same valuetype. Copy also the whole vt.
+			*ip++ = MINT_MOV_VT;
+			
+			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));
+			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [1]));
+			*ip++ = GINT_TO_UINT16 (td->vars [ins->dreg].size);
+		}
 
 		int dest_off = get_local_offset (td, ins->dreg);
 		int src_off = get_local_offset (td, ins->sregs [0]);
@@ -8579,8 +8581,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 				}
 			}
 		}
-		// Replace MINT_MOV_OFF with the real instruction
-		ip [-1] = opcode;
+		*ip++ = opcode;
 		*ip++ = GINT_TO_UINT16 (dest_off);
 		*ip++ = GINT_TO_UINT16 (src_off);
 		if (opcode == MINT_MOV_VT)
