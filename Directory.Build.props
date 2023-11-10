@@ -334,9 +334,8 @@
     
     <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
     <IsXUnitLogCheckerSupported Condition="'$(IsXUnitLogCheckerSupported)' == ''">false</IsXUnitLogCheckerSupported>
-    <IsXUnitLogCheckerSupported Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TestNativeAot)' != 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsXUnitLogCheckerSupported>
-    <!-- TODO: Consolidate these directory properties with the ones used by coreclr. -->
-    <XUnitLogCheckerLibrariesOutputDirectory Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesOutputDirectory>
+    <IsXUnitLogCheckerSupported Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TestNativeAot)' != 'true' and '$(TestRunNamePrefixSuffix)' != 'NativeAOT_Release' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsXUnitLogCheckerSupported>
+    <XUnitLogCheckerPrinted>'$(RuntimeFlavor)' == 'CoreCLR' and '$(TestNativeAot)' != 'true' and '$(TestRunNamePrefixSuffix)' != 'NativeAOT_Release' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'</XUnitLogCheckerPrinted>
   </PropertyGroup>
 
   <!-- Packaging -->
