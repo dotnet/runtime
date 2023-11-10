@@ -492,10 +492,13 @@ namespace Wasm.Build.Tests
                                         .EnsureSuccessful();
         }
 
-        [Fact]
-        public void Test_WasmStripILAfterAOT()
+        [Theory]
+        [InlineData("", true)] // Default case
+        [InlineData("false", false)] // the other case
+        public void Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
         {
-            string id = $"Release_{GetRandomId()}";
+            string config = "Release";
+            string id = $"strip_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
             string projectDirectory = Path.GetDirectoryName(projectFile)!;
@@ -504,11 +507,12 @@ namespace Wasm.Build.Tests
             UpdateProgramCS();
             UpdateConsoleMainJs();
 
-            AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
-            AddItemsPropertiesToProject(projectFile, "<WasmStripILAfterAOT>true</WasmStripILAfterAOT>");
-            AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>false</WasmEnableWebcil>");
+            string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
+            if (!string.IsNullOrEmpty(stripILAfterAOT))
+                extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
+            AddItemsPropertiesToProject(projectFile, extraProperties);
 
-            var buildArgs = new BuildArgs(projectName, "Release", aot, id, null);
+            var buildArgs = new BuildArgs(projectName, config, aot, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
 
             BuildTemplateProject(buildArgs,
@@ -523,36 +527,64 @@ namespace Wasm.Build.Tests
                             IsBrowserProject: false,
                             AssertAppBundle: false));
 
-            string runArgs = $"run --no-silent --no-build -c Release";
-            runArgs += " x y z";
+            string runArgs = $"run --no-silent --no-build -c {config}";
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
                                 .ExecuteWithCapturedOutput(runArgs)
                                 .EnsureExitCode(42);
-            
-            string frameworkDir = Path.Combine(projectDirectory, "bin", "Release", BuildTestBase.DefaultTargetFramework, "browser-wasm", "AppBundle", "_framework");
-            string objBuildDir = Path.Combine(projectDirectory, "obj", "Release", BuildTestBase.DefaultTargetFramework, "browser-wasm", "wasm", "for-publish");
+
+            string frameworkDir = Path.Combine(projectDirectory, "bin", config, BuildTestBase.DefaultTargetFramework, "browser-wasm", "AppBundle", "_framework");
+            string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFramework, "browser-wasm", "wasm", "for-publish");
+            TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
+        }
+
+        internal static void TestWasmStripILAfterAOTOutput(string objBuildDir, string frameworkDir, bool expectILStripping, ITestOutputHelper testOutput)
+        {
             string origAssemblyDir = Path.Combine(objBuildDir, "aot-in");
             string strippedAssemblyDir = Path.Combine(objBuildDir, "stripped");
             Assert.True(Directory.Exists(origAssemblyDir), $"Could not find the original AOT input assemblies dir: {origAssemblyDir}");
-            Assert.True(Directory.Exists(strippedAssemblyDir), $"Could not find the stripped assemblies dir: {strippedAssemblyDir}");
+            if (expectILStripping)
+                Assert.True(Directory.Exists(strippedAssemblyDir), $"Could not find the stripped assemblies dir: {strippedAssemblyDir}");
 
             string assemblyToExamine = "System.Private.CoreLib.dll";
             string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExamine);
             string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExamine);
-            string bundledAssembly = Path.Combine(frameworkDir, assemblyToExamine);
-            Assert.True(File.Exists(originalAssembly));
-            Assert.True(File.Exists(strippedAssembly));
-            Assert.True(File.Exists(bundledAssembly));
+            string bundledAssembly = Path.Combine(frameworkDir, Path.ChangeExtension(assemblyToExamine, ProjectProviderBase.WasmAssemblyExtension));
+            Assert.True(File.Exists(originalAssembly), $"Expected {nameof(originalAssembly)} {originalAssembly} to exist");
+            Assert.True(File.Exists(bundledAssembly), $"Expected {nameof(bundledAssembly)} {bundledAssembly} to exist");
+            if (expectILStripping)
+                Assert.True(File.Exists(strippedAssembly), $"Expected {nameof(strippedAssembly)} {strippedAssembly} to exist");
 
-            string compressedOriginalAssembly = Compress(originalAssembly);
-            string compressedStrippedAssembly = Compress(strippedAssembly);
-            string compressedBundledAssembly = Compress(bundledAssembly);
+            string compressedOriginalAssembly = Utils.GZipCompress(originalAssembly);
+            string compressedBundledAssembly = Utils.GZipCompress(bundledAssembly);
             FileInfo compressedOriginalAssembly_fi = new FileInfo(compressedOriginalAssembly);
-            FileInfo compressedStrippedAssembly_fi = new FileInfo(compressedStrippedAssembly);
             FileInfo compressedBundledAssembly_fi = new FileInfo(compressedBundledAssembly);
-            Assert.True(compressedOriginalAssembly_fi.Length > compressedBundledAssembly_fi.Length);
-            Assert.Equal(compressedBundledAssembly_fi.Length, compressedStrippedAssembly_fi.Length);
+
+            testOutput.WriteLine ($"compressedOriginalAssembly_fi: {compressedOriginalAssembly_fi.Length}, {compressedOriginalAssembly}");
+            testOutput.WriteLine ($"compressedBundledAssembly_fi: {compressedBundledAssembly_fi.Length}, {compressedBundledAssembly}");
+
+            if (expectILStripping)
+            {
+                string compressedStrippedAssembly = Utils.GZipCompress(strippedAssembly);
+                FileInfo compressedStrippedAssembly_fi = new FileInfo(compressedStrippedAssembly);
+                testOutput.WriteLine ($"compressedStrippedAssembly_fi: {compressedStrippedAssembly_fi.Length}, {compressedStrippedAssembly}");
+                if (compressedOriginalAssembly_fi.Length <= compressedStrippedAssembly_fi.Length)
+                {
+                    throw new XunitException(
+                            $"Expected original assembly({compressedOriginalAssembly}) size ({compressedOriginalAssembly_fi.Length}) " +
+                            $"to be bigger than the stripped assembly ({compressedStrippedAssembly}) size ({compressedStrippedAssembly_fi.Length})");
+                }
+            }
+            else
+            {
+                if (!UseWebcil)
+                {
+                    // FIXME: The bundled file would be .wasm in case of webcil, so can't compare size
+                    Assert.True(compressedOriginalAssembly_fi.Length == compressedBundledAssembly_fi.Length);
+                }
+                Assert.False(Directory.Exists(strippedAssemblyDir), $"Expected {strippedAssemblyDir} to not exist");
+                Assert.False(File.Exists(strippedAssembly), $"Expected {strippedAssembly} to not exist");
+            }
         }
     }
 }
