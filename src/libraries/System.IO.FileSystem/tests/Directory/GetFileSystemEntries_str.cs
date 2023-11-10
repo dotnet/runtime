@@ -246,7 +246,7 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => GetEntries(invalid));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsRelativeToCurrentDrivePath()
         {
