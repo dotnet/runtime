@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Internal.Runtime.Binder;
 
 namespace System.Runtime.Loader
 {
     internal partial class DefaultAssemblyLoadContext
     {
         // called by vm
-        private Assembly CreateCoreLib(IntPtr pCoreLibPEImage) => new Assembly(pCoreLibPEImage, true) { Binder = this };
+        private BinderAssembly CreateCoreLib(IntPtr pCoreLibPEImage) => new BinderAssembly(pCoreLibPEImage, true) { Binder = this };
 
         // Helper functions
-        private int BindAssemblyByNameWorker(AssemblyName assemblyName, out Assembly? coreCLRFoundAssembly, bool excludeAppPaths)
+        private int BindAssemblyByNameWorker(BinderAssemblyName assemblyName, out BinderAssembly? coreCLRFoundAssembly, bool excludeAppPaths)
         {
             // CoreLib should be bound using BindToSystem
             Debug.Assert(!assemblyName.IsCoreLib);
@@ -28,11 +27,11 @@ namespace System.Runtime.Loader
             return hr;
         }
 
-        internal override int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly)
+        internal override int BindUsingAssemblyName(BinderAssemblyName assemblyName, out BinderAssembly? assembly)
         {
             assembly = null;
 
-            int hr = BindAssemblyByNameWorker(assemblyName, out Assembly? coreCLRFoundAssembly, excludeAppPaths: false);
+            int hr = BindAssemblyByNameWorker(assemblyName, out BinderAssembly? coreCLRFoundAssembly, excludeAppPaths: false);
 
             if (hr is HResults.E_FILENOTFOUND or AssemblyBinderCommon.FUSION_E_APP_DOMAIN_LOCKED or HResults.FUSION_E_REF_DEF_MISMATCH)
             {
@@ -70,15 +69,15 @@ namespace System.Runtime.Loader
             return hr;
         }
 
-        internal override int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out Assembly? assembly)
+        internal override int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out BinderAssembly? assembly)
         {
             assembly = null;
             int hr;
 
             try
             {
-                Assembly? coreCLRFoundAssembly;
-                AssemblyName assemblyName = new AssemblyName(pPEImage);
+                BinderAssembly? coreCLRFoundAssembly;
+                BinderAssemblyName assemblyName = new BinderAssemblyName(pPEImage);
 
                 // Validate architecture
                 if (!AssemblyBinderCommon.IsValidArchitecture(assemblyName.ProcessorArchitecture))

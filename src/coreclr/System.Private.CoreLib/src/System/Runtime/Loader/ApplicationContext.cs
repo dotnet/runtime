@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
-namespace Internal.Runtime.Binder
+namespace System.Runtime.Loader
 {
     internal struct TPAEntry
     {
@@ -17,7 +16,7 @@ namespace Internal.Runtime.Binder
 
     internal record struct FailureCacheKey(string SimpleName, AssemblyVersion Version)
     {
-        public FailureCacheKey(AssemblyName assemblyName) : this(assemblyName.SimpleName, assemblyName.Version) { }
+        public FailureCacheKey(BinderAssemblyName assemblyName) : this(assemblyName.SimpleName, assemblyName.Version) { }
     }
 
     internal sealed class ApplicationContext
@@ -26,7 +25,7 @@ namespace Internal.Runtime.Binder
 
         public int Version => _version;
 
-        public Dictionary<AssemblyName, Assembly> ExecutionContext { get; } = new Dictionary<AssemblyName, Assembly>();
+        public Dictionary<BinderAssemblyName, BinderAssembly> ExecutionContext { get; } = new Dictionary<BinderAssemblyName, BinderAssembly>();
 
         public Dictionary<FailureCacheKey, int> FailureCache { get; } = new Dictionary<FailureCacheKey, int>();
 
@@ -280,7 +279,7 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        public void AddToFailureCache(AssemblyName assemblyName, int hresult)
+        public void AddToFailureCache(BinderAssemblyName assemblyName, int hresult)
         {
             FailureCache.Add(new FailureCacheKey(assemblyName), hresult);
             IncrementVersion();

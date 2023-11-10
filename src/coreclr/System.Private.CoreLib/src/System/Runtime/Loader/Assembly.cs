@@ -1,20 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Runtime.Loader;
-
-namespace Internal.Runtime.Binder
+namespace System.Runtime.Loader
 {
     // BINDER_SPACE::Assembly represents a result of binding to an actual assembly (PEImage)
     // It is basically a tuple of 1) physical assembly and 2) binder which created/owns this binding
     // We also store whether it was bound using TPA list
-    internal sealed class Assembly
+    internal sealed class BinderAssembly
     {
         // fields used by VM
 #pragma warning disable CA1823, 414, 169
         private AssemblyLoadContext? m_binder;
-        private AssemblyName m_assemblyName;
+        private BinderAssemblyName m_assemblyName;
         private IntPtr m_peImage;
         private IntPtr m_pDomainAssembly;
         private bool m_isInTPA;
@@ -27,16 +24,16 @@ namespace Internal.Runtime.Binder
             set => m_binder = value;
         }
 
-        public AssemblyName AssemblyName => m_assemblyName;
+        public BinderAssemblyName AssemblyName => m_assemblyName;
 
         public IntPtr PEImage => m_peImage;
 
         public bool IsInTPA => m_isInTPA;
 
-        public Assembly(nint pPEImage, bool isInTPA)
+        public BinderAssembly(nint pPEImage, bool isInTPA)
         {
             // Get assembly name def from meta data import and store it for later refs access
-            m_assemblyName = new AssemblyName(pPEImage)
+            m_assemblyName = new BinderAssemblyName(pPEImage)
             {
                 IsDefinition = true
             };

@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Internal.Runtime.Binder;
 
 namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
-        private int BindAssemblyByNameWorker(AssemblyName assemblyName, out Assembly? coreCLRFoundAssembly)
+        private int BindAssemblyByNameWorker(BinderAssemblyName assemblyName, out BinderAssembly? coreCLRFoundAssembly)
         {
             // CoreLib should be bound using BindToSystem
             Debug.Assert(!assemblyName.IsCoreLib);
@@ -24,10 +23,10 @@ namespace System.Runtime.Loader
             return hr;
         }
 
-        internal virtual int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly)
+        internal virtual int BindUsingAssemblyName(BinderAssemblyName assemblyName, out BinderAssembly? assembly)
         {
             int hr;
-            Assembly? coreCLRFoundAssembly;
+            BinderAssembly? coreCLRFoundAssembly;
 
             // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
             //
@@ -73,15 +72,15 @@ namespace System.Runtime.Loader
             return hr;
         }
 
-        internal virtual int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out Assembly? assembly)
+        internal virtual int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out BinderAssembly? assembly)
         {
             assembly = null;
             int hr;
 
             try
             {
-                Assembly? coreCLRFoundAssembly;
-                AssemblyName assemblyName = new AssemblyName(pPEImage);
+                BinderAssembly? coreCLRFoundAssembly;
+                BinderAssemblyName assemblyName = new BinderAssemblyName(pPEImage);
 
                 // Validate architecture
                 if (!AssemblyBinderCommon.IsValidArchitecture(assemblyName.ProcessorArchitecture))

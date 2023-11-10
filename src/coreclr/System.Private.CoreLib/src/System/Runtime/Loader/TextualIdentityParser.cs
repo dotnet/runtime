@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 
-namespace Internal.Runtime.Binder
+namespace System.Runtime.Loader
 {
     internal static class TextualIdentityParser
     {
@@ -75,7 +75,7 @@ namespace Internal.Runtime.Binder
 
             if ((includeFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CONTENT_TYPE) != 0)
             {
-                textualIdentity.Append($", ContentType={nameof(System.Reflection.AssemblyContentType.WindowsRuntime)}");
+                textualIdentity.Append($", ContentType={nameof(AssemblyContentType.WindowsRuntime)}");
             }
 
             return textualIdentity.ToString();

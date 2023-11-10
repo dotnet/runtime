@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.Binder;
-using Internal.Runtime.Binder.Tracing;
+using System.Runtime.Loader.Tracing;
 
 namespace System.Runtime.Loader
 {
@@ -49,7 +49,7 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_GetAppBundleBasePath")]
         private static partial void GetAppBundleBasePath(StringHandleOnStack path);
 
-        public static bool IsCompatibleAssemblyVersion(AssemblyName requestedName, AssemblyName foundName)
+        public static bool IsCompatibleAssemblyVersion(BinderAssemblyName requestedName, BinderAssemblyName foundName)
         {
             AssemblyVersion pRequestedVersion = requestedName.Version;
             AssemblyVersion pFoundVersion = foundName.Version;
@@ -110,7 +110,7 @@ namespace System.Runtime.Loader
             return true;
         }
 
-        public static void CreateImageAssembly(IntPtr pPEImage, ref BindResult bindResult) => bindResult.SetResult(new Assembly(pPEImage, isInTPA: false));
+        public static void CreateImageAssembly(IntPtr pPEImage, ref BindResult bindResult) => bindResult.SetResult(new BinderAssembly(pPEImage, isInTPA: false));
 
         // defined in System.Reflection.PortableExecutable.Machine, but it's in System.Reflection.Metadata
         // also defined in System.Reflection.ImageFileMachine
@@ -196,7 +196,7 @@ namespace System.Runtime.Loader
         public const int CLR_E_BIND_TYPE_NOT_FOUND = unchecked((int)0x80132005);
         public const int CLR_E_BIND_ARCHITECTURE_MISMATCH = unchecked((int)0x80132006);
 
-        public static int BindAssembly(AssemblyLoadContext binder, AssemblyName assemblyName, bool excludeAppPaths, out Assembly? result)
+        public static int BindAssembly(AssemblyLoadContext binder, BinderAssemblyName assemblyName, bool excludeAppPaths, out BinderAssembly? result)
         {
             int kContextVersion = 0;
             BindResult bindResult = default;
@@ -245,7 +245,7 @@ namespace System.Runtime.Loader
         // Skipped - the managed binder can't bootstrap CoreLib
         // static Assembly? BindToSystem(string systemDirectory);
 
-        private static unsafe int BindToSystemSatellite(char* systemDirectory, char* simpleName, char* cultureName, out Assembly? assembly)
+        private static unsafe int BindToSystemSatellite(char* systemDirectory, char* simpleName, char* cultureName, out BinderAssembly? assembly)
         {
             // Satellite assembly's relative path
 
@@ -284,7 +284,7 @@ namespace System.Runtime.Loader
 
         private static int BindByName(
             ApplicationContext applicationContext,
-            AssemblyName assemblyName,
+            BinderAssemblyName assemblyName,
             bool skipFailureChecking,
             bool skipVersionCompatibilityCheck,
             bool excludeAppPaths,
@@ -354,13 +354,13 @@ namespace System.Runtime.Loader
 
         private static int BindLocked(
             ApplicationContext applicationContext,
-            AssemblyName assemblyName,
+            BinderAssemblyName assemblyName,
             bool skipVersionCompatibilityCheck,
             bool excludeAppPaths,
             ref BindResult bindResult)
         {
             bool isTpaListProvided = applicationContext.TrustedPlatformAssemblyMap != null;
-            int hr = FindInExecutionContext(applicationContext, assemblyName, out Assembly? assembly);
+            int hr = FindInExecutionContext(applicationContext, assemblyName, out BinderAssembly? assembly);
 
             // Add the attempt to the bind result on failure / not found. On success, it will be added after the version check.
             if (hr < 0 || assembly == null)
@@ -415,7 +415,7 @@ namespace System.Runtime.Loader
             return hr;
         }
 
-        private static int FindInExecutionContext(ApplicationContext applicationContext, AssemblyName assemblyName, out Assembly? assembly)
+        private static int FindInExecutionContext(ApplicationContext applicationContext, BinderAssemblyName assemblyName, out BinderAssembly? assembly)
         {
             applicationContext.ExecutionContext.TryGetValue(assemblyName, out assembly);
 
@@ -438,7 +438,7 @@ namespace System.Runtime.Loader
         // This does not do a version check.  The binder applies version policy
         // further up the stack once it gets a successful bind.
         //
-        private static bool TestCandidateRefMatchesDef(AssemblyName requestedAssemblyName, AssemblyName boundAssemblyName, bool tpaListAssembly)
+        private static bool TestCandidateRefMatchesDef(BinderAssemblyName requestedAssemblyName, BinderAssemblyName boundAssemblyName, bool tpaListAssembly)
         {
             AssemblyNameIncludeFlags includeFlags = AssemblyNameIncludeFlags.INCLUDE_DEFAULT;
 
@@ -458,7 +458,7 @@ namespace System.Runtime.Loader
             return boundAssemblyName.Equals(requestedAssemblyName, includeFlags);
         }
 
-        private static int BindSatelliteResourceFromBundle(AssemblyName requestedAssemblyName, string relativePath, ref BindResult bindResult)
+        private static int BindSatelliteResourceFromBundle(BinderAssemblyName requestedAssemblyName, string relativePath, ref BindResult bindResult)
         {
             int hr = HResults.S_OK;
 
@@ -468,7 +468,7 @@ namespace System.Runtime.Loader
                 return hr;
             }
 
-            hr = GetAssembly(relativePath, isInTPA: false, out Assembly? assembly, bundleFileLocation);
+            hr = GetAssembly(relativePath, isInTPA: false, out BinderAssembly? assembly, bundleFileLocation);
 
             NativeRuntimeEventSource.Log.KnownPathProbed(relativePath, (ushort)PathSource.Bundle, hr);
 
@@ -483,7 +483,7 @@ namespace System.Runtime.Loader
                 return hr;
 
             Debug.Assert(assembly != null);
-            AssemblyName boundAssemblyName = assembly.AssemblyName;
+            BinderAssemblyName boundAssemblyName = assembly.AssemblyName;
             if (TestCandidateRefMatchesDef(requestedAssemblyName, boundAssemblyName, tpaListAssembly: false))
             {
                 bindResult.SetResult(assembly);
@@ -500,7 +500,7 @@ namespace System.Runtime.Loader
 
         private static int BindSatelliteResourceByProbingPaths(
             List<string> resourceRoots,
-            AssemblyName requestedAssemblyName,
+            BinderAssemblyName requestedAssemblyName,
             string relativePath,
             ref BindResult bindResult,
             PathSource pathSource)
@@ -508,7 +508,7 @@ namespace System.Runtime.Loader
             foreach (string bindingPath in resourceRoots)
             {
                 string fileName = Path.Combine(relativePath, bindingPath);
-                int hr = GetAssembly(fileName, isInTPA: false, out Assembly? assembly);
+                int hr = GetAssembly(fileName, isInTPA: false, out BinderAssembly? assembly);
                 NativeRuntimeEventSource.Log.KnownPathProbed(fileName, (ushort)pathSource, hr);
 
                 // Missing files are okay and expected when probing
@@ -518,7 +518,7 @@ namespace System.Runtime.Loader
                 }
 
                 Debug.Assert(assembly != null);
-                AssemblyName boundAssemblyName = assembly.AssemblyName;
+                BinderAssemblyName boundAssemblyName = assembly.AssemblyName;
                 if (TestCandidateRefMatchesDef(requestedAssemblyName, boundAssemblyName, tpaListAssembly: false))
                 {
                     bindResult.SetResult(assembly);
@@ -537,7 +537,7 @@ namespace System.Runtime.Loader
             return HResults.S_OK;
         }
 
-        private static int BindSatelliteResource(ApplicationContext applicationContext, AssemblyName requestedAssemblyName, ref BindResult bindResult)
+        private static int BindSatelliteResource(ApplicationContext applicationContext, BinderAssemblyName requestedAssemblyName, ref BindResult bindResult)
         {
             Debug.Assert(!requestedAssemblyName.IsNeutralCulture);
 
@@ -571,7 +571,7 @@ namespace System.Runtime.Loader
             return hr;
         }
 
-        private static int BindAssemblyByProbingPaths(List<string> bindingPaths, AssemblyName requestedAssemblyName, out Assembly? result)
+        private static int BindAssemblyByProbingPaths(List<string> bindingPaths, BinderAssemblyName requestedAssemblyName, out BinderAssembly? result)
         {
             PathSource pathSource = PathSource.AppPaths;
 
@@ -583,7 +583,7 @@ namespace System.Runtime.Loader
                 // Look for a matching dll first
                 string fileName = fileNameWithoutExtension + ".dll";
 
-                int hr = GetAssembly(fileName, isInTPA: false, out Assembly? assembly);
+                int hr = GetAssembly(fileName, isInTPA: false, out BinderAssembly? assembly);
                 NativeRuntimeEventSource.Log.KnownPathProbed(fileName, (ushort)pathSource, hr);
 
                 if (hr < 0)
@@ -644,7 +644,7 @@ namespace System.Runtime.Loader
          *
          */
 
-        public static int BindByTpaList(ApplicationContext applicationContext, AssemblyName requestedAssemblyName, bool excludeAppPaths, ref BindResult bindResult)
+        public static int BindByTpaList(ApplicationContext applicationContext, BinderAssemblyName requestedAssemblyName, bool excludeAppPaths, ref BindResult bindResult)
         {
             bool fPartialMatchOnTpa = false;
 
@@ -656,7 +656,7 @@ namespace System.Runtime.Loader
             }
             else
             {
-                Assembly? tpaAssembly = null;
+                BinderAssembly? tpaAssembly = null;
 
                 // Is assembly in the bundle?
                 // Single-file bundle contents take precedence over TPA.
@@ -744,7 +744,7 @@ namespace System.Runtime.Loader
                 {
                     // Probe AppPaths
 
-                    int hr = BindAssemblyByProbingPaths(applicationContext.AppPaths, requestedAssemblyName, out Assembly? assembly);
+                    int hr = BindAssemblyByProbingPaths(applicationContext.AppPaths, requestedAssemblyName, out BinderAssembly? assembly);
                     bindResult.SetAttemptResult(hr, assembly);
 
                     if (hr != HResults.E_FILENOTFOUND)
@@ -790,7 +790,7 @@ namespace System.Runtime.Loader
             return HResults.S_FALSE;
         }
 
-        private static int GetAssembly(string assemblyPath, bool isInTPA, out Assembly? assembly, BundleFileLocation bundleFileLocation = default)
+        private static int GetAssembly(string assemblyPath, bool isInTPA, out BinderAssembly? assembly, BundleFileLocation bundleFileLocation = default)
         {
             int hr = BinderAcquirePEImage(assemblyPath, out IntPtr pPEImage, bundleFileLocation);
 
@@ -831,7 +831,7 @@ namespace System.Runtime.Loader
                     return hr;
                 }
 
-                assembly = new Assembly(pPEImage, isInTPA);
+                assembly = new BinderAssembly(pPEImage, isInTPA);
                 pPEImage = IntPtr.Zero;
                 return HResults.S_OK;
             }
@@ -857,7 +857,7 @@ namespace System.Runtime.Loader
 
             // Register the bindResult in the ExecutionContext only if we dont have it already.
             // This method is invoked under a lock (by its caller), so we are thread safe.
-            int hr = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName, out Assembly? assembly);
+            int hr = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName, out BinderAssembly? assembly);
             if (hr < 0)
                 return hr;
 
@@ -922,7 +922,7 @@ namespace System.Runtime.Loader
             // Look for already cached binding failure (ignore PA, every PA will lock the context)
             if (!applicationContext.FailureCache.ContainsKey(new FailureCacheKey(bindResult.Assembly.AssemblyName))) // hr == S_OK
             {
-                int hr = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName, out Assembly? assembly);
+                int hr = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName, out BinderAssembly? assembly);
                 if (hr >= 0 && assembly != null)
                 {
                     // We can accept this bind in the domain
@@ -934,7 +934,7 @@ namespace System.Runtime.Loader
             return HResults.S_FALSE;
         }
 
-        public static int BindUsingPEImage(AssemblyLoadContext binder, AssemblyName assemblyName, IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly)
+        public static int BindUsingPEImage(AssemblyLoadContext binder, BinderAssemblyName assemblyName, IntPtr pPEImage, bool excludeAppPaths, out BinderAssembly? assembly)
         {
             int hr = HResults.S_OK;
 
@@ -964,7 +964,7 @@ namespace System.Runtime.Loader
                     // IF_FAIL_GO(CreateImageAssembly(pPEImage, &bindResult));
                     try
                     {
-                        bindResult.SetResult(new Assembly(pPEImage, false));
+                        bindResult.SetResult(new BinderAssembly(pPEImage, false));
                     }
                     catch (Exception ex)
                     {
@@ -1070,22 +1070,22 @@ namespace System.Runtime.Loader
         private static partial IntPtr DomainAssembly_EnsureReferenceBinder(IntPtr pDomainAssembly, IntPtr pBinder);
 
         internal static int BindUsingHostAssemblyResolver(
-            AssemblyName assemblyName,
+            BinderAssemblyName assemblyName,
             AssemblyLoadContext? defaultBinder,
             AssemblyLoadContext binder,
-            out Assembly? loadedAssembly)
+            out BinderAssembly? loadedAssembly)
         {
             int hr = HResults.E_FAIL;
             loadedAssembly = null;
-            Assembly? resolvedAssembly = null;
+            BinderAssembly? resolvedAssembly = null;
 
             // body of RuntimeInvokeHostAssemblyResolver
             bool fResolvedAssembly = false;
-            System.Reflection.Assembly? refLoadedAssembly = null;
+            Assembly? refLoadedAssembly = null;
             using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, ref hr);
 
             // Allocate an AssemblyName managed object
-            System.Reflection.AssemblyName refAssemblyName;
+            AssemblyName refAssemblyName;
 
             // Initialize the AssemblyName object
             // AssemblySpec::InitializeAssemblyNameRef
@@ -1102,7 +1102,7 @@ namespace System.Runtime.Loader
                 fixed (char* pCulture = culture)
                 fixed (byte* pPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB)
                 {
-                    var nativeAssemblyNameParts = new System.Reflection.NativeAssemblyNameParts
+                    var nativeAssemblyNameParts = new NativeAssemblyNameParts
                     {
                         _pName = pName,
                         _pCultureName = pCulture,
@@ -1125,7 +1125,7 @@ namespace System.Runtime.Loader
 
                     // Content type unused
 
-                    refAssemblyName = new System.Reflection.AssemblyName(&nativeAssemblyNameParts);
+                    refAssemblyName = new AssemblyName(&nativeAssemblyNameParts);
                 }
             }
 
@@ -1154,7 +1154,7 @@ namespace System.Runtime.Loader
                         // If we could not resolve the assembly using Load method, then attempt fallback with TPA Binder.
                         // Since TPA binder cannot fallback to itself, this fallback does not happen for binds within TPA binder.
 
-                        hr = defaultBinder.BindUsingAssemblyName(assemblyName, out Assembly? coreCLRFoundAssembly);
+                        hr = defaultBinder.BindUsingAssemblyName(assemblyName, out BinderAssembly? coreCLRFoundAssembly);
                         if (hr >= 0)
                         {
                             Debug.Assert(coreCLRFoundAssembly != null);
@@ -1206,7 +1206,7 @@ namespace System.Runtime.Loader
                     // We were able to get the assembly loaded. Now, get its name since the host could have
                     // performed the resolution using an assembly with different name.
 
-                    System.Reflection.RuntimeAssembly? rtAssembly =
+                    RuntimeAssembly? rtAssembly =
                         AssemblyLoadContext.GetRuntimeAssembly(refLoadedAssembly)
                         ?? throw new InvalidOperationException(SR.Arg_MustBeRuntimeAssembly);
 
@@ -1242,7 +1242,7 @@ namespace System.Runtime.Loader
                         DomainAssembly_EnsureReferenceBinder(pDomainAssembly, binder._nativeAssemblyLoadContext);
                     }
 
-                    resolvedAssembly = GCHandle.FromIntPtr(PEAssembly_GetHostAssembly(pLoadedPEAssembly)).Target as Assembly;
+                    resolvedAssembly = GCHandle.FromIntPtr(PEAssembly_GetHostAssembly(pLoadedPEAssembly)).Target as BinderAssembly;
                 }
 
                 if (fResolvedAssembly)

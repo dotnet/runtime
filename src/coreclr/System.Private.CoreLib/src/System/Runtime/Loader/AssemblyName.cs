@@ -1,12 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.Loader;
+using System.Reflection;
 
-namespace Internal.Runtime.Binder
+namespace System.Runtime.Loader
 {
     internal unsafe struct AssemblyMetaDataInternal
     {
@@ -62,18 +61,18 @@ namespace Internal.Runtime.Binder
                     | INCLUDE_PUBLIC_KEY_TOKEN,
     }
 
-    internal sealed unsafe class AssemblyName : AssemblyIdentity, IEquatable<AssemblyName>
+    internal sealed unsafe class BinderAssemblyName : AssemblyIdentity, IEquatable<BinderAssemblyName>
     {
         public bool IsDefinition;
 
-        public AssemblyName(IntPtr pPEImage)
+        public BinderAssemblyName(IntPtr pPEImage)
         {
             IdentityFlags |=
                 AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE | AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL;
 
             int* dwPAFlags = stackalloc int[2];
             IntPtr pIMetaDataAssemblyImport = AssemblyBinderCommon.BinderAcquireImport(pPEImage, dwPAFlags);
-            var scope = new System.Reflection.MetadataImport(pIMetaDataAssemblyImport, null);
+            var scope = new MetadataImport(pIMetaDataAssemblyImport, null);
 
             ProcessorArchitecture = AssemblyBinderCommon.TranslatePEToArchitectureType(dwPAFlags);
 
@@ -126,7 +125,7 @@ namespace Internal.Runtime.Binder
             // Set ContentType
             if ((dwRefOrDefFlags & CorAssemblyFlags.afContentType_Mask) == CorAssemblyFlags.afContentType_Default)
             {
-                ContentType = System.Reflection.AssemblyContentType.Default;
+                ContentType = AssemblyContentType.Default;
             }
             else
             {
@@ -152,7 +151,7 @@ namespace Internal.Runtime.Binder
             {
                 if ((dwRefOrDefFlags & CorAssemblyFlags.afPublicKey) != 0)
                 {
-                    byte[]? publicKeyToken = System.Reflection.AssemblyNameHelpers.ComputePublicKeyToken(new ReadOnlySpan<byte>(pvPublicKeyToken, (int)dwPublicKeyToken));
+                    byte[]? publicKeyToken = AssemblyNameHelpers.ComputePublicKeyToken(new ReadOnlySpan<byte>(pvPublicKeyToken, (int)dwPublicKeyToken));
                     Debug.Assert(publicKeyToken != null);
 
                     PublicKeyOrTokenBLOB = publicKeyToken;
@@ -166,7 +165,7 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        public unsafe AssemblyName(AssemblyNameData* data)
+        public unsafe BinderAssemblyName(AssemblyNameData* data)
         {
             AssemblyIdentityFlags flags = data->IdentityFlags;
             SimpleName = new MdUtf8String(data->Name).ToString();
@@ -184,7 +183,7 @@ namespace Internal.Runtime.Binder
             {
                 // Convert public key to token
 
-                byte[]? publicKeyToken = System.Reflection.AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrTokenBLOB);
+                byte[]? publicKeyToken = AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrTokenBLOB);
                 Debug.Assert(publicKeyToken != null);
 
                 PublicKeyOrTokenBLOB = publicKeyToken;
@@ -312,9 +311,9 @@ namespace Internal.Runtime.Binder
             return (int)dwHash;
         }
 
-        public override bool Equals(object? obj) => obj is AssemblyName other && Equals(other);
+        public override bool Equals(object? obj) => obj is BinderAssemblyName other && Equals(other);
 
-        public bool Equals(AssemblyName? other) => Equals(other, AssemblyNameIncludeFlags.INCLUDE_ALL);
+        public bool Equals(BinderAssemblyName? other) => Equals(other, AssemblyNameIncludeFlags.INCLUDE_ALL);
 
         public bool Equals(AssemblyIdentity? other, AssemblyNameIncludeFlags dwIncludeFlags)
         {
@@ -323,7 +322,7 @@ namespace Internal.Runtime.Binder
 
             bool fEquals = false;
 
-            if (ContentType == System.Reflection.AssemblyContentType.WindowsRuntime)
+            if (ContentType == AssemblyContentType.WindowsRuntime)
             {   // Assembly is meaningless for WinRT, all assemblies form one joint type namespace
                 return ContentType == other.ContentType;
             }

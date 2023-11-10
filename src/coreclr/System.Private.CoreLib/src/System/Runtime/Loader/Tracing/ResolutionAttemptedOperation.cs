@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
-using System.Runtime.Loader;
 
-namespace Internal.Runtime.Binder.Tracing
+namespace System.Runtime.Loader.Tracing
 {
     // An object of this class manages firing events for all the stages during a binder resolving
     // attempt operation.  It has minimal cost if tracing for this event is disabled.
@@ -55,8 +53,8 @@ namespace Internal.Runtime.Binder.Tracing
         private ref readonly int _hr;
         private Stage _stage;
         private bool _tracingEnabled;
-        private AssemblyName? _assemblyNameObject;
-        private Assembly? _foundAssembly;
+        private BinderAssemblyName? _assemblyNameObject;
+        private BinderAssembly? _foundAssembly;
         private string _assemblyName = string.Empty;
         private string _assemblyLoadContextName = string.Empty;
         private string? _exceptionMessage;
@@ -67,7 +65,7 @@ namespace Internal.Runtime.Binder.Tracing
         }
 
         // One of native bindContext or binder is expected to be non-zero. If the managed ALC is set, binder is ignored.
-        public ResolutionAttemptedOperation(AssemblyName? assemblyName, AssemblyLoadContext binder, ref int hResult)
+        public ResolutionAttemptedOperation(BinderAssemblyName? assemblyName, AssemblyLoadContext binder, ref int hResult)
         {
             _hr = ref hResult;
             _stage = Stage.NotYetStarted;
@@ -120,7 +118,7 @@ namespace Internal.Runtime.Binder.Tracing
             }
         }
 
-        public void SetFoundAssembly(Assembly assembly) => _foundAssembly = assembly;
+        public void SetFoundAssembly(BinderAssembly assembly) => _foundAssembly = assembly;
 
         public void GoToStage(Stage stage)
         {
@@ -161,7 +159,7 @@ namespace Internal.Runtime.Binder.Tracing
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern string PEImage_GetPath(IntPtr pPEImage);
 
-        public void TraceStage(Stage stage, int hResult, Assembly? resultAssembly, string? customError = null)
+        public void TraceStage(Stage stage, int hResult, BinderAssembly? resultAssembly, string? customError = null)
         {
             if (!_tracingEnabled || stage == Stage.NotYetStarted)
                 return;

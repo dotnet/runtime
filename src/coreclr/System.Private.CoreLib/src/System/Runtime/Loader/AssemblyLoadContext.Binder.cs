@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.Binder;
 
 namespace System.Runtime.Loader
 {
@@ -23,16 +23,16 @@ namespace System.Runtime.Loader
         public readonly int RevisionNumber;
 
         public readonly PEKind ProcessorArchitecture;
-        public readonly System.Reflection.AssemblyContentType ContentType;
+        public readonly AssemblyContentType ContentType;
 
         public readonly AssemblyIdentityFlags IdentityFlags;
     }
 
     public partial class AssemblyLoadContext
     {
-        private protected unsafe int BindAssemblyByName(void* pAssemblyNameData, out Assembly? assembly)
+        private protected unsafe int BindAssemblyByName(void* pAssemblyNameData, out BinderAssembly? assembly)
         {
-            return BindUsingAssemblyName(new AssemblyName((AssemblyNameData*)pAssemblyNameData), out assembly);
+            return BindUsingAssemblyName(new BinderAssemblyName((AssemblyNameData*)pAssemblyNameData), out assembly);
         }
 
         internal ApplicationContext AppContext { get; } = new ApplicationContext();
@@ -135,7 +135,7 @@ namespace System.Runtime.Loader
                 return;
             }
 
-            var mdImport = new System.Reflection.MetadataImport(Assembly_GetMDImport(loadedAssembly), null);
+            var mdImport = new MetadataImport(Assembly_GetMDImport(loadedAssembly), null);
             mdImport.GetScopeProps(out Guid mvid);
             string simpleName = new MdUtf8String(Assembly_GetSimpleName(loadedAssembly)).ToString();
 
