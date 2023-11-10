@@ -1633,13 +1633,57 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         return NO_ASSERTION_INDEX;
     }
 
-    // Check if exists already, so we can skip adding new one. Search backwards.
-    for (AssertionIndex index = optAssertionCount; index >= 1; index--)
+    // See if we already have this assertion in the table.
+    //
+    // For local assertion prop we can speed things up by checking the dep vectors.
+    //
+    if (optLocalAssertionProp)
     {
-        AssertionDsc* curAssertion = optGetAssertion(index);
-        if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
+        assert(newAssertion->op1.kind == O1K_LCLVAR);
+
+        unsigned        lclNum = newAssertion->op1.lcl.lclNum;
+        BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
+        unsigned        bvIndex = 0;
+        while (iter.NextElem(&bvIndex))
         {
-            return index;
+            AssertionIndex const index        = GetAssertionIndex(bvIndex);
+            AssertionDsc* const  curAssertion = optGetAssertion(index);
+
+            if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
+            {
+                return index;
+            }
+        }
+
+        if (newAssertion->op2.kind == O2K_LCLVAR_COPY)
+        {
+            lclNum = newAssertion->op2.lcl.lclNum;
+            BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
+            unsigned        bvIndex = 0;
+            while (iter.NextElem(&bvIndex))
+            {
+                AssertionIndex const index        = GetAssertionIndex(bvIndex);
+                AssertionDsc* const  curAssertion = optGetAssertion(index);
+
+                if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
+                {
+                    return index;
+                }
+            }
+        }
+    }
+    else
+    {
+        // For global prop we search the entire table.
+        //
+        // Check if exists already, so we can skip adding new one. Search backwards.
+        for (AssertionIndex index = optAssertionCount; index >= 1; index--)
+        {
+            AssertionDsc* curAssertion = optGetAssertion(index);
+            if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
+            {
+                return index;
+            }
         }
     }
 
