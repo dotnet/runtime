@@ -39,15 +39,6 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquirePEImage", StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_GetPEAssembly")]
-        private static partial IntPtr DomainAssembly_GetPEAssembly(IntPtr pDomainAssembly);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEAssembly_GetHostAssembly")]
-        private static partial IntPtr PEAssembly_GetHostAssembly(IntPtr pPEAssembly);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_EnsureReferenceBinder")]
-        private static partial IntPtr DomainAssembly_EnsureReferenceBinder(IntPtr pDomainAssembly, IntPtr pBinder);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_AppIsBundle")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool AppIsBundle();
@@ -943,206 +934,6 @@ namespace System.Runtime.Loader
             return HResults.S_FALSE;
         }
 
-        public static int BindUsingHostAssemblyResolver(
-            AssemblyName assemblyName,
-            AssemblyLoadContext? defaultBinder,
-            AssemblyLoadContext binder,
-            out Assembly? loadedAssembly)
-        {
-            int hr = HResults.E_FAIL;
-            loadedAssembly = null;
-            Assembly? resolvedAssembly = null;
-
-            // body of RuntimeInvokeHostAssemblyResolver
-            bool fResolvedAssembly = false;
-            System.Reflection.Assembly? refLoadedAssembly = null;
-            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, ref hr);
-
-            // Allocate an AssemblyName managed object
-            System.Reflection.AssemblyName refAssemblyName;
-
-            // Initialize the AssemblyName object
-            // AssemblySpec::InitializeAssemblyNameRef
-            unsafe
-            {
-                string culture = string.Empty;
-
-                if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE) != 0)
-                {
-                    culture = assemblyName.IsNeutralCulture ? string.Empty : assemblyName.CultureOrLanguage;
-                }
-
-                fixed (char* pName = assemblyName.SimpleName)
-                fixed (char* pCulture = culture)
-                fixed (byte* pPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB)
-                {
-                    var nativeAssemblyNameParts = new System.Reflection.NativeAssemblyNameParts
-                    {
-                        _pName = pName,
-                        _pCultureName = pCulture,
-                        _major = (ushort)assemblyName.Version.Major,
-                        _minor = (ushort)assemblyName.Version.Minor,
-                        _build = (ushort)assemblyName.Version.Build,
-                        _revision = (ushort)assemblyName.Version.Revision,
-                        _pPublicKeyOrToken = pPublicKeyOrToken,
-                        _cbPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB.Length,
-                    };
-
-                    if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY) != 0)
-                        nativeAssemblyNameParts._flags |= System.Reflection.AssemblyNameFlags.PublicKey;
-
-                    // Architecture unused
-
-                    // Retargetable
-                    if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_RETARGETABLE) != 0)
-                        nativeAssemblyNameParts._flags |= System.Reflection.AssemblyNameFlags.Retargetable;
-
-                    // Content type unused
-
-                    refAssemblyName = new System.Reflection.AssemblyName(&nativeAssemblyNameParts);
-                }
-            }
-
-            bool isSatelliteAssemblyRequest = !assemblyName.IsNeutralCulture;
-            try
-            {
-                if (defaultBinder != null)
-                {
-                    // Step 2 (of CustomAssemblyBinder::BindAssemblyByName) - Invoke Load method
-                    // This is not invoked for TPA Binder since it always returns NULL.
-                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.AssemblyLoadContextLoad);
-
-                    refLoadedAssembly = AssemblyLoadContext.Resolve(binder, refAssemblyName);
-                    if (refLoadedAssembly != null)
-                    {
-                        fResolvedAssembly = true;
-                    }
-
-                    hr = fResolvedAssembly ? HResults.S_OK : HResults.COR_E_FILENOTFOUND;
-
-                    // Step 3 (of CustomAssemblyBinder::BindAssemblyByName)
-                    if (!fResolvedAssembly && !isSatelliteAssemblyRequest)
-                    {
-                        tracer.GoToStage(ResolutionAttemptedOperation.Stage.DefaultAssemblyLoadContextFallback);
-
-                        // If we could not resolve the assembly using Load method, then attempt fallback with TPA Binder.
-                        // Since TPA binder cannot fallback to itself, this fallback does not happen for binds within TPA binder.
-
-                        hr = defaultBinder.BindUsingAssemblyName(assemblyName, out Assembly? coreCLRFoundAssembly);
-                        if (hr >= 0)
-                        {
-                            Debug.Assert(coreCLRFoundAssembly != null);
-                            resolvedAssembly = coreCLRFoundAssembly;
-                            fResolvedAssembly = true;
-                        }
-                    }
-                }
-
-                if (!fResolvedAssembly && isSatelliteAssemblyRequest)
-                {
-                    // Step 4 (of CustomAssemblyBinder::BindAssemblyByName)
-
-                    // Attempt to resolve it using the ResolveSatelliteAssembly method.
-                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.ResolveSatelliteAssembly);
-
-                    refLoadedAssembly = AssemblyLoadContext.ResolveSatelliteAssembly(binder, refAssemblyName);
-                    if (refLoadedAssembly != null)
-                    {
-                        // Set the flag indicating we found the assembly
-                        fResolvedAssembly = true;
-                    }
-
-                    hr = fResolvedAssembly ? HResults.S_OK : HResults.COR_E_FILENOTFOUND;
-                }
-
-                if (!fResolvedAssembly)
-                {
-                    // Step 5 (of CustomAssemblyBinder::BindAssemblyByName)
-
-                    // If we couldn't resolve the assembly using TPA LoadContext as well, then
-                    // attempt to resolve it using the Resolving event.
-                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.AssemblyLoadContextResolvingEvent);
-
-                    refLoadedAssembly = AssemblyLoadContext.ResolveUsingResolvingEvent(binder, refAssemblyName);
-                    if (refLoadedAssembly != null)
-                    {
-                        // Set the flag indicating we found the assembly
-                        fResolvedAssembly = true;
-                    }
-
-                    hr = fResolvedAssembly ? HResults.S_OK : HResults.COR_E_FILENOTFOUND;
-                }
-
-                if (fResolvedAssembly && resolvedAssembly == null)
-                {
-                    // If we are here, assembly was successfully resolved via Load or Resolving events.
-
-                    // We were able to get the assembly loaded. Now, get its name since the host could have
-                    // performed the resolution using an assembly with different name.
-
-                    System.Reflection.RuntimeAssembly? rtAssembly =
-                        AssemblyLoadContext.GetRuntimeAssembly(refLoadedAssembly)
-                        ?? throw new InvalidOperationException(SR.Arg_MustBeRuntimeAssembly);
-
-                    IntPtr pDomainAssembly = rtAssembly.GetUnderlyingNativeHandle();
-                    IntPtr pLoadedPEAssembly = IntPtr.Zero;
-                    bool fFailLoad = false;
-                    if (pDomainAssembly == IntPtr.Zero)
-                    {
-                        // Reflection emitted assemblies will not have a domain assembly.
-                        fFailLoad = true;
-                    }
-                    else
-                    {
-                        pLoadedPEAssembly = DomainAssembly_GetPEAssembly(pDomainAssembly);
-                        if (PEAssembly_GetHostAssembly(pLoadedPEAssembly) == IntPtr.Zero)
-                        {
-                            // Reflection emitted assemblies will not have a domain assembly.
-                            fFailLoad = true;
-                        }
-                    }
-
-                    // The loaded assembly's BINDER_SPACE::Assembly* is saved as HostAssembly in PEAssembly
-                    if (fFailLoad)
-                    {
-                        // string name = assemblyName.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_ALL);
-                        throw new InvalidOperationException("Dynamically emitted assemblies are unsupported during host-based resolution."); // IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED
-                    }
-
-                    // For collectible assemblies, ensure that the parent loader allocator keeps the assembly's loader allocator
-                    // alive for all its lifetime.
-                    if (rtAssembly.IsCollectible)
-                    {
-                        DomainAssembly_EnsureReferenceBinder(pDomainAssembly, binder._nativeAssemblyLoadContext);
-                    }
-
-                    resolvedAssembly = GCHandle.FromIntPtr(PEAssembly_GetHostAssembly(pLoadedPEAssembly)).Target as Assembly;
-                }
-
-                if (fResolvedAssembly)
-                {
-                    Debug.Assert(resolvedAssembly != null);
-
-                    // Get the BINDER_SPACE::Assembly reference to return back to.
-                    loadedAssembly = resolvedAssembly;
-                    hr = HResults.S_OK;
-
-                    tracer.SetFoundAssembly(resolvedAssembly);
-                }
-                else
-                {
-                    hr = HResults.COR_E_FILENOTFOUND;
-                }
-            }
-            catch (Exception ex)
-            {
-                tracer.SetException(ex);
-                throw;
-            }
-
-            return hr;
-        }
-
         public static int BindUsingPEImage(AssemblyLoadContext binder, AssemblyName assemblyName, IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly)
         {
             int hr = HResults.S_OK;
@@ -1264,6 +1055,218 @@ namespace System.Runtime.Loader
 #endif
 
             return architecture == processArchitecture;
+        }
+    }
+
+    public partial class AssemblyLoadContext
+    {
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_GetPEAssembly")]
+        private static partial IntPtr DomainAssembly_GetPEAssembly(IntPtr pDomainAssembly);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEAssembly_GetHostAssembly")]
+        private static partial IntPtr PEAssembly_GetHostAssembly(IntPtr pPEAssembly);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_EnsureReferenceBinder")]
+        private static partial IntPtr DomainAssembly_EnsureReferenceBinder(IntPtr pDomainAssembly, IntPtr pBinder);
+
+        internal static int BindUsingHostAssemblyResolver(
+            AssemblyName assemblyName,
+            AssemblyLoadContext? defaultBinder,
+            AssemblyLoadContext binder,
+            out Assembly? loadedAssembly)
+        {
+            int hr = HResults.E_FAIL;
+            loadedAssembly = null;
+            Assembly? resolvedAssembly = null;
+
+            // body of RuntimeInvokeHostAssemblyResolver
+            bool fResolvedAssembly = false;
+            System.Reflection.Assembly? refLoadedAssembly = null;
+            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, ref hr);
+
+            // Allocate an AssemblyName managed object
+            System.Reflection.AssemblyName refAssemblyName;
+
+            // Initialize the AssemblyName object
+            // AssemblySpec::InitializeAssemblyNameRef
+            unsafe
+            {
+                string culture = string.Empty;
+
+                if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE) != 0)
+                {
+                    culture = assemblyName.IsNeutralCulture ? string.Empty : assemblyName.CultureOrLanguage;
+                }
+
+                fixed (char* pName = assemblyName.SimpleName)
+                fixed (char* pCulture = culture)
+                fixed (byte* pPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB)
+                {
+                    var nativeAssemblyNameParts = new System.Reflection.NativeAssemblyNameParts
+                    {
+                        _pName = pName,
+                        _pCultureName = pCulture,
+                        _major = (ushort)assemblyName.Version.Major,
+                        _minor = (ushort)assemblyName.Version.Minor,
+                        _build = (ushort)assemblyName.Version.Build,
+                        _revision = (ushort)assemblyName.Version.Revision,
+                        _pPublicKeyOrToken = pPublicKeyOrToken,
+                        _cbPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB.Length,
+                    };
+
+                    if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY) != 0)
+                        nativeAssemblyNameParts._flags |= System.Reflection.AssemblyNameFlags.PublicKey;
+
+                    // Architecture unused
+
+                    // Retargetable
+                    if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_RETARGETABLE) != 0)
+                        nativeAssemblyNameParts._flags |= System.Reflection.AssemblyNameFlags.Retargetable;
+
+                    // Content type unused
+
+                    refAssemblyName = new System.Reflection.AssemblyName(&nativeAssemblyNameParts);
+                }
+            }
+
+            bool isSatelliteAssemblyRequest = !assemblyName.IsNeutralCulture;
+            try
+            {
+                if (defaultBinder != null)
+                {
+                    // Step 2 (of CustomAssemblyBinder::BindAssemblyByName) - Invoke Load method
+                    // This is not invoked for TPA Binder since it always returns NULL.
+                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.AssemblyLoadContextLoad);
+
+                    refLoadedAssembly = binder.ResolveUsingLoad(refAssemblyName);
+                    if (refLoadedAssembly != null)
+                    {
+                        fResolvedAssembly = true;
+                    }
+
+                    hr = fResolvedAssembly ? HResults.S_OK : HResults.COR_E_FILENOTFOUND;
+
+                    // Step 3 (of CustomAssemblyBinder::BindAssemblyByName)
+                    if (!fResolvedAssembly && !isSatelliteAssemblyRequest)
+                    {
+                        tracer.GoToStage(ResolutionAttemptedOperation.Stage.DefaultAssemblyLoadContextFallback);
+
+                        // If we could not resolve the assembly using Load method, then attempt fallback with TPA Binder.
+                        // Since TPA binder cannot fallback to itself, this fallback does not happen for binds within TPA binder.
+
+                        hr = defaultBinder.BindUsingAssemblyName(assemblyName, out Assembly? coreCLRFoundAssembly);
+                        if (hr >= 0)
+                        {
+                            Debug.Assert(coreCLRFoundAssembly != null);
+                            resolvedAssembly = coreCLRFoundAssembly;
+                            fResolvedAssembly = true;
+                        }
+                    }
+                }
+
+                if (!fResolvedAssembly && isSatelliteAssemblyRequest)
+                {
+                    // Step 4 (of CustomAssemblyBinder::BindAssemblyByName)
+
+                    // Attempt to resolve it using the ResolveSatelliteAssembly method.
+                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.ResolveSatelliteAssembly);
+
+                    refLoadedAssembly = binder.ResolveSatelliteAssembly(refAssemblyName);
+                    if (refLoadedAssembly != null)
+                    {
+                        // Set the flag indicating we found the assembly
+                        fResolvedAssembly = true;
+                    }
+
+                    hr = fResolvedAssembly ? HResults.S_OK : HResults.COR_E_FILENOTFOUND;
+                }
+
+                if (!fResolvedAssembly)
+                {
+                    // Step 5 (of CustomAssemblyBinder::BindAssemblyByName)
+
+                    // If we couldn't resolve the assembly using TPA LoadContext as well, then
+                    // attempt to resolve it using the Resolving event.
+                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.AssemblyLoadContextResolvingEvent);
+
+                    refLoadedAssembly = binder.ResolveUsingEvent(refAssemblyName);
+                    if (refLoadedAssembly != null)
+                    {
+                        // Set the flag indicating we found the assembly
+                        fResolvedAssembly = true;
+                    }
+
+                    hr = fResolvedAssembly ? HResults.S_OK : HResults.COR_E_FILENOTFOUND;
+                }
+
+                if (fResolvedAssembly && resolvedAssembly == null)
+                {
+                    // If we are here, assembly was successfully resolved via Load or Resolving events.
+
+                    // We were able to get the assembly loaded. Now, get its name since the host could have
+                    // performed the resolution using an assembly with different name.
+
+                    System.Reflection.RuntimeAssembly? rtAssembly =
+                        AssemblyLoadContext.GetRuntimeAssembly(refLoadedAssembly)
+                        ?? throw new InvalidOperationException(SR.Arg_MustBeRuntimeAssembly);
+
+                    IntPtr pDomainAssembly = rtAssembly.GetUnderlyingNativeHandle();
+                    IntPtr pLoadedPEAssembly = IntPtr.Zero;
+                    bool fFailLoad = false;
+                    if (pDomainAssembly == IntPtr.Zero)
+                    {
+                        // Reflection emitted assemblies will not have a domain assembly.
+                        fFailLoad = true;
+                    }
+                    else
+                    {
+                        pLoadedPEAssembly = DomainAssembly_GetPEAssembly(pDomainAssembly);
+                        if (PEAssembly_GetHostAssembly(pLoadedPEAssembly) == IntPtr.Zero)
+                        {
+                            // Reflection emitted assemblies will not have a domain assembly.
+                            fFailLoad = true;
+                        }
+                    }
+
+                    // The loaded assembly's BINDER_SPACE::Assembly* is saved as HostAssembly in PEAssembly
+                    if (fFailLoad)
+                    {
+                        // string name = assemblyName.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_ALL);
+                        throw new InvalidOperationException("Dynamically emitted assemblies are unsupported during host-based resolution."); // IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED
+                    }
+
+                    // For collectible assemblies, ensure that the parent loader allocator keeps the assembly's loader allocator
+                    // alive for all its lifetime.
+                    if (rtAssembly.IsCollectible)
+                    {
+                        DomainAssembly_EnsureReferenceBinder(pDomainAssembly, binder._nativeAssemblyLoadContext);
+                    }
+
+                    resolvedAssembly = GCHandle.FromIntPtr(PEAssembly_GetHostAssembly(pLoadedPEAssembly)).Target as Assembly;
+                }
+
+                if (fResolvedAssembly)
+                {
+                    Debug.Assert(resolvedAssembly != null);
+
+                    // Get the BINDER_SPACE::Assembly reference to return back to.
+                    loadedAssembly = resolvedAssembly;
+                    hr = HResults.S_OK;
+
+                    tracer.SetFoundAssembly(resolvedAssembly);
+                }
+                else
+                {
+                    hr = HResults.COR_E_FILENOTFOUND;
+                }
+            }
+            catch (Exception ex)
+            {
+                tracer.SetException(ex);
+                throw;
+            }
+
+            return hr;
         }
     }
 }

@@ -52,7 +52,7 @@ namespace System.Runtime.Loader
 
                 // The logic was folded from native ALC. We are the managed ALC now and no additional initialization is required.
 
-                hr = AssemblyBinderCommon.BindUsingHostAssemblyResolver(assemblyName, null, this, out coreCLRFoundAssembly);
+                hr = BindUsingHostAssemblyResolver(assemblyName, null, this, out coreCLRFoundAssembly);
 
                 if (hr >= 0)
                 {

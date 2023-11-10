@@ -103,18 +103,6 @@ namespace System.Runtime.Loader
             }
         }
 #endif
-        internal static Assembly? Resolve(AssemblyLoadContext context, AssemblyName assemblyName)
-        {
-            // Invoke the ResolveUsingLoad method
-            return context.ResolveUsingLoad(assemblyName);
-        }
-
-        internal static Assembly? ResolveSatelliteAssembly(AssemblyLoadContext context, AssemblyName assemblyName)
-        {
-            // Invoke the ResolveSatelliteAssembly method
-            return context.ResolveSatelliteAssembly(assemblyName);
-        }
-
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)
@@ -129,12 +117,6 @@ namespace System.Runtime.Loader
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
             return context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
-        }
-
-        internal static Assembly? ResolveUsingResolvingEvent(AssemblyLoadContext context, AssemblyName assemblyName)
-        {
-            // Invoke the AssemblyResolve event callbacks if wired up
-            return context.ResolveUsingEvent(assemblyName);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]

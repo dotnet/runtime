@@ -56,7 +56,7 @@ namespace System.Runtime.Loader
                     // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
                     // that has been loaded.
 
-                    hr = AssemblyBinderCommon.BindUsingHostAssemblyResolver(assemblyName, Default, this, out coreCLRFoundAssembly);
+                    hr = BindUsingHostAssemblyResolver(assemblyName, Default, this, out coreCLRFoundAssembly);
 
                     if (hr >= 0)
                     {
