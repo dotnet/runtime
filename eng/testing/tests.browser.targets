@@ -166,6 +166,12 @@
     <WasmNestedPublishAppDependsOn>PrepareForWasmBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
   </PropertyGroup>
 
+  <Target Name="IncludeTestAssemblyInVFS" BeforeTargets="PrepareForWasmBuildApp">
+    <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="'%(PublishItemsOutputGroupOutputs.FileName)' == '$(AssemblyName)' and '%(PublishItemsOutputGroupOutputs.Extension)' == '.dll'" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="PrepareForWasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
