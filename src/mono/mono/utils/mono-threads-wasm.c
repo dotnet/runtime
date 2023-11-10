@@ -95,6 +95,10 @@ mono_threads_suspend_init_signals (void)
 void
 mono_threads_suspend_init (void)
 {
+#ifndef DISABLE_THREADS
+	// wasm threading require full cooperative suspend
+	g_assert (mono_threads_is_cooperative_suspension_enabled ());
+#endif
 }
 
 void
