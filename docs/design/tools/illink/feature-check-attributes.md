@@ -231,262 +231,7 @@ No warnings are produced just because these features are enabled/disabled. Inste
 However, any attribute-based model that we pick to represent features should be able to tie in with all three representations.
 
 
-## Analogy with `DefineConstants`
 
-Feature switches serve a similar purpose to `DefineConstants`. They behave similarly, except that they are substituted by ILLink/ILCompiler at publish time, instead of by Roslyn at build time.
-
-| Preprocessor symbols | Feature switches |
-| - | - |
-| `DefineConstants` | `RuntimeHostConfigurationOption` |
-| - abc |oe |
-
-
-For
-
-
-## Feature check relationship with feature switches
-
-ILLink and ILCompiler respect feature switches that have a corresponding `ILLink.Substitutions.xml` that sets a feature check to return a constant when a feature switch is set. This allows branch elimination for code guarded by a feature check.
-
-The ILLink Roslyn analyzer only understands the built-in feature check `RuntimeFeature.IsDynamicCodeSupported`. It similarly considers branches guarded by this feature check to be reachable only under the assumption that dynamic code is supported, so it doesn't produce warnings about code which requires dynamic code support in such a context.
-
-## Feature check relationship with `Requires` attributes
-
-Some, but not necessarily all, feature checks guard code which is attributed with `Requires` attributes such as `RequiresUnreferencedCodeAttribute` or `RequiresDynamicCodeAttribute`.
-
-When used with `ILLink.Substitutions.xml`, this allows trimming and native AOT to remove code paths which aren't compatible with trimming and native AOT.
-
-The ILLink Roslyn analyzer 
-
-
-
-## Branch removal
-
-ILLink and ILCompiler remove unused branches that are guarded by [feature checks](feature-checks.md) when the tools know that the feature check returns a constant, based on `ILLink.Substitutions.xml`. The ILLink Roslyn analyzer similarly considers branches guarded by feature checks to be reachable only under the assumption that the corresponding feature switch is enabled. The only feature switch currently supported by the ILLink Roslyn analyzer is `RuntimeFeature.IsDynamicCodeSupported`, which has built-in support. The analyzer doesn't process `ILLink.Substitutions.xml`.
-
-This may be used for two related purposes:
-- Preventing warings in code paths that are incompatible with trimming or native AOT
-- 
-
-interaction with feature attributes
-
-ILLink and ILCompiler produce warnings when they encounter calls to APIs annotated with `RequiresUnreferencedCodeAttribute` (both tools) or `RequiresDynamicCodeAttribute` (ILCompiler only). 
-
-
-## Option 1
-
-Tie feature checks to requires attributes
-
-This would allow libraries to define feature checks which act as guards for `RequiresUnreferencedCode` and `RequiresDynamicCode`. In ILLink and ILCompiler, such feature checks could be set to a constant by default (event without ILLink.Substitutions.xml or any extra feature settings passed in to the tool). ILLink.Substitutions.xml would still be needed:
-- to support overriding these defaults, allowing the developer to turn _on_ a feature which is incompatible with trimming/AOT, or
-- to support branch removal for features which don't have to do with `RequiresUnreferencedCode` or `RequiresDynamicCode`.
-
-It lets us get rid of default feature settings for ILLink and ILCompiler. The information about which features are incompatible with trimming/AOT now lives in the code, not in the SDK.
-
-Solves the analyzer experience for `IsDynamicCodeCompiled`
-
-Tying a feature to an attribute means it would be disabled by default. Doesn't _necessarily_ mean it is incompatible with trimming. It could be annotated as being a guard for RUC, even if it is never actually used to guard a call to RUC code!
-
-## Option 2
-
-Tie feature checks to feature names
-
-This would allow ILLink and ILCompiler to set feature switches to constants when the feature switch is passed in to the tool. It still requires the SDK to pass in the feature settings for features which are disabled when trimming or native AOT compiling.
-
-The ILLink Roslyn analyzer would also need to be told which features are incompatible with `RequiresUnreferencedCode` or `RequiresDynamicCode`. 
-
-This allows us to replace ILLink.Substitutions.xml with an attribute-based model, but the information about which feature switches are incompatible with trimming/AOT still lives in the SDK.
-
-## Option 3
-
-Do both!
-
-This would allow us to get rid of ILLink.Substitutions.xml entirely.
-
-
-# Terminology
-
-- "Incompatible with trimming/AOT": means it would produce trim/AOT warnings if enabled.
-- Disabled for trimming/AOT: means it is disabled by default, maybe as a size optimization, but can be turned on without trim/AOT warnings.
-
-Revisiting the options:
-
-- Tie feature checks to attributes
-  - Can remove trim/AOT default feature settings from the SDK
-  - Still need substitutions
-  - Lets analyzer respect user-defined guards
-  - Possible to define feature check for trimming that is never used as such.
-- Tie feature checks to feature names
-  - Can remove substitutions
-  - Still need to pass feature settings to ILLink/ILCompiler to remove them
-  - Would need to define way to tell analyzer "these features are incompatible with RUC/RDC/etc"
-
-A feature that guards a call to RDC can still be turned on. What's the analyzer supposed to do about that? It wouldn't give you any warnings.
-
-IsDynamicCodeSupported can't be turned on for NativeAOT. So anything guarded by IsDynamicCodeSupported won't warn. Same with IsDynamicCodeCompiled. The "base case" for NativeAOT.
-
-But for ILLink, both features can be turned on via a feature switch.
-
-Other features can still be turned on independently, even if off by default.
-
-SO: in "nativeaot" mode, the analyzer should treat IsDynamicCodeCompiled as a guard for RDC.
-But in "illink" mode, there are no RDC warnings in the first place.
-
-What about a feature that can be turned ON in illink, which guards a RUC API? StartupHoopSupport. Or binary serialization.
-
-My view: Do both. But unify the concepts. Treat a feature name very similarly to a new Requires* attribute, just that
-it's not worth introducing a new one for each feature. And define a way to declare dependencies between features.
-
-StartupHook -> UnreferencedCode.
-Then the feature check for startup hook can guard RUC without analyzer warnings. We can still avoid baking in the feature during library build.
-Custom -> UnreferencedCode, DynamicCode
-DynamicCodeCompilation -> DynamicCode
-
-All we have to tell the tools:
-- Turn off "UnreferencedCode" for nativeaot and illink
-- Turn off "DynamicCode" for nativeaot
-Any features which depend on these will be off-by-default. We can still turn them on (except base cases) via settings. Don't need XML any more.
-
-How to tell the tools that a feature depends on another?
-
-
-Really need:
-- trim-time conditional.
-  [Conditional("StartupHook.IsSupported")]
-
-Really want something like conditional compilation.
-`UnconditionalConditionalAttribute`
-
-Condition must be inside.
-
-Constant.
-
-```csharp
-if (Feature.IsSupported) {
-
-}
-
-class Feature {
-    [FeatureCondition("Feature.IsSupported")]
-    static bool IsSupported => AppContext.TryGetSwitch("Feature.IsSuported");
-}
-```
-
-Use strings for feature names.
-
-```
-```
-
-
-# Goals
-
-- IsDynamicCodeCompiled should not warn in the analyzer
-- remove SDK's knowledge of which features are disabled when trimming/aot
-
-## Example API usages
-
-```csharp
-class Feature {
-    [FeatureCondition("Feature.IsSupported")]
-    static bool IsSupported => //...
-}
-```
-
-```csharp
-class Feature {
-    [FeatureCheck<RequiresUnreferencedCodeAttribute>]
-    static bool IsSupported => // ...
-}
-```
-
-```csharp
-if (Feature.IsSupported)
-    Featuer.Do();
-
-class Feature {
-
-    [FeatureSwitch("Feature.IsSupported")]
-    [FeatureGuard("UnreferencedCode")] // DependsOn, TrueOnlyIf, RequiresFeature, RequiresCheck
-    static bool IsSupported => // ...
-
-    [Requires("UnreferencedCode")]
-    static void Do() {}
-}
-```
-
-API shape:
-- One is the substitution. There can be only one.
-- Another is which features it depends on.
-- Another is which attribute describes which feature.
-
-```csharp
-
-if (Consumer.IsSupported) {
-    Consumer.DoSomething();
-}
-
-[CapabilityCheck(typeof(Feature), nameof(Feature.IsSupported))]
-class RequiresFeatureAttribute : RequiresAttribute {}
-
-class Consumer {
-    [CapabilityGuard(typeof(RequiresFeatureAttribute))]
-    static bool IsSupported => // ...
-
-    [RequiresFeature]
-    public static void DoSomething () {}
-}
-
-```
-
-Important pieces of the API:
-- I don't want a single attribute combining feature name with feature dependencies (RUC)
-- Feature guard should be automatically stubbed out by default, with the setting of the feature it guards.
-  (if the feature it depends on is disabled, then the guard should be disabled by default)
-
-FeatureCheck/FeatureCondition on attribute? Or on the check? Attribute encoding is more efficient.
-- Generics or not?
-- Define an attribute for each feature?
-
-Capability attribute uses attribute definition as the abstraction of a feature.
-
-For ease of implementation:
-- When visiting property, should be able to tell if it's a feature check.
-  OR analyzer needs to have a list of feature attributes to look up. But
-  one goal is that the set of supported features isn't static.
-- => property can declare itself as a FeatureCheck("")
-  causes it to be stubbed with the feature value.
-
-- System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported
-```csharp
-class RuntimeFeature {
-    [UnconditionalCondition("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
-    public static bool IsDynamicCodeSupported => // ...
-}
-```
-
-Feature check vs feature guard?
-- A method can only be a feature check for one feature.
-- Because that feature dictates its value when stubbing it out.
-- But a method can be a feature guard for multiple features.
-- Feature guards silence warnings from features they depend on...
-  UNLESS the features are enabled. Then analyzer and other tools should warn.
-
-You can turn on a feature that depends on RUC and trim. Then library implementation details will start warning.
-The analyzer will only warn if it encounters code using the feature check.
-
-m/n relationships
-
-- A property can only be defined by one feature name
-- A feature name might have multiple properties
-
-- Feature check vs feature guard?
-  Feature guard allows multiple.
-  But...
-
-IsDynamicCodeCompiled can be false, even if IsDynamicCodeSupported is true.
-
-Problem: IsDynamicCodeSupported true means IsDynamicCodeCompiled gets set to true.
-But what if I don't want that?
 
 
 
@@ -999,3 +744,268 @@ We might eventually want to extend the semantics in a few directions:
   ```
 
   Although it's not clear in practice where this would be useful. This is not meant as a realistic example.
+
+
+
+
+
+  <hr />
+
+  
+
+## Analogy with `DefineConstants`
+
+Feature switches serve a similar purpose to `DefineConstants`. They behave similarly, except that they are substituted by ILLink/ILCompiler at publish time, instead of by Roslyn at build time.
+
+| Preprocessor symbols | Feature switches |
+| - | - |
+| `DefineConstants` | `RuntimeHostConfigurationOption` |
+| - abc |oe |
+
+
+For
+
+
+## Feature check relationship with feature switches
+
+ILLink and ILCompiler respect feature switches that have a corresponding `ILLink.Substitutions.xml` that sets a feature check to return a constant when a feature switch is set. This allows branch elimination for code guarded by a feature check.
+
+The ILLink Roslyn analyzer only understands the built-in feature check `RuntimeFeature.IsDynamicCodeSupported`. It similarly considers branches guarded by this feature check to be reachable only under the assumption that dynamic code is supported, so it doesn't produce warnings about code which requires dynamic code support in such a context.
+
+## Feature check relationship with `Requires` attributes
+
+Some, but not necessarily all, feature checks guard code which is attributed with `Requires` attributes such as `RequiresUnreferencedCodeAttribute` or `RequiresDynamicCodeAttribute`.
+
+When used with `ILLink.Substitutions.xml`, this allows trimming and native AOT to remove code paths which aren't compatible with trimming and native AOT.
+
+The ILLink Roslyn analyzer 
+
+
+
+## Branch removal
+
+ILLink and ILCompiler remove unused branches that are guarded by [feature checks](feature-checks.md) when the tools know that the feature check returns a constant, based on `ILLink.Substitutions.xml`. The ILLink Roslyn analyzer similarly considers branches guarded by feature checks to be reachable only under the assumption that the corresponding feature switch is enabled. The only feature switch currently supported by the ILLink Roslyn analyzer is `RuntimeFeature.IsDynamicCodeSupported`, which has built-in support. The analyzer doesn't process `ILLink.Substitutions.xml`.
+
+This may be used for two related purposes:
+- Preventing warings in code paths that are incompatible with trimming or native AOT
+- 
+
+interaction with feature attributes
+
+ILLink and ILCompiler produce warnings when they encounter calls to APIs annotated with `RequiresUnreferencedCodeAttribute` (both tools) or `RequiresDynamicCodeAttribute` (ILCompiler only). 
+
+
+## Option 1
+
+Tie feature checks to requires attributes
+
+This would allow libraries to define feature checks which act as guards for `RequiresUnreferencedCode` and `RequiresDynamicCode`. In ILLink and ILCompiler, such feature checks could be set to a constant by default (event without ILLink.Substitutions.xml or any extra feature settings passed in to the tool). ILLink.Substitutions.xml would still be needed:
+- to support overriding these defaults, allowing the developer to turn _on_ a feature which is incompatible with trimming/AOT, or
+- to support branch removal for features which don't have to do with `RequiresUnreferencedCode` or `RequiresDynamicCode`.
+
+It lets us get rid of default feature settings for ILLink and ILCompiler. The information about which features are incompatible with trimming/AOT now lives in the code, not in the SDK.
+
+Solves the analyzer experience for `IsDynamicCodeCompiled`
+
+Tying a feature to an attribute means it would be disabled by default. Doesn't _necessarily_ mean it is incompatible with trimming. It could be annotated as being a guard for RUC, even if it is never actually used to guard a call to RUC code!
+
+## Option 2
+
+Tie feature checks to feature names
+
+This would allow ILLink and ILCompiler to set feature switches to constants when the feature switch is passed in to the tool. It still requires the SDK to pass in the feature settings for features which are disabled when trimming or native AOT compiling.
+
+The ILLink Roslyn analyzer would also need to be told which features are incompatible with `RequiresUnreferencedCode` or `RequiresDynamicCode`. 
+
+This allows us to replace ILLink.Substitutions.xml with an attribute-based model, but the information about which feature switches are incompatible with trimming/AOT still lives in the SDK.
+
+## Option 3
+
+Do both!
+
+This would allow us to get rid of ILLink.Substitutions.xml entirely.
+
+
+# Terminology
+
+- "Incompatible with trimming/AOT": means it would produce trim/AOT warnings if enabled.
+- Disabled for trimming/AOT: means it is disabled by default, maybe as a size optimization, but can be turned on without trim/AOT warnings.
+
+Revisiting the options:
+
+- Tie feature checks to attributes
+  - Can remove trim/AOT default feature settings from the SDK
+  - Still need substitutions
+  - Lets analyzer respect user-defined guards
+  - Possible to define feature check for trimming that is never used as such.
+- Tie feature checks to feature names
+  - Can remove substitutions
+  - Still need to pass feature settings to ILLink/ILCompiler to remove them
+  - Would need to define way to tell analyzer "these features are incompatible with RUC/RDC/etc"
+
+A feature that guards a call to RDC can still be turned on. What's the analyzer supposed to do about that? It wouldn't give you any warnings.
+
+IsDynamicCodeSupported can't be turned on for NativeAOT. So anything guarded by IsDynamicCodeSupported won't warn. Same with IsDynamicCodeCompiled. The "base case" for NativeAOT.
+
+But for ILLink, both features can be turned on via a feature switch.
+
+Other features can still be turned on independently, even if off by default.
+
+SO: in "nativeaot" mode, the analyzer should treat IsDynamicCodeCompiled as a guard for RDC.
+But in "illink" mode, there are no RDC warnings in the first place.
+
+What about a feature that can be turned ON in illink, which guards a RUC API? StartupHoopSupport. Or binary serialization.
+
+My view: Do both. But unify the concepts. Treat a feature name very similarly to a new Requires* attribute, just that
+it's not worth introducing a new one for each feature. And define a way to declare dependencies between features.
+
+StartupHook -> UnreferencedCode.
+Then the feature check for startup hook can guard RUC without analyzer warnings. We can still avoid baking in the feature during library build.
+Custom -> UnreferencedCode, DynamicCode
+DynamicCodeCompilation -> DynamicCode
+
+All we have to tell the tools:
+- Turn off "UnreferencedCode" for nativeaot and illink
+- Turn off "DynamicCode" for nativeaot
+Any features which depend on these will be off-by-default. We can still turn them on (except base cases) via settings. Don't need XML any more.
+
+How to tell the tools that a feature depends on another?
+
+
+Really need:
+- trim-time conditional.
+  [Conditional("StartupHook.IsSupported")]
+
+Really want something like conditional compilation.
+`UnconditionalConditionalAttribute`
+
+Condition must be inside.
+
+Constant.
+
+```csharp
+if (Feature.IsSupported) {
+
+}
+
+class Feature {
+    [FeatureCondition("Feature.IsSupported")]
+    static bool IsSupported => AppContext.TryGetSwitch("Feature.IsSuported");
+}
+```
+
+Use strings for feature names.
+
+```
+```
+
+
+# Goals
+
+- IsDynamicCodeCompiled should not warn in the analyzer
+- remove SDK's knowledge of which features are disabled when trimming/aot
+
+## Example API usages
+
+```csharp
+class Feature {
+    [FeatureCondition("Feature.IsSupported")]
+    static bool IsSupported => //...
+}
+```
+
+```csharp
+class Feature {
+    [FeatureCheck<RequiresUnreferencedCodeAttribute>]
+    static bool IsSupported => // ...
+}
+```
+
+```csharp
+if (Feature.IsSupported)
+    Featuer.Do();
+
+class Feature {
+
+    [FeatureSwitch("Feature.IsSupported")]
+    [FeatureGuard("UnreferencedCode")] // DependsOn, TrueOnlyIf, RequiresFeature, RequiresCheck
+    static bool IsSupported => // ...
+
+    [Requires("UnreferencedCode")]
+    static void Do() {}
+}
+```
+
+API shape:
+- One is the substitution. There can be only one.
+- Another is which features it depends on.
+- Another is which attribute describes which feature.
+
+```csharp
+
+if (Consumer.IsSupported) {
+    Consumer.DoSomething();
+}
+
+[CapabilityCheck(typeof(Feature), nameof(Feature.IsSupported))]
+class RequiresFeatureAttribute : RequiresAttribute {}
+
+class Consumer {
+    [CapabilityGuard(typeof(RequiresFeatureAttribute))]
+    static bool IsSupported => // ...
+
+    [RequiresFeature]
+    public static void DoSomething () {}
+}
+
+```
+
+Important pieces of the API:
+- I don't want a single attribute combining feature name with feature dependencies (RUC)
+- Feature guard should be automatically stubbed out by default, with the setting of the feature it guards.
+  (if the feature it depends on is disabled, then the guard should be disabled by default)
+
+FeatureCheck/FeatureCondition on attribute? Or on the check? Attribute encoding is more efficient.
+- Generics or not?
+- Define an attribute for each feature?
+
+Capability attribute uses attribute definition as the abstraction of a feature.
+
+For ease of implementation:
+- When visiting property, should be able to tell if it's a feature check.
+  OR analyzer needs to have a list of feature attributes to look up. But
+  one goal is that the set of supported features isn't static.
+- => property can declare itself as a FeatureCheck("")
+  causes it to be stubbed with the feature value.
+
+- System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported
+```csharp
+class RuntimeFeature {
+    [UnconditionalCondition("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+    public static bool IsDynamicCodeSupported => // ...
+}
+```
+
+Feature check vs feature guard?
+- A method can only be a feature check for one feature.
+- Because that feature dictates its value when stubbing it out.
+- But a method can be a feature guard for multiple features.
+- Feature guards silence warnings from features they depend on...
+  UNLESS the features are enabled. Then analyzer and other tools should warn.
+
+You can turn on a feature that depends on RUC and trim. Then library implementation details will start warning.
+The analyzer will only warn if it encounters code using the feature check.
+
+m/n relationships
+
+- A property can only be defined by one feature name
+- A feature name might have multiple properties
+
+- Feature check vs feature guard?
+  Feature guard allows multiple.
+  But...
+
+IsDynamicCodeCompiled can be false, even if IsDynamicCodeSupported is true.
+
+Problem: IsDynamicCodeSupported true means IsDynamicCodeCompiled gets set to true.
+But what if I don't want that?
