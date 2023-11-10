@@ -72,7 +72,7 @@ extends:
                        -c $(_BuildConfig)
                        /p:TestReadyToRun=true
             nameSuffix: TestReadyToRun_Libraries
-            timeoutInMinutes: 240
+            timeoutInMinutes: 360
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:

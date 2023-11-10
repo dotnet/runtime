@@ -107,15 +107,22 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="RemoveDebuggingBinariesFromTestR2R"
+  <Target Name="RemoveDbgBinsFromTestR2ROutput"
           Condition="'$(TestReadyToRun)' == 'true'"
-          BeforeTargets="__ExcludeAssembliesFromSingleFile">
+          BeforeTargets="_CopyFilesMarkedCopyLocal">
     <ItemGroup>
-      <FilesToRemove Include="$(OutDir)*.dbg" />
-      <FilesToRemove Include="$(PublishDir)*.dbg" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
+                               Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dbg'" />
     </ItemGroup>
+  </Target>
 
-    <Delete Files="@(FilesToRemove)" />
+  <Target Name="RemoveDbgBinsFromTestR2RPublish"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          BeforeTargets="_CopyResolvedFilesToPublishPreserveNewest">
+    <ItemGroup>
+      <_ResolvedFileToPublishPreserveNewest Remove="@(_ResolvedFileToPublishPreserveNewest)"
+                                            Condition="'%(_ResolvedFileToPublishPreserveNewest.Extension)' == '.dbg'" />
+    </ItemGroup>
   </Target>
 
   <Target Name="__UpdateExcludedAssembliesFromSingleFile"
