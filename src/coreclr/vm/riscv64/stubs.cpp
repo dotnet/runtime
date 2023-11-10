@@ -1211,7 +1211,7 @@ void StubLinkerCPU::EmitEpilog()
     EmitAddImm(RegSp, RegSp, GetStackFrameSize());
 
     // jalr x0, 0(ra)
-    EmitJumpRegister(1);
+    EmitJumpRegister(RegRa);
 }
 
 // Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
