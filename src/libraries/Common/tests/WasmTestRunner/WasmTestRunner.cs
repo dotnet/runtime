@@ -64,7 +64,11 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             IncludedMethods = includedMethods
         };
 
-        await Task.Yield();
+        if (OperatingSystem.IsBrowser())
+        {
+            await Task.Yield();
+        }
+
         return await runner.Run();
     }
 }
