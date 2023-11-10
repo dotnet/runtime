@@ -233,11 +233,11 @@
   </Target>
 
   <PropertyGroup>
-    <_IsXUnitLogCheckerSupported>0</_IsXUnitLogCheckerSupported>
+    <_ShouldSetXUnitLogCheckerEnvVar>0</_ShouldSetXUnitLogCheckerEnvVar>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">
-    <_IsXUnitLogCheckerSupported Condition="$(TargetFrameworkIdentifier) == '.NETCoreApp'">1</_IsXUnitLogCheckerSupported>
+  <PropertyGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true'">
+    <_ShouldSetXUnitLogCheckerEnvVar Condition="$(TargetFrameworkIdentifier) == '.NETCoreApp'">1</_ShouldSetXUnitLogCheckerEnvVar>
     <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
       $(HelixPreCommands);
       set __TestArchitecture=$(TargetArchitecture)
@@ -252,11 +252,11 @@
     <!-- The IsXUnitLogCheckerSupported property should always be set. -->
     <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
       $(HelixPreCommands);
-      set __IsXUnitLogCheckerSupported=$(_IsXUnitLogCheckerSupported)
+      set __IsXUnitLogCheckerSupported=$(_ShouldSetXUnitLogCheckerEnvVar)
     </HelixPreCommands>
     <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
       $(HelixPreCommands);
-      export __IsXUnitLogCheckerSupported=$(_IsXUnitLogCheckerSupported)
+      export __IsXUnitLogCheckerSupported=$(_ShouldSetXUnitLogCheckerEnvVar)
     </HelixPreCommands>
   </PropertyGroup>
 
