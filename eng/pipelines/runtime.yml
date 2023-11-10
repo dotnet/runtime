@@ -596,7 +596,7 @@ extends:
       #     alwaysRun: ${{ variables.isRollingBuild }}
       #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
-      # Build and Smoke Tests only - Wasm Threading Legs
+      # # Build and Smoke Tests only - Wasm Threading Legs
       # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
       #   parameters:
       #     platforms:
