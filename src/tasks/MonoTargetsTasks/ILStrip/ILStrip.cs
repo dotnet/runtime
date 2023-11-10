@@ -72,6 +72,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             }
         }
 
+        Log.LogMessage(MessageImportance.High, "IL stripping assemblies");
+
         int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(Assemblies.Length, Environment.ProcessorCount);
         if (BuildEngine is IBuildEngine9 be9)
             allowedParallelism = be9.RequestCores(allowedParallelism);
