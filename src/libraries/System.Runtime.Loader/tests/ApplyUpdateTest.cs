@@ -969,7 +969,11 @@ namespace System.Reflection.Metadata
 
                 Assert.Equal(newMethod, throwingMethod);
 
-                Assert.Contains("NewMethodThrows.cs", frames[0].GetFileName());
+                // CoreCLR doesn't have file info after ApplyUpdate
+                if (ApplyUpdateUtil.IsMonoRuntime)
+                {
+                    Assert.Contains("NewMethodThrows.cs", frames[0].GetFileName());
+                }
 
                 var existingMethod = typeof (System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows).GetMethod("ExistingMethod");
 
@@ -977,7 +981,10 @@ namespace System.Reflection.Metadata
 
                 Assert.Equal(existingMethod, throwingMethodCaller);
 
-                Assert.Contains("NewMethodThrows.cs", frames[1].GetFileName());
+                if (ApplyUpdateUtil.IsMonoRuntime)
+                {
+                    Assert.Contains("NewMethodThrows.cs", frames[1].GetFileName());
+                }
             });
         }
     }       
