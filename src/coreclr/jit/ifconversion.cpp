@@ -706,9 +706,29 @@ bool OptIfConversionDsc::optIfConvert()
         selectType       = genActualType(m_thenOperation.node);
     }
 
-    // Create a select node.
-    GenTreeConditional* select =
-        m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
+    GenTree* select = nullptr;
+
+    // For SELECT(COND, CNS1, CNS2) check if we can fold it into ADD(COND, MIN(CNS1, CNS2)) if
+    // the difference between CNS1 and CNS2 is exactly 1. E.g.:
+    //
+    // SELECT(COND, 10, 11) -> ADD(COND, 10)
+    //
+    if (selectTrueInput->IsCnsIntOrI() && selectFalseInput->IsCnsIntOrI())
+    {
+        const ssize_t selectTrueVal  = selectTrueInput->AsIntConCommon()->IconValue();
+        const ssize_t selectFalseVal = selectFalseInput->AsIntConCommon()->IconValue();
+        if (abs(selectTrueVal - selectFalseVal) == 1)
+        {
+            select = m_comp->gtNewOperNode(GT_ADD, m_cond->TypeGet(), m_cond,
+                                           selectTrueVal < selectFalseVal ? selectTrueInput : selectFalseInput);
+        }
+    }
+
+    if (select == nullptr)
+    {
+        // Create a select node.
+        select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
+    }
     m_thenOperation.node->AddAllEffectsFlags(select);
 
     // Use the select as the source of the Then operation.
