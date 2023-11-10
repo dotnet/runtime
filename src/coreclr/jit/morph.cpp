@@ -13938,8 +13938,6 @@ PhaseStatus Compiler::fgMorphBlocks()
         // We are optimizing. Process in RPO.
         //
         fgRenumberBlocks();
-        EnsureBasicBlockEpoch();
-        fgComputeEnterBlocksSet();
         fgDfsReversePostorder();
 
         // Disallow general creation of new blocks or edges as it
@@ -13963,7 +13961,12 @@ PhaseStatus Compiler::fgMorphBlocks()
             fgFirstBB->Next()->bbFlags |= BBF_CAN_ADD_PRED;
         }
 
+        // Remember this so we can sanity check that no new blocks will get created.
+        //
         unsigned const bbNumMax = fgBBNumMax;
+
+        // Morph the blocks in RPO.
+        //
         for (unsigned i = 1; i <= bbNumMax; i++)
         {
             BasicBlock* const block = fgBBReversePostorder[i];

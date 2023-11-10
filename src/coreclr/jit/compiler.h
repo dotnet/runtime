@@ -5329,14 +5329,11 @@ protected:
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
-    void fgDfsReversePostorder();
+    unsigned fgDfsReversePostorder();
     void fgDfsReversePostorderHelper(BasicBlock* block,
                                      BlockSet&   visited,
                                      unsigned&   preorderIndex,
                                      unsigned&   reversePostorderIndex);
-
-    BlockSet_ValRet_T fgDomFindStartNodes(); // Computes which basic blocks don't have incoming edges in the flow graph.
-                                             // Returns this as a set.
 
     INDEBUG(void fgDispDomTree(DomTreeNode* domTree);) // Helper that prints out the Dominator Tree in debug builds.
 
