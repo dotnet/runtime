@@ -93,10 +93,6 @@ if %_exit_code%==1 (
   )
 )
 
-if NOT DEFINED __IsXUnitLogCheckerSupported (
-  echo The '__IsXUnitLogCheckerSupported' env var is not set.
-  GOTO SKIP_XUNITLOGCHECKER
-)
 if NOT %__IsXUnitLogCheckerSupported%==1 (
   echo XUnitLogChecker not supported for this test case. Skipping.
   GOTO SKIP_XUNITLOGCHECKER
