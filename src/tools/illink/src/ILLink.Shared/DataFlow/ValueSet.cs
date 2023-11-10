@@ -17,6 +17,8 @@ namespace ILLink.Shared.DataFlow
 	{
 		const int MaxValuesInSet = 256;
 
+		public static ValueSet<TValue> Empty;
+
 		// Since we're going to do lot of type checks for this class a lot, it is much more efficient
 		// if the class is sealed (as then the runtime can do a simple method table pointer comparison)
 		private sealed class EnumerableValues : HashSet<TValue>
@@ -183,7 +185,7 @@ namespace ILLink.Shared.DataFlow
 				? valuesSet.Contains (value)
 				: EqualityComparer<TValue>.Default.Equals (value, (TValue) _values);
 
-		internal static ValueSet<TValue> Meet (ValueSet<TValue> left, ValueSet<TValue> right)
+		internal static ValueSet<TValue> Union (ValueSet<TValue> left, ValueSet<TValue> right)
 		{
 			if (left._values == null)
 				return right.DeepCopy ();
@@ -202,6 +204,24 @@ namespace ILLink.Shared.DataFlow
 			// create exponentially many possible values. This will result in analysis holes.
 			if (values.Count > MaxValuesInSet)
 				return default;
+			return new ValueSet<TValue> (values);
+		}
+
+		internal static ValueSet<TValue> Intersection (ValueSet<TValue> left, ValueSet<TValue> right)
+		{
+			if (left._values == null)
+				return Empty;
+			if (right._values == null)
+				return Empty;
+
+			if (left._values is not EnumerableValues)
+				return right.Contains ((TValue) left._values) ? left.DeepCopy () : Empty;
+
+			if (right._values is not EnumerableValues)
+				return left.Contains ((TValue) right._values) ? right.DeepCopy () : Empty;
+
+			var values = new EnumerableValues (left.DeepCopy ());
+			values.IntersectWith (right);
 			return new ValueSet<TValue> (values);
 		}
 

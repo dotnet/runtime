@@ -10,13 +10,13 @@ using System.Runtime.InteropServices;
 namespace System.Threading
 {
     //
-    // WebAssembly-specific implementation of Timer
+    // Browser-specific implementation of Timer
     // Based on TimerQueue.Portable.cs
     // Not thread safe
     //
     internal partial class TimerQueue
     {
-        public static long TickCount64 => Environment.TickCount64;
+        private static long TickCount64 => Environment.TickCount64;
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;
         private static long s_shortestDueTimeMs = long.MaxValue;
