@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
 import {
@@ -16,6 +16,7 @@ import { monoStringToString } from "./strings";
 import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
+import { threads_c_functions as tcwraps } from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { assert_bindings, wrap_error_root, wrap_no_error_root } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
@@ -270,11 +271,16 @@ export function invoke_method_and_handle_exception(method: MonoMethod, args: JSM
     assert_bindings();
     const fail_root = mono_wasm_new_root<MonoString>();
     try {
-        const fail = cwraps.mono_wasm_invoke_method_bound(method, args, fail_root.address);
-        if (fail) throw new Error("ERR24: Unexpected error: " + monoStringToString(fail_root));
-        if (is_args_exception(args)) {
-            const exc = get_arg(args, 0);
-            throw marshal_exception_to_js(exc);
+        if (MonoWasmThreads && !ENVIRONMENT_IS_PTHREAD) {
+            tcwraps.mono_wasm_invoke_method_bound_to_deputy(method, args);
+        }
+        else {
+            const fail = cwraps.mono_wasm_invoke_method_bound(method, args, fail_root.address);
+            if (fail) throw new Error("ERR24: Unexpected error: " + monoStringToString(fail_root));
+            if (is_args_exception(args)) {
+                const exc = get_arg(args, 0);
+                throw marshal_exception_to_js(exc);
+            }
         }
     }
     finally {

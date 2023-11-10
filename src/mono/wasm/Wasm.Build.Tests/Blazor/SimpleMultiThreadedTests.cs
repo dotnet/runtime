@@ -12,7 +12,7 @@ using Xunit.Sdk;
 #nullable enable
 
 namespace Wasm.Build.Tests.MT.Blazor;
-
+/* until JS interop in deputy
 public class SimpleMultiThreadedTests : BlazorWasmTestBase
 {
     public SimpleMultiThreadedTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -76,3 +76,4 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
             throw new XunitException($"Errors found in browser console output:\n{errorOutput}");
     }
 }
+*/

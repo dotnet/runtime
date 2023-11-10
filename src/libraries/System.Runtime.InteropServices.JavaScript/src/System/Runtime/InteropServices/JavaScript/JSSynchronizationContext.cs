@@ -30,6 +30,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static JSSynchronizationContext? CurrentJSSynchronizationContext;
         internal SynchronizationContext? previousSynchronizationContext;
         internal bool isDisposed;
+        internal bool _IsMainThread;
 
         internal readonly struct WorkItem
         {
@@ -45,9 +46,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        internal JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId)
+        internal JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId, bool isMainThread)
             : this(
-                targetThread, targetThreadId,
+                targetThread, targetThreadId, isMainThread,
                 Channel.CreateUnbounded<WorkItem>(
                     new UnboundedChannelOptions { SingleWriter = false, SingleReader = true, AllowSynchronousContinuations = true }
                 )
@@ -65,17 +66,18 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-        private JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId, WorkItemQueueType queue)
+        private JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId, bool isMainThread, WorkItemQueueType queue)
         {
             TargetThread = targetThread;
             TargetThreadId = targetThreadId;
             Queue = queue;
+            _IsMainThread = isMainThread;
             _DataIsAvailable = DataIsAvailable;
         }
 
         public override SynchronizationContext CreateCopy()
         {
-            return new JSSynchronizationContext(TargetThread, TargetThreadId, Queue);
+            return new JSSynchronizationContext(TargetThread, TargetThreadId, _IsMainThread, Queue);
         }
 
         internal void AwaitNewData()
@@ -137,7 +139,10 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void TargetThreadScheduleBackgroundJob(IntPtr targetThread, void* callback);
+        // targetThreadId could be long, like internal Thread.thread_id
+        // it's pthread_t tid, which is 4 bytes on emscripten, so we are fine here
+        // MonoNativeThreadId is 4 bytes on emscripten too, so we need IntPtr
+        internal static extern unsafe void TargetThreadScheduleBackgroundJob(IntPtr targetThreadId, void* callback);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]

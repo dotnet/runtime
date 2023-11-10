@@ -662,6 +662,27 @@ mono_wasm_invoke_method_bound (MonoMethod *method, void* args /*JSMarshalerArgum
 	return is_err;
 }
 
+#ifndef DISABLE_THREADS
+// this is running in deputy thread
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_method_bound_deputy (MonoMethod *method, void* args /*JSMarshalerArguments*/)
+{
+	mono_wasm_invoke_method_bound(method, args, NULL);
+	free(args);
+}
+
+void
+mono_threads_wasm_async_run_in_deputy_thread_vii (void (*func)(gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+
+// this is running in UI thread
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_method_bound_to_deputy (MonoMethod *method, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_async_run_in_deputy_thread_vii((void (*)(gpointer, gpointer))mono_wasm_invoke_method_bound_deputy, method, args);
+}
+
+#endif
+
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_breakpoint)
 {
@@ -1185,7 +1206,8 @@ mono_wasm_exec_regression (int verbose_level, char *image)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
-	mono_jit_cleanup (root_domain);
+	// TODO!!!!! call this on deputy thread
+	// mono_jit_cleanup (root_domain);
 	fflush (stdout);
 	fflush (stderr);
 	emscripten_force_exit (exit_code);

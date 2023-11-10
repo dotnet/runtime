@@ -2,11 +2,38 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JavaScriptImports
     {
+#if FEATURE_WASM_THREADS
+        private const int messageSize = 4 * 16;
+
+        public static void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments, JSSynchronizationContext synchronizationContext)
+        {
+            // TODO: optimize to zero copy for the sync dispatch on the same thread ? (only on JSWebWorker)
+            var message = Marshal.AllocHGlobal(messageSize);
+            fixed (JSMarshalerArgument* ptr = arguments)
+            {
+                Unsafe.CopyBlock((void*)message, ptr, messageSize);
+            }
+
+            if (synchronizationContext._IsMainThread)
+            {
+                Interop.Runtime.ResolveOrRejectPromiseUI(message);
+            }
+            else
+            {
+                synchronizationContext.Post(static (message) =>
+                {
+                    IntPtr m = (IntPtr)message!;
+                    Interop.Runtime.ResolveOrRejectPromiseCurrent(m);
+                }, message);
+            }
+        }
+#else
         public static void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
         {
             fixed (JSMarshalerArgument* ptr = arguments)
@@ -19,6 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
         }
+#endif
 
 #if !DISABLE_LEGACY_JS_INTEROP
         #region legacy

@@ -518,7 +518,7 @@ public static class XmlDictionaryWriterTest
             {
                 for (int i = 0; i < chars.Length; ++i)
                     chars[i] = (char)(i % 128);
-                chars[^1] = '\u00E4'; // 'ï¿½' - Latin Small Letter a with Diaeresis. Latin-1 Supplement.
+                chars[^1] = '\u00E4'; // 'ä' - Latin Small Letter a with Diaeresis. Latin-1 Supplement.
             });
 
             int numBytes = Encoding.UTF8.GetBytes(allAscii, buffer);

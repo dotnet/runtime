@@ -65,15 +65,15 @@ Emscripten provides an API to queue up callbacks to run on the main thread, or o
 worker thread.  See
 [`emscripten/threading.h`](https://github.com/emscripten-core/emscripten/blob/main/system/include/emscripten/threading.h).
 
-Mono exposes these functions as `mono_threads_wasm_async_run_in_main_thread`, etc in
+Mono exposes these functions as `mono_threads_wasm_async_run_in_ui_thread`, etc in
 `mono/utils/mono-threads-wasm.h`.
 
 ## Background tasks ##
 
-The runtime has a number of tasks that are scheduled with `mono_main_thread_schedule_background_job`
+The runtime has a number of tasks that are scheduled with `mono_deputy_thread_schedule_background_job`
 (pumping the threadpool task queue, running GC finalizers, etc).
 
-The background tasks will run on the main thread.  Calling `mono_main_thread_schedule_background_job` on
+The background tasks will run on the main thread.  Calling `mono_deputy_thread_schedule_background_job` on
 a worker thread will use `async_run_in_main_thread` to queue up work for the main thread.
 
 ## Debugger tests ##

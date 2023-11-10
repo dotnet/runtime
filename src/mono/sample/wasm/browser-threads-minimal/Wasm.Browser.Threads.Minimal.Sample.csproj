@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmEnableThreads>true</WasmEnableThreads>
+    <MonoWasmBuildVariant>multithread</MonoWasmBuildVariant>
   </PropertyGroup>
   <Import Project="..\DefaultBrowserSample.targets" />
 

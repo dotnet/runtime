@@ -58,8 +58,29 @@ extern int mono_wasm_get_culture_info(MonoString **culture, const uint16_t* resu
 extern int mono_wasm_get_first_day_of_week(MonoString **culture, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_first_week_of_year(MonoString **culture, int *is_exception, MonoObject** ex_result);
 
+#ifndef DISABLE_THREADS
+void
+mono_wasm_resolve_or_reject_promise_current(void *data)
+{
+	printf("mono_wasm_resolve_or_reject_promise_current\n");
+	mono_wasm_resolve_or_reject_promise(data);
+	free(data);
+}
+
+void
+mono_threads_wasm_async_run_in_ui_thread_vi (void (*func)(gpointer), gpointer user_data);
+
+void mono_wasm_resolve_or_reject_promise_ui(void *data)
+{
+	printf("mono_wasm_resolve_or_reject_promise_ui\n");
+	mono_threads_wasm_async_run_in_ui_thread_vi ((void (*)(gpointer))mono_wasm_resolve_or_reject_promise_current, data);
+}
+
+#endif /* DISABLE_THREADS */
+
 void bindings_initialize_internals (void)
 {
+#ifdef DISABLE_THREADS
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::BindJSFunction", mono_wasm_bind_js_function);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function);
@@ -68,8 +89,17 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromise", mono_wasm_resolve_or_reject_promise);
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);
 	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", mono_wasm_deregister_root);
+#else /* DISABLE_THREADS */
+	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromiseUI", mono_wasm_resolve_or_reject_promise_ui); // async message to UI
+	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromiseCurrent", mono_wasm_resolve_or_reject_promise_current); // async message to UI
 
-#ifndef DISABLE_THREADS
+	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object); // async message to UI
+	mono_add_internal_call ("Interop/Runtime::BindJSFunction", mono_wasm_bind_js_function); // many out params, need to be sync call to UI
+	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function); // depending of FuncJS.ResMarshaler
+	mono_add_internal_call ("Interop/Runtime::InvokeImport", mono_wasm_invoke_import); // depending on signature, could be sync or async message to UI
+	mono_add_internal_call ("Interop/Runtime::BindCSFunction", mono_wasm_bind_cs_function); // many out params, need to be sync call to UI
+	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);// could stay on deputy
+	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", mono_wasm_deregister_root);// could stay on deputy
 	mono_add_internal_call ("Interop/Runtime::InstallWebWorkerInterop", mono_wasm_install_js_worker_interop);
 	mono_add_internal_call ("Interop/Runtime::UninstallWebWorkerInterop", mono_wasm_uninstall_js_worker_interop);
 #endif /* DISABLE_THREADS */

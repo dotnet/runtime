@@ -22,8 +22,11 @@ export const JSMarshalerTypeSize = 32;
 export const JSMarshalerSignatureHeaderSize = 4 + 4; // without Exception and Result
 
 export function alloc_stack_frame(size: number): JSMarshalerArguments {
-    const args = Module.stackAlloc(JavaScriptMarshalerArgSize * size) as any;
-    mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
+    const bytes = JavaScriptMarshalerArgSize * size;
+    const args = !MonoWasmThreads
+        ? Module.stackAlloc(bytes) as any
+        : Module._malloc(bytes) as any;
+    mono_assert(args && args % 8 == 0, "Arg alignment");
     const exc = get_arg(args, 0);
     set_arg_type(exc, MarshalerType.None);
     const res = get_arg(args, 1);

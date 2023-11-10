@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
@@ -129,48 +130,52 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task? task = value;
 
-            if (task == null)
+            // if the promise was not pre-allocated by caller
+            if (slot.Type != MarshalerType.Task)
             {
-                slot.Type = MarshalerType.None;
-                return;
-            }
-
-            if (task.IsCompleted)
-            {
-                if (task.Exception != null)
+                if (task == null)
                 {
-                    Exception ex = task.Exception;
-                    ToJS(ex);
-                    slot.ElementType = slot.Type;
-                    slot.Type = MarshalerType.TaskRejected;
+                    slot.Type = MarshalerType.None;
                     return;
                 }
-                else
+
+                if (task.IsCompleted)
                 {
-                    if (GetTaskResultDynamic(task, out object? result))
+                    if (task.Exception != null)
                     {
-                        ToJS(result);
+                        Exception ex = task.Exception;
+                        ToJS(ex);
                         slot.ElementType = slot.Type;
+                        slot.Type = MarshalerType.TaskRejected;
+                        return;
                     }
                     else
                     {
-                        slot.ElementType = MarshalerType.Void;
+                        if (GetTaskResultDynamic(task, out object? result))
+                        {
+                            ToJS(result);
+                            slot.ElementType = slot.Type;
+                        }
+                        else
+                        {
+                            slot.ElementType = MarshalerType.Void;
+                        }
+                        slot.Type = MarshalerType.TaskResolved;
+                        return;
                     }
-                    slot.Type = MarshalerType.TaskResolved;
-                    return;
                 }
-            }
-            slot.Type = MarshalerType.Task;
 
-            slot.JSHandle = AllocJSVHandle();
+                slot.JSHandle = AllocJSVHandle();
+            }
+            else if (task == null)
+            {
+                throw new NotImplementedException();
+            }
+
+            slot.Type = MarshalerType.Task;
             var taskHolder = new JSObject(slot.JSHandle);
 
-
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
-#else
             task.GetAwaiter().OnCompleted(Complete);
-#endif
 
             void Complete()
             {
@@ -206,39 +211,44 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task? task = value;
 
-            if (task == null)
+            // if the promise was not pre-allocated by caller
+            if (slot.Type != MarshalerType.Task)
             {
-                slot.Type = MarshalerType.None;
-                return;
+                if (task == null)
+                {
+                    slot.Type = MarshalerType.None;
+                    return;
+                }
+
+                if (task.IsCompleted)
+                {
+                    if (task.Exception != null)
+                    {
+                        Exception ex = task.Exception;
+                        ToJS(ex);
+                        slot.ElementType = slot.Type;
+                        slot.Type = MarshalerType.TaskRejected;
+                        return;
+                    }
+                    else
+                    {
+                        slot.ElementType = slot.Type;
+                        slot.Type = MarshalerType.TaskResolved;
+                        return;
+                    }
+                }
+
+                slot.JSHandle = AllocJSVHandle();
+            }
+            else if (task == null)
+            {
+                throw new NotImplementedException();
             }
 
-            if (task.IsCompleted)
-            {
-                if (task.Exception != null)
-                {
-                    Exception ex = task.Exception;
-                    ToJS(ex);
-                    slot.ElementType = slot.Type;
-                    slot.Type = MarshalerType.TaskRejected;
-                    return;
-                }
-                else
-                {
-                    slot.ElementType = slot.Type;
-                    slot.Type = MarshalerType.TaskResolved;
-                    return;
-                }
-            }
             slot.Type = MarshalerType.Task;
-
-            slot.JSHandle = AllocJSVHandle();
             var taskHolder = new JSObject(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
-#else
             task.GetAwaiter().OnCompleted(Complete);
-#endif
 
             void Complete()
             {
@@ -264,40 +274,45 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task<T>? task = value;
 
-            if (task == null)
+            // if the promise was not pre-allocated by caller
+            if (slot.Type != MarshalerType.Task)
             {
-                slot.Type = MarshalerType.None;
-                return;
+                if (task == null)
+                {
+                    slot.Type = MarshalerType.None;
+                    return;
+                }
+
+                if (task.IsCompleted)
+                {
+                    if (task.Exception != null)
+                    {
+                        Exception ex = task.Exception;
+                        ToJS(ex);
+                        slot.ElementType = slot.Type;
+                        slot.Type = MarshalerType.TaskRejected;
+                        return;
+                    }
+                    else
+                    {
+                        T result = task.Result;
+                        ToJS(result);
+                        slot.ElementType = slot.Type;
+                        slot.Type = MarshalerType.TaskResolved;
+                        return;
+                    }
+                }
+                slot.JSHandle = AllocJSVHandle();
+            }
+            else if (task == null)
+            {
+                throw new NotImplementedException();
             }
 
-            if (task.IsCompleted)
-            {
-                if (task.Exception != null)
-                {
-                    Exception ex = task.Exception;
-                    ToJS(ex);
-                    slot.ElementType = slot.Type;
-                    slot.Type = MarshalerType.TaskRejected;
-                    return;
-                }
-                else
-                {
-                    T result = task.Result;
-                    ToJS(result);
-                    slot.ElementType = slot.Type;
-                    slot.Type = MarshalerType.TaskResolved;
-                    return;
-                }
-            }
             slot.Type = MarshalerType.Task;
-            slot.JSHandle = AllocJSVHandle();
             var taskHolder = new JSObject(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
-#else
             task.GetAwaiter().OnCompleted(Complete);
-#endif
 
             void Complete()
             {
@@ -313,7 +328,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private static void RejectPromise(JSObject holder, Exception ex)
+        private static unsafe void RejectPromise(JSObject holder, Exception ex)
         {
             holder.AssertNotDisposed();
 
@@ -333,7 +348,11 @@ namespace System.Runtime.InteropServices.JavaScript
             // should fail it with exception
             arg_value.ToJS(ex);
 
+#if FEATURE_WASM_THREADS
+            JavaScriptImports.ResolveOrRejectPromise(args, (JSSynchronizationContext)holder.SynchronizationContext);
+#else
             JavaScriptImports.ResolveOrRejectPromise(args);
+#endif
 
             holder.DisposeLocal();
         }
@@ -357,7 +376,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
             arg_value.slot.Type = MarshalerType.Void;
 
+#if FEATURE_WASM_THREADS
+            JavaScriptImports.ResolveOrRejectPromise(args, (JSSynchronizationContext)holder.SynchronizationContext);
+#else
             JavaScriptImports.ResolveOrRejectPromise(args);
+#endif
 
             holder.DisposeLocal();
         }
@@ -382,7 +405,11 @@ namespace System.Runtime.InteropServices.JavaScript
             // and resolve it with value
             marshaler(ref arg_value, value);
 
+#if FEATURE_WASM_THREADS
+            JavaScriptImports.ResolveOrRejectPromise(args, (JSSynchronizationContext)holder.SynchronizationContext);
+#else
             JavaScriptImports.ResolveOrRejectPromise(args);
+#endif
 
             holder.DisposeLocal();
         }

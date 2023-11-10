@@ -191,6 +191,7 @@ export type RuntimeHelpers = {
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    isDeputyThread: boolean,
     jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 

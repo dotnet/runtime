@@ -9,7 +9,7 @@ import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { alloc_stack_frame, get_arg, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
-import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
+import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js_end, marshal_task_to_js_begin } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
 
 export function init_managed_exports(): void {
@@ -55,12 +55,10 @@ export function init_managed_exports(): void {
                 program_args = undefined;
             }
             marshal_array_to_cs_impl(arg2, program_args, MarshalerType.String);
-            invoke_method_and_handle_exception(call_entry_point, args);
-            let promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
-            if (promise === null || promise === undefined) {
-                promise = Promise.resolve(0);
-            }
+            const promise = marshal_task_to_js_begin(res, undefined, marshal_int32_to_js);
             (promise as any)[do_not_force_dispose] = true; // prevent disposing the task in forceDisposeProxies()
+            invoke_method_and_handle_exception(call_entry_point, args);
+            marshal_task_to_js_end(res);
             return await promise;
         } finally {
             Module.runtimeKeepalivePop();// after await promise !

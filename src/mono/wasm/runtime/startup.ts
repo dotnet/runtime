@@ -7,6 +7,7 @@ import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
 import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
+import { threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
@@ -280,13 +281,14 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             await mono_wasm_init_threads();
         }
 
+        if (MonoWasmThreads) {
+            tcwraps.mono_wasm_create_deputy_thread();
+            // TODO await deputy ready
+            await new Promise(resolve => globalThis.setTimeout(resolve, 50));
+        }
+
         bindings_init();
         jiterpreter_allocate_tables(Module);
-
-        if (MonoWasmThreads) {
-            runtimeHelpers.javaScriptExports.install_synchronization_context();
-            runtimeHelpers.jsSynchronizationContextInstalled = true;
-        }
 
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
@@ -353,7 +355,7 @@ async function mono_wasm_init_threads() {
         return;
     }
     const tid = getBrowserThreadID();
-    mono_set_thread_id(`0x${tid.toString(16)}-main`);
+    mono_set_thread_id(`0x${tid.toString(16)}-UI`);
     await instantiateWasmPThreadWorkerPool();
     await mono_wasm_init_diagnostics();
 }
@@ -556,7 +558,7 @@ async function mono_wasm_before_memory_snapshot() {
     endMeasure(mark, MeasuredBlock.memorySnapshot);
 }
 
-async function maybeSaveInterpPgoTable () {
+async function maybeSaveInterpPgoTable() {
     // If the application exited abnormally, don't save the table. It probably doesn't contain useful data,
     //  and saving would overwrite any existing table from a previous successful run.
     // We treat exiting with a code of 0 as equivalent to if the app is still running - it's perfectly fine

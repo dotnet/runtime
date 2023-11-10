@@ -311,7 +311,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
                 if (ctx == null)
                 {
-                    ctx = new JSSynchronizationContext(Thread.CurrentThread, currentThreadId);
+                    ctx = new JSSynchronizationContext(Thread.CurrentThread, currentThreadId, isMainThread);
                     ctx.previousSynchronizationContext = SynchronizationContext.Current;
                     JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
                     SynchronizationContext.SetSynchronizationContext(ctx);
