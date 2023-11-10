@@ -111,8 +111,8 @@
           Condition="'$(TestReadyToRun)' == 'true'"
           BeforeTargets="_CopyFilesMarkedCopyLocal">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-                               Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dbg'" />
+      <ReferenceCopyLocalPaths
+          Remove="@(ReferenceCopyLocalPaths->WithMetadataValue('Extension', '.dbg'))" />
     </ItemGroup>
   </Target>
 
@@ -120,8 +120,8 @@
           Condition="'$(TestReadyToRun)' == 'true'"
           BeforeTargets="_CopyResolvedFilesToPublishPreserveNewest">
     <ItemGroup>
-      <_ResolvedFileToPublishPreserveNewest Remove="@(_ResolvedFileToPublishPreserveNewest)"
-                                            Condition="'%(_ResolvedFileToPublishPreserveNewest.Extension)' == '.dbg'" />
+      <_ResolvedFileToPublishPreserveNewest
+          Remove="@(_ResolvedFileToPublishPreserveNewest->WithMetadataValue('Extension', '.dbg'))" />
     </ItemGroup>
   </Target>
 
