@@ -88,7 +88,11 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             };
         }
 
-        await Task.Yield();
+        if (OperatingSystem.IsBrowser())
+        {
+            await Task.Yield();
+        }
+
         await runner.RunAsync();
         return runner.LastRunHadFailedTests ? 1 : 0;
     }
