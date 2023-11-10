@@ -713,6 +713,7 @@ bool OptIfConversionDsc::optIfConvert()
     //
     // SELECT(COND, 10, 11) -> ADD(COND, 10)
     //
+    // Conservatively give up on relops with NaNs (we won't be able to reverse them).
     if (selectTrueInput->IsCnsIntOrI() && selectFalseInput->IsCnsIntOrI() &&
         ((m_cond->gtFlags & GTF_RELOP_NAN_UN) == 0))
     {
@@ -726,7 +727,7 @@ bool OptIfConversionDsc::optIfConvert()
                 m_cond->ChangeOper(GenTree::ReverseRelop(m_cond->OperGet()));
                 cns = selectTrueInput;
             }
-            select = m_comp->gtNewOperNode(GT_ADD, m_cond->TypeGet(), m_cond, cns);
+            select = m_comp->gtNewOperNode(GT_ADD, selectType, m_cond, cns);
         }
     }
 
