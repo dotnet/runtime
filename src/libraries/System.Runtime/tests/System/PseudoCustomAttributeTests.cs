@@ -34,7 +34,7 @@ namespace System.Tests
                     Assert.Equal(attribute != null, Attribute.IsDefined(parameterInfo, attributeType, true));
                     break;
                 default:
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
         }
@@ -59,7 +59,7 @@ namespace System.Tests
                     Assert.Equal(attribute, Attribute.GetCustomAttribute(parameterInfo, attributeType, true));
                     break;
                 default:
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
         }
@@ -90,7 +90,7 @@ namespace System.Tests
                         .Where((e) => e.GetType() == attributeType).SingleOrDefault());
                     break;
                 default:
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
         }

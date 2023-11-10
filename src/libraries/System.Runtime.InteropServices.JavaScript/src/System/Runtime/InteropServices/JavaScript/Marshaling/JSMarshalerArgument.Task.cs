@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -36,18 +37,15 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="value">The value to be marshaled.</param>
         public unsafe void ToManaged(out Task? value)
         {
+            // there is no nice way in JS how to check that JS promise is already resolved, to send MarshalerType.TaskRejected, MarshalerType.TaskResolved
             if (slot.Type == MarshalerType.None)
             {
                 value = null;
                 return;
             }
-
-            GCHandle gcHandle = (GCHandle)slot.GCHandle;
-            JSHostImplementation.TaskCallback? holder = (JSHostImplementation.TaskCallback?)gcHandle.Target;
-            if (holder == null) throw new InvalidOperationException(SR.FailedToMarshalTaskCallback);
-
+            PromiseHolder holder = CreateJSOwnedHolder(slot.GCHandle);
             TaskCompletionSource tcs = new TaskCompletionSource(holder);
-            JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
+            ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
                 if (arguments_buffer == null)
                 {
@@ -80,18 +78,15 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <typeparam name="T">Type of marshaled result of the <see cref="System.Threading.Tasks.Task"/>.</typeparam>
         public unsafe void ToManaged<T>(out Task<T>? value, ArgumentToManagedCallback<T> marshaler)
         {
+            // there is no nice way in JS how to check that JS promise is already resolved, to send MarshalerType.TaskRejected, MarshalerType.TaskResolved
             if (slot.Type == MarshalerType.None)
             {
                 value = null;
                 return;
             }
-
-            GCHandle gcHandle = (GCHandle)slot.GCHandle;
-            JSHostImplementation.TaskCallback? holder = (JSHostImplementation.TaskCallback?)gcHandle.Target;
-            if (holder == null) throw new InvalidOperationException(SR.FailedToMarshalTaskCallback);
-
+            PromiseHolder holder = CreateJSOwnedHolder(slot.GCHandle);
             TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
-            JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
+            ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
                 if (arguments_buffer == null)
                 {
@@ -118,6 +113,18 @@ namespace System.Runtime.InteropServices.JavaScript
             value = tcs.Task;
         }
 
+        // TODO unregister and collect pending PromiseHolder also when no C# is awaiting ?
+        private static PromiseHolder CreateJSOwnedHolder(nint gcvHandle)
+        {
+#if FEATURE_WASM_THREADS
+            JSSynchronizationContext.AssertWebWorkerContext();
+#endif
+            var holder = new PromiseHolder(gcvHandle);
+            ThreadJsOwnedHolders.Add(gcvHandle, holder);
+            return holder;
+        }
+
+
         internal void ToJSDynamic(Task? value)
         {
             Task? task = value;
@@ -127,28 +134,37 @@ namespace System.Runtime.InteropServices.JavaScript
                 slot.Type = MarshalerType.None;
                 return;
             }
-            slot.Type = MarshalerType.Task;
 
             if (task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
                     Exception ex = task.Exception;
-                    slot.JSHandle = CreateFailedPromise(ex);
+                    ToJS(ex);
+                    slot.ElementType = slot.Type;
+                    slot.Type = MarshalerType.TaskRejected;
                     return;
                 }
                 else
                 {
-                    object? result = JSHostImplementation.GetTaskResultDynamic(task);
-                    slot.JSHandle = CreateResolvedPromise(result, MarshalResult);
+                    if (GetTaskResultDynamic(task, out object? result))
+                    {
+                        ToJS(result);
+                        slot.ElementType = slot.Type;
+                    }
+                    else
+                    {
+                        slot.ElementType = MarshalerType.Void;
+                    }
+                    slot.Type = MarshalerType.TaskResolved;
                     return;
                 }
             }
+            slot.Type = MarshalerType.Task;
 
+            slot.JSHandle = AllocJSVHandle();
+            var taskHolder = new JSObject(slot.JSHandle);
 
-            IntPtr jsHandle = CreatePendingPromise();
-            slot.JSHandle = jsHandle;
-            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
@@ -158,35 +174,20 @@ namespace System.Runtime.InteropServices.JavaScript
 
             void Complete()
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(promise);
-#endif
-
-                // When this task was never resolved/rejected
-                // promise (held by this lambda) would be collected by GC after the Task is collected
-                // and would also allow the JS promise to be collected
-
-                try
+                if (task.Exception != null)
                 {
-                    if (task.Exception != null)
+                    RejectPromise(taskHolder, task.Exception);
+                }
+                else
+                {
+                    if (GetTaskResultDynamic(task, out object? result))
                     {
-                        FailPromise(promise, task.Exception);
+                        ResolvePromise(taskHolder, result, MarshalResult);
                     }
                     else
                     {
-                        object? result = JSHostImplementation.GetTaskResultDynamic(task);
-
-                        ResolvePromise(promise, result, MarshalResult);
+                        ResolveVoidPromise(taskHolder);
                     }
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException(ex.Message, ex);
-                }
-                finally
-                {
-                    // this should never happen after the task was GC'd
-                    promise.Dispose();
                 }
             }
 
@@ -210,26 +211,28 @@ namespace System.Runtime.InteropServices.JavaScript
                 slot.Type = MarshalerType.None;
                 return;
             }
-            slot.Type = MarshalerType.Task;
 
             if (task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
                     Exception ex = task.Exception;
-                    slot.JSHandle = CreateFailedPromise(ex);
+                    ToJS(ex);
+                    slot.ElementType = slot.Type;
+                    slot.Type = MarshalerType.TaskRejected;
                     return;
                 }
                 else
                 {
-                    slot.JSHandle = IntPtr.Zero;
+                    slot.ElementType = slot.Type;
+                    slot.Type = MarshalerType.TaskResolved;
                     return;
                 }
             }
+            slot.Type = MarshalerType.Task;
 
-            IntPtr jsHandle = CreatePendingPromise();
-            slot.JSHandle = jsHandle;
-            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+            slot.JSHandle = AllocJSVHandle();
+            var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
@@ -239,33 +242,13 @@ namespace System.Runtime.InteropServices.JavaScript
 
             void Complete()
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(promise);
-#endif
-
-                // When this task was never resolved/rejected
-                // promise (held by this lambda) would be collected by GC after the Task is collected
-                // and would also allow the JS promise to be collected
-
-                try
+                if (task.Exception != null)
                 {
-                    if (task.Exception != null)
-                    {
-                        FailPromise(promise, task.Exception);
-                    }
-                    else
-                    {
-                        ResolveVoidPromise(promise);
-                    }
+                    RejectPromise(taskHolder, task.Exception);
                 }
-                catch (Exception ex)
+                else
                 {
-                    throw new InvalidOperationException(ex.Message, ex);
-                }
-                finally
-                {
-                    // this should never happen after the task was GC'd
-                    promise.Dispose();
+                    ResolveVoidPromise(taskHolder);
                 }
             }
         }
@@ -286,28 +269,29 @@ namespace System.Runtime.InteropServices.JavaScript
                 slot.Type = MarshalerType.None;
                 return;
             }
-            slot.Type = MarshalerType.Task;
 
             if (task.IsCompleted)
             {
                 if (task.Exception != null)
                 {
                     Exception ex = task.Exception;
-                    slot.JSHandle = CreateFailedPromise(ex);
+                    ToJS(ex);
+                    slot.ElementType = slot.Type;
+                    slot.Type = MarshalerType.TaskRejected;
                     return;
                 }
                 else
                 {
                     T result = task.Result;
-                    slot.JSHandle = CreateResolvedPromise(result, marshaler);
+                    ToJS(result);
+                    slot.ElementType = slot.Type;
+                    slot.Type = MarshalerType.TaskResolved;
                     return;
                 }
             }
-
-
-            IntPtr jsHandle = CreatePendingPromise();
-            slot.JSHandle = jsHandle;
-            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+            slot.Type = MarshalerType.Task;
+            slot.JSHandle = AllocJSVHandle();
+            var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
@@ -317,80 +301,21 @@ namespace System.Runtime.InteropServices.JavaScript
 
             void Complete()
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(promise);
-#endif
-                // When this task was never resolved/rejected
-                // promise (held by this lambda) would be collected by GC after the Task is collected
-                // and would also allow the JS promise to be collected
-
-                try
+                if (task.Exception != null)
                 {
-                    if (task.Exception != null)
-                    {
-                        FailPromise(promise, task.Exception);
-                    }
-                    else
-                    {
-                        T result = task.Result;
-                        ResolvePromise(promise, result, marshaler);
-                    }
+                    RejectPromise(taskHolder, task.Exception);
                 }
-                catch (Exception ex)
+                else
                 {
-                    throw new InvalidOperationException(ex.Message, ex);
-                }
-                finally
-                {
-                    // this should never happen after the task was GC'd
-                    promise.Dispose();
+                    T result = task.Result;
+                    ResolvePromise(taskHolder, result, marshaler);
                 }
             }
         }
 
-        private static IntPtr CreatePendingPromise()
+        private static void RejectPromise(JSObject holder, Exception ex)
         {
-            Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
-            ref JSMarshalerArgument exc = ref args[0];
-            ref JSMarshalerArgument res = ref args[1];
-            ref JSMarshalerArgument arg_handle = ref args[2];
-            ref JSMarshalerArgument arg_value = ref args[3];
-
-            exc.Initialize();
-            res.Initialize();
-            arg_value.Initialize();
-
-            // should create new promise
-            arg_handle.slot.Type = MarshalerType.Task;
-            arg_handle.slot.JSHandle = IntPtr.Zero;
-            arg_value.slot.Type = MarshalerType.Task;
-
-            JavaScriptImports.MarshalPromise(args);
-            return res.slot.JSHandle;
-        }
-
-        private static IntPtr CreateFailedPromise(Exception ex)
-        {
-            Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
-            ref JSMarshalerArgument exc = ref args[0];
-            ref JSMarshalerArgument res = ref args[1];
-            ref JSMarshalerArgument arg_handle = ref args[2];
-            ref JSMarshalerArgument arg_value = ref args[3];
-            res.Initialize();
-            arg_value.Initialize();
-
-            // should create new promise
-            arg_handle.slot.Type = MarshalerType.Task;
-            arg_handle.slot.JSHandle = IntPtr.Zero;
-            // should fail it with exception
-            exc.ToJS(ex);
-            JavaScriptImports.MarshalPromise(args);
-            return res.slot.JSHandle;
-        }
-
-        private static void FailPromise(JSObject promise, Exception ex)
-        {
-            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
+            holder.AssertNotDisposed();
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -400,20 +325,23 @@ namespace System.Runtime.InteropServices.JavaScript
 
             exc.Initialize();
             res.Initialize();
-            arg_value.Initialize();
 
             // should update existing promise
-            arg_handle.slot.Type = MarshalerType.None;
-            arg_handle.slot.JSHandle = promise.JSHandle;
+            arg_handle.slot.Type = MarshalerType.TaskRejected;
+            arg_handle.slot.JSHandle = holder.JSHandle;
 
             // should fail it with exception
-            exc.ToJS(ex);
+            arg_value.ToJS(ex);
 
-            JavaScriptImports.MarshalPromise(args);
+            JavaScriptImports.ResolveOrRejectPromise(args);
+
+            holder.DisposeLocal();
         }
 
-        private static IntPtr CreateResolvedPromise<T>(T value, ArgumentToJSCallback<T> marshaler)
+        private static void ResolveVoidPromise(JSObject holder)
         {
+            holder.AssertNotDisposed();
+
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
             ref JSMarshalerArgument res = ref args[1];
@@ -423,60 +351,40 @@ namespace System.Runtime.InteropServices.JavaScript
             exc.Initialize();
             res.Initialize();
 
-            // should create new promise
-            arg_handle.slot.Type = MarshalerType.Task;
-            arg_handle.slot.JSHandle = IntPtr.Zero;
+            // should update existing promise
+            arg_handle.slot.Type = MarshalerType.TaskResolved;
+            arg_handle.slot.JSHandle = holder.JSHandle;
+
+            arg_value.slot.Type = MarshalerType.Void;
+
+            JavaScriptImports.ResolveOrRejectPromise(args);
+
+            holder.DisposeLocal();
+        }
+
+        private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
+        {
+            holder.AssertNotDisposed();
+
+            Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
+            ref JSMarshalerArgument exc = ref args[0];
+            ref JSMarshalerArgument res = ref args[1];
+            ref JSMarshalerArgument arg_handle = ref args[2];
+            ref JSMarshalerArgument arg_value = ref args[3];
+
+            exc.Initialize();
+            res.Initialize();
+
+            // should update existing promise
+            arg_handle.slot.Type = MarshalerType.TaskResolved;
+            arg_handle.slot.JSHandle = holder.JSHandle;
 
             // and resolve it with value
             marshaler(ref arg_value, value);
 
-            JavaScriptImports.MarshalPromise(args);
-            return res.slot.JSHandle;
-        }
+            JavaScriptImports.ResolveOrRejectPromise(args);
 
-        private static void ResolveVoidPromise(JSObject promise)
-        {
-            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
-
-            Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
-            ref JSMarshalerArgument exc = ref args[0];
-            ref JSMarshalerArgument res = ref args[1];
-            ref JSMarshalerArgument arg_handle = ref args[2];
-            ref JSMarshalerArgument arg_value = ref args[3];
-
-            exc.Initialize();
-            res.Initialize();
-
-            // should update existing promise
-            arg_handle.slot.Type = MarshalerType.None;
-            arg_handle.slot.JSHandle = promise.JSHandle;
-
-            arg_value.slot.Type = MarshalerType.None;
-
-            JavaScriptImports.MarshalPromise(args);
-        }
-
-        private static void ResolvePromise<T>(JSObject promise, T value, ArgumentToJSCallback<T> marshaler)
-        {
-            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
-
-            Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
-            ref JSMarshalerArgument exc = ref args[0];
-            ref JSMarshalerArgument res = ref args[1];
-            ref JSMarshalerArgument arg_handle = ref args[2];
-            ref JSMarshalerArgument arg_value = ref args[3];
-
-            exc.Initialize();
-            res.Initialize();
-
-            // should update existing promise
-            arg_handle.slot.Type = MarshalerType.None;
-            arg_handle.slot.JSHandle = promise.JSHandle;
-
-            // and resolve it with value
-            marshaler(ref arg_value, value);
-
-            JavaScriptImports.MarshalPromise(args);
+            holder.DisposeLocal();
         }
     }
 }

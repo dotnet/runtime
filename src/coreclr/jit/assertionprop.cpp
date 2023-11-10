@@ -166,6 +166,37 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 
+        case GT_IND:
+        {
+            GenTree* const addr = node->AsIndir()->Addr();
+
+            if (node->TypeIs(TYP_INT) && addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+                addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
+            {
+                GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
+
+                if (compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
+                {
+                    assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
+                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                }
+            }
+            break;
+        }
+
+        case GT_LCL_FLD:
+        {
+            GenTreeLclFld* const lclFld = node->AsLclFld();
+            LclVarDsc* const     varDsc = compiler->lvaGetDesc(lclFld);
+
+            if (node->TypeIs(TYP_INT) && varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
+            break;
+        }
+
         case GT_LCL_VAR:
         {
             LclVarDsc* const varDsc = compiler->lvaGetDesc(node->AsLclVar());
@@ -510,37 +541,85 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 
 void Compiler::optAssertionInit(bool isLocalProp)
 {
-    // Use a function countFunc to determine a proper maximum assertion count for the
-    // method being compiled. The function is linear to the IL size for small and
-    // moderate methods. For large methods, considering throughput impact, we track no
-    // more than 64 assertions.
-    // Note this tracks at most only 256 assertions.
-    static const AssertionIndex countFunc[] = {64, 128, 256, 64};
-    static const unsigned       lowerBound  = 0;
-    static const unsigned       upperBound  = ArrLen(countFunc) - 1;
-    const unsigned              codeSize    = info.compILCodeSize / 512;
-    optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
-
-    optLocalAssertionProp  = isLocalProp;
-    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
-    optComplementaryAssertionMap =
-        new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
     assert(NO_ASSERTION_INDEX == 0);
+    const unsigned maxTrackedLocals = (unsigned)JitConfig.JitMaxLocalsToTrack();
 
-    if (!isLocalProp)
+    // We initialize differently for local prop / global prop
+    //
+    if (isLocalProp)
     {
-        optValueNumToAsserts =
-            new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
-    }
+        optLocalAssertionProp           = true;
+        optCrossBlockLocalAssertionProp = true;
 
-    if (optAssertionDep == nullptr)
-    {
+        // Disable via config
+        //
+        if (JitConfig.JitEnableCrossBlockLocalAssertionProp() == 0)
+        {
+            JITDUMP("Disabling cross-block assertion prop by config setting\n");
+            optCrossBlockLocalAssertionProp = false;
+        }
+
+        // Disable if too many locals
+        //
+        // The typical number of local assertions is roughly proportional
+        // to the number of locals. So when we have huge numbers of locals,
+        // just do within-block local assertion prop.
+        //
+        if (lvaCount > maxTrackedLocals)
+        {
+            JITDUMP("Disabling cross-block assertion prop: too many locals\n");
+            optCrossBlockLocalAssertionProp = false;
+        }
+
+        if (optCrossBlockLocalAssertionProp)
+        {
+            // We may need a fairly large table.
+            // Allow for roughly one assertion per local, up to the tracked limit.
+            // (empirical studies show about 0.6 asserions/local)
+            //
+            optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((lvaCount / 64) + 1) * 64);
+        }
+        else
+        {
+            // The assertion table will be reset for each block, so it can be smaller.
+            //
+            optMaxAssertionCount = 64;
+        }
+
+        // Local assertion prop keeps mappings from each local var to the assertions about that var.
+        //
         optAssertionDep =
             new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
     }
+    else
+    {
+        // General assertion prop.
+        //
+        optLocalAssertionProp = false;
+
+        // Use a function countFunc to determine a proper maximum assertion count for the
+        // method being compiled. The function is linear to the IL size for small and
+        // moderate methods. For large methods, considering throughput impact, we track no
+        // more than 64 assertions.
+        // Note this tracks at most only 256 assertions.
+        //
+        static const AssertionIndex countFunc[] = {64, 128, 256, 64};
+        static const unsigned       upperBound  = ArrLen(countFunc) - 1;
+        const unsigned              codeSize    = info.compILCodeSize / 512;
+        optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
+
+        optValueNumToAsserts =
+            new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
+        optComplementaryAssertionMap = new (this, CMK_AssertionProp)
+            AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
+    }
+
+    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
 
     optAssertionTraitsInit(optMaxAssertionCount);
+
     optAssertionCount      = 0;
+    optAssertionOverflow   = 0;
     optAssertionPropagated = false;
     bbJtrueAssertionOut    = nullptr;
     optCanPropLclVar       = false;
@@ -1437,16 +1516,6 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
             *pFlags    = tree->GetIconHandleFlag();
             return true;
         }
-#ifdef TARGET_64BIT
-        // Just to be clear, get it from gtLconVal rather than
-        // overlapping gtIconVal.
-        else if (tree->OperGet() == GT_CNS_LNG)
-        {
-            *pConstant = tree->AsLngCon()->gtLconVal;
-            *pFlags    = tree->GetIconHandleFlag();
-            return true;
-        }
-#endif
         return false;
     }
 
@@ -1474,6 +1543,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
         return true;
     }
 #endif
+
     return false;
 }
 
@@ -1576,6 +1646,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     // Check if we are within max count.
     if (optAssertionCount >= optMaxAssertionCount)
     {
+        optAssertionOverflow++;
         return NO_ASSERTION_INDEX;
     }
 
@@ -2264,27 +2335,27 @@ void Compiler::optAssertionGen(GenTree* tree)
             }
             break;
 
-        case GT_BLK:
         case GT_IND:
+            // Dynamic block copy sources could be zero-sized and so should not generate assertions.
+            if (tree->TypeIs(TYP_STRUCT))
+            {
+                break;
+            }
+            FALLTHROUGH;
+
+        case GT_XAND:
+        case GT_XORR:
+        case GT_XADD:
+        case GT_XCHG:
+        case GT_CMPXCHG:
+        case GT_BLK:
         case GT_STOREIND:
         case GT_STORE_BLK:
-            // Dynamic block copy sources should not generate non-null assertions; we detect them via NO_CSE.
-            if (tree->CanCSE())
-            {
-                assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
-            }
-            break;
-
+        case GT_NULLCHECK:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
-            // An array meta-data access is an indirection (but doesn't derive from GenTreeIndir).
-            assertionInfo = optCreateAssertion(tree->AsArrCommon()->ArrRef(), nullptr, OAK_NOT_EQUAL);
-            break;
-
-        case GT_NULLCHECK:
-            // Explicit null checks always create non-null assertions.
-            assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
+            assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, OAK_NOT_EQUAL);
             break;
 
         case GT_INTRINSIC:
@@ -2339,8 +2410,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
     }
 
-    // For global assertion prop we must store the assertion number in the tree node
-    if (assertionInfo.HasAssertion() && assertionProven && !optLocalAssertionProp)
+    if (assertionInfo.HasAssertion() && assertionProven)
     {
         tree->SetAssertionInfo(assertionInfo);
     }
@@ -2428,9 +2498,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if ((optLocalAssertionProp ||
-             BitVecOps::IsMember(apTraits, assertions, index - 1)) && // either local prop or use propagated assertions
-            curAssertion->CanPropSubRange())
+        if (BitVecOps::IsMember(apTraits, assertions, index - 1) && curAssertion->CanPropSubRange())
         {
             // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
             bool isEqual = optLocalAssertionProp
@@ -2462,13 +2530,13 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
  */
 AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions)
 {
-    if (!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions))
+    if (BitVecOps::IsEmpty(apTraits, assertions))
     {
         return NO_ASSERTION_INDEX;
     }
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
-        if (!optLocalAssertionProp && !BitVecOps::IsMember(apTraits, assertions, index - 1))
+        if (!BitVecOps::IsMember(apTraits, assertions, index - 1))
         {
             continue;
         }
@@ -2643,7 +2711,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
                     case TYP_DOUBLE:
                         // Same sized reinterpretation of bits to double
-                        conValTree = gtNewDconNode(*(reinterpret_cast<double*>(&value)));
+                        conValTree = gtNewDconNodeD(*(reinterpret_cast<double*>(&value)));
                         break;
 
                     default:
@@ -2694,9 +2762,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
-                        conValTree = gtNewDconNode(FloatingPointUtils::convertToDouble(
-                                                       BitOperations::UInt32BitsToSingle((uint32_t)value)),
-                                                   TYP_FLOAT);
+                        conValTree = gtNewDconNodeF(BitOperations::UInt32BitsToSingle((uint32_t)value));
                         break;
 
                     case TYP_DOUBLE:
@@ -3523,6 +3589,84 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 }
 
 //------------------------------------------------------------------------
+// optAssertionProp_ModDiv: Convert DIV/MOD to UDIV/UMOD if both operands
+//    can be proven to be non-negative, e.g.:
+//
+//    if (x > 0)         // creates "x > 0" assertion
+//        return x / 8;  // DIV can be converted to UDIV
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - the DIV/MOD node to optimize
+//    stmt       - statement containing DIV/MOD
+//
+// Returns:
+//    Updated UDIV/UMOD node, or "nullptr"
+//
+GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+{
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return nullptr;
+    }
+
+    // For now, we're mainly interested in "X op CNS" pattern (where CNS > 0).
+    // Technically, we can check assertions for both operands, but it's not clear if it's worth it.
+    if (!tree->gtGetOp2()->IsNeverNegative(this))
+    {
+        return nullptr;
+    }
+
+    const ValueNum  dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+
+        // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
+        // representing "(X relop CNS) ==/!= 0" assertion.
+        if (!curAssertion->IsConstantBound())
+        {
+            continue;
+        }
+
+        ValueNumStore::ConstantBoundInfo info;
+        vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
+
+        if (info.cmpOpVN != dividendVN)
+        {
+            continue;
+        }
+
+        // Root assertion has to be either:
+        // (X relop CNS) == 0
+        // (X relop CNS) != 0
+        if ((curAssertion->op2.kind != O2K_CONST_INT) || (curAssertion->op2.u1.iconVal != 0))
+        {
+            continue;
+        }
+
+        genTreeOps cmpOper = static_cast<genTreeOps>(info.cmpOper);
+
+        // Normalize "(X relop CNS) == false" to "(X reversed_relop CNS) == true"
+        if (curAssertion->assertionKind == OAK_EQUAL)
+        {
+            cmpOper = GenTree::ReverseRelop(cmpOper);
+        }
+
+        // "X >= CNS" or "X > CNS" where CNS is >= 0
+        if ((info.constVal >= 0) && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+        {
+            JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+            tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+            return optAssertionProp_Update(tree, tree, stmt);
+        }
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // optAssertionProp_Return: Try and optimize a GT_RETURN via assertions.
 //
 // Propagates ZEROOBJ for the return value.
@@ -3565,7 +3709,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 {
     noway_assert((op1Kind == O1K_LCLVAR) || (op1Kind == O1K_EXACT_TYPE) || (op1Kind == O1K_SUBTYPE));
     noway_assert((op2Kind == O2K_CONST_INT) || (op2Kind == O2K_IND_CNS_INT) || (op2Kind == O2K_ZEROOBJ));
-    if (!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions))
+    if (BitVecOps::IsEmpty(apTraits, assertions))
     {
         return NO_ASSERTION_INDEX;
     }
@@ -3573,7 +3717,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
     for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if (optLocalAssertionProp || BitVecOps::IsMember(apTraits, assertions, index - 1))
+        if (BitVecOps::IsMember(apTraits, assertions, index - 1))
         {
             if ((curAssertion->assertionKind != OAK_EQUAL) && (curAssertion->assertionKind != OAK_NOT_EQUAL))
             {
@@ -4357,17 +4501,26 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
     }
     else
     {
-        unsigned lclNum = op->AsLclVarCommon()->GetLclNum();
-        // Check each assertion to find if we have a variable == or != null assertion.
-        for (AssertionIndex index = 1; index <= optAssertionCount; index++)
+        // Find live assertions related to lclNum
+        //
+        unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
+        ASSERT_TP      apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+        // Scan those looking for a suitable assertion
+        //
+        BitVecOps::Iter iter(apTraits, apDependent);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
         {
-            AssertionDsc* curAssertion = optGetAssertion(index);
+            AssertionIndex assertionIndex = GetAssertionIndex(index);
+            AssertionDsc*  curAssertion   = optGetAssertion(assertionIndex);
+
             if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && // kind
                 (curAssertion->op1.kind == O1K_LCLVAR) &&         // op1
                 (curAssertion->op2.kind == O2K_CONST_INT) &&      // op2
                 (curAssertion->op1.lcl.lclNum == lclNum) && (curAssertion->op2.u1.iconVal == 0))
             {
-                return index;
+                return assertionIndex;
             }
         }
     }
@@ -4450,7 +4603,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
         indir->gtFlags |= GTF_IND_NONFAULTING;
 
         // Set this flag to prevent reordering
-        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+        indir->SetHasOrderingSideEffect();
 
         return true;
     }
@@ -4758,6 +4911,10 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_RETURN:
             return optAssertionProp_Return(assertions, tree->AsUnOp(), stmt);
 
+        case GT_MOD:
+        case GT_DIV:
+            return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt);
+
         case GT_BLK:
         case GT_IND:
         case GT_STOREIND:
@@ -4783,11 +4940,9 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_LE:
         case GT_GT:
         case GT_GE:
-
             return optAssertionProp_RelOp(assertions, tree, stmt);
 
         case GT_JTRUE:
-
             if (block != nullptr)
             {
                 return optVNConstantPropOnJTrue(block, tree);
@@ -5260,7 +5415,7 @@ public:
     {
         ASSERT_TP pAssertionOut;
 
-        if (predBlock->bbJumpKind == BBJ_COND && (predBlock->bbJumpDest == block))
+        if (predBlock->KindIs(BBJ_COND) && predBlock->HasJumpTo(block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
 
@@ -5268,7 +5423,7 @@ public:
             {
                 // Scenario where next block and conditional block, both point to the same block.
                 // In such case, intersect the assertions present on both the out edges of predBlock.
-                assert(predBlock->bbNext == block);
+                assert(predBlock->NextIs(block));
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
                 if (VerboseDataflow())
@@ -5460,9 +5615,9 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 
             printf(FMT_BB " valueGen = ", block->bbNum);
             optPrintAssertionIndices(block->bbAssertionGen);
-            if (block->bbJumpKind == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
-                printf(" => " FMT_BB " valueGen = ", block->bbJumpDest->bbNum);
+                printf(" => " FMT_BB " valueGen = ", block->GetJumpDest()->bbNum);
                 optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
@@ -6020,9 +6175,9 @@ PhaseStatus Compiler::optAssertionPropMain()
             printf(FMT_BB ":\n", block->bbNum);
             optDumpAssertionIndices(" in   = ", block->bbAssertionIn, "\n");
             optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
-            if (block->bbJumpKind == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
-                printf(" " FMT_BB " = ", block->bbJumpDest->bbNum);
+                printf(" " FMT_BB " = ", block->GetJumpDest()->bbNum);
                 optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }

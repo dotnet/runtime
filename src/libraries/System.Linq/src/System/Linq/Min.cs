@@ -18,6 +18,7 @@ namespace System.Linq
             public static bool Compare(T left, T right) => left < right;
             public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Min(left, right);
             public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Min(left, right);
+            public static Vector512<T> Compare(Vector512<T> left, Vector512<T> right) => Vector512.Min(left, right);
         }
 
         public static int? Min(this IEnumerable<int?> source) => MinInteger(source);

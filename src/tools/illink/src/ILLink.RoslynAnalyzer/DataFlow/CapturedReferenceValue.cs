@@ -16,16 +16,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			switch (operation.Kind) {
 			case OperationKind.PropertyReference:
+			case OperationKind.EventReference:
 			case OperationKind.LocalReference:
 			case OperationKind.FieldReference:
 			case OperationKind.ParameterReference:
 			case OperationKind.ArrayElementReference:
+			case OperationKind.InlineArrayAccess:
 			case OperationKind.ImplicitIndexerReference:
 				break;
 			case OperationKind.None:
 			case OperationKind.InstanceReference:
 			case OperationKind.Invocation:
-			case OperationKind.EventReference:
 			case OperationKind.Invalid:
 				// These will just be ignored when referenced later.
 				break;

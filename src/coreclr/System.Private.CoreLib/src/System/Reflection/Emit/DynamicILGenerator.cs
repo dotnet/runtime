@@ -36,14 +36,14 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(localType);
 
-            LocalBuilder localBuilder;
+            RuntimeLocalBuilder localBuilder;
 
             RuntimeType? rtType = localType as RuntimeType;
 
             if (rtType == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
-            localBuilder = new LocalBuilder(m_localCount, localType, m_methodBuilder, pinned);
+            localBuilder = new RuntimeLocalBuilder(m_localCount, localType, m_methodBuilder, pinned);
             // add the localType to local signature
             m_localSignature.AddArgument(localType, pinned);
             m_localCount++;
@@ -94,7 +94,7 @@ namespace System.Reflection.Emit
             }
             if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
             {
-                stackchange -= meth.GetParametersNoCopy().Length;
+                stackchange -= meth.GetParametersAsSpan().Length;
             }
             // Pop the "this" parameter if the method is non-static,
             //  and the instruction is not newobj/ldtoken/ldftn.
@@ -416,7 +416,7 @@ namespace System.Reflection.Emit
             if (rtMeth == null && dm == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(methodInfo));
 
-            ParameterInfo[] paramInfo = methodInfo.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> paramInfo = methodInfo.GetParametersAsSpan();
             if (paramInfo != null && paramInfo.Length != 0)
             {
                 parameterTypes = new Type[paramInfo.Length];

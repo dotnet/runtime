@@ -8,6 +8,7 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
+        public static void Abs(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
         public static void Add(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { }
         public static void Add(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { }
         public static void AddMultiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.ReadOnlySpan<float> multiplier, System.Span<float> destination) { }
@@ -24,12 +25,17 @@ namespace System.Numerics.Tensors
         public static int IndexOfMaxMagnitude(System.ReadOnlySpan<float> x) { throw null; }
         public static int IndexOfMin(System.ReadOnlySpan<float> x) { throw null; }
         public static int IndexOfMinMagnitude(System.ReadOnlySpan<float> x) { throw null; }
-        public static float L2Normalize(System.ReadOnlySpan<float> x) { throw null; }
+        public static float Norm(System.ReadOnlySpan<float> x) { throw null; }
         public static void Log(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static void Log2(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
         public static float Max(System.ReadOnlySpan<float> x) { throw null; }
+        public static void Max(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { throw null; }
         public static float MaxMagnitude(System.ReadOnlySpan<float> x) { throw null; }
+        public static void MaxMagnitude(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { throw null; }
         public static float Min(System.ReadOnlySpan<float> x) { throw null; }
+        public static void Min(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { throw null; }
         public static float MinMagnitude(System.ReadOnlySpan<float> x) { throw null; }
+        public static void MinMagnitude(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { throw null; }
         public static void Multiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { }
         public static void Multiply(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { }
         public static void MultiplyAdd(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.ReadOnlySpan<float> addend, System.Span<float> destination) { }

@@ -238,5 +238,10 @@ namespace System.Net.Http.Functional.Tests
             return client.GetByteArrayAsync(uri);
 #endif
         }
+
+        public static Task<HttpResponseMessage> GetAsync(this HttpClient client, bool async, Uri uri, HttpCompletionOption completionOption = default, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(client, async, new HttpRequestMessage(HttpMethod.Get, uri), completionOption, cancellationToken);
+        }
     }
 }

@@ -47,7 +47,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return ContextTypeInfo;
+                return ContextTypeInfo.ToType();
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return ReflectedTypeInfo;
+                return ReflectedTypeInfo.ToType();
             }
         }
 
@@ -110,7 +110,7 @@ namespace System.Reflection.Runtime.EventInfos
         public sealed override string ToString()
         {
             MethodInfo addMethod = this.AddMethod;
-            ParameterInfo[] parameters = addMethod.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = addMethod.GetParametersAsSpan();
             if (parameters.Length == 0)
                 throw new InvalidOperationException(); // Legacy: Why is a ToString() intentionally throwing an exception?
             RuntimeParameterInfo runtimeParameterInfo = (RuntimeParameterInfo)(parameters[0]);

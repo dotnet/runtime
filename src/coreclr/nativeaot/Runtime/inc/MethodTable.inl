@@ -9,20 +9,6 @@ inline uint32_t MethodTable::GetHashCode()
     return m_uHashCode;
 }
 
-//-----------------------------------------------------------------------------------------------------------
-inline PTR_Code MethodTable::get_Slot(uint16_t slotNumber)
-{
-    ASSERT(slotNumber < m_usNumVtableSlots);
-    return *get_SlotPtr(slotNumber);
-}
-
-//-----------------------------------------------------------------------------------------------------------
-inline PTR_PTR_Code MethodTable::get_SlotPtr(uint16_t slotNumber)
-{
-    ASSERT(slotNumber < m_usNumVtableSlots);
-    return dac_cast<PTR_PTR_Code>(dac_cast<TADDR>(this) + offsetof(MethodTable, m_VTable)) + slotNumber;
-}
-
 #ifdef DACCESS_COMPILE
 inline bool MethodTable::DacVerify()
 {

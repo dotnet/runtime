@@ -2893,7 +2893,7 @@ sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_END, generation, generation == GENERATION_OLD && sgen_concurrent_collection_in_progress));
 }
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && defined(DISABLE_THREADS)
 void
 sgen_client_schedule_background_job (void (*cb)(void))
 {

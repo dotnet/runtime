@@ -371,7 +371,7 @@ namespace System.IO.Tests
 
                 fsw.Created += (o, e) =>
                 {
-                    Assert.True(fullPath.Equals(e.FullPath, StringComparison.OrdinalIgnoreCase));
+                    Assert.Equal(fullPath, e.FullPath, StringComparer.OrdinalIgnoreCase);
                     are.Set();
                 };
 

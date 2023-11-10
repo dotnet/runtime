@@ -425,8 +425,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            ReadOnlySpan<char> chars = stackalloc char[] { highChar, lowChar };
-            WriteString(new string(chars), TextBlockType.Text);
+            WriteString(new string([highChar, lowChar]), TextBlockType.Text);
         }
 
         /// <summary>

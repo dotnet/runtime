@@ -1301,7 +1301,7 @@ namespace DebuggerTests
             if (expected?.Equals(actual) == true)
                 return;
 
-            throw new AssertActualExpectedException(
+            throw EqualException.ForMismatchedValues(
                 expected, actual,
                 $"[{label}]\n");
         }

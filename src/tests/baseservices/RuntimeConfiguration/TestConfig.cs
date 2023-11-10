@@ -11,74 +11,66 @@ using System.Runtime;
 
 using Xunit;
 
-class TestConfig
+public class TestConfig
 {
-    const int Success = 100;
-    const int Fail = 101;
+    public const int Success = 100;
+    public const int Fail = 101;
 
-    [Fact]
     [EnvVar("DOTNET_gcServer", "1")]
-    static int Verify_ServerGC_Env_Enable(string[] _)
+    public static int Verify_ServerGC_Env_Enable()
     {
         return GCSettings.IsServerGC
             ? Success
             : Fail;
     }
 
-    [Fact]
     [EnvVar("DOTNET_gcServer", "0")]
-    static int Verify_ServerGC_Env_Disable(string[] _)
+    public static int Verify_ServerGC_Env_Disable()
     {
         return GCSettings.IsServerGC
             ? Fail
             : Success;
     }
 
-    [Fact]
     [ConfigProperty("System.GC.Server", "true")]
-    static int Verify_ServerGC_Prop_Enable(string[] _)
+    public static int Verify_ServerGC_Prop_Enable()
     {
         return GCSettings.IsServerGC
             ? Success
             : Fail;
     }
 
-    [Fact]
     [ConfigProperty("System.GC.Server", "false")]
-    static int Verify_ServerGC_Prop_Disable(string[] _)
+    public static int Verify_ServerGC_Prop_Disable()
     {
         return GCSettings.IsServerGC
             ? Fail
             : Success;
     }
 
-    [Fact]
     [EnvVar("DOTNET_gcServer", "0")]
     [ConfigProperty("System.GC.Server", "true")]
-    static int Verify_ServerGC_Env_Override_Prop(string[] _)
+    public static int Verify_ServerGC_Env_Override_Prop()
     {
         return GCSettings.IsServerGC
             ? Fail
             : Success;
     }
 
+#if !IS_TESTER_APP
     static int Main(string[] args)
     {
-        if (args.Length == 0)
-        {
-            return RunTests();
-        }
-
         MethodInfo infos = typeof(TestConfig).GetMethod(args[0], BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
         if (infos is null)
         {
             return Fail;
         }
-        return (int)infos.Invoke(null, new object[] { args[1..] });
+        return (int)infos.Invoke(null, Array.Empty<object>());
     }
+#endif
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-    class EnvVarAttribute : Attribute
+    public class EnvVarAttribute : Attribute
     {
         public EnvVarAttribute(string name, string value) { Name = name; Value = value; }
         public string Name { get; init; }
@@ -86,77 +78,11 @@ class TestConfig
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-    class ConfigPropertyAttribute : Attribute
+    public class ConfigPropertyAttribute : Attribute
     {
         public ConfigPropertyAttribute(string name, string value) { Name = name; Value = value; }
         public string Name { get; init; }
         public string Value { get; init; }
     }
 
-    static int RunTests()
-    {
-        // clear some environment variables that we will set during the test run
-        Environment.SetEnvironmentVariable("DOTNET_gcServer", null);
-
-        string corerunPath = GetCorerunPath();
-        MethodInfo[] infos = typeof(TestConfig).GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-        foreach (var mi in infos)
-        {
-            var factMaybe = mi.GetCustomAttributes(typeof(FactAttribute));
-            if (!factMaybe.Any())
-            {
-                continue;
-            }
-
-            using Process process = new();
-
-            StringBuilder arguments = new();
-            var configProperties = mi.GetCustomAttributes(typeof(ConfigPropertyAttribute));
-
-            foreach (Attribute cp in configProperties)
-            {
-                ConfigPropertyAttribute configProp = (ConfigPropertyAttribute)cp;
-                arguments.Append($"-p {configProp.Name}={configProp.Value} ");
-            }
-
-            arguments.Append($"\"{System.Reflection.Assembly.GetExecutingAssembly().Location}\" {mi.Name}");
-
-            process.StartInfo.FileName = corerunPath;
-            process.StartInfo.Arguments = arguments.ToString();
-
-            var envVariables = mi.GetCustomAttributes(typeof(EnvVarAttribute));
-            foreach (string key in Environment.GetEnvironmentVariables().Keys)
-            {
-                process.StartInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
-            }
-
-            Console.WriteLine($"Running: {process.StartInfo.Arguments}");
-            foreach (Attribute ev in envVariables)
-            {
-                EnvVarAttribute envVar = (EnvVarAttribute)ev;
-                process.StartInfo.EnvironmentVariables[envVar.Name] = envVar.Value;
-                Console.WriteLine($"    set {envVar.Name}={envVar.Value}");
-            }
-
-            process.Start();
-            process.WaitForExit();
-            if (process.ExitCode != Success)
-            {
-                Console.WriteLine($"Failed: {mi.Name}");
-                return process.ExitCode;
-            }
-        }
-
-        return Success;
-    }
-
-    static string GetCorerunPath()
-    {
-        string corerunName = "corerun";
-        if (TestLibrary.Utilities.IsWindows)
-        {
-            corerunName += ".exe";
-        }
-        return Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), corerunName);
-    }
 }

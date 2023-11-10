@@ -7,9 +7,10 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 
-class AnsiBStrTest
+public class AnsiBStrTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

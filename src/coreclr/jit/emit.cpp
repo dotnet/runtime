@@ -130,6 +130,10 @@ const char* emitter::emitIfName(unsigned f)
     static const char* const ifNames[] = {
 #define IF_DEF(en, op1, op2) "IF_" #en,
 #include "emitfmts.h"
+#if defined(TARGET_ARM64)
+#define IF_DEF(en, op1, op2) "IF_" #en,
+#include "emitfmtsarm64sve.h"
+#endif
     };
 
     static char errBuff[32];
@@ -3767,6 +3771,10 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 const BYTE emitter::emitFmtToOps[] = {
 #define IF_DEF(en, op1, op2) ID_OP_##op2,
 #include "emitfmts.h"
+#if defined(TARGET_ARM64)
+#define IF_DEF(en, op1, op2) ID_OP_##op2,
+#include "emitfmtsarm64sve.h"
+#endif
 };
 
 #ifdef DEBUG
@@ -5972,7 +5980,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
-    // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
+    // We don't rely on (block->GetJumpDest()->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
     if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {
@@ -7139,16 +7147,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 printf("\n%s:", emitLabelString(ig));
                 if (!emitComp->opts.disDiffable)
                 {
-#ifdef DEBUG
                     if (emitComp->opts.disAddr)
-                    {
-                        printf("              ;; offset=0x%04X", emitCurCodeOffs(cp));
-                    }
-                    else
-#endif // DEBUG
-                    {
-                        printf("  ;; offset=0x%04X", emitCurCodeOffs(cp));
-                    }
+                        printf("            ");
+                    printf("  ;; offset=0x%04X", emitCurCodeOffs(cp));
                 }
                 printf("\n");
             }
@@ -7562,7 +7563,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
+                    // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7578,7 +7579,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
+                    // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7613,7 +7614,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // emit offsets after the loop with wrong value (for example for GC ref variables).
     unsigned unusedSize = emitTotalCodeSize - actualCodeSize;
 
-    JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
+    JITDUMP("\n\nAllocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
             actualCodeSize, unusedSize);
 
     BYTE* cpRW = cp + writeableOffset;
@@ -8310,7 +8311,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 switch (dsc->dsDataType)
                 {
                     case TYP_FLOAT:
-                        printf(" ; float  %9.6g", (double)*reinterpret_cast<float*>(&dsc->dsCont));
+                        printf(" ; float  %9.6g",
+                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&dsc->dsCont)));
                         break;
                     case TYP_DOUBLE:
                         printf(" ; double %12.9g", *reinterpret_cast<double*>(&dsc->dsCont));
@@ -8456,7 +8458,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                     case TYP_FLOAT:
                         assert(data->dsSize >= 4);
                         printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
-                        printf("\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
+                        printf("\t; %9.6g",
+                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
                         i += 4;
                         break;
 
@@ -9881,7 +9884,7 @@ void emitter::emitStackPop(BYTE* addr, bool isCall, unsigned char callInstrSize,
         // recorded (when we're doing the ptr reg map for a non-fully-interruptible method).
         if (emitFullGCinfo
 #ifndef JIT32_GCENCODER
-            || (emitComp->IsFullPtrRegMapRequired() && (!emitComp->GetInterruptible()) && isCall)
+            || (emitComp->IsFullPtrRegMapRequired() && !emitComp->GetInterruptible() && isCall)
 #endif // JIT32_GCENCODER
                 )
         {

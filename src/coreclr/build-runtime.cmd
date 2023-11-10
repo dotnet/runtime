@@ -211,8 +211,13 @@ if NOT "%__BuildType%"=="Release" (
     set __PgoOptimize=0
 )
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
+set __TargetOSDirName=%__TargetOS%
+if "%__TargetOS%"=="alpine" (
+    set __TargetOSDirName=linux_musl
+)
+
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOSDirName%.%__TargetArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOSDirName%.%__TargetArch%.%__BuildType%"
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"

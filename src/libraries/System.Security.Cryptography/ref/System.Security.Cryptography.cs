@@ -542,6 +542,24 @@ namespace System.Security.Cryptography
     public static partial class CryptographicOperations
     {
         public static bool FixedTimeEquals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] source) { throw null; }
+        public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.IO.Stream source) { throw null; }
+        public static int HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static byte[] HmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key, byte[] source) { throw null; }
+        public static byte[] HmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        public static byte[] HmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HmacDataAsync(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HmacDataAsync(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HmacDataAsync(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static bool TryHashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryHmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static void ZeroMemory(System.Span<byte> buffer) { }
     }
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException

@@ -78,11 +78,11 @@ namespace System.Threading
             // The PAL's wait subsystem is slower, spin more to compensate for the more expensive wait
             spinCount *= 2;
 #endif
-            int processorCount = Environment.ProcessorCount;
-            int spinIndex = processorCount > 1 ? 0 : SpinSleep0Threshold;
+            bool isSingleProcessor = Environment.IsSingleProcessor;
+            int spinIndex = isSingleProcessor ? SpinSleep0Threshold : 0;
             while (spinIndex < spinCount)
             {
-                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, processorCount);
+                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor);
                 spinIndex++;
 
                 // Try to acquire the semaphore and unregister as a spinner

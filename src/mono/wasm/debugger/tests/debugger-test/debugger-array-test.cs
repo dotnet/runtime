@@ -362,7 +362,7 @@ namespace DebuggerTests
         class Two {}
         class Three {}
         class Four {}
-        struct E
+        public struct E
         {
             public int x;
             public int y;
@@ -370,7 +370,7 @@ namespace DebuggerTests
         }
 
         [System.Runtime.CompilerServices.InlineArray(Length)]
-        struct Arr1
+        public struct Arr1
         {
             public const int Length = 42;
             public E e;
@@ -381,6 +381,7 @@ namespace DebuggerTests
         {
             public const int Length = 42;
             public int e;
+            public int InlineMethod(int n) => n + 100;
         }
         
         [System.Runtime.CompilerServices.InlineArray(1)]

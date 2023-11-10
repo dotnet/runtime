@@ -118,7 +118,7 @@ if (MSVC)
     # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that
     # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
     add_linker_flag(/INCREMENTAL:NO DEBUG)
-    add_linker_flag(/OPT:REF DEBUG)
+    add_linker_flag(/OPT:NOREF DEBUG)
     add_linker_flag(/OPT:NOICF DEBUG)
   endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
 

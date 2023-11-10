@@ -243,6 +243,8 @@ public: // IDispatchTesting
             return DISP_E_EXCEPTION;
         case IDispatchTesting_Exception_HResult:
             return HRESULT_FROM_WIN32(errorCode);
+        case IDispatchTesting_Exception_Int:
+            return errorCode;
         default:
             return S_FALSE; // Return a success case to indicate failure to trigger a failure.
         }

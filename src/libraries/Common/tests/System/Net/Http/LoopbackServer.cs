@@ -363,7 +363,7 @@ namespace System.Net.Test.Common
                     Assert.True(connectionClose);
                     return GetConnectionCloseResponse(content: content);
                 default:
-                    Assert.True(false, $"Unknown content mode: {mode}");
+                    Assert.Fail($"Unknown content mode: {mode}");
                     return null;
             }
         }

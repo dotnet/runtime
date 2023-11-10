@@ -15,8 +15,6 @@
 
 #if defined(FEATURE_EVENT_TRACE)
 
-#define Win32EventWrite PalEventWrite
-
 //---------------------------------------------------------------------------------------
 // BulkTypeValue / BulkTypeEventLogger: These take care of batching up types so they can
 // be logged via ETW in bulk
@@ -128,7 +126,7 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
         }
     }
 
-    Win32EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &BulkType, iDesc, EventData);
+    EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &BulkType, iDesc, EventData);
 
     // Reset state
     m_nBulkTypeValueCount = 0;
@@ -307,7 +305,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
         // Array
         pVal->fixedSizedData.Flags |= kEtwTypeFlagsArray;
         pVal->cTypeParameters = 1;
-        pVal->ullSingleTypeParameter = (ULONGLONG) pEEType->get_RelatedParameterType();
+        pVal->ullSingleTypeParameter = (ULONGLONG) pEEType->GetRelatedParameterType();
     }
     else
     {

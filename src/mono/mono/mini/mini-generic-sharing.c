@@ -2892,7 +2892,8 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 		return data1 == data2;
 	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
-	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE:
+	case MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO: {
 		MonoJumpInfoVirtMethod *info1 = (MonoJumpInfoVirtMethod *)data1;
 		MonoJumpInfoVirtMethod *info2 = (MonoJumpInfoVirtMethod *)data2;
 

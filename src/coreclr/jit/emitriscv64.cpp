@@ -561,6 +561,34 @@ void emitter::emitIns_Mov(
     }
 }
 
+void emitter::emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
+{
+    if (!canSkip || dstReg != srcReg)
+    {
+        assert(attr == EA_4BYTE || attr == EA_PTRSIZE);
+        if (isGeneralRegisterOrR0(dstReg) && isGeneralRegisterOrR0(srcReg))
+        {
+            emitIns_R_R_I(attr == EA_4BYTE ? INS_addiw : INS_addi, attr, dstReg, srcReg, 0);
+        }
+        else if (isGeneralRegisterOrR0(dstReg) && genIsValidFloatReg(srcReg))
+        {
+            emitIns_R_R(attr == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d, attr, dstReg, srcReg);
+        }
+        else if (genIsValidFloatReg(dstReg) && isGeneralRegisterOrR0(srcReg))
+        {
+            emitIns_R_R(attr == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, attr, dstReg, srcReg);
+        }
+        else if (genIsValidFloatReg(dstReg) && genIsValidFloatReg(srcReg))
+        {
+            emitIns_R_R_R(attr == EA_4BYTE ? INS_fsgnj_s : INS_fsgnj_d, attr, dstReg, srcReg, srcReg);
+        }
+        else
+        {
+            assert(!"Invalid registers in emitIns_Mov()\n");
+        }
+    }
+}
+
 /*****************************************************************************
  *
  *  Add an instruction referencing two registers
@@ -700,7 +728,7 @@ void emitter::emitIns_R_R_R(
     if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
-        (INS_feq_d <= ins && ins <= INS_fle_d))
+        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d))
     {
 #ifdef DEBUG
         switch (ins)
@@ -767,18 +795,48 @@ void emitter::emitIns_R_R_R(
             case INS_flt_d:
             case INS_fle_d:
 
+            case INS_lr_w:
+            case INS_lr_d:
+            case INS_sc_w:
+            case INS_sc_d:
+            case INS_amoswap_w:
+            case INS_amoswap_d:
+            case INS_amoadd_w:
+            case INS_amoadd_d:
+            case INS_amoxor_w:
+            case INS_amoxor_d:
+            case INS_amoand_w:
+            case INS_amoand_d:
+            case INS_amoor_w:
+            case INS_amoor_d:
+            case INS_amomin_w:
+            case INS_amomin_d:
+            case INS_amomax_w:
+            case INS_amomax_d:
+            case INS_amominu_w:
+            case INS_amominu_d:
+            case INS_amomaxu_w:
+            case INS_amomaxu_d:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
         }
 
 #endif
+        // Src/data register for load reserved should be empty
+        assert((ins != INS_lr_w && ins != INS_lr_d) || reg3 == REG_R0);
+
         code |= ((reg1 & 0x1f) << 7);
         code |= ((reg2 & 0x1f) << 15);
         code |= ((reg3 & 0x1f) << 20);
         if ((INS_fadd_s <= ins && INS_fsqrt_s >= ins) || (INS_fadd_d <= ins && INS_fsqrt_d >= ins))
         {
             code |= 0x7 << 12;
+        }
+        else if (INS_lr_w <= ins && ins <= INS_amomaxu_d)
+        {
+            // For now all atomics are seq. consistent as Interlocked.* APIs don't expose acquire/release ordering
+            code |= 0b11 << 25;
         }
     }
     else
@@ -1000,7 +1058,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 #ifdef DEBUG
     // Mark the catch return
-    if (emitComp->compCurBB->bbJumpKind == BBJ_EHCATCHRET)
+    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
     {
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
@@ -1608,9 +1666,39 @@ void emitter::emitJumpDistBind()
     }
     if (EMIT_INSTLIST_VERBOSE)
     {
-        printf("\nInstruction list before jump distance binding:\n\n");
+        printf("\nInstruction list before the jump distance binding:\n\n");
         emitDispIGlist(true);
     }
+#endif
+
+#if DEBUG_EMIT
+    auto printJmpInfo = [this](const instrDescJmp* jmp, const insGroup* jmpIG, NATIVE_OFFSET extra,
+                               UNATIVE_OFFSET srcInstrOffs, UNATIVE_OFFSET srcEncodingOffs, UNATIVE_OFFSET dstOffs,
+                               NATIVE_OFFSET jmpDist, const char* direction) {
+        assert(jmp->idDebugOnlyInfo() != nullptr);
+        if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
+        {
+            const char* dirId = (strcmp(direction, "fwd") == 0) ? "[1]" : "[2]";
+            if (INTERESTING_JUMP_NUM == 0)
+            {
+                printf("%s Jump %u:\n", dirId, jmp->idDebugOnlyInfo()->idNum);
+            }
+            printf("%s Jump  block is at %08X\n", dirId, jmpIG->igOffs);
+            printf("%s Jump reloffset is %04X\n", dirId, jmp->idjOffs);
+            printf("%s Jump source is at %08X\n", dirId, srcEncodingOffs);
+            printf("%s Label block is at %08X\n", dirId, dstOffs);
+            printf("%s Jump  dist. is    %04X\n", dirId, jmpDist);
+            if (extra > 0)
+            {
+                printf("%s Dist excess [S] = %d  \n", dirId, extra);
+            }
+        }
+        if (EMITVERBOSE)
+        {
+            printf("Estimate of %s jump [%08X/%03u]: %04X -> %04X = %04X\n", direction, dspPtr(jmp),
+                   jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
+        }
+    };
 #endif
 
     instrDescJmp* jmp;
@@ -1811,28 +1899,7 @@ AGAIN:
             extra = jmpDist - psd;
 
 #if DEBUG_EMIT
-            assert(jmp->idDebugOnlyInfo() != nullptr);
-            if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
-            {
-                if (INTERESTING_JUMP_NUM == 0)
-                {
-                    printf("[1] Jump %u:\n", jmp->idDebugOnlyInfo()->idNum);
-                }
-                printf("[1] Jump  block is at %08X\n", jmpIG->igOffs);
-                printf("[1] Jump reloffset is %04X\n", jmp->idjOffs);
-                printf("[1] Jump source is at %08X\n", srcEncodingOffs);
-                printf("[1] Label block is at %08X\n", dstOffs);
-                printf("[1] Jump  dist. is    %04X\n", jmpDist);
-                if (extra > 0)
-                {
-                    printf("[1] Dist excess [S] = %d  \n", extra);
-                }
-            }
-            if (EMITVERBOSE)
-            {
-                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
-                       jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
-            }
+            printJmpInfo(jmp, jmpIG, extra, srcInstrOffs, srcEncodingOffs, dstOffs, jmpDist, "fwd");
 #endif // DEBUG_EMIT
 
             assert(jmpDist >= 0); // Forward jump
@@ -1842,8 +1909,9 @@ AGAIN:
             {
                 jmp->idAddr()->iiaSetJmpOffset(jmpDist);
             }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
+            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
+                // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
@@ -1908,28 +1976,7 @@ AGAIN:
             extra = jmpDist + nsd;
 
 #if DEBUG_EMIT
-            assert(jmp->idDebugOnlyInfo() != nullptr);
-            if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
-            {
-                if (INTERESTING_JUMP_NUM == 0)
-                {
-                    printf("[2] Jump %u:\n", jmp->idDebugOnlyInfo()->idNum);
-                }
-                printf("[2] Jump  block is at %08X\n", jmpIG->igOffs);
-                printf("[2] Jump reloffset is %04X\n", jmp->idjOffs);
-                printf("[2] Jump source is at %08X\n", srcEncodingOffs);
-                printf("[2] Label block is at %08X\n", dstOffs);
-                printf("[2] Jump  dist. is    %04X\n", jmpDist);
-                if (extra > 0)
-                {
-                    printf("[2] Dist excess [S] = %d  \n", extra);
-                }
-            }
-            if (EMITVERBOSE)
-            {
-                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
-                       jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
-            }
+            printJmpInfo(jmp, jmpIG, extra, srcInstrOffs, srcEncodingOffs, dstOffs, jmpDist, "bwd");
 #endif // DEBUG_EMIT
 
             assert(jmpDist >= 0); // Backward jump
@@ -1939,8 +1986,9 @@ AGAIN:
             {
                 jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
             }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
+            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
+                // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
@@ -2026,7 +2074,7 @@ AGAIN:
 #ifdef DEBUG
     if (EMIT_INSTLIST_VERBOSE)
     {
-        printf("\nLabels list after the jump dist binding:\n\n");
+        printf("\nLabels list after the jump distance binding:\n\n");
         emitDispIGlist(false);
     }
 
@@ -2853,7 +2901,7 @@ static const char* const RegNames[] =
 //    id   - The instrDesc of the code if needed.
 //
 // Note:
-//    The length of the instruction's name include aligned space is 13.
+//    The length of the instruction's name include aligned space is 15.
 //
 
 void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
@@ -2887,7 +2935,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 imm20 |= 0xfff00000;
             }
-            printf("lui          %s, %d\n", rd, imm20);
+            printf("lui            %s, %d\n", rd, imm20);
             return;
         }
         case 0x17: // AUIPC
@@ -2898,7 +2946,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 imm20 |= 0xfff00000;
             }
-            printf("auipc        %s, %d\n", rd, imm20);
+            printf("auipc          %s, %d\n", rd, imm20);
             return;
         }
         case 0x13:
@@ -2914,35 +2962,35 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             switch (opcode2)
             {
                 case 0x0: // ADDI
-                    printf("addi         %s, %s, %d\n", rd, rs1, imm12);
+                    printf("addi           %s, %s, %d\n", rd, rs1, imm12);
                     return;
-                case 0x1:                                                       // SLLI
-                    printf("slli         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
+                case 0x1:                                                         // SLLI
+                    printf("slli           %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
                     return;
                 case 0x2: // SLTI
-                    printf("slti         %s, %s, %d\n", rd, rs1, imm12);
+                    printf("slti           %s, %s, %d\n", rd, rs1, imm12);
                     return;
                 case 0x3: // SLTIU
-                    printf("sltiu        %s, %s, %d\n", rd, rs1, imm12);
+                    printf("sltiu          %s, %s, %d\n", rd, rs1, imm12);
                     return;
                 case 0x4: // XORI
-                    printf("xori         %s, %s, 0x%x\n", rd, rs1, imm12);
+                    printf("xori           %s, %s, 0x%x\n", rd, rs1, imm12);
                     return;
                 case 0x5: // SRLI & SRAI
                     if (((code >> 30) & 0x1) == 0)
                     {
-                        printf("srli         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
+                        printf("srli           %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
                     }
                     else
                     {
-                        printf("srai         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
+                        printf("srai           %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
                     }
                     return;
                 case 0x6: // ORI
-                    printf("ori          %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
+                    printf("ori            %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
                     return;
                 case 0x7: // ANDI
-                    printf("andi         %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
+                    printf("andi           %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
                     return;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
@@ -2962,19 +3010,19 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             switch (opcode2)
             {
                 case 0x0: // ADDIW
-                    printf("addiw        %s, %s, %d\n", rd, rs1, imm12);
+                    printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
                     return;
-                case 0x1:                                                       // SLLIW
-                    printf("slliw        %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
+                case 0x1:                                                         // SLLIW
+                    printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
                     return;
                 case 0x5: // SRLIW & SRAIW
                     if (((code >> 30) & 0x1) == 0)
                     {
-                        printf("srliw        %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
+                        printf("srliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
                     }
                     else
                     {
-                        printf("sraiw        %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
+                        printf("sraiw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
                     }
                     return;
                 default:
@@ -2996,40 +3044,40 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     case 0x0: // ADD & SUB
                         if (((code >> 30) & 0x1) == 0)
                         {
-                            printf("add          %s, %s, %s\n", rd, rs1, rs2);
+                            printf("add            %s, %s, %s\n", rd, rs1, rs2);
                         }
                         else
                         {
-                            printf("sub          %s, %s, %s\n", rd, rs1, rs2);
+                            printf("sub            %s, %s, %s\n", rd, rs1, rs2);
                         }
                         return;
                     case 0x1: // SLL
-                        printf("sll          %s, %s, %s\n", rd, rs1, rs2);
+                        printf("sll            %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x2: // SLT
-                        printf("slt          %s, %s, %s\n", rd, rs1, rs2);
+                        printf("slt            %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x3: // SLTU
-                        printf("sltu         %s, %s, %s\n", rd, rs1, rs2);
+                        printf("sltu           %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x4: // XOR
-                        printf("xor          %s, %s, %s\n", rd, rs1, rs2);
+                        printf("xor            %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x5: // SRL & SRA
                         if (((code >> 30) & 0x1) == 0)
                         {
-                            printf("srl          %s, %s, %s\n", rd, rs1, rs2);
+                            printf("srl            %s, %s, %s\n", rd, rs1, rs2);
                         }
                         else
                         {
-                            printf("sra          %s, %s, %s\n", rd, rs1, rs2);
+                            printf("sra            %s, %s, %s\n", rd, rs1, rs2);
                         }
                         return;
                     case 0x6: // OR
-                        printf("or           %s, %s, %s\n", rd, rs1, rs2);
+                        printf("or             %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x7: // AND
-                        printf("and          %s, %s, %s\n", rd, rs1, rs2);
+                        printf("and            %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);
@@ -3041,28 +3089,28 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 switch (opcode3)
                 {
                     case 0x0: // MUL
-                        printf("mul          %s, %s, %s\n", rd, rs1, rs2);
+                        printf("mul            %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x1: // MULH
-                        printf("mulh         %s, %s, %s\n", rd, rs1, rs2);
+                        printf("mulh           %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x2: // MULHSU
-                        printf("mulhsu       %s, %s, %s\n", rd, rs1, rs2);
+                        printf("mulhsu         %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x3: // MULHU
-                        printf("mulhu        %s, %s, %s\n", rd, rs1, rs2);
+                        printf("mulhu          %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x4: // DIV
-                        printf("div          %s, %s, %s\n", rd, rs1, rs2);
+                        printf("div            %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x5: // DIVU
-                        printf("divu         %s, %s, %s\n", rd, rs1, rs2);
+                        printf("divu           %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x6: // REM
-                        printf("rem          %s, %s, %s\n", rd, rs1, rs2);
+                        printf("rem            %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x7: // REMU
-                        printf("remu         %s, %s, %s\n", rd, rs1, rs2);
+                        printf("remu           %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);
@@ -3090,24 +3138,24 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     case 0x0: // ADDW & SUBW
                         if (((code >> 30) & 0x1) == 0)
                         {
-                            printf("addw         %s, %s, %s\n", rd, rs1, rs2);
+                            printf("addw           %s, %s, %s\n", rd, rs1, rs2);
                         }
                         else
                         {
-                            printf("subw         %s, %s, %s\n", rd, rs1, rs2);
+                            printf("subw           %s, %s, %s\n", rd, rs1, rs2);
                         }
                         return;
                     case 0x1: // SLLW
-                        printf("sllw         %s, %s, %s\n", rd, rs1, rs2);
+                        printf("sllw           %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x5: // SRLW & SRAW
                         if (((code >> 30) & 0x1) == 0)
                         {
-                            printf("srlw         %s, %s, %s\n", rd, rs1, rs2);
+                            printf("srlw           %s, %s, %s\n", rd, rs1, rs2);
                         }
                         else
                         {
-                            printf("sraw         %s, %s, %s\n", rd, rs1, rs2);
+                            printf("sraw           %s, %s, %s\n", rd, rs1, rs2);
                         }
                         return;
                     default:
@@ -3120,19 +3168,19 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 switch (opcode3)
                 {
                     case 0x0: // MULW
-                        printf("mulw         %s, %s, %s\n", rd, rs1, rs2);
+                        printf("mulw           %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x4: // DIVW
-                        printf("divw         %s, %s, %s\n", rd, rs1, rs2);
+                        printf("divw           %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x5: // DIVUW
-                        printf("divuw        %s, %s, %s\n", rd, rs1, rs2);
+                        printf("divuw          %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x6: // REMW
-                        printf("remw         %s, %s, %s\n", rd, rs1, rs2);
+                        printf("remw           %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     case 0x7: // REMUW
-                        printf("remuw        %s, %s, %s\n", rd, rs1, rs2);
+                        printf("remuw          %s, %s, %s\n", rd, rs1, rs2);
                         return;
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);
@@ -3159,23 +3207,23 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             switch (opcode2)
             {
                 case 0: // SB
-                    printf("sb           %s, %d(%s)\n", rs2, offset, rs1);
+                    printf("sb             %s, %d(%s)\n", rs2, offset, rs1);
                     return;
                 case 1: // SH
-                    printf("sh           %s, %d(%s)\n", rs2, offset, rs1);
+                    printf("sh             %s, %d(%s)\n", rs2, offset, rs1);
                     return;
                 case 2: // SW
-                    printf("sw           %s, %d(%s)\n", rs2, offset, rs1);
+                    printf("sw             %s, %d(%s)\n", rs2, offset, rs1);
                     return;
                 case 3: // SD
-                    printf("sd           %s, %d(%s)\n", rs2, offset, rs1);
+                    printf("sd             %s, %d(%s)\n", rs2, offset, rs1);
                     return;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
                     return;
             }
         }
-        case 0x63:
+        case 0x63: // BRANCH
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -3188,28 +3236,38 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             switch (opcode2)
             {
-                case 0: // BEQ
-                    printf("beq          %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 1: // BNE
-                    printf("bne          %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 4: // BLT
-                    printf("blt          %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 5: // BGE
-                    printf("bge          %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 6: // BLTU
-                    printf("bltu         %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 7: // BGEU
-                    printf("bgeu         %s, %s, %d\n", rs1, rs2, offset);
-                    return;
+                case 0:
+                    printf("beq ");
+                    break;
+                case 1:
+                    printf("bne ");
+                    break;
+                case 4:
+                    printf("blt ");
+                    break;
+                case 5:
+                    printf("bge ");
+                    break;
+                case 6:
+                    printf("bltu");
+                    break;
+                case 7:
+                    printf("bgeu");
+                    break;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
                     return;
             }
+            static const int MAX_LEN = 32;
+
+            int len = printf("           %s, %s, %d", rs1, rs2, offset);
+            if (len <= 0 || len > MAX_LEN)
+                return;
+
+            if (!emitComp->opts.disDiffable)
+                printf("%*s;; offset=0x%04X", MAX_LEN - len, "", emitCurCodeOffs(insAdr) + offset);
+            printf("\n");
+            return;
         }
         case 0x03:
         {
@@ -3225,25 +3283,25 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             switch (opcode2)
             {
                 case 0: // LB
-                    printf("lb           %s, %d(%s)\n", rd, offset, rs1);
+                    printf("lb             %s, %d(%s)\n", rd, offset, rs1);
                     return;
                 case 1: // LH
-                    printf("lh           %s, %d(%s)\n", rd, offset, rs1);
+                    printf("lh             %s, %d(%s)\n", rd, offset, rs1);
                     return;
                 case 2: // LW
-                    printf("lw           %s, %d(%s)\n", rd, offset, rs1);
+                    printf("lw             %s, %d(%s)\n", rd, offset, rs1);
                     return;
                 case 3: // LD
-                    printf("ld           %s, %d(%s)\n", rd, offset, rs1);
+                    printf("ld             %s, %d(%s)\n", rd, offset, rs1);
                     return;
                 case 4: // LBU
-                    printf("lbu          %s, %d(%s)\n", rd, offset, rs1);
+                    printf("lbu            %s, %d(%s)\n", rd, offset, rs1);
                     return;
                 case 5: // LHU
-                    printf("lhu          %s, %d(%s)\n", rd, offset, rs1);
+                    printf("lhu            %s, %d(%s)\n", rd, offset, rs1);
                     return;
                 case 6: // LWU
-                    printf("lwu          %s, %d(%s)\n", rd, offset, rs1);
+                    printf("lwu            %s, %d(%s)\n", rd, offset, rs1);
                     return;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
@@ -3259,7 +3317,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 offset |= 0xfffff000;
             }
-            printf("jalr         %s, %d(%s)", rd, offset, rs1);
+            printf("jalr           %s, %d(%s)", rd, offset, rs1);
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             // Target for ret call is unclear, e.g.:
             //   jalr zero, 0(ra)
@@ -3282,7 +3340,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 offset |= 0xfff00000;
             }
-            printf("jal          %s, %d", rd, offset);
+            printf("jal            %s, %d", rd, offset);
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             if (handle != 0)
             {
@@ -3297,7 +3355,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             int pred = ((code) >> 24) & 0xf;
             int succ = ((code) >> 20) & 0xf;
-            printf("fence        %d, %d\n", pred, succ);
+            printf("fence          %d, %d\n", pred, succ);
             return;
         }
         case 0x73:
@@ -3328,32 +3386,32 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             switch (opcode2)
             {
                 case 0x00: // FADD.S
-                    printf("fadd.s       %s, %s, %s\n", fd, fs1, fs2);
+                    printf("fadd.s         %s, %s, %s\n", fd, fs1, fs2);
                     return;
                 case 0x04: // FSUB.S
-                    printf("fsub.s       %s, %s, %s\n", fd, fs1, fs2);
+                    printf("fsub.s         %s, %s, %s\n", fd, fs1, fs2);
                     return;
                 case 0x08: // FMUL.S
-                    printf("fmul.s       %s, %s, %s\n", fd, fs1, fs2);
+                    printf("fmul.s         %s, %s, %s\n", fd, fs1, fs2);
                     return;
                 case 0x0C: // FDIV.S
-                    printf("fdiv.s       %s, %s, %s\n", fd, fs1, fs2);
+                    printf("fdiv.s         %s, %s, %s\n", fd, fs1, fs2);
                     return;
                 case 0x2C: // FSQRT.S
-                    printf("fsqrt.s      %s, %s\n", fd, fs1);
+                    printf("fsqrt.s        %s, %s\n", fd, fs1);
                     return;
                 case 0x10:            // FSGNJ.S & FSGNJN.S & FSGNJX.S
                     if (opcode4 == 0) // FSGNJ.S
                     {
-                        printf("fsgnj.s      %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fsgnj.s        %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else if (opcode4 == 1) // FSGNJN.S
                     {
-                        printf("fsgnjn.s     %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fsgnjn.s       %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else if (opcode4 == 2) // FSGNJX.S
                     {
-                        printf("fsgnjx.s     %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fsgnjx.s       %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else
                     {
@@ -3363,11 +3421,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x14:            // FMIN.S & FMAX.S
                     if (opcode4 == 0) // FMIN.S
                     {
-                        printf("fmin.s       %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fmin.s         %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else if (opcode4 == 1) // FMAX.S
                     {
-                        printf("fmax.s       %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fmax.s         %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else
                     {
@@ -3377,19 +3435,19 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x60:            // FCVT.W.S & FCVT.WU.S & FCVT.L.S & FCVT.LU.S
                     if (opcode3 == 0) // FCVT.W.S
                     {
-                        printf("fcvt.w.s     %s, %s\n", xd, fs1);
+                        printf("fcvt.w.s       %s, %s\n", xd, fs1);
                     }
                     else if (opcode3 == 1) // FCVT.WU.S
                     {
-                        printf("fcvt.wu.s    %s, %s\n", xd, fs1);
+                        printf("fcvt.wu.s      %s, %s\n", xd, fs1);
                     }
                     else if (opcode3 == 2) // FCVT.L.S
                     {
-                        printf("fcvt.l.s     %s, %s\n", xd, fs1);
+                        printf("fcvt.l.s       %s, %s\n", xd, fs1);
                     }
                     else if (opcode3 == 3) // FCVT.LU.S
                     {
-                        printf("fcvt.lu.s    %s, %s\n", xd, fs1);
+                        printf("fcvt.lu.s      %s, %s\n", xd, fs1);
                     }
                     else
                     {
@@ -3399,11 +3457,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x70:            // FMV.X.W & FCLASS.S
                     if (opcode4 == 0) // FMV.X.W
                     {
-                        printf("fmv.x.w      %s, %s\n", xd, fs1);
+                        printf("fmv.x.w        %s, %s\n", xd, fs1);
                     }
                     else if (opcode4 == 1) // FCLASS.S
                     {
-                        printf("fclass.s     %s, %s\n", xd, fs1);
+                        printf("fclass.s       %s, %s\n", xd, fs1);
                     }
                     else
                     {
@@ -3413,15 +3471,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x50:            // FLE.S & FLT.S & FEQ.S
                     if (opcode4 == 0) // FLE.S
                     {
-                        printf("fle.s        %s, %s, %s\n", xd, fs1, fs2);
+                        printf("fle.s          %s, %s, %s\n", xd, fs1, fs2);
                     }
                     else if (opcode4 == 1) // FLT.S
                     {
-                        printf("flt.s        %s, %s, %s\n", xd, fs1, fs2);
+                        printf("flt.s          %s, %s, %s\n", xd, fs1, fs2);
                     }
                     else if (opcode4 == 2) // FEQ.S
                     {
-                        printf("feq.s        %s, %s, %s\n", xd, fs1, fs2);
+                        printf("feq.s          %s, %s, %s\n", xd, fs1, fs2);
                     }
                     else
                     {
@@ -3431,19 +3489,19 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x68:            // FCVT.S.W & FCVT.S.WU & FCVT.S.L & FCVT.S.LU
                     if (opcode3 == 0) // FCVT.S.W
                     {
-                        printf("fcvt.s.w     %s, %s\n", fd, xs1);
+                        printf("fcvt.s.w       %s, %s\n", fd, xs1);
                     }
                     else if (opcode3 == 1) // FCVT.S.WU
                     {
-                        printf("fcvt.s.wu    %s, %s\n", fd, xs1);
+                        printf("fcvt.s.wu      %s, %s\n", fd, xs1);
                     }
                     else if (opcode3 == 2) // FCVT.S.L
                     {
-                        printf("fcvt.s.l     %s, %s\n", fd, xs1);
+                        printf("fcvt.s.l       %s, %s\n", fd, xs1);
                     }
                     else if (opcode3 == 3) // FCVT.S.LU
                     {
-                        printf("fcvt.s.lu    %s, %s\n", fd, xs1);
+                        printf("fcvt.s.lu      %s, %s\n", fd, xs1);
                     }
 
                     else
@@ -3452,35 +3510,35 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     return;
                 case 0x78: // FMV.W.X
-                    printf("fmv.w.x      %s, %s\n", fd, xs1);
+                    printf("fmv.w.x        %s, %s\n", fd, xs1);
                     return;
                 case 0x1: // FADD.D
-                    printf("fadd.d       %s, %s, %s\n", fd, fs1, fs2);
+                    printf("fadd.d         %s, %s, %s\n", fd, fs1, fs2);
                     return;
                 case 0x5: // FSUB.D
-                    printf("fsub.d       %s, %s, %s\n", fd, fs1, fs2);
+                    printf("fsub.d         %s, %s, %s\n", fd, fs1, fs2);
                     return;
                 case 0x9: // FMUL.D
-                    printf("fmul.d       %s, %s, %s\n", fd, fs1, fs2);
+                    printf("fmul.d         %s, %s, %s\n", fd, fs1, fs2);
                     return;
                 case 0xd: // FDIV.D
-                    printf("fdiv.d       %s, %s, %s\n", fd, fs1, fs2);
+                    printf("fdiv.d         %s, %s, %s\n", fd, fs1, fs2);
                     return;
                 case 0x2d: // FSQRT.D
-                    printf("fsqrt.d      %s, %s\n", fd, fs1);
+                    printf("fsqrt.d        %s, %s\n", fd, fs1);
                     return;
                 case 0x11:            // FSGNJ.D & FSGNJN.D & FSGNJX.D
                     if (opcode4 == 0) // FSGNJ.D
                     {
-                        printf("fsgnj.d      %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fsgnj.d        %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else if (opcode4 == 1) // FSGNJN.D
                     {
-                        printf("fsgnjn.d     %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fsgnjn.d       %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else if (opcode4 == 2) // FSGNJX.D
                     {
-                        printf("fsgnjx.d     %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fsgnjx.d       %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else
                     {
@@ -3490,11 +3548,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x15:            // FMIN.D & FMAX.D
                     if (opcode4 == 0) // FMIN.D
                     {
-                        printf("fmin.d       %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fmin.d         %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else if (opcode4 == 1) // FMAX.D
                     {
-                        printf("fmax.d       %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fmax.d         %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else
                     {
@@ -3504,7 +3562,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x20:            // FCVT.S.D
                     if (opcode3 == 1) // FCVT.S.D
                     {
-                        printf("fcvt.s.d     %s, %s\n", fd, fs1);
+                        printf("fcvt.s.d       %s, %s\n", fd, fs1);
                     }
                     else
                     {
@@ -3514,7 +3572,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x21:            // FCVT.D.S
                     if (opcode3 == 0) // FCVT.D.S
                     {
-                        printf("fcvt.d.s     %s, %s\n", fd, fs1);
+                        printf("fcvt.d.s       %s, %s\n", fd, fs1);
                     }
                     else
                     {
@@ -3524,15 +3582,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x51:            // FLE.D & FLT.D & FEQ.D
                     if (opcode4 == 0) // FLE.D
                     {
-                        printf("fle.d        %s, %s, %s\n", xd, fs1, fs2);
+                        printf("fle.d          %s, %s, %s\n", xd, fs1, fs2);
                     }
                     else if (opcode4 == 1) // FLT.D
                     {
-                        printf("flt.d        %s, %s, %s\n", xd, fs1, fs2);
+                        printf("flt.d          %s, %s, %s\n", xd, fs1, fs2);
                     }
                     else if (opcode4 == 2) // FEQ.D
                     {
-                        printf("feq.d        %s, %s, %s\n", xd, fs1, fs2);
+                        printf("feq.d          %s, %s, %s\n", xd, fs1, fs2);
                     }
                     else
                     {
@@ -3543,19 +3601,19 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
                     if (opcode3 == 0) // FCVT.W.D
                     {
-                        printf("fcvt.w.d     %s, %s\n", xd, fs1);
+                        printf("fcvt.w.d       %s, %s\n", xd, fs1);
                     }
                     else if (opcode3 == 1) // FCVT.WU.D
                     {
-                        printf("fcvt.wu.d    %s, %s\n", xd, fs1);
+                        printf("fcvt.wu.d      %s, %s\n", xd, fs1);
                     }
                     else if (opcode3 == 2) // FCVT.L.D
                     {
-                        printf("fcvt.l.d     %s, %s\n", xd, fs1);
+                        printf("fcvt.l.d       %s, %s\n", xd, fs1);
                     }
                     else if (opcode3 == 3) // FCVT.LU.D
                     {
-                        printf("fcvt.lu.d    %s, %s\n", xd, fs1);
+                        printf("fcvt.lu.d      %s, %s\n", xd, fs1);
                     }
                     else
                     {
@@ -3565,19 +3623,19 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x69:            // FCVT.D.W & FCVT.D.WU & FCVT.D.L & FCVT.D.LU
                     if (opcode3 == 0) // FCVT.D.W
                     {
-                        printf("fcvt.d.w     %s, %s\n", fd, xs1);
+                        printf("fcvt.d.w       %s, %s\n", fd, xs1);
                     }
                     else if (opcode3 == 1) // FCVT.D.WU
                     {
-                        printf("fcvt.d.wu    %s, %s\n", fd, xs1);
+                        printf("fcvt.d.wu      %s, %s\n", fd, xs1);
                     }
                     else if (opcode3 == 2)
                     {
-                        printf("fcvt.d.l     %s, %s\n", fd, xs1);
+                        printf("fcvt.d.l       %s, %s\n", fd, xs1);
                     }
                     else if (opcode3 == 3)
                     {
-                        printf("fcvt.d.lu    %s, %s\n", fd, xs1);
+                        printf("fcvt.d.lu      %s, %s\n", fd, xs1);
                     }
 
                     else
@@ -3589,11 +3647,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x71:            // FMV.X.D & FCLASS.D
                     if (opcode4 == 0) // FMV.X.D
                     {
-                        printf("fmv.x.d      %s, %s\n", xd, fs1);
+                        printf("fmv.x.d        %s, %s\n", xd, fs1);
                     }
                     else if (opcode4 == 1) // FCLASS.D
                     {
-                        printf("fclass.d     %s, %s\n", xd, fs1);
+                        printf("fclass.d       %s, %s\n", xd, fs1);
                     }
                     else
                     {
@@ -3602,7 +3660,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     return;
                 case 0x79: // FMV.D.X
                     assert(opcode4 == 0);
-                    printf("fmv.d.x      %s, %s\n", fd, xs1);
+                    printf("fmv.d.x        %s, %s\n", fd, xs1);
                     return;
                 default:
                     NYI_RISCV64("illegal ins within emitDisInsName!");
@@ -3623,11 +3681,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             if (opcode2 == 2) // FSW
             {
-                printf("fsw          %s, %d(%s)\n", rs2, offset, rs1);
+                printf("fsw            %s, %d(%s)\n", rs2, offset, rs1);
             }
             else if (opcode2 == 3) // FSD
             {
-                printf("fsd          %s, %d(%s)\n", rs2, offset, rs1);
+                printf("fsd            %s, %d(%s)\n", rs2, offset, rs1);
             }
             else
             {
@@ -3647,15 +3705,101 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             if (opcode2 == 2) // FLW
             {
-                printf("flw          %s, %d(%s)\n", rd, offset, rs1);
+                printf("flw            %s, %d(%s)\n", rd, offset, rs1);
             }
             else if (opcode2 == 3) // FLD
             {
-                printf("fld          %s, %d(%s)\n", rd, offset, rs1);
+                printf("fld            %s, %d(%s)\n", rd, offset, rs1);
             }
             else
             {
                 NYI_RISCV64("illegal ins within emitDisInsName!");
+            }
+            return;
+        }
+        case 0x2f: // AMO - atomic memory operation
+        {
+            bool        hasDataReg = true;
+            const char* name;
+            switch (code >> 27) // funct5
+            {
+                case 0b00010:
+                    name       = "lr";
+                    hasDataReg = false;
+                    break;
+                case 0b00011:
+                    name = "sc";
+                    break;
+                case 0b00001:
+                    name = "amoswap";
+                    break;
+                case 0b00000:
+                    name = "amoadd";
+                    break;
+                case 0b00100:
+                    name = "amoxor";
+                    break;
+                case 0b01100:
+                    name = "amoand";
+                    break;
+                case 0b01000:
+                    name = "amoor";
+                    break;
+                case 0b10000:
+                    name = "amomin";
+                    break;
+                case 0b10100:
+                    name = "amomax";
+                    break;
+                case 0b11000:
+                    name = "amominu";
+                    break;
+                case 0b11100:
+                    name = "amomaxu";
+                    break;
+                default:
+                    assert(!"Illegal funct5 within atomic memory operation, emitDisInsName");
+                    name = "?";
+            }
+
+            char width;
+            switch ((code >> 12) & 0x7) // funct3: width
+            {
+                case 0x2:
+                    width = 'w';
+                    break;
+                case 0x3:
+                    width = 'd';
+                    break;
+                default:
+                    assert(!"Illegal width tag within atomic memory operation, emitDisInsName");
+                    width = '?';
+            }
+
+            const char* aq = code & (1 << 25) ? "aq" : "";
+            const char* rl = code & (1 << 26) ? "rl" : "";
+
+            int len = printf("%s.%c.%s%s", name, width, aq, rl);
+            if (len <= 0)
+            {
+                return;
+            }
+            static const int INS_LEN = 14;
+            assert(len <= INS_LEN);
+
+            const char* dest = RegNames[(code >> 7) & 0x1f];
+            const char* addr = RegNames[(code >> 15) & 0x1f];
+
+            int dataReg = (code >> 20) & 0x1f;
+            if (hasDataReg)
+            {
+                const char* data = RegNames[dataReg];
+                printf("%*s %s, %s, (%s)\n", INS_LEN - len, "", dest, data, addr);
+            }
+            else
+            {
+                assert(dataReg == REG_R0);
+                printf("%*s %s, (%s)\n", INS_LEN - len, "", dest, addr);
             }
             return;
         }

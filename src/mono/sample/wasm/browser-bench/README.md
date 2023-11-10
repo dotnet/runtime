@@ -20,6 +20,18 @@ To run the benchmark on windows:
 
     > dotnet build /t:RunSample
 
+### Blazor startup measurements
+
+To run the benchmark with blazor startup measurements, set `BlazorStartup` property to `true`, like:
+
+    > dotnet build /t:RunSample /p:BlazorStartup=true
+
+### Additional build arguments
+
+The benchmark project is built in a separate process, so to pass additional msbuild arguments, use `BuildAdditionalArgs` property, like:
+
+    > dotnet build /t:RunSample  /p:BuildAdditionalArgs="/p:WasmEnableSIMD=false"
+
 Example console output:
 
     > make run

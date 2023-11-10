@@ -253,6 +253,12 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Insert:
             case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
@@ -547,7 +553,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Ceiling:
         {
             assert(sig->numArgs == 1);
-            assert(varTypeIsFloating(simdBaseType));
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCeilNode(retType, op1, simdBaseJitType, simdSize);
@@ -1098,7 +1109,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Floor:
         {
             assert(sig->numArgs == 1);
-            assert(varTypeIsFloating(simdBaseType));
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize);
@@ -1728,6 +1744,52 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_StoreVector64x2:
+        case NI_AdvSimd_StoreVector64x3:
+        case NI_AdvSimd_StoreVector64x4:
+        case NI_AdvSimd_Arm64_StoreVector128x2:
+        case NI_AdvSimd_Arm64_StoreVector128x3:
+        case NI_AdvSimd_Arm64_StoreVector128x4:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType == TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2                 = impPopStack().val;
+            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1                 = getArgForHWIntrinsic(argType, argClass);
+
+            assert(op2->TypeGet() == TYP_STRUCT);
+            if (op1->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op1 = op1->gtGetOp1();
+                }
+            }
+
+            if (!op2->OperIs(GT_LCL_VAR))
+            {
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreVectorNx2 temp tree"));
+
+                impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
+                op2 = gtNewLclvNode(tmp, argType);
+            }
+            op2 = gtConvertTableOpToFieldList(op2, fieldCount);
+
+            info.compNeedsConsecutiveRegisters = true;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_Sum:
         case NI_Vector128_Sum:
         {
@@ -1825,6 +1887,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_LoadVector64x2AndUnzip:
+        case NI_AdvSimd_LoadVector64x3AndUnzip:
+        case NI_AdvSimd_LoadVector64x4AndUnzip:
+        case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
+        case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
+        case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
+        case NI_AdvSimd_LoadVector64x2:
+        case NI_AdvSimd_LoadVector64x3:
+        case NI_AdvSimd_LoadVector64x4:
+        case NI_AdvSimd_Arm64_LoadVector128x2:
+        case NI_AdvSimd_Arm64_LoadVector128x3:
+        case NI_AdvSimd_Arm64_LoadVector128x4:
+        case NI_AdvSimd_LoadAndReplicateToVector64x2:
+        case NI_AdvSimd_LoadAndReplicateToVector64x3:
+        case NI_AdvSimd_LoadAndReplicateToVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            info.compNeedsConsecutiveRegisters = true;
+            FALLTHROUGH;
         case NI_AdvSimd_Arm64_LoadPairScalarVector64:
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
         case NI_AdvSimd_Arm64_LoadPairVector128:
@@ -1847,6 +1929,57 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
 
             op1     = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode = impStoreMultiRegValueToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
+            break;
+        }
+        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+        {
+            assert(sig->numArgs == 3);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = impPopStack().val;
+
+            if (op3->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op3->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op3 = op3->gtGetOp1();
+                }
+            }
+
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(op1->TypeGet() == TYP_STRUCT);
+
+            info.compNeedsConsecutiveRegisters = true;
+            unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
+
+            if (!op1->OperIs(GT_LCL_VAR))
+            {
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("LoadAndInsertScalar temp tree"));
+
+                impStoreTemp(tmp, op1, CHECK_SPILL_NONE);
+                op1 = gtNewLclvNode(tmp, argType);
+            }
+
+            op1     = gtConvertParamOpToFieldList(op1, fieldCount, argClass);
+            op1     = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
             retNode = impStoreMultiRegValueToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }

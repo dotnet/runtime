@@ -906,9 +906,6 @@ void HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t 
 #endif
 }
 
-extern int getNumberOfSlots();
-
-
 /*
  * HndCountHandles
  *

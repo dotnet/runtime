@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -45,8 +45,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public Type value;
 		}
 
-		// Analyzer doesn't understand inline arrays currently - so it doesn't produce a warning here
-		[ExpectedWarning ("IL2065", "GetProperty", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2065", "GetProperty")]
 		static void AccessUnannotatedTypeArray ()
 		{
 			UnannotatedTypeArray a = new UnannotatedTypeArray ();
@@ -64,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		// Currently tracking of annotations on inline array values is not implemented
-		[ExpectedWarning("IL2065", "GetProperty", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning("IL2065", "GetProperty")]
 		static void AccessAnnotatedTypeArray ()
 		{
 			AnnotatedTypeArray a = new AnnotatedTypeArray ();

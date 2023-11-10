@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for UnloadabilityIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- The test leaves AssemblyLoadContext.Default.ResolvingUnmanagedDll event registered to a method in the test at exit -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
@@ -11,7 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="TestAsm/TestAsm.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>

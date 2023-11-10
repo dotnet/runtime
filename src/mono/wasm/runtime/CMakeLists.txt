@@ -34,8 +34,8 @@ target_link_libraries(dotnet.native
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
 
 set_target_properties(dotnet.native PROPERTIES
-    LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/pal_random.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"
-    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-link.rsp ${CONFIGURATION_LINK_FLAGS} --pre-js ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js --js-library ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js --js-library ${NATIVE_BIN_DIR}/src/pal_random.lib.js --extern-post-js ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js "
+    LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"
+    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-link.rsp ${CONFIGURATION_LINK_FLAGS} --pre-js ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js --js-library ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js --extern-post-js ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js "
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")

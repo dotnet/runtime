@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- The test is lengthy as it scans the entire System.Private.CoreLib so that it times out in GC stress runs. -->
     <!-- The purpose of the test is functional testing of the R2R reader, not runtime stress testing. -->
     <GCStressIncompatible>true</GCStressIncompatible>

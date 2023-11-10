@@ -90,9 +90,9 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
 
     // If a result array is passed then it should be an array type with pointer-sized components that are not
     // GC-references.
-    ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
-    ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultArray || pResultArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
+    ASSERT(!pResultArray || pResultArray->GetMethodTable()->IsArray());
+    ASSERT(!pResultArray || !pResultArray->GetMethodTable()->HasReferenceFields());
+    ASSERT(!pResultArray || pResultArray->GetMethodTable()->RawGetComponentSize() == sizeof(void*));
 
     uint32_t cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
     HANDLE * pResultElements = pResultArray ? (HANDLE*)(pResultArray + 1) : NULL;

@@ -15,7 +15,7 @@ namespace Internal.Runtime
     {
         private static unsafe MethodTable* GetArrayEEType()
         {
-            return typeof(Array).TypeHandle.ToEETypePtr();
+            return MethodTable.Of<Array>();
         }
 
         internal unsafe RuntimeTypeHandle ToRuntimeTypeHandle()
