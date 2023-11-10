@@ -106,7 +106,7 @@ We could allow placing `FeatureGuardAttribute` on the property to indicate that 
   class Feature {
       [FeatureGuard(typeof(RuntimeFeature), nameof(RuntimeFeature.IsDynamicCodeSupported))]
       public static bool IsSupported => RuntimeFeature.IsDynamicCodeSupported;
-  }u
+  }
   ```
 
   The analyzer would need to hard-code the fact that `RuntimeFeature.IsDynamicCodeSupported` corresponds to `RequiresDynamicCodeAttribute`, unless we model this relationship via attributes that represent feature switches.
@@ -120,12 +120,12 @@ if (Feature.IsSupported) {
 }
 
 [RequiresDynamicCode("Does something with dynamic codegen")]
-static void APIWhichRequiseDynamicCode() {
+static void APIWhichRequiresDynamicCode() {
     // ...
 }
 ```
 
-#### Danger of incorrect usage
+### Danger of incorrect usage
 
 
 Since a feature guard silences warnings from the analyzer, there is some danger that `FeatureGuardAttribute` will be used carelessly as a way to silence warnings, even when the definition of the `IsSupported` property doesn't have any tie to the existing feature. For example:
@@ -152,7 +152,7 @@ If there is no substitution XML which sets `SilenceWarnings` to `false` when `Is
 
 We should be extremely clear in our documentation that this is not the intended use.
 
-#### Validating correctness of feature guards
+### Validating correctness of feature guards
 
 Better would be for the analyzer to validate that the implementation of a feature check includes a check for `IsDynamicCodeSupported`. This could be done using the analyzer infrastructure we have in place without much cost for simple cases:
 
@@ -174,12 +174,55 @@ Note that this analysis does require the analyzer to understand the relationship
 
 There may be more complex implementations of feature guards that the analyzer would not support. In this case, the analyzer would produce a warning on the property definition that can be silenced if the author is confident that the return value of the property reflects the referenced feature.
 
-#### Feature guard semantics for trimming and AOT
+### Feature guard semantics for trimming and AOT
 
 On its own, a feature guard is enough for the analyzer to avoid producing a warning for guarded calls. However, a separate mechanism is still required for ILLink and ILCompiler to behave the same way. (ILLink may actually work due to interprocedural constant propagation, but ILCompiler will not). There would still need to be an XML substitution file or an equivalent way to tell these tools that `Feature.IsSupported` should be treated as returning the constant `false` whenever `System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported` is set to `false`.
 
 This is another reason to consider also encoding feature switches as attributes, so that there is a uniform way to get the same behavior in all three tools.
 
+### Relationship with feature switches and attributes
+
+We saw a few cases that required a link between feature guards and the functionality related to feature switches:
+- To support feature guards in the analyzer, there must be a tie to the guarded `Requires` attribute
+- To support detecting incorrect implementations of the feature guard property, there must be a tie to the feature switch property of the guarded feature.
+- To support eliminating branches guarded by feature guards in ILLink/ILCompiler, there must be a tie to the name of the feature setting.
+
+It seems natural to define a model where all three of these represent the same concept.
+
+### Unified view of features
+
+We take the view that `RequiresDynamicCodeAttribute`, `RuntimeFeature.IsDynamicCodeSupported`, and `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"` all conceptually represent the same "feature".
+
+- The "feature" of dynamic code support is represented as:
+  - `RequiresDynamicCodeAttribute`
+  - `RuntimeFeature.IsDynamicCodeSupported` property
+  - `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"`
+
+Currently, "dynamic code" is the main example of a feature that defines all three of these components.
+
+Not all features come with a feature switch. For example:
+
+- The "feature" of unreferenced code being available is represented as:
+  - `RequiresUnreferencedCodeAttribute`
+
+It's easy to imagine adding a feature check property like `RuntimeFeature.IsUnreferencedCodeSupported` that would be set to `false` in trimmed apps. We don't necessarily want to do this, because there is value in organizing features that call into `RequiresUnreferencedCode` APIs in a more granular way, so that they can be toggled independently.
+
+- The "feature" of individual assembly files being available in an app is represented as:
+  - `RequiresAssemblyFilesAttribute`
+
+Similarly, not all features come with an attribute. Some features don't tie into functionality which is designed to produce warnings if called. For example:
+
+- The "feature" of verifying that open generics are dynamically instantiated with trim-compatible arguments is represented as:
+  - `VerifyOpenGenericServiceTrimmability` property
+  - `"Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability"`
+
+- The "feature" of supporting or not supporting globalization is represented as:
+  - `GlobalizationMode.Invariant` property
+  - `"System.Globalization.Invariant"`
+
+No warnings are produced just because these features are enabled/disabled. Instead, they are designed to be used to change the behavior, and possibly remove unneccessary code when publishing. It's easy to imagine adding an attribute like `RequiresVariantGlobalization` that would be used to annotate APIs that rely on globalization support, such that analysis warnings would prevent accidentally pulling in the globalization stack from code that is supposed to be using invariant globalization. We don't want to do this for every feature; typically we only do this for features that represent large cross-cutting concerns, and are not available with certain app models (trimming, AOT compilation, single-file publishing).
+
+However, any attribute-based model that we pick to represent features should be able to tie in with all three representations.
 
 
 ## Analogy with `DefineConstants`
@@ -644,42 +687,11 @@ We would like the Roslyn analyzer to not produce any warnings in code guarded by
 
 ### 
 
-## Unified view of features
-
-We take the view that `RequiresDynamicCodeAttribute`, `RuntimeFeature.IsDynamicCodeSupported`, and `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"` all conceptually represent the same "feature".
-
-- The "feature" of dynamic code support is represented as:
-  - `RequiresDynamicCodeAttribute`
-  - `RuntimeFeature.IsDynamicCodeSupported` property
-  - `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"`
 
 # TODO: mention SupportedOSPlatform
 
 This has both an attribute involed in the analysis, and a feature switch with support for replacing calls to the feature check property with a constant when publishing, based on the MSBuild settings.
 
-Not all features need to come with a feature switch. For example:
-
-- The "feature" of unreferenced code being available is represented as:
-  - `RequiresUnreferencedCodeAttribute`
-
-It's easy to imagine adding a feature check property like `RuntimeFeature.IsUnreferencedCodeSupported` that would be set to `false` in trimmed apps. We don't necessarily want to do this, because there is value in organizing features that call into `RequiresUnreferencedCode` APIs in a more granular way, so that they can be toggled independently.
-
-- The "feature" of individual assembly files being available in an app is represented as:
-  - `RequiresAssemblyFilesAttribute`
-
-Similarly, not all features need to come with an attribute. Some features don't tie into functionality which is designed to produce warnings if called. For example:
-
-- The "feature" of verifying that open generics are dynamically instantiated with trim-compatible arguments is represented as:
-  - `VerifyOpenGenericServiceTrimmability` property
-  - `"Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability"`
-
-- The "feature" of supporting or not supporting globalization is represented as:
-  - `GlobalizationMode.Invariant` property
-  - `"System.Globalization.Invariant"`
-
-No warnings are produced just because these features are enabled/disabled. Instead, they are designed to be used to change the behavior, and possibly remove unneccessary code when publishing. It's easy to imagine adding an attribute like `RequiresVariantGlobalization` that would be used to annotate APIs that rely on invariant globalization, such that analysis warnings would prevent accidentally pulling in the globalization stack from code that is supposed to be using invariant globalization. We don't want to do this for every feature; typically we only do this for features that represent large cross-cutting concerns, and are not available with certain app models (trimming, AOT compilation, single-file publishing).
-
-However, any attribute-based model that we pick to represent features should be able to tie in with all three representations.
 
 ## Decomposing the problem
 
