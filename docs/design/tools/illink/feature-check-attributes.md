@@ -50,10 +50,12 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 ## Goals
 
 - Teach the ILLink Roslyn analyzer to treat `IsDynamicCodeCompiled` as a guard for `RequiresDynamicCodeAttribute`
-- Allow libraries to define their own feature guard properties
+- Allow libraries to define their own feature guard propertiesu
 
   Libraries should be able to introduce their own properties that can act as guards for `RequiresDynamicCodeAttribute`, or for other features that might produce warnings in the analyzer
+
 - Define an attribute-based model for such feature guards
+
 - Take into account how this would interact with an attribute-based model for feature switches
 
   We don't necessarily aim to introduce a model for feature switches in this proposal, but we will at least explore the potential API shape to ensure that our model for feature guards would work well if we did.
@@ -67,6 +69,10 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 - Teach the ILLink Roslyn Analyzer about the substitution XML
 
   We don't want to teach the analyzer to read the substitution XML. The analyzer is the first interaction that users typically have with trimming and AOT warnings. This should not be burdened by the XML format. Even if we did teach the analyzer about the XML, it would not solve the problem because the analyzer must not globally assume that `IsDynamicCodeSupported` is false as ILCompiler does.
+
+- Define a model with the full richness of the supported OS platform attributes
+
+  We will focus initially on a model where feature switches are booleans that return `true` if a feature is enabled. We aren't considering supporting version checks, or feature switches of the opposite polarity (where `true` means a feature is disabled/unsupported). We will consider what this might look like just enough to gain confcidence that our model could be extended to support these cases in the future, but won't design this fully in the first iteration.
 
 ## Requirements for feature guards
 
@@ -904,3 +910,92 @@ We could just hard-code the fact that `IsDynamicCodeCompiled` should act as a gu
 It is possible via XML to define a new feature that has as string name and a check property, but there is currently no extensibility model for defining a new feature attribute. We might consider adding new feature _attributes_ out of scope for this proposal, but the solution should be compatible with introducing feature attributes for new features.
 
 Should we define an attribute-based model for defining feature switches?
+
+## Extending the semantics
+
+We might eventually want to extend the semantics in a few directions:
+
+- Feature switches with inverted polarity (`false` means supported/available)
+
+  `GlobalizationMode.Invariant` is an example of this. `true` means that globalization support is not available.
+
+  This could be done by adding an extra boolean argument to the feature switch attribute constructor:
+
+  ```csharp
+  class GlobalizationMode {
+      [FeatureSwitch("Globalization.Invariant", negativeCheck: true)]
+      public static bool InvariantGlobalization => AppContext.TryGetSwitch("Globalization.Invariant", out bool value) ? value : false;
+  }
+  ```
+
+  ```csharp
+  if (GlobaliazationMode.Invariant) {
+      UseInvariantGlobalization();
+  } else {
+      UseGlobalization(); // no warning
+  }
+
+  [RequiresGlobalizationSupport]
+  static void UseGlobalization() { }
+  ```
+
+- Feature guards with inverted polarity. This could work similarly to feature switches:
+  ```csharp
+  class Feature {
+      [FeatureGuard("RuntimeFeature.IsDynamicCodeSupported", negativeCheck: true)]
+      public bool IsDynamicCodeUnsupported => !RuntimeFeature.IsDynamicCodeSupported;
+  }
+  ```
+
+- Feature attributes with inverted polarity
+
+  It would be possible to define an attribute that indicates _lack_ of support for a feature, similar to the `UnsupportedOSPlatformAttribute`. The attribute-based model should make it possible to differentiate these from the `Requires` attributes, for example with a different base class.
+
+  It's not clear whether we have a use case for such an attribute, so these examples aren't meant to suggest realistic names, but just the semantics:
+
+  ```csharp
+  class RequiresNotAttribute : Attribute {}
+
+  class RequiresNoDynamicCodeAttribute : RequiresNotAttribute {}
+  ```
+
+- Versioning support for feature attributes/checks/guards
+
+  The model here would extend naturally to include support for version checks the same way that the platform compatibility analyzer does. Versions would likely be represented as strings because they are encodable in custom attributes:
+
+  ```csharp
+  class RequiresWithVersionAttribute : Attribute {
+      public RequiresWithVersionAttribute(string version) {}
+  }
+
+  class RequiresFooVersionAttribute : RequiresWithVersionAttribute {
+      public RequiresFooVersionAttribute(string version) : base(version) {}
+  }
+
+  class Foo {
+      [FeatureSwitch<Requires>]
+      public static bool IsSupportedWithVersionAtLeast(string version) => return VersionIsLessThanOrEquals(version, "2.0");
+
+      [RequiresFooVersion("2.0")]
+      public static void Impl_2_0() {
+          // Do some work
+      }
+
+      [RequiresFooVersion("1.0")]
+      public static void Impl_1_0() {
+        // Breaking change was made in version 2.0, where this API is no longer supported.
+          throw new NotSupportedException();
+      }
+  }
+  ```
+
+  Code that was originally built against the 1.0 version, and broken on the upgrade to the 2.0 version, could then be updated with a feature check like this:
+  ```csharp
+  if (Foo.IsSupportedWithVersionAtLeast("2.0")) {
+      Foo.Impl_2_0();
+  } else {
+      Foo.Impl_1_0();
+  }
+  ```
+
+  Although it's not clear in practice where this would be useful. This is not meant as a realistic example.
