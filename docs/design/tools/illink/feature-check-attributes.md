@@ -72,7 +72,7 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 
 In order to treat a property as a guard for a feature that has a `Requires` attribute, there must be a semantic tie between the guard property and the attribute. ILLink and ILCompiler don't have this requirement because they run on apps, not libraries, so the desired warning behavior just falls out, thanks to branch elimination and the fact that `IsDynamicCodeSupported` is set to false from MSBuild.
 
-## Potential API shapes
+## Feature guard attribute
 
 We could allow placing `FeatureGuardAttribute` on the property to indicate that it should act as a guard for a particular feature. The attribute instance needs to reference the feature somehow, whether as:
 
