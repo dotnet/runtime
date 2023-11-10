@@ -63,26 +63,33 @@ internal sealed class PInvokeTableGenerator
         return signatures;
     }
 
-
     private void EmitPInvokeTable(StreamWriter w, Dictionary<string, string> modules, List<PInvoke> pinvokes)
     {
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
         w.WriteLine();
 
-        // create a module for WasmLinkage
-        foreach (var pinvoke in pinvokes)
-        {
-            // WasmImportLinkage is intended to end up as a wasm import so we include those modules directly
-            if (pinvoke.WasmLinkage)
+        foreach (var pinvoke in pinvokes) {
+            // Handle special modules, and add them to the list of modules
+            // otherwise, skip them and throw an exception at runtime if they
+            // are called.
+            if (pinvoke.WasmLinkage && !modules.ContainsKey(pinvoke.Module))
             {
+                // WasmLinkage means we needs to import the module
+                modules.Add(pinvoke.Module, pinvoke.Module);
                 Log.LogMessage(MessageImportance.Low, $"Adding module {pinvoke.Module} for WasmImportLinkage");
-                modules[pinvoke.Module] = pinvoke.Module;
+            }
+            else if ((pinvoke.Module == "*" || pinvoke.Module == "__Internal") && !modules.ContainsKey(pinvoke.Module))
+            {
+                // Special case for __Internal and * modules to indicate static linking wihtout specifying the module
+                modules.Add(pinvoke.Module, pinvoke.Module);
+                Log.LogMessage(MessageImportance.Low, $"Adding module {pinvoke.Module} for static linking");
             }
         }
+
         var pinvokesGroupedByEntryPoint = pinvokes
                                             .Where(l => modules.ContainsKey(l.Module))
                                             .OrderBy(l => l.EntryPoint)
-                                            .GroupBy(l => l.EntryPoint);
+                                            .GroupBy(TransformEntryPoint);
 
         var comparer = new PInvokeComparer();
         foreach (IGrouping<string, PInvoke> group in pinvokesGroupedByEntryPoint)
@@ -125,7 +132,7 @@ internal sealed class PInvokeTableGenerator
                 Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select(l => "{\"" + _fixupSymbolName(l.Key) + "\", " + _fixupSymbolName(l.Key) + "}, " +
+                Select(l => "{\"" + _fixupSymbolName(l.Key) + "\", " + TransformEntryPoint(l.First()) + "}, " +
                                 "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)));
 
             foreach (var pinvoke in assemblies_pinvokes)
@@ -165,6 +172,16 @@ internal sealed class PInvokeTableGenerator
                         .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
                                     c.Method.GetParameters().Length != firstNumArgs);
         }
+    }
+
+    private string TransformEntryPoint(PInvoke pinvoke)
+    {
+        if (pinvoke.WasmLinkage)
+        {
+            // We mangle the name to avoid collisions with symbols in other modules
+            return _fixupSymbolName($"{pinvoke.Module}_{pinvoke.EntryPoint}");
+        }
+        return _fixupSymbolName(pinvoke.EntryPoint);
     }
 
     private string SymbolNameForMethod(MethodInfo method)
@@ -234,10 +251,10 @@ internal sealed class PInvokeTableGenerator
         }
 
         if (pinvoke.WasmLinkage) {
-            sb.Append($" __attribute__((import_module(\"{pinvoke.Module}\"), import_name(\"{pinvoke.EntryPoint}\")))\nextern ");
+            sb.Append($"__attribute__((import_module(\"{pinvoke.Module}\"), import_name(\"{pinvoke.EntryPoint}\")))\nextern ");
         }
         sb.Append(MapType(method.ReturnType));
-        sb.Append($" {_fixupSymbolName(pinvoke.EntryPoint)} (");
+        sb.Append($" {TransformEntryPoint(pinvoke)} (");
         int pindex = 0;
         var pars = method.GetParameters();
         foreach (var p in pars)
