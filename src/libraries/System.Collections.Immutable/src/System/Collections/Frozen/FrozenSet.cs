@@ -129,67 +129,45 @@ namespace System.Collections.Frozen
                 {
                     if (analysis.RightJustifiedSubstring)
                     {
-                        if (analysis.IgnoreCaseForHash)
+                        if (analysis.IgnoreCase)
                         {
-                            Debug.Assert(analysis.IgnoreCase);
-                            frozenSet = analysis.AllAsciiIfIgnoreCaseForHash
+                            frozenSet = analysis.AllAsciiIfIgnoreCase
                                 ? new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
                                 : new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
-                            if (analysis.HashCount == 1)
-                            {
-                                frozenSet = analysis.IgnoreCase
-                                    ? new OrdinalStringFrozenSet_RightJustifiedSingleCharCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                    : new OrdinalStringFrozenSet_RightJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex); ;
-                            }
-                            else
-                            {
-                                frozenSet = analysis.IgnoreCase
-                                    ? new OrdinalStringFrozenSet_RightJustifiedSubstringCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                    : new OrdinalStringFrozenSet_RightJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
-                            }
+                            frozenSet = analysis.HashCount == 1
+                                ? new OrdinalStringFrozenSet_RightJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
+                                : new OrdinalStringFrozenSet_RightJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                     else
                     {
-                        if (analysis.IgnoreCaseForHash)
+                        if (analysis.IgnoreCase)
                         {
-                            Debug.Assert(analysis.IgnoreCase);
-                            frozenSet = analysis.AllAsciiIfIgnoreCaseForHash
+                            frozenSet = analysis.AllAsciiIfIgnoreCase
                                 ? new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
                                 : new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
-                            if (analysis.HashCount == 1)
-                            {
-                                frozenSet = analysis.IgnoreCase
-                                    ? new OrdinalStringFrozenSet_LeftJustifiedSingleCharCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                    : new OrdinalStringFrozenSet_LeftJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex);
-                            }
-                            else
-                            {
-                                frozenSet = analysis.IgnoreCase
-                                    ? new OrdinalStringFrozenSet_LeftJustifiedSubstringCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                    : new OrdinalStringFrozenSet_LeftJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
-                            }
+                            frozenSet = analysis.HashCount == 1
+                                ? new OrdinalStringFrozenSet_LeftJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
+                                : new OrdinalStringFrozenSet_LeftJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                 }
                 else
                 {
-                    if (analysis.IgnoreCaseForHash)
+                    if (analysis.IgnoreCase)
                     {
-                        Debug.Assert(analysis.IgnoreCase);
-                        frozenSet = analysis.AllAsciiIfIgnoreCaseForHash
+                        frozenSet = analysis.AllAsciiIfIgnoreCase
                             ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
                             : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
                     }
                     else
                     {
-                        // if (IgnoreCase) => Can only be true if there are no letters, thus case sensitive comparison still works here.
                         frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
                     }
                 }

@@ -37,7 +37,7 @@ namespace System.Collections.Frozen
             AnalysisResults results;
             if (minLength == 0 || !TryUseSubstring(uniqueStrings, ignoreCase, minLength, maxLength, out results))
             {
-                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, static (s, _, _) => s.AsSpan());
+                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, false, static (s, _, _) => s.AsSpan());
             }
 
             return results;
@@ -77,7 +77,7 @@ namespace System.Collections.Frozen
                     if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                     {
                         results = CreateAnalysisResults(
-                            uniqueStrings, ignoreCase, minLength, maxLength, index, count,
+                            uniqueStrings, ignoreCase, minLength, maxLength, index, count, true,
                             static (string s, int index, int count) => s.AsSpan(index, count));
                         return true;
                     }
@@ -101,7 +101,7 @@ namespace System.Collections.Frozen
                         if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                         {
                             results = CreateAnalysisResults(
-                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count,
+                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count, true,
                                 static (string s, int index, int count) => s.AsSpan(s.Length + index, count));
                             return true;
                         }
@@ -115,23 +115,21 @@ namespace System.Collections.Frozen
         }
 
         private static AnalysisResults CreateAnalysisResults(
-            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, GetSpan getSubstringSpan)
+            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, bool isSubstring, GetSpan getSubstringSpan)
         {
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCaseForHash = true;
 
-            bool ignoreCaseForHash = ignoreCase;
-
             // If we're case-sensitive, it doesn't matter if the strings are ASCII or not.
             // But if we're case-insensitive, we can switch to a faster comparer if all the
             // substrings are ASCII, so we check each.
-            if (ignoreCaseForHash)
+            if (ignoreCase)
             {
-                // Further, if the ASCII substrings don't contain any letters, then we can
+                // Further, if the ASCII keys (in their entirety) don't contain any letters, then we can
                 // actually perform the comparison as case-sensitive even if case-insensitive
                 // was requested, as there's nothing that would compare equally to the substring
                 // other than the substring itself.
-                bool canSwitchIgnoreCaseHashToCaseSensitive = true;
+                bool canSwitchIgnoreCaseHashToCaseSensitive = !isSubstring;
 
                 foreach (string s in uniqueStrings)
                 {
@@ -157,12 +155,12 @@ namespace System.Collections.Frozen
                 // If we can switch to case-sensitive, do so.
                 if (canSwitchIgnoreCaseHashToCaseSensitive)
                 {
-                    ignoreCaseForHash = false;
+                    ignoreCase = false;
                 }
             }
 
             // Return the analysis results.
-            return new AnalysisResults(ignoreCase, ignoreCaseForHash, allAsciiIfIgnoreCaseForHash, index, count, minLength, maxLength);
+            return new AnalysisResults(ignoreCase, allAsciiIfIgnoreCaseForHash, index, count, minLength, maxLength);
         }
 
         private delegate ReadOnlySpan<char> GetSpan(string s, int index, int count);
@@ -245,11 +243,10 @@ namespace System.Collections.Frozen
 
         internal readonly struct AnalysisResults
         {
-            public AnalysisResults(bool ignoreCase, bool ignoreCaseForHash, bool allAsciiIfIgnoreCaseForHash, int hashIndex, int hashCount, int minLength, int maxLength)
+            public AnalysisResults(bool ignoreCase, bool allAsciiIfIgnoreCase, int hashIndex, int hashCount, int minLength, int maxLength)
             {
                 IgnoreCase = ignoreCase;
-                IgnoreCaseForHash = ignoreCaseForHash;
-                AllAsciiIfIgnoreCaseForHash = allAsciiIfIgnoreCaseForHash;
+                AllAsciiIfIgnoreCase = allAsciiIfIgnoreCase;
                 HashIndex = hashIndex;
                 HashCount = hashCount;
                 MinimumLength = minLength;
@@ -257,8 +254,7 @@ namespace System.Collections.Frozen
             }
 
             public bool IgnoreCase { get; }
-            public bool IgnoreCaseForHash { get; }
-            public bool AllAsciiIfIgnoreCaseForHash { get; }
+            public bool AllAsciiIfIgnoreCase { get; }
             public int HashIndex { get; }
             public int HashCount { get; }
             public int MinimumLength { get; }

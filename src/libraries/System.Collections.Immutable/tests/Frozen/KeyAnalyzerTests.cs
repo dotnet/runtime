@@ -32,28 +32,24 @@ namespace System.Collections.Frozen.Tests
         {
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "K0", "K20", "K300" }, false);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.False(r.IgnoreCaseForHash);
             Assert.False(r.IgnoreCase);
             Assert.Equal(1, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "S1" }, false);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.False(r.IgnoreCaseForHash);
             Assert.False(r.IgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "S1", "T1" }, false);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.False(r.IgnoreCaseForHash);
             Assert.False(r.IgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "SA1", "TA1", "SB1" }, false);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.False(r.IgnoreCaseForHash);
             Assert.False(r.IgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(2, r.HashCount);
@@ -64,57 +60,50 @@ namespace System.Collections.Frozen.Tests
         {
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "É1" }, true);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.True(r.IgnoreCaseForHash);
             Assert.True(r.IgnoreCase);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "É1", "T1" }, true);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.True(r.IgnoreCaseForHash);
             Assert.True(r.IgnoreCase);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "ÉA1", "TA1", "ÉB1" }, true);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.True(r.IgnoreCaseForHash);
             Assert.True(r.IgnoreCase);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(2, r.HashCount);
 
             r = RunAnalysis(new[] { "ABCDEÉ1ABCDEF", "ABCDETA1ABCDEF", "ABCDESB1ABCDEF" }, true);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.True(r.IgnoreCaseForHash);
             Assert.True(r.IgnoreCase);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(5, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "ABCDEFÉ1ABCDEF", "ABCDEFTA1ABCDEF", "ABCDEFSB1ABCDEF" }, true);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.True(r.IgnoreCaseForHash);
             Assert.True(r.IgnoreCase);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(6, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "ABCÉDEFÉ1ABCDEF", "ABCÉDEFTA1ABCDEF", "ABCÉDEFSB1ABCDEF" }, true);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.True(r.IgnoreCaseForHash);
             Assert.True(r.IgnoreCase);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(7, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "1abc", "2abc", "3abc", "4abc", "5abc", "6abc" }, true);
             Assert.False(r.RightJustifiedSubstring);
-            Assert.False(r.IgnoreCaseForHash);
-            Assert.True(r.IgnoreCase);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.IgnoreCase);
+            Assert.True(r.AllAsciiIfIgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
@@ -126,24 +115,21 @@ namespace System.Collections.Frozen.Tests
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "S1" }, true);
             Assert.False(r.RightJustifiedSubstring);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "S1", "T1" }, true);
             Assert.False(r.RightJustifiedSubstring);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "SA1", "TA1", "SB1" }, true);
             Assert.False(r.RightJustifiedSubstring);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(2, r.HashCount);
         }
@@ -154,16 +140,14 @@ namespace System.Collections.Frozen.Tests
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "1T1", "1T" }, false);
             Assert.True(r.RightJustifiedSubstring);
             Assert.False(r.IgnoreCase);
-            Assert.False(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
             Assert.Equal(-1, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "1ATA", "1ATB", "1BS" }, false);
             Assert.True(r.RightJustifiedSubstring);
             Assert.False(r.IgnoreCase);
-            Assert.False(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
             Assert.Equal(-1, r.HashIndex);
             Assert.Equal(1, r.HashCount);
         }
@@ -174,16 +158,14 @@ namespace System.Collections.Frozen.Tests
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "1ÉÉ", "1É" }, true);
             Assert.True(r.RightJustifiedSubstring);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(-2, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "ÉA", "1AT", "1AÉT" }, true);
             Assert.True(r.RightJustifiedSubstring);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(-2, r.HashIndex);
             Assert.Equal(2, r.HashCount);
         }
@@ -194,16 +176,14 @@ namespace System.Collections.Frozen.Tests
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "a1", "A1T" }, true);
             Assert.True(r.RightJustifiedSubstring);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
             Assert.Equal(-1, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
             r = RunAnalysis(new[] { "bÉÉ", "caT", "cAÉT" }, true);
             Assert.True(r.RightJustifiedSubstring);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
             Assert.Equal(-3, r.HashIndex);
             Assert.Equal(1, r.HashCount);
         }
@@ -214,8 +194,7 @@ namespace System.Collections.Frozen.Tests
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "ABC", "DBC", "ADC", "ABD", "ABDABD" }, false);
             Assert.False(r.SubstringHashing);
             Assert.False(r.IgnoreCase);
-            Assert.False(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
         }
 
         [Fact]
@@ -224,8 +203,7 @@ namespace System.Collections.Frozen.Tests
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "æbc", "DBC", "æDC", "æbd", "æbdæbd" }, true);
             Assert.False(r.SubstringHashing);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.False(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.False(r.AllAsciiIfIgnoreCase);
         }
 
         [Fact]
@@ -234,8 +212,7 @@ namespace System.Collections.Frozen.Tests
             KeyAnalyzer.AnalysisResults r = RunAnalysis(new[] { "abc", "DBC", "aDC", "abd", "abdabd" }, true);
             Assert.False(r.SubstringHashing);
             Assert.True(r.IgnoreCase);
-            Assert.True(r.IgnoreCaseForHash);
-            Assert.True(r.AllAsciiIfIgnoreCaseForHash);
+            Assert.True(r.AllAsciiIfIgnoreCase);
         }
 
         [Fact]

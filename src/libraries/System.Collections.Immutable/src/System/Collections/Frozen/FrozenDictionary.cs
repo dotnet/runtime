@@ -181,67 +181,45 @@ namespace System.Collections.Frozen
                 {
                     if (analysis.RightJustifiedSubstring)
                     {
-                        if (analysis.IgnoreCaseForHash)
+                        if (analysis.IgnoreCase)
                         {
-                            Debug.Assert(analysis.IgnoreCase);
-                            frozenDictionary = analysis.AllAsciiIfIgnoreCaseForHash
+                            frozenDictionary = analysis.AllAsciiIfIgnoreCase
                                 ? new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
                                 : new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
-                            if (analysis.HashCount == 1)
-                            {
-                                frozenDictionary = analysis.IgnoreCase
-                                    ? new OrdinalStringFrozenDictionary_RightJustifiedSingleCharCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                    : new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex);
-                            }
-                            else
-                            {
-                                frozenDictionary = analysis.IgnoreCase
-                                    ? new OrdinalStringFrozenDictionary_RightJustifiedSubstringCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                    : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
-                            }
+                            frozenDictionary = analysis.HashCount == 1
+                                ? new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
+                                : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                     else
                     {
-                        if (analysis.IgnoreCaseForHash)
+                        if (analysis.IgnoreCase)
                         {
-                            Debug.Assert(analysis.IgnoreCase);
-                            frozenDictionary = analysis.AllAsciiIfIgnoreCaseForHash
+                            frozenDictionary = analysis.AllAsciiIfIgnoreCase
                                 ? new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
                                 : new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
-                            if (analysis.HashCount == 1)
-                            {
-                                frozenDictionary = analysis.IgnoreCase
-                                    ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleCharCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                    : new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex);
-                            }
-                            else
-                            {
-                                frozenDictionary = analysis.IgnoreCase
-                                    ? new OrdinalStringFrozenDictionary_LeftJustifiedSubstringCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                    : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
-                            }
+                            frozenDictionary = analysis.HashCount == 1
+                                ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
+                                : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                 }
                 else
                 {
-                    if (analysis.IgnoreCaseForHash)
+                    if (analysis.IgnoreCase)
                     {
-                        Debug.Assert(analysis.IgnoreCase);
-                        frozenDictionary = analysis.AllAsciiIfIgnoreCaseForHash
+                        frozenDictionary = analysis.AllAsciiIfIgnoreCase
                             ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
                             : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
                     }
                     else
                     {
-                        // if (IgnoreCase) => Can only be true if there are no letters, thus case sensitive comparison still works here.
                         frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
                     }
                 }
