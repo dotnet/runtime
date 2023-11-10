@@ -803,8 +803,8 @@ namespace Internal.JitInterface
                 if (caller.OwningType is EcmaType ecmaOwningType
                     && ecmaOwningType.EcmaModule.EntryPoint == caller)
                 {
-                    // We don't want to tailcall the entrypoint for an application; It results in a rather
-                    // confusing debugging experience.
+                    // Do not tailcall from the application entrypoint.
+                    // We want Main to be visible in stack traces.
                     result = false;
                 }
 
