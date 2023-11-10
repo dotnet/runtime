@@ -5,7 +5,6 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <XUnitLogCheckerLibrariesHelixDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'helix', 'tests', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesHelixDirectory>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,15 +15,5 @@
     <Compile Include="../Coreclr.TestWrapper/CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
     <Compile Include="../Coreclr.TestWrapper/MobileAppHandler.cs" Link="MobileAppHandler.cs" />
   </ItemGroup>
- 
-  <Target Name="ZipTestArchive" AfterTargets="PrepareForRun" Condition="'$(IsXUnitLogCheckerSupported)' == 'true'">
-    <!-- TODO: This project gets excluded from the libraries ones, preventing it from getting zipped and uploaded along
-         with the others, so we need to have a copy of the target here. This may be removed once we consolidate coreclr with libraries
-         in a common location that will work for both. -->
-    <MakeDir Directories="$(XUnitLogCheckerLibrariesHelixDirectory)" />
-    <ZipDirectory SourceDirectory="$(OutDir)"
-                  DestinationFile="$(XUnitLogCheckerLibrariesHelixDirectory)$(MSBuildProjectName).zip"
-                  Overwrite="true" />
-  </Target>
 
 </Project>

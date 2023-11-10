@@ -155,7 +155,7 @@ TEST_ARCH=$(_AndroidArchitecture)
     </WriteLinesToFile>
   </Target>
 
-  <Target Name="RunTests" Condition="'$(MSBuildProjectName)' != 'XUnitLogChecker'">
+  <Target Name="RunTests">
     <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
       <RunTestsCommand>"$(RunScriptOutputPath)"</RunTestsCommand>
       <!-- Use runtime path only for the live built shared framework (NetCoreAppCurrent). -->

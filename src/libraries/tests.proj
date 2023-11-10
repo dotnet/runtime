@@ -707,7 +707,7 @@
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">
     <ProjectReference
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
-      AdditionalProperties="%(AdditionalProperties);Configuration=Release;OutDir=$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'XUnitLogChecker'))" />
+      AdditionalProperties="%(AdditionalProperties);Configuration=Release;OutDir=$(XUnitLogCheckerLibrariesOutDir)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
