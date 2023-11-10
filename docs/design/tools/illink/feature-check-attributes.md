@@ -12,7 +12,7 @@
 
 The bold pieces are the focus of this document. [Feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switches.md) describes how settings flow from the MSBuild property through the AppContext (for runtime feature checks) or `ILLink.Substitutions.xml` (for feature settings baked-in when trimming). This document aims to describe an attribute-based model to replace some of the functionality currently implemented via ILLink.Substitutions.xml, used for branch elimination in ILLink and ILCompiler to remove branches that call into `Requires`-annotated code when trimming.
 
-## Backgrounnd
+## Background
 
 ### Terminology
 
@@ -50,10 +50,13 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 ## Goals
 
 - Teach the ILLink Roslyn analyzer to treat `IsDynamicCodeCompiled` as a guard for `RequiresDynamicCodeAttribute`
-- Allow libraries to define their own feature guard properties for `RequiresDynamicCodeAttribute` and other features that might produce warnings in the analyzer
+- Allow libraries to define their own feature guard properties
+
+  Libraries should be able to introduce their own properties that can act as guards for `RequiresDynamicCodeAttribute`, or for other features that might produce warnings in the analyzer
 - Define an attribute-based model for such feature guards
 - Take into account how this would interact with an attribute-based model for feature switches
-  - We don't necessarily aim to introduce a model for feature switches in this proposal, but we will at least explore the potential API shape to ensure that our model for feature guards would work well if we did.
+
+  We don't necessarily aim to introduce a model for feature switches in this proposal, but we will at least explore the potential API shape to ensure that our model for feature guards would work well if we did.
 
 ### Non-goals
 
@@ -103,7 +106,7 @@ We could allow placing `FeatureGuardAttribute` on the property to indicate that 
   class Feature {
       [FeatureGuard(typeof(RuntimeFeature), nameof(RuntimeFeature.IsDynamicCodeSupported))]
       public static bool IsSupported => RuntimeFeature.IsDynamicCodeSupported;
-  }
+  }u
   ```
 
   The analyzer would need to hard-code the fact that `RuntimeFeature.IsDynamicCodeSupported` corresponds to `RequiresDynamicCodeAttribute`, unless we model this relationship via attributes that represent feature switches.
@@ -122,11 +125,10 @@ static void APIWhichRequiseDynamicCode() {
 }
 ```
 
-#### Limitations of feature guards
+#### Danger of incorrect usage
 
-On its own, a feature guard would let the analyzer avoid producing a warning in this scenario. However, a separate mechanism is still required for ILLink and ILCompiler to behave the same way. (ILLink may actually work due to constant propagation, but ILCompiler will not.) There would still need to be an XML substitution file or an equivalent way to tell these tools that `Feature.IsSupported` should be treated as returning the constant `false` whenever `System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported` is set to `false`.
 
-Since a feature guard silences warnings from the analyzer, there is also some danger that `FeatureGuardAttribute` will be used carelessly as a way to silence warnings, even when the definition of the `IsSupported` property doesn't have any tie to the existing feature. For example:
+Since a feature guard silences warnings from the analyzer, there is some danger that `FeatureGuardAttribute` will be used carelessly as a way to silence warnings, even when the definition of the `IsSupported` property doesn't have any tie to the existing feature. For example:
 
 ```csharp
 class Feature {
@@ -141,15 +143,18 @@ if (Feature.SilenceWarnings) {
 }
 ```
 
-If there is no substitution XML which sets `SilenceWarnings` to `false` when `IsDynamicCodeSupported` is `false`, the feature check is a no-op that just silences the warning from the analyzer.
+This will silence warnings from the analyzer without any indication that `RequiresDynamicCode`-annotated code might be reached at runtime. ILLink and ILCompiler would still warn in this example, so we do have some guard rails for this.
 
-ILLink and ILCompiler would still warn in this example, so we do have some guard rails for this. However, if there is a substitution XML that sets `SilenceWarnings` to `false` whenever `IsDynamicCodeSupported` is `false`, then ILLink and ILCompiler will remove this branch, and it will silently behave differently in "dotnet run" (no trimming/AOT) than in a published app. The published app would have the branch removed, while "dotnet run" would execute the call, without any `RequiresDynamicCode` warnings.
+However, if there is a substitution XML that sets `SilenceWarnings` to `false` whenever `IsDynamicCodeSupported` is `false`, then ILLink and ILCompiler will remove this branch, and it will silently behave differently in "dotnet run" (no trimming/AOT) than in a published app. The published app would have the branch removed, while "dotnet run" would execute the call, without any `RequiresDynamicCode` warnings.
+
+If there is no substitution XML which sets `SilenceWarnings` to `false` when `IsDynamicCodeSupported` is `false`, the feature check is a no-op that just silences the warning from the analyzer, but will still produce warnings when publishing.
+
 
 We should be extremely clear in our documentation that this is not the intended use.
 
 #### Validating correctness of feature guards
 
-Even better would be for the analyzer to validate that the implementation of a feature check includes a check for `IsDynamicCodeSupported`. This could be done using the analyzer infrastructure we have in place without much cost for simple cases:
+Better would be for the analyzer to validate that the implementation of a feature check includes a check for `IsDynamicCodeSupported`. This could be done using the analyzer infrastructure we have in place without much cost for simple cases:
 
 ```csharp
 class Feature {
@@ -167,7 +172,15 @@ class Feature {
 
 Note that this analysis does require the analyzer to understand the relationship between `RequiresDynamicCodeAttribute` and `RuntimeFeature.IsDynamicCodeSupported`, so it would still require either hard-coding this relationship in the analyzer, or representing it via an attribute model for feature switches.
 
-#### Should feature guards have semantics for trimming or AOT?
+There may be more complex implementations of feature guards that the analyzer would not support. In this case, the analyzer would produce a warning on the property definition that can be silenced if the author is confident that the return value of the property reflects the referenced feature.
+
+#### Feature guard semantics for trimming and AOT
+
+On its own, a feature guard is enough for the analyzer to avoid producing a warning for guarded calls. However, a separate mechanism is still required for ILLink and ILCompiler to behave the same way. (ILLink may actually work due to interprocedural constant propagation, but ILCompiler will not). There would still need to be an XML substitution file or an equivalent way to tell these tools that `Feature.IsSupported` should be treated as returning the constant `false` whenever `System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported` is set to `false`.
+
+This is another reason to consider also encoding feature switches as attributes, so that there is a uniform way to get the same behavior in all three tools.
+
+
 
 ## Analogy with `DefineConstants`
 
