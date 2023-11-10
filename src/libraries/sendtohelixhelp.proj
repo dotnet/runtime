@@ -237,7 +237,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true'">
-    <_ShouldSetXUnitLogCheckerEnvVar Condition="$(TargetFrameworkIdentifier) == '.NETCoreApp'">1</_ShouldSetXUnitLogCheckerEnvVar>
+    <_ShouldSetXUnitLogCheckerEnvVar Condition="$(BuildTargetFramework) == '.NETCoreApp'">1</_ShouldSetXUnitLogCheckerEnvVar>
     <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
       $(HelixPreCommands);
       set __TestArchitecture=$(TargetArchitecture)
