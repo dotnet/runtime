@@ -257,6 +257,17 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             }
         }
 
+        if (runtimeHelpers.config.virtualWorkingDirectory) {
+            const FS = Module.FS;
+            const cwd = runtimeHelpers.config.virtualWorkingDirectory;
+            const wds = FS.stat(cwd);
+            if (!wds) {
+                Module.FS_createPath("/", cwd, true, true);
+            }
+            mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
+            FS.chdir(cwd);
+        }
+
         runtimeHelpers.runtimeReady = true;
 
 
@@ -511,17 +522,6 @@ export async function start_mono_vm() {
         await interp_pgo_load_data();
 
         setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
-    }
-
-    if (runtimeHelpers.config.virtualWorkingDirectory) {
-        const FS = Module.FS;
-        const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-        const wds = FS.stat(cwd);
-        if (!wds) {
-            Module.FS_createPath("/", cwd, true, true);
-        }
-        mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
-        FS.chdir(cwd);
     }
 
     bindings_init();
