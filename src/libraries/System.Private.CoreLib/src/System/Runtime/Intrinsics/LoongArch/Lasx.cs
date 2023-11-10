@@ -2265,5 +2265,55 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LASX: XVPCNT_D Xd, Xj
         /// </summary>
         public static Vector256<ulong> PopCount(Vector256<ulong> value) => PopCount(value);
+
+        /// <summary>
+        ///  uint8x32_t xvrepl128vei_u8(uint8x32_t vector, uint8_t idx)
+        ///   LASX: XVREPL128VEI_B Xd.32B, Xj.32B, ui4
+        /// </summary>
+        public static Vector256<byte> VectorElementReplicate(Vector256<byte> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        /// <summary>
+        ///  int8x32_t xvrepl128vei_s8(int8x32_t vector, uint8_t idx)
+        ///   LASX: XVREPL128VEI_B Xd.32B, Xj.32B, ui4
+        /// </summary>
+        public static Vector256<sbyte> VectorElementReplicate(Vector256<sbyte> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        /// <summary>
+        ///  int16x16_t xvrepl128vei_s16(int16x16_t vector, uint8_t idx)
+        ///   LASX: XVREPL128VEI_H Xd.16H, Xj.16H, ui3
+        /// </summary>
+        public static Vector256<short> VectorElementReplicate(Vector256<short> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        /// <summary>
+        ///  uint16x16_t xvrepl128vei_u16(uint16x16_t vector, uint8_t idx)
+        ///   LASX: XVREPLVEI_H Xd.16H, Xj.16H, ui3
+        /// </summary>
+        public static Vector256<ushort> VectorElementReplicate(Vector256<ushort> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        /// <summary>
+        ///  int32x8_t xvrepl128vei_s32(int32x8_t vector, uint8_t idx)
+        ///   LASX: XVREPL128VEII_W Xd.8W, Xj.8W, ui2
+        /// </summary>
+        public static Vector256<int> VectorElementReplicate(Vector256<int> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        /// <summary>
+        ///  uint32x8_t xvrepl128vei_u32(uint32x8_t vector, uint8_t idx)
+        ///   LASX: XVREPL128VEII_W Xd.8W, Xj.8W, ui2
+        /// </summary>
+        public static Vector256<uint> VectorElementReplicate(Vector256<uint> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        /// <summary>
+        ///  int64x4_t xvrepl128vei_s64(int64x4_t vector, uint8_t idx)
+        ///   LASX: XVREPL128VEII_D Xd.4D, Xj.4D, ui1
+        /// </summary>
+        public static Vector256<long> VectorElementReplicate(Vector256<long> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        /// <summary>
+        ///  uint64x4_t xvrepl128vei_u64(uint64x4_t vector, uint8_t idx)
+        ///   LASX: XVREPL128VEII_D Xd.4D, Xj.4D, ui1
+        /// </summary>
+        public static Vector256<ulong> VectorElementReplicate(Vector256<ulong> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        // TODO:----------------------------------
     }
 }
