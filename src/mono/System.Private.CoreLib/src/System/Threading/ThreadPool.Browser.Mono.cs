@@ -14,7 +14,7 @@ using Microsoft.Win32.SafeHandles;
 namespace System.Threading
 {
 #if FEATURE_WASM_THREADS
-#error when compiled with FEATURE_WASM_THREADS, we use PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs
+#error when compiled with FEATURE_WASM_THREADS, we use normal unix thread pool
 #endif
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
