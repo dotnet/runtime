@@ -711,7 +711,8 @@ bool OptIfConversionDsc::optIfConvert()
     // For SELECT(COND, CNS1, CNS2) check if we can fold it into ADD(COND, MIN(CNS1, CNS2)) if
     // the difference between CNS1 and CNS2 is exactly 1. E.g.:
     //
-    // SELECT(COND, 10, 11) -> ADD(COND, 10)
+    // SELECT(COND, 2, 1) -> ADD(COND, 1)
+    // SELECT(COND, 1, 2) -> ADD(REVERSED_COND, 1)
     //
     // Conservatively give up on relops with NaNs (we won't be able to reverse them).
     if (selectTrueInput->IsCnsIntOrI() && selectFalseInput->IsCnsIntOrI() &&
