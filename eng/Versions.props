@@ -248,7 +248,7 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- installer version, for testing workloads -->
-    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.23559.1</MicrosoftDotnetSdkInternalVersion>
+    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.23560.4</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
   </PropertyGroup>
 </Project>
