@@ -159,25 +159,9 @@ if [[ $test_exitcode -ne 0 ]]; then
 fi
 
 if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
-  if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
-
-    # For abrupt failures, in Helix, dump some of the kernel log, in case there is a hint
-    if [[ $test_exitcode -ne 1 ]]; then
-      dmesg | tail -50
-    fi
-
-    have_sleep=$(which sleep)
-    if [ -x "$have_sleep" ]; then
-      echo Waiting a few seconds for any dump to be written...
-      sleep 10s
-    fi
-  fi
-
   echo cat /proc/sys/kernel/core_pattern: $(cat /proc/sys/kernel/core_pattern)
   echo cat /proc/sys/kernel/core_uses_pid: $(cat /proc/sys/kernel/core_uses_pid)
   echo cat /proc/sys/kernel/coredump_filter: $(cat /proc/sys/kernel/coredump_filter)
-
-  echo Looking around for any Linux dumps...
 
   # Depending on distro/configuration, the core files may either be named "core"
   # or "core.<PID>" by default. We read /proc/sys/kernel/core_uses_pid to
@@ -186,11 +170,14 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   if [[ -e /proc/sys/kernel/core_uses_pid && "1" == $(cat /proc/sys/kernel/core_uses_pid) ]]; then
     core_name_uses_pid=1
   fi
+  
+  # The osx dumps are too large to egress the machine
+  echo Looking around for any Linux dumps...
 
   if [[ "$core_name_uses_pid" == "1" ]]; then
     # We don't know what the PID of the process was, so let's look at all core
     # files whose name matches core.NUMBER
-    echo "Looking for files matching core.*"
+    echo "Looking for files matching core.* ..."
     for f in $(find . -name "core.*"); do
       [[ $f =~ core.[0-9]+ ]] && move_core_file_to_temp_location "$f"
     done
@@ -199,46 +186,58 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   if [ -f core ]; then
     move_core_file_to_temp_location "core"
   fi
+fi
 
-  if [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
-    echo "The '__IsXUnitLogCheckerSupported' env var is not set."
-  elif [[ "$__IsXUnitLogCheckerSupported" != "1" ]]; then
-    echo "XUnitLogChecker not supported for this test case. Skipping."
-  else
+if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
+  # For abrupt failures, in Helix, dump some of the kernel log, in case there is a hint
+  if [[ $test_exitcode -ne 1 ]]; then
+    dmesg | tail -50
+  fi
 
-    total_dumps=$(find $HELIX_DUMP_FOLDER -name "*.dmp" | wc -l)
-    
-    echo ----- start ===============  XUnitLogChecker Output =====================================================
-    xunitlogchecker_exit_code=0
-    if [[ $total_dumps > 0 ]]; then
-      echo "Total dumps found in $HELIX_DUMP_FOLDER: $total_dumps"
-      xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll"
-      dotnet_file_name="$RUNTIME_PATH/dotnet"
-
-      if [[ ! -f $dotnet_file_name ]]; then
-        echo "'$dotnet_file_name' was not found. Unable to run XUnitLogChecker."
-        xunitlogchecker_exit_code=1
-      elif [[ ! -f $xunitlogchecker_file_name ]]; then 
-        echo "'$xunitlogchecker_file_name' was not found. Unable to print dump file contents."
-        xunitlogchecker_exit_code=2
-      else
-        echo "Executing XUnitLogChecker..."
-        cmd="$dotnet_file_name --roll-forward Major $xunitlogchecker_file_name --dumps-path $HELIX_DUMP_FOLDER"
-        echo "$cmd"
-        $cmd
-        xunitlogchecker_exit_code=$?
-      fi
-    else
-      echo "No dumps found."
-    fi
-
-    if [[ $xunitlogchecker_exit_code -ne 0 ]]; then
-      test_exitcode=$xunitlogchecker_exit_code
-    fi
-    echo ----- end ===============  XUnitLogChecker Output - exit code $xunitlogchecker_exit_code ===========================
-
+  have_sleep=$(which sleep)
+  if [ -x "$have_sleep" ]; then
+    echo Waiting a few seconds for any dump to be written...
+    sleep 10s
   fi
 fi
+
+if [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
+  echo "The '__IsXUnitLogCheckerSupported' env var is not set."
+elif [[ "$__IsXUnitLogCheckerSupported" != "1" ]]; then
+  echo "XUnitLogChecker not supported for this test case. Skipping."
+else
+  total_dumps=$(find $HELIX_DUMP_FOLDER -name "*.dmp" | wc -l)
+
+  echo ----- start ===============  XUnitLogChecker Output =====================================================
+  xunitlogchecker_exit_code=0
+  if [[ $total_dumps > 0 ]]; then
+    echo "Total dumps found in $HELIX_DUMP_FOLDER: $total_dumps"
+    xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll"
+    dotnet_file_name="$RUNTIME_PATH/dotnet"
+
+    if [[ ! -f $dotnet_file_name ]]; then
+      echo "'$dotnet_file_name' was not found. Unable to run XUnitLogChecker."
+      xunitlogchecker_exit_code=1
+    elif [[ ! -f $xunitlogchecker_file_name ]]; then 
+      echo "'$xunitlogchecker_file_name' was not found. Unable to print dump file contents."
+      xunitlogchecker_exit_code=2
+    else
+      echo "Executing XUnitLogChecker..."
+      cmd="$dotnet_file_name --roll-forward Major $xunitlogchecker_file_name --dumps-path $HELIX_DUMP_FOLDER"
+      echo "$cmd"
+      $cmd
+      xunitlogchecker_exit_code=$?
+    fi
+  else
+    echo "No dumps found."
+  fi
+
+  if [[ $xunitlogchecker_exit_code -ne 0 ]]; then
+    test_exitcode=$xunitlogchecker_exit_code
+  fi
+  echo ----- end ===============  XUnitLogChecker Output - exit code $xunitlogchecker_exit_code ===========================
+fi
+
 popd >/dev/null
 # ======================== END Core File Inspection ==========================
 # The helix work item should not exit with non-zero if tests ran and produced results
