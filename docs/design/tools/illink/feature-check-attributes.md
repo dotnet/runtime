@@ -81,11 +81,11 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 
   We will focus initially on a model where feature switches are booleans that return `true` if a feature is enabled. We aren't considering supporting version checks, or feature switches of the opposite polarity (where `true` means a feature is disabled/unsupported). We will consider what this might look like just enough to gain confcidence that our model could be extended to support these cases in the future, but won't design this fully in the first iteration.
 
-## Requirements for feature guards
+
+## Feature guard attribute
 
 In order to treat a property as a guard for a feature that has a `Requires` attribute, there must be a semantic tie between the guard property and the attribute. ILLink and ILCompiler don't have this requirement because they run on apps, not libraries, so the desired warning behavior just falls out, thanks to branch elimination and the fact that `IsDynamicCodeSupported` is set to false from MSBuild.
 
-## Feature guard attribute
 
 We could allow placing `FeatureGuardAttribute` on the property to indicate that it should act as a guard for a particular feature. The attribute instance needs to reference the feature somehow, whether as:
 
@@ -146,7 +146,6 @@ static void APIWhichRequiresDynamicCode() {
 
 ### Danger of incorrect usage
 
-
 Since a feature guard silences warnings from the analyzer, there is some danger that `FeatureGuardAttribute` will be used carelessly as a way to silence warnings, even when the definition of the `IsSupported` property doesn't have any tie to the existing feature. For example:
 
 ```csharp
@@ -193,50 +192,6 @@ Note that this analysis does require the analyzer to understand the relationship
 
 There may be more complex implementations of feature guards that the analyzer would not support. In this case, the analyzer would produce a warning on the property definition that can be silenced if the author is confident that the return value of the property reflects the referenced feature.
 
-### Relationship with feature switches and attributes
-
-We saw a few cases that required a link between feature guards and the functionality related to feature switches:
-- To support feature guards in the analyzer, there must be a tie to the guarded `Requires` attribute
-- To support detecting incorrect implementations of the feature guard property, there must be a tie to the feature switch property of the guarded feature.
-- To support eliminating branches guarded by feature guards in ILLink/ILCompiler, there must be a tie to the name of the feature setting.
-
-It seems natural to define a model where all three of these represent the same concept.
-
-### Unified view of features
-
-We take the view that `RequiresDynamicCodeAttribute`, `RuntimeFeature.IsDynamicCodeSupported`, and `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"` all conceptually represent the same "feature".
-
-- The "feature" of dynamic code support is represented as:
-  - `RequiresDynamicCodeAttribute`
-  - `RuntimeFeature.IsDynamicCodeSupported` property
-  - `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"`
-
-Currently, "dynamic code" is the main example of a feature that defines all three of these components.
-
-Not all features come with a feature switch. For example:
-
-- The "feature" of unreferenced code being available is represented as:
-  - `RequiresUnreferencedCodeAttribute`
-
-It's easy to imagine adding a feature check property like `RuntimeFeature.IsUnreferencedCodeSupported` that would be set to `false` in trimmed apps. We don't necessarily want to do this, because there is value in organizing features that call into `RequiresUnreferencedCode` APIs in a more granular way, so that they can be toggled independently.
-
-- The "feature" of individual assembly files being available in an app is represented as:
-  - `RequiresAssemblyFilesAttribute`
-
-Similarly, not all features come with an attribute. Some features don't tie into functionality which is designed to produce warnings if called. For example:
-
-- The "feature" of verifying that open generics are dynamically instantiated with trim-compatible arguments is represented as:
-  - `VerifyOpenGenericServiceTrimmability` property
-  - `"Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability"`
-
-- The "feature" of supporting or not supporting globalization is represented as:
-  - `GlobalizationMode.Invariant` property
-  - `"System.Globalization.Invariant"`
-
-No warnings are produced just because these features are enabled/disabled. Instead, they are designed to be used to change the behavior, and possibly remove unneccessary code when publishing. It's easy to imagine adding an attribute like `RequiresVariantGlobalization` that would be used to annotate APIs that rely on globalization support, such that analysis warnings would prevent accidentally pulling in the globalization stack from code that is supposed to be using invariant globalization. We don't want to do this for every feature; typically we only do this for features that represent large cross-cutting concerns, and are not available with certain app models (trimming, AOT compilation, single-file publishing).
-
-However, any attribute-based model that we pick to represent features should be able to tie in with all three representations.
-
 ### Feature switch attributes
 
 Allow placing `FeatureSwitchAttribute` on the property to indicate that it should be treated as a constant if the feature setting is passed to ILLink/ILCompiler at publish time. The Roslyn analyzer could also respect it by not analyzing branches that are unreachable with the feature setting, though we don't have an immediate use case for this. It could be useful when analyzing application code, but the analyzer is most important for libraries, where feature switches are usually not set.
@@ -281,6 +236,52 @@ static void APIWhichRequiresDynamicCode() {
     // ...
 }
 ```
+
+
+### Relationship with feature switches and attributes
+
+We saw a few cases that required a link between feature guards and the functionality related to feature switches:
+- To support feature guards in the analyzer, there must be a tie to the guarded `Requires` attribute
+- To support detecting incorrect implementations of the feature guard property, there must be a tie to the feature switch property of the guarded feature.
+- To support eliminating branches guarded by feature guards in ILLink/ILCompiler, there must be a tie to the name of the feature setting.
+
+It seems natural to define a model where all three of these represent the same concept.
+
+### Unified view of features
+
+We take the view that `RequiresDynamicCodeAttribute`, `RuntimeFeature.IsDynamicCodeSupported`, and `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"` all conceptually represent the same "feature".
+
+- The "feature" of dynamic code support is represented as:
+  - `RequiresDynamicCodeAttribute`
+  - `RuntimeFeature.IsDynamicCodeSupported` property
+  - `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"`
+
+Currently, "dynamic code" is the main example of a feature that defines all three of these components.
+
+Not all features come with a feature switch. For example:
+
+- The "feature" of unreferenced code being available is represented as:
+  - `RequiresUnreferencedCodeAttribute`
+
+It's easy to imagine adding a feature check property like `RuntimeFeature.IsUnreferencedCodeSupported` that would be set to `false` in trimmed apps. We don't necessarily want to do this, because there is value in organizing features that call into `RequiresUnreferencedCode` APIs in a more granular way, so that they can be toggled independently.
+
+- The "feature" of individual assembly files being available in an app is represented as:
+  - `RequiresAssemblyFilesAttribute`
+
+Similarly, not all features come with an attribute. Some features don't tie into functionality which is designed to produce warnings if called. For example:
+
+- The "feature" of verifying that open generics are dynamically instantiated with trim-compatible arguments is represented as:
+  - `VerifyOpenGenericServiceTrimmability` property
+  - `"Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability"`
+
+- The "feature" of supporting or not supporting globalization is represented as:
+  - `GlobalizationMode.Invariant` property
+  - `"System.Globalization.Invariant"`
+
+No warnings are produced just because these features are enabled/disabled. Instead, they are designed to be used to change the behavior, and possibly remove unneccessary code when publishing. It's easy to imagine adding an attribute like `RequiresVariantGlobalization` that would be used to annotate APIs that rely on globalization support, such that analysis warnings would prevent accidentally pulling in the globalization stack from code that is supposed to be using invariant globalization. We don't want to do this for every feature; typically we only do this for features that represent large cross-cutting concerns, and are not available with certain app models (trimming, AOT compilation, single-file publishing).
+
+However, any attribute-based model that we pick to represent features should be able to tie in with all three representations.
+
 
 ### Unified attribute model for feature switches and guards
 
