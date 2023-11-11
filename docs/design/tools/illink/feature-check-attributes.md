@@ -347,6 +347,144 @@ interface IFeatureAttribute<TSelf> where TSelf : Attribute {
 
 We could use this model even for feature switches similar to `StartupHookSupport`, which don't currently have a `StartupHoopSupportAttribute`. There's no need to actually annotate related APIs with the attribute if that is overkill for a small feature. In this case the attribute definition would just serve as metadata that allows us to define a feature switch in a uniform way.
 
+This is fundamentally the same idea outlined in https://github.com/dotnet/designs/pull/261. The hope is that this document provides the motivation for using a unified representation for the attributes that are related to feature switches and trim/AOT analysis.
+
+## Comparison with platform compatibility analyzer
+
+The platform compatibility analyzer is semantically very similar to the behavior described here, except that it doesn't come with ILLink/ILCompiler support for removing removing branches that are unreachable when publishing for a given platform.
+
+"Platforms" (instead of "features") are represented as strings, with optional versions.
+
+- `SupportedOSPlatformAttribute` is similar to the `RequiresDynamicCodeAttribute`, etc, and will produce warnings if called in an unguarded context.
+
+  ```csharp
+  CallSomeAndroidAPI(); // warns if not targeting android
+
+  [SupportedOSPlatform("android")]
+  static void CallSomeAndroidAPI() {
+    // ...
+  }
+  ```
+
+- Platform checks are like feature switch properties, and can guard calls to annotated APIs:
+
+  ```csharp
+  if (OperatingSystem.IsAndroid())
+    CallSomeAndroidAPI(); // no warning for guarded call
+  ```
+
+  The analyzer has built-in knowledge of fact that `IsAndroid` corresponds to the `SupportedOSPlatform("android")`. This is similar to the ILLink analyzer's current hard-coded knowledge of the fact that `IsDynamicCodeSupported` corresponds to `RequiresDynamicCodeAttribute`.
+
+- Platform guards are like feature guards, allowing libraries to incroduce custom guards for existing platforms:
+
+  ```csharp
+  class Feature {
+      [SupportedOSPlatformGuard("android")]
+      public static bool IsSupported => SomeCondition() && OperatingSystem.IsAndroid();
+  }
+  ```
+
+  ```csharp
+  if (Feature.IsSupported)
+    CallSomeAndroidAPI(); // no warning for guarded call
+  ```
+
+The platform compatibility analyzer also has some additional functionality, such as annotating _unsupported_ APIs, and including version numbers.
+
+
+## Possible future extensions
+
+We might eventually want to extend the semantics in a few directions:
+
+- Feature switches with inverted polarity (`false` means supported/available)
+
+  `GlobalizationMode.Invariant` is an example of this. `true` means that globalization support is not available.
+
+  This could be done by adding an extra boolean argument to the feature switch attribute constructor:
+
+  ```csharp
+  class GlobalizationMode {
+      [FeatureSwitch("Globalization.Invariant", negativeCheck: true)]
+      public static bool InvariantGlobalization => AppContext.TryGetSwitch("Globalization.Invariant", out bool value) ? value : false;
+  }
+  ```
+
+  ```csharp
+  if (GlobaliazationMode.Invariant) {
+      UseInvariantGlobalization();
+  } else {
+      UseGlobalization(); // no warning
+  }
+
+  [RequiresGlobalizationSupport]
+  static void UseGlobalization() { }
+  ```
+
+- Feature guards with inverted polarity. This could work similarly to feature switches:
+  ```csharp
+  class Feature {
+      [FeatureGuard("RuntimeFeature.IsDynamicCodeSupported", negativeCheck: true)]
+      public bool IsDynamicCodeUnsupported => !RuntimeFeature.IsDynamicCodeSupported;
+  }
+  ```
+
+- Feature attributes with inverted polarity
+
+  It would be possible to define an attribute that indicates _lack_ of support for a feature, similar to the `UnsupportedOSPlatformAttribute`. The attribute-based model should make it possible to differentiate these from the `Requires` attributes, for example with a different base class.
+
+  It's not clear whether we have a use case for such an attribute, so these examples aren't meant to suggest realistic names, but just the semantics:
+
+  ```csharp
+  class RequiresNotAttribute : Attribute {}
+
+  class RequiresNoDynamicCodeAttribute : RequiresNotAttribute {}
+  ```
+
+- Versioning support for feature attributes/checks/guards
+
+  The model here would extend naturally to include support for version checks the same way that the platform compatibility analyzer does. Versions would likely be represented as strings because they are encodable in custom attributes:
+
+  ```csharp
+  class RequiresWithVersionAttribute : Attribute {
+      public RequiresWithVersionAttribute(string version) {}
+  }
+
+  class RequiresFooVersionAttribute : RequiresWithVersionAttribute {
+      public RequiresFooVersionAttribute(string version) : base(version) {}
+  }
+
+  class Foo {
+      [FeatureSwitch<Requires>]
+      public static bool IsSupportedWithVersionAtLeast(string version) => return VersionIsLessThanOrEquals(version, "2.0");
+
+      [RequiresFooVersion("2.0")]
+      public static void Impl_2_0() {
+          // Do some work
+      }
+
+      [RequiresFooVersion("1.0")]
+      public static void Impl_1_0() {
+        // Breaking change was made in version 2.0, where this API is no longer supported.
+          throw new NotSupportedException();
+      }
+  }
+  ```
+
+  Code that was originally built against the 1.0 version, and broken on the upgrade to the 2.0 version, could then be updated with a feature check like this:
+  ```csharp
+  if (Foo.IsSupportedWithVersionAtLeast("2.0")) {
+      Foo.Impl_2_0();
+  } else {
+      Foo.Impl_1_0();
+  }
+  ```
+
+  Although it's not clear in practice where this would be useful. This is not meant as a realistic example.
+
+
+
+<hr />
+
 # Two models for custom feature checks
 
 In practice, custom feature checks in dotnet/runtime broadly fall into two categories:
@@ -597,46 +735,6 @@ For example, in a trimmed app, the feature `RequiresUnreferencedCodeAttribute` i
 In a native AOT app, `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"` is set to `false` by default because native AOT doesn't provide a JIT or interpreter, and calls to APIs annotated with `RequiresDynamicCodeAttribute` will produce warnings. There is also an independent feature switch `CanEmitObjectArrayDelegate` that is disabled by default because it depends on APIs marked `RequiresDynamicCode`.
 
 
-## Comparison with platform compatibility analyzer
-
-The platform compatibility analyzer is semantically very similar to the behavior described here, except that it doesn't come with ILLink/ILCompiler support for removing removing branches that are unreachable when publishing for a given platform.
-
-"Platforms" (instead of "features") are represented as strings, with optional versions.
-
-- `SupportedOSPlatformAttribute` is similar to the `RequiresDynamicCodeAttribute`, etc, and will produce warnings if called in an unguarded context.
-
-  ```csharp
-  CallSomeAndroidAPI(); // warns if not targeting android
-
-  [SupportedOSPlatform("android")]
-  static void CallSomeAndroidAPI() {
-    // ...
-  }
-  ```
-
-- Platform checks are like feature switch properties, and can guard calls to annotated APIs:
-
-  ```csharp
-  if (OperatingSystem.IsAndroid())
-    CallSomeAndroidAPI(); // no warning for guarded call
-  ```
-
-  The analyzer has built-in knowledge of fact that `IsAndroid` corresponds to the `SupportedOSPlatform("android")`. This is similar to the ILLink analyzer's current hard-coded knowledge of the fact that `IsDynamicCodeSupported` corresponds to `RequiresDynamicCodeAttribute`.
-
-- Platform guards are like feature guards, allowing libraries to incroduce custom guards for existing platforms:
-
-  ```csharp
-  class Feature {
-      [SupportedOSPlatformGuard("android")]
-      public static bool IsSupported => SomeCondition() && OperatingSystem.IsAndroid();
-  }
-  ```
-
-  ```csharp
-  if (Feature.IsSupported)
-    CallSomeAndroidAPI(); // no warning for guarded call
-  ```
-
 ## Guarding features that don't have feature attributes
 
 We've identified three components that a "feature" may or may not have:
@@ -742,97 +840,6 @@ It is possible via XML to define a new feature that has as string name and a che
 
 Should we define an attribute-based model for defining feature switches?
 
-## Extending the semantics
-
-We might eventually want to extend the semantics in a few directions:
-
-- Feature switches with inverted polarity (`false` means supported/available)
-
-  `GlobalizationMode.Invariant` is an example of this. `true` means that globalization support is not available.
-
-  This could be done by adding an extra boolean argument to the feature switch attribute constructor:
-
-  ```csharp
-  class GlobalizationMode {
-      [FeatureSwitch("Globalization.Invariant", negativeCheck: true)]
-      public static bool InvariantGlobalization => AppContext.TryGetSwitch("Globalization.Invariant", out bool value) ? value : false;
-  }
-  ```
-
-  ```csharp
-  if (GlobaliazationMode.Invariant) {
-      UseInvariantGlobalization();
-  } else {
-      UseGlobalization(); // no warning
-  }
-
-  [RequiresGlobalizationSupport]
-  static void UseGlobalization() { }
-  ```
-
-- Feature guards with inverted polarity. This could work similarly to feature switches:
-  ```csharp
-  class Feature {
-      [FeatureGuard("RuntimeFeature.IsDynamicCodeSupported", negativeCheck: true)]
-      public bool IsDynamicCodeUnsupported => !RuntimeFeature.IsDynamicCodeSupported;
-  }
-  ```
-
-- Feature attributes with inverted polarity
-
-  It would be possible to define an attribute that indicates _lack_ of support for a feature, similar to the `UnsupportedOSPlatformAttribute`. The attribute-based model should make it possible to differentiate these from the `Requires` attributes, for example with a different base class.
-
-  It's not clear whether we have a use case for such an attribute, so these examples aren't meant to suggest realistic names, but just the semantics:
-
-  ```csharp
-  class RequiresNotAttribute : Attribute {}
-
-  class RequiresNoDynamicCodeAttribute : RequiresNotAttribute {}
-  ```
-
-- Versioning support for feature attributes/checks/guards
-
-  The model here would extend naturally to include support for version checks the same way that the platform compatibility analyzer does. Versions would likely be represented as strings because they are encodable in custom attributes:
-
-  ```csharp
-  class RequiresWithVersionAttribute : Attribute {
-      public RequiresWithVersionAttribute(string version) {}
-  }
-
-  class RequiresFooVersionAttribute : RequiresWithVersionAttribute {
-      public RequiresFooVersionAttribute(string version) : base(version) {}
-  }
-
-  class Foo {
-      [FeatureSwitch<Requires>]
-      public static bool IsSupportedWithVersionAtLeast(string version) => return VersionIsLessThanOrEquals(version, "2.0");
-
-      [RequiresFooVersion("2.0")]
-      public static void Impl_2_0() {
-          // Do some work
-      }
-
-      [RequiresFooVersion("1.0")]
-      public static void Impl_1_0() {
-        // Breaking change was made in version 2.0, where this API is no longer supported.
-          throw new NotSupportedException();
-      }
-  }
-  ```
-
-  Code that was originally built against the 1.0 version, and broken on the upgrade to the 2.0 version, could then be updated with a feature check like this:
-  ```csharp
-  if (Foo.IsSupportedWithVersionAtLeast("2.0")) {
-      Foo.Impl_2_0();
-  } else {
-      Foo.Impl_1_0();
-  }
-  ```
-
-  Although it's not clear in practice where this would be useful. This is not meant as a realistic example.
-
-
-
 
 
   <hr />
@@ -910,7 +917,6 @@ This allows us to replace ILLink.Substitutions.xml with an attribute-based model
 Do both!
 
 This would allow us to get rid of ILLink.Substitutions.xml entirely.
-
 
 # Terminology
 
