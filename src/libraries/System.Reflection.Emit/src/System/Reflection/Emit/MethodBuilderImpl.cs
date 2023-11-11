@@ -53,7 +53,9 @@ namespace System.Reflection.Emit
             _initLocals = true;
         }
 
-        internal int ParameterCount => _parameterTypes == null? 0 : _parameterTypes.Length;
+        internal int ParameterCount => _parameterTypes == null ? 0 : _parameterTypes.Length;
+
+        internal Type[]? ParameterTypes => _parameterTypes;
 
         internal ILGeneratorImpl? ILGeneratorImpl => _ilGenerator;
 
@@ -77,6 +79,16 @@ namespace System.Reflection.Emit
 
             return convention;
         }
+
+        internal BindingFlags GetBindingFlags()
+        {
+            BindingFlags bindingFlags = (_attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public ?
+                BindingFlags.Public : BindingFlags.NonPublic;
+            bindingFlags |= (_attributes & MethodAttributes.Static) != 0 ? BindingFlags.Static : BindingFlags.Instance;
+
+            return bindingFlags;
+        }
+
         protected override bool InitLocalsCore
         {
             get { ThrowIfGeneric(); return _initLocals; }
@@ -209,7 +221,7 @@ namespace System.Reflection.Emit
         public override bool IsSecurityTransparent => false;
         public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
-        public override Type? ReflectedType { get => throw new NotImplementedException(); }
+        public override Type? ReflectedType => _declaringType;
         public override ParameterInfo ReturnParameter { get => throw new NotImplementedException(); }
         public override Type ReturnType => _returnType;
         public override ICustomAttributeProvider ReturnTypeCustomAttributes { get => throw new NotImplementedException(); }

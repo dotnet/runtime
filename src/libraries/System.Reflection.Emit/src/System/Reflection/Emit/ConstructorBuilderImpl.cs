@@ -7,7 +7,7 @@ namespace System.Reflection.Emit
 {
     internal sealed class ConstructorBuilderImpl : ConstructorBuilder
     {
-        private readonly MethodBuilderImpl _methodBuilder;
+        internal readonly MethodBuilderImpl _methodBuilder;
         internal bool _isDefaultConstructor;
 
         public ConstructorBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConvention,
