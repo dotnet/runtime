@@ -3033,8 +3033,7 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        internal static int CountMatches<T>(this Vector128<T> vector)
+        internal static int GetMatchCount<T>(this Vector128<T> vector)
         {
             if (AdvSimd.Arm64.IsSupported)
             {
@@ -3047,8 +3046,7 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        internal static int IndexOfMatch<T>(this Vector128<T> vector)
+        internal static int IndexOfFirstMatch<T>(this Vector128<T> vector)
         {
             if (AdvSimd.Arm64.IsSupported)
             {

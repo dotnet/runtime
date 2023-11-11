@@ -2931,7 +2931,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int CountMatches<T>(this Vector256<T> vector)
+        internal static int GetMatchCount<T>(this Vector256<T> vector)
         {
             if (Vector256.IsHardwareAccelerated)
             {
@@ -2941,14 +2941,14 @@ namespace System.Runtime.Intrinsics
             Vector128<T> lower = vector._lower;
             Vector128<T> upper = vector._upper;
 
-            int lowerCount = Vector128.CountMatches(lower);
-            int upperCount = Vector128.CountMatches(upper);
+            int lowerCount = Vector128.GetMatchCount(lower);
+            int upperCount = Vector128.GetMatchCount(upper);
 
             return lowerCount + upperCount;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfMatch<T>(this Vector256<T> vector)
+        internal static int IndexOfFirstMatch<T>(this Vector256<T> vector)
         {
             if (Vector256.IsHardwareAccelerated)
             {
@@ -2958,10 +2958,10 @@ namespace System.Runtime.Intrinsics
             Vector128<T> lower = vector._lower;
             Vector128<T> upper = vector._upper;
 
-            int result = Vector128.IndexOfMatch(lower);
+            int result = Vector128.IndexOfFirstMatch(lower);
             if (result >= Vector128<T>.Count)
             {
-                return Vector128<T>.Count + Vector128.IndexOfMatch(upper);
+                return Vector128<T>.Count + Vector128.IndexOfFirstMatch(upper);
             }
 
             return result;

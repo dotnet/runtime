@@ -2951,7 +2951,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<T> Xor<T>(Vector512<T> left, Vector512<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int CountMatches<T>(this Vector512<T> vector)
+        internal static int GetMatchCount<T>(this Vector512<T> vector)
         {
             if (Vector512.IsHardwareAccelerated)
             {
@@ -2962,8 +2962,8 @@ namespace System.Runtime.Intrinsics
                 Vector256<T> lower = vector._lower;
                 Vector256<T> upper = vector._upper;
 
-                int lowerCount = Vector256.CountMatches(lower);
-                int upperCount = Vector256.CountMatches(upper);
+                int lowerCount = Vector256.GetMatchCount(lower);
+                int upperCount = Vector256.GetMatchCount(upper);
 
                 return lowerCount + upperCount;
             }
@@ -2973,16 +2973,16 @@ namespace System.Runtime.Intrinsics
             Vector128<T> vec2 = vector._upper._lower;
             Vector128<T> vec3 = vector._upper._upper;
 
-            int cnt0 = Vector128.CountMatches(vec0);
-            int cnt1 = Vector128.CountMatches(vec1);
-            int cnt2 = Vector128.CountMatches(vec2);
-            int cnt3 = Vector128.CountMatches(vec3);
+            int cnt0 = Vector128.GetMatchCount(vec0);
+            int cnt1 = Vector128.GetMatchCount(vec1);
+            int cnt2 = Vector128.GetMatchCount(vec2);
+            int cnt3 = Vector128.GetMatchCount(vec3);
 
             return cnt0 + cnt1 + cnt2 + cnt3;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfMatch<T>(this Vector512<T> vector)
+        internal static int IndexOfFirstMatch<T>(this Vector512<T> vector)
         {
             if (Vector512.IsHardwareAccelerated)
             {
@@ -2993,10 +2993,10 @@ namespace System.Runtime.Intrinsics
                 Vector256<T> lower = vector._lower;
                 Vector256<T> upper = vector._upper;
 
-                int lowerIndex = Vector256.IndexOfMatch(lower);
+                int lowerIndex = Vector256.IndexOfFirstMatch(lower);
                 if (lowerIndex >= Vector256<T>.Count)
                 {
-                    return Vector256<T>.Count + Vector256.IndexOfMatch(upper);
+                    return Vector256<T>.Count + Vector256.IndexOfFirstMatch(upper);
                 }
 
                 return lowerIndex;
@@ -3007,16 +3007,16 @@ namespace System.Runtime.Intrinsics
             Vector128<T> vec2 = vector._upper._lower;
             Vector128<T> vec3 = vector._upper._upper;
 
-            int idx0 = Vector128.IndexOfMatch(vec0);
+            int idx0 = Vector128.IndexOfFirstMatch(vec0);
             if (idx0 >= Vector128<T>.Count)
             {
-                int idx1 = Vector128.IndexOfMatch(vec1);
+                int idx1 = Vector128.IndexOfFirstMatch(vec1);
                 if (idx1 >= Vector128<T>.Count)
                 {
-                    int idx2 = Vector128.IndexOfMatch(vec2);
+                    int idx2 = Vector128.IndexOfFirstMatch(vec2);
                     if (idx2 >= Vector128<T>.Count)
                     {
-                        return (Vector128<T>.Count * 3) + Vector128.IndexOfMatch(vec3);
+                        return (Vector128<T>.Count * 3) + Vector128.IndexOfFirstMatch(vec3);
                     }
 
                     return (Vector128<T>.Count * 2) + idx2;
