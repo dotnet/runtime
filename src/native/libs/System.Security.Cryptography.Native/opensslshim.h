@@ -44,6 +44,8 @@
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include <openssl/provider.h>
+#include <openssl/params.h>
+#include <openssl/core_names.h>
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
@@ -345,6 +347,15 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
+    LIGHTUP_FUNCTION(EVP_MAC_fetch) \
+    LIGHTUP_FUNCTION(EVP_MAC_final) \
+    LIGHTUP_FUNCTION(EVP_MAC_free) \
+    LIGHTUP_FUNCTION(EVP_MAC_CTX_new) \
+    LIGHTUP_FUNCTION(EVP_MAC_CTX_free) \
+    LIGHTUP_FUNCTION(EVP_MAC_CTX_set_params) \
+    LIGHTUP_FUNCTION(EVP_MAC_CTX_dup) \
+    LIGHTUP_FUNCTION(EVP_MAC_init) \
+    LIGHTUP_FUNCTION(EVP_MAC_update) \
     REQUIRED_FUNCTION(EVP_md5) \
     REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
@@ -457,6 +468,9 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
     FALLBACK_FUNCTION(OpenSSL_version_num) \
     LIGHTUP_FUNCTION(OSSL_PROVIDER_try_load) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_octet_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_end) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
@@ -846,6 +860,15 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
+#define EVP_MAC_fetch EVP_MAC_fetch_ptr
+#define EVP_MAC_final EVP_MAC_final_ptr
+#define EVP_MAC_free EVP_MAC_free_ptr
+#define EVP_MAC_CTX_new EVP_MAC_CTX_new_ptr
+#define EVP_MAC_CTX_free EVP_MAC_CTX_free_ptr
+#define EVP_MAC_CTX_set_params EVP_MAC_CTX_set_params_ptr
+#define EVP_MAC_CTX_dup EVP_MAC_CTX_dup_ptr
+#define EVP_MAC_init EVP_MAC_init_ptr
+#define EVP_MAC_update EVP_MAC_update_ptr
 #define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
@@ -957,6 +980,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
 #define OSSL_PROVIDER_try_load OSSL_PROVIDER_try_load_ptr
+#define OSSL_PARAM_construct_octet_string OSSL_PARAM_construct_octet_string_ptr
+#define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr
+#define OSSL_PARAM_construct_end OSSL_PARAM_construct_end_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr
