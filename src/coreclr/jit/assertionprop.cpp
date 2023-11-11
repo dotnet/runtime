@@ -1635,7 +1635,9 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
 
     // See if we already have this assertion in the table.
     //
-    // For local assertion prop we can speed things up by checking the dep vectors.
+    // For local assertion prop we can speed things up by checking the dep vector.
+    // Note we only need check the op1 vector; copies get indexed on both op1
+    // and op2, so searching the first will find any existing match.
     //
     if (optLocalAssertionProp)
     {
@@ -1649,26 +1651,9 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
             AssertionIndex const index        = GetAssertionIndex(bvIndex);
             AssertionDsc* const  curAssertion = optGetAssertion(index);
 
-            if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
+            if (curAssertion->Equals(newAssertion, /* vnBased */ false)
             {
                 return index;
-            }
-        }
-
-        if (newAssertion->op2.kind == O2K_LCLVAR_COPY)
-        {
-            lclNum = newAssertion->op2.lcl.lclNum;
-            BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
-            unsigned        bvIndex = 0;
-            while (iter.NextElem(&bvIndex))
-            {
-                AssertionIndex const index        = GetAssertionIndex(bvIndex);
-                AssertionDsc* const  curAssertion = optGetAssertion(index);
-
-                if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
-                {
-                    return index;
-                }
             }
         }
     }
@@ -1680,7 +1665,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         for (AssertionIndex index = optAssertionCount; index >= 1; index--)
         {
             AssertionDsc* curAssertion = optGetAssertion(index);
-            if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
+            if (curAssertion->Equals(newAssertion, /* vnBased */ true))
             {
                 return index;
             }
