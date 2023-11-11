@@ -102,9 +102,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 bool isFirstType = true;
                 foreach (TypeSpec type in targetTypes)
                 {
-                    Debug.Assert(_typeIndex.CanBindTo(type.TypeRef));
-
                     TypeSpec effectiveType = _typeIndex.GetEffectiveTypeSpec(type);
+
+                    Debug.Assert(effectiveType is UnsupportedTypeSpec || _typeIndex.CanBindTo(type.TypeRef));
+
                     string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
 
                     EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.TypeRef.FullyQualifiedName}))");
@@ -497,7 +498,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if ({{Identifier.binderOptions}}?.{{Identifier.ErrorOnUnknownConfiguration}} is true)
                         {
                             {{TypeDisplayString.ListOfString}}? {{Identifier.temp}} = null;
-                    
+
                             foreach ({{Identifier.IConfigurationSection}} {{Identifier.section}} in {{Identifier.configuration}}.{{Identifier.GetChildren}}())
                             {
                                 if (!{{keysIdentifier}}.Value.Contains({{Expression.sectionKey}}))

@@ -1104,6 +1104,116 @@ void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
     Emit32(0x00000067 | (regTarget << 15));
 }
 
+void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace)
+{
+    _ASSERTE(!m_fProlog);
+
+    unsigned short numberOfEntriesOnStack  = 2 + cIntRegArgs + cFpRegArgs; // 2 for fp, ra
+
+    // Stack needs to be 16 byte aligned. Compute the required padding before saving it
+    unsigned short totalPaddedFrameSize = static_cast<unsigned short>(ALIGN_UP(cbStackSpace + numberOfEntriesOnStack * sizeof(void*), 2 * sizeof(void*)));
+    // The padding is going to be applied to the local stack
+    cbStackSpace =  totalPaddedFrameSize - numberOfEntriesOnStack * sizeof(void*);
+
+    // Record the parameters of this prolog so that we can generate a matching epilog and unwind info.
+    DescribeProlog(cIntRegArgs, cFpRegArgs, cbStackSpace);
+
+
+    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emitting right prolog that's
+    // expressable in unwind codes efficiently. The largest offset in typical unwindinfo encodings that we use is 504.
+    // so allocations larger than 504 bytes would require setting the SP in multiple strides, which would complicate both
+    // prolog and epilog generation as well as unwindinfo generation.
+    _ASSERTE((totalPaddedFrameSize <= 504) && "NYI:RISCV64 Implement StubLinker prologs with larger than 504 bytes of frame size");
+    if (totalPaddedFrameSize > 504)
+        COMPlusThrow(kNotSupportedException);
+
+    // Here is how the stack would look like (Stack grows up)
+    // [Low Address]
+    //            +------------+
+    //      SP -> |            | <-+
+    //            :            :   | Stack Frame, (i.e outgoing arguments) including padding
+    //            |            | <-+
+    //            +------------+
+    //            | FP         |
+    //            +------------+
+    //            | RA         |
+    //            +------------+
+    //            | F10        | <-+
+    //            +------------+   |
+    //            :            :   | Fp Args
+    //            +------------+   |
+    //            | F17        | <-+
+    //            +------------+
+    //            | X10        | <-+
+    //            +------------+   |
+    //            :            :   | Int Args
+    //            +------------+   |
+    //            | X17        | <-+
+    //            +------------+
+    //  Old SP -> |[Stack Args]|
+    // [High Address]
+
+    // Regarding the order of operations in the prolog and epilog;
+    // If the prolog and the epilog matches each other we can simplify emitting the unwind codes and save a few
+    // bytes of unwind codes by making prolog and epilog share the same unwind codes.
+    // In order to do that we need to make the epilog be the reverse of the prolog.
+    // But we wouldn't want to add restoring of the argument registers as that's completely unnecessary.
+    // Besides, saving argument registers cannot be expressed by the unwind code encodings.
+    // So, we'll push saving the argument registers to the very last in the prolog, skip restoring it in epilog,
+    // and also skip reporting it to the OS.
+    //
+    // Another bit that we can save is resetting the frame pointer.
+    // This is not necessary when the SP doesn't get modified beyond prolog and epilog. (i.e no alloca/localloc)
+    // And in that case we don't need to report setting up the FP either.
+
+    // 1. Relocate SP
+    EmitSubImm(RegSp, RegSp, totalPaddedFrameSize);
+
+    unsigned cbOffset = 2 * sizeof(void*) + cbStackSpace; // 2 is for fp, ra
+
+    // 2. Store FP/RA
+    EmitStore(RegFp, RegSp, cbStackSpace);
+    EmitStore(RegRa, RegSp, cbStackSpace + sizeof(void*));
+
+    // 3. Set the frame pointer
+    EmitMovReg(RegFp, RegSp);
+
+    // 4. Store floating point argument registers
+    _ASSERTE(cFpRegArgs <= 8);
+    for (unsigned short i = 0; i < cFpRegArgs; i++)
+        EmitStore(FloatReg(i + 10), RegSp, cbOffset + i * sizeof(void*));
+
+    // 5. Store int argument registers
+    cbOffset += cFpRegArgs * sizeof(void*);
+    _ASSERTE(cIntRegArgs <= 8);
+    for (unsigned short i = 0 ; i < cIntRegArgs; i++)
+        EmitStore(IntReg(i + 10), RegSp, cbOffset + i * sizeof(void*));
+}
+
+void StubLinkerCPU::EmitEpilog()
+{
+    _ASSERTE(m_fProlog);
+
+    // 5. Restore int argument registers
+    //    nop: We don't need to. They are scratch registers
+
+    // 4. Restore floating point argument registers
+    //    nop: We don't need to. They are scratch registers
+
+    // 3. Restore the SP from FP
+    //    N.B. We're assuming that the stublinker stubs doesn't do alloca, hence nop
+
+    // 2. Restore FP/RA
+    EmitLoad(RegFp, RegSp, m_cbStackSpace);
+    EmitLoad(RegRa, RegSp, m_cbStackSpace + sizeof(void*));
+
+    // 1. Restore SP
+    EmitAddImm(RegSp, RegSp, GetStackFrameSize());
+
+    // jalr x0, 0(ra)
+    EmitJumpRegister(RegRa);
+}
+
 // Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
 static unsigned ITypeInstr(unsigned opcode, unsigned funct3, unsigned rd, unsigned rs1, int imm12)
 {

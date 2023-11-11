@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Xunit;
@@ -795,7 +796,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             await VerifyAgainstBaselineUsingFile("Primitives.generated.txt", source);
         }
-        
+
         [Fact]
         public async Task DefaultConstructorParameters()
         {
@@ -925,7 +926,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string source = """
                 using System.Collections.Generic;
                 using Microsoft.Extensions.Configuration;
-                
+
                 public class Program
                 {
                 	public static void Main()
@@ -964,6 +965,161 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
 
             Assert.Equal(2, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+        }
+
+        private readonly static string [] s_typesToSkip = new string []
+        {
+            "Action<string>",
+            "List<Action<string>>",
+            "List<Dictionary<string, Action<string>>>",
+            "Func<int>",
+            "List<Func<int>>",
+            "List<Dictionary<string, Func<string>>>",
+            "myMethodDelegate",
+            "List<myMethodDelegate>",
+            "List<Dictionary<string, myMethodDelegate>>",
+            "IntPtr",
+            "List<IntPtr>",
+            "List<Dictionary<string, IntPtr>>",
+            "UIntPtr",
+            "List<UIntPtr>",
+            "List<Dictionary<string, UIntPtr>>",
+            "SerializationInfo",
+            "List<SerializationInfo>",
+            "List<Dictionary<string, SerializationInfo>>",
+            "MethodInfo",
+            "List<MethodInfo>",
+            "List<Dictionary<string, MethodInfo>>",
+            "ConstructorInfo",
+            "List<ConstructorInfo>",
+            "List<Dictionary<string, ConstructorInfo>>",
+            "string[,]",
+            "List<string[,]>",
+            "List<Dictionary<string, string[,]>>",
+            "Func<string>[]",
+            "Action<string>[]",
+            "myMethodDelegate[]",
+            "MethodInfo[]",
+            "ConstructorInfo[]",
+            "SerializationInfo[]",
+            "IntPtr[]",
+            "UIntPtr[]",
+            "Action<string>?",
+            "List<Action<string>?>",
+            "List<Dictionary<string, Action<string>?>>",
+            "Func<int>?",
+            "List<Func<int>?>",
+            "List<Dictionary<string, Func<string>?>>",
+            "myMethodDelegate?",
+            "List<myMethodDelegate?>",
+            "List<Dictionary<string, myMethodDelegate?>>",
+            "IntPtr?",
+            "List<IntPtr?>",
+            "List<Dictionary<string, IntPtr?>>",
+            "UIntPtr?",
+            "List<UIntPtr?>",
+            "List<Dictionary<string, UIntPtr?>>",
+            "SerializationInfo?",
+            "List<SerializationInfo?>",
+            "List<Dictionary<string, SerializationInfo?>>",
+            "MethodInfo?",
+            "List<MethodInfo?>",
+            "List<Dictionary<string, MethodInfo?>>",
+            "ConstructorInfo?",
+            "List<ConstructorInfo?>",
+            "List<Dictionary<string, ConstructorInfo?>>",
+            "string[,]?",
+            "List<string[,]?>",
+            "List<Dictionary<string, string[,]?>>",
+            "Func<string>?[]",
+            "Action<string>?[]",
+            "myMethodDelegate?[]",
+            "MethodInfo?[]",
+            "ConstructorInfo?[]",
+            "SerializationInfo?[]",
+            "IntPtr?[]",
+            "UIntPtr?[]",
+            "ParameterInfo",
+            "ParameterInfo?",
+            "List<ParameterInfo>",
+            "List<ParameterInfo?>",
+            "ParameterInfo[]",
+            "MyDictionary"
+        };
+
+        private readonly static string [] s_rootCollectionTypesToGenerateDiagnostics = new string []
+        {
+            "List<IntPtr>",
+            "MyDictionary",
+        };
+
+        [Fact]
+        public async Task UnsupportedTypes()
+        {
+            StringBuilder sb1 = new();
+            for (int i = 0; i < s_typesToSkip.Length; i++)
+            {
+                sb1.AppendLine($"public {s_typesToSkip[i]} SkipProp{i} {{ get; set; }}");
+            }
+
+            StringBuilder sb2 = new();
+            for (int i = 0; i < s_rootCollectionTypesToGenerateDiagnostics.Length; i++)
+            {
+                sb2.AppendLine($"configuration.Get<{s_rootCollectionTypesToGenerateDiagnostics[i]}>(_ => {{ }});");
+            }
+
+            string source = $$"""
+                using System;
+                using System.Collections.Generic;
+                using System.Reflection;
+                using System.Runtime.Serialization;
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.DependencyInjection;
+
+                public class Program
+                {
+                	public static void Main()
+                	{
+                		ConfigurationBuilder configurationBuilder = new();
+                		IConfiguration configuration = configurationBuilder.Build();
+
+                        // var ws = config.GetSection("MySection");
+                        var w = new Options();
+                        configuration.Bind(w);
+                        configuration.Get<Options>(_ => { });
+
+                        // Should generate a diagnostics
+                        {{sb2}}
+                	}
+                }
+
+                public class Options
+                {
+                    public string? Name { get; set; }
+                    public int Age { get; set; }
+                    public List<string> List { get; set; }
+                    public string[] Array { get; set; }
+                    public Record<Action> Record { get; set; }
+                    {{sb1}}
+                    public delegate string myMethodDelegate( int myInt );
+                }
+
+                public class MyDictionary : Dictionary<string, Action> { }
+
+                public record Record<T>(int x = 10);
+
+                namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
+                """;
+
+            ConfigBindingGenRunResult result = await VerifyAgainstBaselineUsingFile(
+                "UnsupportedTypes.generated.txt",
+                source, expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
+
+            Assert.Equal(s_rootCollectionTypesToGenerateDiagnostics.Length, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+            Assert.True(result.GeneratedSource.HasValue);
+            string generatedSource = result.GeneratedSource.Value.SourceText.ToString();
+            Assert.DoesNotContain(generatedSource, "SkipProp");
+            Assert.Contains("global::Record<global::System.Action>", generatedSource);
         }
     }
 }
