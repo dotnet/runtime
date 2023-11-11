@@ -132,7 +132,7 @@ internal sealed class PInvokeTableGenerator
                 Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select(l => "{\"" + _fixupSymbolName(l.Key) + "\", " + TransformEntryPoint(l.First()) + "}, " +
+                Select(l => "{\"" + l.Key + "\", " + TransformEntryPoint(l.First()) + "}, " +
                                 "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)));
 
             foreach (var pinvoke in assemblies_pinvokes)
