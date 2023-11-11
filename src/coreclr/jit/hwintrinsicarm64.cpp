@@ -1058,7 +1058,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 op1 = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseJitType, simdSize);
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8);
-                op1 = gtNewSimdHWIntrinsicNode(simdBaseType, op1, NI_Vector64_ToScalar, simdBaseJitType, 8);
+                op1 = gtNewSimdHWIntrinsicNode(genActualType(simdBaseType), op1, NI_Vector64_ToScalar, simdBaseJitType,
+                                               8);
                 op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, TYP_INT);
 
                 GenTree* zero  = gtNewZeroConNode(TYP_SIMD16);
@@ -1066,7 +1067,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 op2 = gtNewSimdGetUpperNode(TYP_SIMD8, op2, simdBaseJitType, simdSize);
                 op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8);
-                op2 = gtNewSimdHWIntrinsicNode(simdBaseType, op2, NI_Vector64_ToScalar, simdBaseJitType, 8);
+                op2 = gtNewSimdHWIntrinsicNode(genActualType(simdBaseType), op2, NI_Vector64_ToScalar, simdBaseJitType,
+                                               8);
                 op2 = gtNewCastNode(TYP_INT, op2, /* isUnsigned */ true, TYP_INT);
 
                 op2     = gtNewOperNode(GT_LSH, TYP_INT, op2, gtNewIconNode(8));
@@ -1095,7 +1097,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                    simdSize);
                 }
 
-                retNode = gtNewSimdHWIntrinsicNode(simdBaseType, op1, NI_Vector64_ToScalar, simdBaseJitType, 8);
+                retNode = gtNewSimdHWIntrinsicNode(genActualType(simdBaseType), op1, NI_Vector64_ToScalar,
+                                                   simdBaseJitType, 8);
 
                 if ((simdBaseType != TYP_INT) && (simdBaseType != TYP_UINT))
                 {
