@@ -553,21 +553,24 @@ static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFun
 //   Whether or not the visiting should proceed.
 //
 // Remarks:
-//   Because we make the conservative assumption that control flow can jump
-//   from a try block to its handler at any time, the immediate (regular
-//   control flow) predecessor(s) of the first block of a try block are also
-//   considered to have the first block of the handler as an EH successor.
+//   The successors visited here are not true successors in the control flow
+//   sense -- it is not possible for control to transfer directly from the
+//   predecessor of a try to the try's handler. However, considering these as
+//   successors (and correspondingly, expanding the set of predecessors for
+//   handlers in BlockPredsWithEH) simplifies the handling in other places of
+//   the JIT:
 //
-//   As an example: for liveness this makes variables that are "live-in" to the
-//   handler become "live-out" for these try-predecessor block, so that they
-//   become live-in to the try -- which we require.
+//   * It makes the (immediate) dominator computation work out in the expected
+//   way by computing the dominator of a handler to be the dominator of the
+//   preds of the try;
 //
-//   TODO-Cleanup: Is the above comment true today or is this code unnecessary?
-//   For a block T with an EH successor E liveness takes care to consider the
-//   live-in set E as "volatile" variables that are fully live at all points
-//   within the block T, including being a part of T's live-in set. That means
-//   that if T is the beginning of a try, then any predecessor of T will
-//   naturally also have E's live-in set as part of its live-out set.
+//   * It simplifies PHI arguments in handlers. In particular, when control is
+//   transferred to a handler, the reaching defs of live-in locals may come
+//   from predecessors of the try block if an exception was thrown before a def
+//   in the try. Without considering these as preds, we would have odd phi args
+//   (referring to blocks that aren't considered to be predecessors), or we
+//   would need to insert extra PHI definitions in the try block that the
+//   handler could refer to.
 //
 template <typename TFunc>
 static BasicBlockVisit VisitSuccessorEHSuccessors(Compiler* comp, BasicBlock* block, BasicBlock* succ, TFunc func)
