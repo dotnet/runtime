@@ -1091,6 +1091,11 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static UInt128 operator /(UInt128 left, UInt128 right)
         {
+            if ((right._lower == 0) && (right._upper == 0))
+            {
+                throw new DivideByZeroException();
+            }
+
             if ((right._upper == 0) && (left._upper == 0))
             {
                 // left and right are both uint64
