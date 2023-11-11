@@ -769,7 +769,6 @@ bool Compiler::fgRemoveDeadBlocks()
 // Notes:
 //   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
 //   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
-//   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
 //
 //   Unreachable blocks will have higher pre and post order numbers than reachable blocks.
 //   Hence they will appear at lower indices in the fgBBReversePostorder array.

@@ -9630,220 +9630,62 @@ void ValueNumStore::RunTests(Compiler* comp)
 }
 #endif // DEBUG
 
-typedef JitExpandArrayStack<BasicBlock*> BlockStack;
-
-// This represents the "to do" state of the value number computation.
-struct ValueNumberState
+class ValueNumberState
 {
-    // These two stacks collectively represent the set of blocks that are candidates for
-    // processing, because at least one predecessor has been processed.  Blocks on "m_toDoAllPredsDone"
-    // have had *all* predecessors processed, and thus are candidates for some extra optimizations.
-    // Blocks on "m_toDoNotAllPredsDone" have at least one predecessor that has not been processed.
-    // Blocks are initially on "m_toDoNotAllPredsDone" may be moved to "m_toDoAllPredsDone" when their last
-    // unprocessed predecessor is processed, thus maintaining the invariants.
-    BlockStack m_toDoAllPredsDone;
-    BlockStack m_toDoNotAllPredsDone;
+    Compiler*    m_comp;
+    BitVecTraits m_blockTraits;
+    BitVec       m_provenUnreachableBlocks;
 
-    Compiler* m_comp;
-
-    // TBD: This should really be a bitset...
-    // For now:
-    // first bit indicates completed,
-    // second bit indicates that it's been pushed on all-done stack,
-    // third bit indicates that it's been pushed on not-all-done stack.
-    BYTE* m_visited;
-
-    enum BlockVisitBits
-    {
-        BVB_complete     = 0x1,
-        BVB_onAllDone    = 0x2,
-        BVB_onNotAllDone = 0x4,
-        // Set for statically reachable blocks that we have proven unreachable.
-        BVB_provenUnreachable = 0x8,
-    };
-
-    bool GetVisitBit(unsigned bbNum, BlockVisitBits bvb)
-    {
-        return (m_visited[bbNum] & bvb) != 0;
-    }
-    void SetVisitBit(unsigned bbNum, BlockVisitBits bvb)
-    {
-        m_visited[bbNum] |= bvb;
-    }
-
+public:
     ValueNumberState(Compiler* comp)
-        : m_toDoAllPredsDone(comp->getAllocator(CMK_ValueNumber), /*minSize*/ 4)
-        , m_toDoNotAllPredsDone(comp->getAllocator(CMK_ValueNumber), /*minSize*/ 4)
-        , m_comp(comp)
-        , m_visited(new (comp, CMK_ValueNumber) BYTE[comp->fgBBNumMax + 1]())
+        : m_comp(comp)
+        , m_blockTraits(comp->fgBBNumMax + 1, comp)
+        , m_provenUnreachableBlocks(BitVecOps::MakeEmpty(&m_blockTraits))
     {
     }
 
-    BasicBlock* ChooseFromNotAllPredsDone()
+    //------------------------------------------------------------------------
+    // SetUnreachable: Mark that a block has been proven unreachable.
+    //
+    // Parameters:
+    //   bb - The block.
+    //
+    void SetUnreachable(BasicBlock* bb)
     {
-        assert(m_toDoAllPredsDone.Size() == 0);
-        // If we have no blocks with all preds done, then (ideally, if all cycles have been captured by loops)
-        // we must have at least one block within a loop.  We want to do the loops first.  Doing a loop entry block
-        // should break the cycle, making the rest of the body of the loop (unless there's a nested loop) doable by the
-        // all-preds-done rule.  If several loop entry blocks are available, at least one should have all non-loop preds
-        // done -- we choose that.
-        for (unsigned i = 0; i < m_toDoNotAllPredsDone.Size(); i++)
-        {
-            BasicBlock* cand = m_toDoNotAllPredsDone.Get(i);
-
-            // Skip any already-completed blocks (a block may have all its preds finished, get added to the
-            // all-preds-done todo set, and get processed there).  Do this by moving the last one down, to
-            // keep the array compact.
-            while (GetVisitBit(cand->bbNum, BVB_complete))
-            {
-                if (i + 1 < m_toDoNotAllPredsDone.Size())
-                {
-                    cand = m_toDoNotAllPredsDone.Pop();
-                    m_toDoNotAllPredsDone.Set(i, cand);
-                }
-                else
-                {
-                    // "cand" is the last element; delete it.
-                    (void)m_toDoNotAllPredsDone.Pop();
-                    break;
-                }
-            }
-            // We may have run out of non-complete candidates above.  If so, we're done.
-            if (i == m_toDoNotAllPredsDone.Size())
-            {
-                break;
-            }
-
-            // See if "cand" is a loop entry.
-            unsigned lnum;
-            if (m_comp->optBlockIsLoopEntry(cand, &lnum))
-            {
-                // "lnum" is the innermost loop of which "cand" is the entry; find the outermost.
-                unsigned lnumPar = m_comp->optLoopTable[lnum].lpParent;
-                while (lnumPar != BasicBlock::NOT_IN_LOOP)
-                {
-                    if (m_comp->optLoopTable[lnumPar].lpEntry == cand)
-                    {
-                        lnum = lnumPar;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                    lnumPar = m_comp->optLoopTable[lnumPar].lpParent;
-                }
-
-                bool allNonLoopPredsDone = true;
-                for (FlowEdge* pred = m_comp->BlockPredsWithEH(cand); pred != nullptr; pred = pred->getNextPredEdge())
-                {
-                    BasicBlock* predBlock = pred->getSourceBlock();
-                    if (!m_comp->optLoopTable[lnum].lpContains(predBlock))
-                    {
-                        if (!GetVisitBit(predBlock->bbNum, BVB_complete))
-                        {
-                            allNonLoopPredsDone = false;
-                        }
-                    }
-                }
-                if (allNonLoopPredsDone)
-                {
-                    return cand;
-                }
-            }
-        }
-
-        // If we didn't find a loop entry block with all non-loop preds done above, then return a random member (if
-        // there is one).
-        if (m_toDoNotAllPredsDone.Size() == 0)
-        {
-            return nullptr;
-        }
-        else
-        {
-            return m_toDoNotAllPredsDone.Pop();
-        }
+        BitVecOps::AddElemD(&m_blockTraits, m_provenUnreachableBlocks, bb->bbNum);
     }
 
-// Debugging output that is too detailed for a normal JIT dump...
-#define DEBUG_VN_VISIT 0
-
-    // Record that "blk" has been visited, and add any unvisited successors of "blk" to the appropriate todo set.
-    void FinishVisit(BasicBlock* blk)
+    //------------------------------------------------------------------------
+    // IsReachable: Check if a block is reachable. Takes static reachability
+    // and proven unreachability into account.
+    //
+    // Parameters:
+    //   bb - The block.
+    //
+    // Returns:
+    //   True if the basic block is potentially reachable. False if the basic
+    //   block is definitely not reachable.
+    //
+    bool IsReachable(BasicBlock* bb)
     {
-#ifdef DEBUG_VN_VISIT
-        JITDUMP("finish(" FMT_BB ").\n", blk->bbNum);
-#endif // DEBUG_VN_VISIT
-
-        SetVisitBit(blk->bbNum, BVB_complete);
-
-        blk->VisitAllSuccs(m_comp, [&](BasicBlock* succ) {
-#ifdef DEBUG_VN_VISIT
-            JITDUMP("   Succ(" FMT_BB ").\n", succ->bbNum);
-#endif // DEBUG_VN_VISIT
-
-            if (GetVisitBit(succ->bbNum, BVB_complete))
-            {
-                return BasicBlockVisit::Continue;
-            }
-#ifdef DEBUG_VN_VISIT
-            JITDUMP("     Not yet completed.\n");
-#endif // DEBUG_VN_VISIT
-
-            bool allPredsVisited   = true;
-            bool provenUnreachable = true;
-            for (FlowEdge* pred = m_comp->BlockPredsWithEH(succ); pred != nullptr; pred = pred->getNextPredEdge())
-            {
-                BasicBlock* predBlock = pred->getSourceBlock();
-                if (!GetVisitBit(predBlock->bbNum, BVB_complete))
-                {
-                    allPredsVisited = false;
-                    break;
-                }
-
-                if (provenUnreachable && !GetVisitBit(predBlock->bbNum, BVB_provenUnreachable) &&
-                    IsReachableFromPred(predBlock, succ))
-                {
-                    provenUnreachable = false;
-                }
-            }
-
-            if (allPredsVisited)
-            {
-#ifdef DEBUG_VN_VISIT
-                JITDUMP("     All preds complete, adding to allDone.\n");
-#endif // DEBUG_VN_VISIT
-
-                // Only last completion of last succ should add to this.
-                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone));
-                m_toDoAllPredsDone.Push(succ);
-                SetVisitBit(succ->bbNum, BVB_onAllDone);
-
-                if (provenUnreachable)
-                {
-                    SetVisitBit(succ->bbNum, BVB_provenUnreachable);
-                }
-            }
-            else
-            {
-#ifdef DEBUG_VN_VISIT
-                JITDUMP("     Not all preds complete  Adding to notallDone, if necessary...\n");
-#endif // DEBUG_VN_VISIT
-
-                if (!GetVisitBit(succ->bbNum, BVB_onNotAllDone))
-                {
-#ifdef DEBUG_VN_VISIT
-                    JITDUMP("       Was necessary.\n");
-#endif // DEBUG_VN_VISIT
-                    m_toDoNotAllPredsDone.Push(succ);
-                    SetVisitBit(succ->bbNum, BVB_onNotAllDone);
-                }
-            }
-
-            return BasicBlockVisit::Continue;
-        });
+        return (bb->bbPostorderNum < m_comp->fgSSAPostOrderCount) &&
+               (m_comp->fgSSAPostOrder[bb->bbPostorderNum] == bb) &&
+               !BitVecOps::IsMember(&m_blockTraits, m_provenUnreachableBlocks, bb->bbNum);
     }
 
-    bool IsReachableFromPred(BasicBlock* predBlock, BasicBlock* block)
+    //------------------------------------------------------------------------
+    // IsReachableFromPred: Check if a block is reachability from one of its
+    // predecessors.
+    //
+    // Parameters:
+    //   block     - A block
+    //   predBlock - A predecessor of 'block'
+    //
+    // Returns:
+    //   False if 'block' is definitely not reachable even though it is a
+    //   direct successor of 'predBlock'.
+    //
+    bool IsReachableFromPred(BasicBlock* block, BasicBlock* predBlock)
     {
         if (!predBlock->KindIs(BBJ_COND) || predBlock->JumpsToNext())
         {
@@ -9866,11 +9708,6 @@ struct ValueNumberState
         bool        isTaken         = normalVN != m_comp->vnStore->VNZeroForType(TYP_INT);
         BasicBlock* unreachableSucc = isTaken ? predBlock->Next() : predBlock->GetJumpDest();
         return block != unreachableSucc;
-    }
-
-    bool ToDoExists()
-    {
-        return m_toDoAllPredsDone.Size() > 0 || m_toDoNotAllPredsDone.Size() > 0;
     }
 };
 
@@ -10003,42 +9840,48 @@ PhaseStatus Compiler::fgValueNumber()
 #endif // DEBUG
 
     ValueNumberState vs(this);
+    vnState = &vs;
 
-    vnVisitState = &vs;
-
-    // Push the first block.  This has no preds.
-    vs.m_toDoAllPredsDone.Push(fgFirstBB);
-
-    while (vs.ToDoExists())
+    // SSA has already computed a post-order taking EH successors into account.
+    // Visiting that in reverse will ensure we visit a block's predecessors
+    // before itself whenever possible.
+    for (unsigned i = fgSSAPostOrderCount; i != 0; i--)
     {
-        while (vs.m_toDoAllPredsDone.Size() > 0)
-        {
-            BasicBlock* toDo = vs.m_toDoAllPredsDone.Pop();
+        BasicBlock* block = fgSSAPostOrder[i - 1];
+        JITDUMP("Visiting " FMT_BB "\n", block->bbNum);
 
-            // TODO-TP: We can skip VN'ing blocks we have proven unreachable
-            // here. However, currently downstream phases are not prepared to
-            // handle the fact that some blocks that are seemingly reachable
-            // have not been VN'd.
-            fgValueNumberBlock(toDo);
-
-            // Record that we've visited "toDo", and add successors to the right sets.
-            vs.FinishVisit(toDo);
-        }
-        // OK, we've run out of blocks whose predecessors are done.  Pick one whose predecessors are not all done,
-        // process that.  This may make more "all-done" blocks, so we'll go around the outer loop again --
-        // note that this is an "if", not a "while" loop.
-        if (vs.m_toDoNotAllPredsDone.Size() > 0)
+        if (block != fgFirstBB)
         {
-            BasicBlock* toDo = vs.ChooseFromNotAllPredsDone();
-            if (toDo == nullptr)
+            bool anyPredReachable = false;
+            for (FlowEdge* pred = BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
             {
-                continue; // We may have run out, because of completed blocks on the not-all-preds done list.
+                BasicBlock* predBlock = pred->getSourceBlock();
+                if (!vs.IsReachable(predBlock))
+                {
+                    JITDUMP("  " FMT_BB " is an unreachable pred\n", predBlock->bbNum);
+                    continue;
+                }
+
+                if (!vs.IsReachableFromPred(block, predBlock))
+                {
+                    JITDUMP("  " FMT_BB " is a reachable pred, but " FMT_BB " is not reachable from it\n",
+                            predBlock->bbNum, block->bbNum);
+                    continue;
+                }
+
+                JITDUMP("  " FMT_BB " is a reachable pred\n", predBlock->bbNum);
+                anyPredReachable = true;
+                break;
             }
 
-            fgValueNumberBlock(toDo);
-            // Record that we've visited "toDo", and add successors to the right sest.
-            vs.FinishVisit(toDo);
+            if (!anyPredReachable)
+            {
+                JITDUMP("  " FMT_BB " was proven unreachable\n", block->bbNum);
+                vs.SetUnreachable(block);
+            }
         }
+
+        fgValueNumberBlock(block);
     }
 
 #ifdef DEBUG
@@ -10068,9 +9911,9 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         for (GenTreePhi::Use& use : phiNode->Uses())
         {
             GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-            if (vnVisitState->GetVisitBit(phiArg->gtPredBB->bbNum, ValueNumberState::BVB_provenUnreachable))
+            if (!vnState->IsReachable(phiArg->gtPredBB))
             {
-                JITDUMP("  Phi arg [%06u] refers to proven unreachable pred " FMT_BB "\n", dspTreeID(phiArg),
+                JITDUMP("  Phi arg [%06u] refers to unreachable pred " FMT_BB "\n", dspTreeID(phiArg),
                         phiArg->gtPredBB->bbNum);
 
                 if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
@@ -10078,7 +9921,8 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
                     continue;
                 }
 
-                JITDUMP("  ..but it looks like all preds are unreachable, so we are using it anyway\n");
+                assert(!vnState->IsReachable(blk));
+                JITDUMP("  ..but all preds are unreachable, so we are using it anyway\n");
             }
 
             ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
