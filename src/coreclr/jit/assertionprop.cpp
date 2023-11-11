@@ -1651,7 +1651,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
             AssertionIndex const index        = GetAssertionIndex(bvIndex);
             AssertionDsc* const  curAssertion = optGetAssertion(index);
 
-            if (curAssertion->Equals(newAssertion, /* vnBased */ false)
+            if (curAssertion->Equals(newAssertion, /* vnBased */ false))
             {
                 return index;
             }
