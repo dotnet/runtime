@@ -57,7 +57,7 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 ## Goals
 
 - Teach the ILLink Roslyn analyzer to treat `IsDynamicCodeCompiled` as a guard for `RequiresDynamicCodeAttribute`
-- Allow libraries to define their own feature guard propertiesu
+- Allow libraries to define their own feature guard properties
 
   Libraries should be able to introduce their own properties that can act as guards for `RequiresDynamicCodeAttribute`, or for other features that might produce warnings in the analyzer
 
@@ -192,7 +192,7 @@ Note that this analysis does require the analyzer to understand the relationship
 
 There may be more complex implementations of feature guards that the analyzer would not support. In this case, the analyzer would produce a warning on the property definition that can be silenced if the author is confident that the return value of the property reflects the referenced feature.
 
-### Feature switch attributes
+## Feature switch attributes
 
 Allow placing `FeatureSwitchAttribute` on the property to indicate that it should be treated as a constant if the feature setting is passed to ILLink/ILCompiler at publish time. The Roslyn analyzer could also respect it by not analyzing branches that are unreachable with the feature setting, though we don't have an immediate use case for this. It could be useful when analyzing application code, but the analyzer is most important for libraries, where feature switches are usually not set.
 
@@ -237,17 +237,45 @@ static void APIWhichRequiresDynamicCode() {
 }
 ```
 
+## Relationship between feature switches and feature guards
 
-### Relationship with feature switches and attributes
+### Feature switches are also guards
+A feature switch is also a feature guard for the feature it is defined by. We could encode this in one of two ways:
+- `FeatureSwitch` only, with a unified representation that includes the mapping to both the attribute and feature name, or
+- Require both `FeatureSwitch` and `FeatureGuard`, where both attributes together provide a mapping to the attribute and the feature name
+
+### Feature guards _may_ also be feature switches
+
+A feature guard might also come with its own independent feature switch. We shoud be careful to avoid violating the assumptions of the feature guard by controlling the property via a feature switch.
+
+For example, if we had a separate feature switch for `IsDynamicCodeCompiled`, this would allow setting `IsDynamicCodeCompiled` to `true` even when `IsDynamicCodeSupported` is `false`. This is essentially what we did for features like `StartupHookSupport`: this feature switch can be set even in trimmed apps.
+
+We rely on trim warnings to alert the app author to the problem, and also default `StartupHookSupport` to `false` for trimmed apps. If we have an attribute-based model for feature guards, we may want to consider inferring these defaults from the `FeatureGuard` instead (so a guard for `RequiresUnreferencedCode` that is also a feature switch would be `false` by default whenever "unreferenced code" is unavailable).
+
+The proposal for now is not to infer any defaults and just take care to set appropriate defaults in the SDK. This means that custom feature guards that are also feature switches will need to do the same. For example, a library that defines a feature switch which guards `RequiresUnreferencedCode` will need to ship with MSBuild targets that disable the feature by default for trimmed apps.
+
+### Referencing features from `FeatureGuard` and `FeatureSwitch`
 
 We saw a few cases that required a link between feature guards and the functionality related to feature switches:
 - To support feature guards in the analyzer, there must be a tie to the guarded `Requires` attribute
-- To support detecting incorrect implementations of the feature guard property, there must be a tie to the feature switch property of the guarded feature.
 - To support eliminating branches guarded by feature guards in ILLink/ILCompiler, there must be a tie to the name of the feature setting.
+- To support detecting incorrect implementations of the feature guard property in the analyzer, there must be a tie to the feature switch property of the guarded feature.
+
+| How `FeatureGuard` references the guarded feature | Analyzer | ILLink/ILCompiler |
+| - | - | - |
+| Attribute | OK; needs mapping to feature name/property for validation | needs mapping to feature name |
+| Feature switch name | needs mapping to attribute | OK |
+| Feature switch property | needs mapping to attribute | needs mapping to feature name |
+
+| How `FeatureSwitch` references the defining feature | Analyzer | ILLink/ILCompiler |
+| - | - | - |
+| Feature switch name | needs mapping to attribute | OK |
+| Feature attribute | OK | needs mapping to feature name |
+
 
 It seems natural to define a model where all three of these represent the same concept.
 
-### Unified view of features
+## Unified view of features
 
 We take the view that `RequiresDynamicCodeAttribute`, `RuntimeFeature.IsDynamicCodeSupported`, and `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"` all conceptually represent the same "feature".
 
@@ -282,39 +310,42 @@ No warnings are produced just because these features are enabled/disabled. Inste
 
 However, any attribute-based model that we pick to represent features should be able to tie in with all three representations.
 
-
 ### Unified attribute model for feature switches and guards
 
 We would like for the attribute model to have a consistent way to refer to a feature in `FeatureGuardAttribute` or `FeatureSwitchAttribute`. The proposal is to support an attribute model for features that have an associated `Requires` attribute, and use that attribute type uniformly to refer to the feature from `FeatureGuardAttribute` and `FeatureSwitchAttribute`.
 
-### Feature switches and feature guards interaction
+For example, the feature switch for "dynamic code support" might look like this:
+```csharp
+public class RuntimeFeature
+{
+    [FeatureSwitch<RequiresDynamicCode>]
+    public static bool IsDynamicCodeSupported => // ...
+}
 
-#### Feature guard
-| How `FeatureGuard` references the guarded feature | Analyzer | ILLink/ILCompiler |
-| - | - | - |
-| Attribute | OK | needs mapping to feature name |
-| Feature switch name | needs mapping to attribute | OK |
-| Feature switch property | needs mapping to attribute | needs mapping to feature name |
+class RequiresDynamicCodeAttribute : Attribute, IFeatureAttribute<RequiresDynamicCodeAttribute> {
+    public static string FeatureName => "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported";
+}
+```
+and a feature guard for "dynamic code compilation" might look like this:
+```csharp
+public class RuntimeFeature
+{
+    [FeatureGuard<RequiresDynamicCode>]
+    public static bool IsDynamicCodeSupported => // ...
+}
+```
 
-#### Feature switch
+The attribute definitions to support this might look like this:
+```csharp
+class FeatureGuardAttribute<T> : Attribute
+  where T : Attribute, IFeatureAttribute<T> {}
 
-| How `FeatureSwitch` references the defining feature | Analyzer | ILLink/ILCompiler |
-| - | - | - |
-| Feature switch name | needs mapping to attribute | OK |
-| Feature attribute | OK | needs mapping to feature name |
+interface IFeatureAttribute<TSelf> where TSelf : Attribute {
+    static abstract string FeatureName { get; }
+}
+```
 
-### Relationship between feature switches and feature guards
-
-A feature switch is also a feature guard for the feature it is defined by. We could encode this in one of two ways:
-
-- `FeatureSwitch` only, with a unified representation that includes the mapping to both the attribute and feature name, or
-- Require both `FeatureSwitch` and `FeatureGuard`, where both attributes together provide a mapping to the attribute and the feature name
-
-A feature guard might also come with its own independent feature switch. We shoud be careful to avoid violating the assumptions of the feature guard by controlling the property via a feature switch. For example, if we had a separate feature switch for `IsDynamicCodeCompiled`, this would allow setting `IsDynamicCodeCompiled` to `true` even when `IsDynamicCodeSupported` is `false`.
-
-This is essentially what we did for features like `StartupHookSupport`: this feature switch can be set even in trimmed apps. We rely on trim warnings to alert the app author to the problem, and also default `StartupHookSupport` to `false` for trimmed apps. If we have an attribute-based model for feature guards, we may want to consider inferring these defaults from the `FeatureGuard` instead (so a guard for `RequiresUnreferencedCode` that is also a feature switch would be `false` by default whenever "unreferenced code" is unavailable).
-
-The proposal for now is not to infer any defaults and just take care to set appropriate defaults in the SDK. This means that custom feature guards that are also feature switches will need to do the same. For example, a library that defines a feature switch which guards `RequiresUnreferencedCode` will need to ship with MSBuild targets that disable the feature by default for trimmed apps.
+We could use this model even for feature switches similar to `StartupHookSupport`, which don't currently have a `StartupHoopSupportAttribute`. There's no need to actually annotate related APIs with the attribute if that is overkill for a small feature. In this case the attribute definition would just serve as metadata that allows us to define a feature switch in a uniform way.
 
 # Two models for custom feature checks
 
