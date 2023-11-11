@@ -185,7 +185,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     genTreeOps foldOp;
     genTreeOps cmpOp;
-    var_types  foldType = m_c1->TypeGet();
+    var_types  foldType = genActualType(m_c1);
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -1412,7 +1412,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
     // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE/GT_GE/GT_LT)
 
-    var_types foldType = m_c1->TypeGet();
+    var_types foldType = genActualType(m_c1->TypeGet());
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;

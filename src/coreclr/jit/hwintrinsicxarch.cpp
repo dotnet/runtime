@@ -2728,7 +2728,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(simdSize == 16);
 
-                if (varTypeIsSmallInt(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                 {
                     // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
                     break;
