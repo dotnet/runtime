@@ -13827,6 +13827,9 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
                         // This pred was not reachable from the original DFS root set, so
                         // we can ignore its assertion information.
                         //
+                        JITDUMP(FMT_BB " ignoring assertions from unreachable pred " FMT_BB
+                                       " [pred postorder num %u, highest reachable %u]\n",
+                                block->bbNum, pred->bbNum, pred->bbPostorderNum, highestReachablePostorder);
                         continue;
                     }
 
