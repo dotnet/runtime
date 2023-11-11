@@ -74,8 +74,40 @@ function move_core_file_to_temp_location {
   rm $core_file_name
 }
 
+xunitlogchecker_exit_code=0
+function invoke_xunitlogchecker {
+  local dump_folder=$1
+
+  total_dumps=$(find $dump_folder -name "*.dmp" | wc -l)
+  
+  if [[ $total_dumps > 0 ]]; then
+    echo "Total dumps found in $dump_folder: $total_dumps"
+    xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll"
+    dotnet_file_name="$RUNTIME_PATH/dotnet"
+
+    if [[ ! -f $dotnet_file_name ]]; then
+      echo "'$dotnet_file_name' was not found. Unable to run XUnitLogChecker."
+      xunitlogchecker_exit_code=1
+    elif [[ ! -f $xunitlogchecker_file_name ]]; then 
+      echo "'$xunitlogchecker_file_name' was not found. Unable to print dump file contents."
+      xunitlogchecker_exit_code=2
+    elif [[ ! -d dump_folder ]]; then
+      echo "The dump directory '$dump_folder' does not exist."
+    else
+      echo "Executing XUnitLogChecker in $dump_folder..."
+      cmd="$dotnet_file_name --roll-forward Major $xunitlogchecker_file_name --dumps-path $dump_folder"
+      echo "$cmd"
+      $cmd
+      xunitlogchecker_exit_code=$?
+    fi
+  else
+    echo "No dumps found in $dump_folder."
+  fi
+}
+
 # ========================= BEGIN Core File Setup ============================
-if [[ "$(uname -s)" == "Darwin" ]]; then
+system_name="$(uname -s)"
+if [[ $system_name == "Darwin" ]]; then
   # On OS X, we will enable core dump generation only if there are no core
   # files already in /cores/ at this point. This is being done to prevent
   # inadvertently flooding the CI machines with dumps.
@@ -109,7 +141,7 @@ if [ ! -z $spmi_enable_collection ]; then
   fi
   mkdir -p $spmi_collect_dir
   export spmi_file_extension=so
-  if [[ "$(uname -s)" == "Darwin" ]]; then
+  if [[ $system_name == "Darwin" ]]; then
     export spmi_file_extension=dylib
   fi
   export SuperPMIShimLogPath=$spmi_collect_dir
@@ -158,7 +190,7 @@ if [[ $test_exitcode -ne 0 ]]; then
   echo ulimit -c value: $(ulimit -c)
 fi
 
-if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
+if [[ $system_name == "Linux" && $test_exitcode -ne 0 ]]; then
   echo cat /proc/sys/kernel/core_pattern: $(cat /proc/sys/kernel/core_pattern)
   echo cat /proc/sys/kernel/core_uses_pid: $(cat /proc/sys/kernel/core_uses_pid)
   echo cat /proc/sys/kernel/coredump_filter: $(cat /proc/sys/kernel/coredump_filter)
@@ -206,30 +238,13 @@ if [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
 elif [[ "$__IsXUnitLogCheckerSupported" != "1" ]]; then
   echo "XUnitLogChecker not supported for this test case. Skipping."
 else
-  total_dumps=$(find $HELIX_DUMP_FOLDER -name "*.dmp" | wc -l)
-
   echo ----- start ===============  XUnitLogChecker Output =====================================================
-  xunitlogchecker_exit_code=0
-  if [[ $total_dumps > 0 ]]; then
-    echo "Total dumps found in $HELIX_DUMP_FOLDER: $total_dumps"
-    xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll"
-    dotnet_file_name="$RUNTIME_PATH/dotnet"
+  
+  invoke_xunitlogchecker "$HELIX_DUMP_FOLDER"
 
-    if [[ ! -f $dotnet_file_name ]]; then
-      echo "'$dotnet_file_name' was not found. Unable to run XUnitLogChecker."
-      xunitlogchecker_exit_code=1
-    elif [[ ! -f $xunitlogchecker_file_name ]]; then 
-      echo "'$xunitlogchecker_file_name' was not found. Unable to print dump file contents."
-      xunitlogchecker_exit_code=2
-    else
-      echo "Executing XUnitLogChecker..."
-      cmd="$dotnet_file_name --roll-forward Major $xunitlogchecker_file_name --dumps-path $HELIX_DUMP_FOLDER"
-      echo "$cmd"
-      $cmd
-      xunitlogchecker_exit_code=$?
-    fi
-  else
-    echo "No dumps found."
+  # osx stores giant dumps in a separate folder
+  if [[ $system_name == "Darwin" ]]; then
+    invoke_xunitlogchecker "/cores"
   fi
 
   if [[ $xunitlogchecker_exit_code -ne 0 ]]; then
