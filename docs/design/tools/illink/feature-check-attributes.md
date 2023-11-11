@@ -19,12 +19,19 @@ The bold pieces are the focus of this document. [Feature switches](https://githu
 We'll use the following terms to describe specific bits of functionality related to feature switches:
 - Feature switch property: the IL property whose value indicates whether a feature is enabled/supported
   - For example: `RuntimeFeature.IsDynamicCodeSupported`
-- Feature attribute: an attribute associated with a feature, used to annotate code that is related to, or depends on, the feature.
+- Feature switch name: the string that identifies a feature in `RuntimeHostConfigurationOption` and AppContext
+  - For example: `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"`
+- Feature attribute: an attribute associated with a feature, used to annotate code that is directly related to the feature.
   - For example: `RequiresDynamicCodeAttribute`
-- Feature guard property: an IL property whose value _depends_ on a feature being enabled, but doesn't necessarily _define_ the availability of that feature.
+- Feature guard property: an IL property whose value _depends_ on a feature being enabled, but isn't necessarily _defined_ by the availability of that feature.
   - For example: `RuntimeFeature.IsDynamicCodeCompiled` depends on `IsDynamicCodeSupported`. It should return `false` when `IsDynamicCodeSupported` returns `false`, but it may return `false` even if `IsDynamicCodeSupported` is `true`.
 
-We'll say that a "feature switch property" is also necessarily a "feature guard property", but not all "feature guard properties" are "feature switch properties".
+We'll say that a "feature switch property" is also necessarily a "feature guard property" for its defining featuer, but not all "feature guard properties" are "feature switch properties".
+
+A "feature switch property" may also be a "feature guard property" for a feature _other than_ the defining feature. For example, we introduced the feature switch property `StartupHookProvider.IsSupported` is defined by the feature switch named `"System.StartupHookProvider.IsSupported"`, but additionally serves as a guard for code in the implementation that has `RequiresUnreferencedCodeAttribute`. Startup hook support is disabled whenever we trim out unreferenced code, but may alse be disabled independently by the feature switch.
+
+Similarly, one could imagine introducing a feature switch for `IsDynamicCodeCompiled`. 
+
 
 `IsDynamicCodeSupported` is an example of a feature that has an attribute, a feature switch, and a separate feature guard (`IsDynamicCodeCompiled`), but not all features have all of these bits of functionality.
 
@@ -230,9 +237,77 @@ No warnings are produced just because these features are enabled/disabled. Inste
 
 However, any attribute-based model that we pick to represent features should be able to tie in with all three representations.
 
+### Feature switch attributes
 
+Allow placing `FeatureSwitchAttribute` on the property to indicate that it should be treated as a constant if the feature setting is passed to ILLink/ILCompiler at publish time. The Roslyn analyzer could also respect it by not analyzing branches that are unreachable with the feature setting, though we don't have an immediate use case for this. It could be useful when analyzing application code, but the analyzer is most important for libraries, where feature switches are usually not set.
 
+The attribute needs to reference the feature somehow, whether as:
 
+- a reference to the feature name string:
+
+  ```csharp
+  class RuntimeFeature {
+      [FeatureSwitch("RuntimeFeature.IsDynamicCodeSupported")]
+      public static bool IsDynamicCodeSupported => AppContext.TryGetSwitch("RuntimeFeature.IsDynamicCodeSupported", out bool isEnabled) ? isEnabled : false;
+  }
+  ```
+
+  Since we set `"RuntimeFeature.IsDynamicCodeSupported"` to `false` when running ILCompiler, this is enough for ILCompiler to use it for branch elimination and avoid warning for guarded calls to `RequiresDynamicCodeAttribute`. ILLink would behave similarly if there were a feature switch for `RequiresUnreferencedCodeAttribute`.
+
+  The analyzer would still need to separately encode the fact that `"RuntimeFeature.IsDynamicCodeSupported"` corresponds to `RequiresDynamicCodeAttribute`.
+
+- a reference to the feature attribute, for those feature switches that are associated with attributes:
+
+  ```csharp
+  class RuntimeFeature {
+      [FeatureSwitch<RequiresDynamicCodeAttribute>]
+      public static bool IsDynamicCodeSupported => AppContext.TryGetSwitch("RuntimteFeature.IsDynamicCodeSupported", out bool isEnabled) ? isEnabled : true;
+  }
+  ```
+
+  In this case, ILCompiler would need to hard-code the fact that `RequiresDynamicCodeAttribute` corresponds to `"RuntimeFeature.IsDynamicCodeSupported"`, and use this knowledge to treat the property as returning a constant.
+
+  However, the Roslyn analyzer would have enough information from this attribute alone.
+
+In either case, the feature switch property would be usable as a guard for calls to `RequiresDynamicCode` APIs:
+
+```csharp
+if (RuntimeFeature.IsDynamicCodeSupported) {
+    APIWhichRequiresDynamicCode(); // No warnings
+}
+
+[RequiresDynamicCode("Does something with dynamic codegen")]
+static void APIWhichRequiresDynamicCode() {
+    // ...
+}
+```
+
+### Unified attribute model for feature switches and guards
+
+We would like for the attribute model to have a consistent way to refer to a feature in `FeatureGuardAttribute` or `FeatureSwitchAttribute`. The proposal is to support an attribute model for features that have an associated `Requires` attribute, and use that attribute type uniformly to refer to the feature from `FeatureGuardAttribute` and `FeatureSwitchAttribute`.
+
+### Feature switches and feature guards interaction
+
+#### Feature guard
+| How FeatureGuard references the guarded feature | Analyzer | ILLink/ILCompiler |
+| - | - | - |
+| Attribute | OK | needs mapping to feature name |
+| Feature name | needs mapping to attribute | OK |
+| Feature switch | needs mapping to attribute | OK |
+
+#### Feature switch
+
+| How FeatureSwitch references the defining feature | Analyzer | ILLink/ILCompiler |
+| - | - | - |
+| Feature name | needs mapping to attribute | OK |
+| Feature attribute | OK | needs mapping to feature name |
+
+### Relationship between feature switches and feature guards
+
+A feature switch is automatically a feature guard for the feature it is defined by. We could encode this in one of two ways:
+
+- `FeatureSwitch` only, with a unified representation that includes the mapping to both the attribute and feature name, or
+- `FeatureSwitch` with `FeatureGuard`, where both attributes together provide a mapping to the attribute and the feature name
 
 
 
@@ -485,31 +560,6 @@ For example, in a trimmed app, the feature `RequiresUnreferencedCodeAttribute` i
 
 In a native AOT app, `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"` is set to `false` by default because native AOT doesn't provide a JIT or interpreter, and calls to APIs annotated with `RequiresDynamicCodeAttribute` will produce warnings. There is also an independent feature switch `CanEmitObjectArrayDelegate` that is disabled by default because it depends on APIs marked `RequiresDynamicCode`.
 
-### Feature switch attributes
-
-Allow placing `FeatureSwitchAttribute` on the property to indicate that it should be treated as a constant if the feature setting is passed to ILLink/ILCompiler at publish time. The Roslyn analyzer could also respect it by not analyzing branches that are unreachable with the feature setting, though we don't have an immediate use case for this. It could be useful when analyzing application code, but the analyzer is most important for libraries, where feature switches are usually not set.
-
-The attribute needs to reference the feature somehow, whether as:
-
-- a reference to the feature name string:
-
-  ```csharp
-  class RuntimeFeature {
-      [FeatureSwitch("Feature.LightweightMode")]
-      public static bool LightWeightMode => AppContext.TryGetSwitch("Feature.LightweightMode", out bool isEnabled) ? isEnabled : false;
-  }
-  ```
-
-- a reference to the feature attribute, for those feature switches that are associated with attributes:
-
-  ```csharp
-  class RuntimeFeature {
-      [Feature<RequiresDynamicCodeAttribute>]
-      public static bool IsDynamicCodeSupported => AppContext.TryGetSwitch("RuntimteFeature.IsDynamicCodeSupported", out bool isEnabled) ? isEnabled : true;
-  }
-  ```
-
-  In this case, ILLink and ILCompiler would need to hard-code the fact that `RequiresDynamicCodeAttribute` corresponds to `RuntimeFeature.IsDynamicCodeSupported`.
 
 ## Comparison with platform compatibility analyzer
 
