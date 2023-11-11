@@ -253,8 +253,7 @@ internal sealed class PInvokeTableGenerator
         if (pinvoke.WasmLinkage) {
             sb.Append($"__attribute__((import_module(\"{pinvoke.Module}\"), import_name(\"{pinvoke.EntryPoint}\")))\nextern ");
         }
-        sb.Append(MapType(method.ReturnType));
-        sb.Append($" {TransformEntryPoint(pinvoke)} (");
+        sb.Append($"{MapType(method.ReturnType)} {TransformEntryPoint(pinvoke)} (");
         int pindex = 0;
         var pars = method.GetParameters();
         foreach (var p in pars)
@@ -266,6 +265,40 @@ internal sealed class PInvokeTableGenerator
         }
         sb.Append(");");
         return sb.ToString();
+    }
+
+    private static string EntryPointSymbolName(PInvokeCallback export, out bool wasmLinkage)
+    {
+        var method = export.Method;
+        string? entryPoint = null;
+        wasmLinkage = false;
+        foreach (var attr in method.CustomAttributes)
+        {
+            if (attr.AttributeType.Name == "UnmanagedCallersOnlyAttribute")
+            {
+                foreach(var arg in attr.NamedArguments)
+                {
+                    if (arg.MemberName == "EntryPoint")
+                    {
+                        entryPoint = arg.TypedValue.Value!.ToString();
+                        break;
+                    }
+                }
+            }
+            if (attr.AttributeType.Name == "WasmImportLinkageAttribute")
+            {
+                wasmLinkage = true;
+            }
+        }
+        if (entryPoint != null)
+            return entryPoint;
+
+        // WasmLinkage requires an EntryPoint UnmanagedCallersOnlyAttribute
+        wasmLinkage = false;
+        string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
+        string class_name = method.DeclaringType.Name;
+        string method_name = method.Name;
+        return $"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}";
     }
 
     private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
@@ -314,17 +347,18 @@ internal sealed class PInvokeTableGenerator
 
             bool is_void = method.ReturnType.Name == "Void";
 
-            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-            uint token = (uint)method.MetadataToken;
-            string class_name = method.DeclaringType.Name;
-            string method_name = method.Name;
-            string entry_name = _fixupSymbolName($"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}");
+            var entry_point = EntryPointSymbolName(cb, out var wasmLinkage);
+            var entry_name = _fixupSymbolName(entry_point);
             if (callbackNames.Contains(entry_name))
             {
-                Error($"Two callbacks with the same name '{method_name}' are not supported.");
+                Error($"Two callbacks with the same name '{entry_point}' are not supported.");
             }
             callbackNames.Add(entry_name);
             cb.EntryName = entry_name;
+            if (wasmLinkage)
+            {
+                sb.Append($"__attribute__((export_name(\"{entry_point}\")))\n");
+            }
             sb.Append(MapType(method.ReturnType));
             sb.Append($" {entry_name} (");
             pindex = 0;
@@ -332,8 +366,7 @@ internal sealed class PInvokeTableGenerator
             {
                 if (pindex > 0)
                     sb.Append(',');
-                sb.Append(MapType(p.ParameterType));
-                sb.Append($" arg{pindex}");
+                sb.Append($"{MapType(p.ParameterType)} arg{pindex}");
                 pindex++;
             }
             sb.Append(") { \n");
