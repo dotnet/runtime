@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -132,7 +133,7 @@ internal sealed class PInvokeTableGenerator
                 Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select(l => "{\"" + l.Key + "\", " + TransformEntryPoint(l.First()) + "}, " +
+                Select(l => "{\"" + EscapeLiteral(l.Key) + "\", " + TransformEntryPoint(l.First()) + "}, " +
                                 "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)));
 
             foreach (var pinvoke in assemblies_pinvokes)
@@ -153,7 +154,7 @@ internal sealed class PInvokeTableGenerator
         w.Write("static char *pinvoke_names[] = { ");
         foreach (var module in modules.Keys)
         {
-            w.Write("\"" + module + "\"" + ",");
+            w.Write($"\"{EscapeLiteral(module)}\",");
         }
         w.WriteLine("};");
 
@@ -251,7 +252,7 @@ internal sealed class PInvokeTableGenerator
         }
 
         if (pinvoke.WasmLinkage) {
-            sb.Append($"__attribute__((import_module(\"{pinvoke.Module}\"), import_name(\"{pinvoke.EntryPoint}\")))\nextern ");
+            sb.Append($"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"), import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))\nextern ");
         }
         sb.Append($"{MapType(method.ReturnType)} {TransformEntryPoint(pinvoke)} (");
         int pindex = 0;
@@ -300,6 +301,10 @@ internal sealed class PInvokeTableGenerator
         string method_name = method.Name;
         return $"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}";
     }
+
+    #pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
+    private static string EscapeLiteral(string s) => Regex.Replace(s, @"(\\|\"")", @"\$1");
+    #pragma warning restore SYSLIB1045
 
     private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
@@ -357,7 +362,7 @@ internal sealed class PInvokeTableGenerator
             cb.EntryName = entry_name;
             if (wasmLinkage)
             {
-                sb.Append($"__attribute__((export_name(\"{entry_point}\")))\n");
+                sb.Append($"__attribute__((export_name(\"{EscapeLiteral(entry_point)}\")))\n");
             }
             sb.Append(MapType(method.ReturnType));
             sb.Append($" {entry_name} (");
