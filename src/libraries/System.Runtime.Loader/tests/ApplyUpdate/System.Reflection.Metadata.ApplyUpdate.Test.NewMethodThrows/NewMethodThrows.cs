@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 using System;
 
-namespace StandaloneApp
+
+namespace System.Reflection.Metadata.ApplyUpdate.Test
 {
-    public static class Program
+    public class NewMethodThrows
     {
-        public static void Main(string[] args)
-        {
-            Console.WriteLine("Hello World!");
+        public string ExistingMethod(string x)
+	{
+            return x;
         }
+
     }
 }
