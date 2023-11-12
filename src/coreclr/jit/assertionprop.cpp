@@ -231,7 +231,17 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_HWINTRINSIC:
             switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
             {
+                case NI_Vector128_op_Equality:
+                case NI_Vector128_op_Inequality:
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+
 #if defined(TARGET_XARCH)
+                case NI_Vector256_op_Equality:
+                case NI_Vector256_op_Inequality:
+                case NI_Vector512_op_Equality:
+                case NI_Vector512_op_Inequality:
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+
                 case NI_BMI1_TrailingZeroCount:
                 case NI_BMI1_X64_TrailingZeroCount:
                 case NI_LZCNT_LeadingZeroCount:
