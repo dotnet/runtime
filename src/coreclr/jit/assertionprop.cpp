@@ -231,11 +231,21 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_HWINTRINSIC:
             switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
             {
+#if defined(TARGET_XARCH)
+                case NI_Vector128_ToScalar:
+                case NI_Vector256_ToScalar:
+                case NI_Vector512_ToScalar:
+                {
+                    var_types baseType = node->AsHWIntrinsic()->GetSimdBaseType();
+                    if (varTypeIsSmall(baseType))
+                    {
+                        return ForType(baseType);
+                    }
+                }
+                break;
+
                 case NI_Vector128_op_Equality:
                 case NI_Vector128_op_Inequality:
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
-
-#if defined(TARGET_XARCH)
                 case NI_Vector256_op_Equality:
                 case NI_Vector256_op_Inequality:
                 case NI_Vector512_op_Equality:
@@ -249,6 +259,23 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_POPCNT_PopCount:
                 case NI_POPCNT_X64_PopCount:
 #elif defined(TARGET_ARM64)
+                case NI_Vector64_ToScalar:
+                case NI_Vector128_ToScalar:
+                {
+                    var_types baseType = node->AsHWIntrinsic()->GetSimdBaseType();
+                    if (varTypeIsSmall(baseType))
+                    {
+                        return ForType(baseType);
+                    }
+                }
+                break;
+
+                case NI_Vector64_op_Equality:
+                case NI_Vector64_op_Inequality:
+                case NI_Vector128_op_Equality:
+                case NI_Vector128_op_Inequality:
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+
                 case NI_AdvSimd_PopCount:
                 case NI_AdvSimd_LeadingZeroCount:
                 case NI_AdvSimd_LeadingSignCount:
