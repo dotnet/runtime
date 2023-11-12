@@ -2958,13 +2958,13 @@ namespace System.Runtime.Intrinsics
             Vector128<T> lower = vector._lower;
             Vector128<T> upper = vector._upper;
 
-            int result = Vector128.IndexOfFirstMatch(lower);
-            if (result >= Vector128<T>.Count)
+            int lowerIndex = Vector128.IndexOfFirstMatch(lower);
+            if (lowerIndex >= Vector128<T>.Count)
             {
                 return Vector128<T>.Count + Vector128.IndexOfFirstMatch(upper);
             }
 
-            return result;
+            return lowerIndex;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

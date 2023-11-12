@@ -2787,5 +2787,26 @@ namespace System.Runtime.Intrinsics
             ref T address = ref Unsafe.As<Vector64<T>, T>(ref Unsafe.AsRef(in vector));
             Unsafe.Add(ref address, index) = value;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int GetMatchCount<T>(this Vector64<T> vector)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64
+                    .AddAcross(AdvSimd.PopCount(vector.AsByte()))
+                    .ToScalar() / (8 * Unsafe.SizeOf<T>());
+            }
+
+            return BitOperations.PopCount(
+                vector.AsUInt64().ToScalar()) / (8 * Unsafe.SizeOf<T>());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfFirstMatch<T>(this Vector64<T> vector)
+        {
+            return BitOperations.TrailingZeroCount(
+                vector.AsUInt64().ToScalar()) / (8 * Unsafe.SizeOf<T>());
+        }
     }
 }

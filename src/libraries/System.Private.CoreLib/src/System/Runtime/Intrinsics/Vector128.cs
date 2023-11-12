@@ -3041,8 +3041,18 @@ namespace System.Runtime.Intrinsics
                     .AddAcross(AdvSimd.PopCount(vector.AsByte()))
                     .ToScalar() / (8 * Unsafe.SizeOf<T>());
             }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            }
 
-            return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            Vector64<T> lower = vector._lower;
+            Vector64<T> upper = vector._upper;
+
+            int lowerCount = Vector64.GetMatchCount(lower);
+            int upperCount = Vector64.GetMatchCount(upper);
+
+            return lowerCount + upperCount;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3057,8 +3067,21 @@ namespace System.Runtime.Intrinsics
 
                 return BitOperations.TrailingZeroCount(result) / (4 * Unsafe.SizeOf<T>());
             }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                return BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+            }
 
-            return BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+            Vector64<T> lower = vector._lower;
+            Vector64<T> upper = vector._upper;
+
+            int lowerIndex = Vector64.IndexOfFirstMatch(lower);
+            if (lowerIndex >= Vector64<T>.Count)
+            {
+                return Vector64<T>.Count + Vector64.IndexOfFirstMatch(upper);
+            }
+
+            return lowerIndex;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
