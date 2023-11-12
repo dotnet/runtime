@@ -241,7 +241,12 @@ namespace ILCompiler.ObjectWriter
         {
             foreach (var (symbolName, symbolDefinition) in definedSymbols)
             {
-                if (!_symbolNameToIndex.ContainsKey(symbolName))
+                if (_symbolNameToIndex.TryGetValue(symbolName, out uint symbolIndex))
+                {
+                    // Update value for COMDAT symbols
+                    ((CoffSymbol)_symbols[(int)symbolIndex]).Value = (uint)symbolDefinition.Value;
+                }
+                else
                 {
                     _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
                     _symbols.Add(new CoffSymbol
