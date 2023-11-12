@@ -235,14 +235,11 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_Vector128_ToScalar:
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
-                {
-                    var_types baseType = node->AsHWIntrinsic()->GetSimdBaseType();
-                    if (varTypeIsSmall(baseType))
+                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
                     {
-                        return ForType(baseType);
+                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
                     }
-                }
-                break;
+                    break;
 
                 case NI_Vector128_op_Equality:
                 case NI_Vector128_op_Inequality:
@@ -258,17 +255,15 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_LZCNT_X64_LeadingZeroCount:
                 case NI_POPCNT_PopCount:
                 case NI_POPCNT_X64_PopCount:
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
                 case NI_Vector64_ToScalar:
                 case NI_Vector128_ToScalar:
-                {
-                    var_types baseType = node->AsHWIntrinsic()->GetSimdBaseType();
-                    if (varTypeIsSmall(baseType))
+                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
                     {
-                        return ForType(baseType);
+                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
                     }
-                }
-                break;
+                    break;
 
                 case NI_Vector64_op_Equality:
                 case NI_Vector64_op_Inequality:
@@ -282,11 +277,11 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #else
 #error Unsupported platform
 #endif
                     // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
                 default:
                     break;
             }
