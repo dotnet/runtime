@@ -3309,24 +3309,21 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
+            int index = equals.IndexOfFirstMatch();
             return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector256<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
+            int index = equals.IndexOfFirstMatch();
             return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector512<T> equals) where T : struct
         {
-            ulong notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
+            int index = equals.IndexOfFirstMatch();
             return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
@@ -3772,7 +3769,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector512<T>.Count);
                     do
                     {
-                        count += BitOperations.PopCount(Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector).GetMatchCount();
                         current = ref Unsafe.Add(ref current, Vector512<T>.Count);
                     }
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
@@ -3800,7 +3797,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector256<T>.Count);
                     do
                     {
-                        count += BitOperations.PopCount(Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector).GetMatchCount();
                         current = ref Unsafe.Add(ref current, Vector256<T>.Count);
                     }
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
@@ -3828,7 +3825,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector128<T>.Count);
                     do
                     {
-                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).GetMatchCount();
                         current = ref Unsafe.Add(ref current, Vector128<T>.Count);
                     }
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
@@ -3850,11 +3847,7 @@ namespace System
 
             while (Unsafe.IsAddressLessThan(ref current, ref end))
             {
-                if (current.Equals(value))
-                {
-                    count++;
-                }
-
+                count += count.Equals(value) ? 1 : 0;
                 current = ref Unsafe.Add(ref current, 1);
             }
 
