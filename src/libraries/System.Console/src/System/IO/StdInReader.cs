@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    /* This class is used by for reading from the stdin.
+    /* This class is used by for reading from the stdin when it is a terminal.
      * It is designed to read stdin in raw mode for interpreting
      * key press events and maintain its own buffer for the same.
      * which is then used for all the Read operations
@@ -23,9 +23,8 @@ namespace System.IO
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
         private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
         private readonly Encoding _encoding;
-        private readonly Encoder? _terminalEncoder;
+        private readonly Encoder _echoEncoder;
         private Encoder? _bufferReadEncoder;
-        private readonly bool _isTerminal;
 
         private char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
@@ -34,18 +33,16 @@ namespace System.IO
 
         private static SafeFileHandle StdInHandle => Interop.Sys.FileDescriptors.STDIN_FILENO;
 
-        internal StdInReader(Encoding encoding, bool isTerminal)
+        internal StdInReader(Encoding encoding)
         {
+            Debug.Assert(!Console.IsInputRedirected); // stdin is a terminal.
+
             _encoding = encoding;
             _unprocessedBufferToBeRead = new char[encoding.GetMaxCharCount(BytesToBeRead)];
             _startIndex = 0;
             _endIndex = 0;
             _readLineSB = new StringBuilder();
-            _isTerminal = isTerminal;
-            if (_isTerminal)
-            {
-                _terminalEncoder = _encoding.GetEncoder();
-            }
+            _echoEncoder = _encoding.GetEncoder();
         }
 
         /// <summary> Checks whether the unprocessed buffer is empty. </summary>
@@ -157,7 +154,6 @@ namespace System.IO
             // _availableKeys either contains a line that was already read,
             // or we need to read a new line from stdin.
             bool freshKeys = _availableKeys.Count == 0;
-            bool echo = freshKeys && _isTerminal;
 
            // Don't carry over chars from previous ReadLine call.
             _readLineSB.Clear();
@@ -182,9 +178,9 @@ namespace System.IO
                     // try to keep this very simple, at least for now.
                     if (keyInfo.Key == ConsoleKey.Enter)
                     {
-                        if (echo)
+                        if (freshKeys)
                         {
-                            WriteToTerminal('\n');
+                            Echo('\n');
                         }
                         return true;
                     }
@@ -209,7 +205,7 @@ namespace System.IO
                             removed = _tmpKeys.TryPop(out _);
                         }
 
-                        if (removed && echo)
+                        if (removed && freshKeys)
                         {
                             // The ReadLine input may wrap across terminal rows and we need to handle that.
                             // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
@@ -241,15 +237,15 @@ namespace System.IO
                         {
                             _readLineSB.Append(keyInfo.KeyChar);
                         }
-                        if (echo)
+                        if (freshKeys)
                         {
-                            WriteToTerminal(' ');
+                            Echo(' ');
                         }
                     }
                     else if (keyInfo.Key == ConsoleKey.Clear)
                     {
                         _readLineSB.Clear();
-                        if (echo)
+                        if (freshKeys)
                         {
                             ConsolePal.WriteTerminalAnsiString(StdInHandle, ConsolePal.TerminalFormatStringsInstance.Clear);
                         }
@@ -260,9 +256,9 @@ namespace System.IO
                         {
                             _readLineSB.Append(keyInfo.KeyChar);
                         }
-                        if (echo)
+                        if (freshKeys)
                         {
-                            WriteToTerminal(keyInfo.KeyChar);
+                            Echo(keyInfo.KeyChar);
                         }
                     }
                 }
@@ -331,9 +327,9 @@ namespace System.IO
 
             ConsoleKeyInfo keyInfo = ReadKey();
 
-            if (!intercept && keyInfo.KeyChar != '\0' && _isTerminal)
+            if (!intercept && keyInfo.KeyChar != '\0')
             {
-                WriteToTerminal(keyInfo.KeyChar);
+                Echo(keyInfo.KeyChar);
             }
 
             return keyInfo;
@@ -380,13 +376,11 @@ namespace System.IO
         /// <summary>Gets whether there's input waiting on stdin.</summary>
         internal static bool StdinReady => Interop.Sys.StdinReady();
 
-        private void WriteToTerminal(char c)
+        private void Echo(char c)
         {
-            Debug.Assert(_terminalEncoder is not null);
-
             ReadOnlySpan<char> chars = [ c ];
             Span<byte> bytes = stackalloc byte[32]; // 32 bytes seems ample
-            int bytesWritten = _terminalEncoder.GetBytes(chars, bytes, flush: false);
+            int bytesWritten = _echoEncoder.GetBytes(chars, bytes, flush: false);
             if (bytesWritten == 0)
             {
                 return;

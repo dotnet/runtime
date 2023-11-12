@@ -82,8 +82,8 @@ namespace System
 
                     SyncTextReader reader = SyncTextReader.GetSynchronizedTextReader(
                                                 new StdInReader(
-                                                    encoding: Console.InputEncoding,
-                                                    isTerminal: !Console.IsInputRedirected));
+                                                    encoding: Console.InputEncoding
+                                                ));
 
                     // Don't overwrite a set reader.
                     // The reader doesn't own resources, so we don't need to dispose
