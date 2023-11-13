@@ -30,6 +30,8 @@ parameters:
   extraVariablesTemplates: []
   isManualCodeQLBuild: false
   preBuildSteps: []
+  enableRichCodeNavigation: false
+  richCodeNavigationLanguage: 'csharp'
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -46,6 +48,9 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
+
+    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
+    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
 
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
