@@ -1531,19 +1531,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode);
     if (lclNode->IsMultiReg())
     {
+        // This is the case of storing to a multi-reg local, currently supported
+        // only in ARM64 CodeGen. It may require HFA and SIMD features enabled.
         NYI_RISCV64("genCodeForStoreLclVar-----unimplemented on RISCV64 yet----");
-        regNumber    operandReg = genConsumeReg(data);
-        unsigned int regCount   = varDsc->lvFieldCnt;
-        for (unsigned i = 0; i < regCount; ++i)
-        {
-            regNumber varReg = lclNode->GetRegByIndex(i);
-            assert(varReg != REG_NA);
-            unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
-            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
-            assert(fieldVarDsc->TypeGet() == TYP_FLOAT);
-            GetEmitter()->emitIns_R_R_I(INS_sd, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
-        }
-        genProduceReg(lclNode);
     }
     else
     {
@@ -3190,8 +3180,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 // Arguments:
 //    tree - the GT_SWAP node
 //
-void CodeGen::genCodeForSwap(GenTreeOp* tree)
+void CodeGen::genCodeForSwap(GenTreeOp*)
 {
+    // For now GT_SWAP handling is only (partially) supported in ARM64 and XARCH CodeGens.
     NYI_RISCV64("genCodeForSwap-----unimplemented/unused on RISCV64 yet----");
 }
 
