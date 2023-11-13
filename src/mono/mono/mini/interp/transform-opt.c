@@ -1210,6 +1210,8 @@ interp_exit_ssa (TransformData *td)
 				ins->opcode = MINT_NOP;
 			else
 				interp_foreach_ins_var (td, ins, NULL, revert_ssa_rename_cb);
+
+			ins->flags &= ~INTERP_INST_FLAG_LIVENESS_MARKER;
 		}
 	}
 
@@ -1219,6 +1221,7 @@ interp_exit_ssa (TransformData *td)
 			g_slist_free (td->vars [i].declare_bbs);
 			td->vars [i].declare_bbs = NULL;
 		}
+		td->vars [i].ext_index = -1;
 	}
 
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb)	{
@@ -1226,6 +1229,11 @@ interp_exit_ssa (TransformData *td)
 			g_slist_free (bb->dominated);
 			bb->dominated = NULL;
 		}
+		bb->dfs_index = -1;
+		bb->gen_set = NULL;
+		bb->kill_set = NULL;
+		bb->live_in_set = NULL;
+		bb->live_out_set = NULL;
 	}
 
 	for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
@@ -1234,6 +1242,7 @@ interp_exit_ssa (TransformData *td)
 			td->renamable_vars [i].ssa_stack = NULL;
 		}
 	}
+	td->renamable_vars_size = 0;
 
 	for (unsigned int i = 0; i < td->renamed_fixed_vars_size; i++) {
 		if (td->renamed_fixed_vars [i].live_limit_bblocks) {
@@ -1241,6 +1250,7 @@ interp_exit_ssa (TransformData *td)
 			td->renamed_fixed_vars [i].live_limit_bblocks = NULL;
 		}
 	}
+	td->renamed_fixed_vars_size = 0;
 }
 
 /*
@@ -1347,17 +1357,16 @@ interp_unlink_bblocks (InterpBasicBlock *from, InterpBasicBlock *to)
 	to->in_count--;
 }
 
-static gboolean
+static void
 interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *prev_bb)
 {
-	gboolean needs_cprop = FALSE;
-
 	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		if (ins->opcode == MINT_LDLOCA_S) {
 			td->vars [ins->sregs [0]].indirects--;
 			if (!td->vars [ins->sregs [0]].indirects) {
-				// We can do cprop now through this local. Run cprop again.
-				needs_cprop = TRUE;
+				if (td->verbose_level)
+					g_print ("Remove bblock %d, var %d no longer indirect\n", bb->index, ins->sregs [0]);
+				td->need_ssa_retry = TRUE;
 			}
 		}
 	}
@@ -1367,8 +1376,6 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 		interp_unlink_bblocks (bb, bb->out_bb [0]);
 	prev_bb->next_bb = bb->next_bb;
 	mark_bb_as_dead (td, bb, bb->next_bb);
-
-	return needs_cprop;
 }
 
 void
@@ -1639,11 +1646,10 @@ interp_reorder_bblocks (TransformData *td)
 }
 
 // Traverse the list of basic blocks and merge adjacent blocks
-static gboolean
+static void
 interp_optimize_bblocks (TransformData *td)
 {
 	InterpBasicBlock *bb = td->entry_bb;
-	gboolean needs_cprop = FALSE;
 
 	interp_reorder_bblocks (td);
 
@@ -1656,20 +1662,18 @@ interp_optimize_bblocks (TransformData *td)
 		if (!next_bb->reachable) {
 			if (td->verbose_level)
 				g_print ("Removed BB%d\n", next_bb->index);
-			needs_cprop |= interp_remove_bblock (td, next_bb, bb);
+			interp_remove_bblock (td, next_bb, bb);
 			continue;
 		} else if (bb->out_count == 1 && bb->out_bb [0] == next_bb && next_bb->in_count == 1 && !next_bb->eh_block && !next_bb->patchpoint_data) {
 			g_assert (next_bb->in_bb [0] == bb);
 			interp_merge_bblocks (td, bb, next_bb);
 			if (td->verbose_level)
 				g_print ("Merged BB%d and BB%d\n", bb->index, next_bb->index);
-			needs_cprop = TRUE;
 			continue;
 		}
 
 		bb = next_bb;
 	}
-	return needs_cprop;
 }
 
 static void
@@ -1706,8 +1710,14 @@ retry:
 						g_print ("kill dead ins:\n\t");
 						interp_dump_ins (ins, td->data_items);
 					}
-					if (ins->opcode == MINT_LDLOCA_S)
+					if (ins->opcode == MINT_LDLOCA_S) {
 						td->vars [ins->sregs [0]].indirects--;
+						if (!td->vars [ins->sregs [0]].indirects) {
+							if (td->verbose_level)
+								g_print ("Kill ldloca, var %d no longer indirect\n", ins->sregs [0]);
+							td->need_ssa_retry = TRUE;
+						}
+					}
 
 					interp_foreach_ins_svar (td, ins, &need_retry, decrement_ref_count);
 
@@ -3323,6 +3333,9 @@ interp_optimize_code (TransformData *td)
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
 
+ssa_retry:
+	td->need_ssa_retry = FALSE;
+
 	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_time, interp_compute_ssa (td));
 
 	if (mono_interp_opt & INTERP_OPT_CPROP)
@@ -3340,6 +3353,12 @@ interp_optimize_code (TransformData *td)
 
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
+
+	if (td->need_ssa_retry) {
+		if (td->verbose_level)
+			g_print ("Retry method %s\n", mono_method_full_name (td->method, 1));
+		goto ssa_retry;
+	}
 
 	if (td->verbose_level) {
 		g_print ("\nOptimized IR:\n");
