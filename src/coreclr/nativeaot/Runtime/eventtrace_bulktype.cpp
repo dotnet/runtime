@@ -282,7 +282,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     // Determine this MethodTable's module.
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
-    // There can be invalid pEETypes where EETypeElementType is ElementType_Unknown and accessing the TypeManager can cause problems
+    // EEType for GC statics are not fully populated and they do not have a valid TypeManager. We will identify them by checking for `ElementType_Unknown`.
     // Specifically, the TypeManagerHandle _value). We will not be able to get the osModuleHandle for these
     ULONGLONG osModuleHandle = 0;
     if (pEEType->GetElementType() != ElementType_Unknown)
