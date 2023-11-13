@@ -138,6 +138,9 @@ class BulkTypeEventLogger
 {
 private:
 
+    // The maximum event size, and the size of the buffer that we allocate to hold the event contents.
+    static const size_t kSizeOfEventBuffer = 65536;
+
     // Estimate of how many bytes we can squeeze in the event data for the value struct
     // array.  (Intentionally overestimate the size of the non-array parts to keep it safe.)
     static const int kMaxBytesTypeValues = (cbMaxEtwEvent - 0x30);
@@ -178,14 +181,25 @@ private:
     // List of types we've batched.
     BulkTypeValue m_rgBulkTypeValues[kMaxCountTypeValues];
 
+    BYTE *m_pBulkTypeEventBuffer;
+
     int LogSingleType(MethodTable * pEEType);
 
 public:
     BulkTypeEventLogger() :
         m_nBulkTypeValueCount(0),
         m_nBulkTypeValueByteCount(0)
+        , m_pBulkTypeEventBuffer(NULL)
     {
         LIMITED_METHOD_CONTRACT;
+
+        m_pBulkTypeEventBuffer = new (nothrow) BYTE[kSizeOfEventBuffer];
+    }
+
+    ~BulkTypeEventLogger()
+    {
+        delete[] m_pBulkTypeEventBuffer;
+        m_pBulkTypeEventBuffer = NULL;
     }
 
     void LogTypeAndParameters(ULONGLONG thAsAddr);
