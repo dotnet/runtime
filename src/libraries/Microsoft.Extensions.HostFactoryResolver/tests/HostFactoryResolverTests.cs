@@ -279,7 +279,6 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void NoSpecialEntryPointPatternCanRunInParallel()
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);

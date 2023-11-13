@@ -292,7 +292,7 @@ namespace Microsoft.Interop
             // Create the stub.
             var signatureContext = SignatureContext.Create(
                 symbol,
-                DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr),
+                LibraryImportGeneratorHelpers.CreateMarshallingInfoParser(environment, targetFramework, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr),
                 environment,
                 new CodeEmitOptions(SkipInit: targetFramework.TargetFramework == TargetFramework.Net),
                 typeof(LibraryImportGenerator).Assembly);

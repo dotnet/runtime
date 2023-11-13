@@ -46,29 +46,35 @@ namespace System.Collections.Frozen
         /// <summary>Try to find the minimal unique substring index/length to use for comparisons.</summary>
         private static bool TryUseSubstring(ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, out AnalysisResults results)
         {
-            const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... t's not worth the increase in algorithmic complexity to analyze longer substrings
+            const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... it's not worth the increase in algorithmic complexity to analyze longer substrings
+            int uniqueStringsLength = uniqueStrings.Length;
+
+            // Sufficient uniqueness factor of 95% is good enough.
+            // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
+            int acceptableNonUniqueCount = uniqueStringsLength / 20;
 
             SubstringComparer comparer = ignoreCase ? new JustifiedCaseInsensitiveSubstringComparer() : new JustifiedSubstringComparer();
             HashSet<string> set = new HashSet<string>(
 #if NET6_0_OR_GREATER
-                uniqueStrings.Length,
+                uniqueStringsLength,
 #endif
                 comparer);
 
-            // For each substring length...
+            // For each substring length...preferring the shortest length that provides
+            // enough uniqueness
             int maxSubstringLength = Math.Min(minLength, MaxSubstringLengthLimit);
             for (int count = 1; count <= maxSubstringLength; count++)
             {
                 comparer.IsLeft = true;
                 comparer.Count = count;
 
-                // For each index, get a uniqueness factor for the left-justified substrings.
+                // For each index from, get a uniqueness factor for the left-justified substrings.
                 // If any is above our threshold, we're done.
                 for (int index = 0; index <= minLength - count; index++)
                 {
                     comparer.Index = index;
 
-                    if (HasSufficientUniquenessFactor(set, uniqueStrings))
+                    if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                     {
                         results = CreateAnalysisResults(
                             uniqueStrings, ignoreCase, minLength, maxLength, index, count,
@@ -90,10 +96,9 @@ namespace System.Collections.Frozen
                     // If any is above our threshold, we're done.
                     for (int index = 0; index <= minLength - count; index++)
                     {
-                        // Get a uniqueness factor for the right-justified substrings.
-                        // If it's above our threshold, we're done.
                         comparer.Index = -index - count;
-                        if (HasSufficientUniquenessFactor(set, uniqueStrings))
+
+                        if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                         {
                             results = CreateAnalysisResults(
                                 uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count,
@@ -202,7 +207,7 @@ namespace System.Collections.Frozen
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 #endif
-        private static bool ContainsAnyLetters(ReadOnlySpan<char> s)
+        internal static bool ContainsAnyLetters(ReadOnlySpan<char> s)
         {
             Debug.Assert(IsAllAscii(s));
 
@@ -221,13 +226,9 @@ namespace System.Collections.Frozen
 #endif
         }
 
-        private static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings)
+        internal static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings, int acceptableNonUniqueCount)
         {
             set.Clear();
-
-            // Sufficient uniqueness factor of 95% is good enough.
-            // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
-            int acceptableNonUniqueCount = uniqueStrings.Length / 20;
 
             foreach (string s in uniqueStrings)
             {

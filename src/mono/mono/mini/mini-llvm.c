@@ -4383,7 +4383,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	gboolean vretaddr;
 	LLVMTypeRef llvm_sig;
 	gpointer target;
-	gboolean is_virtual, calli;
+	gboolean is_virtual, calli, is_simd;
 	LLVMBuilderRef builder = *builder_ref;
 
 	/* If both imt and rgctx arg are required, only pass the imt arg, the rgctx trampoline will pass the rgctx */
@@ -4423,10 +4423,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	is_virtual = opcode == OP_VOIDCALL_MEMBASE || opcode == OP_CALL_MEMBASE
 			|| opcode == OP_VCALL_MEMBASE || opcode == OP_LCALL_MEMBASE
 			|| opcode == OP_FCALL_MEMBASE || opcode == OP_RCALL_MEMBASE
-			|| opcode == OP_TAILCALL_MEMBASE;
+			|| opcode == OP_XCALL_MEMBASE || opcode == OP_TAILCALL_MEMBASE;
 	calli = !call->fptr_is_patch && (opcode == OP_VOIDCALL_REG || opcode == OP_CALL_REG
 		|| opcode == OP_VCALL_REG || opcode == OP_LCALL_REG || opcode == OP_FCALL_REG
-		|| opcode == OP_RCALL_REG || opcode == OP_TAILCALL_REG);
+		|| opcode == OP_RCALL_REG || opcode == OP_XCALL_REG || opcode == OP_TAILCALL_REG);
+	is_simd = opcode == OP_XCALL || opcode == OP_XCALL_REG || opcode == OP_XCALL_MEMBASE;
 
 	/* FIXME: Avoid creating duplicate methods */
 
@@ -4774,7 +4775,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	}
 
 	MonoClass *retclass = mono_class_from_mono_type_internal (sig->ret);
-	gboolean is_simd = mini_class_is_simd (ctx->cfg, retclass);
 	gboolean should_promote_to_value = FALSE;
 	const char *load_name = NULL;
 	/*
@@ -7029,18 +7029,21 @@ MONO_RESTORE_WARNING
 		case OP_FCALL:
 		case OP_RCALL:
 		case OP_VCALL:
+		case OP_XCALL:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
 		case OP_FCALL_MEMBASE:
 		case OP_RCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
+		case OP_XCALL_MEMBASE:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
 		case OP_LCALL_REG:
 		case OP_FCALL_REG:
 		case OP_RCALL_REG:
-		case OP_VCALL_REG: {
+		case OP_VCALL_REG:
+		case OP_XCALL_REG: {
 			process_call (ctx, bb, &builder, ins);
 			break;
 		}
@@ -8276,9 +8279,13 @@ MONO_RESTORE_WARNING
 					result = fcmp_and_select (builder, ins, l, r);
 				}
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
 				LLVMValueRef min_max_args [] = { l, r };
+#ifdef TARGET_WASM
+				IntrinsicId iid = ins->inst_c0 == OP_FMAX ? INTRINS_WASM_FMAX : INTRINS_WASM_FMIN;
+#else
 				IntrinsicId iid = ins->inst_c0 == OP_FMAX ? INTRINS_AARCH64_ADV_SIMD_FMAX : INTRINS_AARCH64_ADV_SIMD_FMIN;
+#endif
 				llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, min_max_args, "");
 #else

@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -27,8 +29,8 @@ System.ComponentModel.Composition.Registration.ExportBuilder</PackageDescription
     <Compile Include="System\ComponentModel\Composition\Registration\PartBuilder.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderOfT.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilder.cs" />
-    <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\ReadLock.cs" />
+    <Compile Include="System\Threading\ReadWriteLock.cs" />
     <Compile Include="System\Threading\WriteLock.cs" />
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTrace.cs"
              Link="Common\System\Composition\Diagnostics\CompositionTrace.cs" />
@@ -46,4 +48,5 @@ System.ComponentModel.Composition.Registration.ExportBuilder</PackageDescription
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\src\System.ComponentModel.Composition.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Context\src\System.Reflection.Context.csproj" />
   </ItemGroup>
+
 </Project>

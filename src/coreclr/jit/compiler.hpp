@@ -3069,7 +3069,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 
 inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 {
-    if (!fgIsCodeAdded())
+    if (!fgRngChkThrowAdded)
     {
         return false;
     }
@@ -3095,6 +3095,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 
     if (!((call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
+          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_FAIL_FAST)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTEXCEPTION)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW))))
@@ -3111,7 +3112,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         if (block == add->acdDstBlk)
         {
             return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW ||
-                   add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN;
+                   add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
         }
     }
 
@@ -3136,7 +3137,7 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
             // Compute assert cond separately as assert macro cannot have conditional compilation directives.
             bool cond =
                 (add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW ||
-                 add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN);
+                 add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST);
             assert(cond);
 
             // TODO: bbTgtStkDepth is DEBUG-only.
@@ -3155,16 +3156,6 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 }
 
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-/*****************************************************************************
- *
- *  Return true if we've added any new basic blocks.
- */
-
-inline bool Compiler::fgIsCodeAdded()
-{
-    return fgAddCodeModf;
-}
 
 /*****************************************************************************
   Is the offset too big?
@@ -4563,15 +4554,15 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            if (visitor(cmpXchg->gtOpLocation) == VisitResult::Abort)
+            if (visitor(cmpXchg->Addr()) == VisitResult::Abort)
             {
                 return;
             }
-            if (visitor(cmpXchg->gtOpValue) == VisitResult::Abort)
+            if (visitor(cmpXchg->Data()) == VisitResult::Abort)
             {
                 return;
             }
-            visitor(cmpXchg->gtOpComparand);
+            visitor(cmpXchg->Comparand());
             return;
         }
 

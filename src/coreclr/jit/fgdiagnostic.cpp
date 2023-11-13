@@ -2077,7 +2077,8 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_EHFILTERRET:
-                printf("%*s        (fltret)", maxBlockNumWidth - 2, "");
+                printf("-> " FMT_BB "%*s (fltret)", block->GetJumpDest()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
                 break;
 
             case BBJ_EHCATCHRET:
@@ -3038,6 +3039,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->getTryIndex() < compHndBBtabCount);
         }
 
+        // Blocks with these jump kinds must have non-null jump targets
+        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE))
+        {
+            assert(block->HasJump());
+        }
+
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
         // with the finally block the BBJ_CALLFINALLY is targeting. There is one special case: if the
         // BBJ_CALLFINALLY is the first block of a `try`, then its predecessor can be outside the `try`:
@@ -3145,12 +3152,13 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
 //------------------------------------------------------------------------
 // fgDebugCheckFlags: Validate various invariants related to the propagation
-//                    and setting of tree flags ("gtFlags").
+//                    and setting of tree, block, and method flags
 //
 // Arguments:
 //    tree - the tree to (recursively) check the flags for
+//    block - basic block containing the tree
 //
-void Compiler::fgDebugCheckFlags(GenTree* tree)
+void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 {
     GenTreeFlags actualFlags   = tree->gtFlags & GTF_ALL_EFFECT;
     GenTreeFlags expectedFlags = GTF_EMPTY;
@@ -3237,10 +3245,17 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             break;
 
         case GT_CALL:
+        {
+            GenTreeCall* const call = tree->AsCall();
 
-            GenTreeCall* call;
-
-            call = tree->AsCall();
+            // Before global morph, if there are recursive tail calls, we should have
+            // set the associated block and method flags.
+            //
+            if (!fgGlobalMorphDone && call->CanTailCall() && gtIsRecursiveCall(call))
+            {
+                assert(doesMethodHaveRecursiveTailcall());
+                assert((block->bbFlags & BBF_RECURSIVE_TAILCALL) != 0);
+            }
 
             for (CallArg& arg : call->gtArgs.Args())
             {
@@ -3256,8 +3271,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
                 }
             }
-
-            break;
+        }
+        break;
 
         case GT_CMPXCHG:
             expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
@@ -3333,7 +3348,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     }
 
     tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
-        fgDebugCheckFlags(operand);
+        fgDebugCheckFlags(operand, block);
         expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
         return GenTree::VisitResult::Continue;
@@ -3741,7 +3756,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
             gtDispTree(stmt->GetRootNode());
         }
 
-        fgDebugCheckFlags(stmt->GetRootNode());
+        fgDebugCheckFlags(stmt->GetRootNode(), block);
 
         // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
         // done by fgMorphTree()

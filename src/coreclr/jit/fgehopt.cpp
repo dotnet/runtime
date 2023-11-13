@@ -165,7 +165,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
                 noway_assert(leaveBlock->KindIs(BBJ_ALWAYS));
 
-                currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, postTryFinallyBlock);
+                currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, postTryFinallyBlock DEBUG_ARG(this));
 
                 // Ref count updates.
                 fgAddRefPred(postTryFinallyBlock, currentBlock);
@@ -454,7 +454,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Time to optimize.
         //
         // (1) Convert the callfinally to a normal jump to the handler
-        callFinally->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+        assert(callFinally->HasJump());
+        callFinally->SetJumpKind(BBJ_ALWAYS);
 
         // Identify the leave block and the continuation
         BasicBlock* const leave        = callFinally->Next();
@@ -527,7 +528,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                     assert(finallyRetExpr->gtOper == GT_RETFILT);
                     fgRemoveStmt(block, finallyRet);
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, continuation);
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, continuation DEBUG_ARG(this));
                     fgAddRefPred(continuation, block);
                     fgRemoveRefPred(leave, block);
                 }
@@ -561,6 +562,9 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // should currently be at least 2.
         assert(firstHandlerBlock->bbRefs >= 2);
         firstHandlerBlock->bbRefs -= 1;
+
+        // (8) The old try entry no longer needs special protection.
+        firstTryBlock->bbFlags &= ~BBF_DONT_REMOVE;
 
         // Another one bites the dust...
         emptyCount++;
@@ -1020,10 +1024,6 @@ PhaseStatus Compiler::fgCloneFinally()
         {
             BasicBlock* newBlock;
 
-            // Avoid asserts when `fgNewBBinRegion` verifies the handler table, by mapping any cloned finally
-            // return blocks to BBJ_ALWAYS (which we would do below if we didn't do it here).
-            BBjumpKinds bbNewJumpKind = block->KindIs(BBJ_EHFINALLYRET) ? BBJ_ALWAYS : block->GetJumpKind();
-
             if (block == firstBlock)
             {
                 // Put first cloned finally block into the appropriate
@@ -1031,7 +1031,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 // callfinallys, depending on the EH implementation.
                 const unsigned    hndIndex = 0;
                 BasicBlock* const nearBlk  = cloneInsertAfter;
-                newBlock                   = fgNewBBinRegion(bbNewJumpKind, finallyTryIndex, hndIndex, nearBlk);
+                newBlock                   = fgNewBBinRegion(BBJ_NONE, finallyTryIndex, hndIndex, nearBlk);
 
                 // If the clone ends up just after the finally, adjust
                 // the stopping point for finally traversal.
@@ -1045,7 +1045,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Put subsequent blocks in the same region...
                 const bool extendRegion = true;
-                newBlock                = fgNewBBafter(bbNewJumpKind, insertAfter, extendRegion);
+                newBlock                = fgNewBBafter(BBJ_NONE, insertAfter, extendRegion);
             }
 
             cloneBBCount++;
@@ -1081,7 +1081,7 @@ PhaseStatus Compiler::fgCloneFinally()
             newBlock->clearHndIndex();
 
             // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-            assert(newBlock->HasJumpTo(nullptr));
+            assert(!newBlock->HasJump());
         }
 
         if (!clonedOk)
@@ -1103,6 +1103,8 @@ PhaseStatus Compiler::fgCloneFinally()
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->Next())
         {
             BasicBlock* newBlock = blockMap[block];
+            // Jump kind/target should not be set yet
+            assert(newBlock->KindIs(BBJ_NONE));
 
             if (block->KindIs(BBJ_EHFINALLYRET))
             {
@@ -1110,8 +1112,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                 assert(finallyRetExpr->gtOper == GT_RETFILT);
                 fgRemoveStmt(newBlock, finallyRet);
-                assert(newBlock->KindIs(BBJ_ALWAYS)); // we mapped this above already
-                newBlock->SetJumpDest(normalCallFinallyReturn);
+                newBlock->SetJumpKindAndTarget(BBJ_ALWAYS, normalCallFinallyReturn DEBUG_ARG(this));
 
                 fgAddRefPred(normalCallFinallyReturn, newBlock);
             }
@@ -1151,7 +1152,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     // This call returns to the expected spot, so
                     // retarget it to branch to the clone.
-                    currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstCloneBlock);
+                    currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstCloneBlock DEBUG_ARG(this));
 
                     // Ref count updates.
                     fgAddRefPred(firstCloneBlock, currentBlock);
@@ -1211,7 +1212,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 if (block->KindIs(BBJ_EHFINALLYRET))
                 {
                     assert(block->GetJumpEhf()->bbeCount == 0);
-                    block->SetJumpKind(BBJ_EHFAULTRET DEBUG_ARG(this));
+                    block->SetJumpKind(BBJ_EHFAULTRET);
                 }
             }
         }
@@ -2258,7 +2259,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 {
     assert(predBlock->NextIs(nonCanonicalBlock));
 
-    BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true);
+    BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true, canonicalBlock);
 
     JITDUMP("*** " FMT_BB " now falling through to empty " FMT_BB " and then to " FMT_BB "\n", predBlock->bbNum,
             newBlock->bbNum, canonicalBlock->bbNum);
@@ -2269,7 +2270,6 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
     // Wire up the new flow
     fgAddRefPred(newBlock, predBlock, predEdge);
 
-    newBlock->SetJumpDest(canonicalBlock);
     fgAddRefPred(canonicalBlock, newBlock, predEdge);
 
     // If nonCanonicalBlock has only one pred, all its flow transfers.

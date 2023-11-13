@@ -43,6 +43,11 @@ namespace System.Net.Test.Common
             _transparentPingResponse = transparentPingResponse;
         }
 
+        public override string ToString()
+        {
+            return $"{this.GetType().Name} {_connectionSocket.LocalEndPoint} <-> {_connectionSocket.RemoteEndPoint}";
+        }
+
         public static Task<Http2LoopbackConnection> CreateAsync(SocketWrapper socket, Stream stream, Http2Options httpOptions)
         {
             return CreateAsync(socket, stream, httpOptions, Http2LoopbackServer.Timeout);
@@ -663,7 +668,7 @@ namespace System.Net.Test.Common
                     default:
                         // Assert.Fail is already merged in xUnit but not released yet. Replace once available.
                         // https://github.com/xunit/xunit/issues/2105
-                        Assert.True(false, $"Unexpected frame type '{frame.Type}'");
+                        Assert.Fail($"Unexpected frame type '{frame.Type}'");
                         break;
                 }
             }

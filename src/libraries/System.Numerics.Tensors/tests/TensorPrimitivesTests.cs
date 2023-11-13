@@ -62,7 +62,7 @@ namespace System.Numerics.Tensors.Tests
             if (diff > tolerance &&
                 diff > Math.Max(Math.Abs(expected), Math.Abs(actual)) * tolerance)
             {
-                throw new EqualException(expected, actual);
+                throw EqualException.ForMismatchedValues(expected, actual);
             }
         }
 
@@ -583,7 +583,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Cosh_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -920,7 +919,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Exp_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -2460,7 +2458,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Sigmoid_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -2565,7 +2562,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Sinh_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -2942,7 +2938,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Tanh_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);

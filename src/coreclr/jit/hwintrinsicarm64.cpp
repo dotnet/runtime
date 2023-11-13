@@ -1744,8 +1744,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_StoreVector64x2AndZip:
+        case NI_AdvSimd_StoreVector64x3AndZip:
+        case NI_AdvSimd_StoreVector64x4AndZip:
+        case NI_AdvSimd_Arm64_StoreVector128x2AndZip:
+        case NI_AdvSimd_Arm64_StoreVector128x3AndZip:
+        case NI_AdvSimd_Arm64_StoreVector128x4AndZip:
         case NI_AdvSimd_StoreVector64x2:
+        case NI_AdvSimd_StoreVector64x3:
+        case NI_AdvSimd_StoreVector64x4:
         case NI_AdvSimd_Arm64_StoreVector128x2:
+        case NI_AdvSimd_Arm64_StoreVector128x3:
+        case NI_AdvSimd_Arm64_StoreVector128x4:
         {
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
@@ -1883,6 +1893,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_LoadVector64x2AndUnzip:
+        case NI_AdvSimd_LoadVector64x3AndUnzip:
+        case NI_AdvSimd_LoadVector64x4AndUnzip:
+        case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
+        case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
+        case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
         case NI_AdvSimd_LoadVector64x2:
         case NI_AdvSimd_LoadVector64x3:
         case NI_AdvSimd_LoadVector64x4:

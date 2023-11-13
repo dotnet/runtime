@@ -87,7 +87,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             foreach (TypeDefinitionHandle nestedTypeHandle in _typeDefinition.NestedTypes)
             {
                 if (optionalNameFilter == null || optionalNameFilter.Matches(nestedTypeHandle.GetTypeDefinition(_reader).Name, _reader))
-                    yield return nestedTypeHandle.GetNamedType(_reader);
+                    yield return nestedTypeHandle.GetNamedType(_reader).ToType();
             }
         }
     }

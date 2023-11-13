@@ -7793,10 +7793,38 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             }
 
 #ifdef TARGET_ARM64
-            case NI_AdvSimd_Multiply:
             case NI_AdvSimd_MultiplyByScalar:
-            case NI_AdvSimd_Arm64_Multiply:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
+            {
+                if (!varTypeIsFloating(baseType))
+                {
+                    // Handle `x * 0 == 0` and `0 * x == 0`
+                    // Not safe for floating-point when x == -0.0, NaN, +Inf, -Inf
+                    ValueNum zeroVN = VNZeroForType(TypeOfVN(cnsVN));
+
+                    if (cnsVN == zeroVN)
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+
+                assert((TypeOfVN(arg0VN) == type) && (TypeOfVN(arg1VN) == TYP_SIMD8));
+
+                // Handle x * 1 => x, but only if the scalar RHS is <1, ...>.
+                if (IsVNConstant(arg1VN))
+                {
+                    if (EvaluateSimdGetElement(this, TYP_SIMD8, baseType, arg1VN, 0) == VNOneForType(baseType))
+                    {
+                        return arg0VN;
+                    }
+                }
+                break;
+            }
+#endif
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Multiply:
+            case NI_AdvSimd_Arm64_Multiply:
 #else
             case NI_SSE_Multiply:
             case NI_SSE2_Multiply:
@@ -9630,6 +9658,8 @@ struct ValueNumberState
         BVB_complete     = 0x1,
         BVB_onAllDone    = 0x2,
         BVB_onNotAllDone = 0x4,
+        // Set for statically reachable blocks that we have proven unreachable.
+        BVB_provenUnreachable = 0x8,
     };
 
     bool GetVisitBit(unsigned bbNum, BlockVisitBits bvb)
@@ -9759,7 +9789,8 @@ struct ValueNumberState
             JITDUMP("     Not yet completed.\n");
 #endif // DEBUG_VN_VISIT
 
-            bool allPredsVisited = true;
+            bool allPredsVisited   = true;
+            bool provenUnreachable = true;
             for (FlowEdge* pred = m_comp->BlockPredsWithEH(succ); pred != nullptr; pred = pred->getNextPredEdge())
             {
                 BasicBlock* predBlock = pred->getSourceBlock();
@@ -9767,6 +9798,12 @@ struct ValueNumberState
                 {
                     allPredsVisited = false;
                     break;
+                }
+
+                if (provenUnreachable && !GetVisitBit(predBlock->bbNum, BVB_provenUnreachable) &&
+                    IsReachableFromPred(predBlock, succ))
+                {
+                    provenUnreachable = false;
                 }
             }
 
@@ -9780,6 +9817,11 @@ struct ValueNumberState
                 assert(!GetVisitBit(succ->bbNum, BVB_onAllDone));
                 m_toDoAllPredsDone.Push(succ);
                 SetVisitBit(succ->bbNum, BVB_onAllDone);
+
+                if (provenUnreachable)
+                {
+                    SetVisitBit(succ->bbNum, BVB_provenUnreachable);
+                }
             }
             else
             {
@@ -9799,6 +9841,31 @@ struct ValueNumberState
 
             return BasicBlockVisit::Continue;
         });
+    }
+
+    bool IsReachableFromPred(BasicBlock* predBlock, BasicBlock* block)
+    {
+        if (!predBlock->KindIs(BBJ_COND) || predBlock->JumpsToNext())
+        {
+            return true;
+        }
+
+        GenTree* lastTree = predBlock->lastStmt()->GetRootNode();
+        assert(lastTree->OperIs(GT_JTRUE));
+
+        GenTree* cond = lastTree->gtGetOp1();
+        // TODO-Cleanup: Using liberal VNs here is a bit questionable as it
+        // adds a cross-phase dependency on RBO to definitely fold this branch
+        // away.
+        ValueNum normalVN = m_comp->vnStore->VNNormalValue(cond->GetVN(VNK_Liberal));
+        if (!m_comp->vnStore->IsVNConstant(normalVN))
+        {
+            return true;
+        }
+
+        bool        isTaken         = normalVN != m_comp->vnStore->VNZeroForType(TYP_INT);
+        BasicBlock* unreachableSucc = isTaken ? predBlock->Next() : predBlock->GetJumpDest();
+        return block != unreachableSucc;
     }
 
     bool ToDoExists()
@@ -9937,6 +10004,8 @@ PhaseStatus Compiler::fgValueNumber()
 
     ValueNumberState vs(this);
 
+    vnVisitState = &vs;
+
     // Push the first block.  This has no preds.
     vs.m_toDoAllPredsDone.Push(fgFirstBB);
 
@@ -9945,7 +10014,13 @@ PhaseStatus Compiler::fgValueNumber()
         while (vs.m_toDoAllPredsDone.Size() > 0)
         {
             BasicBlock* toDo = vs.m_toDoAllPredsDone.Pop();
+
+            // TODO-TP: We can skip VN'ing blocks we have proven unreachable
+            // here. However, currently downstream phases are not prepared to
+            // handle the fact that some blocks that are seemingly reachable
+            // have not been VN'd.
             fgValueNumberBlock(toDo);
+
             // Record that we've visited "toDo", and add successors to the right sets.
             vs.FinishVisit(toDo);
         }
@@ -9982,8 +10057,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 
     Statement* stmt = blk->firstStmt();
 
-    // First: visit phi's.  If "newVNForPhis", give them new VN's.  If not,
-    // first check to see if all phi args have the same value.
+    // First: visit phis and check to see if all phi args have the same value.
     for (; (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->GetNextStmt())
     {
         GenTreeLclVar* newSsaDef = stmt->GetRootNode()->AsLclVar();
@@ -9993,9 +10067,22 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 
         for (GenTreePhi::Use& use : phiNode->Uses())
         {
-            GenTreePhiArg* phiArg         = use.GetNode()->AsPhiArg();
-            ValueNum       phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
-            ValueNumPair   phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
+            GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+            if (vnVisitState->GetVisitBit(phiArg->gtPredBB->bbNum, ValueNumberState::BVB_provenUnreachable))
+            {
+                JITDUMP("  Phi arg [%06u] refers to proven unreachable pred " FMT_BB "\n", dspTreeID(phiArg),
+                        phiArg->gtPredBB->bbNum);
+
+                if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
+                {
+                    continue;
+                }
+
+                JITDUMP("  ..but it looks like all preds are unreachable, so we are using it anyway\n");
+            }
+
+            ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
+            ValueNumPair phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
 
             phiArg->gtVNPair = phiArgVNP;
 
@@ -10021,12 +10108,9 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
             }
         }
 
-#ifdef DEBUG
-        // There should be at least to 2 PHI arguments so phiVN's VNs should always be VNF_Phi functions.
-        VNFuncApp phiFunc;
-        assert(vnStore->GetVNFunc(phiVNP.GetLiberal(), &phiFunc) && (phiFunc.m_func == VNF_Phi));
-        assert(vnStore->GetVNFunc(phiVNP.GetConservative(), &phiFunc) && (phiFunc.m_func == VNF_Phi));
-#endif
+        // We should have visited at least one phi arg in the loop above
+        assert(phiVNP.GetLiberal() != ValueNumStore::NoVN);
+        assert(phiVNP.GetConservative() != ValueNumStore::NoVN);
 
         ValueNumPair newSsaDefVNP;
 
@@ -11604,25 +11688,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // For XADD and XCHG other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
                         fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
 
-                        assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
-
-                        GenTree* addr = tree->AsOp()->gtOp1; // op1
-                        GenTree* data = tree->AsOp()->gtOp2; // op2
-
                         ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+                        vnpExcSet              = vnStore->VNPUnionExcSet(tree->AsIndir()->Addr()->gtVNPair, vnpExcSet);
+                        vnpExcSet              = vnStore->VNPUnionExcSet(tree->AsIndir()->Data()->gtVNPair, vnpExcSet);
 
-                        vnpExcSet = vnStore->VNPUnionExcSet(data->gtVNPair, vnpExcSet);
-                        vnpExcSet = vnStore->VNPUnionExcSet(addr->gtVNPair, vnpExcSet);
-
-                        // The normal value is a new unique VN.
-                        ValueNumPair normalPair;
-                        normalPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-
-                        // Attach the combined exception set
-                        tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
-
-                        // add the null check exception for 'addr' to the tree's value number
-                        fgValueNumberAddExceptionSetForIndirection(tree, addr);
+                        // The normal value is a new unique VN. The null reference exception will be added below.
+                        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), vnpExcSet);
                         break;
                     }
 
@@ -11726,9 +11797,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
 
-                GenTree* location  = cmpXchg->gtOpLocation;  // arg1
-                GenTree* value     = cmpXchg->gtOpValue;     // arg2
-                GenTree* comparand = cmpXchg->gtOpComparand; // arg3
+                GenTree* location  = cmpXchg->Addr();
+                GenTree* value     = cmpXchg->Data();
+                GenTree* comparand = cmpXchg->Comparand();
 
                 ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
@@ -11738,16 +11809,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 vnpExcSet = vnStore->VNPUnionExcSet(comparand->gtVNPair, vnpExcSet);
 
                 // The normal value is a new unique VN.
-                ValueNumPair normalPair;
-                normalPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-
-                // Attach the combined exception set
-                tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
+                tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), vnpExcSet);
 
                 // add the null check exception for 'location' to the tree's value number
                 fgValueNumberAddExceptionSetForIndirection(tree, location);
-                // add the null check exception for 'comparand' to the tree's value number
-                fgValueNumberAddExceptionSetForIndirection(tree, comparand);
                 break;
             }
 
@@ -13580,6 +13645,11 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIntrinsic()->gtGetOp1());
                 break;
 
+            case GT_XAND:
+            case GT_XORR:
+            case GT_XADD:
+            case GT_XCHG:
+            case GT_CMPXCHG:
             case GT_IND:
             case GT_BLK:
             case GT_STOREIND:

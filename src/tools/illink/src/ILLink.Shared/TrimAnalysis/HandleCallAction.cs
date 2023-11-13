@@ -151,7 +151,9 @@ namespace ILLink.Shared.TrimAnalysis
 			// This needs additional validation that the .ctor is called from a "newobj" instruction/operation
 			// so it can't be done easily in shared code yet.
 			case IntrinsicId.Array_Empty:
-				// Array.Empty<T> must for now be handled by the specific implementation since it requires instantiated generic method handling
+			// Array.Empty<T> must for now be handled by the specific implementation since it requires instantiated generic method handling
+			case IntrinsicId.Object_GetType:
+				// Object.GetType requires additional handling by the caller to implement type hierarchy marking and related diagnostics
 				methodReturnValue = MultiValueLattice.Top;
 				return false;
 

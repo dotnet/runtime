@@ -2044,7 +2044,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        Assert.True(false, "Invalid HTTP request version");
+                        Assert.Fail("Invalid HTTP request version");
                     }
                 }
             });

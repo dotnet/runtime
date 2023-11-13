@@ -660,7 +660,6 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT uint64_t REDHAWK_PALAPI PalGetTickCount64();
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t exitCode);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX

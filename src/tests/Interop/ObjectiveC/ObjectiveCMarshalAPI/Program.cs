@@ -387,7 +387,7 @@ namespace ObjectiveCMarshalAPI
                 return (delegate* unmanaged<IntPtr, void>)NativeObjCMarshalTests.GetThrowException();
             }
 
-            Assert.True(false, "Unknown exception type");
+            Assert.Fail("Unknown exception type");
             throw new UnreachableException();
         }
 

@@ -82,7 +82,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         throw new NotSupportedException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
                 }
             }
-            MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBase methodBase = ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);
             MethodInfo methodInfo = methodBase as MethodInfo;
             if (methodInfo != null)
                 return methodInfo;

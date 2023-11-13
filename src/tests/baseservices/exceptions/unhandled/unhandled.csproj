@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needs explicit Main to return the proper "unhandled exception" exit code -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+
     <Optimize>false</Optimize>
   </PropertyGroup>
   <ItemGroup>

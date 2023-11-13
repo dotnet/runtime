@@ -437,6 +437,11 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             // to properly set the info.compProfilerCallback flag.
             continue;
         }
+        else if ((block->bbFlags & BBF_DONT_REMOVE) && block->isEmpty() && block->KindIs(BBJ_THROW))
+        {
+            // We already converted a non-removable block to a throw; don't bother processing it again.
+            continue;
+        }
         else if (!canRemoveBlock(block))
         {
             continue;
@@ -458,12 +463,14 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 
             // Unmark the block as removed, clear BBF_INTERNAL, and set BBJ_IMPORTED
 
+            JITDUMP("Converting BBF_DONT_REMOVE block " FMT_BB " to BBJ_THROW\n", block->bbNum);
+
             // The successors may be unreachable after this change.
             changed |= block->NumSucc() > 0;
 
             block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL);
             block->bbFlags |= BBF_IMPORTED;
-            block->SetJumpKind(BBJ_THROW DEBUG_ARG(this));
+            block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
             block->bbSetRunRarely();
 
             // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, we just converted it to a BBJ_THROW.
@@ -631,34 +638,6 @@ bool Compiler::fgRemoveDeadBlocks()
 {
     JITDUMP("\n*************** In fgRemoveDeadBlocks()");
 
-    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
-
-    worklist.push_back(fgFirstBB);
-
-    // Do not remove handler blocks
-    for (EHblkDsc* const HBtab : EHClauses(this))
-    {
-        if (HBtab->HasFilter())
-        {
-            worklist.push_back(HBtab->ebdFilter);
-        }
-        worklist.push_back(HBtab->ebdHndBeg);
-    }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // For ARM code, prevent creating retless calls by adding the BBJ_ALWAYS to the "fgAlwaysBlks" list.
-    for (BasicBlock* const block : Blocks())
-    {
-        if (block->KindIs(BBJ_CALLFINALLY))
-        {
-            assert(block->isBBCallAlwaysPair());
-
-            // Don't remove the BBJ_ALWAYS block that is only here for the unwinder.
-            worklist.push_back(block->Next());
-        }
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     unsigned prevFgCurBBEpoch = fgCurBBEpoch;
     EnsureBasicBlockEpoch();
 
@@ -672,6 +651,9 @@ bool Compiler::fgRemoveDeadBlocks()
     }
 
     BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+
+    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
+    worklist.push_back(fgFirstBB);
 
     // Visit all the reachable blocks, everything else can be removed
     while (!worklist.empty())
@@ -690,6 +672,43 @@ bool Compiler::fgRemoveDeadBlocks()
         {
             worklist.push_back(succ);
         }
+
+        // Add all the "EH" successors. For every `try`, add its handler (including filter) to the worklist.
+        if (bbIsTryBeg(block))
+        {
+            // Due to EH normalization, a block can only be the start of a single `try` region, with the exception
+            // of mutually-protect regions.
+            assert(block->hasTryIndex());
+            unsigned  tryIndex = block->getTryIndex();
+            EHblkDsc* ehDsc    = ehGetDsc(tryIndex);
+            for (;;)
+            {
+                worklist.push_back(ehDsc->ebdHndBeg);
+                if (ehDsc->HasFilter())
+                {
+                    worklist.push_back(ehDsc->ebdFilter);
+                }
+                tryIndex = ehDsc->ebdEnclosingTryIndex;
+                if (tryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    break;
+                }
+                ehDsc = ehGetDsc(tryIndex);
+                if (ehDsc->ebdTryBeg != block)
+                {
+                    break;
+                }
+            }
+        }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        // For ARM code, always keep BBJ_CALLFINALLY/BBJ_ALWAYS as a pair
+        if (block->KindIs(BBJ_CALLFINALLY))
+        {
+            assert(block->isBBCallAlwaysPair());
+            worklist.push_back(block->Next());
+        }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     }
 
     // Track if there is any unreachable block. Even if it is marked with
@@ -702,14 +721,14 @@ bool Compiler::fgRemoveDeadBlocks()
     // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
         bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
-        bool isRemovable = (!isVisited || block->bbRefs == 0);
+        bool isRemovable = !isVisited || (block->bbRefs == 0);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        isRemovable &=
-            !block->isBBCallAlwaysPairTail(); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
+        // Can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair, even if bbRefs == 0.
+        isRemovable &= !block->isBBCallAlwaysPairTail();
 #endif
-        hasUnreachableBlock |= isRemovable;
 
+        hasUnreachableBlock |= isRemovable;
         return isRemovable;
     };
 
@@ -738,64 +757,103 @@ bool Compiler::fgRemoveDeadBlocks()
     fgVerifyHandlerTab();
     fgDebugCheckBBlist(false);
 #endif // DEBUG
+
     return hasUnreachableBlock;
 }
 
 //-------------------------------------------------------------
 // fgDfsReversePostorder: Depth first search to establish block
-//   preorder and reverse postorder numbers, plus a reverse postorder for blocks.
+//   preorder and reverse postorder numbers, plus a reverse postorder for blocks,
+//   using all entry blocks and EH handler blocks as start blocks.
 //
 // Notes:
-//   Assumes caller has computed the fgEnterBlks set.
-//
 //   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
-//
 //   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
-//
 //   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
 //
-void Compiler::fgDfsReversePostorder()
+//   Unreachable blocks will have higher pre and post order numbers than reachable blocks.
+//   Hence they will appear at lower indices in the fgBBReversePostorder array.
+//
+unsigned Compiler::fgDfsReversePostorder()
 {
     assert(fgBBcount == fgBBNumMax);
     assert(BasicBlockBitSetTraits::GetSize(this) == fgBBNumMax + 1);
-
-    // Make sure fgEnterBlks are still there in startNodes, even if they participate in a loop (i.e., there is
-    // an incoming edge into the block).
-    assert(fgEnterBlksSetValid);
-
     fgBBReversePostorder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
-
-    // visited   :  Once we run the DFS post order sort recursive algorithm, we mark the nodes we visited to avoid
-    //              backtracking.
     BlockSet visited(BlockSetOps::MakeEmpty(this));
 
-    // We begin by figuring out which basic blocks don't have incoming edges and mark them as
-    // start nodes.  Later on we run the recursive algorithm for each node that we
-    // mark in this step.
-    BlockSet_ValRet_T startNodes = fgDomFindStartNodes();
-
-    BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
-    assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
-
-    // Call the flowgraph DFS traversal helper.
     unsigned preorderIndex  = 1;
     unsigned postorderIndex = 1;
-    for (BasicBlock* const block : Blocks())
+
+    // Walk from our primary root.
+    //
+    fgDfsReversePostorderHelper(fgFirstBB, visited, preorderIndex, postorderIndex);
+
+    // For OSR, walk from the original method entry too.
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr))
     {
-        // If the block has no predecessors, and we haven't already visited it (because it's in fgEnterBlks but also
-        // reachable from the first block), go ahead and traverse starting from this block.
-        if (BlockSetOps::IsMember(this, startNodes, block->bbNum) &&
-            !BlockSetOps::IsMember(this, visited, block->bbNum))
+        if (!BlockSetOps::IsMember(this, visited, fgEntryBB->bbNum))
         {
-            fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+            fgDfsReversePostorderHelper(fgEntryBB, visited, preorderIndex, postorderIndex);
         }
     }
 
-    // If there are still unvisited blocks (say isolated cycles), visit them too.
+    // If we didn't end up visiting everything, try the EH roots.
     //
     if (preorderIndex != fgBBcount + 1)
     {
-        JITDUMP("DFS: flow graph has some isolated cycles, doing extra traversals\n");
+        for (EHblkDsc* const HBtab : EHClauses(this))
+        {
+            if (HBtab->HasFilter())
+            {
+                BasicBlock* const filterBlock = HBtab->ebdFilter;
+                if (!BlockSetOps::IsMember(this, visited, filterBlock->bbNum))
+                {
+                    fgDfsReversePostorderHelper(filterBlock, visited, preorderIndex, postorderIndex);
+                }
+            }
+
+            BasicBlock* const handlerBlock = HBtab->ebdHndBeg;
+            if (!BlockSetOps::IsMember(this, visited, handlerBlock->bbNum))
+            {
+                fgDfsReversePostorderHelper(handlerBlock, visited, preorderIndex, postorderIndex);
+            }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+            // For ARM code, prevent creating retless calls by visiting the call finally successors
+            //
+            if (HBtab->HasFinallyHandler())
+            {
+                for (BasicBlock* const finallyPredBlock : handlerBlock->PredBlocks())
+                {
+                    // In some rare cases the finally is a loop entry.
+                    //
+                    if (!finallyPredBlock->KindIs(BBJ_CALLFINALLY))
+                    {
+                        continue;
+                    }
+                    assert(finallyPredBlock->isBBCallAlwaysPair());
+                    BasicBlock* const pairTailBlock = finallyPredBlock->Next();
+
+                    if (!BlockSetOps::IsMember(this, visited, pairTailBlock->bbNum))
+                    {
+                        fgDfsReversePostorderHelper(pairTailBlock, visited, preorderIndex, postorderIndex);
+                    }
+                }
+            }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        }
+    }
+
+    // That's everything reachable from the roots.
+    //
+    const unsigned highestReachablePostorderNumber = postorderIndex - 1;
+
+    // If we still didn't end up visiting everything, visit what remains.
+    //
+    if (highestReachablePostorderNumber != fgBBcount)
+    {
+        JITDUMP("DFS: there are %u unreachable blocks\n", fgBBcount - highestReachablePostorderNumber);
         for (BasicBlock* const block : Blocks())
         {
             if (!BlockSetOps::IsMember(this, visited, block->bbNum))
@@ -821,48 +879,12 @@ void Compiler::fgDfsReversePostorder()
         printf("\n");
     }
 #endif // DEBUG
-}
 
-//-------------------------------------------------------------
-// fgDomFindStartNodes: Helper for dominance computation to find the start nodes block set.
-//
-// The start nodes is a set that represents which basic blocks in the flow graph don't have incoming edges.
-// We begin assuming everything is a start block and remove any block that is a successor of another.
-//
-// Returns:
-//    Block set of start nodes.
-//
-BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
-{
-    BlockSet startNodes(BlockSetOps::MakeFull(this));
-
-    for (BasicBlock* const block : Blocks())
-    {
-        for (BasicBlock* const succ : block->Succs(this))
-        {
-            BlockSetOps::RemoveElemD(this, startNodes, succ->bbNum);
-        }
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nDominator computation start blocks (those blocks with no incoming edges):\n");
-        BlockSetOps::Iter iter(this, startNodes);
-        unsigned          bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            printf(FMT_BB " ", bbNum);
-        }
-        printf("\n");
-    }
-#endif // DEBUG
-
-    return startNodes;
+    return highestReachablePostorderNumber;
 }
 
 //------------------------------------------------------------------------
-// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks.
+// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks
 //
 // Arguments:
 //    block   - The starting entry block
@@ -1641,7 +1663,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                         // What follows is similar to fgNewBBInRegion, but we can't call that
                         // here as the oldTryEntry is no longer in the main bb list.
-                        newTryEntry = bbNewBasicBlock(BBJ_NONE);
+                        newTryEntry = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
                         newTryEntry->bbFlags |= (BBF_IMPORTED | BBF_INTERNAL);
                         newTryEntry->bbRefs = 0;
 
@@ -1661,7 +1683,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // plausible flow target. Simplest is to just mark it as a throw.
                         if (bbIsHandlerBeg(newTryEntry->Next()))
                         {
-                            newTryEntry->SetJumpKind(BBJ_THROW DEBUG_ARG(this));
+                            newTryEntry->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
                         }
                         else
                         {
@@ -1798,7 +1820,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     GenTree* const jumpIfEntryStateZero = gtNewOperNode(GT_JTRUE, TYP_VOID, compareEntryStateToZero);
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
-                    fromBlock->SetJumpKindAndTarget(BBJ_COND, toBlock);
+                    fromBlock->SetJumpKindAndTarget(BBJ_COND, toBlock DEBUG_ARG(this));
                     fgAddRefPred(toBlock, fromBlock);
                     newBlock->inheritWeight(fromBlock);
 
@@ -2348,7 +2370,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpDest());
+            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpDest() DEBUG_ARG(this));
 
             /* Update the predecessor list for 'bNext->bbJumpDest' */
             fgReplacePred(bNext->GetJumpDest(), bNext, block);
@@ -2361,7 +2383,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_NONE:
-            block->SetJumpKind(bNext->GetJumpKind() DEBUG_ARG(this));
+            block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
             /* Update the predecessor list for 'bNext->bbNext' */
             fgReplacePred(bNext->Next(), bNext, block);
             break;
@@ -2375,11 +2397,11 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_THROW:
         case BBJ_RETURN:
             /* no jumps or fall through blocks to set here */
-            block->SetJumpKind(bNext->GetJumpKind() DEBUG_ARG(this));
+            block->SetJumpKind(bNext->GetJumpKind());
             break;
 
         case BBJ_SWITCH:
-            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpSwt());
+            block->SetSwitchKindAndTarget(bNext->GetJumpSwt());
             // We are moving the switch jump from bNext to block.  Examine the jump targets
             // of the BBJ_SWITCH at bNext and replace the predecessor to 'bNext' with ones to 'block'
             fgChangeSwitchBlock(bNext, block);
@@ -2389,6 +2411,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             noway_assert(!"Unexpected bbJumpKind");
             break;
     }
+
+    assert(block->KindIs(bNext->GetJumpKind()));
 
     if (bNext->KindIs(BBJ_COND, BBJ_ALWAYS) && bNext->GetJumpDest()->isLoopAlign())
     {
@@ -2619,12 +2643,11 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     noway_assert(flow->getDupCount() == 2);
 
     // Change the BBJ_COND to BBJ_NONE, and adjust the refCount and dupCount.
-    block->SetJumpKind(BBJ_NONE DEBUG_ARG(this));
+    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
     --block->Next()->bbRefs;
     flow->decrementDupCount();
 
 #ifdef DEBUG
-    block->SetJumpDest(nullptr);
     if (verbose)
     {
         printf("Block " FMT_BB " becoming a BBJ_NONE to " FMT_BB " (jump target is the same whether the condition"
@@ -3295,7 +3318,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         }
 
         // Change the switch jump into a BBJ_ALWAYS
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, block->GetJumpSwt()->bbsDstTab[0]);
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, block->GetJumpSwt()->bbsDstTab[0] DEBUG_ARG(this));
         if (jmpCnt > 1)
         {
             for (unsigned i = 1; i < jmpCnt; ++i)
@@ -3359,7 +3382,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             fgSetStmtSeq(switchStmt);
         }
 
-        block->SetJumpKindAndTarget(BBJ_COND, block->GetJumpSwt()->bbsDstTab[0]);
+        block->SetJumpKindAndTarget(BBJ_COND, block->GetJumpSwt()->bbsDstTab[0] DEBUG_ARG(this));
 
         JITDUMP("After:\n");
         DISPNODE(switchTree);
@@ -3770,18 +3793,18 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     // Fix up block's flow
     //
-    block->SetJumpKindAndTarget(BBJ_COND, target->GetJumpDest());
+    block->SetJumpKindAndTarget(BBJ_COND, target->GetJumpDest() DEBUG_ARG(this));
     fgAddRefPred(block->GetJumpDest(), block);
     fgRemoveRefPred(target, block);
 
     // add an unconditional block after this block to jump to the target block's fallthrough block
     //
-    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true);
+    assert(!target->IsLast());
+    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->Next());
 
     // The new block 'next' will inherit its weight from 'block'
     //
     next->inheritWeight(block);
-    next->SetJumpDest(target->Next());
     fgAddRefPred(next, block);
     fgAddRefPred(next->GetJumpDest(), next);
 
@@ -3822,7 +3845,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                 if (!block->isBBCallAlwaysPairTail())
                 {
                     /* the unconditional jump is to the next BB  */
-                    block->SetJumpKind(BBJ_NONE DEBUG_ARG(this));
+                    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
 #ifdef DEBUG
                     if (verbose)
                     {
@@ -3948,7 +3971,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
         /* Conditional is gone - simply fall into the next block */
 
-        block->SetJumpKind(BBJ_NONE DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
 
         /* Update bbRefs and bbNum - Conditional predecessors to the same
          * block are counted twice so we have to remove one of them */
@@ -4213,7 +4236,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
 
-    bJump->SetJumpKindAndTarget(BBJ_COND, bDest->Next());
+    bJump->SetJumpKindAndTarget(BBJ_COND, bDest->Next() DEBUG_ARG(this));
 
     /* Update bbRefs and bbPreds */
 
@@ -4373,7 +4396,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Wire up the new control flow.
         //
-        block->SetJumpKindAndTarget(BBJ_COND, dominantTarget);
+        block->SetJumpKindAndTarget(BBJ_COND, dominantTarget DEBUG_ARG(this));
         FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
         FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
         assert(blockToNewBlockEdge->getSourceBlock() == block);
@@ -6098,6 +6121,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 bDest = nullptr;
                 if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, block->Next()))
                 {
+                    assert(block->KindIs(BBJ_COND));
                     change   = true;
                     modified = true;
                     bDest    = block->GetJumpDest();
@@ -6249,9 +6273,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             //
                             if (bDest->KindIs(BBJ_NONE, BBJ_COND))
                             {
-                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
+                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestNext);
                                 bFixup->inheritWeight(bDestNext);
-                                bFixup->SetJumpDest(bDestNext);
 
                                 fgRemoveRefPred(bDestNext, bDest);
                                 fgAddRefPred(bFixup, bDest);
@@ -6708,69 +6731,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     // If return value is true, retry.
     // May also add to retryBlocks.
     //
-    auto tailMerge = [&](BasicBlock* block) -> bool {
-
-        if (block->countOfInEdges() < 2)
-        {
-            // Nothing to merge here
-            return false;
-        }
-
-        predInfo.Reset();
-
-        // Find the subset of preds that reach along non-critical edges
-        // and populate predInfo.
-        //
-        for (BasicBlock* const predBlock : block->PredBlocks())
-        {
-            if (predBlock->GetUniqueSucc() != block)
-            {
-                continue;
-            }
-
-            if (!BasicBlock::sameEHRegion(block, predBlock))
-            {
-                continue;
-            }
-
-            Statement* lastStmt = predBlock->lastStmt();
-
-            // Block might be empty.
-            //
-            if (lastStmt == nullptr)
-            {
-                continue;
-            }
-
-            // Walk back past any GT_NOPs.
-            //
-            Statement* const firstStmt = predBlock->firstStmt();
-            while (lastStmt->GetRootNode()->OperIs(GT_NOP))
-            {
-                if (lastStmt == firstStmt)
-                {
-                    // predBlock is evidently all GT_NOP.
-                    //
-                    lastStmt = nullptr;
-                    break;
-                }
-
-                lastStmt = lastStmt->GetPrevStmt();
-            }
-
-            // Block might be effectively empty.
-            //
-            if (lastStmt == nullptr)
-            {
-                continue;
-            }
-
-            // We don't expect to see PHIs but watch for them anyways.
-            //
-            assert(!lastStmt->IsPhiDefnStmt());
-            predInfo.Emplace(predBlock, lastStmt);
-        }
-
+    auto tailMergePreds = [&](BasicBlock* commSucc) -> bool {
         // Are there enough preds to make it interesting?
         //
         if (predInfo.Height() < 2)
@@ -6821,9 +6782,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // We have some number of preds that have identical last statements.
             // If all preds of block have a matching last stmt, move that statement to the start of block.
             //
-            if (matchedPredInfo.Height() == (int)block->countOfInEdges())
+            if ((commSucc != nullptr) && (matchedPredInfo.Height() == (int)commSucc->countOfInEdges()))
             {
-                JITDUMP("All preds of " FMT_BB " end with the same tree, moving\n", block->bbNum);
+                JITDUMP("All preds of " FMT_BB " end with the same tree, moving\n", commSucc->bbNum);
                 JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
                 for (int j = 0; j < matchedPredInfo.Height(); j++)
@@ -6839,8 +6800,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     //
                     if (j == 0)
                     {
-                        fgInsertStmtAtBeg(block, stmt);
-                        block->bbFlags |= predBlock->bbFlags & BBF_COPY_PROPAGATE;
+                        fgInsertStmtAtBeg(commSucc, stmt);
+                        commSucc->bbFlags |= predBlock->bbFlags & BBF_COPY_PROPAGATE;
                     }
 
                     madeChanges = true;
@@ -6855,7 +6816,16 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // Pick one block as the victim -- preferably a block with just one
             // statement or one that falls through to block (or both).
             //
-            JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(), block->bbNum);
+            if (commSucc != nullptr)
+            {
+                JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(),
+                        commSucc->bbNum);
+            }
+            else
+            {
+                JITDUMP("A set of %d return blocks end with the same tree\n", matchedPredInfo.Height());
+            }
+
             JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
             BasicBlock* crossJumpVictim       = nullptr;
@@ -6954,9 +6924,12 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                predBlock->SetJumpKindAndTarget(BBJ_ALWAYS, crossJumpTarget);
+                predBlock->SetJumpKindAndTarget(BBJ_ALWAYS, crossJumpTarget DEBUG_ARG(this));
 
-                fgRemoveRefPred(block, predBlock);
+                if (commSucc != nullptr)
+                {
+                    fgRemoveRefPred(commSucc, predBlock);
+                }
                 fgAddRefPred(crossJumpTarget, predBlock);
             }
 
@@ -6980,6 +6953,71 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         return false;
     };
 
+    auto tailMerge = [&](BasicBlock* block) -> bool {
+        if (block->countOfInEdges() < 2)
+        {
+            // Nothing to merge here
+            return false;
+        }
+
+        predInfo.Reset();
+
+        // Find the subset of preds that reach along non-critical edges
+        // and populate predInfo.
+        //
+        for (BasicBlock* const predBlock : block->PredBlocks())
+        {
+            if (predBlock->GetUniqueSucc() != block)
+            {
+                continue;
+            }
+
+            if (!BasicBlock::sameEHRegion(block, predBlock))
+            {
+                continue;
+            }
+
+            Statement* lastStmt = predBlock->lastStmt();
+
+            // Block might be empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // Walk back past any GT_NOPs.
+            //
+            Statement* const firstStmt = predBlock->firstStmt();
+            while (lastStmt->GetRootNode()->OperIs(GT_NOP))
+            {
+                if (lastStmt == firstStmt)
+                {
+                    // predBlock is evidently all GT_NOP.
+                    //
+                    lastStmt = nullptr;
+                    break;
+                }
+
+                lastStmt = lastStmt->GetPrevStmt();
+            }
+
+            // Block might be effectively empty.
+            //
+            if (lastStmt == nullptr)
+            {
+                continue;
+            }
+
+            // We don't expect to see PHIs but watch for them anyways.
+            //
+            assert(!lastStmt->IsPhiDefnStmt());
+            predInfo.Emplace(predBlock, lastStmt);
+        }
+
+        return tailMergePreds(block);
+    };
+
     auto iterateTailMerge = [&](BasicBlock* block) -> void {
 
         int numOpts = 0;
@@ -6995,12 +7033,29 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     };
 
+    ArrayStack<BasicBlock*> retBlocks(getAllocator(CMK_ArrayStack));
+
     // Visit each block
     //
     for (BasicBlock* const block : Blocks())
     {
         iterateTailMerge(block);
+
+        // TODO: consider removing hasSingleStmt(), it should find more opportunities
+        // (with size and TP regressions)
+        if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block != genReturnBB))
+        {
+            retBlocks.Push(block);
+        }
     }
+
+    predInfo.Reset();
+    for (int i = 0; i < retBlocks.Height(); i++)
+    {
+        predInfo.Push(PredInfo(retBlocks.Bottom(i), retBlocks.Bottom(i)->lastStmt()));
+    }
+
+    tailMergePreds(nullptr);
 
     // Work through any retries
     //

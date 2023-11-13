@@ -416,7 +416,7 @@
     </ItemGroup>
 
     <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
-    <Exec Command="llvm-size$(_ExeExt) -d --format=sysv @(_AOTObjectFile, ' ')"
+    <Exec Command="llvm-size$(_ExeExt) -d --format=sysv @(_AOTObjectFile->'&quot;%(Identity)&quot;', ' ')"
           Condition="'$(_WasmShouldAOT)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           ConsoleToMsBuild="true"
@@ -619,6 +619,8 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
     </PropertyGroup>
 
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(PublishTrimmed)' != 'true'"
+           Text="AOT is not supported without IL trimming (PublishTrimmed=true required)." />
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
@@ -712,14 +714,15 @@
     <ILStrip
         Condition=" '$(WasmStripILAfterAOT)' == 'true' "
         TrimIndividualMethods="true"
+        IntermediateOutputPath="$(_WasmIntermediateOutputPath)"
         Assemblies="@(_WasmAssembliesInternal)">
-      <Output TaskParameter="TrimmedAssemblies" ItemName="_ILStripTrimmedAssemblies" />
+      <Output TaskParameter="UpdatedAssemblies" ItemName="_UpdatedAssembliesAfterILStrip" />
     </ILStrip>
-    <Move
-        Condition=" '$(WasmStripILAfterAOT)' == 'true' "
-        SourceFiles="@(_ILStripTrimmedAssemblies->'%(TrimmedAssemblyFileName)')"
-        DestinationFiles="@(_ILStripTrimmedAssemblies)"
-    />
+
+    <ItemGroup Condition="'$(WasmStripILAfterAOT)' == 'true'">
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)"/>
+      <_WasmAssembliesInternal Include="@(_UpdatedAssembliesAfterILStrip)"/>
+    </ItemGroup>
 
     <ItemGroup>
       <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />

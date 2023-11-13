@@ -991,13 +991,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (!bIntrinsicImported)
             {
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-
                 // Keep track of the raw IL offset of the call
-                call->AsCall()->gtRawILOffset = rawILOffset;
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+                INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
@@ -1050,7 +1045,6 @@ DONE:
     {
         const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
         const bool isImplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_IMPLICIT) != 0;
-        const bool isStressTailCall   = (tailCallFlags & PREFIX_TAILCALL_STRESS) != 0;
 
         // Exactly one of these should be true.
         assert(isExplicitTailCall != isImplicitTailCall);
@@ -1113,11 +1107,13 @@ DONE:
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
                     JITDUMP("\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
 
-                    if (isStressTailCall)
+#ifdef DEBUG
+                    if ((prefixFlags & PREFIX_TAILCALL_STRESS) != 0)
                     {
-                        call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_STRESS_TAILCALL;
-                        JITDUMP("\nGTF_CALL_M_STRESS_TAILCALL set for call [%06u]\n", dspTreeID(call));
+                        call->AsCall()->gtCallDebugFlags |= GTF_CALL_MD_STRESS_TAILCALL;
+                        JITDUMP("\nGTF_CALL_MD_STRESS_TAILCALL set for call [%06u]\n", dspTreeID(call));
                     }
+#endif
                 }
                 else
                 {
@@ -1205,12 +1201,8 @@ DONE:
             }
         }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
         // Keep track of the raw IL offset of the call
-        call->AsCall()->gtRawILOffset = rawILOffset;
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+        INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
@@ -1255,7 +1247,7 @@ DONE:
                     dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
             fgMarkBackwardJump(loopHead, compCurBB);
 
-            compMayConvertTailCallToLoop = true;
+            setMethodHasRecursiveTailcall();
             compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
         }
 
@@ -3242,8 +3234,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
                     genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
-                    retNode        = gtNewOperNode(op, genActualType(callType), op1, op2);
-                    retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+                    retNode        = gtNewAtomicNode(op, genActualType(callType), op1, op2);
                 }
                 break;
             }
@@ -3254,16 +3245,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
-                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
-                if ((retType == TYP_REF) && impStackTop(1).val->IsIntegralConst(0))
+
+                if ((retType == TYP_REF) &&
+                    (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
                 }
-                else if ((retType != TYP_INT) && (retType != TYP_LONG))
+                else if (!varTypeIsIntegral(retType))
                 {
                     break;
                 }
@@ -3274,11 +3267,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* op3 = impPopStack().val; // comparand
                 GenTree* op2 = impPopStack().val; // value
                 GenTree* op1 = impPopStack().val; // location
-
-                GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
-
-                node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
-                retNode = node;
+                retNode      = gtNewAtomicNode(GT_CMPXCHG, callType, op1, op2, op3);
                 break;
             }
 
@@ -3289,17 +3278,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 2);
 
                 var_types retType = JITtype2varType(sig->retType);
-                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
-                if ((retType == TYP_REF) && impStackTop().val->IsIntegralConst(0))
+
+                if ((retType == TYP_REF) &&
+                    (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
                     assert(ni == NI_System_Threading_Interlocked_Exchange);
                 }
-                else if ((retType != TYP_INT) && (retType != TYP_LONG))
+                else if (!varTypeIsIntegral(retType))
                 {
                     break;
                 }
@@ -3308,19 +3299,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* op1 = impPopStack().val;
 
                 // This creates:
-                //   val
                 // XAdd
-                //   addr
-                //     field (for example)
+                //   val
+                //   field_addr (for example)
                 //
-                // In the case where the first argument is the address of a local, we might
-                // want to make this *not* make the var address-taken -- but atomic instructions
-                // on a local are probably pretty useless anyway, so we probably don't care.
-
-                op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
-                                    genActualType(callType), op1, op2);
-                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-                retNode = op1;
+                retNode = gtNewAtomicNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
+                                          callType, op1, op2);
                 break;
             }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
@@ -7096,7 +7080,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
-    call->gtCallMoreFlags |= GTF_CALL_M_DEVIRTUALIZED;
+    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
@@ -7257,7 +7241,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                 // TODO-CallArgs-REVIEW: Might discard commas otherwise?
                                 assert(thisObj == thisArg->GetEarlyNode());
                                 thisArg->SetEarlyNode(localCopyThis);
-                                call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                                INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
 
                                 call->gtArgs.InsertInstParam(this, methodTableArg);
 
@@ -7296,7 +7280,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             // TODO-CallArgs-REVIEW: Might discard commas otherwise?
                             thisArg->SetEarlyNode(localCopyThis);
                             call->gtCallMethHnd = unboxedEntryMethod;
-                            call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                             derivedMethod         = unboxedEntryMethod;
                             pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
 
@@ -7366,7 +7350,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             assert(thisObj == thisArg->GetEarlyNode());
                             thisArg->SetEarlyNode(boxPayload);
                             call->gtCallMethHnd = unboxedEntryMethod;
-                            call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
 
                             // Method attributes will differ because unboxed entry point is shared
                             //
@@ -7390,7 +7374,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
                         thisArg->SetEarlyNode(boxPayload);
                         call->gtCallMethHnd = unboxedEntryMethod;
-                        call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                        INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                         derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
                     }
@@ -7424,6 +7408,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
     }
 
+    // We might have created a new recursive tail call candidate.
+    //
+    if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
+    {
+        setMethodHasRecursiveTailcall();
+        compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+    }
+
 #ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
@@ -7436,7 +7428,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Update the call.
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
-        call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN

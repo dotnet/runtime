@@ -1,7 +1,8 @@
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
   # On OSX and *BSD, we use the libunwind that's part of the OS
+  # On Haiku, we used a special port of libunwind
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
+endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -96,6 +97,10 @@ if(CLR_CMAKE_TARGET_LINUX_MUSL)
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif(CLR_CMAKE_TARGET_LINUX_MUSL)
+
+if(CLR_CMAKE_TARGET_HAIKU)
+  add_definitions(-D_GNU_SOURCE)
+endif(CLR_CMAKE_TARGET_HAIKU)
 
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
@@ -230,6 +235,13 @@ if(CLR_CMAKE_TARGET_OSX)
     ${LIBUNWIND_DAC_OBJECTS}
   )
 
+  target_include_directories(coreclrpal_dac PUBLIC
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep
+    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include
+    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep
+  )
+
   target_compile_definitions(coreclrpal_dac PUBLIC -DUNW_REMOTE_ONLY)
 else()
   if(NOT FEATURE_CROSSBITNESS)
@@ -238,15 +250,6 @@ else()
     )
   endif(NOT FEATURE_CROSSBITNESS)
 endif(CLR_CMAKE_TARGET_OSX)
-
-if(NOT FEATURE_CROSSBITNESS)
-  target_include_directories(coreclrpal_dac PUBLIC
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep
-    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include
-    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep
-  )
-endif(NOT FEATURE_CROSSBITNESS)
 
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
@@ -280,6 +283,14 @@ if(CLR_CMAKE_TARGET_FREEBSD)
     ${UNWIND_LIBS}
   )
 endif(CLR_CMAKE_TARGET_FREEBSD)
+
+if(CLR_CMAKE_TARGET_HAIKU)
+  target_link_libraries(coreclrpal
+    PUBLIC
+    bsd
+    ${UNWIND_LIBS}
+  )
+endif(CLR_CMAKE_TARGET_HAIKU)
 
 if(CLR_CMAKE_TARGET_LINUX)
   # On Android, we don't need to link with gcc_s, pthread and rt

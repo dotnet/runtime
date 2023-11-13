@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -361,7 +362,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.Equal(new [] {
 #if NET8_0_OR_GREATER
                 "P0: The field OptionsUsingGeneratedAttributes.P0 must be a string or collection type with a minimum length of '1' and maximum length of '3'.",
-                "P11: The field OptionsUsingGeneratedAttributes.P11 must be between 1/30/2023 12:00:00 AM and 12/30/2023 12:00:00 AM.",
+                string.Format(CultureInfo.CurrentCulture, "P11: The field OptionsUsingGeneratedAttributes.P11 must be between {0} and {1}.", new DateTime(2023, 1, 30), new DateTime(2023, 12, 30)),
                 "P12: The field OptionsUsingGeneratedAttributes.P12 must be between 5 exclusive and 10.",
                 "P13: The field OptionsUsingGeneratedAttributes.P13 must be between 5 and 10 exclusive.",
                 "P14: The field OptionsUsingGeneratedAttributes.P14 must be a string or collection type with a minimum length of '2' and maximum length of '10'.",

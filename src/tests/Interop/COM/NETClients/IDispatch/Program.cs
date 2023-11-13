@@ -121,7 +121,7 @@ namespace NetClient
             {
                 Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} with {nameof(IDispatchTesting_Exception.Disp)} {errorCode}...");
                 dispatchTesting.TriggerException(IDispatchTesting_Exception.Disp, errorCode);
-                Assert.True(false, "DISP exception not thrown properly");
+                Assert.Fail("DISP exception not thrown properly");
             }
             catch (COMException e)
             {
@@ -133,7 +133,7 @@ namespace NetClient
             {
                 Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} with {nameof(IDispatchTesting_Exception.HResult)} {errorCode}...");
                 dispatchTesting.TriggerException(IDispatchTesting_Exception.HResult, errorCode);
-                Assert.True(false, "HRESULT exception not thrown properly");
+                Assert.Fail("HRESULT exception not thrown properly");
             }
             catch (COMException e)
             {

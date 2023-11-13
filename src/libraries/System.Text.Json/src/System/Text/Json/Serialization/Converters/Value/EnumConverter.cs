@@ -271,17 +271,20 @@ namespace System.Text.Json.Serialization.Converters
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
 #if NETCOREAPP
-            bool success = TryParseEnumCore(ref reader, out T value);
+            if (TryParseEnumCore(ref reader, out T value))
 #else
-            bool success = TryParseEnumCore(reader.GetString(), out T value);
+            string? enumString = reader.GetString();
+            if (TryParseEnumCore(reader.GetString(), out T value))
 #endif
-
-            if (!success)
             {
-                ThrowHelper.ThrowJsonException();
+                return value;
             }
 
-            return value;
+#if NETCOREAPP
+            return ReadEnumUsingNamingPolicy(reader.GetString());
+#else
+            return ReadEnumUsingNamingPolicy(enumString);
+#endif
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)

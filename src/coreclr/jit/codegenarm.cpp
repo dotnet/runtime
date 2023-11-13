@@ -125,7 +125,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     assert(!block->IsLast());
     assert(block->Next()->KindIs(BBJ_ALWAYS));
-    assert(!block->Next()->HasJumpTo(nullptr));
+    assert(block->Next()->HasJump());
     assert(block->Next()->GetJumpDest()->bbFlags & BBF_FINALLY_TARGET);
 
     bbFinallyRet = block->Next()->GetJumpDest();

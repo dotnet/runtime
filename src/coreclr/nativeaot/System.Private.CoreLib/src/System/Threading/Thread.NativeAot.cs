@@ -230,7 +230,7 @@ namespace System.Threading
                 }
 
                 // Prevent race condition with starting this thread
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
                     if (HasStarted() && !SetPriorityLive(value))
                     {
@@ -358,7 +358,7 @@ namespace System.Threading
 
         private void StartCore()
         {
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 if (!GetThreadStateBit(ThreadState.Unstarted))
                 {
