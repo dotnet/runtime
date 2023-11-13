@@ -175,8 +175,8 @@ public class BuildPublishTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("", false)] // Default case
-    [InlineData("true", true)] // the other case
+    [InlineData("", true)] // Default case
+    [InlineData("false", false)] // the other case
     public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
     {
         string config = "Release";
