@@ -40,31 +40,36 @@ namespace System
             }
         }
 
+        private static class AllocationLockHolder
+        {
+            public static LowLevelLock AllocationLock = new LowLevelLock();
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
-            // TODO: instead of fragmenting the frozen object heap, we should have our own allocator
-            // for objects that live forever outside the GC heap.
-
-            RuntimeType? type = null;
-            RuntimeImports.RhAllocateNewObject(
-                (IntPtr)MethodTable.Of<RuntimeType>(),
-                (uint)GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP,
-                Unsafe.AsPointer(ref type));
-
-            if (type == null)
-                throw new OutOfMemoryException();
-
-            type.DangerousSetUnderlyingEEType(pMT);
-
-            ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
-            if (Interlocked.CompareExchange(ref runtimeTypeCache, type, null) == null)
+            // Allocate and set the RuntimeType under a lock - there's no way to free it if there is a race.
+            AllocationLockHolder.AllocationLock.Acquire();
+            try
             {
-                // Create and leak a GC handle
-                UnsafeGCHandle.Alloc(type);
-            }
+                ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                if (runtimeTypeCache != null)
+                    return runtimeTypeCache;
 
-            return runtimeTypeCache;
+                RuntimeType? type = FrozenObjectHeapManager.Instance.TryAllocateObject<RuntimeType>();
+                if (type == null)
+                    throw new OutOfMemoryException();
+
+                type.DangerousSetUnderlyingEEType(pMT);
+
+                runtimeTypeCache = type;
+
+                return type;
+            }
+            finally
+            {
+                AllocationLockHolder.AllocationLock.Release();
+            }
         }
 
         //
