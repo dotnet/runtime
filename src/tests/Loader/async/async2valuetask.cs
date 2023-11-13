@@ -19,8 +19,7 @@ public class Async2valuetask
         return M1(arg);
     }
 
-    [ValueTaskAsyncAttribute]
-    private static async2 int M1(int arg)
+    private static async2 ValueTask<int> M1(int arg)
     {
         await Task.Yield();
         return arg;

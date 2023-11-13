@@ -10,7 +10,7 @@ public class Async2Implement
 {
     interface IBase1
     {
-        public async2 int M1();
+        public async2 Task<int> M1();
     }
 
     class Derived1 : IBase1
@@ -24,7 +24,7 @@ public class Async2Implement
 
     class Derived1a : IBase1
     {
-        public async2 int M1()
+        public async2 Task<int> M1()
         {
             await Task.Yield();
             return 3;
@@ -38,7 +38,7 @@ public class Async2Implement
 
     class Derived2 : IBase2
     {
-        public async2 int M1()
+        public async2 Task<int> M1()
         {
             await Task.Yield();
             return 12;

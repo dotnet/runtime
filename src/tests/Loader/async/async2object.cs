@@ -20,7 +20,7 @@ public class Async2Object
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 object ObjMethod(int arg)
+    private static async2 Task<object> ObjMethod(int arg)
     {
         await Task.Yield();
         return arg;

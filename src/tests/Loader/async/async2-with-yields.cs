@@ -8,7 +8,7 @@ using Xunit;
 
 public class Async2FibonacceWithYields
 {
-    internal static async2 int B(int n)
+    internal static async2 Task<int> B(int n)
     {
         int num = 1;
         await Task.Yield();
@@ -22,7 +22,7 @@ public class Async2FibonacceWithYields
         return num;
     }
 
-    internal static async2 int A(int n)
+    internal static async2 Task<int> A(int n)
     {
         int num = n;
         for (int num2 = 0; num2 < n; num2++)

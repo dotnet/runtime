@@ -28,7 +28,7 @@ public class Async2FibonacceWithYields
         }
     }
 
-    static async2 uint A(uint n)
+    static async2 Task<uint> A(uint n)
     {
         uint result = n;
         for (uint i = 0; i < n && !done; i++)
@@ -36,7 +36,7 @@ public class Async2FibonacceWithYields
         return result;
     }
 
-    static async2 uint B(uint n)
+    static async2 Task<uint> B(uint n)
     {
         uint result = n;
 

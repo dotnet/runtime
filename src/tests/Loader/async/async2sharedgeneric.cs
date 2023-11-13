@@ -22,8 +22,12 @@ public class Async2SharedGeneric
     {
         await Async2TestEntryPoint<T>();
     }
+
+    //This async method lacks 'await'
+#pragma warning disable 1998
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 void Async2TestEntryPoint<T>()
+    private static async2 Task Async2TestEntryPoint<T>()
     {
         s_type = typeof(T);
     }

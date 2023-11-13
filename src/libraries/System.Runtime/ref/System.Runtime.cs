@@ -13299,11 +13299,6 @@ namespace System.Runtime.CompilerServices
     {
         public UnsafeValueTypeAttribute() { }
     }
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed partial class ValueTaskAsyncAttribute : Attribute
-    {
-        public ValueTaskAsyncAttribute() { }
-    }
     public readonly partial struct ValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;

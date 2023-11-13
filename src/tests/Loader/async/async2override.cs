@@ -10,7 +10,7 @@ public class Async2Override
 {
     class Base
     {
-        public virtual async2 int M1()
+        public virtual async2 Task<int> M1()
         {
             await Task.Yield();
             return 1;
@@ -28,7 +28,7 @@ public class Async2Override
 
     class Derived2 : Derived1
     {
-        public override async2 int M1()
+        public override async2 Task<int> M1()
         {
             await Task.Yield();
             return 3;
@@ -47,7 +47,7 @@ public class Async2Override
 
     class Derived11 : Base1
     {
-        public override async2 int M1()
+        public override async2 Task<int> M1()
         {
             await Task.Yield();
             return 12;

@@ -82,7 +82,7 @@ public
 #elif ASYNC1_VALUETASK
         async ValueTask<long>
 #else
-        async2 long
+        async2 Task<long>
 #endif
         Run(int depth)
         {
@@ -104,7 +104,7 @@ private
 #elif ASYNC1_VALUETASK
         async ValueTask<long>
 #else
-        async2 long
+        async2 Task<long>
 #endif
         Loop()
         {
@@ -130,7 +130,7 @@ private
 #elif ASYNC1_VALUETASK
         async ValueTask<int>
 #else
-        async2 int
+        async2 Task<int>
 #endif
         DoYields()
         {

@@ -8,12 +8,15 @@ using Xunit;
 
 public class Async2FibonacceWithoutYields
 {
-    internal static async2 int B(int n)
+    //This async method lacks 'await'
+#pragma warning disable 1998
+
+    internal static async2 Task<int> B(int n)
     {
         return 100;
     }
 
-    internal static async2 int A(int n)
+    internal static async2 Task<int> A(int n)
     {
         int num = n;
         for (int num2 = 0; num2 < n; num2++)

@@ -22,7 +22,7 @@ public class Async2Void
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 void HoistedByref(int[] arr, int index)
+    private static async2 Task HoistedByref(int[] arr, int index)
     {
         for (int i = 0; i < 20000; i++)
         {

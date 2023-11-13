@@ -15,7 +15,7 @@ public class Async2Returns
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 void Returns(C c)
+    private static async2 Task Returns(C c)
     {
         for (int i = 0; i < 20000; i++)
         {
@@ -58,28 +58,28 @@ public class Async2Returns
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 S<long> ReturnsStruct()
+    private static async2 Task<S<long>> ReturnsStruct()
     {
         await Task.Yield();
         return new S<long> { A = 42, B = 4242, C = 424242, D = 42424242 };
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 S<string> ReturnsStructGC()
+    private static async2 Task<S<string>> ReturnsStructGC()
     {
         await Task.Yield();
         return new S<string> { A = "A", B = "B", C = "C", D = "D" };
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 S<byte> ReturnsBytes()
+    private static async2 Task<S<byte>> ReturnsBytes()
     {
         await Task.Yield();
         return new S<byte> { A = 4, B = 40, C = 42, D = 45 };
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 string ReturnsString()
+    private static async2 Task<string> ReturnsString()
     {
         await Task.Yield();
         return "a string!";
