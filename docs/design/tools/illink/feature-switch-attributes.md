@@ -574,6 +574,48 @@ We might eventually want to extend the semantics in a few directions:
 
 ## Alternate API shapes
 
+### Feature switches without feature attributes
+
+The proposed model for feature attributes requires introducing a separate attribute type for each feature switch, in order to make the API shapes of `FeatureSwitch` and `FeatureGuard` more uniform by letting them both reference the feature attribute type.
+
+An alternative is to use feature attributes only for those features that need to support `FeatureGuard`, and use strings for `FeatureSwitch`. For example:
+
+```csharp
+class RuntimeFeature {
+    [FeatureSwitch("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+    public static bool IsDynamicCodeSupported => // ...
+
+    [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+    public static bool IsDynamicCodeCompiled => // ...
+}
+```
+
+With this model, there's a missing link between `IsDynamicCodeSupported` and `RequiresDynamicCodeAttribute`. We would then need to either continue hard-coding this association in the tools that implement the attribute-based analysis, or come up with some other way to create the association. One idea is to create the association when we see `FeatureSwitch` and `FeatureGuard` on the same property:
+
+```csharp
+class RuntimeFeature {
+    [FeatureSwitch("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+    [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+    public static bool IsDynamicCodeSupported => // ...
+}
+```
+
+However, this would conflict with the existing feature switches which guard `RequiresUnreferencedCodeAttribute`, which would be annotated as follows:
+
+```csharp
+class StartupHookProvider {
+    [FeatureSwitch("System.StartupHookProvider.IsSupported")]
+    [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+    private static bool IsSupported => // ...
+}
+```
+
+However, we don't want to treat `"System.StartupHookProvider.IsSupported"` as a feature switch for `RequiresUnreferencedCodeAttribute` since it is possible to turn on in a trimmed app. It should be treated as an independent feature switch that by default (based on defaults externally specified in MSBuild) is disabled when unreferenced code is trimmed, so acts only as a guard for `RequiresUnreferencedCodeAttribute`.
+
+This approach would also make it possible to create many-to-many associations between feature switch names and feature attributes, which doesn't make sense.
+
+### Generic attributes with interface constraint
+
 An earlier version of this proposal had the following API shape:
 
 ```csharp
