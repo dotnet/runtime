@@ -985,13 +985,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonSerializerOptions GetOrCreateWebOptionsInstance()
         {
-            var options = new JsonSerializerOptions
-            {
-                _propertyNameCaseInsensitive = true,
-                _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                _numberHandling = JsonNumberHandling.AllowReadingFromString
-            };
-
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web) { _isReadOnly = true };
             return Interlocked.CompareExchange(ref s_webOptions, options, null) ?? s_webOptions;
         }
 

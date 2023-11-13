@@ -1036,6 +1036,31 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(resolver, optionsSingleton.TypeInfoResolver);
         }
 
+        [Fact]
+        public static void JsonSerializerOptions_Web_MatchesConstructorWithJsonSerializerDefaults()
+        {
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Web;
+            JsonTestHelper.AssertOptionsEqual(options, optionsSingleton);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_ReturnsSameInstance()
+        {
+            Assert.Same(JsonSerializerOptions.Web, JsonSerializerOptions.Web);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_IsReadOnly()
+        {
+            var optionsSingleton = JsonSerializerOptions.Web;
+            Assert.True(optionsSingleton.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNameCaseInsensitive = true);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+            Assert.Throws<InvalidOperationException>(() => new JsonContext(optionsSingleton));
+        }
+
         [Theory]
         [MemberData(nameof(GetInitialTypeInfoResolversAndExpectedChains))]
         public static void TypeInfoResolverChain_SetTypeInfoResolver_ReturnsExpectedChain(
@@ -1253,7 +1278,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void PredefinedSerializerOptions_Web()
         {
-            var options = JsonSerializerOptions.Web;
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
             Assert.True(options.PropertyNameCaseInsensitive);
             Assert.Same(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
             Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
