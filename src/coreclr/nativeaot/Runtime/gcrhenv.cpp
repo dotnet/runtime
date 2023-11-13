@@ -1125,6 +1125,11 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     // TODO: Linux LTTng
 }
 
+void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg)
+{
+    // TODO: Implementation
+}
+
 uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 {
     return PalGetProcessCpuCount();
