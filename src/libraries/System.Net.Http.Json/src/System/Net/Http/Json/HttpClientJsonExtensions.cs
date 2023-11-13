@@ -112,7 +112,7 @@ namespace System.Net.Http.Json
         private static Uri? CreateUri(string? uri) =>
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
 
-        private static async Task<Stream> GetHttpResponseStreamAsync(
+        private static ValueTask<Stream> GetHttpResponseStreamAsync(
             HttpClient client,
             HttpResponseMessage response,
             bool usingResponseHeadersRead,
@@ -126,16 +126,17 @@ namespace System.Net.Http.Json
                 LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
             }
 
-            Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(response.Content, cancellationToken)
-                .ConfigureAwait(false);
+            ValueTask<Stream> task = HttpContentJsonExtensions.GetContentStreamAsync(response.Content, cancellationToken);
 
             // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront.
             // No need to check the limit again.
-            Stream readStream = usingResponseHeadersRead
-                ? new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize)
-                : contentStream;
+            return usingResponseHeadersRead ? GetLengthLimitReadStreamAsync(client, task) : task;
+        }
 
-            return readStream;
+        private static async ValueTask<Stream> GetLengthLimitReadStreamAsync(HttpClient client, ValueTask<Stream> task)
+        {
+            Stream contentStream = await task.ConfigureAwait(false);
+            return new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize);
         }
     }
 }

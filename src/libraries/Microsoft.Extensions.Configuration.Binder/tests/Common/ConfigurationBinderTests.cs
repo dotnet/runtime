@@ -736,47 +736,20 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("Derived:Sup", options.Virtual);
         }
 
-        private static readonly object _syncLock = new object();
-
         [Fact]
         public void GetCanReadStaticProperty()
         {
-            // The test uses ComplexOptions.StaticProperty which is possible to be changed by other tests.
-            lock (_syncLock)
+            var dic = new Dictionary<string, string>
             {
-                var dic = new Dictionary<string, string>
-                {
-                    {"StaticProperty", "stuff"},
-                };
-                var configurationBuilder = new ConfigurationBuilder();
-                configurationBuilder.AddInMemoryCollection(dic);
-                var config = configurationBuilder.Build();
-                var options = new ComplexOptions();
-                config.Bind(options);
+                {"StaticProperty", "stuff"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+            var options = new ComplexOptions();
+            config.Bind(options);
 
-                Assert.Equal("stuff", ComplexOptions.StaticProperty);
-            }
-        }
-
-        [Fact]
-        public void BindCanReadStaticProperty()
-        {
-            // The test uses ComplexOptions.StaticProperty which is possible to be changed by other tests.
-            lock (_syncLock)
-            {
-                var dic = new Dictionary<string, string>
-                {
-                    {"StaticProperty", "other stuff"},
-                };
-                var configurationBuilder = new ConfigurationBuilder();
-                configurationBuilder.AddInMemoryCollection(dic);
-                var config = configurationBuilder.Build();
-
-                var instance = new ComplexOptions();
-                config.Bind(instance);
-
-                Assert.Equal("other stuff", ComplexOptions.StaticProperty);
-            }
+            Assert.Equal("stuff", ComplexOptions.StaticProperty);
         }
 
         [Fact]
@@ -1423,6 +1396,24 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var options = config.Get<ClassWithPrimaryCtor>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindClassWithPrimaryCtorWithDefaultValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "-1"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithPrimaryCtorDefaultValues>();
+            Assert.Equal(-1, options.Length);
+            Assert.Equal("blue", options.Color);
+            Assert.Equal(5.946238490567943927384M, options.Height);
+            Assert.Equal(EditorBrowsableState.Never, options.EB);
         }
 
         [Fact]

@@ -22,7 +22,7 @@ namespace Internal.Runtime.TypeLoader
 
         public static TypeSystemContext Create()
         {
-            using (LockHolder.Hold(s_lock))
+            using (s_lock.EnterScope())
             {
                 TypeSystemContext context = (TypeSystemContext)s_cachedContext.Target;
                 if (context != null)

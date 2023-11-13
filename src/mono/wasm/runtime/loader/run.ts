@@ -8,7 +8,7 @@ import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExports
 
 import { ENVIRONMENT_IS_WEB, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
-import { mono_exit } from "./exit";
+import { mono_exit, register_exit_handlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
 import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
@@ -173,6 +173,19 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withInterpreterPgo(value: boolean, autoSaveDelay?: number): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                interpreterPgo: value,
+                interpreterPgoSaveDelay: autoSaveDelay
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withConfig(config: MonoConfig): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, config);
@@ -249,7 +262,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withDebugging(level: number): DotnetHostBuilder {
         try {
-            mono_assert(level && typeof level === "number", "must be number");
+            mono_assert(level !== undefined && level !== null && typeof level === "number", "must be number");
             deep_merge_config(monoConfig, {
                 debugLevel: level
             });
@@ -411,6 +424,8 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
 
+    register_exit_handlers();
+
     return emscriptenModule.ENVIRONMENT_IS_PTHREAD
         ? createEmscriptenWorker()
         : createEmscriptenMain();
@@ -428,14 +443,14 @@ function importModules() {
         jsModuleRuntimePromise = jsModuleRuntimeAsset.moduleExports;
     } else {
         mono_log_debug(`Attempting to import '${jsModuleRuntimeAsset.resolvedUrl}' for ${jsModuleRuntimeAsset.name}`);
-        jsModuleRuntimePromise = import(/* webpackIgnore: true */jsModuleRuntimeAsset.resolvedUrl!);
+        jsModuleRuntimePromise = import(/*! webpackIgnore: true */jsModuleRuntimeAsset.resolvedUrl!);
     }
 
     if (typeof jsModuleNativeAsset.moduleExports === "object") {
         jsModuleNativePromise = jsModuleNativeAsset.moduleExports;
     } else {
         mono_log_debug(`Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
-        jsModuleNativePromise = import(/* webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
+        jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
 
     return [jsModuleRuntimePromise, jsModuleNativePromise];

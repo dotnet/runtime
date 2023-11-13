@@ -60,6 +60,7 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_calendarData.c
     pal_casing.c
     pal_collation.c
+    pal_common.c
     pal_idna.c
     pal_locale.c
     pal_localeNumberData.c
@@ -75,7 +76,7 @@ endif()
 
 if (CMAKE_USE_PTHREADS)
     add_compile_options(-pthread)
-    add_link_options(-pthread)
+    add_linker_flag(-pthread)
 endif()
 
 if (LOCAL_BUILD)
@@ -132,7 +133,7 @@ if (GEN_SHARED_LIB)
 
     target_link_libraries(System.Globalization.Native
         PRIVATE
-        dl
+        ${CMAKE_DL_LIBS}
         ${FOUNDATION}
     )
 
@@ -151,7 +152,7 @@ endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"

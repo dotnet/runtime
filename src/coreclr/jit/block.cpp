@@ -28,10 +28,6 @@ size_t BasicBlock::s_Count;
 // The max # of tree nodes in any BB
 /* static */
 unsigned BasicBlock::s_nMaxTrees;
-
-// Temporary target to initialize blocks with jumps
-/* static */
-BasicBlock BasicBlock::bbTempJumpDest;
 #endif // DEBUG
 
 #ifdef DEBUG
@@ -520,6 +516,10 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_HAS_MDARRAYREF)
     {
         printf("mdarr ");
+    }
+    if (bbFlags & BBF_NEEDS_GCPOLL)
+    {
+        printf("gcpoll ");
     }
 }
 
@@ -1445,14 +1445,14 @@ bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tai
  *  Allocate a basic block but don't append it to the current BB list.
  */
 
-BasicBlock* Compiler::bbNewBasicBlock()
+BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler)
 {
     BasicBlock* block;
 
     /* Allocate the block descriptor and zero it out */
-    assert(fgSafeBasicBlockCreation);
+    assert(compiler->fgSafeBasicBlockCreation);
 
-    block = new (this, CMK_BasicBlock) BasicBlock;
+    block = new (compiler, CMK_BasicBlock) BasicBlock;
 
 #if MEASURE_BLOCK_SIZE
     BasicBlock::s_Count += 1;
@@ -1461,7 +1461,7 @@ BasicBlock* Compiler::bbNewBasicBlock()
 
 #ifdef DEBUG
     // fgLookupBB() is invalid until fgInitBBLookup() is called again.
-    fgBBs = (BasicBlock**)0xCDCD;
+    compiler->fgInvalidateBBLookup();
 #endif
 
     // TODO-Throughput: The following memset is pretty expensive - do something else?
@@ -1475,15 +1475,15 @@ BasicBlock* Compiler::bbNewBasicBlock()
     block->bbCodeOffsEnd = BAD_IL_OFFSET;
 
 #ifdef DEBUG
-    block->bbID = compBasicBlockID++;
+    block->bbID = compiler->compBasicBlockID++;
 #endif
 
     /* Give the block a number, set the ancestor count and weight */
 
-    ++fgBBcount;
-    block->bbNum = ++fgBBNumMax;
+    ++compiler->fgBBcount;
+    block->bbNum = ++compiler->fgBBNumMax;
 
-    if (compRationalIRForm)
+    if (compiler->compRationalIRForm)
     {
         block->bbFlags |= BBF_IS_LIR;
     }
@@ -1497,7 +1497,7 @@ BasicBlock* Compiler::bbNewBasicBlock()
     block->bbEntryState = nullptr;
 
 #ifdef DEBUG
-    if (verbose)
+    if (compiler->verbose)
     {
         printf("New Basic Block %s created.\n", block->dspToString());
     }
@@ -1506,21 +1506,21 @@ BasicBlock* Compiler::bbNewBasicBlock()
     // We will give all the blocks var sets after the number of tracked variables
     // is determined and frozen.  After that, if we dynamically create a basic block,
     // we will initialize its var sets.
-    if (fgBBVarSetsInited)
+    if (compiler->fgBBVarSetsInited)
     {
-        VarSetOps::AssignNoCopy(this, block->bbVarUse, VarSetOps::MakeEmpty(this));
-        VarSetOps::AssignNoCopy(this, block->bbVarDef, VarSetOps::MakeEmpty(this));
-        VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::MakeEmpty(this));
-        VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::MakeEmpty(this));
-        VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::MakeEmpty(this));
+        VarSetOps::AssignNoCopy(compiler, block->bbVarUse, VarSetOps::MakeEmpty(compiler));
+        VarSetOps::AssignNoCopy(compiler, block->bbVarDef, VarSetOps::MakeEmpty(compiler));
+        VarSetOps::AssignNoCopy(compiler, block->bbLiveIn, VarSetOps::MakeEmpty(compiler));
+        VarSetOps::AssignNoCopy(compiler, block->bbLiveOut, VarSetOps::MakeEmpty(compiler));
+        VarSetOps::AssignNoCopy(compiler, block->bbScope, VarSetOps::MakeEmpty(compiler));
     }
     else
     {
-        VarSetOps::AssignNoCopy(this, block->bbVarUse, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(this, block->bbVarDef, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(compiler, block->bbVarUse, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(compiler, block->bbVarDef, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(compiler, block->bbLiveIn, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(compiler, block->bbLiveOut, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(compiler, block->bbScope, VarSetOps::UninitVal());
     }
 
     block->bbMemoryUse     = emptyMemoryKindSet;
@@ -1546,10 +1546,15 @@ BasicBlock* Compiler::bbNewBasicBlock()
     return block;
 }
 
-BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
+BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
 {
-    BasicBlock* block = bbNewBasicBlock();
-    block->SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(this));
+    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
+
+    // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
+    // yet.
+    // The checks will be done any time the jump kind/target is read or written to after initialization.
+    block->bbJumpKind = jumpKind;
+    block->bbJumpDest = jumpDest;
 
     if (jumpKind == BBJ_THROW)
     {
@@ -1559,17 +1564,19 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind, BasicBlock* jumpDest
     return block;
 }
 
-BasicBlock* Compiler::bbNewBasicBlock(BBswtDesc* jumpSwt)
+BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler, BBswtDesc* jumpSwt)
 {
-    BasicBlock* block = bbNewBasicBlock();
-    block->SetSwitchKindAndTarget(jumpSwt);
+    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
+    block->bbJumpKind = BBJ_SWITCH;
+    block->bbJumpSwt  = jumpSwt;
     return block;
 }
 
-BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind, unsigned jumpOffs)
+BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs)
 {
-    BasicBlock* block = bbNewBasicBlock();
-    block->SetJumpKindAndTarget(jumpKind, jumpOffs);
+    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
+    block->bbJumpKind = jumpKind;
+    block->bbJumpOffs = jumpOffs;
     return block;
 }
 

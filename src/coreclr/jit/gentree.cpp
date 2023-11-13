@@ -836,7 +836,7 @@ bool GenTree::gtHasReg(Compiler* comp) const
     {
         assert(comp != nullptr);
         const GenTreeLclVar* lclNode  = AsLclVar();
-        const unsigned       regCount = GetMultiRegCount(comp);
+        const unsigned       regCount = lclNode->GetFieldCount(comp);
         // A Multi-reg local vars is said to have regs,
         // if it has valid regs in any of the positions.
         for (unsigned i = 0; i < regCount; i++)
@@ -2534,7 +2534,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 #endif
 
         if ((c1->gtCallType == CT_USER_FUNC) &&
-            ((c1->gtCallMoreFlags & GTF_CALL_VIRT_KIND_MASK) != (c2->gtCallMoreFlags & GTF_CALL_VIRT_KIND_MASK)))
+            ((c1->gtFlags & GTF_CALL_VIRT_KIND_MASK) != (c2->gtFlags & GTF_CALL_VIRT_KIND_MASK)))
         {
             return false;
         }
@@ -6957,9 +6957,14 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_CALL:
             assert(!"Unexpected GT_CALL in OperExceptions");
-
             return ExceptionSetFlags::All;
 
+        case GT_LOCKADD:
+        case GT_XAND:
+        case GT_XORR:
+        case GT_XADD:
+        case GT_XCHG:
+        case GT_CMPXCHG:
         case GT_IND:
         case GT_STOREIND:
         case GT_BLK:
@@ -7019,7 +7024,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            assert(!OperMayOverflow() && (!OperIsIndirOrArrMetaData() || OperIsAtomicZeroDiffQuirk()));
+            assert(!OperMayOverflow() && !OperIsIndirOrArrMetaData());
             return ExceptionSetFlags::None;
     }
 }
@@ -8073,10 +8078,11 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallType    = callType;
     node->gtCallMethHnd = callHnd;
     INDEBUG(node->callSig = nullptr;)
-    node->tailCallInfo      = nullptr;
-    node->gtRetClsHnd       = nullptr;
-    node->gtControlExpr     = nullptr;
-    node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    node->tailCallInfo    = nullptr;
+    node->gtRetClsHnd     = nullptr;
+    node->gtControlExpr   = nullptr;
+    node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
+    INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
@@ -8094,7 +8100,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtEntryPoint.accessType = IAT_VALUE;
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // These get updated after call node is built.
     node->gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
     node->gtRawILOffset       = BAD_IL_OFFSET;
@@ -8452,7 +8458,6 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
     GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, data, layout);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
-
     gtInitializeStoreNode(store, data);
 
     return store;
@@ -8477,7 +8482,6 @@ GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenT
     GenTreeStoreInd* store = new (this, GT_STOREIND) GenTreeStoreInd(type, addr, data);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
-
     gtInitializeStoreNode(store, data);
 
     return store;
@@ -8542,7 +8546,7 @@ GenTree* Compiler::gtNewStoreValueNode(
 GenTree* Compiler::gtNewAtomicNode(genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand)
 {
     assert(GenTree::OperIsAtomicOp(oper) && ((oper == GT_CMPXCHG) == (comparand != nullptr)));
-    GenTree* node;
+    GenTreeIndir* node;
     if (comparand != nullptr)
     {
         node = new (this, GT_CMPXCHG) GenTreeCmpXchg(type, addr, value, comparand);
@@ -8553,8 +8557,9 @@ GenTree* Compiler::gtNewAtomicNode(genTreeOps oper, var_types type, GenTree* add
         node = new (this, oper) GenTreeIndir(oper, type, addr, value);
     }
 
-    // All atomics are opaque global stores.
-    node->AddAllEffectsFlags(GTF_ASG | GTF_GLOB_REF);
+    node->AddAllEffectsFlags(GTF_ASG); // All atomics are opaque global stores.
+    gtInitializeIndirNode(node, GTF_EMPTY);
+
     return node;
 }
 
@@ -8759,8 +8764,6 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 {
     if (UsesDivideByConstOptimized(comp))
     {
-        gtFlags |= GTF_DIV_BY_CNS_OPT;
-
         // Now set DONT_CSE on the GT_CNS_INT divisor, note that
         // with ValueNumbering we can have a non GT_CNS_INT divisor
         GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
@@ -9703,6 +9706,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     GenTreeCall* copy = new (this, GT_CALL) GenTreeCall(tree->TypeGet());
 
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
+    INDEBUG(copy->gtCallDebugFlags = tree->gtCallDebugFlags);
 
     copy->gtArgs.InternalCopyFrom(this, &tree->gtArgs,
                                   [=](GenTree* node) { return gtCloneExpr(node, addFlags, deepVarNum, deepVarVal); });
@@ -9746,7 +9750,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     copy->setEntryPoint(tree->gtEntryPoint);
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     copy->gtInlineObservation = tree->gtInlineObservation;
     copy->gtRawILOffset       = tree->gtRawILOffset;
     copy->gtInlineContext     = tree->gtInlineContext;
@@ -10649,12 +10653,9 @@ bool GenTree::Precedes(GenTree* other)
 // Arguments:
 //    comp  - compiler instance
 //
-// Remarks:
-//    This should only be used for reads.
-//
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrMetaData() && OperIsSimple());
+    assert(OperIsIndirOrArrMetaData() && (OperIsSimple() || OperIs(GT_CMPXCHG)));
 
     if (IndirMayFault(comp))
     {
@@ -10670,6 +10671,10 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     if (OperIsBinary())
     {
         gtFlags |= gtGetOp2()->gtFlags & GTF_EXCEPT;
+    }
+    if (OperIs(GT_CMPXCHG))
+    {
+        gtFlags |= AsCmpXchg()->Comparand()->gtFlags & GTF_EXCEPT;
     }
 }
 
@@ -11131,18 +11136,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 if (tree->gtFlags & GTF_MUL_64RSLT)
                 {
                     printf("L");
-                    --msgLength;
-                    break;
-                }
-                goto DASH;
-
-            case GT_DIV:
-            case GT_MOD:
-            case GT_UDIV:
-            case GT_UMOD:
-                if (tree->gtFlags & GTF_DIV_BY_CNS_OPT)
-                {
-                    printf("M"); // We will use a Multiply by reciprical
                     --msgLength;
                     break;
                 }
@@ -25741,6 +25734,18 @@ bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
     }
 }
 
+//------------------------------------------------------------------------
+// OperIsBitwiseHWIntrinsic: Is this HWIntrinsic a bitwise logic intrinsic node.
+//
+// Return Value:
+//    Whether "this" is a bitwise logic intrinsic node.
+//
+bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
+{
+    genTreeOps Oper = HWOperGet();
+    return Oper == GT_AND || Oper == GT_OR || Oper == GT_XOR || Oper == GT_AND_NOT;
+}
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.
@@ -25833,6 +25838,7 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
         case NI_AdvSimd_Arm64_LoadPairVector64:
         case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+        case NI_AdvSimd_LoadVector64x2AndUnzip:
         case NI_AdvSimd_LoadVector64x2:
         case NI_AdvSimd_LoadAndInsertScalarVector64x2:
         case NI_AdvSimd_LoadAndReplicateToVector64x2:
@@ -25840,24 +25846,29 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
 
         case NI_AdvSimd_Arm64_LoadPairVector128:
         case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+        case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
         case NI_AdvSimd_Arm64_LoadVector128x2:
         case NI_AdvSimd_LoadVector64x4:
+        case NI_AdvSimd_LoadVector64x4AndUnzip:
         case NI_AdvSimd_LoadAndReplicateToVector64x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
         case NI_AdvSimd_LoadAndInsertScalarVector64x4:
             return compiler->typGetBlkLayout(32);
 
+        case NI_AdvSimd_LoadVector64x3AndUnzip:
         case NI_AdvSimd_LoadVector64x3:
         case NI_AdvSimd_LoadAndInsertScalarVector64x3:
         case NI_AdvSimd_LoadAndReplicateToVector64x3:
             return compiler->typGetBlkLayout(24);
 
+        case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
         case NI_AdvSimd_Arm64_LoadVector128x3:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
             return compiler->typGetBlkLayout(48);
 
+        case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
         case NI_AdvSimd_Arm64_LoadVector128x4:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
@@ -25963,7 +25974,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 //------------------------------------------------------------------------------
 // HWOperGet : Returns Oper based on the HWIntrinsicId
 //
-genTreeOps GenTreeHWIntrinsic::HWOperGet()
+genTreeOps GenTreeHWIntrinsic::HWOperGet() const
 {
     switch (GetHWIntrinsicId())
     {
@@ -25972,6 +25983,8 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_SSE2_And:
         case NI_AVX_And:
         case NI_AVX2_And:
+        case NI_AVX512F_And:
+        case NI_AVX512DQ_And:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_And:
 #endif
@@ -25991,6 +26004,8 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_SSE2_Xor:
         case NI_AVX_Xor:
         case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Xor:
 #endif
@@ -25998,6 +26013,31 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
             return GT_XOR;
         }
 
+#if defined(TARGET_XARCH)
+        case NI_SSE_Or:
+        case NI_SSE2_Or:
+        case NI_AVX_Or:
+        case NI_AVX2_Or:
+        case NI_AVX512F_Or:
+        case NI_AVX512DQ_Or:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_Or:
+#endif
+        {
+            return GT_OR;
+        }
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+        {
+            return GT_AND_NOT;
+        }
+#endif
         // TODO: Handle other cases
 
         default:
@@ -26783,6 +26823,80 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree
     }
 
     return 0;
+}
+
+//------------------------------------------------------------------------
+// GetTernaryControlByte: calculate the value of the control byte for ternary node
+// with given logic nodes on the input.
+//
+// Return value: the value of the ternary control byte.
+uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) const
+{
+    // we assume we have a structure like:
+    /*
+               /- A
+               +- B
+        t1 = binary logical op1
+
+               /- C
+               +- t1
+        t2 = binary logical op2
+    */
+
+    // To calculate the control byte value:
+    // The way the constants work is we have three keys:
+    // * A: 0xF0
+    // * B: 0xCC
+    // * C: 0xAA
+    //
+    // To compute the correct control byte, you simply perform the corresponding operation on these keys. So, if you
+    // wanted to do (A & B) ^ C, you would compute (0xF0 & 0xCC) ^ 0xAA or 0x6A.
+    assert(second->Op(1) == this || second->Op(2) == this);
+    const uint8_t A = 0xF0;
+    const uint8_t B = 0xCC;
+    const uint8_t C = 0xAA;
+
+    genTreeOps firstOper  = HWOperGet();
+    genTreeOps secondOper = second->HWOperGet();
+
+    uint8_t AB  = 0;
+    uint8_t ABC = 0;
+
+    if (firstOper == GT_AND)
+    {
+        AB = A & B;
+    }
+    else if (firstOper == GT_OR)
+    {
+        AB = A | B;
+    }
+    else if (firstOper == GT_XOR)
+    {
+        AB = A ^ B;
+    }
+    else
+    {
+        unreached();
+    }
+
+    if (secondOper == GT_AND)
+    {
+        ABC = AB & C;
+    }
+    else if (secondOper == GT_OR)
+    {
+        ABC = AB | C;
+    }
+    else if (secondOper == GT_XOR)
+    {
+        ABC = AB ^ C;
+    }
+    else
+    {
+        unreached();
+    }
+
+    return ABC;
 }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 

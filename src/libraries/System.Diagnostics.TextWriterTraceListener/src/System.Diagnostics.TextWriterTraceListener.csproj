@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Diagnostics\ConsoleTraceListener.cs" />
     <Compile Include="System\Diagnostics\DelimitedListTraceListener.cs" />
     <Compile Include="System\Diagnostics\TextWriterTraceListener.cs" />
     <Compile Include="System\Diagnostics\XmlWriterTraceListener.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Console" />
@@ -23,4 +27,5 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
+
 </Project>

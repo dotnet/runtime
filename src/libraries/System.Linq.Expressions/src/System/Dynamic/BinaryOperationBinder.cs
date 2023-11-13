@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 
@@ -9,6 +10,7 @@ namespace System.Dynamic
     /// <summary>
     /// Represents the binary dynamic operation at the call site, providing the binding semantic and the details about the operation.
     /// </summary>
+    [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
     public abstract class BinaryOperationBinder : DynamicMetaObjectBinder
     {
         /// <summary>

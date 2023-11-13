@@ -3,9 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ReproGH93597 {
-        public static int Main() {
+        [Fact]
+        public static int TestEntryPoint() {
                 var expected = new int[] {5,4,3,2,1};
 
                 const int LowerBound = 5;

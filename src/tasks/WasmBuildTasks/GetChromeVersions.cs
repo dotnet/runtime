@@ -96,7 +96,7 @@ public partial class GetChromeVersions : MBU.Task
         int numMajorVersionsTried = 0;
 
         string curMajorVersion = string.Empty;
-        await foreach (string version in GetVersionsAsync())
+        await foreach (string version in GetVersionsAsync().ConfigureAwait(false))
         {
             string majorVersion = version[..version.IndexOf('.')];
             if (curMajorVersion != majorVersion)

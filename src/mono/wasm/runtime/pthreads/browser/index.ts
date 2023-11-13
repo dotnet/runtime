@@ -5,9 +5,8 @@ import { isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApp
 import { pthreadPtr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import Internals from "../shared/emscripten-internals";
-import { createPromiseController, mono_assert, runtimeHelpers } from "../../globals";
+import { createPromiseController, runtimeHelpers } from "../../globals";
 import { PromiseController } from "../../types/internal";
-import { MonoConfig } from "../../types";
 import { mono_log_debug } from "../../logging";
 
 const threads: Map<pthreadPtr, Thread> = new Map();
@@ -114,19 +113,8 @@ export function afterLoadWasmModuleToWorker(worker: Worker): void {
 /// We call on the main thread this during startup to pre-allocate a pool of pthread workers.
 /// At this point asset resolution needs to be working (ie we loaded MonoConfig).
 /// This is used instead of the Emscripten PThread.initMainThread because we call it later.
-export function preAllocatePThreadWorkerPool(defaultPthreadPoolSize: number, config: MonoConfig): void {
-    const poolSizeSpec = config?.pthreadPoolSize;
-    let n: number;
-    if (poolSizeSpec === undefined || poolSizeSpec === null) {
-        n = defaultPthreadPoolSize;
-    } else {
-        mono_assert(typeof poolSizeSpec === "number", "pthreadPoolSize must be a number");
-        if (poolSizeSpec < 0)
-            n = defaultPthreadPoolSize;
-        else
-            n = poolSizeSpec;
-    }
-    for (let i = 0; i < n; i++) {
+export function preAllocatePThreadWorkerPool(pthreadPoolSize: number): void {
+    for (let i = 0; i < pthreadPoolSize; i++) {
         Internals.allocateUnusedWorker();
     }
 }
