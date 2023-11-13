@@ -53,7 +53,7 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
                     includedMethods.Add(args[i + 1]);
                     i++;
                     break;
-                case "-mt":
+                case "-threads":
                     break;
                 default:
                     throw new ArgumentException($"Invalid argument '{option}'.");
@@ -61,7 +61,7 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
         }
 
         WasmApplicationEntryPointBase? runner = null;
-        if (args.Contains("-mt"))
+        if (args.Contains("-threads"))
         {
             Console.WriteLine("Using MultiThreadedTestRunner");
             runner = new MultiThreadedTestRunner()
