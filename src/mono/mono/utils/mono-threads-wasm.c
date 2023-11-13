@@ -10,6 +10,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/checked-build.h>
 
 #include <glib.h>
