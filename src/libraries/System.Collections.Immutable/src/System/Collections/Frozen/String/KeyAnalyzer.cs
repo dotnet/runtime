@@ -37,7 +37,7 @@ namespace System.Collections.Frozen
             AnalysisResults results;
             if (minLength == 0 || !TryUseSubstring(uniqueStrings, ignoreCase, minLength, maxLength, out results))
             {
-                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, false, static (s, _, _) => s.AsSpan());
+                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, isSubstring: false, static (s, _, _) => s.AsSpan());
             }
 
             return results;
@@ -77,7 +77,7 @@ namespace System.Collections.Frozen
                     if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                     {
                         results = CreateAnalysisResults(
-                            uniqueStrings, ignoreCase, minLength, maxLength, index, count, true,
+                            uniqueStrings, ignoreCase, minLength, maxLength, index, count, isSubstring: true,
                             static (string s, int index, int count) => s.AsSpan(index, count));
                         return true;
                     }
@@ -101,7 +101,7 @@ namespace System.Collections.Frozen
                         if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                         {
                             results = CreateAnalysisResults(
-                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count, true,
+                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count, isSubstring: true,
                                 static (string s, int index, int count) => s.AsSpan(s.Length + index, count));
                             return true;
                         }
@@ -118,7 +118,7 @@ namespace System.Collections.Frozen
             ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, bool isSubstring, GetSpan getSubstringSpan)
         {
             // Start off by assuming all strings are ASCII
-            bool allAsciiIfIgnoreCaseForHash = true;
+            bool allAsciiIfIgnoreCase = true;
 
             // If we're case-sensitive, it doesn't matter if the strings are ASCII or not.
             // But if we're case-insensitive, we can switch to a faster comparer if all the
@@ -139,7 +139,7 @@ namespace System.Collections.Frozen
                     // If the substring isn't ASCII, bail out to return the results.
                     if (!IsAllAscii(substring))
                     {
-                        allAsciiIfIgnoreCaseForHash = false;
+                        allAsciiIfIgnoreCase = false;
                         canSwitchIgnoreCaseHashToCaseSensitive = false;
                         break;
                     }
@@ -160,7 +160,7 @@ namespace System.Collections.Frozen
             }
 
             // Return the analysis results.
-            return new AnalysisResults(ignoreCase, allAsciiIfIgnoreCaseForHash, index, count, minLength, maxLength);
+            return new AnalysisResults(ignoreCase, allAsciiIfIgnoreCase, index, count, minLength, maxLength);
         }
 
         private delegate ReadOnlySpan<char> GetSpan(string s, int index, int count);
