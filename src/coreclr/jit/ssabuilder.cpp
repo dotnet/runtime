@@ -327,7 +327,7 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
         FlowEdge* blockPreds = m_pCompiler->BlockPredsWithEH(block);
 
         // If block has 0/1 predecessor, skip, apart from handler entry blocks
-        // whose dominance frontier always contains its enclosed blocks.
+        // that are always in the dominance frontier of its enclosed blocks.
         if (!m_pCompiler->bbIsHandlerBeg(block) &&
             ((blockPreds == nullptr) || (blockPreds->getNextPredEdge() == nullptr)))
         {
