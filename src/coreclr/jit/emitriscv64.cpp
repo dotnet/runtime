@@ -447,7 +447,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
             code |= ((imm >> 20) & 0x1) << 31;
             break;
         default:
-            NYI_RISCV64("illegal ins within emitIns_I!");
+            NO_WAY("illegal ins within emitIns_I!");
     }
 
     instrDesc* id = emitNewInstr(attr);
@@ -495,7 +495,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= ((imm >> 20) & 0x1) << 31;
             break;
         default:
-            NYI_RISCV64("illegal ins within emitIns_R_I!");
+            NO_WAY("illegal ins within emitIns_R_I!");
             break;
     } // end switch (ins)
 
@@ -3793,10 +3793,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             return;
         }
         default:
-            NYI_RISCV64("illegal ins within emitDisInsName!");
+            NO_WAY("illegal ins within emitDisInsName!");
     }
 
-    NYI_RISCV64("illegal ins within emitDisInsName!");
+    NO_WAY("illegal ins within emitDisInsName!");
 }
 
 /*****************************************************************************
@@ -3979,7 +3979,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                             ins = INS_sd;
                         break;
                     default:
-                        NYI_RISCV64("illegal ins within emitInsLoadStoreOp!");
+                        NO_WAY("illegal ins within emitInsLoadStoreOp!");
                 }
 
                 if (lsl > 0)

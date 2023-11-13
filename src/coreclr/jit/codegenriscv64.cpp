@@ -2800,8 +2800,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             default:
-                NYI_RISCV64("Unhandled oper in genGetInsForOper() - float");
-                unreached();
+                NO_WAY("Unhandled oper in genGetInsForOper() - float");
                 break;
         }
     }
@@ -3039,8 +3038,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             default:
-                NYI_RISCV64("Unhandled oper in genGetInsForOper() - integer");
-                unreached();
+                NO_WAY("Unhandled oper in genGetInsForOper() - integer");
                 break;
         }
     }
