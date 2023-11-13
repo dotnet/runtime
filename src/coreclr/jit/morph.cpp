@@ -11019,16 +11019,15 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         GenTreeOp*     addOne   = op1->AsOp();
         GenTreeOp*     addTwo   = op2->AsOp();
         GenTreeIntCon* constOne = addOne->gtGetOp2()->AsIntCon();
-        GenTreeIntCon* constTwo = addTwo->gtGetOp2()->AsIntCon();
 
+        // addOne is now "x + y"
         addOne->gtOp2 = addTwo->gtGetOp1();
         addOne->SetAllEffectsFlags(addOne->gtGetOp1(), addOne->gtGetOp2());
-        DEBUG_DESTROY_NODE(addTwo);
 
-        constOne->SetValueTruncating(constOne->IconValue() + constTwo->IconValue());
-        op2        = constOne;
-        add->gtOp2 = constOne;
-        DEBUG_DESTROY_NODE(constTwo);
+        // addTwo is now "icon1 + icon2" so we can fold it using gtFoldExprConst
+        addTwo->gtOp1 = constOne;
+        add->gtOp2    = gtFoldExprConst(add->gtOp2);
+        op2           = add->gtGetOp2();
     }
 
     // Fold (x + 0) - given it won't change the tree type.
@@ -13773,17 +13772,96 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 // Arguments:
 //    block - block in question
+//    highestReachablePostorder - maximum postorder number for a
+//     reachable block.
 //
-void Compiler::fgMorphBlock(BasicBlock* block)
+void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorder)
 {
     JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
 
     if (optLocalAssertionProp)
     {
-        // For now, each block starts with an empty table, and no available assertions
-        //
-        optAssertionReset(0);
-        apLocal = BitVecOps::MakeEmpty(apTraits);
+        if (!optCrossBlockLocalAssertionProp)
+        {
+            // Each block starts with an empty table, and no available assertions
+            //
+            optAssertionReset(0);
+            apLocal = BitVecOps::MakeEmpty(apTraits);
+        }
+        else
+        {
+            assert(highestReachablePostorder > 0);
+
+            // Determine if this block can leverage assertions from its pred blocks.
+            //
+            // Some blocks are ineligible.
+            //
+            bool canUsePredAssertions = ((block->bbFlags & BBF_CAN_ADD_PRED) == 0) && !bbIsHandlerBeg(block);
+
+            // Validate all preds have valid info
+            //
+            if (!canUsePredAssertions)
+            {
+                JITDUMP(FMT_BB " ineligible for cross-block\n", block->bbNum);
+            }
+            else
+            {
+                bool hasPredAssertions = false;
+
+                for (BasicBlock* const pred : block->PredBlocks())
+                {
+                    // A smaller pred postorder number means the pred appears later in the postorder.
+                    // An equal number means pred == block (block is a self-loop).
+                    // Either way the assertion info is not available, and we must assume the worst.
+                    //
+                    if (pred->bbPostorderNum <= block->bbPostorderNum)
+                    {
+                        JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
+                                pred->bbNum);
+                        hasPredAssertions = false;
+                        break;
+                    }
+
+                    if (pred->bbPostorderNum > highestReachablePostorder)
+                    {
+                        // This pred was not reachable from the original DFS root set, so
+                        // we can ignore its assertion information.
+                        //
+                        JITDUMP(FMT_BB " ignoring assertions from unreachable pred " FMT_BB
+                                       " [pred postorder num %u, highest reachable %u]\n",
+                                block->bbNum, pred->bbNum, pred->bbPostorderNum, highestReachablePostorder);
+                        continue;
+                    }
+
+                    // Yes, pred assertions are available. If this is the first pred, copy.
+                    // If this is a subsequent pred, intersect.
+                    //
+                    if (!hasPredAssertions)
+                    {
+                        apLocal           = BitVecOps::MakeCopy(apTraits, pred->bbAssertionOut);
+                        hasPredAssertions = true;
+                    }
+                    else
+                    {
+                        BitVecOps::IntersectionD(apTraits, apLocal, pred->bbAssertionOut);
+                    }
+                }
+
+                if (!hasPredAssertions)
+                {
+                    // Either no preds, or some preds w/o assertions.
+                    //
+                    canUsePredAssertions = false;
+                }
+            }
+
+            if (!canUsePredAssertions)
+            {
+                apLocal = BitVecOps::MakeEmpty(apTraits);
+            }
+
+            JITDUMPEXEC(optDumpAssertionIndices("Assertions in: ", apLocal));
+        }
     }
 
     // Make the current basic block address available globally.
@@ -13799,6 +13877,14 @@ void Compiler::fgMorphBlock(BasicBlock* block)
         {
             fgMergeBlockReturn(block);
         }
+    }
+
+    // Publish the live out state.
+    //
+    if (optCrossBlockLocalAssertionProp && (block->NumSucc() > 0))
+    {
+        assert(optLocalAssertionProp);
+        block->bbAssertionOut = BitVecOps::MakeCopy(apTraits, apLocal);
     }
 
     compCurBB = nullptr;
@@ -13820,15 +13906,18 @@ PhaseStatus Compiler::fgMorphBlocks()
     //
     fgGlobalMorph = true;
 
-    // Local assertion prop is enabled if we are optimized
-    //
-    optLocalAssertionProp = opts.OptimizationEnabled();
-
-    if (optLocalAssertionProp)
+    if (opts.OptimizationEnabled())
     {
-        // Initialize for local assertion prop
+        // Local assertion prop is enabled if we are optimizing.
         //
-        optAssertionInit(true);
+        optAssertionInit(/* isLocalProp*/ true);
+    }
+    else
+    {
+        // Not optimizing. No assertion prop.
+        //
+        optLocalAssertionProp           = false;
+        optCrossBlockLocalAssertionProp = false;
     }
 
     if (!compEnregLocals())
@@ -13855,10 +13944,6 @@ PhaseStatus Compiler::fgMorphBlocks()
     {
         // If we aren't optimizing, we just morph in normal bbNext order.
         //
-        // Note morph can add blocks downstream from the current block,
-        // and alter (but not null out) the current block's bbNext;
-        // this iterator ensures they all get visited.
-        //
         for (BasicBlock* block : Blocks())
         {
             fgMorphBlock(block);
@@ -13869,9 +13954,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         // We are optimizing. Process in RPO.
         //
         fgRenumberBlocks();
-        EnsureBasicBlockEpoch();
-        fgComputeEnterBlocksSet();
-        fgDfsReversePostorder();
+        const unsigned highestReachablePostorder = fgDfsReversePostorder();
 
         // Disallow general creation of new blocks or edges as it
         // would invalidate RPO.
@@ -13894,11 +13977,16 @@ PhaseStatus Compiler::fgMorphBlocks()
             fgFirstBB->Next()->bbFlags |= BBF_CAN_ADD_PRED;
         }
 
+        // Remember this so we can sanity check that no new blocks will get created.
+        //
         unsigned const bbNumMax = fgBBNumMax;
+
+        // Morph the blocks in RPO.
+        //
         for (unsigned i = 1; i <= bbNumMax; i++)
         {
             BasicBlock* const block = fgBBReversePostorder[i];
-            fgMorphBlock(block);
+            fgMorphBlock(block, highestReachablePostorder);
         }
         assert(bbNumMax == fgBBNumMax);
 

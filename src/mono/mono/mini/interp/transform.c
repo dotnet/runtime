@@ -1214,7 +1214,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
-	if (!interp_jit_call_can_be_supported (method, sig, mono_llvm_only))
+	if (!mono_jit_call_can_be_supported_by_interp (method, sig, mono_llvm_only))
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
@@ -2306,7 +2306,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_INITBLK;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
-		if (!strcmp (tm, "GetHashCode") || !strcmp (tm, "InternalGetHashCode")) {
+		if (!strcmp (tm, "get_OffsetToStringData")) {
+			g_assert (csignature->param_count == 0);
+			int offset = MONO_STRUCT_OFFSET (MonoString, chars);
+			interp_add_ins (td, MINT_LDC_I4);
+			WRITE32_INS (td->last_ins, 0, &offset);
+			push_simple_type (td, STACK_TYPE_I4);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "GetHashCode") || !strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
 		} else if (!strcmp (tm, "TryGetHashCode")) {
 			*op = MINT_INTRINS_TRY_GET_HASHCODE;
@@ -3541,10 +3550,20 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	CHECK_STACK_RET (td, csignature->param_count + csignature->hasthis, FALSE);
+
+	gboolean skip_tailcall = FALSE;
+	if (tailcall && !is_virtual && target_method != NULL) {
+		MonoMethodHeader *mh = interp_method_get_header (target_method, error);
+		if (mh != NULL && mh->code_size == 0)
+			skip_tailcall = TRUE;
+		mono_metadata_free_mh (mh);
+	}
+
 	if (tailcall && !td->gen_sdb_seq_points && !calli && op == -1 &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
-		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
+		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) &&
+		!skip_tailcall) {
 		(void)mono_class_vtable_checked (target_method->klass, error);
 		return_val_if_nok (error, FALSE);
 
