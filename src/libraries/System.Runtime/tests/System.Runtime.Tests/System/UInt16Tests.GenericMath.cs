@@ -1032,7 +1032,9 @@ namespace System.Tests
             Assert.Equal((ushort)0x4000, DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0x8000, (ushort)2));
             Assert.Equal((ushort)0x7FFF, DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0xFFFF, (ushort)2));
 
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0x0000, (ushort)0));
             Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0x0001, (ushort)0));
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0xFFFF, (ushort)0));
         }
 
         [Fact]
@@ -1044,7 +1046,9 @@ namespace System.Tests
             Assert.Equal((ushort)0x4000, DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0x8000, (ushort)2));
             Assert.Equal((ushort)0x7FFF, DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0xFFFF, (ushort)2));
 
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0x0000, (ushort)0));
             Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0x0001, (ushort)0));
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0xFFFF, (ushort)0));
         }
 
         //
