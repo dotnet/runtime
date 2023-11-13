@@ -222,7 +222,7 @@
       <!-- Include files specified by test projects from publish dir -->
       <WasmFilesToIncludeInFileSystem
               Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
-              TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
+              TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
 
