@@ -1617,7 +1617,7 @@ bool Compiler::optAssertionVnInvolvesNan(AssertionDsc* assertion)
  *
  *  If it is already in the assertion table return the assertionIndex that
  *  we use to refer to this element.
- *  Otherwise add it to the assertion table ad return the assertionIndex that
+ *  Otherwise add it to the assertion table and return the assertionIndex that
  *  we use to refer to this element.
  *  If we need to add to the table and the table is full return the value zero
  */
@@ -1633,13 +1633,42 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         return NO_ASSERTION_INDEX;
     }
 
-    // Check if exists already, so we can skip adding new one. Search backwards.
-    for (AssertionIndex index = optAssertionCount; index >= 1; index--)
+    // See if we already have this assertion in the table.
+    //
+    // For local assertion prop we can speed things up by checking the dep vector.
+    // Note we only need check the op1 vector; copies get indexed on both op1
+    // and op2, so searching the first will find any existing match.
+    //
+    if (optLocalAssertionProp)
     {
-        AssertionDsc* curAssertion = optGetAssertion(index);
-        if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
+        assert(newAssertion->op1.kind == O1K_LCLVAR);
+
+        unsigned        lclNum = newAssertion->op1.lcl.lclNum;
+        BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
+        unsigned        bvIndex = 0;
+        while (iter.NextElem(&bvIndex))
         {
-            return index;
+            AssertionIndex const index        = GetAssertionIndex(bvIndex);
+            AssertionDsc* const  curAssertion = optGetAssertion(index);
+
+            if (curAssertion->Equals(newAssertion, /* vnBased */ false))
+            {
+                return index;
+            }
+        }
+    }
+    else
+    {
+        // For global prop we search the entire table.
+        //
+        // Check if exists already, so we can skip adding new one. Search backwards.
+        for (AssertionIndex index = optAssertionCount; index >= 1; index--)
+        {
+            AssertionDsc* curAssertion = optGetAssertion(index);
+            if (curAssertion->Equals(newAssertion, /* vnBased */ true))
+            {
+                return index;
+            }
         }
     }
 
@@ -2490,15 +2519,19 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 //
 AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
-    if ((!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions)) || !optCanPropSubRange)
+    if (!optCanPropSubRange)
     {
+        // (don't early out in checked, verify above)
         return NO_ASSERTION_INDEX;
     }
 
-    for (AssertionIndex index = 1; index <= optAssertionCount; index++)
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        bvIndex = 0;
+    while (iter.NextElem(&bvIndex))
     {
-        AssertionDsc* curAssertion = optGetAssertion(index);
-        if (BitVecOps::IsMember(apTraits, assertions, index - 1) && curAssertion->CanPropSubRange())
+        AssertionIndex const index        = GetAssertionIndex(bvIndex);
+        AssertionDsc* const  curAssertion = optGetAssertion(index);
+        if (curAssertion->CanPropSubRange())
         {
             // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
             bool isEqual = optLocalAssertionProp
@@ -2530,18 +2563,12 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
  */
 AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions)
 {
-    if (BitVecOps::IsEmpty(apTraits, assertions))
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        bvIndex = 0;
+    while (iter.NextElem(&bvIndex))
     {
-        return NO_ASSERTION_INDEX;
-    }
-    for (AssertionIndex index = 1; index <= optAssertionCount; index++)
-    {
-        if (!BitVecOps::IsMember(apTraits, assertions, index - 1))
-        {
-            continue;
-        }
-
-        AssertionDsc* curAssertion = optGetAssertion(index);
+        AssertionIndex const index        = GetAssertionIndex(bvIndex);
+        AssertionDsc*        curAssertion = optGetAssertion(index);
         if (curAssertion->assertionKind != OAK_EQUAL ||
             (curAssertion->op1.kind != O1K_SUBTYPE && curAssertion->op1.kind != O1K_EXACT_TYPE))
         {
@@ -3709,31 +3736,31 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 {
     noway_assert((op1Kind == O1K_LCLVAR) || (op1Kind == O1K_EXACT_TYPE) || (op1Kind == O1K_SUBTYPE));
     noway_assert((op2Kind == O2K_CONST_INT) || (op2Kind == O2K_IND_CNS_INT) || (op2Kind == O2K_ZEROOBJ));
-    if (BitVecOps::IsEmpty(apTraits, assertions))
-    {
-        return NO_ASSERTION_INDEX;
-    }
 
-    for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
+    assert(optLocalAssertionProp);
+    ASSERT_TP apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+    BitVecOps::Iter iter(apTraits, apDependent);
+    unsigned        bvIndex = 0;
+    while (iter.NextElem(&bvIndex))
     {
-        AssertionDsc* curAssertion = optGetAssertion(index);
-        if (BitVecOps::IsMember(apTraits, assertions, index - 1))
+        AssertionIndex const index        = GetAssertionIndex(bvIndex);
+        AssertionDsc*        curAssertion = optGetAssertion(index);
+
+        if ((curAssertion->assertionKind != OAK_EQUAL) && (curAssertion->assertionKind != OAK_NOT_EQUAL))
         {
-            if ((curAssertion->assertionKind != OAK_EQUAL) && (curAssertion->assertionKind != OAK_NOT_EQUAL))
-            {
-                continue;
-            }
+            continue;
+        }
 
-            if ((curAssertion->op1.kind == op1Kind) && (curAssertion->op1.lcl.lclNum == lclNum) &&
-                (curAssertion->op2.kind == op2Kind))
-            {
-                bool constantIsEqual  = (curAssertion->op2.u1.iconVal == cnsVal);
-                bool assertionIsEqual = (curAssertion->assertionKind == OAK_EQUAL);
+        if ((curAssertion->op1.kind == op1Kind) && (curAssertion->op1.lcl.lclNum == lclNum) &&
+            (curAssertion->op2.kind == op2Kind))
+        {
+            bool constantIsEqual  = (curAssertion->op2.u1.iconVal == cnsVal);
+            bool assertionIsEqual = (curAssertion->assertionKind == OAK_EQUAL);
 
-                if (constantIsEqual || assertionIsEqual)
-                {
-                    return index;
-                }
+            if (constantIsEqual || assertionIsEqual)
+            {
+                return index;
             }
         }
     }

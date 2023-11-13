@@ -788,6 +788,16 @@ unsigned Compiler::fgDfsReversePostorder()
     //
     fgDfsReversePostorderHelper(fgFirstBB, visited, preorderIndex, postorderIndex);
 
+    // For OSR, walk from the original method entry too.
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr))
+    {
+        if (!BlockSetOps::IsMember(this, visited, fgEntryBB->bbNum))
+        {
+            fgDfsReversePostorderHelper(fgEntryBB, visited, preorderIndex, postorderIndex);
+        }
+    }
+
     // If we didn't end up visiting everything, try the EH roots.
     //
     if (preorderIndex != fgBBcount + 1)

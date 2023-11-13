@@ -13772,8 +13772,10 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 // Arguments:
 //    block - block in question
+//    highestReachablePostorder - maximum postorder number for a
+//     reachable block.
 //
-void Compiler::fgMorphBlock(BasicBlock* block)
+void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorder)
 {
     JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
 
@@ -13788,6 +13790,8 @@ void Compiler::fgMorphBlock(BasicBlock* block)
         }
         else
         {
+            assert(highestReachablePostorder > 0);
+
             // Determine if this block can leverage assertions from its pred blocks.
             //
             // Some blocks are ineligible.
@@ -13816,6 +13820,17 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                                 pred->bbNum);
                         hasPredAssertions = false;
                         break;
+                    }
+
+                    if (pred->bbPostorderNum > highestReachablePostorder)
+                    {
+                        // This pred was not reachable from the original DFS root set, so
+                        // we can ignore its assertion information.
+                        //
+                        JITDUMP(FMT_BB " ignoring assertions from unreachable pred " FMT_BB
+                                       " [pred postorder num %u, highest reachable %u]\n",
+                                block->bbNum, pred->bbNum, pred->bbPostorderNum, highestReachablePostorder);
+                        continue;
                     }
 
                     // Yes, pred assertions are available. If this is the first pred, copy.
@@ -13939,7 +13954,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         // We are optimizing. Process in RPO.
         //
         fgRenumberBlocks();
-        fgDfsReversePostorder();
+        const unsigned highestReachablePostorder = fgDfsReversePostorder();
 
         // Disallow general creation of new blocks or edges as it
         // would invalidate RPO.
@@ -13971,7 +13986,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         for (unsigned i = 1; i <= bbNumMax; i++)
         {
             BasicBlock* const block = fgBBReversePostorder[i];
-            fgMorphBlock(block);
+            fgMorphBlock(block, highestReachablePostorder);
         }
         assert(bbNumMax == fgBBNumMax);
 
