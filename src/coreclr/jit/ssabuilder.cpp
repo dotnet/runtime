@@ -69,6 +69,8 @@ PhaseStatus Compiler::fgSsaBuild()
     JitTestCheckSSA();
 #endif // DEBUG
 
+    fgSSAPostOrder = builder.GetPostOrder(&fgSSAPostOrderCount);
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -144,7 +146,7 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
 //  Return Value:
 //     The number of nodes visited while performing DFS on the graph.
 //
-int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
+unsigned SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
 {
     Compiler* comp = m_pCompiler;
 
@@ -179,7 +181,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
     };
 
     // Compute order.
-    int         postIndex = 0;
+    unsigned    postIndex = 0;
     BasicBlock* block     = comp->fgFirstBB;
     BitVecOps::AddElemD(&m_visitedTraits, m_visited, block->bbNum);
 
@@ -206,15 +208,12 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
             // all successors have been visited
             blocks.Pop();
 
-            DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%d] = " FMT_BB "\n", postIndex, block->bbNum);
+            DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%u] = " FMT_BB "\n", postIndex, block->bbNum);
             postOrder[postIndex]  = block;
             block->bbPostorderNum = postIndex;
             postIndex++;
         }
     }
-
-    // In the absence of EH (because catch/finally have no preds), this should be valid.
-    // assert(postIndex == (count - 1));
 
     return postIndex;
 }
@@ -1500,16 +1499,7 @@ void SsaBuilder::Build()
 
     // Allocate the postOrder array for the graph.
 
-    BasicBlock** postOrder;
-
-    if (blockCount > DEFAULT_MIN_OPTS_BB_COUNT)
-    {
-        postOrder = new (m_allocator) BasicBlock*[blockCount];
-    }
-    else
-    {
-        postOrder = (BasicBlock**)_alloca(blockCount * sizeof(BasicBlock*));
-    }
+    m_postOrder = new (m_allocator) BasicBlock*[blockCount];
 
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
@@ -1527,12 +1517,12 @@ void SsaBuilder::Build()
     }
 
     // Topologically sort the graph.
-    int count = TopologicalSort(postOrder, blockCount);
+    m_postOrderCount = TopologicalSort(m_postOrder, blockCount);
     JITDUMP("[SsaBuilder] Topologically sorted the graph.\n");
     EndPhase(PHASE_BUILD_SSA_TOPOSORT);
 
     // Compute IDom(b).
-    ComputeImmediateDom(postOrder, count);
+    ComputeImmediateDom(m_postOrder, m_postOrderCount);
 
     m_pCompiler->fgSsaDomTree = m_pCompiler->fgBuildDomTree();
     EndPhase(PHASE_BUILD_SSA_DOMS);
@@ -1551,7 +1541,7 @@ void SsaBuilder::Build()
     }
 
     // Insert phi functions.
-    InsertPhiFunctions(postOrder, count);
+    InsertPhiFunctions(m_postOrder, m_postOrderCount);
 
     // Rename local variables and collect UD information for each ssa var.
     RenameVariables();
