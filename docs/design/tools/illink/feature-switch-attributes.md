@@ -8,7 +8,7 @@
 - AppContext feature setting
 - **ILLink.Substitutions.xml**
 - **static boolean property**
-- **Requries attributes**
+- **Requires attributes**
 
 The bold pieces are the focus of this document. [Feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md) describes how settings flow from the MSBuild property through the AppContext (for runtime feature checks) or `ILLink.Substitutions.xml` (for feature settings baked-in when trimming). This document aims to describe an attribute-based model to replace some of the functionality currently implemented via ILLink.Substitutions.xml, used for branch elimination in ILLink and ILCompiler to remove branches that call into `Requires`-annotated code when trimming.
 
@@ -30,7 +30,7 @@ We'll say that a "feature switch property" is also necessarily a "feature guard 
 
 A "feature switch property" may also be a "feature guard property" for a feature _other than_ the defining feature. For example, we introduced the feature switch property `StartupHookProvider.IsSupported`, which is defined by the feature switch named `"System.StartupHookProvider.IsSupported"`, but additionally serves as a guard for code in the implementation that has `RequiresUnreferencedCodeAttribute`. Startup hook support is disabled whenever we trim out unreferenced code, but may alse be disabled independently by the feature switch.
 
-Similarly, one could imagine introducing a feature switch for `IsDynamicCodeCompiled`. 
+Similarly, one could imagine introducing a feature switch for `IsDynamicCodeCompiled`.
 
 
 `IsDynamicCodeSupported` is an example of a feature that has an attribute, a feature switch, and a separate feature guard (`IsDynamicCodeCompiled`), but not all features have all of these bits of functionality.
@@ -85,7 +85,6 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 
 In order to treat a property as a guard for a feature that has a `Requires` attribute, there must be a semantic tie between the guard property and the attribute. ILLink and ILCompiler don't have this requirement because they run on apps, not libraries, so the desired warning behavior just falls out, thanks to branch elimination and the fact that `IsDynamicCodeSupported` is set to false from MSBuild.
 
-
 We could allow placing `FeatureGuardAttribute` on the property to indicate that it should act as a guard for a particular feature. The intention with any of these approaches is for the guard to prevent analyzer warnings:
 
 ```csharp
@@ -105,7 +104,7 @@ The attribute instance needs to reference the feature somehow, whether as:
 
   ```csharp
   class Feature {
-      [FeatureGuard<RequiresDynamicCodeAttribute>]
+      [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
       public static bool IsSupported => RuntimeFeature.IsDynamicCodeSupported;
   }
   ```
@@ -142,16 +141,13 @@ The attribute instance needs to reference the feature somehow, whether as:
 
   This would be sufficient for ILLink/ILCompiler to treat `IsSupported` as a constant based on the feature switch name, assuming it has existing knowledge of the fact that `RuntimeFeature.IsDynamicCodeSupported` is contrelled by the feature switch named `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"`, either from a substitution XML or from a separate attribute that encodes this.
 
-
-
-
 ### Danger of incorrect usage
 
 Since a feature guard silences warnings from the analyzer, there is some danger that `FeatureGuardAttribute` will be used carelessly as a way to silence warnings, even when the definition of the `IsSupported` property doesn't have any tie to the existing feature. For example:
 
 ```csharp
 class Feature {
-    [FeatureGuard<RequiresDynamicCodeAttribute>]
+    [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
     public static bool SilenceWarnings => true; // BAD
 }
 ```
@@ -170,14 +166,14 @@ Better would be for the analyzer to validate that the implementation of a featur
 
 ```csharp
 class Feature {
-    [FeatureGuard<RequiresDynamicCodeAttribute>]
+    [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
     public static bool IsSupported => RuntimeFeature.IsDynamicCodeSupported && SomeOtherCondition(); // OK
 }
 ```
 
 ```csharp
 class Feature {
-    [FeatureGuard<RequiresDynamicCodeAttribute>]
+    [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
     public static bool IsSupported => SomeOtherCondition(); // warning
 }
 ```
@@ -195,6 +191,19 @@ A separate concept is still required to replace the substitution XML for propert
 ## Feature switch attributes
 
 Allow placing `FeatureSwitchAttribute` on the property to indicate that it should be treated as a constant if the feature setting is passed to ILLink/ILCompiler at publish time. The Roslyn analyzer could also respect it by not analyzing branches that are unreachable with the feature setting, though we don't have an immediate use case for this. It could be useful when analyzing application code, but the analyzer is most important for libraries, where feature switches are usually not set.
+
+The feature switch property would be usable as a guard for calls to `RequiresDynamicCode` APIs:
+
+```csharp
+if (RuntimeFeature.IsDynamicCodeSupported) {
+    APIWhichRequiresDynamicCode(); // No warnings
+}
+
+[RequiresDynamicCode("Does something with dynamic codegen")]
+static void APIWhichRequiresDynamicCode() {
+    // ...
+}
+```
 
 The attribute needs to reference the feature somehow, whether as:
 
@@ -215,7 +224,7 @@ The attribute needs to reference the feature somehow, whether as:
 
   ```csharp
   class RuntimeFeature {
-      [FeatureSwitch<RequiresDynamicCodeAttribute>]
+      [FeatureSwitch(typeof(RequiresDynamicCodeAttribute))]
       public static bool IsDynamicCodeSupported => AppContext.TryGetSwitch("RuntimteFeature.IsDynamicCodeSupported", out bool isEnabled) ? isEnabled : true;
   }
   ```
@@ -223,19 +232,6 @@ The attribute needs to reference the feature somehow, whether as:
   In this case, ILCompiler would need to hard-code the fact that `RequiresDynamicCodeAttribute` corresponds to `"RuntimeFeature.IsDynamicCodeSupported"`, and use this knowledge to treat the property as returning a constant.
 
   However, the Roslyn analyzer would have enough information from this attribute alone.
-
-In either case, the feature switch property would be usable as a guard for calls to `RequiresDynamicCode` APIs:
-
-```csharp
-if (RuntimeFeature.IsDynamicCodeSupported) {
-    APIWhichRequiresDynamicCode(); // No warnings
-}
-
-[RequiresDynamicCode("Does something with dynamic codegen")]
-static void APIWhichRequiresDynamicCode() {
-    // ...
-}
-```
 
 ## Relationship between feature switches and feature guards
 
@@ -315,35 +311,65 @@ However, any attribute-based model that we pick to represent features should be 
 We would like for the attribute model to have a consistent way to refer to a feature in `FeatureGuardAttribute` or `FeatureSwitchAttribute`. The proposal is to support an attribute model for features that have an associated `Requires` attribute, and use that attribute type uniformly to refer to the feature from `FeatureGuardAttribute` and `FeatureSwitchAttribute`.
 
 For example, the feature switch for "dynamic code support" might look like this:
+
 ```csharp
 public class RuntimeFeature
 {
-    [FeatureSwitch<RequiresDynamicCode>]
+    [FeatureSwitch(typeof(RequiresDynamicCodeAttribute))]
     public static bool IsDynamicCodeSupported => // ...
 }
 
-class RequiresDynamicCodeAttribute : Attribute, IFeatureAttribute<RequiresDynamicCodeAttribute> {
-    public static string FeatureName => "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported";
-}
+
+```csharp
+[FeatureName("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+class RequiresDynamicCodeAttribute : FeatureAttribute { }
 ```
+
 and a feature guard for "dynamic code compilation" might look like this:
 ```csharp
 public class RuntimeFeature
 {
-    [FeatureGuard<RequiresDynamicCode>]
-    public static bool IsDynamicCodeSupported => // ...
+    [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+    public static bool IsDynamicCodeCompiled => // ...
 }
 ```
 
 The attribute definitions to support this might look like this:
 ```csharp
-class FeatureGuardAttribute<T> : Attribute
-  where T : Attribute, IFeatureAttribute<T> {}
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+abstract class FeatureAttribute : Attribute { }
 
-interface IFeatureAttribute<TSelf> where TSelf : Attribute {
-    static abstract string FeatureName { get; }
+[AttributeUsage(AttributeTargets.Property, Inherited = false)]
+class FeatureSwitchAttribute : Attribute {
+    public Type FeatureAttributeType { get; }
+
+    public FeatureSwitchAttribute(Type featureAttributeType) {
+        FeatureAttributeType = featureAttributeType;
+    }
+}
+
+[AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+class FeatureGuardAttribute : Attribute
+{
+    public Type FeatureAttributeType { get; }
+
+    public FeatureGuardAttribute(Type featureAttributeType) {
+        FeatureAttributeType = featureAttributeType;
+    }
+}
+
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+class FeatureNameAttribute : Attribute
+{
+    public string Name { get; }
+
+    public FeatureNameAttribute(string name) {
+        Name = name;
+    }
 }
 ```
+
+The analyzer would validate that `FeatureGuardAttribute` and `FeatureSwitchAttribute` attribute arguments are derived classes of `FeatureAttribute`, and that `FeatureNameAttribute` is only placed on derived classes of `FeatureAttribute`.
 
 We could use this model even for feature switches similar to `StartupHookSupport`, which don't currently have a `StartupHookSupportAttribute`. There's no need to actually annotate related APIs with the attribute if that is overkill for a small feature. In this case the attribute definition would just serve as metadata that allows us to define a feature switch in a uniform way.
 
@@ -384,7 +410,7 @@ This is fundamentally the same idea outlined in https://github.com/dotnet/design
   ```csharp
   public sealed class RuntimeFeature
   {
-      [FeatureSwitch<RequiresDynamicCodeAttribute>]
+      [FeatureSwitch(typeof(RequiresDynamicCodeAttribute))]
       public bool IsDynamicCodeSupported => // ...
   }
   ```
@@ -499,7 +525,7 @@ We might eventually want to extend the semantics in a few directions:
   }
 
   class Foo {
-      [FeatureSwitch<Requires>]
+      [FeatureSwitch(typeof(RequiresFooVersion))]
       public static bool IsSupportedWithVersionAtLeast(string version) => return VersionIsLessThanOrEquals(version, "2.0");
 
       [RequiresFooVersion("2.0")]
@@ -525,6 +551,38 @@ We might eventually want to extend the semantics in a few directions:
   ```
 
   Although it's not clear in practice where this would be useful. This is not meant as a realistic example.
+
+## Alternate API shapes
+
+An earlier version of this proposal had the following API shape:
+
+```csharp
+class RuntimeFeatures {
+    [FeatureSwitch<RequiresDynamicCodeAttribute>]
+    public static bool IsDynamicCodeSupported => // ...
+
+    [FeatureGuard<RequiresDynamicCodeAttribute>]
+    public static bool IsDynamicCodeCompiled => // ...
+}
+```
+
+```csharp
+public class FeatureGuardAttribute<T> : Attribute
+    where T : Attribute, IFeatureAttribute<T> { }
+
+public class FeatureSwitchAttribute<T> : Attribute
+    where T : Attribute, IFeatureAttribute<T> { }
+
+interface IFeatureAttribute<TSelf> where TSelf : Attribute {
+    static abstract string FeatureName { get; }
+}
+```
+
+This would use the type system to validate that `FeatureSwitch` and `FeatureGuard` are only used with attribute arguments that implement `IFeatureAttribute<T>`.
+
+The use of an interface method for `FeatureName` would require more work for the tooling to retrieve the string, so we would rather encode this in a custom attribute blob.
+
+The use of generic attributes would also restrict this form of the API to runtimes which supports generic attributes, excluding for example `netstandard2.0` libraries. 
 
 ## Implementation notes
 
