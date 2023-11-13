@@ -552,6 +552,26 @@ We might eventually want to extend the semantics in a few directions:
 
   Although it's not clear in practice where this would be useful. This is not meant as a realistic example.
 
+  The platform compatibility analyzer represents version ranges via a combination of attributes as described in [advanced scenarios for attribute combinations](https://learn.microsoft.com/dotnet/standard/analyzers/platform-compat-analyzer#advanced-scenarios-for-attribute-combinations) (in addition to representing combinations of support or lack of support for various platforms). This can encode a supported or unsupported version range for a given platform, which might alternately be encoded by a single attribute that takes starting and ending versions for support. In any case, the model seems neatly extensible to version numbers should we need them.
+
+- Feature attribute schemas
+
+  We could consider unifying this model with the platform compatibility analyzer. One difference is that the `SupportedOSPlatformAttribute` takes a string indicating the platform name. We would likely need to extend the understanding of feature attributes to support treating "features" differently based on this string, effectively supporting feature attributes which define not a single feature, but a schema that allows representing a class of features. For example:
+
+  ```csharp
+  class OSPlatformAttribute : FeatureAttribute {
+      private protected OSPlatformAttribute([FeatureName] string platformName)
+      {
+          PlatformName = platformName;
+      }
+
+      [FeatureName]
+      public string PlatformName { get; }
+  }
+  ```
+
+  In this example, `FeatureName` indicates that the instances of `SupportedOSPlatformAttribute` should be differentiated based on the value of this parameter.
+
 ## Alternate API shapes
 
 An earlier version of this proposal had the following API shape:
@@ -582,7 +602,7 @@ This would use the type system to validate that `FeatureSwitch` and `FeatureGuar
 
 The use of an interface method for `FeatureName` would require more work for the tooling to retrieve the string, so we would rather encode this in a custom attribute blob.
 
-The use of generic attributes would also restrict this form of the API to runtimes which supports generic attributes, excluding for example `netstandard2.0` libraries. 
+The use of generic attributes would also restrict this form of the API to runtimes which supports generic attributes, excluding for example `netstandard2.0` libraries.
 
 ## Implementation notes
 
