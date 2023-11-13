@@ -55,27 +55,44 @@ namespace System.Reflection.Tests
         {
             MethodBase mbase = typeof(MethodBaseTests).GetMethod("MyOtherMethod", BindingFlags.Static | BindingFlags.Public);
             MethodBody mb = mbase.GetMethodBody();
+            var codeSize = mb.GetILAsByteArray().Length;
             Assert.True(mb.InitLocals);  // local variables are initialized
+
+            if (codeSize == 0)
+            {
+                // This condition is needed for running this test under WASM AOT mode.
+                // Because IL trim is enabled be default for WASM apps whenever AOT is enabled.
+                // And the method body of "MyOtherMethod" will be trimmed.
 #if DEBUG
-            Assert.Equal(2, mb.MaxStackSize);
-            Assert.Equal(3, mb.LocalVariables.Count);
-
-            foreach (LocalVariableInfo lvi in mb.LocalVariables)
-            {
-                if (lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
-                if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
-                if (lvi.LocalIndex == 2) { Assert.Equal(typeof(bool), lvi.LocalType); }
-            }
+                Assert.Equal(2, mb.MaxStackSize);
 #else
-            Assert.Equal(1, mb.MaxStackSize);
-            Assert.Equal(2, mb.LocalVariables.Count);
-
-            foreach (LocalVariableInfo lvi in mb.LocalVariables)
-            {
-                if (lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
-                if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
-            }
+                Assert.Equal(1, mb.MaxStackSize);
 #endif
+                Assert.Equal(0, mb.LocalVariables.Count);
+            }
+            else
+            {
+#if DEBUG
+                Assert.Equal(2, mb.MaxStackSize);
+                Assert.Equal(3, mb.LocalVariables.Count);
+
+                foreach (LocalVariableInfo lvi in mb.LocalVariables)
+                {
+                    if (lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
+                    if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
+                    if (lvi.LocalIndex == 2) { Assert.Equal(typeof(bool), lvi.LocalType); }
+                }
+#else
+                Assert.Equal(1, mb.MaxStackSize);
+                Assert.Equal(2, mb.LocalVariables.Count);
+
+                foreach (LocalVariableInfo lvi in mb.LocalVariables)
+                {
+                    if (lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
+                    if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
+                }
+#endif
+            }
         }
 
         private static int MyAnotherMethod(int x)

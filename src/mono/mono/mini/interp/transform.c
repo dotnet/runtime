@@ -1214,7 +1214,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
-	if (!interp_jit_call_can_be_supported (method, sig, mono_llvm_only))
+	if (!mono_jit_call_can_be_supported_by_interp (method, sig, mono_llvm_only))
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
@@ -3550,10 +3550,20 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	CHECK_STACK_RET (td, csignature->param_count + csignature->hasthis, FALSE);
+
+	gboolean skip_tailcall = FALSE;
+	if (tailcall && !is_virtual && target_method != NULL) {
+		MonoMethodHeader *mh = interp_method_get_header (target_method, error);
+		if (mh != NULL && mh->code_size == 0)
+			skip_tailcall = TRUE;
+		mono_metadata_free_mh (mh);
+	}
+
 	if (tailcall && !td->gen_sdb_seq_points && !calli && op == -1 &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
-		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
+		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) &&
+		!skip_tailcall) {
 		(void)mono_class_vtable_checked (target_method->klass, error);
 		return_val_if_nok (error, FALSE);
 
