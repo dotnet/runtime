@@ -777,6 +777,28 @@ mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDoma
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return NULL;
 
+	MonoImage *img = m_class_get_image (method->klass);
+	if (G_UNLIKELY (img->has_updates)) {
+		guint32 idx = mono_metadata_token_index (method->token);
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie != NULL) {
+			offset = il_offset_from_address (method, address);
+			if (offset < 0) {
+				mono_debugger_unlock ();
+				return NULL;
+			}
+
+			MonoDebugSourceLocation * ret = mono_ppdb_lookup_location_enc (mdie->ppdb_file, mdie->idx, offset);
+			if (ret)
+				return ret;
+		} else {
+			/// added method without EnC info, maybe the delta came in without a PDB delta
+			gboolean added_method = idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD]);
+			if (added_method)
+				return NULL;
+		}
+	}
+
 	mono_debugger_lock ();
 	minfo = lookup_method (method);
 	if (!minfo || !minfo->handle) {
