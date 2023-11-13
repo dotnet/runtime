@@ -125,14 +125,14 @@ internal class MyXUnitTestRunner : MyXunitTestRunnerBase
 
     private void HandleTestStarting(MessageHandlerArgs<ITestStarting> args)
     {
-        if (Environment.GetEnvironmentVariable("XHARNESS_LOG_TEST_START") != null)
-        {
-            OnInfo($"\t[STRT] {args.Message.Test.DisplayName}");
-        }
-
         if (args == null || args.Message == null)
         {
             return;
+        }
+
+        if (Environment.GetEnvironmentVariable("XHARNESS_LOG_TEST_START") != null)
+        {
+            OnInfo($"\t[STRT] {args.Message.Test.DisplayName}");
         }
 
         OnDebug("Test starting");
