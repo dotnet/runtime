@@ -232,15 +232,6 @@ bool IntegralRange::Contains(int64_t value) const
             switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
             {
 #if defined(TARGET_XARCH)
-                case NI_Vector128_ToScalar:
-                case NI_Vector256_ToScalar:
-                case NI_Vector512_ToScalar:
-                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
-                    {
-                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
-                    }
-                    break;
-
                 case NI_Vector128_op_Equality:
                 case NI_Vector128_op_Inequality:
                 case NI_Vector256_op_Equality:
@@ -255,16 +246,9 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_LZCNT_X64_LeadingZeroCount:
                 case NI_POPCNT_PopCount:
                 case NI_POPCNT_X64_PopCount:
+                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
-                case NI_Vector64_ToScalar:
-                case NI_Vector128_ToScalar:
-                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
-                    {
-                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
-                    }
-                    break;
-
                 case NI_Vector64_op_Equality:
                 case NI_Vector64_op_Inequality:
                 case NI_Vector128_op_Equality:
@@ -277,12 +261,16 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
+                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #else
 #error Unsupported platform
 #endif
-                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
                 default:
+                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
+                    {
+                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
+                    }
                     break;
             }
             break;
