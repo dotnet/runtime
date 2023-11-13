@@ -4892,8 +4892,8 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
     GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
-    void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
-    void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
+    bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
+    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
