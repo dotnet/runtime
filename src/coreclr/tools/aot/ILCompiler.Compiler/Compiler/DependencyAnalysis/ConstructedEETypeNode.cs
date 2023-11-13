@@ -31,6 +31,9 @@ namespace ILCompiler.DependencyAnalysis
             // relocs to nodes we emit.
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
 
+            if (_type is MetadataType mdType)
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, mdType.Module);
+
             DefType closestDefType = _type.GetClosestDefType();
 
             if (_type.IsArray)
@@ -66,6 +69,9 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
+
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 
             return dependencyList;
@@ -74,6 +80,11 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
+        }
+
+        protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
+        {
+            return factory.SerializedConstructedRuntimeTypeObject(_type);
         }
 
         protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)

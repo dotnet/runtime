@@ -805,6 +805,7 @@ internal static partial class Interop
                 {
                     s_fileStream.Write(data);
                     s_fileStream.WriteByte((byte)'\n');
+                    s_fileStream.Flush();
                 }
             }
         }
