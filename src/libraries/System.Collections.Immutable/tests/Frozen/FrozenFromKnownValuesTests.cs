@@ -27,7 +27,6 @@ namespace System.Collections.Frozen.Tests
             from comparer in new[] { StringComparer.Ordinal, StringComparer.OrdinalIgnoreCase }
             from keys in new string[][]
             {
-                
                 // from https://github.com/dotnet/runtime/blob/a30de6d40f69ef612b514344a5ec83fffd10b957/src/libraries/Common/src/Interop/Unix/System.Native/Interop.MountPoints.FormatInfo.cs#L84-L327
                 new[]
                 {
@@ -228,7 +227,6 @@ namespace System.Collections.Frozen.Tests
                 {
                     Assert.True(frozen.ContainsKey(key));
                 }
-
                 foreach (TKey key in frozen.Keys)
                 {
                     Assert.True(source.ContainsKey(key));
@@ -322,7 +320,6 @@ namespace System.Collections.Frozen.Tests
                 {
                     Assert.True(frozen.Contains(key));
                 }
-
                 foreach (TKey item in frozen.Items)
                 {
                     Assert.True(source.ContainsKey(item));
