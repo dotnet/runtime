@@ -3777,6 +3777,156 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.8H, Vn+1.8H }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(short* address, (Vector128<short> Value1, Vector128<short> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.8H, Vn+1.8H }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(int* address, (Vector128<int> Value1, Vector128<int> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///    A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(long* address, (Vector128<long> Value1, Vector128<long> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(float* address, (Vector128<float> Value1, Vector128<float> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2AndZip(double* address, (Vector128<double> Value1, Vector128<double> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(short* address, (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(int* address, (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(long* address, (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(float* address, (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x3AndZip(double* address, (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(short* address, (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(int* address, (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(long* address, (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(float* address, (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x4AndZip(double* address, (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             ///   A64: ST1 { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
             public static unsafe void StoreVector128x2(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2) value) { throw new PlatformNotSupportedException(); }
@@ -15606,6 +15756,111 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ST1 { Vt.D }[index], [Xn]
         /// </summary>
         public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2AndZip(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2AndZip(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.4H, Vn+1.4H }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2AndZip(short* address, (Vector64<short> Value1, Vector64<short> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.4H, Vn+1.4H }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2AndZip(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2AndZip(int* address, (Vector64<int> Value1, Vector64<int> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2AndZip(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2AndZip(float* address, (Vector64<float> Value1, Vector64<float> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST3 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x3AndZip(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST3 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x3AndZip(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST3 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x3AndZip(short* address, (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST3 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x3AndZip(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x3AndZip(int* address, (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x3AndZip(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x3AndZip(float* address, (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x4AndZip(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3, Vector64<byte> Value4) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x4AndZip(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3, Vector64<sbyte> Value4) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x4AndZip(short* address, (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3, Vector64<short> Value4) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x4AndZip(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3, Vector64<ushort> Value4) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x4AndZip(int* address, (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3, Vector64<int> Value4) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x4AndZip(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3, Vector64<uint> Value4) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x4AndZip(float* address, (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   A64: ST1 { Vn.8B, Vn+1.8B }, [Xn]
