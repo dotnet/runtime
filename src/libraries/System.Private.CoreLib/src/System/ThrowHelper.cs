@@ -970,8 +970,6 @@ namespace System
                     return "other";
                 case ExceptionArgument.newSize:
                     return "newSize";
-                case ExceptionArgument.lowerBounds:
-                    return "lowerBounds";
                 case ExceptionArgument.lengths:
                     return "lengths";
                 case ExceptionArgument.len:
@@ -986,12 +984,6 @@ namespace System
                     return "index2";
                 case ExceptionArgument.index3:
                     return "index3";
-                case ExceptionArgument.length1:
-                    return "length1";
-                case ExceptionArgument.length2:
-                    return "length2";
-                case ExceptionArgument.length3:
-                    return "length3";
                 case ExceptionArgument.endIndex:
                     return "endIndex";
                 case ExceptionArgument.elementType:
@@ -1300,7 +1292,6 @@ namespace System
         handle,
         other,
         newSize,
-        lowerBounds,
         lengths,
         len,
         keys,
@@ -1308,9 +1299,6 @@ namespace System
         index1,
         index2,
         index3,
-        length1,
-        length2,
-        length3,
         endIndex,
         elementType,
         arrayIndex,

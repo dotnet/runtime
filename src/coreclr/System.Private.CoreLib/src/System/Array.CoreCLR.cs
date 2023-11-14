@@ -14,15 +14,18 @@ namespace System
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstance")]
+        private static unsafe partial void InternalCreate(QCallTypeHandle type, int rank, int* pLengths, int* pLowerBounds, ObjectHandleOnStack retArray);
 
-        private static unsafe Array InternalCreateFromArrayType(Type arrayType, int rank, int* pLengths, int* pLowerBounds)
+        private static unsafe Array InternalCreate(RuntimeType type, int rank, int* pLengths, int* pLowerBounds)
         {
-            return rank == 1 && (pLowerBounds == null || pLowerBounds[0] == 0)
-                ? GC.AllocateNewArray(arrayType.TypeHandle.Value, pLengths[0], GC.GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS)
-                : InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
+            Array? retArray = null;
+            InternalCreate(new QCallTypeHandle(ref type), rank, pLengths, pLowerBounds, ObjectHandleOnStack.Create(ref retArray));
+            return retArray!;
         }
+
+        private static unsafe Array InternalCreateFromArrayType(RuntimeType type, int rank, int* pLengths, int* pLowerBounds)
+            => InternalCreate(type, -rank, pLengths, pLowerBounds);
 
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {

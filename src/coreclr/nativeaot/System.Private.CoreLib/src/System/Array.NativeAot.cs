@@ -55,6 +55,21 @@ namespace System
             return MethodTable.Of<Array>();
         }
 
+        private static void ValidateElementType(Type elementType)
+        {
+            while (elementType.IsArray)
+            {
+                elementType = elementType.GetElementType()!;
+            }
+
+            if (elementType.IsByRef || elementType.IsByRefLike)
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ByRefLikeArray);
+            if (elementType == typeof(void))
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_VoidArray);
+            if (elementType.ContainsGenericParameters)
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_OpenType);
+        }
+
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
@@ -72,21 +87,27 @@ namespace System
             if (rank == 1)
             {
                 return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), pLengths[0]);
-
             }
             else
             {
+                Type arrayType = elementType.MakeArrayType(rank);
+
                 // Create a local copy of the lengths that cannot be modified by the caller
                 int* pImmutableLengths = stackalloc int[rank];
                 for (int i = 0; i < rank; i++)
                     pImmutableLengths[i] = pLengths[i];
 
-                return NewMultiDimArray(elementType.MakeArrayType(rank).TypeHandle.ToEETypePtr(), pImmutableLengths, rank);
+                return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pImmutableLengths, rank);
             }
         }
 
-        private static unsafe Array InternalCreateFromArrayType(Type arrayType, int rank, int* pLengths, int* pLowerBounds)
+        private static unsafe Array InternalCreateFromArrayType(RuntimeType arrayType, int rank, int* pLengths, int* pLowerBounds)
         {
+            Debug.Assert(arrayType.IsArray);
+            Debug.Assert(arrayType.GetArrayRank() == rank);
+
+            ValidateElementType(arrayType.GetElementType());
+
             if (pLowerBounds != null)
             {
                 for (int i = 0; i < rank; i++)
@@ -96,9 +117,15 @@ namespace System
                 }
             }
 
+            EETypePtr eeType = arrayType.TypeHandle.ToEETypePtr();
             if (rank == 1)
             {
-                return RuntimeImports.RhNewArray(arrayType.TypeHandle.ToEETypePtr(), pLengths[0]);
+                // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
+                // as an SzArray. SzArray is castable to MdArray rank 1.
+                if (!eeType.IsSzArray)
+                    eeType = arrayType.GetElementType().MakeArrayType().TypeHandle.ToEETypePtr();
+
+                return RuntimeImports.RhNewArray(eeType, pLengths[0]);
             }
             else
             {
@@ -107,7 +134,7 @@ namespace System
                 for (int i = 0; i < rank; i++)
                     pImmutableLengths[i] = pLengths[i];
 
-                return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pImmutableLengths, rank);
+                return NewMultiDimArray(eeType, pImmutableLengths, rank);
             }
         }
 

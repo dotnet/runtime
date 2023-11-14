@@ -2063,6 +2063,21 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("lowerBounds", () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[] { 1 }, null));
         }
 
+        [Fact]
+        public void CreateInstanceFromTemplate_Rank1()
+        {
+            Type variableBoundArrayType = typeof(object).MakeArrayType(1);
+            Assert.NotEqual(variableBoundArrayType, typeof(object[]));
+
+            Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, 12).GetType(), typeof(object[]));
+            Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, [22]).GetType(), typeof(object[]));
+            Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [0]).GetType(), typeof(object[]));
+
+            Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [22]).GetType(), variableBoundArrayType);
+
+            Assert.Throws<ArgumentException>(Array.CreateInstanceFromArrayType(typeof(object[]), [7], [8]));
+        }
+
         [Theory]
         [InlineData((long)int.MaxValue + 1)]
         [InlineData((long)int.MinValue - 1)]
