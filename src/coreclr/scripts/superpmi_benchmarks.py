@@ -18,7 +18,6 @@ import sys
 import stat
 import os
 import time
-import shutil
 
 from shutil import copyfile
 from coreclr_arguments import *
@@ -232,7 +231,7 @@ def build_and_run(coreclr_args, output_mch_name):
         else:
             RID = "linux-" + arch
 
-        copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/" + RID + "/lib/netstandard1.6/"), benchmarks_dll_core_root, verbose_copy=True)
+        copy_directory(os.path.join(benchmarks_dll_dir, f"runtimes/{RID}/lib/netstandard1.6/"), benchmarks_dll_core_root, verbose_copy=True)
         # End copy PowerShell dependencies.
 
         # Copy the original 'core_root' to the benchmarks' 'core_root'.
