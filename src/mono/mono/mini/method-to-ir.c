@@ -7632,30 +7632,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
-			if (sig->call_convention == MONO_CALL_SWIFTCALL) {
-				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-				MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ref_class ();
-				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
-				int swift_error_args = 0, swift_self_args = 0;
-				for (int i = 0; i < sig->param_count; ++i) {
-					MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
-					if (klass) {
-						if (klass == swift_error) {
-							swift_error_args = swift_self_args = 0;
-							mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("SwiftError argument must be a reference."));
-							break;
-						} else if (klass == swift_error_ptr) {
-							swift_self_args++;
-						} else if (klass == swift_self) {
-							swift_self_args++;
-						}
-					}
-				}
-				if (swift_self_args > 1 || swift_error_args > 1) {
-					mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Method signature contains multiple SwiftSelf/SwiftError arguments."));
-				}
-			}
-
 			/* Some wrappers use calli with ftndesc-es */
 			if (cfg->llvm_only && !(cfg->method->wrapper_type &&
 									cfg->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD &&
@@ -11170,6 +11146,36 @@ field_access_end:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 			const MonoJitICallId jit_icall_id = (MonoJitICallId)token;
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
+
+			if (method->wrapper_type == MONO_CALL_SWIFTCALL) {
+				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+				MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ref_class ();
+				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+				int swift_error_args = 0, swift_self_args = 0;
+				ERROR_DECL (swiftcall_error);
+				for (int i = 0; i < method->signature->param_count; ++i) {
+					MonoClass *klass = mono_class_from_mono_type_internal (method->signature->params [i]);
+					if (klass) {
+						if (klass == swift_error) {
+							swift_error_args = swift_self_args = 0;
+                            mono_error_set_invalid_program (swiftcall_error, g_strdup_printf ("SwiftError argument must be a reference."), mono_method_full_name (method, TRUE));
+							break;
+						} else if (klass == swift_error_ptr) {
+							swift_self_args++;
+						} else if (klass == swift_self) {
+							swift_self_args++;
+						}
+					}
+				}
+				if (swift_self_args > 1 || swift_error_args > 1) {
+					mono_error_set_invalid_program (swiftcall_error, g_strdup_printf ("Method signature contains multiple SwiftSelf/SwiftError arguments."), mono_method_full_name (method, TRUE));
+				}
+
+				if (!is_ok (swiftcall_error)) {
+                    emit_invalid_program_with_msg (cfg, swiftcall_error, method, cmethod);
+                    mono_error_cleanup (swiftcall_error);
+                }
+			}
 
 			CHECK_STACK (jit_icall_info->sig->param_count);
 			sp -= jit_icall_info->sig->param_count;
