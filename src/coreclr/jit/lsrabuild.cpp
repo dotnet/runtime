@@ -2815,8 +2815,6 @@ void           LinearScan::buildIntervals()
     {
         actualRegistersMask = ~RBM_NONE;
     }
-    printf("actualRegistersMask: ");
-    BitOperations::print128x(actualRegistersMask);
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
