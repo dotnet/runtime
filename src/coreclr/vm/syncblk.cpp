@@ -2851,6 +2851,15 @@ BOOL SyncBlock::Wait(INT32 timeOut)
 
     OBJECTREF     obj = m_Monitor.GetOwningObject();
 
+    LARGE_INTEGER startTicks = { {0} };
+    bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
+
+    if (isContentionKeywordEnabled)
+    {
+        QueryPerformanceCounter(&startTicks);
+        FireEtwWaitStart_V1(GetClrInstanceId(), this, OBJECTREFToObject(obj));
+    }
+
     m_Monitor.IncrementTransientPrecious();
 
     // While we are in this frame the thread is considered blocked on the
@@ -2874,6 +2883,16 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     }
     GCPROTECT_END();
     m_Monitor.DecrementTransientPrecious();
+
+    if (isContentionKeywordEnabled)
+    {
+        LARGE_INTEGER endTicks;
+        QueryPerformanceCounter(&endTicks);
+
+        double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
+
+        FireEtwWaitStop_V1(GetClrInstanceId(), elapsedTimeInNanosecond);
+    }
 
     return !isTimedOut;
 }

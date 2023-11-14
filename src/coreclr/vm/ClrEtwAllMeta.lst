@@ -191,6 +191,8 @@ nomac:Contention:::ContentionStop
 nostack:Contention:::ContentionStop_V1
 nomac:Contention:::ContentionStop_V1
 nomac:Contention:::ContentionLockCreated
+nomac:Contention:::WaitStart_V1
+nomac:Contention:::WaitStop_V1
 
 ##################
 # StackWalk events

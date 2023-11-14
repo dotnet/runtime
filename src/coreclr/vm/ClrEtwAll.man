@@ -1775,6 +1775,30 @@
                         </UserData>
                     </template>
 
+                    <template tid="WaitStart_V1">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="LockID" inType="win:Pointer" />
+                        <data name="AssociatedObjectID" inType="win:Pointer" />
+                        <UserData>
+                            <Contention xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <LockID> %2 </LockID>
+                                <AssociatedObjectID> %3 </AssociatedObjectID>
+                            </Contention>
+                        </UserData>
+                    </template>
+
+                    <template tid="WaitStop_V1">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="DurationNs" inType="win:Double" />
+                        <UserData>
+                            <Contention xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <DurationNs> %2 </DurationNs>
+                            </Contention>
+                        </UserData>
+                    </template>
+
                     <template tid="DomainModuleLoadUnload">
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
@@ -3696,6 +3720,15 @@
                            task="Contention"
                            symbol="ContentionLockCreated" message="$(string.RuntimePublisher.ContentionLockCreatedEventMessage)"/>
 
+                    <event value="301" version="1" level="win:Informational"  template="WaitStart_V1"
+                           keywords="ContentionKeyword"  opcode="win:Start"
+                           task="Contention"
+                           symbol="WaitStart_V1" message="$(string.RuntimePublisher.WaitStart_V1EventMessage)"/>
+
+                    <event value="302" version="1" level="win:Informational"  template="WaitStop_V1"
+                           keywords ="ContentionKeyword"  opcode="win:Stop"
+                           task="Contention"
+                           symbol="WaitStop_V1" message="$(string.RuntimePublisher.WaitStop_V1EventMessage)"/>
 
                     <!-- CLR Stack events -->
                     <event value="82" version="0" level="win:LogAlways"  template="ClrStackWalk"
@@ -8483,6 +8516,8 @@
                 <string id="RuntimePublisher.ContentionStopEventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.ContentionStop_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;DurationNs=%3"/>
                 <string id="RuntimePublisher.ContentionLockCreatedEventMessage" value="LockID=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
+                <string id="RuntimePublisher.WaitStart_V1EventMessage" value="ClrInstanceID=%1;%nLockID=%2;%nAssociatedObjectID=%3"/>
+                <string id="RuntimePublisher.WaitStop_V1EventMessage" value="ClrInstanceID=%1;%nDurationNs=%2"/>
                 <string id="RuntimePublisher.DCStartCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.DCEndCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
