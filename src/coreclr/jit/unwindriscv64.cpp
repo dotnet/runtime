@@ -20,8 +20,208 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if defined(FEATURE_CFI_SUPPORT)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
-    NYI_RISCV64("mapRegNumToDwarfReg-----unimplemented on RISCV64 yet----");
-    return 0;
+    short dwarfReg = DWARF_REG_ILLEGAL;
+
+    switch (reg)
+    {
+        case REG_R0:
+            dwarfReg = 0;
+            break;
+        case REG_RA:
+            dwarfReg = 1;
+            break;
+        case REG_SP:
+            dwarfReg = 2;
+            break;
+        case REG_GP:
+            dwarfReg = 3;
+            break;
+        case REG_TP:
+            dwarfReg = 4;
+            break;
+        case REG_T0:
+            dwarfReg = 5;
+            break;
+        case REG_T1:
+            dwarfReg = 6;
+            break;
+        case REG_T2:
+            dwarfReg = 7;
+            break;
+        case REG_FP:
+            dwarfReg = 8;
+            break;
+        case REG_S1:
+            dwarfReg = 9;
+            break;
+        case REG_A0:
+            dwarfReg = 10;
+            break;
+        case REG_A1:
+            dwarfReg = 11;
+            break;
+        case REG_A2:
+            dwarfReg = 12;
+            break;
+        case REG_A3:
+            dwarfReg = 13;
+            break;
+        case REG_A4:
+            dwarfReg = 14;
+            break;
+        case REG_A5:
+            dwarfReg = 15;
+            break;
+        case REG_A6:
+            dwarfReg = 16;
+            break;
+        case REG_A7:
+            dwarfReg = 17;
+            break;
+        case REG_S2:
+            dwarfReg = 18;
+            break;
+        case REG_S3:
+            dwarfReg = 19;
+            break;
+        case REG_S4:
+            dwarfReg = 20;
+            break;
+        case REG_S5:
+            dwarfReg = 21;
+            break;
+        case REG_S6:
+            dwarfReg = 22;
+            break;
+        case REG_S7:
+            dwarfReg = 23;
+            break;
+        case REG_S8:
+            dwarfReg = 24;
+            break;
+        case REG_S9:
+            dwarfReg = 25;
+            break;
+        case REG_S10:
+            dwarfReg = 26;
+            break;
+        case REG_S11:
+            dwarfReg = 27;
+            break;
+        case REG_T3:
+            dwarfReg = 28;
+            break;
+        case REG_T4:
+            dwarfReg = 29;
+            break;
+        case REG_T5:
+            dwarfReg = 30;
+            break;
+        case REG_T6:
+            dwarfReg = 31;
+            break;
+        case REG_F0:
+            dwarfReg = 32;
+            break;
+        case REG_F1:
+            dwarfReg = 33;
+            break;
+        case REG_F2:
+            dwarfReg = 34;
+            break;
+        case REG_F3:
+            dwarfReg = 35;
+            break;
+        case REG_F4:
+            dwarfReg = 36;
+            break;
+        case REG_F5:
+            dwarfReg = 37;
+            break;
+        case REG_F6:
+            dwarfReg = 38;
+            break;
+        case REG_F7:
+            dwarfReg = 39;
+            break;
+        case REG_F8:
+            dwarfReg = 40;
+            break;
+        case REG_F9:
+            dwarfReg = 41;
+            break;
+        case REG_F10:
+            dwarfReg = 42;
+            break;
+        case REG_F11:
+            dwarfReg = 43;
+            break;
+        case REG_F12:
+            dwarfReg = 44;
+            break;
+        case REG_F13:
+            dwarfReg = 45;
+            break;
+        case REG_F14:
+            dwarfReg = 46;
+            break;
+        case REG_F15:
+            dwarfReg = 47;
+            break;
+        case REG_F16:
+            dwarfReg = 48;
+            break;
+        case REG_F17:
+            dwarfReg = 49;
+            break;
+        case REG_F18:
+            dwarfReg = 50;
+            break;
+        case REG_F19:
+            dwarfReg = 51;
+            break;
+        case REG_F20:
+            dwarfReg = 52;
+            break;
+        case REG_F21:
+            dwarfReg = 53;
+            break;
+        case REG_F22:
+            dwarfReg = 54;
+            break;
+        case REG_F23:
+            dwarfReg = 55;
+            break;
+        case REG_F24:
+            dwarfReg = 56;
+            break;
+        case REG_F25:
+            dwarfReg = 57;
+            break;
+        case REG_F26:
+            dwarfReg = 58;
+            break;
+        case REG_F27:
+            dwarfReg = 59;
+            break;
+        case REG_F28:
+            dwarfReg = 60;
+            break;
+        case REG_F29:
+            dwarfReg = 61;
+            break;
+        case REG_F30:
+            dwarfReg = 62;
+            break;
+        case REG_F31:
+            dwarfReg = 63;
+            break;
+
+        default:
+            NYI("CFI codes");
+    }
+
+    return dwarfReg;
 }
 #endif // FEATURE_CFI_SUPPORT
 
