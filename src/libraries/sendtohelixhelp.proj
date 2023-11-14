@@ -241,7 +241,7 @@
     </HelixPreCommands>
     <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
       $(HelixPreCommands);
-      export __TestArchitecture=$(TargetArchitecture)
+      export __TestArchitecture=$(TargetArchitecture);
       export __IsXUnitLogCheckerSupported=$(_ShouldSetXUnitLogCheckerEnvVar)
     </HelixPreCommands>
   </PropertyGroup>
