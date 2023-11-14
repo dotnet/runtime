@@ -1613,6 +1613,12 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 			}
 
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
+				int vt_slot_const = method->slot + interface_offset;
+				if (G_UNLIKELY (vt_slot != vt_slot_const)) {
+					char *name = mono_method_full_name (method, TRUE);
+					g_assertf (vt_slot == vt_slot_const, "method %s computed slot %d != pre-assigned slot %d (interface %d, slot %d)", name, vt_slot, vt_slot_const, interface_offset, method->slot);
+					g_free (name);
+				}
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
 				vt_slot ++;
 			}
