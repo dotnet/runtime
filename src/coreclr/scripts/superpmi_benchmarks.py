@@ -18,10 +18,11 @@ import sys
 import stat
 import os
 import time
+import shutil
 
 from shutil import copyfile
 from coreclr_arguments import *
-from jitutil import run_command, ChangeDir, TempDir
+from jitutil import run_command, ChangeDir, TempDir, copy_directory
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -154,7 +155,7 @@ def build_and_run(coreclr_args, output_mch_name):
     benchmark_path = coreclr_args.benchmark_path
     benchmark_binary = coreclr_args.benchmark_binary
     dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
-    dotnet_exe = os.path.join(dotnet_directory, "dotnet")
+    dotnet_exe = "dotnet" #os.path.join(dotnet_directory, "dotnet")
 
     artifacts_directory = os.path.join(performance_directory, "artifacts")
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
@@ -175,6 +176,7 @@ def build_and_run(coreclr_args, output_mch_name):
 
     make_executable(dotnet_exe)
 
+    print(dotnet_exe)
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
 
@@ -208,6 +210,22 @@ def build_and_run(coreclr_args, output_mch_name):
 
     # common BDN prefix
     collection_command = f"{dotnet_exe} {benchmarks_dll} --corerun {os.path.join(core_root, corerun_exe)} "
+
+    # This is specifically for PowerShell.Benchmarks.
+    # Because we are using '--corerun' when running the benchmarks, it is not able to resolve the PowerShell dependent assemblies.
+    # To make this work, we simply copy the dependencies into core_root.
+    if benchmarks_dll.endswith("PowerShell.Benchmarks.dll"):
+        benchmarks_dll_dir = os.path.dirname(benchmarks_dll)
+        copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/win/lib/net7.0/"), core_root, make_sub_directory=True, verbose_copy=True)
+
+        if is_windows:
+            RID = "win-" + arch
+        elif platform.system() == "Darwin":
+            RID = "osx-" + arch
+        else:
+            RID = "linux-" + arch
+
+        copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/" + RID + "/lib/netstandard1.6/"), core_root, make_sub_directory=True, verbose_copy=True)
 
     # test specific filters
     if benchmark_binary.lower().startswith("microbenchmarks"):
