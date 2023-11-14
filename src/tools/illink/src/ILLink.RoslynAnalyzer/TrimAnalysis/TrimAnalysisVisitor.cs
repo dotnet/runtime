@@ -20,7 +20,8 @@ using StateValue = ILLink.RoslynAnalyzer.DataFlow.LocalDataFlowState<
 	ILLink.RoslynAnalyzer.DataFlow.FeatureContext,
 	ILLink.Shared.DataFlow.ValueSetLattice<ILLink.Shared.DataFlow.SingleValue>,
 	ILLink.RoslynAnalyzer.DataFlow.FeatureContextLattice,
-	ILLink.RoslynAnalyzer.DataFlow.FeatureChecksValue>;
+	ILLink.RoslynAnalyzer.DataFlow.FeatureChecksValue,
+	ILLink.RoslynAnalyzer.DataFlow.FeatureChecksLattice>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
@@ -29,7 +30,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		FeatureContext,
 		ValueSetLattice<SingleValue>,
 		FeatureContextLattice,
-		FeatureChecksValue>
+		FeatureChecksValue,
+		FeatureChecksLattice>
 	{
 		public readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
 
@@ -44,7 +46,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public TrimAnalysisVisitor (
 			Compilation compilation,
-			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice, FeatureChecksValue> lattice,
+			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice, FeatureChecksValue, FeatureChecksLattice> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,

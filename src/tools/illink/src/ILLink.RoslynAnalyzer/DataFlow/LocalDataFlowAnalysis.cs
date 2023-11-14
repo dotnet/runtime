@@ -19,8 +19,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	public abstract class LocalDataFlowAnalysis<TValue, TContext, TLattice, TContextLattice, TTransfer, TConditionValue, TConditionLattice>
 		: ForwardDataFlowAnalysis<
 			LocalStateAndContext<TValue, TContext, TConditionValue>,
-			LocalDataFlowState<TValue, TContext, TLattice, TContextLattice, TConditionValue>,
-			LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice, TConditionValue>,
+			LocalDataFlowState<TValue, TContext, TLattice, TContextLattice, TConditionValue, TConditionLattice>,
+			LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice, TConditionValue, TConditionLattice>,
 			BlockProxy,
 			RegionProxy,
 			ControlFlowGraphProxy,
@@ -31,7 +31,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		where TContext : struct, IEquatable<TContext>
 		where TLattice : ILattice<TValue>, new()
 		where TContextLattice : ILattice<TContext>, new()
-		where TTransfer : LocalDataFlowVisitor<TValue, TContext, TLattice, TContextLattice, TConditionValue>
+		where TTransfer : LocalDataFlowVisitor<TValue, TContext, TLattice, TContextLattice, TConditionValue, TConditionLattice>
 		where TConditionValue : struct, IEquatable<TConditionValue>, INegate<TConditionValue>
 		where TConditionLattice : ILattice<TConditionValue>, new()
 	{
@@ -39,11 +39,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		readonly IOperation OperationBlock;
 
-		static LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice, TConditionValue> GetLatticeAndEntryValue(
+		static LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice, TConditionValue, TConditionLattice> GetLatticeAndEntryValue(
 			TContext initialContext,
 			out LocalStateAndContext<TValue, TContext, TConditionValue> entryValue)
 		{
-			LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice, TConditionValue> lattice = new (new (new TLattice ()), new TContextLattice ());
+			LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice, TConditionValue,  TConditionLattice> lattice = new (new (new TLattice ()), new TContextLattice (), new TConditionLattice ());
 			entryValue = new LocalStateAndContext<TValue, TContext, TConditionValue> (default (LocalState<TValue>), initialContext, default (TConditionValue));
 			return lattice;
 		}
