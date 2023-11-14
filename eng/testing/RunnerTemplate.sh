@@ -65,7 +65,7 @@ function move_core_file_to_temp_location {
   local core_file_name=$1
 
   # Append the dmp extension to ensure XUnitLogChecker finds it
-  local new_location=$HELIX_DUMP_FOLDER/core.$RANDOM.dmp
+  local new_location=$HELIX_DUMP_FOLDER/$core_file_name.$RANDOM.dmp
 
   echo "Copying dump file '$core_file_name' to '$new_location'"
   cp $core_file_name $new_location
