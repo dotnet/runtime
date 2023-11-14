@@ -373,10 +373,10 @@ bool RiscV64SingleStepper::TryEmulate(T_CONTEXT *pCtx, uint32_t opcode, bool exe
             LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::TryEmulate JAL\n"));
 
             // J-immediate encodes a signed offset in multiples of 2 bytes
-            //      21       | 20                                               1 | 0
+            //      20       | 19                                               1 | 0
             // inst[31]/sign | inst[19:12] | inst[20] | inst[30:25] | inst[24:21] | 0
             uint64_t imm = SignExtend((BitExtract(opcode, 30, 21) << 1) | (BitExtract(opcode, 20, 20) << 11) |
-                                      (BitExtract(opcode, 19, 12) << 12) | (BitExtract(opcode, 31, 31) << 20), 21);
+                                      (BitExtract(opcode, 19, 12) << 12) | (BitExtract(opcode, 31, 31) << 20), 20);
             uint64_t Rd = BitExtract(opcode, 11, 7);
             SetReg(pCtx, Rd, m_originalPc + 4);
 
@@ -422,10 +422,10 @@ bool RiscV64SingleStepper::TryEmulate(T_CONTEXT *pCtx, uint32_t opcode, bool exe
                 (((opcode & 0x707f) == 0x5063) && Rs1SValue >= Rs2SValue))
             {
                 // B-immediate encodes a signed offset in multiples of 2 bytes
-                //       13      | 12                               1 | 0
+                //       12      | 11                               1 | 0
                 // inst[31]/sign | inst[7] | inst[30:25] | inst[11:8] | 0
                 uint64_t imm = SignExtend((BitExtract(opcode, 11, 8) << 1) | (BitExtract(opcode, 30, 25) << 5) |
-                                          (BitExtract(opcode, 7, 7) << 11) | (BitExtract(opcode, 31, 31) << 12), 13);
+                                          (BitExtract(opcode, 7, 7) << 11) | (BitExtract(opcode, 31, 31) << 12), 12);
 
                 fRedirectedPc = true;
                 m_targetPc = m_originalPc + imm;
@@ -449,10 +449,10 @@ bool RiscV64SingleStepper::TryEmulate(T_CONTEXT *pCtx, uint32_t opcode, bool exe
                 (((opcode & 0x707f) == 0x7063) && Rs1Value >= Rs2Value))
             {
                 // B-immediate encodes a signed offset in multiples of 2 bytes
-                //       13      | 12                               1 | 0
+                //       12      | 11                               1 | 0
                 // inst[31]/sign | inst[7] | inst[30:25] | inst[11:8] | 0
                 uint64_t imm = SignExtend((BitExtract(opcode, 11, 8) << 1) | (BitExtract(opcode, 30, 25) << 5) |
-                                          (BitExtract(opcode, 7, 7) << 11) | (BitExtract(opcode, 31, 31) << 12), 13);
+                                          (BitExtract(opcode, 7, 7) << 11) | (BitExtract(opcode, 31, 31) << 12), 12);
 
                 fRedirectedPc = true;
                 m_targetPc = m_originalPc + imm;
