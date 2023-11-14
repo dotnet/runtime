@@ -1062,6 +1062,47 @@ namespace System.Runtime.Loader
 
             return architecture == processArchitecture;
         }
+
+        // AssemblySpec::InitializeAssemblyNameRef
+        public static unsafe AssemblyName InitializeAssemblyNameRef(BinderAssemblyName assemblyName)
+        {
+            string culture = string.Empty;
+
+            if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE) != 0)
+            {
+                culture = assemblyName.IsNeutralCulture ? string.Empty : assemblyName.CultureOrLanguage;
+            }
+
+            fixed (char* pName = assemblyName.SimpleName)
+            fixed (char* pCulture = culture)
+            fixed (byte* pPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB)
+            {
+                var nativeAssemblyNameParts = new NativeAssemblyNameParts
+                {
+                    _pName = pName,
+                    _pCultureName = pCulture,
+                    _major = (ushort)assemblyName.Version.Major,
+                    _minor = (ushort)assemblyName.Version.Minor,
+                    _build = (ushort)assemblyName.Version.Build,
+                    _revision = (ushort)assemblyName.Version.Revision,
+                    _pPublicKeyOrToken = pPublicKeyOrToken,
+                    _cbPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB.Length,
+                };
+
+                if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY) != 0)
+                    nativeAssemblyNameParts._flags |= System.Reflection.AssemblyNameFlags.PublicKey;
+
+                // Architecture unused
+
+                // Retargetable
+                if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_RETARGETABLE) != 0)
+                    nativeAssemblyNameParts._flags |= System.Reflection.AssemblyNameFlags.Retargetable;
+
+                // Content type unused
+
+                return new AssemblyName(&nativeAssemblyNameParts);
+            }
+        }
     }
 
     public partial class AssemblyLoadContext
@@ -1091,49 +1132,8 @@ namespace System.Runtime.Loader
             using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, ref hr);
 
             // Allocate an AssemblyName managed object
-            AssemblyName refAssemblyName;
-
             // Initialize the AssemblyName object
-            // AssemblySpec::InitializeAssemblyNameRef
-            unsafe
-            {
-                string culture = string.Empty;
-
-                if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE) != 0)
-                {
-                    culture = assemblyName.IsNeutralCulture ? string.Empty : assemblyName.CultureOrLanguage;
-                }
-
-                fixed (char* pName = assemblyName.SimpleName)
-                fixed (char* pCulture = culture)
-                fixed (byte* pPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB)
-                {
-                    var nativeAssemblyNameParts = new NativeAssemblyNameParts
-                    {
-                        _pName = pName,
-                        _pCultureName = pCulture,
-                        _major = (ushort)assemblyName.Version.Major,
-                        _minor = (ushort)assemblyName.Version.Minor,
-                        _build = (ushort)assemblyName.Version.Build,
-                        _revision = (ushort)assemblyName.Version.Revision,
-                        _pPublicKeyOrToken = pPublicKeyOrToken,
-                        _cbPublicKeyOrToken = assemblyName.PublicKeyOrTokenBLOB.Length,
-                    };
-
-                    if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY) != 0)
-                        nativeAssemblyNameParts._flags |= System.Reflection.AssemblyNameFlags.PublicKey;
-
-                    // Architecture unused
-
-                    // Retargetable
-                    if ((assemblyName.IdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_RETARGETABLE) != 0)
-                        nativeAssemblyNameParts._flags |= System.Reflection.AssemblyNameFlags.Retargetable;
-
-                    // Content type unused
-
-                    refAssemblyName = new AssemblyName(&nativeAssemblyNameParts);
-                }
-            }
+            AssemblyName refAssemblyName = AssemblyBinderCommon.InitializeAssemblyNameRef(assemblyName);
 
             bool isSatelliteAssemblyRequest = !assemblyName.IsNeutralCulture;
             try
@@ -1208,12 +1208,13 @@ namespace System.Runtime.Loader
                 if (fResolvedAssembly && resolvedAssembly == null)
                 {
                     // If we are here, assembly was successfully resolved via Load or Resolving events.
+                    Debug.Assert(refLoadedAssembly != null);
 
                     // We were able to get the assembly loaded. Now, get its name since the host could have
                     // performed the resolution using an assembly with different name.
 
                     RuntimeAssembly? rtAssembly =
-                        AssemblyLoadContext.GetRuntimeAssembly(refLoadedAssembly)
+                        GetRuntimeAssembly(refLoadedAssembly)
                         ?? throw new InvalidOperationException(SR.Arg_MustBeRuntimeAssembly);
 
                     IntPtr pDomainAssembly = rtAssembly.GetUnderlyingNativeHandle();
