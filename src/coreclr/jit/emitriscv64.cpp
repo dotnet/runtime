@@ -2901,7 +2901,7 @@ static const char* const RegNames[] =
 //    id   - The instrDesc of the code if needed.
 //
 // Note:
-//    The length of the instruction's name include aligned space is 13.
+//    The length of the instruction's name include aligned space is 15.
 //
 
 void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
@@ -3223,7 +3223,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     return;
             }
         }
-        case 0x63:
+        case 0x63: // BRANCH
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -3236,28 +3236,38 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             switch (opcode2)
             {
-                case 0: // BEQ
-                    printf("beq            %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 1: // BNE
-                    printf("bne            %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 4: // BLT
-                    printf("blt            %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 5: // BGE
-                    printf("bge            %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 6: // BLTU
-                    printf("bltu           %s, %s, %d\n", rs1, rs2, offset);
-                    return;
-                case 7: // BGEU
-                    printf("bgeu           %s, %s, %d\n", rs1, rs2, offset);
-                    return;
+                case 0:
+                    printf("beq ");
+                    break;
+                case 1:
+                    printf("bne ");
+                    break;
+                case 4:
+                    printf("blt ");
+                    break;
+                case 5:
+                    printf("bge ");
+                    break;
+                case 6:
+                    printf("bltu");
+                    break;
+                case 7:
+                    printf("bgeu");
+                    break;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
                     return;
             }
+            static const int MAX_LEN = 32;
+
+            int len = printf("           %s, %s, %d", rs1, rs2, offset);
+            if (len <= 0 || len > MAX_LEN)
+                return;
+
+            if (!emitComp->opts.disDiffable)
+                printf("%*s;; offset=0x%04X", MAX_LEN - len, "", emitCurCodeOffs(insAdr) + offset);
+            printf("\n");
+            return;
         }
         case 0x03:
         {

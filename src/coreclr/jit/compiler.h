@@ -4493,6 +4493,8 @@ public:
     unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
+    BasicBlock** fgSSAPostOrder;       // Blocks in postorder, computed during SSA
+    unsigned     fgSSAPostOrderCount;  // Number of blocks in fgSSAPostOrder
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -4799,7 +4801,7 @@ public:
     FoldResult fgFoldConditional(BasicBlock* block);
 
     PhaseStatus fgMorphBlocks();
-    void fgMorphBlock(BasicBlock* block);
+    void fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorder = 0);
     void fgMorphStmts(BasicBlock* block);
 
     void fgMergeBlockReturn(BasicBlock* block);
@@ -4892,8 +4894,8 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
     GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
-    void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
-    void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
+    bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
+    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
@@ -5057,6 +5059,7 @@ public:
 
     // The value numbers for this compilation.
     ValueNumStore* vnStore;
+    class ValueNumberState* vnState;
 
 public:
     ValueNumStore* GetValueNumStore()
@@ -5329,14 +5332,11 @@ protected:
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
-    void fgDfsReversePostorder();
+    unsigned fgDfsReversePostorder();
     void fgDfsReversePostorderHelper(BasicBlock* block,
                                      BlockSet&   visited,
                                      unsigned&   preorderIndex,
                                      unsigned&   reversePostorderIndex);
-
-    BlockSet_ValRet_T fgDomFindStartNodes(); // Computes which basic blocks don't have incoming edges in the flow graph.
-                                             // Returns this as a set.
 
     INDEBUG(void fgDispDomTree(DomTreeNode* domTree);) // Helper that prints out the Dominator Tree in debug builds.
 
@@ -5725,7 +5725,7 @@ public:
 
 protected:
     friend class SsaBuilder;
-    friend struct ValueNumberState;
+    friend class ValueNumberState;
 
     //--------------------- Detect the basic blocks ---------------------------
 
@@ -7640,6 +7640,7 @@ protected:
     AssertionDsc*  optAssertionTabPrivate;      // table that holds info about value assignments
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
     bool           optCanPropEqual;

@@ -183,3 +183,4 @@ While not necessarily associated with a specific area, these community members h
 * @teo-tsirpanis
 * @tmds
 * @vcsjones
+* @Sergio0694

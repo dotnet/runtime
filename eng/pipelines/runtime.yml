@@ -617,7 +617,6 @@ extends:
             - wasi_wasm_win
           nameSuffix: '_Smoke'
           extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          shouldContinueOnError: true
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
