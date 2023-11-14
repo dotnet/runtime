@@ -265,7 +265,7 @@
 
   <Target Name="_WasmSelectRuntimeComponentsForLinking" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
-  <Target Name="_GetNativeFilesForLinking" Returns="@(_WasmNativeFileForLinking)">
+  <Target Name="_GetNativeFilesForLinking" DependsOnTargets="_WasmSelectRuntimeComponentsForLinking" Returns="@(_WasmNativeFileForLinking)">
     <Message Text="MicrosoftNetCoreAppRuntimePackRidNativeDir: $(MicrosoftNetCoreAppRuntimePackRidNativeDir)" Importance="High" />
     <PropertyGroup>
       <!-- FIXME: eh case -->
