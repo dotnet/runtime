@@ -16,17 +16,24 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisReturnValuePattern> ReturnValuePatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
 		readonly FeatureContextLattice FeatureContextLattice;
+		readonly FeatureChecksLattice FeatureChecksLattice;
 
-		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice, FeatureContextLattice featureContextLattice)
+		public TrimAnalysisPatternStore (
+			ValueSetLattice<SingleValue> lattice,
+			FeatureContextLattice featureContextLattice,
+			FeatureChecksLattice featureChecksLattice)
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
 			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
 			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
+			ReturnValuePatterns = new Dictionary<IOperation, TrimAnalysisReturnValuePattern> ();
 			Lattice = lattice;
 			FeatureContextLattice = featureContextLattice;
+			FeatureChecksLattice = featureChecksLattice;
 		}
 
 		public void Add (TrimAnalysisAssignmentPattern trimAnalysisPattern, bool isReturnValue)
@@ -75,6 +82,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 
 			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
+		}
+
+		public void Add (TrimAnalysisReturnValuePattern pattern)
+		{
+			if (!ReturnValuePatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				ReturnValuePatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			ReturnValuePatterns[pattern.Operation] = pattern.Merge (FeatureChecksLattice, existingPattern);
 		}
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)

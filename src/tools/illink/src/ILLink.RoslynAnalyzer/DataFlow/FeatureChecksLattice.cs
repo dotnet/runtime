@@ -15,7 +15,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// For now, this is only designed to track the built-in "features"/"capabilities"
 	// like RuntimeFeatures.IsDynamicCodeSupported, where a true return value
 	// indicates that a feature/capability is available.
-	public record struct FeatureChecksValue : IEquatable<FeatureChecksValue>, INegate<FeatureChecksValue>
+	public record struct FeatureChecksValue : IEquatable<FeatureChecksValue>, INegate<FeatureChecksValue>, IDeepCopyValue<FeatureChecksValue>
 	{
 		public FeatureContext EnabledFeatures;
 		public FeatureContext DisabledFeatures;
@@ -56,6 +56,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			return new FeatureChecksValue (DisabledFeatures.DeepCopy (), EnabledFeatures.DeepCopy ());
 		}
+
+		public FeatureChecksValue DeepCopy ()
+		{
+			return new FeatureChecksValue (EnabledFeatures.DeepCopy (), DisabledFeatures.DeepCopy ());
+		}
+
 	}
 
 	public readonly struct FeatureChecksLattice : ILattice<FeatureChecksValue>
