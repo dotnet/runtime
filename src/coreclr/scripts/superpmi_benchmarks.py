@@ -18,6 +18,7 @@ import sys
 import stat
 import os
 import time
+import shutil
 
 from shutil import copyfile
 from coreclr_arguments import *
@@ -206,15 +207,23 @@ def build_and_run(coreclr_args, output_mch_name):
          "--framework", "net8.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
-    # common BDN prefix
-    collection_command = f"{dotnet_exe} {benchmarks_dll} --corerun {os.path.join(core_root, corerun_exe)} "
-
     # This is specifically for PowerShell.Benchmarks.
     # Because we are using '--corerun' when running the benchmarks, it is not able to resolve the PowerShell dependent assemblies.
-    # To make this work, we simply copy the dependencies into core_root.
+    # To make this work, we create a directory called 'core_root' in the directory where the benchmarks_dll lives.
+    # Then we copy the relevant PowerShell dependencies to 'core_root'.
+    # Then we copy the contents of the original 'core_root' to the benchmarks' 'core_root', potentially overwriting any older core dlls.
+    # Then we just use the 'corerun.exe' from the benchmarks' 'core_root'.
+    # We make a copy of 'core_root' as to avoid any potential file-system issues.
     if benchmarks_dll.endswith("PowerShell.Benchmarks.dll"):
         benchmarks_dll_dir = os.path.dirname(benchmarks_dll)
-        copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/win/lib/net7.0/"), core_root, make_sub_directory=True, verbose_copy=True)
+
+        # Create benchmarks' 'core_root'.
+        benchmarks_dll_core_root = os.path.join(benchmarks_dll_dir, "core_root")
+        if not os.path.exists(benchmarks_dll_core_root):
+            os.makedirs(benchmarks_dll_core_root)
+
+        # Begin copy PowerShell dependencies.
+        copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/win/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
 
         if is_windows:
             RID = "win-" + arch
@@ -223,7 +232,18 @@ def build_and_run(coreclr_args, output_mch_name):
         else:
             RID = "linux-" + arch
 
-        copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/" + RID + "/lib/netstandard1.6/"), core_root, make_sub_directory=True, verbose_copy=True)
+        copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/" + RID + "/lib/netstandard1.6/"), benchmarks_dll_core_root, verbose_copy=True)
+        # End copy PowerShell dependencies.
+
+        # Copy the original 'core_root' to the benchmarks' 'core_root'.
+        copy_directory(core_root, benchmarks_dll_core_root, verbose_copy=True)
+
+        # Use benchmarks' 'core_root'.
+        print(f"Using new 'core_root': {benchmarks_dll_core_root}")
+        core_root = benchmarks_dll_core_root
+
+    # common BDN prefix
+    collection_command = f"{dotnet_exe} {benchmarks_dll} --corerun {os.path.join(core_root, corerun_exe)} "
 
     # test specific filters
     if benchmark_binary.lower().startswith("microbenchmarks"):
