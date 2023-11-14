@@ -221,6 +221,7 @@ typedef struct {
 	guint global : 1;
 	guint no_call_args : 1;
 	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
+	guint eh_var : 1; // This var is used inside a clause handler. It will not be in ssa form.
 	guint no_ssa : 1; // Var is not in ssa form, not subject to optimizations
 	guint il_global : 1; // Args and IL locals
 	guint renamed_ssa_fixed : 1; // If true, ext_index points to InterpRenamedVar, otherwise to InterpRenamableVar
@@ -346,6 +347,7 @@ typedef struct
 	guint has_inlined_one_call : 1;
 	guint need_ssa_retry : 1;
 	guint disable_ssa : 1;
+	guint eh_vars_computed : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

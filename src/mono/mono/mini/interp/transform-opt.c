@@ -746,6 +746,69 @@ interp_compute_dominance (TransformData *td)
 /*
  * SSA TRANSFORMATION
  */
+static void
+compute_eh_var_cb (TransformData *td, int *pvar, gpointer data)
+{
+	int var = *pvar;
+	td->vars [var].eh_var = TRUE;
+}
+
+static void
+interp_compute_eh_vars (TransformData *td)
+{
+	// EH bblocks are stored separately and are not reachable from the non-EF control flow
+	// path. Any var reachable from EH bblocks will not be in SSA form.
+	for (int i = td->bblocks_count; i < td->bblocks_count_eh; i++) {
+		InterpBasicBlock *bb = td->bblocks [i];
+		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			if (ins->opcode == MINT_LDLOCA_S)
+				td->vars [ins->sregs [0]].eh_var = TRUE;
+			interp_foreach_ins_var (td, ins, bb, compute_eh_var_cb);
+		}
+	}
+
+	// If we have a try block that might catch exceptions, then we can't do any propagation
+	// of the values defined in the block since an exception could interrupt the normal control
+	// flow. All vars defined in this block will not be in SSA form.
+	for (unsigned int i = 0; i < td->header->num_clauses; i++) {
+		MonoExceptionClause *c = &td->header->clauses [i];
+		if (c->flags == MONO_EXCEPTION_CLAUSE_NONE ||
+				c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			InterpBasicBlock *bb = td->offset_to_bb [c->try_offset];
+			int try_end = c->try_offset + c->try_len;
+			g_assert (bb);
+			while (bb->il_offset != -1 && bb->il_offset < try_end) {
+				for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+					if (mono_interp_op_dregs [ins->opcode])
+						td->vars [ins->dreg].eh_var = TRUE;
+				}
+				bb = bb->next_bb;
+			}
+		}
+	}
+
+	td->eh_vars_computed = TRUE;
+}
+
+static void
+interp_compute_ssa_vars (TransformData *td)
+{
+	if (!td->eh_vars_computed)
+		interp_compute_eh_vars (td);
+
+	for (unsigned int i = 0; i < td->vars_size; i++) {
+		if (td->vars [i].indirects > 0) {
+			td->vars [i].no_ssa = TRUE;
+			td->vars [i].has_indirects = TRUE;
+		} else {
+			td->vars [i].has_indirects = FALSE;
+			if (td->vars [i].eh_var)
+				td->vars [i].no_ssa = TRUE;
+			else
+				td->vars [i].no_ssa = FALSE;
+		}
+	}
+}
 
 static gboolean
 var_is_ssa_form (TransformData *td, int var)
@@ -777,13 +840,6 @@ compute_global_var_cb (TransformData *td, int *pvar, gpointer data)
 static void
 interp_compute_global_vars (TransformData *td)
 {
-	for (int i = 0; i < td->vars_size; i++) {
-		if (td->vars [i].indirects > 0)
-			td->vars [i].no_ssa = TRUE;
-		else
-			td->vars [i].no_ssa = FALSE;
-	}
-
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		if (!is_bblock_ssa_cfg (td, bb))
@@ -1192,6 +1248,8 @@ interp_compute_ssa (TransformData *td)
 	}
 
 	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_dominance_time, interp_compute_dominance (td));
+
+	interp_compute_ssa_vars (td);
 
 	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_global_vars_time, interp_compute_global_vars (td));
 
@@ -3356,9 +3414,6 @@ interp_super_instructions (TransformData *td)
 void
 interp_optimize_code (TransformData *td)
 {
-	if (td->header->num_clauses)
-		return;
-
 	if (td->disable_ssa)
 		return;
 

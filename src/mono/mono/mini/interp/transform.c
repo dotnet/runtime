@@ -1082,6 +1082,7 @@ store_local (TransformData *td, int local)
 {
 	int mt = td->vars [local].mt;
 	CHECK_STACK_RET_VOID (td, 1);
+
 #if SIZEOF_VOID_P == 8
 	// nint and int32 can be used interchangeably. Add implicit conversions.
 	if (td->sp [-1].type == STACK_TYPE_I4 && stack_type [mt] == STACK_TYPE_I8)
@@ -2815,6 +2816,11 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 		return FALSE;
 
 	if (td->cbb->no_inlining)
+		return FALSE;
+
+	// Exception handlers are always uncommon, with the exception of finally.
+	int inner_clause = td->clause_indexes [td->current_il_offset];
+	if (inner_clause != -1 && td->header->clauses [inner_clause].flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 		return FALSE;
 
 	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
