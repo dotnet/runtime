@@ -64,6 +64,7 @@
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
+      <HelixCorrelationPayload Include="$(LibraryBuilderDir)"                    Destination="build/LibraryBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
                                                                                  Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
