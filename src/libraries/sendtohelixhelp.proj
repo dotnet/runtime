@@ -250,7 +250,7 @@
     </HelixPreCommands>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">  
+  <ItemGroup Condition="'$(_ShouldSetXUnitLogCheckerEnvVar)' == '1'">  
     <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutDir)" />  
   </ItemGroup>  
 
