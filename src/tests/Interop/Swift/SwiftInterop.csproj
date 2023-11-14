@@ -9,21 +9,4 @@
     <Compile Include="ErrorHandling.cs" />
     <Compile Include="InvalidCallingConv.cs" />
   </ItemGroup>
-  
-  <Target Name="BuildSwiftNativeLibraries" AfterTargets="Build">
-    <Exec Command="swiftc -emit-library $(RepoRoot)src/tests/Interop/Swift/ErrorHandling.swift -o $(RepoRoot)artifacts/tests/coreclr/$(TargetOS).$(TargetArchitecture).Debug/Interop/Swift/SwiftInterop/libErrorHandling.dylib"
-          ConsoleToMsBuild="true"
-          StandardOutputImportance="Low">
-    </Exec>
-    
-    <Exec Command="swiftc -emit-library $(RepoRoot)src/tests/Interop/Swift/SelfContext.swift -o $(RepoRoot)artifacts/tests/coreclr/$(TargetOS).$(TargetArchitecture).Debug/Interop/Swift/SwiftInterop/libSelfContext.dylib"
-          ConsoleToMsBuild="true"
-          StandardOutputImportance="Low">
-    </Exec>
-
-    <Exec Command="swiftc -emit-library $(RepoRoot)src/tests/Interop/Swift/Dummy.swift -o $(RepoRoot)artifacts/tests/coreclr/$(TargetOS).$(TargetArchitecture).Debug/Interop/Swift/SwiftInterop/libDummy.dylib"
-          ConsoleToMsBuild="true"
-          StandardOutputImportance="Low">
-    </Exec>
-  </Target>
 </Project>
