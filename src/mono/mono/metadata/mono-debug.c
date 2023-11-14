@@ -775,7 +775,7 @@ get_method_enc_debug_info (MonoMethod *method, MonoDebugInformationEnc **mdie_ou
 			*mdie_out = mdie;
 			return TRUE;
 		} else {
-			/// added method without EnC info, maybe the delta came in without a PDB delta
+			/// an added method without debug info; maybe the delta came in without a PDB delta
 			gboolean added_method = idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD]);
 			if (added_method)
 				return TRUE;
