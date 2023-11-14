@@ -414,8 +414,16 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
     </PropertyGroup>
 
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0">
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
+    </ItemGroup>
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) > 0">
+      <_WasmResolvedFilesToPublish Include="@(WasmAssembliesFinal)" />
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" Condition="'%(Extension)' != '.dll'" />
+    </ItemGroup>
+
     <ComputeWasmPublishAssets
-      ResolvedFilesToPublish="@(ResolvedFileToPublish)"
+      ResolvedFilesToPublish="@(_WasmResolvedFilesToPublish)"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
       PublishPath="$(PublishDir)"
@@ -595,7 +603,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_GatherWasmFilesToPublish">
     <ItemGroup>
       <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
-      <WasmAssembliesToBundle Include="%(ResolvedFileToPublish.FullPath)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
+      <WasmAssembliesToBundle Include="@(ResolvedFileToPublish)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
     </ItemGroup>
   </Target>
 </Project>
