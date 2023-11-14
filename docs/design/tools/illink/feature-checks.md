@@ -279,3 +279,31 @@ static void DoesNotReturn() {
     // ...
 }
 ```
+
+### Compiler-generated state machines
+
+`async` or iterator methods produce state machines that are not understood by ILLink and ILCompiler, so branch removal may not work in such methods even if the analyzer does not produce warnings. It is recommended to avoid such using feature checks in async or iterator methods. For example:
+
+```csharp
+async Task AsyncMethod ()
+{
+    if (!Feature.IsSupported)
+        return;
+
+    await Task.Yield();
+
+    Feature.Run(); // OK in analyzer, may warn in ILLink/ILCompiler
+}
+```
+
+```csharp
+IEnumerable<int> StateFlowsAcrossYield ()
+{
+    if (!Feature.IsSupported)
+        yield break;
+
+    yield return 0;
+
+    Feature.Run(); // OK in analyzer, may warn in ILLink/ILCompiler
+}
+```

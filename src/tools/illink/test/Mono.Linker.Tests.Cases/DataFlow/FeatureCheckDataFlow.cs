@@ -2,9 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.CompilerServices;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using ILLink.RoslynAnalyzer;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -30,6 +33,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			FeatureCheckCombinations.Test ();
 			GuardedPatterns.Test ();
 			ExceptionalDataFlow.Test ();
+			CompilerGeneratedCodeDataflow.Test ();
 		}
 
 		class CallFeatureUnguarded
@@ -1043,6 +1047,127 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		class CompilerGeneratedCodeDataflow
+		{
+			static IEnumerable<int> GuardInIterator ()
+			{
+				if (TestFeatures.IsUnreferencedCodeSupported) {
+					RequiresUnreferencedCode ();
+					yield return 0;
+				}
+			}
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer,
+				CompilerGeneratedCode = true)]
+			static IEnumerable<int> StateFlowsAcrossYield ()
+			{
+				if (!TestFeatures.IsUnreferencedCodeSupported)
+					yield break;
+
+				yield return 0;
+
+				RequiresUnreferencedCode ();
+			}
+
+			static async Task GuardInAsync ()
+			{
+				if (TestFeatures.IsUnreferencedCodeSupported) {
+					RequiresUnreferencedCode ();
+					await Task.Yield ();
+				}
+			}
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot,
+				CompilerGeneratedCode = true)]
+			static async Task StateFlowsAcrossAwait ()
+			{
+				if (!TestFeatures.IsUnreferencedCodeSupported)
+					return;
+
+				await Task.Yield ();
+
+				RequiresUnreferencedCode ();
+			}
+
+			static async IAsyncEnumerable<int> GuardInAsyncIterator ()
+			{
+				if (TestFeatures.IsUnreferencedCodeSupported) {
+					RequiresUnreferencedCode ();
+					await Task.Yield ();
+					yield return 0;
+				}
+			}
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), ProducedBy = Tool.Trimmer | Tool.NativeAot,
+				CompilerGeneratedCode = true)]
+			static async IAsyncEnumerable<int> StateFlowsAcrossAwaitAndYield ()
+			{
+				if (!TestFeatures.IsUnreferencedCodeSupported)
+					yield break;
+
+				await Task.Yield ();
+
+				yield return 0;
+
+				RequiresUnreferencedCode ();
+			}
+
+			static void GuardInLambda ()
+			{
+				Action a = () => {
+					if (TestFeatures.IsUnreferencedCodeSupported)
+						RequiresUnreferencedCode ();
+				};
+				a ();
+			}
+
+			static void GuardInLocalFunction ()
+			{
+				void LocalFunction ()
+				{
+					if (TestFeatures.IsUnreferencedCodeSupported)
+						RequiresUnreferencedCode ();
+				}
+				LocalFunction ();
+			}
+
+			static void GuardedLambda ()
+			{
+				Action a = null;
+
+				if (TestFeatures.IsUnreferencedCodeSupported) {
+					a = [RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
+						() => RequiresUnreferencedCode ();
+				}
+
+				if (TestFeatures.IsUnreferencedCodeSupported) {
+					a ();
+				}
+			}
+
+			static void GuardedLocalFunction ()
+			{
+				[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
+				void LocalFunction () => RequiresUnreferencedCode ();
+
+				if (TestFeatures.IsUnreferencedCodeSupported)
+					LocalFunction ();
+			}
+
+			public static void Test ()
+			{
+				GuardInIterator ();
+				StateFlowsAcrossYield ();
+				GuardInAsync ();
+				StateFlowsAcrossAwait ();
+				GuardInAsyncIterator ();
+				StateFlowsAcrossAwaitAndYield ();
+				GuardInLambda ();
+				GuardInLocalFunction ();
+				GuardedLambda ();
+				GuardedLocalFunction ();
+			}
+		}
 
 		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
 		static void RequiresUnreferencedCode () {}
