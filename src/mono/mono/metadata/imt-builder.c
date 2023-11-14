@@ -142,9 +142,9 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 	entry = (MonoImtBuilderEntry *)g_malloc0 (sizeof (MonoImtBuilderEntry));
 	entry->key = method;
 	entry->value.vtable_slot = vtable_slot;
-	entry->next = imt_builder [imt_slot];
-	if (imt_builder [imt_slot] != NULL) {
-		entry->children = imt_builder [imt_slot]->children + 1;
+	entry->next = *imt_builder;
+	if (*imt_builder != NULL) {
+		entry->children = (*imt_builder)->children + 1;
 		if (entry->children == 1) {
 			UnlockedIncrement (&mono_stats.imt_slots_with_collisions);
 			*imt_collisions_bitmap |= (1 << imt_slot);
@@ -153,7 +153,7 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 		entry->children = 0;
 		UnlockedIncrement (&mono_stats.imt_used_slots);
 	}
-	imt_builder [imt_slot] = entry;
+	*imt_builder = entry;
 #if DEBUG_IMT
 	{
 	char *method_name = mono_method_full_name (method, TRUE);
@@ -292,7 +292,8 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 
 	int i;
 	guint32 imt_collisions_bitmap = 0;
-	MonoImtBuilderEntry **imt_builder = (MonoImtBuilderEntry **)g_calloc (MONO_IMT_SIZE, sizeof (MonoImtBuilderEntry*));
+	MonoImtBuilderEntry *imt_builder[1] = { NULL };
+	// MonoImtBuilderEntry **imt_builder = (MonoImtBuilderEntry **)g_calloc (MONO_IMT_SIZE, sizeof (MonoImtBuilderEntry*));
 	int method_count = 0;
 	gboolean record_method_count_for_max_collisions = FALSE;
 	gboolean has_generic_virtual = FALSE, has_variant_iface = FALSE;
@@ -365,18 +366,19 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 			}
 		}
 	}
-	for (i = 0; i < MONO_IMT_SIZE; ++i) {
-		/* overwrite the imt slot only if we're building all the entries or if
-		 * we're building this specific one
+
+	{
+		i = slot_num;
+		/* overwrite the imt slot since we're building this specific one
 		 */
-		if (i == slot_num) {
+		{
 			MonoImtBuilderEntry *entries = get_generic_virtual_entries (mem_manager, &imt [i]);
 
 			if (entries) {
-				if (imt_builder [i]) {
+				if (imt_builder[0]) {
 					MonoImtBuilderEntry *entry;
 
-					/* Link entries with imt_builder [i] */
+					/* Link entries with imt_builder */
 					for (entry = entries; entry->next; entry = entry->next) {
 #if DEBUG_IMT
 						MonoMethod *method = (MonoMethod*)entry->key;
@@ -385,10 +387,10 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 						g_free (method_name);
 #endif
 					}
-					entry->next = imt_builder [i];
-					entries->children += imt_builder [i]->children + 1;
+					entry->next = imt_builder[0];
+					entries->children += imt_builder[0]->children + 1;
 				}
-				imt_builder [i] = entries;
+				imt_builder[0] = entries;
 			}
 
 			if (has_generic_virtual || has_variant_iface) {
@@ -401,17 +403,17 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 				 * The IMT trampoline might be called with an instance of one of the
 				 * generic virtual methods, so has to fallback to the IMT trampoline.
 				 */
-				imt [i] = initialize_imt_slot (vt, imt_builder [i], mono_get_runtime_callbacks ()->get_imt_trampoline (vt, i));
+				imt [i] = initialize_imt_slot (vt, imt_builder[0], mono_get_runtime_callbacks ()->get_imt_trampoline (vt, i));
 			} else {
-				imt [i] = initialize_imt_slot (vt, imt_builder [i], NULL);
+				imt [i] = initialize_imt_slot (vt, imt_builder[0], NULL);
 			}
 #if DEBUG_IMT
-			printf ("initialize_imt_slot[%d]: %p methods %d\n", i, imt [i], imt_builder [i]->children + 1);
+			printf ("initialize_imt_slot[%d]: %p methods %d\n", i, imt [i], imt_builder[0]->children + 1);
 #endif
 		}
 
-		if (imt_builder [i] != NULL) {
-			int methods_in_slot = imt_builder [i]->children + 1;
+		if (imt_builder[0] != NULL) {
+			int methods_in_slot = imt_builder[0]->children + 1;
 			if (methods_in_slot > UnlockedRead (&mono_stats.imt_max_collisions_in_slot)) {
 				UnlockedWrite (&mono_stats.imt_max_collisions_in_slot, methods_in_slot);
 				record_method_count_for_max_collisions = TRUE;
@@ -425,15 +427,14 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 		UnlockedWrite (&mono_stats.imt_method_count_when_max_collisions, method_count);
 	}
 
-	for (i = 0; i < MONO_IMT_SIZE; i++) {
-		MonoImtBuilderEntry* entry = imt_builder [i];
+	{
+		MonoImtBuilderEntry* entry = imt_builder[0];
 		while (entry != NULL) {
 			MonoImtBuilderEntry* next = entry->next;
 			g_free (entry);
 			entry = next;
 		}
 	}
-	g_free (imt_builder);
 	/* we OR the bitmap since we may build just a single imt slot at a time */
 	vt->imt_collisions_bitmap |= imt_collisions_bitmap;
 }
