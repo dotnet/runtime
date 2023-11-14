@@ -59,7 +59,7 @@ public:
         IsNullEntry,            // Uninitialized HashedTypeEntry
         IsHashedTokenEntry,     // Entry is a token value in a R2R hashtable in from the R2R module
         IsHashedClassEntry      // Entry is a EEClassHashEntry_t from the hashtable constructed at
-                                // module load time (or from the hashtable loaded from the native image)
+                                // module load time
     } EntryType;
 
     typedef struct
@@ -138,18 +138,6 @@ public:
         memset((void*) this, NULL, sizeof(*this));
     }
 
-    NameHandle(LPCUTF8 name) :
-        m_nameSpace(NULL),
-        m_name(name),
-        m_pTypeScope(PTR_NULL),
-        m_mdType(mdTokenNil),
-        m_mdTokenNotToLoad(tdNoTypes),
-        m_WhichTable(nhCaseSensitive),
-        m_Bucket()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
     NameHandle(LPCUTF8 nameSpace, LPCUTF8 name) :
         m_nameSpace(nameSpace),
         m_name(name),
@@ -161,6 +149,8 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
+        _ASSERTE(nameSpace != NULL);
+        _ASSERTE(name != NULL);
     }
 
     NameHandle(ModuleBase* pModule, mdToken token);
@@ -180,17 +170,13 @@ public:
         m_Bucket = p.m_Bucket;
     }
 
-    void SetName(LPCUTF8 pName)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_name = pName;
-    }
-
     void SetName(LPCUTF8 pNameSpace, LPCUTF8 pName)
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC_HOST_ONLY;
 
+        _ASSERTE(pNameSpace != NULL);
+        _ASSERTE(pName != NULL);
         m_nameSpace = pNameSpace;
         m_name = pName;
     }
@@ -761,6 +747,7 @@ private:
 
     VOID AddAvailableClassHaveLock(Module *          pModule,
                                    mdTypeDef         classdef,
+                                   SArray<EEClassHashEntry_t *>* classEntries,
                                    AllocMemTracker * pamTracker);
 
     VOID AddExportedTypeDontHaveLock(Module *pManifestModule,
@@ -769,6 +756,7 @@ private:
 
     VOID AddExportedTypeHaveLock(Module *pManifestModule,
                                  mdExportedType cl,
+                                 SArray<EEClassHashEntry_t *>* exportedEntries,
                                  AllocMemTracker *pamTracker);
 
 public:

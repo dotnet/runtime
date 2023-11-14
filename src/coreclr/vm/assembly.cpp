@@ -199,9 +199,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
     PrepareModuleForAssembly(m_pModule, pamTracker);
 
-    if (!m_pModule->IsReadyToRun())
-        CacheManifestExportedTypes(pamTracker);
-
     // We'll load the friend assembly information lazily.  For the ngen case we should avoid
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
@@ -951,24 +948,6 @@ Module * Assembly::FindModuleByTypeRef(
 } // Assembly::FindModuleByTypeRef
 
 #ifndef DACCESS_COMPILE
-
-void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
-{
-    STANDARD_VM_CONTRACT;
-
-    mdToken mdExportedType;
-
-    HENUMInternalHolder phEnum(GetMDImport());
-    phEnum.EnumInit(mdtExportedType,
-                    mdTokenNil);
-
-    ClassLoader::AvailableClasses_LockHolder lh(m_pClassLoader);
-
-    for(int i = 0; GetMDImport()->EnumNext(&phEnum, &mdExportedType); i++)
-        m_pClassLoader->AddExportedTypeHaveLock(GetModule(),
-                                                mdExportedType,
-                                                pamTracker);
-}
 
 void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTracker)
 {

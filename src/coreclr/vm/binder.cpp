@@ -83,10 +83,13 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
         (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
 
         // Now load the nested type.
-        nameHandle.SetName(NULL, nestedTypeMaybe + 1);
+        nameHandle.SetName("", nestedTypeMaybe + 1);
 
         // We don't support nested types in nested types.
         _ASSERTE(strchr(nameHandle.GetName(), '+') == NULL);
+
+        // We don't support nested types with explicit namespaces
+        _ASSERTE(strchr(nameHandle.GetName(), '.') == NULL);
         pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle).AsMethodTable();
     }
 

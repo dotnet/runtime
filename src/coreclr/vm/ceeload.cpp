@@ -460,7 +460,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     {
         m_pAvailableClasses = EEClassHashTable::Create(this,
             GetAssembly()->IsCollectible() ? AVAILABLE_CLASSES_HASH_BUCKETS_COLLECTIBLE : AVAILABLE_CLASSES_HASH_BUCKETS,
-                                                        FALSE /* bCaseInsensitive */, pamTracker);
+                                                        NULL, pamTracker);
     }
 
     if (m_pAvailableParamTypes == NULL)

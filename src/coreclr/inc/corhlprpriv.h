@@ -294,9 +294,9 @@ public:
     }
 
     // Copy single byte string and hold it
-    const char * SetStringNoThrow(const char * pStr, SIZE_T len)
+    const char * SetString(const char * pStr, SIZE_T len)
     {
-        LPSTR buffer = (LPSTR) AllocNoThrow(len + 1);
+        LPSTR buffer = (LPSTR) AllocThrows(len + 1);
 
         if (buffer != NULL)
         {
