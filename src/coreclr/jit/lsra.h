@@ -29,6 +29,8 @@ const unsigned int   MaxLocation = UINT_MAX;
 const unsigned int MaxInternalRegisters = 8;
 const unsigned int RegisterTypeCount    = 2;
 
+#define UINT128(hi, lo) (((__uint128_t) (hi)) << 64 | (lo))
+
 /*****************************************************************************
 * Register types
 *****************************************************************************/

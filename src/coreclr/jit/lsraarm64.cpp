@@ -76,7 +76,9 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
-    consecutiveRegsInUseThisLocation = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
+    consecutiveRegsInUseThisLocation = (UINT128(0, ((1ULL << firstRefPosition->regCount) - 1)) << firstRegAssigned);
+    printf("consecutiveRegsInUseThisLocation: ");
+    BitOperations::print128x(consecutiveRegsInUseThisLocation);
 
     while (consecutiveRefPosition != nullptr)
     {
@@ -192,8 +194,12 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
 // available, create the mask only for Rm, Rm+1, ..., Rm+(k-n) to convey that it
 // is safe to assign any of those registers, but not beyond that.
 #define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
-    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
-    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
+    regMaskTP selectionStartMask = UINT128(0, (1ULL << regAvailableStartIndex) - 1);                                   \
+    printf("selectionStartMask: ");                                                                                    \
+    BitOperations::print128x(selectionStartMask);                                                                                     \
+    regMaskTP selectionEndMask   = UINT128(0, (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1);             \
+    printf("selectionEndMask: ");                                                                                    \
+    BitOperations::print128x(selectionEndMask);                                                                                     \
     consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
@@ -201,12 +207,18 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
 
     do
     {
+        printf("currAvailableRegs: ");
+        BitOperations::print128x(currAvailableRegs);
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(currAvailableRegs));
-        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
-
+        regAvailableStartIndex = BitOperations::BitScanForward(currAvailableRegs);
+        printf("regAvailableStartIndex: %u\n", regAvailableStartIndex);
+        regMaskTP startMask    = UINT128(0, (1ULL << regAvailableStartIndex) - 1);
+        printf("startMask: ");
+        BitOperations::print128x(startMask);
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
-        regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
+        regMaskTP maskProcessed = UINT128(0, 0xFFFFFFFF) & ~(currAvailableRegs | startMask);
+        printf("maskProcessed: ");
+        BitOperations::print128x(maskProcessed);
 
         // From regAvailableStart, find the first unavailable register (bit `0`).
         if (maskProcessed == RBM_NONE)
@@ -220,9 +232,12 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         }
         else
         {
-            regAvailableEndIndex = BitOperations::BitScanForward(static_cast<DWORD64>(maskProcessed));
+            regAvailableEndIndex = BitOperations::BitScanForward(maskProcessed);
         }
-        regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
+        printf("regAvailableEndIndex: %u\n", regAvailableEndIndex);
+        regMaskTP endMask = UINT128(0, (1ULL << regAvailableEndIndex) - 1);
+        printf("endMask: ");
+        BitOperations::print128x(consecutiveRegsInUseThisLocation);
 
         // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available.
         // If they are equal to or greater than our register requirements, then add all of them to the result.
@@ -328,11 +343,13 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
     regMaskTP unprocessedRegs          = consecutiveCandidates;
     unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     int       maxSpillRegs        = registersNeeded;
-    regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
+    regMaskTP registersNeededMask = UINT128(0, (1ULL << registersNeeded) - 1);
+    printf("registersNeededMask: ");
+    BitOperations::print128x(registersNeededMask);
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(unprocessedRegs));
+        regAvailableStartIndex = BitOperations::BitScanForward(unprocessedRegs);
 
         // For the current range, find how many registers are free vs. busy
         regMaskTP maskForCurRange        = RBM_NONE;
@@ -356,7 +373,9 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
         if (shouldCheckForRounding)
         {
             unsigned int roundedRegistersNeeded = registersNeeded - (63 - regAvailableStartIndex + 1);
-            maskForCurRange                     = (1ULL << roundedRegistersNeeded) - 1;
+            maskForCurRange                     = UINT128(0, (1ULL << roundedRegistersNeeded) - 1);
+            printf("maskForCurRange: ");
+            BitOperations::print128x(maskForCurRange);
         }
 
         maskForCurRange |= (registersNeededMask << regAvailableStartIndex);

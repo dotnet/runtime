@@ -2799,7 +2799,14 @@ void           LinearScan::buildIntervals()
         availableRegCount = REG_INT_COUNT;
     }
 
-    if (availableRegCount < (sizeof(regMaskTP) * 8))
+    if ((sizeof(regMaskTP) * 8) > 64)
+    {
+        // Mask out the bits that are between 64 ~ availableRegCount
+        // unsigned __int128 a = ((UINT128(1, 0) << 64) - 1);
+        unsigned __int64 b = ~0;
+        actualRegistersMask = b;
+    }
+    else if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
         // Mask out the bits that are between 64 ~ availableRegCount
         actualRegistersMask = (1ULL << availableRegCount) - 1;
@@ -2808,6 +2815,8 @@ void           LinearScan::buildIntervals()
     {
         actualRegistersMask = ~RBM_NONE;
     }
+    printf("actualRegistersMask: ");
+    BitOperations::print128x(actualRegistersMask);
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited

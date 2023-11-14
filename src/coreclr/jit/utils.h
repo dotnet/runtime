@@ -838,14 +838,16 @@ public:
             printf("%lx", hi);
             printf("%lx", lo);
         }
-        printf("%lx", lo);
+        else
+        {
+            printf("%lx", lo);
+        }        
+        printf("\n");
     }
     
     FORCEINLINE static uint32_t BitScanForward(unsigned __int128 value)
     {
         uint32_t result = BitScanForward(static_cast<uint64_t>(value));
-        print128x(value);
-        printf(", answer= %u\n", value, result);
         return result;
     }
 #endif

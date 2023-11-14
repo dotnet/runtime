@@ -4838,6 +4838,12 @@ void LinearScan::allocateRegisters()
     {
         RefPosition* nextRefPosition = currentRefPosition.nextRefPosition;
 
+        
+        if (compiler->verbose && currentRefPosition.rpNum == 4)
+        {
+            // __builtin_debugtrap();
+            printf("here\n");
+        }
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
