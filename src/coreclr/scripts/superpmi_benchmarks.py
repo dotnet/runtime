@@ -18,7 +18,6 @@ import sys
 import stat
 import os
 import time
-import shutil
 
 from shutil import copyfile
 from coreclr_arguments import *
@@ -176,7 +175,6 @@ def build_and_run(coreclr_args, output_mch_name):
 
     make_executable(dotnet_exe)
 
-    print(dotnet_exe)
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
 
