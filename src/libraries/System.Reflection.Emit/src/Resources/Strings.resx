@@ -201,7 +201,6 @@
   <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
     <value>The specified opcode cannot be passed to EmitCall.</value>
   </data>
-<<<<<<< HEAD
   <data name="InvalidOperation_DefaultConstructorILGen" xml:space="preserve">
     <value>Unable to access ILGenerator on a constructor created with DefineDefaultConstructor.</value>
   </data>
