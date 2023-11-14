@@ -242,11 +242,6 @@ else
   
   invoke_xunitlogchecker "$HELIX_DUMP_FOLDER"
 
-  # osx stores giant dumps in a separate folder
-  if [[ $system_name == "Darwin" ]]; then
-    invoke_xunitlogchecker "/cores"
-  fi
-
   if [[ $xunitlogchecker_exit_code -ne 0 ]]; then
     test_exitcode=$xunitlogchecker_exit_code
   fi
