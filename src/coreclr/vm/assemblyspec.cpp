@@ -210,8 +210,12 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     {
         AssemblyBinder* pExpectedBinder = pFile->GetAssemblyBinder();
         // We should always have the binding context in the PEAssembly.
-        _ASSERTE(pExpectedBinder != NULL);
-        SetBinder(pExpectedBinder);
+        if (!IsCoreLib())
+        {
+            // Binder of CoreLib will be set afterwards.
+            _ASSERTE(pExpectedBinder != NULL);
+            SetBinder(pExpectedBinder);
+        }
     }
 }
 

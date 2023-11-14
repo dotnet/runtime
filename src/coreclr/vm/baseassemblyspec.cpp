@@ -22,7 +22,7 @@ BOOL BaseAssemblySpec::IsCoreLib()
     {
         THROWS;
         INSTANCE_CHECK;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
     }

@@ -2757,10 +2757,15 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     {
         LoaderAllocator *pLoaderAllocator = NULL;
 
+        // AssemblyBinder isn't set for CoreLib during bootstrap
+        if (!pPEAssembly->IsSystem())
+        {
         AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
         // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
         // marked as collectible
         pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
+        }
+
         if (pLoaderAllocator == NULL)
         {
             pLoaderAllocator = this->GetLoaderAllocator();
