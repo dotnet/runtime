@@ -226,11 +226,6 @@ if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
     dmesg | tail -50
   fi
 
-  have_sleep=$(which sleep)
-  if [ -x "$have_sleep" ]; then
-    echo Waiting a few seconds for any dump to be written...
-    sleep 10s
-  fi
 fi
 
 if [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
