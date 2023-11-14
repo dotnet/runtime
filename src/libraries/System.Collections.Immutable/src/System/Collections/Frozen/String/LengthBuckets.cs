@@ -17,16 +17,16 @@ namespace System.Collections.Frozen
         /// <summary>This value represents a "null" bucket entry. Not "-1" to avoid conflict with ~0, as we use the bit inversion of N to represent that a node is an internal node and not a leaf.</summary>
         internal const int NullSentinel = int.MinValue;
 
-        /// <summary>Precalculated instructions for mapping a sorted array of varying length into a binary tree.</summary>
+        /// <summary>Precalculated instructions for mapping a sorted array of varying length into a PreOrdered binary tree.</summary>
         private static readonly int[][] s_sortedBucketToBinaryTree = [
             [NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel],
-            [NullSentinel, NullSentinel, NullSentinel, 0, NullSentinel, NullSentinel, NullSentinel],
-            [NullSentinel, 0, NullSentinel, ~1, NullSentinel, NullSentinel, NullSentinel],
-            [NullSentinel, 0, NullSentinel, ~1, NullSentinel, 2, NullSentinel],
-            [NullSentinel, 0, NullSentinel, ~1, 2, ~3, NullSentinel],
-            [NullSentinel, 0, NullSentinel, ~1, 2, ~3, 4],
-            [0, ~1, 2, ~3, 4, ~5, NullSentinel],
-            [0, ~1, 2, ~3, 4, ~5, 6],
+            [0, NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel],
+            [~1, 0, NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel],
+            [~1, 0, NullSentinel, NullSentinel, 2, NullSentinel, NullSentinel],
+            [~1, 0, NullSentinel, NullSentinel, ~3, 2, NullSentinel],
+            [~1, 0, NullSentinel, NullSentinel, ~3, 2, 4],
+            [~3, ~1, 0, 2, ~5, 4, NullSentinel],
+            [~3, ~1, 0, 2, ~5, 4, 6],
         ];
 
         internal static unsafe int[]? CreateLengthBucketsArrayIfAppropriate(string[] keys, IEqualityComparer<string> comparer, int minLength, int maxLength)

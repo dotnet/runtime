@@ -64,8 +64,7 @@ namespace System.Collections.Frozen
 
                     if (!_ignoreCase)
                     {
-                        int jumpLength = LengthBuckets.MaxPerLength / 2;
-                        bucketIndex += LengthBuckets.MaxPerLength / 2;
+                        int branchSize = LengthBuckets.MaxPerLength / 2;
 
                         do
                         {
@@ -95,18 +94,19 @@ namespace System.Collections.Frozen
 
                             if (comparison < 0)
                             {
-                                bucketIndex -= --jumpLength;
+                                bucketIndex += 1;
                             }
                             else
                             {
-                                bucketIndex += --jumpLength;
+                                bucketIndex += 1 + branchSize;
                             }
-                        } while (jumpLength >= 0);
+
+                            branchSize -= 2;
+                        } while (branchSize >= -1);
                     }
                     else
                     {
-                        int jumpLength = LengthBuckets.MaxPerLength / 2;
-                        bucketIndex += LengthBuckets.MaxPerLength / 2;
+                        int branchSize = LengthBuckets.MaxPerLength / 2;
 
                         do
                         {
@@ -136,13 +136,15 @@ namespace System.Collections.Frozen
 
                             if (comparison < 0)
                             {
-                                bucketIndex -= --jumpLength;
+                                bucketIndex += 1;
                             }
                             else
                             {
-                                bucketIndex += --jumpLength;
+                                bucketIndex += 1 + branchSize;
                             }
-                        } while (jumpLength >= 0);
+
+                            branchSize -= 2;
+                        } while (branchSize >= -1);
                     }
                 }
             }
