@@ -64,16 +64,12 @@ namespace System.Collections.Frozen
 
                     if (!_ignoreCase)
                     {
-                        int jumpLength = (LengthBuckets.MaxPerLength / 2) - 1;
+                        int jumpLength = LengthBuckets.MaxPerLength / 2;
                         bucketIndex += LengthBuckets.MaxPerLength / 2;
 
                         do
                         {
                             int index = lengthBuckets[bucketIndex];
-                            if (index == LengthBuckets.NullSentinel)
-                            {
-                                break;
-                            }
 
                             if (index >= 0)
                             {
@@ -86,36 +82,35 @@ namespace System.Collections.Frozen
                                 break;
                             }
 
-                            index = ~index;
+                            if (index == LengthBuckets.NullSentinel)
+                            {
+                                break;
+                            }
 
-                            int comparison = string.CompareOrdinal(item, items[index]);
+                            int comparison = string.CompareOrdinal(item, items[~index]);
                             if (comparison == 0)
                             {
-                                return index;
+                                return ~index;
                             }
 
                             if (comparison < 0)
                             {
-                                bucketIndex -= jumpLength--;
+                                bucketIndex -= --jumpLength;
                             }
                             else
                             {
-                                bucketIndex += jumpLength--;
+                                bucketIndex += --jumpLength;
                             }
                         } while (jumpLength >= 0);
                     }
                     else
                     {
-                        int jumpLength = (LengthBuckets.MaxPerLength / 2) - 1;
+                        int jumpLength = LengthBuckets.MaxPerLength / 2;
                         bucketIndex += LengthBuckets.MaxPerLength / 2;
 
                         do
                         {
                             int index = lengthBuckets[bucketIndex];
-                            if (index == LengthBuckets.NullSentinel)
-                            {
-                                break;
-                            }
 
                             if (index >= 0)
                             {
@@ -128,21 +123,24 @@ namespace System.Collections.Frozen
                                 break;
                             }
 
-                            index = ~index;
+                            if (index == LengthBuckets.NullSentinel)
+                            {
+                                break;
+                            }
 
-                            int comparison = StringComparer.OrdinalIgnoreCase.Compare(item, items[index]);
+                            int comparison = StringComparer.OrdinalIgnoreCase.Compare(item, items[~index]);
                             if (comparison == 0)
                             {
-                                return index;
+                                return ~index;
                             }
 
                             if (comparison < 0)
                             {
-                                bucketIndex -= jumpLength--;
+                                bucketIndex -= --jumpLength;
                             }
                             else
                             {
-                                bucketIndex += jumpLength--;
+                                bucketIndex += --jumpLength;
                             }
                         } while (jumpLength >= 0);
                     }
