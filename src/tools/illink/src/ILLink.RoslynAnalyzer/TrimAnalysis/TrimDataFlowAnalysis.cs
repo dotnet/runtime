@@ -15,8 +15,8 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using LocalStateValue = ILLink.RoslynAnalyzer.DataFlow.LocalStateAndContext<
 	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>,
-	ILLink.RoslynAnalyzer.DataFlow.FeatureContext
->;
+	ILLink.RoslynAnalyzer.DataFlow.FeatureContext,
+	ILLink.RoslynAnalyzer.DataFlow.FeatureChecksValue>;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
@@ -27,7 +27,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		ValueSetLattice<SingleValue>,
 		FeatureContextLattice,
 		TrimAnalysisVisitor,
-		FeatureChecksValue>
+		FeatureChecksValue,
+		FeatureChecksLattice>
 	{
 		public TrimAnalysisPatternStore TrimAnalysisPatterns { get; }
 

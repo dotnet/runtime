@@ -19,8 +19,8 @@ using StateValue = ILLink.RoslynAnalyzer.DataFlow.LocalDataFlowState<
 	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>,
 	ILLink.RoslynAnalyzer.DataFlow.FeatureContext,
 	ILLink.Shared.DataFlow.ValueSetLattice<ILLink.Shared.DataFlow.SingleValue>,
-	ILLink.RoslynAnalyzer.DataFlow.FeatureContextLattice
-	>;
+	ILLink.RoslynAnalyzer.DataFlow.FeatureContextLattice,
+	ILLink.RoslynAnalyzer.DataFlow.FeatureChecksValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
@@ -44,7 +44,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public TrimAnalysisVisitor (
 			Compilation compilation,
-			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
+			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice, FeatureChecksValue> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
@@ -63,9 +63,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			return _featureChecksVisitor.Visit (branchValueOperation, state);
 		}
 
-		public override void ApplyCondition (FeatureChecksValue featureChecksValue,  ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
+		public override void ApplyCondition (FeatureChecksValue featureChecksValue,  ref LocalStateAndContext<MultiValue, FeatureContext, FeatureChecksValue> currentState)
 		{
-			currentState.Context = currentState.Context.Union (new FeatureContext (featureChecksValue.EnabledFeatures));
+			currentState.Context = currentState.Context.Union (featureChecksValue.EnabledFeatures);
 		}
 
 		// Override visitor methods to create tracked values when visiting operations

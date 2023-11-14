@@ -15,8 +15,8 @@ using StateValue = ILLink.RoslynAnalyzer.DataFlow.LocalDataFlowState<
 	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>,
 	ILLink.RoslynAnalyzer.DataFlow.FeatureContext,
 	ILLink.Shared.DataFlow.ValueSetLattice<ILLink.Shared.DataFlow.SingleValue>,
-	ILLink.RoslynAnalyzer.DataFlow.FeatureContextLattice
-	>;
+	ILLink.RoslynAnalyzer.DataFlow.FeatureContextLattice,
+	ILLink.RoslynAnalyzer.DataFlow.FeatureChecksValue>;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
@@ -47,7 +47,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					var featureCheck = new FeatureChecksValue (analyzer.FeatureName);
 					featureChecks = featureChecks == null
 						? featureCheck
-						: featureChecks.Value.And (featureCheck);
+						: featureChecks.Value.Union (featureCheck);
 				}
 			}
 

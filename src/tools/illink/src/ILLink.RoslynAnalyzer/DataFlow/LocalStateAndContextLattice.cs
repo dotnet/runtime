@@ -8,31 +8,35 @@ using ILLink.Shared.DataFlow;
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
 	// A lattice value that holds both a local state, and a context
-	public struct LocalStateAndContext<TValue, TContext> : IEquatable<LocalStateAndContext<TValue, TContext>>
+	public struct LocalStateAndContext<TValue, TContext, TConditionValue> : IEquatable<LocalStateAndContext<TValue, TContext, TConditionValue>>
 		where TValue : IEquatable<TValue>
 		where TContext : IEquatable<TContext>
+		where TConditionValue : struct
 	{
 		public LocalState<TValue> LocalState;
 		public TContext Context;
+		public TConditionValue ReturnValue;
 
-		public LocalStateAndContext (LocalState<TValue> localState, TContext context)
+		public LocalStateAndContext (LocalState<TValue> localState, TContext context, TConditionValue returnValue)
 		{
 			LocalState = localState;
 			Context = context;
+			ReturnValue = returnValue;
 		}
 
-		public bool Equals (LocalStateAndContext<TValue, TContext> other) =>
-			LocalState.Equals (other.LocalState) && Context.Equals (other.Context);
+		public bool Equals (LocalStateAndContext<TValue, TContext, TConditionValue> other) =>
+			LocalState.Equals (other.LocalState) && Context.Equals (other.Context) && ReturnValue.Equals (other.ReturnValue);
 
-		public override bool Equals (object? obj) => obj is LocalStateAndContext<TValue, TContext> other && Equals (other);
-		public override int GetHashCode () => HashUtils.Combine (LocalState, Context);
+		public override bool Equals (object? obj) => obj is LocalStateAndContext<TValue, TContext, TConditionValue> other && Equals (other);
+		public override int GetHashCode () => HashUtils.Combine (LocalState, Context, ReturnValue);
 	}
 
-	public readonly struct LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> : ILattice<LocalStateAndContext<TValue, TContext>>
+	public readonly struct LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice, TConditionValue> : ILattice<LocalStateAndContext<TValue, TContext, TConditionValue>>
 		where TValue : struct, IEquatable<TValue>
 		where TContext : struct, IEquatable<TContext>
 		where TValueLattice : ILattice<TValue>
 		where TContextLattice : ILattice<TContext>
+		where TConditionValue : struct
 	{
 		public readonly LocalStateLattice<TValue, TValueLattice> LocalStateLattice;
 		public readonly TContextLattice ContextLattice;
@@ -43,11 +47,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			ContextLattice = contextLattice;
 		}
 
-		public LocalStateAndContext<TValue, TContext> Top { get; }
+		public LocalStateAndContext<TValue, TContext, TConditionValue> Top { get; }
 
-		public LocalStateAndContext<TValue, TContext> Meet (LocalStateAndContext<TValue, TContext> left, LocalStateAndContext<TValue, TContext> right)
+		public LocalStateAndContext<TValue, TContext, TConditionValue> Meet (LocalStateAndContext<TValue, TContext, TConditionValue> left, LocalStateAndContext<TValue, TContext, TConditionValue> right)
 		{
-			return new LocalStateAndContext<TValue, TContext> {
+			return new LocalStateAndContext<TValue, TContext, TConditionValue> {
 				LocalState = LocalStateLattice.Meet (left.LocalState, right.LocalState),
 				Context = ContextLattice.Meet (left.Context, right.Context)
 			};

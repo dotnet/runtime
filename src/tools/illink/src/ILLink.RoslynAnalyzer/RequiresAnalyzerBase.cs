@@ -305,9 +305,6 @@ namespace ILLink.RoslynAnalyzer
 
 		internal bool IsAnnotatedFeatureCheck (Compilation compilation, IPropertySymbol propertySymbol)
 		{
-			if (propertySymbol.ToString().Contains("AreDynamicAndUn")) {
-				Console.WriteLine("Here");
-			}
 			// Get attributes on the property symbol
 			var attributes = propertySymbol.GetAttributes ();
 			if (attributes.Length == 0)

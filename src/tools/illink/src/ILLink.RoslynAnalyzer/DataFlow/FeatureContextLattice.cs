@@ -15,7 +15,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	{
 		// The set of features known to be enabled in this context.
 		// Null represents "all possible features".
-		public ValueSet<string>? EnabledFeatures;
+		private ValueSet<string>? FeatureSet;
 
 		public static readonly FeatureContext All = new FeatureContext (null);
 
@@ -23,42 +23,42 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public FeatureContext (ValueSet<string>? enabled)
 		{
-			EnabledFeatures = enabled;
+			FeatureSet = enabled;
 		}
 
 		public bool IsEnabled (string feature)
 		{
-			return EnabledFeatures == null || EnabledFeatures.Value.Contains (feature);
+			return FeatureSet == null || FeatureSet.Value.Contains (feature);
 		}
 
-		public bool Equals (FeatureContext other) => EnabledFeatures == other.EnabledFeatures;
+		public bool Equals (FeatureContext other) => FeatureSet == other.FeatureSet;
 		public override bool Equals (object? obj) => obj is FeatureContext other && Equals (other);
-		public override int GetHashCode () => EnabledFeatures?.GetHashCode () ?? typeof (FeatureContext).GetHashCode ();
+		public override int GetHashCode () => FeatureSet?.GetHashCode () ?? typeof (FeatureContext).GetHashCode ();
 
 		public static bool operator == (FeatureContext left, FeatureContext right) => left.Equals (right);
 		public static bool operator != (FeatureContext left, FeatureContext right) => !left.Equals (right);
 
 		public FeatureContext DeepCopy ()
 		{
-			return new FeatureContext (EnabledFeatures?.DeepCopy ());
+			return new FeatureContext (FeatureSet?.DeepCopy ());
 		}
 
 		public FeatureContext Intersection (FeatureContext other)
 		{
-			if (EnabledFeatures == null)
+			if (FeatureSet == null)
 				return other.DeepCopy ();
-			if (other.EnabledFeatures == null)
+			if (other.FeatureSet == null)
 				return this.DeepCopy ();
-			return new FeatureContext (ValueSet<string>.Intersection (EnabledFeatures.Value, other.EnabledFeatures.Value));
+			return new FeatureContext (ValueSet<string>.Intersection (FeatureSet.Value, other.FeatureSet.Value));
 		}
 
 		public FeatureContext Union (FeatureContext other)
 		{
-			if (EnabledFeatures == null)
+			if (FeatureSet == null)
 				return this.DeepCopy ();
-			if (other.EnabledFeatures == null)
+			if (other.FeatureSet == null)
 				return other.DeepCopy ();
-			return new FeatureContext (ValueSet<string>.Union (EnabledFeatures.Value, other.EnabledFeatures.Value));
+			return new FeatureContext (ValueSet<string>.Union (FeatureSet.Value, other.FeatureSet.Value));
 		}
 	}
 
