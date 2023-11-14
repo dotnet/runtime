@@ -49,7 +49,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
-    (CorDebugRegister)(-1), // X0 is zero register that is not a real register. We need padding here for proper mapping with ICorDebugInfo::RegNum.
+    (CorDebugRegister)(255), // X0 is zero register that is not a real register. We need padding here for proper mapping with ICorDebugInfo::RegNum.
     REGISTER_RISCV64_RA,
     REGISTER_RISCV64_SP,
     REGISTER_RISCV64_GP,
