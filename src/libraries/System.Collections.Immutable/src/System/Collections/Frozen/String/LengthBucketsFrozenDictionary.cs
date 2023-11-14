@@ -75,10 +75,23 @@ namespace System.Collections.Frozen
                     do
                     {
                         int index = lengthBuckets[bucketIndex];
-                        if (index == -1)
+                        if (index == LengthBuckets.NullSentinel)
                         {
                             break;
                         }
+
+                        if (index >= 0)
+                        {
+                            // Leaf Node
+                            if (key == keys[index])
+                            {
+                                return ref values[index];
+                            }
+
+                            break;
+                        }
+
+                        index = ~index;
 
                         int comparison = string.CompareOrdinal(key, keys[index]);
                         if (comparison == 0)
@@ -86,7 +99,7 @@ namespace System.Collections.Frozen
                             return ref values[index];
                         }
 
-                        if(comparison < 0)
+                        if (comparison < 0)
                         {
                             bucketIndex -= jumpLength--;
                         }
@@ -104,10 +117,23 @@ namespace System.Collections.Frozen
                     do
                     {
                         int index = lengthBuckets[bucketIndex];
-                        if (index == -1)
+                        if (index == LengthBuckets.NullSentinel)
                         {
                             break;
                         }
+
+                        if (index >= 0)
+                        {
+                            // Leaf Node
+                            if (StringComparer.OrdinalIgnoreCase.Equals(key, keys[index]))
+                            {
+                                return ref values[index];
+                            }
+
+                            break;
+                        }
+
+                        index = ~index;
 
                         int comparison = StringComparer.OrdinalIgnoreCase.Compare(key, keys[index]);
                         if (comparison == 0)

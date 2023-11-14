@@ -70,10 +70,23 @@ namespace System.Collections.Frozen
                         do
                         {
                             int index = lengthBuckets[bucketIndex];
-                            if (index == -1)
+                            if (index == LengthBuckets.NullSentinel)
                             {
                                 break;
                             }
+
+                            if (index >= 0)
+                            {
+                                // Leaf Node
+                                if (item == items[index])
+                                {
+                                    return index;
+                                }
+
+                                break;
+                            }
+
+                            index = ~index;
 
                             int comparison = string.CompareOrdinal(item, items[index]);
                             if (comparison == 0)
@@ -99,10 +112,23 @@ namespace System.Collections.Frozen
                         do
                         {
                             int index = lengthBuckets[bucketIndex];
-                            if (index == -1)
+                            if (index == LengthBuckets.NullSentinel)
                             {
                                 break;
                             }
+
+                            if (index >= 0)
+                            {
+                                // Leaf Node
+                                if (StringComparer.OrdinalIgnoreCase.Equals(item, items[index]))
+                                {
+                                    return index;
+                                }
+
+                                break;
+                            }
+
+                            index = ~index;
 
                             int comparison = StringComparer.OrdinalIgnoreCase.Compare(item, items[index]);
                             if (comparison == 0)

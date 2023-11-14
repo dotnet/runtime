@@ -14,16 +14,19 @@ namespace System.Collections.Frozen
         /// <summary>Allowed ratio between buckets with values and total buckets.  Under this ratio, this implementation won't be used due to too much wasted space.</summary>
         private const double EmptyLengthsRatio = 0.2;
 
-        /// <summary>A precalculated instructions on how to sort an array of varying length into a tree.</summary>
+        /// <summary>This value represents a "null" bucket entry. Not "-1" to avoid conflict with ~0, as we use the bit inversion of N to represent that a node is an internal node and not a leaf.</summary>
+        internal const int NullSentinel = int.MinValue;
+
+        /// <summary>Precalculated instructions for mapping a sorted array of varying length into a binary tree.</summary>
         private static readonly int[][] s_sortedBucketToBinaryTree = [
-            [-1, -1, -1, -1, -1, -1, -1],
-            [-1, -1, -1, 0, -1, -1, -1],
-            [-1, 0, -1, 1, -1, -1, -1],
-            [-1, 0, -1, 1, -1, 2, -1],
-            [-1, 0, -1, 1, 2, 3, -1],
-            [-1, 0, -1, 1, 2, 3, 4],
-            [0, 1, 2, 3, 4, 5, -1],
-            [0, 1, 2, 3, 4, 5, 6],
+            [NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel, NullSentinel],
+            [NullSentinel, NullSentinel, NullSentinel, 0, NullSentinel, NullSentinel, NullSentinel],
+            [NullSentinel, 0, NullSentinel, ~1, NullSentinel, NullSentinel, NullSentinel],
+            [NullSentinel, 0, NullSentinel, ~1, NullSentinel, 2, NullSentinel],
+            [NullSentinel, 0, NullSentinel, ~1, 2, ~3, NullSentinel],
+            [NullSentinel, 0, NullSentinel, ~1, 2, ~3, 4],
+            [0, ~1, 2, ~3, 4, ~5, NullSentinel],
+            [0, ~1, 2, ~3, 4, ~5, 6],
         ];
 
         internal static unsafe int[]? CreateLengthBucketsArrayIfAppropriate(string[] keys, IEqualityComparer<string> comparer, int minLength, int maxLength)
@@ -55,9 +58,9 @@ namespace System.Collections.Frozen
             // we rent a single dimension array, where every bucket has five slots.
             // The bucket starts at (key.Length - minLength) * 5.
             // Each value is an index of the key from _keys array
-            // or just -1, which represents "null".
+            // or just NullSentinel, which represents "null".
             int[] buckets = ArrayPool<int>.Shared.Rent(arraySize);
-            buckets.AsSpan(0, arraySize).Fill(-1);
+            buckets.AsSpan(0, arraySize).Fill(NullSentinel);
 
             int nonEmptyCount = 0;
             for (int i = 0; i < keys.Length; i++)
@@ -115,10 +118,10 @@ namespace System.Collections.Frozen
                 // e.g. 0,1,2,3,4,5,6 becomes 3,1,0,2,5,4,6
 #if NET5_0_OR_GREATER
                 buckets.AsSpan().Slice(bucketStartIndex, MaxPerLength).CopyTo(sortingBucket);
-                int bucketLength = sortingBucket.IndexOf(-1);
+                int bucketLength = sortingBucket.IndexOf(NullSentinel);
 #else
                 Array.Copy(buckets, bucketStartIndex, sortingBucket, 0, MaxPerLength);
-                int bucketLength = Array.IndexOf(sortingBucket, -1);
+                int bucketLength = Array.IndexOf(sortingBucket, NullSentinel);
 #endif
 
                 if (bucketLength == -1)
@@ -132,11 +135,11 @@ namespace System.Collections.Frozen
                 {
                     if (i < bucketLength)
                     {
-                        Debug.Assert(sortingBucket[i] > -1);
+                        Debug.Assert(sortingBucket[i] != NullSentinel);
                     }
                     else
                     {
-                        Debug.Assert(sortingBucket[i] == -1);
+                        Debug.Assert(sortingBucket[i] == NullSentinel);
                     }
                 }
 #endif
@@ -153,7 +156,12 @@ namespace System.Collections.Frozen
 
                     for (int i = 0; i < MaxPerLength; i++)
                     {
-                        buckets[bucketStartIndex + i] = swapInstructions[i] == -1 ? -1 : sortingBucket[swapInstructions[i]];
+                        buckets[bucketStartIndex + i] = swapInstructions[i] switch
+                        {
+                            NullSentinel => NullSentinel,
+                            < 0 => ~sortingBucket[~swapInstructions[i]],
+                            _ => sortingBucket[swapInstructions[i]]
+                        };
                     }
                 }
             }
