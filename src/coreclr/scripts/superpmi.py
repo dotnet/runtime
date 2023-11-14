@@ -275,7 +275,7 @@ superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
-superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
+superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on collection and replay.")
 superpmi_common_parser.add_argument("-error_limit", help=error_limit_help)
 
 # subparser for collect
@@ -823,6 +823,10 @@ class SuperPMICollect:
                 dotnet_env["ZapDisable"] = "1"
                 dotnet_env["ReadyToRun"] = "0"
 
+            if self.coreclr_args.altjit:
+                dotnet_env["AltJit"] = "*"
+                dotnet_env["AltJitNgen"] = "*"
+
             logging.debug("Starting collection.")
             logging.debug("")
 
@@ -877,11 +881,15 @@ class SuperPMICollect:
 
                 collection_command_env = env_copy.copy()
                 collection_dotnet_env = dotnet_env.copy()
-                # In debug/checked builds we have the JitPath variable that the runtime will prefer.
-                # We still specify JitName for release builds, but this requires the user to manually
+                # In debug/checked builds we have the JitPath/AltJitPath variable that the runtime will prefer.
+                # We still specify JitName/AltJitName for release builds, but this requires the user to manually
                 # copy the shim next to coreclr.
-                collection_dotnet_env["JitPath"] = self.collection_shim_path
-                collection_dotnet_env["JitName"] = self.collection_shim_name
+                if self.coreclr_args.altjit:
+                    collection_dotnet_env["AltJitPath"] = self.collection_shim_path
+                    collection_dotnet_env["AltJitName"] = self.collection_shim_name
+                else:
+                    collection_dotnet_env["JitPath"] = self.collection_shim_path
+                    collection_dotnet_env["JitName"] = self.collection_shim_name
                 set_and_report_env(collection_command_env, root_env, collection_dotnet_env)
 
                 logging.info("Collecting using command:")
@@ -957,11 +965,15 @@ class SuperPMICollect:
                 # Set environment variables.
                 pmi_command_env = env_copy.copy()
                 pmi_dotnet_env = dotnet_env.copy()
-                # In debug/checked builds we have the JitPath variable that the runtime will prefer.
-                # We still specify JitName for release builds, but this requires the user to manually
+                # In debug/checked builds we have the JitPath/AltJitPath variable that the runtime will prefer.
+                # We still specify JitName/AltJitPath for release builds, but this requires the user to manually
                 # copy the shim next to coreclr.
-                pmi_dotnet_env["JitPath"] = self.collection_shim_path
-                pmi_dotnet_env["JitName"] = self.collection_shim_name
+                if self.coreclr_args.altjit:
+                    pmi_dotnet_env["AltJitPath"] = self.collection_shim_path
+                    pmi_dotnet_env["AltJitName"] = self.collection_shim_name
+                else:
+                    pmi_dotnet_env["JitPath"] = self.collection_shim_path
+                    pmi_dotnet_env["JitName"] = self.collection_shim_name
 
                 if self.coreclr_args.pmi_path is not None:
                     pmi_root_env = root_env.copy()
@@ -4542,6 +4554,10 @@ def setup_args(args):
                     sys.exit(1)
                 coreclr_args.collection_command = collection_tool_path
                 logging.info("Using collection command from PATH: \"%s\"", coreclr_args.collection_command)
+
+        if coreclr_args.altjit and (coreclr_args.crossgen2 or coreclr_args.nativeaot):
+            print("Altjit collection using crossgen2 or nativeaot is not implemented")
+            sys.exit(1)
 
     elif coreclr_args.mode == "replay":
 
