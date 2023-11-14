@@ -232,10 +232,6 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup>
-    <_ShouldSetXUnitLogCheckerEnvVar>0</_ShouldSetXUnitLogCheckerEnvVar>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
     <_ShouldSetXUnitLogCheckerEnvVar>1</_ShouldSetXUnitLogCheckerEnvVar>
     <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
