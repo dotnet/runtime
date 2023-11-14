@@ -6499,7 +6499,7 @@ public:
         {
             if (lpHead->NextIs(lpEntry))
             {
-                assert(lpHead->bbFallsThrough());
+                assert(lpHead->bbFallsThrough() || lpHead->JumpsToNext());
                 assert(lpTop == lpEntry);
                 return true;
             }

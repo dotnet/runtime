@@ -13124,10 +13124,11 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     optUnmarkLoopBlocks(block->GetJumpDest(), block);
                 }
 
-                /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
+                /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
                 bTaken    = block->Next();
                 bNotTaken = block->GetJumpDest();
-                block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, bTaken DEBUG_ARG(this));
+                block->bbFlags |= BBF_NONE_QUIRK;
             }
 
             if (fgHaveValidEdgeWeights)
@@ -13182,13 +13183,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     // Now fix the weights of the edges out of 'bUpdated'
                     switch (bUpdated->GetJumpKind())
                     {
-                        case BBJ_NONE:
-                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
-                            break;
-
                         case BBJ_COND:
                             edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
@@ -13219,11 +13213,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (verbose)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum, block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
-                }
+                printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
                 printf("\n");
             }
 #endif
@@ -13351,16 +13342,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    if (!block->NextIs(curJump))
-                    {
-                        // transform the basic block into a BBJ_ALWAYS
-                        block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump DEBUG_ARG(this));
-                    }
-                    else
-                    {
-                        // transform the basic block into a BBJ_NONE
-                        block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
-                    }
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump DEBUG_ARG(this));
                     foundVal = true;
                 }
                 else
@@ -13371,16 +13353,17 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             }
 
             assert(foundVal);
+            if (block->JumpsToNext())
+            {
+                block->bbFlags |= BBF_NONE_QUIRK;
+            }
 
 #ifdef DEBUG
             if (verbose)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum, block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
-                }
+                printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
                 printf("\n");
             }
 #endif
@@ -13504,7 +13487,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
 
         // The rest of block has been removed and we will always throw an exception.
         //
-        // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_NONE.
+        // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_ALWAYS.
         // We should not convert it to a ThrowBB.
         if ((block != fgFirstBB) || ((fgFirstBB->bbFlags & BBF_INTERNAL) == 0))
         {
@@ -14541,13 +14524,15 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
-    BasicBlock* helperBlock = fgNewBBafter(BBJ_NONE, block, true);
+    BasicBlock* helperBlock = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
     BasicBlock* cond2Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
-    BasicBlock* asgBlock    = fgNewBBafter(BBJ_NONE, block, true);
+    BasicBlock* asgBlock    = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
 
     block->bbFlags &= ~BBF_NEEDS_GCPOLL;
     remainderBlock->bbFlags |= propagateFlags;
+    helperBlock->bbFlags |= BBF_NONE_QUIRK;
+    asgBlock->bbFlags |= BBF_NONE_QUIRK;
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
@@ -14564,6 +14549,8 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     }
 
     // Chain the flow correctly.
+    assert(block->KindIs(BBJ_ALWAYS));
+    block->SetJumpDest(asgBlock);
     fgAddRefPred(asgBlock, block);
     fgAddRefPred(cond1Block, asgBlock);
     fgAddRefPred(cond2Block, cond1Block);
@@ -14724,8 +14711,8 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
-    BasicBlock* condBlock = fgNewBBafter(BBJ_NONE, block, true);
-    BasicBlock* elseBlock = fgNewBBafter(BBJ_NONE, condBlock, true);
+    BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
+    BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
@@ -14742,12 +14729,19 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     condBlock->inheritWeight(block);
 
+    assert(block->KindIs(BBJ_ALWAYS));
+    block->SetJumpDest(condBlock);
+    condBlock->SetJumpDest(elseBlock);
+    elseBlock->SetJumpDest(remainderBlock);
+    assert(condBlock->JumpsToNext());
+    assert(elseBlock->JumpsToNext());
+
     fgAddRefPred(condBlock, block);
     fgAddRefPred(elseBlock, condBlock);
     fgAddRefPred(remainderBlock, elseBlock);
 
-    condBlock->bbFlags |= propagateFlagsToAll;
-    elseBlock->bbFlags |= propagateFlagsToAll;
+    condBlock->bbFlags |= (propagateFlagsToAll | BBF_NONE_QUIRK);
+    elseBlock->bbFlags |= (propagateFlagsToAll | BBF_NONE_QUIRK);
 
     BasicBlock* thenBlock = nullptr;
     if (hasTrueExpr && hasFalseExpr)

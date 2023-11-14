@@ -497,12 +497,6 @@ void BlockCountInstrumentor::RelocateProbes()
             }
             else
             {
-                // Ensure this pred is not a fall through.
-                //
-                if (pred->KindIs(BBJ_NONE))
-                {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block DEBUG_ARG(m_comp));
-                }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
         }
@@ -513,8 +507,9 @@ void BlockCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->bbFlags |= BBF_IMPORTED | BBF_MARKED;
+            BasicBlock* const intermediary =
+                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            intermediary->bbFlags |= BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK;
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             SetModifiedFlow();
@@ -1235,7 +1230,7 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
 {
     static const int IS_INTERNAL_BLOCK = (int32_t)0x80000000;
     int32_t          key               = (int32_t)block->bbCodeOffs;
-    // We may see empty BBJ_NONE BBF_INTERNAL blocks that were added
+    // We may see empty BBJ_ALWAYS BBF_INTERNAL blocks that were added
     // by fgNormalizeEH.
     //
     // We'll use their bbNum in place of IL offset, and set
@@ -1548,14 +1543,6 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
 
                     if (found)
                     {
-                        // Importer folding may have changed the block jump kind
-                        // to BBJ_NONE. If so, warp it back to BBJ_ALWAYS.
-                        //
-                        if (block->KindIs(BBJ_NONE))
-                        {
-                            block->SetJumpKindAndTarget(BBJ_ALWAYS, target DEBUG_ARG(m_comp));
-                        }
-
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
                         instrumentedBlock->bbFlags |= BBF_IMPORTED;
                         edgesSplit++;
@@ -1691,13 +1678,10 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 //
                 NewRelocatedProbe(pred, probe->source, probe->target, &leader);
 
-                // Ensure this pred is not a fall through.
+                // Ensure this pred always jumps to block
                 //
-                if (pred->KindIs(BBJ_NONE))
-                {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block DEBUG_ARG(m_comp));
-                }
                 assert(pred->KindIs(BBJ_ALWAYS));
+                assert(pred->HasJumpTo(block));
             }
         }
 
@@ -1706,8 +1690,9 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->bbFlags |= BBF_IMPORTED;
+            BasicBlock* intermediary =
+                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            intermediary->bbFlags |= BBF_IMPORTED | BBF_NONE_QUIRK;
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
@@ -4426,11 +4411,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bSrc = bDst->bbPreds->getSourceBlock();
 
                     // Does this block flow into only one other block
-                    if (bSrc->KindIs(BBJ_NONE))
-                    {
-                        bOnlyNext = bSrc->Next();
-                    }
-                    else if (bSrc->KindIs(BBJ_ALWAYS))
+                    if (bSrc->KindIs(BBJ_ALWAYS))
                     {
                         bOnlyNext = bSrc->GetJumpDest();
                     }
@@ -4447,11 +4428,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 }
 
                 // Does this block flow into only one other block
-                if (bDst->KindIs(BBJ_NONE))
-                {
-                    bOnlyNext = bDst->Next();
-                }
-                else if (bDst->KindIs(BBJ_ALWAYS))
+                if (bDst->KindIs(BBJ_ALWAYS))
                 {
                     bOnlyNext = bDst->GetJumpDest();
                 }
@@ -4688,7 +4665,6 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                case BBJ_NONE:
                 case BBJ_CALLFINALLY:
                     // We know the exact edge weight
                     assignOK &= edge->setEdgeWeightMinChecked(bSrc->bbWeight, bDst, slop, &usedSlop);

@@ -1441,27 +1441,21 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         return false;
     }
 
-    bool modifiedFlow = false;
-
     if ((jti.m_numAmbiguousPreds > 0) && (jti.m_fallThroughPred != nullptr))
     {
-        // If fall through pred is BBJ_NONE, and we have only (ambiguous, true) or (ambiguous, false) preds,
-        // we can change the fall through to BBJ_ALWAYS.
-        //
+        // TODO: Simplify jti.m_fallThroughPred logic, now that implicit fallthrough is disallowed.
         const bool fallThroughIsTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
+        const bool predJumpsToNext = jti.m_fallThroughPred->KindIs(BBJ_ALWAYS) && jti.m_fallThroughPred->JumpsToNext();
 
-        if (jti.m_fallThroughPred->KindIs(BBJ_NONE) && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
-                                                        (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
+        if (predJumpsToNext && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
+                                (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
         {
             JITDUMP(FMT_BB " has ambiguous preds and a (%s) fall through pred and no (%s) preds.\n"
-                           "Converting fall through pred " FMT_BB " to BBJ_ALWAYS\n",
+                           "Fall through pred " FMT_BB " is BBJ_ALWAYS\n",
                     jti.m_block->bbNum, fallThroughIsTruePred ? "true" : "false",
                     fallThroughIsTruePred ? "false" : "true", jti.m_fallThroughPred->bbNum);
 
-            // Possibly defer this until after early out below.
-            //
-            jti.m_fallThroughPred->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_block DEBUG_ARG(this));
-            modifiedFlow = true;
+            assert(jti.m_fallThroughPred->HasJumpTo(jti.m_block));
         }
         else
         {
@@ -1496,7 +1490,6 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         // This is possible, but also should be rare.
         //
         JITDUMP(FMT_BB " now only has ambiguous preds, not jump threading\n", jti.m_block->bbNum);
-        assert(!modifiedFlow);
         return false;
     }
 
@@ -1540,7 +1533,9 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", jti.m_block->bbNum,
                 jti.m_falseTarget->bbNum);
         fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
-        jti.m_block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+        jti.m_block->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_falseTarget DEBUG_ARG(this));
+        jti.m_block->bbFlags |= BBF_NONE_QUIRK;
+        assert(jti.m_block->JumpsToNext());
     }
 
     // Now reroute the flow from the predecessors.

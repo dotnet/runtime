@@ -65,7 +65,6 @@ enum BBjumpKinds : BYTE
     BBJ_EHCATCHRET,  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))
     BBJ_THROW,       // block ends with 'throw'
     BBJ_RETURN,      // block ends with 'ret'
-    BBJ_NONE,        // block flows into the next one (no jump)
     BBJ_ALWAYS,      // block always jumps to the target
     BBJ_LEAVE,       // block always jumps to the target, maybe out of guarded region. Only used until importing.
     BBJ_CALLFINALLY, // block always calls the target finally
@@ -83,7 +82,6 @@ const char* const BBjumpKindNames[] = {
     "BBJ_EHCATCHRET",
     "BBJ_THROW",
     "BBJ_RETURN",
-    "BBJ_NONE",
     "BBJ_ALWAYS",
     "BBJ_LEAVE",
     "BBJ_CALLFINALLY",
@@ -441,6 +439,10 @@ enum BasicBlockFlags : unsigned __int64
     BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(41), // Block has recursive tailcall that may turn into a loop
     BBF_NO_CSE_IN                      = MAKE_BBFLAG(42), // Block should kill off any incoming CSE
     BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(43), // Ok to add pred edge to this block, even when "safe" edge creation disabled
+    BBF_NONE_QUIRK                     = MAKE_BBFLAG(44), // Block was created as a BBJ_ALWAYS to the next block,
+                                                          // and should be treated as if it falls through.
+                                                          // This is just to reduce diffs from removing BBJ_NONE.
+                                                          // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
 
     // The following are sets of flags.
 
@@ -640,11 +642,8 @@ public:
     void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest DEBUG_ARG(Compiler* compiler))
     {
 #ifdef DEBUG
-        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
-        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
-        //
-        // (right now, this assertion does the null check to avoid unused variable warnings)
-        assert((jumpKind != BBJ_NONE) || (compiler != nullptr));
+        // TODO: Delete
+        assert(compiler != nullptr);
 #endif // DEBUG
 
         bbJumpKind = jumpKind;
@@ -748,7 +747,7 @@ public:
     unsigned dspPreds();               // Print the predecessors (bbPreds)
     void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
                                        // regions are printed: see NumSucc() for details.
-    void dspJumpKind();                // Print the block jump kind (e.g., BBJ_NONE, BBJ_COND, etc.).
+    void dspJumpKind();                // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);
@@ -1785,12 +1784,6 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             m_succs[0] = block->bbJumpDest;
-            m_begin    = &m_succs[0];
-            m_end      = &m_succs[1];
-            break;
-
-        case BBJ_NONE:
-            m_succs[0] = block->bbNext;
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;

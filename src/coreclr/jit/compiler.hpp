@@ -654,12 +654,6 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
             break;
 
-        case BBJ_NONE:
-            RETURN_ON_ABORT(func(bbNext));
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbNext, func));
-            break;
-
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
 
@@ -736,10 +730,6 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
             RETURN_ON_ABORT(func(bbJumpDest));
-            break;
-
-        case BBJ_NONE:
-            RETURN_ON_ABORT(func(bbNext));
             break;
 
         case BBJ_COND:

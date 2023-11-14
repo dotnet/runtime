@@ -422,7 +422,6 @@ void CodeGen::genMarkLabelsForCodegen()
             case BBJ_EHFILTERRET:
             case BBJ_RETURN:
             case BBJ_THROW:
-            case BBJ_NONE:
                 break;
 
             default:

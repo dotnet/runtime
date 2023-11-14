@@ -1008,7 +1008,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     // Update the flow.
     m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
-    m_b1->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(m_comp));
+    m_b1->SetJumpKindAndTarget(BBJ_ALWAYS, m_b1->Next() DEBUG_ARG(m_comp));
+    m_b1->bbFlags |= BBF_NONE_QUIRK;
 
     // Fixup flags.
     m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
