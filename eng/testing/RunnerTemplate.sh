@@ -91,7 +91,7 @@ function invoke_xunitlogchecker {
     elif [[ ! -f $xunitlogchecker_file_name ]]; then 
       echo "'$xunitlogchecker_file_name' was not found. Unable to print dump file contents."
       xunitlogchecker_exit_code=2
-    elif [[ ! -d dump_folder ]]; then
+    elif [[ ! -d $dump_folder ]]; then
       echo "The dump directory '$dump_folder' does not exist."
     else
       echo "Executing XUnitLogChecker in $dump_folder..."
