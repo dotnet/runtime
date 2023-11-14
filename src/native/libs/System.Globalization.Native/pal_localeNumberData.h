@@ -34,7 +34,7 @@ typedef enum
     WeekRule_FirstFullWeek = 1,
     WeekRule_FirstFourDayWeek = 2
 } CalendarWeekRule;
-#if !defined(__APPLE__) || (defined(__APPLE__) && !(TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
+#if !defined(__APPLE__) || (defined(__APPLE__) && !(TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || CLR_CMAKE_TARGET_IOS || CLR_CMAKE_TARGET_TVOS))
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoInt(const UChar* localeName,
                                                        LocaleNumberData localeNumberData,
                                                        int32_t* value);

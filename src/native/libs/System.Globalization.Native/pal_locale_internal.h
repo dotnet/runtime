@@ -4,7 +4,7 @@
 #pragma once
 
 #include "pal_icushim_internal.h"
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(CLR_CMAKE_TARGET_IOS) || defined(CLR_CMAKE_TARGET_TVOS)
 #include <unicode/utypes.h>
 #endif
 /*
