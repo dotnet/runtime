@@ -3847,7 +3847,7 @@ namespace System
 
             while (Unsafe.IsAddressLessThan(ref current, ref end))
             {
-                count += count.Equals(value) ? 1 : 0;
+                count += current.Equals(value) ? 1 : 0;
                 current = ref Unsafe.Add(ref current, 1);
             }
 
