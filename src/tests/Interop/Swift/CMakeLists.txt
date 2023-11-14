@@ -1,25 +1,19 @@
 project(SwiftInteropLibraries)
-# include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 
-if(NOT CMAKE_Swift_COMPILER)
-  set(CMAKE_Swift_COMPILER swiftc)
-endif()
-
-enable_language(Swift)
-
-set(SOURCE_FILES_DUMMY Dummy.swift)
-set(SOURCE_FILES_ERROR_HANDLING ErrorHandling.swift)
-set(SOURCE_FILES_SELF_CONTEXT SelfContext.swift)
-
-add_library(Dummy SHARED ${SOURCE_FILES_DUMMY})
-add_library(ErrorHandling SHARED ${SOURCE_FILES_ERROR_HANDLING})
-add_library(SelfContext SHARED ${SOURCE_FILES_SELF_CONTEXT})
-
-# Set the output name for the libraries
-set_target_properties(Dummy PROPERTIES OUTPUT_NAME "Dummy")
-set_target_properties(ErrorHandling PROPERTIES OUTPUT_NAME "ErrorHandling")
-set_target_properties(SelfContext PROPERTIES OUTPUT_NAME "SelfContext")
-
-install(TARGETS Dummy ErrorHandling SelfContext
-  LIBRARY DESTINATION bin
+set(SWIFT_SOURCES
+  Dummy
+  ErrorHandling
+  SelfContext
 )
+
+foreach(SOURCE ${SWIFT_SOURCES})
+    add_custom_target(${SOURCE}SwiftLibrary ALL
+        COMMAND xcrun swiftc -emit-library ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}.swift -o ${CMAKE_CURRENT_BINARY_DIR}/lib${SOURCE}.dylib
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}.swift
+        COMMENT "Generating ${SOURCE} library"
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${SOURCE}.dylib
+        DESTINATION bin
+    )
+endforeach()

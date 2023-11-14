@@ -86,15 +86,5 @@ Build the coreroot:
 ```
 Build the tests:
 ```sh
-./src/tests/build.sh -mono debug -test:Interop/Swift/SwiftInterop.csproj /p:LibrariesConfiguration=Debug
-```
-Build the native library:
-```sh
-swiftc -emit-library ./src/tests/Interop/Swift/ErrorHandling.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libErrorHandling.dylib
-swiftc -emit-library ./src/tests/Interop/Swift/SelfContext.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libSelfContext.dylib
-swiftc -emit-library ./src/tests/Interop/Swift/Dummy.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libDummy.dylib
-```
-Run the tests:
-```
-bash $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/SwiftInterop.sh -coreroot=$PWD/artifacts/tests/coreclr/osx.arm64.Debug/Tests/Core_Root/
+./src/tests/build.sh -mono debug -tree:Interop/Swift /p:LibrariesConfiguration=Debug
 ```
