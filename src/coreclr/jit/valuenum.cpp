@@ -9674,19 +9674,24 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // IsReachableFromPred: Check if a block is reachability from one of its
-    // predecessors.
+    // IsReachableThroughPred: Check if a block can be reached through one of
+    // its direct predecessors.
     //
     // Parameters:
     //   block     - A block
     //   predBlock - A predecessor of 'block'
     //
     // Returns:
-    //   False if 'block' is definitely not reachable even though it is a
-    //   direct successor of 'predBlock'.
+    //   False if 'block' is definitely not reachable through 'predBlock', even
+    //   though it is a direct successor of 'predBlock'.
     //
-    bool IsReachableFromPred(BasicBlock* block, BasicBlock* predBlock)
+    bool IsReachableThroughPred(BasicBlock* block, BasicBlock* predBlock)
     {
+        if (!IsReachable(predBlock))
+        {
+            return false;
+        }
+
         if (!predBlock->KindIs(BBJ_COND) || predBlock->JumpsToNext())
         {
             return true;
@@ -9856,20 +9861,13 @@ PhaseStatus Compiler::fgValueNumber()
             for (FlowEdge* pred = BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
             {
                 BasicBlock* predBlock = pred->getSourceBlock();
-                if (!vs.IsReachable(predBlock))
+                if (!vs.IsReachableThroughPred(block, predBlock))
                 {
-                    JITDUMP("  " FMT_BB " is an unreachable pred\n", predBlock->bbNum);
+                    JITDUMP("  Unreachable through pred " FMT_BB "\n", predBlock->bbNum);
                     continue;
                 }
 
-                if (!vs.IsReachableFromPred(block, predBlock))
-                {
-                    JITDUMP("  " FMT_BB " is a reachable pred, but " FMT_BB " is not reachable from it\n",
-                            predBlock->bbNum, block->bbNum);
-                    continue;
-                }
-
-                JITDUMP("  " FMT_BB " is a reachable pred\n", predBlock->bbNum);
+                JITDUMP("  Reachable through pred " FMT_BB "\n", predBlock->bbNum);
                 anyPredReachable = true;
                 break;
             }
@@ -9911,10 +9909,10 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         for (GenTreePhi::Use& use : phiNode->Uses())
         {
             GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-            if (!vnState->IsReachable(phiArg->gtPredBB))
+            if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
             {
-                JITDUMP("  Phi arg [%06u] refers to unreachable pred " FMT_BB "\n", dspTreeID(phiArg),
-                        phiArg->gtPredBB->bbNum);
+                JITDUMP("  Phi arg [%06u] unnecessary; path through pred " FMT_BB " cannot be taken\n",
+                        dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
 
                 if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
                 {
@@ -9922,7 +9920,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
                 }
 
                 assert(!vnState->IsReachable(blk));
-                JITDUMP("  ..but all preds are unreachable, so we are using it anyway\n");
+                JITDUMP("  ..but no other path can, so we are using it anyway\n");
             }
 
             ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
