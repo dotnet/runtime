@@ -8406,16 +8406,16 @@ namespace System.Diagnostics.CodeAnalysis
     }
     // TODO: make this minimal. avoid introducing any unnecessary API.
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false)] 
-    public class FeatureCheckAttribute : Attribute
+    public class FeatureGuardAttribute : Attribute
     {
-        public FeatureCheckAttribute(Type requiresAttributeType) { }
+        public FeatureGuardAttribute(Type requiresAttributeType) { }
         public Type RequiresAttributeType { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
-    public sealed class FeatureCheckAttribute<T> : FeatureCheckAttribute
+    public sealed class FeatureGuardAttribute<T> : FeatureGuardAttribute
         where T : Attribute
     {
-        public FeatureCheckAttribute() : base (default(System.Type)) { }
+        public FeatureGuardAttribute() : base (default(System.Type)) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
@@ -13103,7 +13103,7 @@ namespace System.Runtime.CompilerServices
         public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
         public const string VirtualStaticsInInterfaces = "VirtualStaticsInInterfaces";
         public static bool IsDynamicCodeCompiled { get { throw null; } }
-        [FeatureCheck<RequiresDynamicCodeAttribute>]
+        [FeatureGuard<RequiresDynamicCodeAttribute>]
         public static bool IsDynamicCodeSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }

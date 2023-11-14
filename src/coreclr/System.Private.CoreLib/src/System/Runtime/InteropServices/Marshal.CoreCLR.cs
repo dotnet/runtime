@@ -258,7 +258,7 @@ namespace System.Runtime.InteropServices
             => (obj == null) || !RuntimeHelpers.GetMethodTable(obj)->ContainsGCPointers;
 
 #if TARGET_WINDOWS
-        [FeatureCheck<RequiresUnreferencedCode>]
+        [FeatureGuard<RequiresUnreferencedCode>]
         internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]

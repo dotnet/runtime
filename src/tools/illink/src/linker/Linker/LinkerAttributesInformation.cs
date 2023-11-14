@@ -62,8 +62,8 @@ namespace Mono.Linker
 					attributeValue = new RemoveAttributeInstancesAttribute (customAttribute.ConstructorArguments);
 					allowMultiple = true;
 					break;
-				case "FeatureCheckAttribute`1":
-					attributeValue = ProcessFeatureCheckAttribute (context, provider, customAttribute);
+				case "FeatureGuardAttribute`1":
+					attributeValue = ProcessFeatureGuardAttribute (context, provider, customAttribute);
 					break;
 				default:
 					continue;
@@ -132,7 +132,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		static FeatureCheckAttribute<RequiresUnreferencedCodeAttribute>? ProcessFeatureCheckAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
+		static FeatureGuardAttribute<RequiresUnreferencedCodeAttribute>? ProcessFeatureGuardAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
 			if (provider is not PropertyDefinition)
 				return null;
@@ -144,7 +144,7 @@ namespace Mono.Linker
 
 			// TODO: remove this check. It was already done in the caller.
 			Console.WriteLine("Attribute type name: "  + attributeType);
-			if (attributeType.Name is not "FeatureCheckAttribute`1")
+			if (attributeType.Name is not "FeatureGuardAttribute`1")
 				return null;
 
 			// If it's not a generic instantiation, we're done
@@ -159,7 +159,7 @@ namespace Mono.Linker
 			if (requiresAttributeType.Namespace is not "System.Diagnostics.CodeAnalysis")
 				return null;
 			if (requiresAttributeType.Name is "RequiresUnreferencedCodeAttribute")
-				return new FeatureCheckAttribute<RequiresUnreferencedCodeAttribute> ();
+				return new FeatureGuardAttribute<RequiresUnreferencedCodeAttribute> ();
 
 			return null;
 		}

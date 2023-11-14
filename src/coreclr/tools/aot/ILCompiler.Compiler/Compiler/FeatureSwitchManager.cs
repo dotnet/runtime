@@ -22,19 +22,19 @@ using MethodDebugInformation = Internal.IL.MethodDebugInformation;
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    internal class FeatureCheckAttribute : Attribute
+    internal class FeatureGuardAttribute : Attribute
     {
         public Type RequiresAttributeType { get; }
-        public FeatureCheckAttribute (Type requiresAttributeType)
+        public FeatureGuardAttribute (Type requiresAttributeType)
         {
             RequiresAttributeType = requiresAttributeType;
         }
     }
 
-    internal sealed class FeatureCheckAttribute<T> : FeatureCheckAttribute
+    internal sealed class FeatureGuardAttribute<T> : FeatureGuardAttribute
         where T : Attribute
     {
-        public FeatureCheckAttribute () : base (typeof (T))
+        public FeatureGuardAttribute () : base (typeof (T))
         {
         }
     }
@@ -95,7 +95,7 @@ namespace ILCompiler
 
                 if (getter == ecmaMethod.Handle) {
                     // found it!
-                    var featureCheckAttr = ProcessFeatureCheckAttribute (property);
+                    var featureCheckAttr = ProcessFeatureGuardAttribute (property);
                     if (featureCheckAttr is null)
                         return false;
                     
@@ -108,10 +108,10 @@ namespace ILCompiler
 
             return false;
 
-            FeatureCheckAttribute ProcessFeatureCheckAttribute (PropertyDefinition property)
+            FeatureGuardAttribute ProcessFeatureGuardAttribute (PropertyDefinition property)
             {
                 CustomAttributeHandleCollection customAttributeHandles = property.GetCustomAttributes();
-                CustomAttributeHandle caHandle = reader.GetCustomAttributeHandle(customAttributeHandles, "System.Diagnostics.CodeAnalysis", "FeatureCheckAttribute`1");
+                CustomAttributeHandle caHandle = reader.GetCustomAttributeHandle(customAttributeHandles, "System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute`1");
                 if (caHandle.IsNil)
                     return null;
                 var ca = reader.GetCustomAttribute(caHandle);
@@ -172,11 +172,11 @@ namespace ILCompiler
 
                 switch (genArgTypeRefName) {
                 case "RequiresUnreferencedCodeAttribute":
-                    return new FeatureCheckAttribute<RequiresUnreferencedCodeAttribute>();
+                    return new FeatureGuardAttribute<RequiresUnreferencedCodeAttribute>();
                 case "RequiresDynamicCodeAttribute":
-                    return new FeatureCheckAttribute<RequiresDynamicCodeAttribute>();
+                    return new FeatureGuardAttribute<RequiresDynamicCodeAttribute>();
                 case "RequiresAssemblyFilesAttribute":
-                    return new FeatureCheckAttribute<RequiresAssemblyFilesAttribute>();
+                    return new FeatureGuardAttribute<RequiresAssemblyFilesAttribute>();
                 }
                 return null;
 

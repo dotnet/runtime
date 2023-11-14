@@ -314,7 +314,7 @@ namespace ILLink.RoslynAnalyzer
 				return false;
 
 			// Get "System.Diagnostics.CodeAnalysis" in the compilation? Or just use string?
-			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureCheckAttribute`1");
+			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureGuardAttribute`1");
 			if (featureCheckType == null)
 				return false;
 

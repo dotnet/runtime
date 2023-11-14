@@ -17,8 +17,8 @@ namespace System.ComponentModel.Design
     {
         internal const byte BinaryWriterMagic = 255;
 
-        [FeatureCheck<RequiresUnreferencedCodeAttribute>]
-        [FeatureCheck<RequiresDynamicCodeAttribute>]
+        [FeatureGuard<RequiresUnreferencedCodeAttribute>]
+        [FeatureGuard<RequiresDynamicCodeAttribute>]
         private static bool EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization { get; } = AppContext.TryGetSwitch("System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization", out bool isEnabled) ? isEnabled : false;
 
         // Not creatable.

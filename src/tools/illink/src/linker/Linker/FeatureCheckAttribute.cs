@@ -3,17 +3,17 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-	class FeatureCheckAttribute : Attribute
+	class FeatureGuardAttribute : Attribute
 	{
-		public FeatureCheckAttribute (Type requiresAttributeType)
+		public FeatureGuardAttribute (Type requiresAttributeType)
 		{
 		}
 	}
 
-	sealed class FeatureCheckAttribute<T> : FeatureCheckAttribute
+	sealed class FeatureGuardAttribute<T> : FeatureGuardAttribute
 		where T : Attribute
 	{
-		public FeatureCheckAttribute () : base (typeof (T))
+		public FeatureGuardAttribute () : base (typeof (T))
 		{
 		}
 	}

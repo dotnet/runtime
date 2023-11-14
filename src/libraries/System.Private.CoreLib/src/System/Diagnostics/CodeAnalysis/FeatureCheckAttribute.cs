@@ -9,11 +9,11 @@ namespace System.Diagnostics.CodeAnalysis
 #else
     internal
 #endif
-        class FeatureCheckAttribute : Attribute
+        class FeatureGuardAttribute : Attribute
     {
         public Type RequiresAttributeType { get; }
 
-        public FeatureCheckAttribute(Type requiresAttributeType)
+        public FeatureGuardAttribute(Type requiresAttributeType)
         {
             RequiresAttributeType = requiresAttributeType;
         }
@@ -25,10 +25,10 @@ namespace System.Diagnostics.CodeAnalysis
 #else
     internal
 #endif
-        sealed class FeatureCheckAttribute<T> : FeatureCheckAttribute
+        sealed class FeatureGuardAttribute<T> : FeatureGuardAttribute
             where T : Attribute
     {
-        public FeatureCheckAttribute() : base(typeof(T))
+        public FeatureGuardAttribute() : base(typeof(T))
         {
         }
     }

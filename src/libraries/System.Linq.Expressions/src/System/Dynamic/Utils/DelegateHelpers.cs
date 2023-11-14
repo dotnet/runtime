@@ -14,7 +14,7 @@ namespace System.Dynamic.Utils
     internal static class DelegateHelpers
     {
         // This can be flipped to false using feature switches at publishing time
-        [FeatureCheck<RequiresDynamicCode>]
+        [FeatureGuard<RequiresDynamicCode>]
         internal static bool CanEmitObjectArrayDelegate => true;
 
         // Separate class so that the it can be trimmed away and doesn't get conflated

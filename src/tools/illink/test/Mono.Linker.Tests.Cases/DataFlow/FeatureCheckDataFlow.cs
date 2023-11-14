@@ -1091,10 +1091,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 namespace System.Diagnostics.CodeAnalysis
 {
 	[AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
-	internal sealed class FeatureCheckAttribute<T> : Attribute
+	internal sealed class FeatureGuardAttribute<T> : Attribute
 		where T : Attribute
 	{
-		public FeatureCheckAttribute()
+		public FeatureGuardAttribute()
 		{
 		}
 	}
@@ -1104,7 +1104,7 @@ namespace System.Runtime.CompilerServices
 {
 	class RuntimeFeature
 	{
-		[FeatureCheck<RequiresDynamicCodeAttribute>]
+		[FeatureGuard<RequiresDynamicCodeAttribute>]
 		public static bool IsDynamicCodeSupported => true;
 	}
 }
@@ -1113,16 +1113,16 @@ namespace ILLink.RoslynAnalyzer
 {
 	class TestFeatures
 	{
-		[FeatureCheck<RequiresUnreferencedCodeAttribute>]
+		[FeatureGuard<RequiresUnreferencedCodeAttribute>]
 		public static bool IsUnreferencedCodeSupported => true;
-		[FeatureCheck<RequiresAssemblyFilesAttribute>]
+		[FeatureGuard<RequiresAssemblyFilesAttribute>]
 		public static bool IsAssemblyFilesSupported => true;
 
-		[FeatureCheck<RequiresDynamicCodeAttribute>]
+		[FeatureGuard<RequiresDynamicCodeAttribute>]
 		public static bool IsDynamicCodeSupported => true;
 
-		[FeatureCheck<RequiresDynamicCodeAttribute>]
-		[FeatureCheck<RequiresUnreferencedCodeAttribute>]
+		[FeatureGuard<RequiresDynamicCodeAttribute>]
+		[FeatureGuard<RequiresUnreferencedCodeAttribute>]
 		public static bool AreDynamicAndUnreferencedCodeSupported => true;
 	}
 }
