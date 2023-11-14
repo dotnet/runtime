@@ -11,6 +11,9 @@
                                                  '$(SuppressFinalPackageVersion)' == 'true' or
                                                  '$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(ApiCompatNetCoreAppBaselineVersion)</PackageValidationBaselineVersion>
+    <!-- In servicing, the live package is compared against the GA version in strict mode. -->
+    <EnableStrictModeForBaselineValidation Condition="'$(DotNetFinalVersionKind)' == 'servicing'">true</EnableStrictModeForBaselineValidation>
+
     <BeforePack>$(BeforePack);IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging</BeforePack>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludeProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
