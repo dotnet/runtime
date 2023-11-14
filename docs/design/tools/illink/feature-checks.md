@@ -242,7 +242,7 @@ Feature.Run(); // OK in analyzer, warns in ILLLink/ILCompiler
 
 However, ILLink and ILCompiler don't optimize away branches based on `DoesNotReturnIfAttribute`, because the attribute doesn't have runtime semantics, and an incorrectly-applied attribute could result in the guarded branch being reachable at runtime. Or, in the case of `Debug.Assert`, if the assert is used incorrectly, the guarded code may still be reachable at runtime in `Release` builds.
 
-Here are some more examples:
+Here are some more examples. These are not recommended because they are not supported by ILLink/ILCompiler:
 
 ```csharp
 DoesNotReturnIfFalse (Feature.IsSupported);

@@ -109,6 +109,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void UnguardedReturn ()
+			{
+				if (TestFeatures.IsUnreferencedCodeSupported)
+				{
+					return;
+				}
+
+				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
+				RequiresAssemblyFiles ();
+			}
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
 			static void UnguardedAssert ()
 			{
 				Debug.Assert (!TestFeatures.IsUnreferencedCodeSupported);
@@ -158,6 +173,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				UnguardedOr ();
 				UnguardedTernary ();
 				UnguardedThrow ();
+				UnguardedReturn ();
 				UnguardedAssert ();
 				UnguardedDoesNotReturnIfTrue ();
 				UnguardedDoesNotReturnIfFalse ();
@@ -176,6 +192,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GuardedOr ();
 				GuardedTernary ();
 				GuardedThrow ();
+				GuardedReturn ();
 				GuardedAssert ();
 				GuardedDoesNotReturnIfTrue ();
 				GuardedDoesNotReturnIfFalse ();
@@ -233,6 +250,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				if (!TestFeatures.IsUnreferencedCodeSupported)
 				{
 					throw new Exception ();
+				}
+
+				RequiresUnreferencedCode ();
+				RequiresDynamicCode ();
+				RequiresAssemblyFiles ();
+			}
+
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", nameof (RequiresAssemblyFiles), ProducedBy = Tool.Analyzer)]
+			static void GuardedReturn ()
+			{
+				if (!TestFeatures.IsUnreferencedCodeSupported)
+				{
+					return;
 				}
 
 				RequiresUnreferencedCode ();
