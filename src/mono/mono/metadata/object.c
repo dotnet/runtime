@@ -1388,10 +1388,12 @@ static void
 add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, guint32 *imt_collisions_bitmap, int vtable_slot, int slot_num) {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
+	g_assert (slot_num >= 0 && slot_num < MONO_IMT_SIZE);
+
 	guint32 imt_slot = mono_method_get_imt_slot (method);
 	MonoImtBuilderEntry *entry;
 
-	if (slot_num >= 0 && imt_slot != slot_num) {
+	if (imt_slot != slot_num) {
 		/* we build just a single imt slot and this is not it */
 		return;
 	}
@@ -1555,6 +1557,8 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 	gboolean has_generic_virtual = FALSE, has_variant_iface = FALSE;
 	MonoMemoryManager *mem_manager = m_class_get_mem_manager (klass);
 
+	g_assert (slot_num >= 0 && slot_num < MONO_IMT_SIZE);
+
 #if DEBUG_IMT
 	printf ("Building IMT for class %s.%s slot %d\n", m_class_get_name_space (klass), m_class_get_name (klass), slot_num);
 #endif
@@ -1575,7 +1579,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 		for (method_slot_in_interface = 0; method_slot_in_interface < mcount; method_slot_in_interface++) {
 			MonoMethod *method;
 
-			if (slot_num >= 0 && mono_class_is_ginst (iface)) {
+			if (mono_class_is_ginst (iface)) {
 				/*
 				 * The imt slot of the method is the same as for its declaring method,
 				 * see the comment in mono_method_get_imt_slot (), so we can
@@ -1618,7 +1622,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 		/* overwrite the imt slot only if we're building all the entries or if
 		 * we're building this specific one
 		 */
-		if (slot_num < 0 || i == slot_num) {
+		if (i == slot_num) {
 			MonoImtBuilderEntry *entries = get_generic_virtual_entries (mem_manager, &imt [i]);
 
 			if (entries) {
