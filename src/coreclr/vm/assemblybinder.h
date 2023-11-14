@@ -18,10 +18,6 @@ class AssemblyBinder
 {
 public:
 
-    HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData, BINDER_SPACE::Assembly** ppAssembly);
-    virtual HRESULT BindUsingPEImage(PEImage* pPEImage, bool excludeAppPaths, BINDER_SPACE::Assembly** ppAssembly) = 0;
-    virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName, BINDER_SPACE::Assembly** ppAssembly) = 0;
-
     /// <summary>
     /// Get LoaderAllocator for binders that contain it. For other binders, return NULL.
     /// </summary>

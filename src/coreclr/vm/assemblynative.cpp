@@ -197,24 +197,6 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     RETURN pDomainAssembly->GetAssembly();
 }
 
-LoaderAllocator* AssemblyBinder_GetNativeLoaderAllocator(ASSEMBLYBINDERREF pBinder)
-{
-    GCX_COOP();
-
-    LoaderAllocator* pNativeLA = NULL;
-
-    GCPROTECT_BEGIN(pBinder);
-
-    MethodDescCallSite getLA(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR);
-    ARG_SLOT arg = ObjToArgSlot(pBinder);
-    LOADERALLOCATORREF pManagedLA = (LOADERALLOCATORREF)getLA.Call_RetOBJECTREF(&arg);
-    pNativeLA = pManagedLA->GetNativeLoaderAllocator();
-
-    GCPROTECT_END();
-
-    return pNativeLA;
-}
-
 extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;

@@ -8,25 +8,6 @@
 
 #ifndef DACCESS_COMPILE
 
-HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
-    BINDER_SPACE::Assembly** ppAssembly)
-{
-    _ASSERTE(pAssemblyNameData != nullptr && ppAssembly != nullptr);
-
-    HRESULT hr = S_OK;
-    *ppAssembly = nullptr;
-
-    ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;
-    SAFE_NEW(pAssemblyName, BINDER_SPACE::AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
-
-    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
-
-Exit:
-    return hr;
-}
-
-
 NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName)
 {
     STANDARD_VM_CONTRACT;

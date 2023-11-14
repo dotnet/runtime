@@ -9,7 +9,6 @@ set(BINDER_COMMON_SOURCES
     assemblybindercommon.cpp
     assemblyname.cpp
     bindertracing.cpp
-    defaultassemblybinder.cpp
     failurecache.cpp
     textualidentityparser.cpp
     utils.cpp

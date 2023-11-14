@@ -17,13 +17,6 @@ class CustomAssemblyBinder final : public AssemblyBinder
 {
 public:
 
-    HRESULT BindUsingPEImage(PEImage* pPEImage,
-        bool excludeAppPaths,
-        BINDER_SPACE::Assembly** ppAssembly) override;
-
-    HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-        BINDER_SPACE::Assembly** ppAssembly) override;
-
     AssemblyLoaderAllocator* GetLoaderAllocator() override;
 
     bool IsDefault() override
@@ -48,8 +41,6 @@ public:
     void ReleaseLoadContext();
 
 private:
-    HRESULT BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName, BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly);
-
     DefaultAssemblyBinder *m_pDefaultBinder;
 
     // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
