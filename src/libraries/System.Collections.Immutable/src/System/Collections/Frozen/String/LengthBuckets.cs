@@ -9,12 +9,24 @@ namespace System.Collections.Frozen
 {
     internal static class LengthBuckets
     {
-        /// <summary>The maximum number of items allowed per bucket.  The larger the value, the longer it can take to search a bucket, which is sequentially examined.</summary>
-        internal const int MaxPerLength = 5;
+        /// <summary>The maximum number of items allowed per bucket.  The larger the value, the longer it can take to search a bucket, which is examined using binary search.</summary>
+        internal const int MaxPerLength = 7;
         /// <summary>Allowed ratio between buckets with values and total buckets.  Under this ratio, this implementation won't be used due to too much wasted space.</summary>
         private const double EmptyLengthsRatio = 0.2;
 
-        internal static int[]? CreateLengthBucketsArrayIfAppropriate(string[] keys, IEqualityComparer<string> comparer, int minLength, int maxLength)
+        /// <summary>A precalculated instructions on how to sort an array of varying length into a tree.</summary>
+        private static readonly int[][] s_sortedBucketToBinaryTree = [
+            [-1, -1, -1, -1, -1, -1, -1],
+            [0, -1, -1, -1, -1, -1, -1],
+            [1, 0, -1, -1, -1, -1, -1],
+            [1, 0, -1, -1, 2, -1, -1],
+            [1, 0, -1, -1, 3, 2, -1],
+            [2, 1, 0, -1, 4, 3, -1],
+            [2, 1, 0, -1, 4, 3, 5],
+            [3, 1, 0, 2, 5, 4, 6],
+        ];
+
+        internal static unsafe int[]? CreateLengthBucketsArrayIfAppropriate(string[] keys, IEqualityComparer<string> comparer, int minLength, int maxLength)
         {
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
             Debug.Assert(minLength >= 0 && maxLength >= minLength);
@@ -87,6 +99,65 @@ namespace System.Collections.Frozen
                 return null;
             }
 
+#if NET5_0_OR_GREATER
+            Span<int> sortingBucket = stackalloc int[MaxPerLength];
+#else
+            int[] sortingBucket = new int[MaxPerLength];
+#endif
+            IndexedKeyComparer indexedKeyComparer = new IndexedKeyComparer(
+                comparer == EqualityComparer<string>.Default
+                ? StringComparer.Ordinal
+                : (StringComparer)comparer, keys);
+            for (int bucketStartIndex = 0; bucketStartIndex < arraySize; bucketStartIndex += MaxPerLength)
+            {
+                // Within the bucket we order the elements to make binary search easier.
+                // The first element is the first to be compared and thus is the middle value.
+                // e.g. 0,1,2,3,4,5,6 becomes 3,1,0,2,5,4,6
+#if NET5_0_OR_GREATER
+                buckets.AsSpan().Slice(bucketStartIndex, MaxPerLength).CopyTo(sortingBucket);
+                int bucketLength = sortingBucket.IndexOf(-1);
+#else
+                Array.Copy(buckets, bucketStartIndex, sortingBucket, 0, MaxPerLength);
+                int bucketLength = Array.IndexOf(sortingBucket, -1);
+#endif
+
+                if (bucketLength == -1)
+                {
+                    bucketLength = sortingBucket.Length;
+                }
+
+#if DEBUG
+                // Assert our expectation that the buckets are filled sequentially
+                for (int i = 0; i < MaxPerLength; i++)
+                {
+                    if (i < bucketLength)
+                    {
+                        Debug.Assert(sortingBucket[i] > -1);
+                    }
+                    else
+                    {
+                        Debug.Assert(sortingBucket[i] == -1);
+                    }
+                }
+#endif
+
+
+                if (bucketLength > 0)
+                {
+#if NET5_0_OR_GREATER
+                    sortingBucket.Slice(0, bucketLength).Sort(indexedKeyComparer);
+#else
+                    Array.Sort(sortingBucket, 0, bucketLength, indexedKeyComparer);
+#endif
+                    int[] swapInstructions = s_sortedBucketToBinaryTree[bucketLength];
+
+                    for (int i = 0; i < MaxPerLength; i++)
+                    {
+                        buckets[bucketStartIndex + i] = swapInstructions[i] == -1 ? -1 : sortingBucket[swapInstructions[i]];
+                    }
+                }
+            }
+
 #if NET6_0_OR_GREATER
             // We don't need an array with every value initialized to zero if we are just about to overwrite every value anyway.
             int[] copy = GC.AllocateUninitializedArray<int>(arraySize);
@@ -97,6 +168,20 @@ namespace System.Collections.Frozen
             ArrayPool<int>.Shared.Return(buckets);
 
             return copy;
+        }
+
+        private class IndexedKeyComparer : IComparer<int>
+        {
+            private readonly IComparer<string> _keyComparer;
+            private readonly string[] _keys;
+
+            public IndexedKeyComparer(IComparer<string> keyComparer, string[] keys)
+            {
+                _keyComparer = keyComparer;
+                _keys = keys;
+            }
+
+            public int Compare(int x, int y) => _keyComparer.Compare(_keys[x], _keys[y]);
         }
     }
 }

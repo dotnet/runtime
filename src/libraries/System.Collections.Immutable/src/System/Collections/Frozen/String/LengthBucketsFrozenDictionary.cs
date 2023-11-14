@@ -69,40 +69,69 @@ namespace System.Collections.Frozen
 
                 if (!_ignoreCase)
                 {
-                    for (; bucketIndex < bucketEndIndex; bucketIndex++)
+                    // within a bucket, strings are sorted in order 3102546
+                    int jumpSize = LengthBuckets.MaxPerLength / 2;
+                    int nextJump = 0;
+
+                    while (jumpSize >= -1)
                     {
+                        bucketIndex += nextJump;
                         int index = lengthBuckets[bucketIndex];
-                        if ((uint)index < (uint)keys.Length)
-                        {
-                            if (key == keys[index])
-                            {
-                                return ref values[index];
-                            }
-                        }
-                        else
+                        if ((uint)keys.Length < (uint)index)
                         {
                             // -1 is used to indicate a null, when it's casted to unit it becomes > keys.Length
                             break;
                         }
+
+                        int comparison = string.CompareOrdinal(key, keys[index]);
+                        if (comparison == 0)
+                        {
+                            return ref values[index];
+                        }
+
+                        if (comparison < 0)
+                        {
+                            nextJump = 1;
+                        }
+                        else
+                        {
+                            nextJump = 1 + jumpSize;
+                        }
+
+                        jumpSize -= 2;
                     }
                 }
                 else
-                {
-                    for (; bucketIndex < bucketEndIndex; bucketIndex++)
+                {    // within a bucket, strings are sorted in order 3102546
+                    int jumpSize = LengthBuckets.MaxPerLength / 2;
+                    int nextJump = 0;
+
+                    while (jumpSize >= -1)
                     {
+                        bucketIndex += nextJump;
                         int index = lengthBuckets[bucketIndex];
-                        if ((uint)index < (uint)keys.Length)
-                        {
-                            if (StringComparer.OrdinalIgnoreCase.Equals(key, keys[index]))
-                            {
-                                return ref values[index];
-                            }
-                        }
-                        else
+                        if ((uint)keys.Length < (uint)index)
                         {
                             // -1 is used to indicate a null, when it's casted to unit it becomes > keys.Length
                             break;
                         }
+
+                        int comparison = StringComparer.OrdinalIgnoreCase.Compare(key, keys[index]);
+                        if (comparison == 0)
+                        {
+                            return ref values[index];
+                        }
+
+                        if (comparison < 0)
+                        {
+                            nextJump = 1;
+                        }
+                        else
+                        {
+                            nextJump = 1 + jumpSize;
+                        }
+
+                        jumpSize -= 2;
                     }
                 }
             }
