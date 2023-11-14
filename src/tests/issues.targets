@@ -755,9 +755,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: SAFEARRAY</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/WeakReference/WeakReferenceTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: AssemblyLoadContext.LoadFromAssemblyPath</Issue>
         </ExcludeList>
