@@ -281,6 +281,57 @@ initialize_imt_slot (MonoVTable *vtable, MonoImtBuilderEntry *imt_builder_entry,
 static MonoImtBuilderEntry*
 get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_slot);
 
+typedef enum MonoIMTMethodKind {
+	MONO_IMT_METHOD_NOIMT, // method does not appear in IMT and has no vtable slot
+	MONO_IMT_METHOD_VTSLOT_NOIMT, // method does not appear in IMT, but has a vtable slot
+	MONO_IMT_METHOD_GENERIC_VIRT, // generic virtual instance method - handled specially by IMT; has a vtable slot
+	MONO_IMT_METHOD_VIRTUAL, // ordinary virtual instance method - will be in an IMT slot; has a vtable slot
+} MonoIMTMethodKind;
+
+static MonoIMTMethodKind
+classify_imt_method (int slot_num, MonoClass *iface, int method_slot_in_interface, MonoMethod **out_method)
+{
+	g_assert (out_method != NULL);
+	*out_method = NULL;
+	if (mono_class_is_ginst (iface)) {
+		/*
+		 * The imt slot of the method is the same as for its declaring method,
+		 * see the comment in mono_method_get_imt_slot (), so we can
+		 * avoid inflating methods which will be discarded by
+		 * add_imt_builder_entry anyway.
+		 */
+		MonoMethod *method = *out_method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
+		if (m_method_is_static (method)) {
+			if (m_method_is_virtual (method))
+				return MONO_IMT_METHOD_VTSLOT_NOIMT;
+			return MONO_IMT_METHOD_NOIMT;
+		}
+		if (mono_method_get_imt_slot (method) != slot_num) {
+			return MONO_IMT_METHOD_VTSLOT_NOIMT;
+		}
+		// otherwise, continue below by inflating the interface
+	}
+	MonoMethod *method = *out_method = mono_class_get_method_by_index (iface, method_slot_in_interface);
+	if (method->is_generic) {
+		if (m_method_is_virtual (method)) {
+			return MONO_IMT_METHOD_GENERIC_VIRT;
+		}
+		return MONO_IMT_METHOD_NOIMT;
+	}
+
+	if (m_method_is_static (method)) {
+		if (m_method_is_virtual (method))
+			return MONO_IMT_METHOD_VTSLOT_NOIMT;
+		return MONO_IMT_METHOD_NOIMT;
+	}
+
+	if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
+		// FIXME: in mono_class_setup_methods reabstracted methods (method_is_reabstracted) also don't get a vt slot assignment
+		return MONO_IMT_METHOD_VIRTUAL;
+	}
+	return MONO_IMT_METHOD_NOIMT;
+}
+
 /*
  * LOCKING: assume the loader lock is held
  *
@@ -321,40 +372,23 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 		for (method_slot_in_interface = 0; method_slot_in_interface < mcount; method_slot_in_interface++) {
 			MonoMethod *method;
 
-			if (mono_class_is_ginst (iface)) {
-				/*
-				 * The imt slot of the method is the same as for its declaring method,
-				 * see the comment in mono_method_get_imt_slot (), so we can
-				 * avoid inflating methods which will be discarded by
-				 * add_imt_builder_entry anyway.
-				 */
-				method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
-				if (m_method_is_static (method)) {
-					if (m_method_is_virtual (method))
-						vt_slot ++;
-					continue;
-				}
-				if (mono_method_get_imt_slot (method) != slot_num) {
-					vt_slot ++;
-					continue;
-				}
-			}
-			method = mono_class_get_method_by_index (iface, method_slot_in_interface);
-			if (method->is_generic) {
-				if (m_method_is_virtual (method)) {
-					has_generic_virtual = TRUE;
-					vt_slot ++;
-				}
+			MonoIMTMethodKind kind = classify_imt_method (slot_num, iface, method_slot_in_interface, &method);
+			switch (kind) {
+			case MONO_IMT_METHOD_GENERIC_VIRT:
+				has_generic_virtual = TRUE;
+				vt_slot++;
 				continue;
+			case MONO_IMT_METHOD_VTSLOT_NOIMT:
+				vt_slot++;
+				continue;
+			case MONO_IMT_METHOD_NOIMT:
+				continue;
+			default:
+				break;
 			}
 
-			if (m_method_is_static (method)) {
-				if (m_method_is_virtual (method))
-					vt_slot ++;
-				continue;
-			}
-
-			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
+			g_assert (kind == MONO_IMT_METHOD_VIRTUAL);
+			{
 				int vt_slot_const = method->slot + interface_offset;
 				if (G_UNLIKELY (vt_slot != vt_slot_const)) {
 					char *name = mono_method_full_name (method, TRUE);
