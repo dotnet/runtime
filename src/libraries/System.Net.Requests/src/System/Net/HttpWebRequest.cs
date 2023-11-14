@@ -1687,8 +1687,6 @@ namespace System.Net
                             socket.NoDelay = true;
                         }
 
-                        socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.ReuseUnicastPort, parameters.ReusePort);
-
                         if (parameters.Async)
                         {
                             await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
