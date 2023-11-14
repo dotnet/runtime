@@ -6703,11 +6703,11 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_rorv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
 
     // TODO-SVE: Fix once we add predicate registers
-    theEmitter->emitIns_R_R_R(INS_uzp1, EA_8BYTE, REG_R0, REG_R1, REG_R2,
+    theEmitter->emitIns_R_R_R(INS_sve_uzp1, EA_8BYTE, REG_R0, REG_R1, REG_R2,
                               INS_OPTS_8B); // UZP1    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_uzp1, EA_8BYTE, REG_R0, REG_R1, REG_R2,
+    theEmitter->emitIns_R_R_R(INS_sve_uzp1, EA_8BYTE, REG_R0, REG_R1, REG_R2,
                               INS_OPTS_8B); // UZP1    <Zd>.Q, <Zn>.Q, <Zm>.Q
-    theEmitter->emitIns_R_R_R(INS_uzp1, EA_8BYTE, REG_R0, REG_R1, REG_R2,
+    theEmitter->emitIns_R_R_R(INS_sve_uzp1, EA_8BYTE, REG_R0, REG_R1, REG_R2,
                               INS_OPTS_8B); // UZP1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS
