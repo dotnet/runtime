@@ -9911,7 +9911,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
             GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
             if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
             {
-                JITDUMP("  Phi arg [%06u] unnecessary; path through pred " FMT_BB " cannot be taken\n",
+                JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
                         dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
 
                 if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
