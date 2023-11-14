@@ -236,7 +236,7 @@
     <_ShouldSetXUnitLogCheckerEnvVar>1</_ShouldSetXUnitLogCheckerEnvVar>
     <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
       $(HelixPreCommands);
-      set __TestArchitecture=$(TargetArchitecture)
+      set __TestArchitecture=$(TargetArchitecture);
       set __IsXUnitLogCheckerSupported=$(_ShouldSetXUnitLogCheckerEnvVar)
     </HelixPreCommands>
     <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
