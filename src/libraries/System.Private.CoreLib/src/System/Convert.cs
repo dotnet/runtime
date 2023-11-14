@@ -3153,5 +3153,30 @@ namespace System
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Lower);
         }
+
+        /// <summary>
+        /// Converts a span of 8-bit unsigned integers to its equivalent span representation that is encoded with lowercase hex characters.
+        /// </summary>
+        /// <param name="source">A span of 8-bit unsigned integers.</param>
+        /// <param name="destination">The span representation in hex of the elements in <paramref name="source"/>.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars that were written in <paramref name="destination"/>.</param>
+        /// <returns>true if the conversion was successful; otherwise, false.</returns>
+        public static bool TryToHexStringLower(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
+        {
+            if (source.Length == 0)
+            {
+                charsWritten = 0;
+                return true;
+            }
+            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length  * 2)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            HexConverter.EncodeToUtf16(source, destination, HexConverter.Casing.Lower);
+            charsWritten = source.Length  * 2;
+            return true;
+        }
     }  // class Convert
 }  // namespace
