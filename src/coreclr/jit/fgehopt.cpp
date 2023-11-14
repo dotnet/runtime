@@ -563,6 +563,9 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         assert(firstHandlerBlock->bbRefs >= 2);
         firstHandlerBlock->bbRefs -= 1;
 
+        // (8) The old try entry no longer needs special protection.
+        firstTryBlock->bbFlags &= ~BBF_DONT_REMOVE;
+
         // Another one bites the dust...
         emptyCount++;
     }

@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition.Hosting
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif
 
-        private readonly Lock _thisLock = new Lock();
+        private readonly ReadWriteLock _thisLock = new ReadWriteLock();
         private readonly ICompositionElement? _definitionOrigin;
         private ComposablePartCatalogCollection _catalogCollection;
         private Dictionary<string, AssemblyCatalog> _assemblyCatalogs;

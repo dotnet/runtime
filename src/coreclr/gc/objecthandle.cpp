@@ -1854,6 +1854,11 @@ int GetCurrentThreadHomeHeapNumber()
     return g_theGCHeap->GetHomeHeapNumber();
 }
 
+gc_alloc_context* GetCurrentThreadAllocContext()
+{
+    return GCToEEInterface::GetAllocContext();
+}
+
 bool HandleTableBucket::Contains(OBJECTHANDLE handle)
 {
     LIMITED_METHOD_CONTRACT;

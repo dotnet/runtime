@@ -153,7 +153,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static unsafe void InitializeModuleFrozenObjectSegment(IntPtr segmentStart, int length)
         {
-            if (RuntimeImports.RhpRegisterFrozenSegment(segmentStart, (IntPtr)length) == IntPtr.Zero)
+            if (RuntimeImports.RhRegisterFrozenSegment((void*)segmentStart, (nuint)length, (nuint)length, (nuint)length) == IntPtr.Zero)
             {
                 // This should only happen if we ran out of memory.
                 RuntimeExceptionHelpers.FailFast("Failed to register frozen object segment for the module.");

@@ -35,7 +35,12 @@ namespace System.Xml.Xsl.IlGen
     /// True--Branch if boolean expression evaluates to true
     /// False--Branch if boolean expression evaluates to false
     /// </summary>
-    internal enum BranchingContext { None, OnTrue, OnFalse };
+    internal enum BranchingContext
+    {
+        None,
+        OnTrue,
+        OnFalse
+    };
 
     /// <summary>
     /// Describes the Clr type and location of items returned by an iterator.

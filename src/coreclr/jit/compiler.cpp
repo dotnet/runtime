@@ -2927,7 +2927,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 
 #ifdef LATE_DISASM
-        if (JitConfig.JitLateDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitLateDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
@@ -4747,9 +4747,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
-    auto morphGlobalPhase = [this]() {
-        unsigned prevBBCount = fgBBcount;
-        fgMorphBlocks();
+    unsigned const preMorphBBCount = fgBBcount;
+    DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    auto postMorphPhase = [this]() {
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
@@ -4765,16 +4766,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         compCurBB = nullptr;
 #endif // DEBUG
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         // Enable IR checks
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
-    DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
+    DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
+
+    // If we needed to create any new BasicBlocks then renumber the blocks
+    //
+    if (fgBBcount > preMorphBBCount)
+    {
+        fgRenumberBlocks();
+    }
 
     // GS security checks for unsafe buffers
     //

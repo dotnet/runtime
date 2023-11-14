@@ -54,7 +54,6 @@ namespace System.Numerics.Tensors
             ref ushort destinationRef = ref Unsafe.As<Half, ushort>(ref MemoryMarshal.GetReference(destination));
             int i = 0, twoVectorsFromEnd;
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 twoVectorsFromEnd = source.Length - (Vector512<float>.Count * 2);
@@ -84,7 +83,6 @@ namespace System.Numerics.Tensors
                     return;
                 }
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -287,7 +285,6 @@ namespace System.Numerics.Tensors
                 return bitValue;
             }
 
-#if NET8_0_OR_GREATER
             static Vector512<uint> SingleToHalfAsWidenedUInt32_Vector512(Vector512<float> value)
             {
                 Vector512<uint> bitValue = value.AsUInt32();
@@ -344,7 +341,6 @@ namespace System.Numerics.Tensors
                 // The final result
                 return bitValue;
             }
-#endif
         }
 
         /// <summary>
@@ -373,7 +369,6 @@ namespace System.Numerics.Tensors
             ref float destinationRef = ref MemoryMarshal.GetReference(destination);
             int i = 0, oneVectorFromEnd;
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 oneVectorFromEnd = source.Length - Vector512<short>.Count;
@@ -403,7 +398,6 @@ namespace System.Numerics.Tensors
                     return;
                 }
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -574,7 +568,6 @@ namespace System.Numerics.Tensors
                 return (absoluteValue | sign).AsSingle();
             }
 
-#if NET8_0_OR_GREATER
             static Vector512<float> HalfAsWidenedUInt32ToSingle_Vector512(Vector512<uint> value)
             {
                 // Extract sign bit of value
@@ -618,18 +611,26 @@ namespace System.Numerics.Tensors
                 // Merge sign bit with rest
                 return (absoluteValue | sign).AsSingle();
             }
-#endif
         }
 
         /// <summary>Computes the cosine similarity between the two specified non-empty, equal-length tensors of single-precision floating-point numbers.</summary>
         /// <remarks>Assumes arguments have already been validated to be non-empty and equal length.</remarks>
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
             // Compute the same as:
             // TensorPrimitives.Dot(x, y) / (Math.Sqrt(TensorPrimitives.SumOfSquares(x)) * Math.Sqrt(TensorPrimitives.SumOfSquares(y)))
             // but only looping over each span once.
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
@@ -675,7 +676,6 @@ namespace System.Numerics.Tensors
                     Vector512.Sum(dotProductVector) /
                     (MathF.Sqrt(Vector512.Sum(xSumOfSquaresVector)) * MathF.Sqrt(Vector512.Sum(ySumOfSquaresVector)));
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
             {
@@ -805,7 +805,6 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 float result;
@@ -825,7 +824,6 @@ namespace System.Numerics.Tensors
 
                 return result;
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -1322,7 +1320,6 @@ namespace System.Numerics.Tensors
                 return result;
             }
 
-#if NET8_0_OR_GREATER
             static float Vectorized512(ref float xRef, nuint remainder)
             {
                 Vector512<float> vresult = Vector512.Create(TAggregationOperator.IdentityValue);
@@ -1591,7 +1588,6 @@ namespace System.Numerics.Tensors
 
                 return result;
             }
-#endif
         }
 
         /// <summary>Performs an aggregation over all pair-wise elements in <paramref name="x"/> and <paramref name="y"/> to produce a single-precision floating-point value.</summary>
@@ -1620,7 +1616,6 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 float result;
@@ -1640,7 +1635,6 @@ namespace System.Numerics.Tensors
 
                 return result;
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -2189,7 +2183,6 @@ namespace System.Numerics.Tensors
                 return result;
             }
 
-#if NET8_0_OR_GREATER
             static float Vectorized512(ref float xRef, ref float yRef, nuint remainder)
             {
                 Vector512<float> vresult = Vector512.Create(TAggregationOperator.IdentityValue);
@@ -2488,7 +2481,6 @@ namespace System.Numerics.Tensors
 
                 return result;
             }
-#endif
         }
 
         /// <remarks>
@@ -2508,16 +2500,19 @@ namespace System.Numerics.Tensors
             // otherwise returns the greater of the inputs.
             // It treats +0 as greater than -0 as per the specification.
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
+
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector512.EqualsAll(result, result))
+                Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0);
+                Vector512<float> current;
+
+                Vector512<float> nanMask = ~Vector512.Equals(result, result);
+                if (nanMask != Vector512<float>.Zero)
                 {
-                    return GetFirstNaN(result);
+                    return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
 
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
@@ -2528,9 +2523,11 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector512.LoadUnsafe(ref xRef, (uint)i);
-                    if (!Vector512.EqualsAll(current, current))
+
+                    nanMask = ~Vector512.Equals(current, current);
+                    if (nanMask != Vector512<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2541,21 +2538,19 @@ namespace System.Numerics.Tensors
                 if (i != x.Length)
                 {
                     current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
-                    if (!Vector512.EqualsAll(current, current))
+
+                    nanMask = ~Vector512.Equals(current, current);
+                    if (nanMask != Vector512<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = Vector512.ConditionalSelect(
-                        Vector512.Equals(CreateRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
-                        result,
-                        TMinMaxOperator.Invoke(result, current));
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
                 return TMinMaxOperator.Invoke(result);
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
             {
@@ -2563,10 +2558,13 @@ namespace System.Numerics.Tensors
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector256<float> result = Vector256.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector256.EqualsAll(result, result))
+                Vector256<float> result = Vector256.LoadUnsafe(ref xRef, 0);
+                Vector256<float> current;
+
+                Vector256<float> nanMask = ~Vector256.Equals(result, result);
+                if (nanMask != Vector256<float>.Zero)
                 {
-                    return GetFirstNaN(result);
+                    return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
 
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
@@ -2577,9 +2575,11 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector256.LoadUnsafe(ref xRef, (uint)i);
-                    if (!Vector256.EqualsAll(current, current))
+
+                    nanMask = ~Vector256.Equals(current, current);
+                    if (nanMask != Vector256<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2590,15 +2590,14 @@ namespace System.Numerics.Tensors
                 if (i != x.Length)
                 {
                     current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
-                    if (!Vector256.EqualsAll(current, current))
+
+                    nanMask = ~Vector256.Equals(current, current);
+                    if (nanMask != Vector256<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = Vector256.ConditionalSelect(
-                        Vector256.Equals(CreateRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
-                        result,
-                        TMinMaxOperator.Invoke(result, current));
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -2611,10 +2610,13 @@ namespace System.Numerics.Tensors
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector128<float> result = Vector128.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector128.EqualsAll(result, result))
+                Vector128<float> result = Vector128.LoadUnsafe(ref xRef, 0);
+                Vector128<float> current;
+
+                Vector128<float> nanMask = ~Vector128.Equals(result, result);
+                if (nanMask != Vector128<float>.Zero)
                 {
-                    return GetFirstNaN(result);
+                    return result.GetElement(IndexOfFirstMatch(nanMask));
                 }
 
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
@@ -2625,9 +2627,11 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector128.LoadUnsafe(ref xRef, (uint)i);
-                    if (!Vector128.EqualsAll(current, current))
+
+                    nanMask = ~Vector128.Equals(current, current);
+                    if (nanMask != Vector128<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
                     result = TMinMaxOperator.Invoke(result, current);
@@ -2638,15 +2642,14 @@ namespace System.Numerics.Tensors
                 if (i != x.Length)
                 {
                     current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
-                    if (!Vector128.EqualsAll(current, current))
+
+                    nanMask = ~Vector128.Equals(current, current);
+                    if (nanMask != Vector128<float>.Zero)
                     {
-                        return GetFirstNaN(current);
+                        return current.GetElement(IndexOfFirstMatch(nanMask));
                     }
 
-                    result = Vector128.ConditionalSelect(
-                        Vector128.Equals(CreateRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
-                        result,
-                        TMinMaxOperator.Invoke(result, current));
+                    result = TMinMaxOperator.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -2654,36 +2657,38 @@ namespace System.Numerics.Tensors
             }
 
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
+            float curResult = x[0];
+            if (float.IsNaN(curResult))
             {
-                float result = x[0];
-                if (float.IsNaN(result))
-                {
-                    return result;
-                }
-
-                for (int i = 1; i < x.Length; i++)
-                {
-                    float current = x[i];
-                    if (float.IsNaN(current))
-                    {
-                        return current;
-                    }
-
-                    result = TMinMaxOperator.Invoke(result, current);
-                }
-
-                return result;
+                return curResult;
             }
+
+            for (int i = 1; i < x.Length; i++)
+            {
+                float current = x[i];
+                if (float.IsNaN(current))
+                {
+                    return current;
+                }
+
+                curResult = TMinMaxOperator.Invoke(curResult, current);
+            }
+
+            return curResult;
         }
 
         private static int IndexOfMinMaxCore<TIndexOfMinMax>(ReadOnlySpan<float> x) where TIndexOfMinMax : struct, IIndexOfOperator
         {
+            if (x.IsEmpty)
+            {
+                return -1;
+            }
+
             // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
             // It propagates NaN inputs back to the caller and
             // otherwise returns the index of the greater of the inputs.
             // It treats +0 as greater than -0 as per the specification.
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
@@ -2741,7 +2746,6 @@ namespace System.Numerics.Tensors
                 // Aggregate the lanes in the vector to create the final scalar result.
                 return TIndexOfMinMax.Invoke(result, resultIndex);
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
             {
@@ -2892,12 +2896,10 @@ namespace System.Numerics.Tensors
             return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
         }
 
-#if NET8_0_OR_GREATER
         private static int IndexOfFirstMatch(Vector512<float> mask)
         {
             return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
         }
-#endif
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
@@ -2922,7 +2924,6 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 if (remainder >= (uint)(Vector512<float>.Count))
@@ -2940,7 +2941,6 @@ namespace System.Numerics.Tensors
 
                 return;
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -3499,7 +3499,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-#if NET8_0_OR_GREATER
             static void Vectorized512(ref float xRef, ref float dRef, nuint remainder)
             {
                 ref float dRefBeg = ref dRef;
@@ -3794,7 +3793,6 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
-#endif
         }
 
         /// <summary>
@@ -3832,7 +3830,6 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 if (remainder >= (uint)(Vector512<float>.Count))
@@ -3850,7 +3847,6 @@ namespace System.Numerics.Tensors
 
                 return;
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -4479,7 +4475,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-#if NET8_0_OR_GREATER
             static void Vectorized512(ref float xRef, ref float yRef, ref float dRef, nuint remainder)
             {
                 ref float dRefBeg = ref dRef;
@@ -4813,7 +4808,6 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
-#endif
         }
 
         /// <summary>
@@ -4861,7 +4855,6 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 if (remainder >= (uint)(Vector512<float>.Count))
@@ -4879,7 +4872,6 @@ namespace System.Numerics.Tensors
 
                 return;
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -5502,7 +5494,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-#if NET8_0_OR_GREATER
             static void Vectorized512(ref float xRef, float y, ref float dRef, nuint remainder)
             {
                 ref float dRefBeg = ref dRef;
@@ -5836,7 +5827,6 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
-#endif
         }
 
         /// <summary>
@@ -5877,7 +5867,6 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 if (remainder >= (uint)(Vector512<float>.Count))
@@ -5895,7 +5884,6 @@ namespace System.Numerics.Tensors
 
                 return;
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -6594,7 +6582,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-#if NET8_0_OR_GREATER
             static void Vectorized512(ref float xRef, ref float yRef, ref float zRef, ref float dRef, nuint remainder)
             {
                 ref float dRefBeg = ref dRef;
@@ -6967,7 +6954,6 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
-#endif
         }
 
         /// <summary>
@@ -7006,7 +6992,6 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 if (remainder >= (uint)(Vector512<float>.Count))
@@ -7024,7 +7009,6 @@ namespace System.Numerics.Tensors
 
                 return;
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -7717,7 +7701,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-#if NET8_0_OR_GREATER
             static void Vectorized512(ref float xRef, ref float yRef, float z, ref float dRef, nuint remainder)
             {
                 ref float dRefBeg = ref dRef;
@@ -8090,7 +8073,6 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
-#endif
         }
 
         /// <summary>
@@ -8129,7 +8111,6 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-#if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated)
             {
                 if (remainder >= (uint)(Vector512<float>.Count))
@@ -8147,7 +8128,6 @@ namespace System.Numerics.Tensors
 
                 return;
             }
-#endif
 
             if (Vector256.IsHardwareAccelerated)
             {
@@ -8840,7 +8820,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-#if NET8_0_OR_GREATER
             static void Vectorized512(ref float xRef, float y, ref float zRef, ref float dRef, nuint remainder)
             {
                 ref float dRefBeg = ref dRef;
@@ -9213,7 +9192,6 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
-#endif
         }
 
         /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
@@ -9245,7 +9223,6 @@ namespace System.Numerics.Tensors
             return (x * y) + addend;
         }
 
-#if NET8_0_OR_GREATER
         /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<float> FusedMultiplyAdd(Vector512<float> x, Vector512<float> y, Vector512<float> addend)
@@ -9257,7 +9234,6 @@ namespace System.Numerics.Tensors
 
             return (x * y) + addend;
         }
-#endif
 
         /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>
         /// <typeparam name="TAggregate">Specifies the operation to be performed on each pair of values.</typeparam>
@@ -9278,13 +9254,11 @@ namespace System.Numerics.Tensors
         private static float HorizontalAggregate<TAggregate>(Vector256<float> x) where TAggregate : struct, IBinaryOperator =>
             HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
 
-#if NET8_0_OR_GREATER
         /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>
         /// <typeparam name="TAggregate">Specifies the operation to be performed on each pair of values.</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float HorizontalAggregate<TAggregate>(Vector512<float> x) where TAggregate : struct, IBinaryOperator =>
             HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
-#endif
 
         /// <summary>Gets whether the specified <see cref="float"/> is negative.</summary>
         private static bool IsNegative(float f) => float.IsNegative(f);
@@ -9299,12 +9273,10 @@ namespace System.Numerics.Tensors
         private static Vector256<float> IsNegative(Vector256<float> vector) =>
             Vector256.LessThan(vector.AsInt32(), Vector256<int>.Zero).AsSingle();
 
-#if NET8_0_OR_GREATER
         /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<float> IsNegative(Vector512<float> vector) =>
             Vector512.LessThan(vector.AsInt32(), Vector512<int>.Zero).AsSingle();
-#endif
 
         /// <summary>Gets whether the specified <see cref="float"/> is positive.</summary>
         private static bool IsPositive(float f) => float.IsPositive(f);
@@ -9319,62 +9291,10 @@ namespace System.Numerics.Tensors
         private static Vector256<float> IsPositive(Vector256<float> vector) =>
             Vector256.GreaterThan(vector.AsInt32(), Vector256<int>.AllBitsSet).AsSingle();
 
-#if NET8_0_OR_GREATER
         /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<float> IsPositive(Vector512<float> vector) =>
             Vector512.GreaterThan(vector.AsInt32(), Vector512<int>.AllBitsSet).AsSingle();
-#endif
-
-        /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static float GetFirstNaN(Vector128<float> vector)
-        {
-            Debug.Assert(!Vector128.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector128.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-        /// <summary>Finds and returns the first NaN index value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static int GetFirstNaNIndex(Vector128<float> vector, Vector128<int> index)
-        {
-            Debug.Assert(!Vector128.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return index.GetElement(BitOperations.TrailingZeroCount((~Vector128.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-        /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static float GetFirstNaN(Vector256<float> vector)
-        {
-            Debug.Assert(!Vector256.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector256.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-        /// <summary>Finds and returns the first NaN index value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static int GetFirstNaNIndex(Vector256<float> vector, Vector256<int> index)
-        {
-            Debug.Assert(!Vector256.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return index.GetElement(BitOperations.TrailingZeroCount((~Vector256.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-#if NET8_0_OR_GREATER
-        /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static float GetFirstNaN(Vector512<float> vector)
-        {
-            Debug.Assert(!Vector512.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector512.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-
-        /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
-        /// <remarks>The vector must have already been validated to contain a NaN.</remarks>
-        private static int GetFirstNaNIndex(Vector512<float> vector, Vector512<int> index)
-        {
-            Debug.Assert(!Vector512.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return index.GetElement(BitOperations.TrailingZeroCount((~Vector512.Equals(vector, vector)).ExtractMostSignificantBits()));
-        }
-#endif
 
         /// <summary>Gets the base 2 logarithm of <paramref name="x"/>.</summary>
         private static float Log2(float x) => MathF.Log2(x);
@@ -9399,7 +9319,6 @@ namespace System.Numerics.Tensors
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x16)),
                 (uint)(count * 16)); // first eight floats in the row
 
-#if NET8_0_OR_GREATER
         /// <summary>
         /// Gets a vector mask that will be all-ones-set for the last <paramref name="count"/> elements
         /// and zero for all other elements.
@@ -9409,7 +9328,6 @@ namespace System.Numerics.Tensors
             Vector512.LoadUnsafe(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x16)),
                 (uint)(count * 16)); // all sixteen floats in the row
-#endif
 
         /// <summary>
         /// Gets a vector mask that will be all-ones-set for the last <paramref name="count"/> elements
@@ -9431,7 +9349,6 @@ namespace System.Numerics.Tensors
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
                 (uint)((count * 16) + 8)); // last eight floats in the row
 
-#if NET8_0_OR_GREATER
         /// <summary>
         /// Gets a vector mask that will be all-ones-set for the last <paramref name="count"/> elements
         /// and zero for all other elements.
@@ -9441,7 +9358,6 @@ namespace System.Numerics.Tensors
             Vector512.LoadUnsafe(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
                 (uint)(count * 16)); // all sixteen floats in the row
-#endif
 
         /// <summary>x + y</summary>
         private readonly struct AddOperator : IAggregationOperator
@@ -9449,15 +9365,11 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x, float y) => x + y;
             public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y) => x + y;
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) => x + y;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x + y;
-#endif
 
             public static float Invoke(Vector128<float> x) => Vector128.Sum(x);
             public static float Invoke(Vector256<float> x) => Vector256.Sum(x);
-#if NET8_0_OR_GREATER
             public static float Invoke(Vector512<float> x) => Vector512.Sum(x);
-#endif
 
             public static float IdentityValue => 0;
         }
@@ -9468,9 +9380,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x, float y) => x - y;
             public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y) => x - y;
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) => x - y;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x - y;
-#endif
         }
 
         /// <summary>(x - y) * (x - y)</summary>
@@ -9494,13 +9404,11 @@ namespace System.Numerics.Tensors
                 return tmp * tmp;
             }
 
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
             {
                 Vector512<float> tmp = x - y;
                 return tmp * tmp;
             }
-#endif
         }
 
         /// <summary>x * y</summary>
@@ -9509,15 +9417,11 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x, float y) => x * y;
             public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y) => x * y;
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) => x * y;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x * y;
-#endif
 
             public static float Invoke(Vector128<float> x) => HorizontalAggregate<MultiplyOperator>(x);
             public static float Invoke(Vector256<float> x) => HorizontalAggregate<MultiplyOperator>(x);
-#if NET8_0_OR_GREATER
             public static float Invoke(Vector512<float> x) => HorizontalAggregate<MultiplyOperator>(x);
-#endif
 
             public static float IdentityValue => 1;
         }
@@ -9528,9 +9432,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x, float y) => x / y;
             public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y) => x / y;
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) => x / y;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x / y;
-#endif
         }
 
         /// <summary>MathF.Max(x, y) (but NaNs may not be propagated)</summary>
@@ -9562,19 +9464,15 @@ namespace System.Numerics.Tensors
                     Vector256.ConditionalSelect(IsNegative(x), y, x),
                     Vector256.Max(x, y));
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
                 Vector512.ConditionalSelect(Vector512.Equals(x, y),
                     Vector512.ConditionalSelect(IsNegative(x), y, x),
                     Vector512.Max(x, y));
-#endif
 
             public static float Invoke(Vector128<float> x) => HorizontalAggregate<MaxOperator>(x);
             public static float Invoke(Vector256<float> x) => HorizontalAggregate<MaxOperator>(x);
-#if NET8_0_OR_GREATER
             public static float Invoke(Vector512<float> x) => HorizontalAggregate<MaxOperator>(x);
-#endif
         }
 
         private interface IIndexOfOperator
@@ -9584,10 +9482,8 @@ namespace System.Numerics.Tensors
             static abstract void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex);
             static abstract int Invoke(Vector256<float> result, Vector256<int> resultIndex);
             static abstract void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex);
-#if NET8_0_OR_GREATER
             static abstract int Invoke(Vector512<float> result, Vector512<int> resultIndex);
             static abstract void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex);
-#endif
         }
 
         /// <summary>Returns the index of MathF.Max(x, y)</summary>
@@ -9657,7 +9553,6 @@ namespace System.Numerics.Tensors
                 maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
@@ -9687,7 +9582,6 @@ namespace System.Numerics.Tensors
 
                 maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
-#endif
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
@@ -9780,7 +9674,6 @@ namespace System.Numerics.Tensors
                 maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
@@ -9811,7 +9704,6 @@ namespace System.Numerics.Tensors
 
                 maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
-#endif
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
@@ -9905,7 +9797,6 @@ namespace System.Numerics.Tensors
                 resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
@@ -9935,7 +9826,6 @@ namespace System.Numerics.Tensors
 
                 resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
-#endif
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
@@ -10028,7 +9918,6 @@ namespace System.Numerics.Tensors
                 resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
@@ -10060,7 +9949,6 @@ namespace System.Numerics.Tensors
 
                 resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
-#endif
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
@@ -10119,7 +10007,6 @@ namespace System.Numerics.Tensors
                         y),
                     x);
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
                 Vector512.ConditionalSelect(Vector512.Equals(x, x),
@@ -10129,7 +10016,6 @@ namespace System.Numerics.Tensors
                             Vector512.Max(x, y)),
                         y),
                     x);
-#endif
         }
 
         /// <summary>Operator to get x or y based on which has the larger MathF.Abs (but NaNs may not be propagated)</summary>
@@ -10165,7 +10051,6 @@ namespace System.Numerics.Tensors
                         Vector256.ConditionalSelect(Vector256.GreaterThan(xMag, yMag), x, y));
             }
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
             {
@@ -10175,13 +10060,10 @@ namespace System.Numerics.Tensors
                         Vector512.ConditionalSelect(IsNegative(x), y, x),
                         Vector512.ConditionalSelect(Vector512.GreaterThan(xMag, yMag), x, y));
             }
-#endif
 
             public static float Invoke(Vector128<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
             public static float Invoke(Vector256<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
-#if NET8_0_OR_GREATER
             public static float Invoke(Vector512<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
-#endif
         }
 
         /// <summary>Operator to get x or y based on which has the larger MathF.Abs</summary>
@@ -10218,7 +10100,6 @@ namespace System.Numerics.Tensors
                         x);
             }
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
             {
@@ -10232,7 +10113,6 @@ namespace System.Numerics.Tensors
                             y),
                         x);
             }
-#endif
         }
 
         /// <summary>MathF.Min(x, y) (but NaNs may not be propagated)</summary>
@@ -10264,19 +10144,15 @@ namespace System.Numerics.Tensors
                     Vector256.ConditionalSelect(IsNegative(y), y, x),
                     Vector256.Min(x, y));
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
                 Vector512.ConditionalSelect(Vector512.Equals(x, y),
                     Vector512.ConditionalSelect(IsNegative(y), y, x),
                     Vector512.Min(x, y));
-#endif
 
             public static float Invoke(Vector128<float> x) => HorizontalAggregate<MinOperator>(x);
             public static float Invoke(Vector256<float> x) => HorizontalAggregate<MinOperator>(x);
-#if NET8_0_OR_GREATER
             public static float Invoke(Vector512<float> x) => HorizontalAggregate<MinOperator>(x);
-#endif
         }
 
         /// <summary>MathF.Min(x, y)</summary>
@@ -10313,7 +10189,6 @@ namespace System.Numerics.Tensors
                         y),
                     x);
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
                 Vector512.ConditionalSelect(Vector512.Equals(x, x),
@@ -10323,7 +10198,6 @@ namespace System.Numerics.Tensors
                             Vector512.Min(x, y)),
                         y),
                     x);
-#endif
         }
 
         /// <summary>Operator to get x or y based on which has the smaller MathF.Abs (but NaNs may not be propagated)</summary>
@@ -10358,7 +10232,6 @@ namespace System.Numerics.Tensors
                         Vector256.ConditionalSelect(Vector256.LessThan(yMag, xMag), y, x));
             }
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
             {
@@ -10368,13 +10241,10 @@ namespace System.Numerics.Tensors
                         Vector512.ConditionalSelect(IsNegative(y), y, x),
                         Vector512.ConditionalSelect(Vector512.LessThan(yMag, xMag), y, x));
             }
-#endif
 
             public static float Invoke(Vector128<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
             public static float Invoke(Vector256<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
-#if NET8_0_OR_GREATER
             public static float Invoke(Vector512<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
-#endif
         }
 
         /// <summary>Operator to get x or y based on which has the smaller MathF.Abs</summary>
@@ -10411,7 +10281,6 @@ namespace System.Numerics.Tensors
                         x);
             }
 
-#if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
             {
@@ -10425,7 +10294,6 @@ namespace System.Numerics.Tensors
                             y),
                         x);
             }
-#endif
         }
 
         /// <summary>-x</summary>
@@ -10434,9 +10302,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x) => -x;
             public static Vector128<float> Invoke(Vector128<float> x) => -x;
             public static Vector256<float> Invoke(Vector256<float> x) => -x;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x) => -x;
-#endif
         }
 
         /// <summary>(x + y) * z</summary>
@@ -10445,9 +10311,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x, float y, float z) => (x + y) * z;
             public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z) => (x + y) * z;
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z) => (x + y) * z;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z) => (x + y) * z;
-#endif
         }
 
         /// <summary>(x * y) + z</summary>
@@ -10456,9 +10320,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x, float y, float z) => (x * y) + z;
             public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z) => (x * y) + z;
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z) => (x * y) + z;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z) => (x * y) + z;
-#endif
         }
 
         /// <summary>x</summary>
@@ -10467,9 +10329,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x) => x;
             public static Vector128<float> Invoke(Vector128<float> x) => x;
             public static Vector256<float> Invoke(Vector256<float> x) => x;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x) => x;
-#endif
         }
 
         /// <summary>x * x</summary>
@@ -10478,9 +10338,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x) => x * x;
             public static Vector128<float> Invoke(Vector128<float> x) => x * x;
             public static Vector256<float> Invoke(Vector256<float> x) => x * x;
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x) => x * x;
-#endif
         }
 
         /// <summary>MathF.Abs(x)</summary>
@@ -10489,9 +10347,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x) => MathF.Abs(x);
             public static Vector128<float> Invoke(Vector128<float> x) => Vector128.Abs(x);
             public static Vector256<float> Invoke(Vector256<float> x) => Vector256.Abs(x);
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x) => Vector512.Abs(x);
-#endif
         }
 
         /// <summary>MathF.Exp(x)</summary>
@@ -10696,7 +10552,6 @@ namespace System.Numerics.Tensors
                 return ret;
             }
 
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
                 // Convert x to double precision
@@ -10772,7 +10627,6 @@ namespace System.Numerics.Tensors
 
                 return ret;
             }
-#endif
         }
 
         /// <summary>MathF.Cosh(x)</summary>
@@ -10819,14 +10673,12 @@ namespace System.Numerics.Tensors
                 return Vector256.Create(HALFV) * (z + (Vector256.Create(INVV2) / z));
             }
 
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
                 Vector512<float> y = Vector512.Abs(x);
                 Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV));
                 return Vector512.Create(HALFV) * (z + (Vector512.Create(INVV2) / z));
             }
-#endif
         }
 
         /// <summary>MathF.Sinh(x)</summary>
@@ -10860,7 +10712,6 @@ namespace System.Numerics.Tensors
                 return (sign ^ result.AsUInt32()).AsSingle();
             }
 
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
                 Vector512<float> y = Vector512.Abs(x);
@@ -10869,7 +10720,6 @@ namespace System.Numerics.Tensors
                 Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
                 return (sign ^ result.AsUInt32()).AsSingle();
             }
-#endif
         }
 
         /// <summary>MathF.Tanh(x)</summary>
@@ -10914,7 +10764,6 @@ namespace System.Numerics.Tensors
                 return (sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32()).AsSingle();
             }
 
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
                 Vector512<float> y = Vector512.Abs(x);
@@ -10922,7 +10771,6 @@ namespace System.Numerics.Tensors
                 Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32()).AsSingle();
             }
-#endif
         }
 
         /// <summary>MathF.Log(x)</summary>
@@ -11139,7 +10987,6 @@ namespace System.Numerics.Tensors
                 );
             }
 
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
                 Vector512<float> specialResult = x;
@@ -11208,7 +11055,6 @@ namespace System.Numerics.Tensors
                     n * Vector512.Create(V_LN2) + q
                 );
             }
-#endif
         }
 
         /// <summary>MathF.Log2(x)</summary>
@@ -11420,7 +11266,6 @@ namespace System.Numerics.Tensors
                 );
             }
 
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
                 Vector512<float> specialResult = x;
@@ -11489,7 +11334,6 @@ namespace System.Numerics.Tensors
                     n + poly
                 );
             }
-#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -11528,7 +11372,6 @@ namespace System.Numerics.Tensors
             return Vector256.ConditionalSelect(mask, left, right);
         }
 
-#if NET8_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<float> ElementWiseSelect(Vector512<float> mask, Vector512<float> left, Vector512<float> right)
         {
@@ -11546,7 +11389,6 @@ namespace System.Numerics.Tensors
 
             return Vector512.ConditionalSelect(mask, left, right);
         }
-#endif
 
         /// <summary>1f / (1f + MathF.Exp(-x))</summary>
         private readonly struct SigmoidOperator : IUnaryOperator
@@ -11554,9 +11396,7 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x) => 1.0f / (1.0f + MathF.Exp(-x));
             public static Vector128<float> Invoke(Vector128<float> x) => Vector128.Create(1f) / (Vector128.Create(1f) + ExpOperator.Invoke(-x));
             public static Vector256<float> Invoke(Vector256<float> x) => Vector256.Create(1f) / (Vector256.Create(1f) + ExpOperator.Invoke(-x));
-#if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x) => Vector512.Create(1f) / (Vector512.Create(1f) + ExpOperator.Invoke(-x));
-#endif
         }
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>
@@ -11565,9 +11405,7 @@ namespace System.Numerics.Tensors
             static abstract float Invoke(float x);
             static abstract Vector128<float> Invoke(Vector128<float> x);
             static abstract Vector256<float> Invoke(Vector256<float> x);
-#if NET8_0_OR_GREATER
             static abstract Vector512<float> Invoke(Vector512<float> x);
-#endif
         }
 
         /// <summary>Operator that takes two input values and returns a single value.</summary>
@@ -11576,9 +11414,7 @@ namespace System.Numerics.Tensors
             static abstract float Invoke(float x, float y);
             static abstract Vector128<float> Invoke(Vector128<float> x, Vector128<float> y);
             static abstract Vector256<float> Invoke(Vector256<float> x, Vector256<float> y);
-#if NET8_0_OR_GREATER
             static abstract Vector512<float> Invoke(Vector512<float> x, Vector512<float> y);
-#endif
         }
 
         /// <summary><see cref="IBinaryOperator"/> that specializes horizontal aggregation of all elements in a vector.</summary>
@@ -11586,9 +11422,7 @@ namespace System.Numerics.Tensors
         {
             static abstract float Invoke(Vector128<float> x);
             static abstract float Invoke(Vector256<float> x);
-#if NET8_0_OR_GREATER
             static abstract float Invoke(Vector512<float> x);
-#endif
 
             static virtual float IdentityValue => throw new NotSupportedException();
         }
@@ -11599,9 +11433,7 @@ namespace System.Numerics.Tensors
             static abstract float Invoke(float x, float y, float z);
             static abstract Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z);
             static abstract Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z);
-#if NET8_0_OR_GREATER
             static abstract Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z);
-#endif
         }
     }
 }

@@ -35,7 +35,7 @@ public class ManagedToNativeGenerator : Task
     [Output]
     public string[]? FileWrites { get; private set; }
 
-    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
+    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+', '<', '>' };
 
     // Avoid sharing this cache with all the invocations of this task throughout the build
     private readonly Dictionary<string, string> _symbolNameFixups = new();

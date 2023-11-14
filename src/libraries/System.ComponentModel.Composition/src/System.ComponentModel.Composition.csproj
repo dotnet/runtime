@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -41,8 +43,8 @@ System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices</Packa
     <Compile Include="Microsoft\Internal\ContractServices.cs" />
     <Compile Include="Microsoft\Internal\GenerationServices.cs" />
     <Compile Include="Microsoft\Internal\LazyServices.cs" />
-    <Compile Include="Microsoft\Internal\Lock.cs" />
     <Compile Include="Microsoft\Internal\Lock.Reader.cs" />
+    <Compile Include="Microsoft\Internal\Lock.ReaderWriter.cs" />
     <Compile Include="Microsoft\Internal\Lock.Writer.cs" />
     <Compile Include="Microsoft\Internal\StringComparers.cs" />
     <Compile Include="Microsoft\Internal\ReflectionServices.cs" />
@@ -205,4 +207,5 @@ System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices</Packa
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
 </Project>

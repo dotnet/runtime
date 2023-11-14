@@ -251,8 +251,11 @@ namespace System
         }
 
         internal static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, EETypePtr dstEEType, bool destinationIsByRef = false)
+            => CreateChangeTypeArgumentException(srcEEType, Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType)), destinationIsByRef);
+
+        internal static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, Type dstType, bool destinationIsByRef = false)
         {
-            object? destinationTypeName = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType));
+            object? destinationTypeName = dstType;
             if (destinationIsByRef)
                 destinationTypeName += "&";
             return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), destinationTypeName));
