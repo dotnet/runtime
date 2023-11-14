@@ -1272,7 +1272,6 @@ namespace System.Reflection.Emit
 
             // Define the constructor Builder
             constBuilder = (RuntimeConstructorBuilder)DefineConstructor(attributes, CallingConventions.Standard, null);
-            m_constructorCount++;
 
             // generate the code to call the parent's default constructor
             ILGenerator il = constBuilder.GetILGenerator();

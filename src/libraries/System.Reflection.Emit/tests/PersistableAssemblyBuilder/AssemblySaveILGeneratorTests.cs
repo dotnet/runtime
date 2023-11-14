@@ -655,20 +655,67 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                type.DefineGenericParameters("T");
-
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(new[] { "T" });
+                ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public |
+                    MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
+                FieldBuilder myField = type.DefineField("Field", typeParams[0], FieldAttributes.Public);
                 MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
                 GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
-                genericMethod.SetSignature(null, null, null, new[] { methodParams[0] }, null, null);
-                MethodInfo createdGenericMethod = TypeBuilder.GetMethod(type, genericMethod);
+                genericMethod.SetSignature(null, null, null, new [] { methodParams[0] }, null, null);
+                ILGenerator ilg = genericMethod.GetILGenerator();
+                Type SampleOfU = type.MakeGenericType(methodParams[0]);
+                ilg.DeclareLocal(SampleOfU);
+                ConstructorInfo ctorOfU = TypeBuilder.GetConstructor(SampleOfU, ctor);
+                ilg.Emit(OpCodes.Newobj, ctorOfU);
+                ilg.Emit(OpCodes.Stloc_0);
+                ilg.Emit(OpCodes.Ldloc_0);
+                ilg.Emit(OpCodes.Ldarg_0);
+                FieldInfo FieldOfU = TypeBuilder.GetField(SampleOfU, myField);
+                ilg.Emit(OpCodes.Stfld, FieldOfU);
+                ilg.Emit(OpCodes.Ldloc_0);
+                ilg.Emit(OpCodes.Ldfld, FieldOfU);
+                ilg.Emit(OpCodes.Box, methodParams[0]);
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(object) });
+                ilg.EmitCall(OpCodes.Call, writeLineObj, null);
+                ilg.Emit(OpCodes.Ret);
 
-                Assert.True(createdGenericMethod.IsGenericMethodDefinition);
-                Assert.Equal("Type: U", createdGenericMethod.GetGenericArguments()[0].ToString());
+                TypeBuilder dummy = ab.GetDynamicModule("MyModule").DefineType("Dummy", TypeAttributes.Class | TypeAttributes.NotPublic);
+                MethodBuilder mainMethod = dummy.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
+                ilg = mainMethod.GetILGenerator();
+                Type SampleOfInt = type.MakeGenericType(typeof(string));
+                MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(SampleOfInt, genericMethod);
+                MethodInfo GMOfString = SampleOfIntGM.MakeGenericMethod(typeof(string));
+                ilg.Emit(OpCodes.Ldstr, "Hello, world!");
+                ilg.EmitCall(OpCodes.Call, GMOfString, null);
+                ilg.Emit(OpCodes.Ret);
 
-                //saveMethod.Invoke(assemblyBuilder, new[] { file.Path });
+/* TODO: verify 'MyType<string>.GM<string>("HelloWorld");' emitted correctly after 'MethodBuilderImpl.GetParameters()' implemented
+public class MyType<T>
+{
+	public T Field;
 
-                //TODO:
+	public static void GM<U>(U P_0)
+	{
+		MyType<U> myType = new MyType<U>();
+		myType.Field = P_0;
+		Console.WriteLine(myType.Field);
+	}
+}
+
+internal class Dummy
+{
+	public static void Main()
+	{
+		MyType<string>.GM<string>("HelloWorld");
+	}
+}               */
+                saveMethod.Invoke(ab, new[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                Assert.True(typeFromDisk.IsGenericType);
+                Assert.True(typeFromDisk.IsGenericTypeDefinition);
             }
         }
 

@@ -17,7 +17,7 @@ namespace System.Reflection.Emit
         private readonly MetadataBuilder _metadataBuilder;
         private readonly AssemblyBuilderImpl _assemblyBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
-        private readonly Dictionary<Type, TypeReferenceHandle> _typeReferences = new();
+        private readonly Dictionary<Type, EntityHandle> _typeReferences = new();
         private readonly Dictionary<MemberInfo, MemberReferenceHandle> _memberReferences = new();
         private readonly List<TypeBuilderImpl> _typeDefinitions = new();
         private readonly Dictionary<ConstructorInfo, MemberReferenceHandle> _ctorReferences = new();
@@ -342,7 +342,7 @@ namespace System.Reflection.Emit
         {
             if (!_ctorReferences.TryGetValue(constructorInfo, out var constructorHandle))
             {
-                TypeReferenceHandle parentHandle = GetTypeReference(constructorInfo.DeclaringType!);
+                EntityHandle parentHandle = GetTypeReferenceOrSpecificationHandle(constructorInfo.DeclaringType!);
                 constructorHandle = AddConstructorReference(parentHandle, constructorInfo);
                 _ctorReferences.Add(constructorInfo, constructorHandle);
             }
@@ -350,22 +350,34 @@ namespace System.Reflection.Emit
             return constructorHandle;
         }
 
-        private TypeReferenceHandle GetTypeReference(Type type)
+        private EntityHandle GetTypeReferenceOrSpecificationHandle(Type type)
         {
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
-                typeHandle = AddTypeReference(type, GetAssemblyReference(type.Assembly));
+                if (type.IsArray || type.IsGenericParameter || (type.IsGenericType && !type.IsGenericTypeDefinition))
+                {
+                    typeHandle = AddTypeSpecification(type);
+                }
+                else
+                {
+                    typeHandle = AddTypeReference(type, GetAssemblyReference(type.Assembly));
+                }
+
                 _typeReferences.Add(type, typeHandle);
             }
 
             return typeHandle;
         }
 
+        private TypeSpecificationHandle AddTypeSpecification(Type type) =>
+            _metadataBuilder.AddTypeSpecification(
+                signature: _metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetTypeSignature(type, this)));
+
         private MemberReferenceHandle GetMemberReference(MemberInfo member)
         {
             if (!_memberReferences.TryGetValue(member, out var memberHandle))
             {
-                memberHandle = AddMemberReference(member.Name, GetTypeReference(member.DeclaringType!), GetMemberSignature(member));
+                memberHandle = AddMemberReference(member.Name, GetTypeReferenceOrSpecificationHandle(member.DeclaringType!), GetMemberSignature(member));
                 _memberReferences.Add(member, memberHandle);
             }
 
@@ -476,7 +488,7 @@ namespace System.Reflection.Emit
                 name: _metadataBuilder.GetOrAddString(memberName),
                 signature: _metadataBuilder.GetOrAddBlob(signature));
 
-        private MemberReferenceHandle AddConstructorReference(TypeReferenceHandle parent, ConstructorInfo method)
+        private MemberReferenceHandle AddConstructorReference(EntityHandle parent, ConstructorInfo method)
         {
             var blob = MetadataSignatureHelper.ConstructorSignatureEncoder(method.GetParameters(), this);
             return _metadataBuilder.AddMemberReference(
@@ -530,7 +542,7 @@ namespace System.Reflection.Emit
                 return eb._typeBuilder._handle;
             }
 
-            return GetTypeReference(type);
+            return GetTypeReferenceOrSpecificationHandle(type);
         }
 
         internal EntityHandle GetMemberHandle(MemberInfo member)

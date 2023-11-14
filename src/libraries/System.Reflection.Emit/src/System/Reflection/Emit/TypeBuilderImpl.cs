@@ -10,7 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
-    internal sealed partial class TypeBuilderImpl : TypeBuilder
+    internal sealed class TypeBuilderImpl : TypeBuilder
     {
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
@@ -84,19 +84,28 @@ namespace System.Reflection.Emit
         protected override TypeInfo CreateTypeInfoCore()
         {
             if (_isCreated)
+            {
                 return this;
+            }
 
             // Create a public default constructor if this class has no constructor. Except the type is Interface, ValueType, Enum, or a static class.
             // (TypeAttributes.Abstract | TypeAttributes.Sealed) determines if the type is static
             if (_constructorDefinitions.Count == 0 && (_attributes & TypeAttributes.Interface) == 0 && !IsValueType &&
                 ((_attributes & (TypeAttributes.Abstract | TypeAttributes.Sealed)) != (TypeAttributes.Abstract | TypeAttributes.Sealed)))
             {
-
                 DefineDefaultConstructor(MethodAttributes.Public);
             }
 
             _isCreated = true;
             return this;
+        }
+
+        private void ThrowIfTheTypeCreated()
+        {
+            if (_isCreated)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
+            }
         }
 
         protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
@@ -105,6 +114,8 @@ namespace System.Reflection.Emit
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ConstructorNotAllowedOnInterface);
             }
+
+            ThrowIfTheTypeCreated();
 
             string name;
 
@@ -133,39 +144,25 @@ namespace System.Reflection.Emit
             return DefineDefaultConstructorInternal(attributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "MakeGenericType is only called on a TypeBuilderInstantiation which is not subject to trimming")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "GetConstructor is only called on a TypeBuilderInstantiation which is not subject to trimming")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "MakeGenericType is only called on a TypeBuilderInstantiation which is not subject to trimming")]
         private ConstructorBuilderImpl DefineDefaultConstructorInternal(MethodAttributes attributes)
         {
             // Get the parent class's default constructor and add it to the IL
-            ConstructorInfo? con = null;
+            ConstructorInfo? con;
 
-            if (_typeParent!.IsConstructedGenericType && _typeParent.GetGenericTypeDefinition() is TypeBuilder)
+            if (_typeParent!.IsConstructedGenericType && _typeParent.GetGenericTypeDefinition() is TypeBuilderImpl typeBuilder)
             {
-                Type? genericTypeDefinition = _typeParent.GetGenericTypeDefinition();
-
-                Type inst = genericTypeDefinition.MakeGenericType(_typeParent.GetGenericArguments());
-
-                /*if (inst is TypeBuilderInstantiation)
-                {*/
-                    con = TypeBuilder.GetConstructor(inst, genericTypeDefinition.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
-                /*}
-                else
-                {
-                    con = inst.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
-                }*/
-                if (con == null) throw new Exception("Got null con");
+                con = GetConstructor(_typeParent, typeBuilder.GetConstructor(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
+            }
+            else
+            {
+                con = _typeParent.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
 
-            con ??= _typeParent.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
-
             if (con == null)
+            {
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
+            }
 
             ConstructorBuilderImpl constBuilder = (ConstructorBuilderImpl)DefineConstructorCore(attributes, CallingConventions.Standard, null, null, null);
 
@@ -176,7 +173,6 @@ namespace System.Reflection.Emit
             il.Emit(OpCodes.Ret);
 
             constBuilder._isDefaultConstructor = true;
-            _constructorDefinitions.Add(constBuilder);
             return constBuilder;
         }
 
@@ -323,7 +319,7 @@ namespace System.Reflection.Emit
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:DynamicallyAccessedMembers",
-            Justification = "TODO: Need to figure out how to preserve System.Object public constructor")]
+            Justification = "System.Object type is preserved via ModulBuilderImpl.s_coreTypes")]
         protected override void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             if (parent != null)
@@ -387,7 +383,9 @@ namespace System.Reflection.Emit
                 if (IsEnum)
                 {
                     if (_enumUnderlyingType == null)
+                    {
                         throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
+                    }
 
                     return _enumUnderlyingType;
                 }
@@ -414,10 +412,19 @@ namespace System.Reflection.Emit
             return ((GetAttributeFlagsImpl() & TypeAttributes.Import) != 0) ? true : false;
         }
 
+        private void ThrowIfTheTypeNotCreated()
+        {
+            if (!_isCreated)
+            {
+                throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
+            }
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[]? _)
         {
+            ThrowIfTheTypeNotCreated();
             ArgumentNullException.ThrowIfNull(types);
 
             for (int i = 0; i < types.Length; i++)
@@ -436,34 +443,34 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        private static bool MatchesTheFilter(MethodBuilderImpl method, BindingFlags conFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
+        private static bool MatchesTheFilter(MethodBuilderImpl method, BindingFlags ctorFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
-            bindingFlags ^= BindingFlags.DeclaredOnly;
-
-            // Apply Base Filter
-            if ((bindingFlags & conFlags) != conFlags)
-                return false;
-
-            // Check CallingConvention
-            if ((callConv & CallingConventions.Any) == 0)
+            if ((bindingFlags & ctorFlags) != ctorFlags)
             {
-                if ((callConv & CallingConventions.VarArgs) != 0 &&
-                    (method.CallingConvention & CallingConventions.VarArgs) == 0)
-                    return false;
-
-                if ((callConv & CallingConventions.Standard) != 0 &&
-                    (method.CallingConvention & CallingConventions.Standard) == 0)
-                    return false;
+                return false;
             }
 
-            Type[]? parameterTypes = method.ParameterTypes;
+            if ((callConv & CallingConventions.Any) == 0)
+            {
+                if ((callConv & CallingConventions.VarArgs) != 0 && (method.CallingConvention & CallingConventions.VarArgs) == 0)
+                {
+                    return false;
+                }
+
+                if ((callConv & CallingConventions.Standard) != 0 && (method.CallingConvention & CallingConventions.Standard) == 0)
+                {
+                    return false;
+                }
+            }
+
+            Type[] parameterTypes = method.ParameterTypes ?? EmptyTypes;
 
             if (argumentTypes == null)
             {
-                return parameterTypes == null;
+                return parameterTypes.Length == 0;
             }
 
-            if (parameterTypes == null || argumentTypes.Length == parameterTypes.Length)
+            if (argumentTypes.Length != parameterTypes.Length)
             {
                 return false;
             }
@@ -480,7 +487,22 @@ namespace System.Reflection.Emit
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => throw new NotSupportedException();
+        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
+        {
+            ThrowIfTheTypeNotCreated();
+
+            List<ConstructorInfo> ctors = new();
+            foreach (ConstructorBuilderImpl con in _constructorDefinitions)
+            {
+                if (MatchesTheFilter(con._methodBuilder, con._methodBuilder.GetBindingFlags(), bindingAttr, CallingConventions.Any, con._methodBuilder.ParameterTypes))
+                {
+                    ctors.Add(con);
+                }
+            }
+
+            return ctors.ToArray();
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public override EventInfo[] GetEvents() => throw new NotSupportedException();
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]

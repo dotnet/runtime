@@ -30,7 +30,9 @@ namespace System.Reflection.Emit
         protected override ILGenerator GetILGeneratorCore(int streamSize)
         {
             if (_isDefaultConstructor)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_DefaultConstructorILGen);
+            }
 
             return _methodBuilder.GetILGenerator(streamSize);
         }
@@ -50,7 +52,9 @@ namespace System.Reflection.Emit
             get
             {
                 if (DeclaringType!.IsGenericType)
+                {
                     return CallingConventions.HasThis;
+                }
 
                 return CallingConventions.Standard;
             }
@@ -69,7 +73,7 @@ namespace System.Reflection.Emit
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
-        public override ParameterInfo[] GetParameters() => throw new NotImplementedException();
+        public override ParameterInfo[] GetParameters() => _methodBuilder.GetParameters();
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
             => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture) =>

@@ -49,7 +49,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MethodBase Members
-        public override ParameterInfo[] GetParameters() { throw new NotSupportedException(); }
+        public override ParameterInfo[] GetParameters() => _method.GetParameters();
         public override MethodImplAttributes GetMethodImplementationFlags() { return _method.GetMethodImplementationFlags(); }
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override MethodAttributes Attributes => _method.Attributes;

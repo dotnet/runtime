@@ -36,6 +36,17 @@ namespace System.Reflection.Emit
             _returnType = returnType ?? _module.GetTypeFromCoreAssembly(CoreTypeId.Void);
             _name = name;
             _attributes = attributes;
+
+            if ((attributes & MethodAttributes.Static) == 0)
+            {
+                // turn on the has this calling convention
+                callingConventions |= CallingConventions.HasThis;
+            }
+            else if ((attributes & MethodAttributes.Virtual) != 0 && (attributes & MethodAttributes.Abstract) == 0)
+            {
+                throw new ArgumentException(SR.Argument_NoStaticVirtual);
+            }
+
             _callingConventions = callingConventions;
             _declaringType = declaringType;
 
@@ -239,7 +250,7 @@ namespace System.Reflection.Emit
         public override MethodImplAttributes GetMethodImplementationFlags()
             => _methodImplFlags;
 
-        public override ParameterInfo[] GetParameters() => throw new NotImplementedException();
+        public override ParameterInfo[] GetParameters() => Array.Empty<ParameterInfo>(); // TODO: Workaround until derive the ParameterBuilder from ParameterInfo
 
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
              => throw new NotSupportedException(SR.NotSupported_DynamicModule);

@@ -201,37 +201,19 @@
   <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
     <value>The specified opcode cannot be passed to EmitCall.</value>
   </data>
-  <data name="Argument_InvalidMethodDeclaringType" xml:space="preserve">
-    <value>The specified method must be declared on the generic type definition of the specified type.</value>
-  </data>
-  <data name="Argument_MethodNeedGenericDeclaringType" xml:space="preserve">
-    <value>The specified method cannot be dynamic or global and must be declared on a generic type definition.</value>
-  </data>
-  <data name="Argument_MustBeTypeBuilder" xml:space="preserve">
-    <value>'type' must be or must contain a TypeBuilder as a generic argument.</value>
-  </data>
-  <data name="Argument_NeedGenericMethodDefinition" xml:space="preserve">
-    <value>Method must represent a generic method definition on a generic type definition.</value>
-  </data>
-  <data name="Argument_NeedNonGenericType" xml:space="preserve">
-    <value>The specified Type must not be a generic type.</value>
-  </data>
   <data name="InvalidOperation_DefaultConstructorILGen" xml:space="preserve">
     <value>Unable to access ILGenerator on a constructor created with DefineDefaultConstructor.</value>
   </data>
   <data name="NotSupported_NoParentDefaultConstructor" xml:space="preserve">
     <value>Parent does not have a default constructor. The default constructor must be explicitly defined.</value>
   </data>
-  <data name="Argument_BadSigFormat" xml:space="preserve">
-    <value>Incorrect signature format.</value>
+  <data name="InvalidOperation_TypeHasBeenCreated" xml:space="preserve">
+    <value>Unable to change after type has been created.</value>
   </data>
-  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
-    <value>Must be an array type.</value>
+  <data name="NotSupported_TypeNotYetCreated" xml:space="preserve">
+    <value>The invoked member is not supported before the type is created.</value>
   </data>
-  <data name="Arg_NotGenericTypeDefinition" xml:space="preserve">
-    <value>{0} is not a GenericTypeDefinition. MakeGenericType may only be called on a type for which Type.IsGenericTypeDefinition is true.</value>
-  </data>
-  <data name="NotSupported_NonReflectedType" xml:space="preserve">
-    <value>Not supported in a non-reflected type.</value>
+  <data name="Argument_NoStaticVirtual" xml:space="preserve">
+    <value>Method cannot be both static and virtual.</value>
   </data>
 </root>
