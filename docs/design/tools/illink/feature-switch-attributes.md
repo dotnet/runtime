@@ -139,7 +139,7 @@ The attribute instance needs to reference the feature somehow, whether as:
 
   The analyzer would need to hard-code the fact that `RuntimeFeature.IsDynamicCodeSupported` corresponds to `RequiresDynamicCodeAttribute`, unless we model this relationship via attributes that represent feature switches.
 
-  This would be sufficient for ILLink/ILCompiler to treat `IsSupported` as a constant based on the feature switch name, assuming it has existing knowledge of the fact that `RuntimeFeature.IsDynamicCodeSupported` is contrelled by the feature switch named `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"`, either from a substitution XML or from a separate attribute that encodes this.
+  This would be sufficient for ILLink/ILCompiler to treat `IsSupported` as a constant based on the feature switch name, assuming it has existing knowledge of the fact that `RuntimeFeature.IsDynamicCodeSupported` is controlled by the feature switch named `"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"`, either from a substitution XML or from a separate attribute that encodes this.
 
 ### Danger of incorrect usage
 
@@ -181,6 +181,8 @@ class Feature {
 Note that this analysis does require the analyzer to understand the relationship between `RequiresDynamicCodeAttribute` and `RuntimeFeature.IsDynamicCodeSupported`, so it would still require either hard-coding this relationship in the analyzer, or representing it via an attribute model for feature switches.
 
 There may be more complex implementations of feature guards that the analyzer would not support. In this case, the analyzer would produce a warning on the property definition that can be silenced if the author is confident that the return value of the property reflects the referenced feature.
+
+We may also want to add support for such validation in ILLink and ILCompiler, though this may be slightly costlier than adding support in the analyzer.
 
 ### Feature guards and constant propagation
 
@@ -244,11 +246,46 @@ A feature switch is also a feature guard for the feature it is defined by. We co
 
 A feature guard might also come with its own independent feature switch. We shoud be careful to avoid violating the assumptions of the feature guard by controlling the property via a feature switch.
 
-For example, if we had a separate feature switch for `IsDynamicCodeCompiled`, this would allow setting `IsDynamicCodeCompiled` to `true` even when `IsDynamicCodeSupported` is `false`. This is essentially what we did for features like `StartupHookSupport`: this feature switch can be set even in trimmed apps.
+For example, if we had a separate feature switch for `IsDynamicCodeCompiled`, this would allow setting `IsDynamicCodeCompiled` to `true` even when `IsDynamicCodeSupported` is `false`.
 
-We rely on trim warnings to alert the app author to the problem, and also default `StartupHookSupport` to `false` for trimmed apps. If we have an attribute-based model for feature guards, we may want to consider inferring these defaults from the `FeatureGuard` instead (so a guard for `RequiresUnreferencedCode` that is also a feature switch would be `false` by default whenever "unreferenced code" is unavailable).
+This is essentially what we did for features like `StartupHookSupport`, which can be set even in trimmed apps:
 
-The proposal for now is not to infer any defaults and just take care to set appropriate defaults in the SDK. This means that custom feature guards that are also feature switches will need to do the same. For example, a library that defines a feature switch which guards `RequiresUnreferencedCode` will need to ship with MSBuild targets that disable the feature by default for trimmed apps.
+```csharp
+class StartupHookProvider
+{
+    [FeatureSwitch(typeof(RequiresStartupHookSupport))]
+    [FeatureGuard(typeof(RequiresUnreferencedCodeSupport))]
+    private static bool IsSupported => AppContext.TryGetSwitch("System.StartupHookProvider.IsSupported", out bool isSupported) ? isSupported : true;
+
+    private static void ProcessStartupHooks()
+    {
+        if (!IsSupported)
+            return;
+
+        var startupHooks = // parse startup hooks...
+
+        for (int i = 0; i < startupHooks.Count; i++)
+            CallStartupHook(startupHooks[i]);
+    }
+
+    [RequiresUnreferencedCode("The StartupHookSupport feature switch has been enabled for this app which is being trimmed. " +
+            "Startup hook code is not observable by the trimmer and so required assemblies, types and members may be removed")]
+    private static void CallStartupHook(StartupHookNameOrPath startupHook) {
+        // ...
+    }
+}
+
+[FeatureName("System.StartupHookProvider.IsSupported")]
+class RequiresStartupHookSupport : RequiresAttribute {}
+```
+
+In this example, `FeatureGuard` would prevent analyzer warnings at the `CallStartupHook` callsite, due to the `IsSupported` check earlier in the method. The default settings for ILCompiler and ILLink ensure the same by setting `"System.StartupHookProvider.IsSupported"` to `false` in trimmed apps from MSBuild.
+
+However, it is possible to bypass the defaults and set `StartupHookSupport` to `true` even in a trimmed app. We rely on trim warnings to alert the app author to the proble in this case.
+
+If we have an attribute-based model for feature guards, we may want to consider inferring these defaults from the `FeatureGuard` instead (so a guard for `RequiresUnreferencedCode` that is also a feature switch would be `false` by default whenever "unreferenced code" is unavailable). In the above example, this would mean that ILLink and ILCompiler could treat `System.StartupHook.Provider.IsSupported` as `false` by default without any MSBuild logic.
+
+The proposal for now is not to infer any defaults and just take care to set appropriate defaults in the SDK. This means that custom feature guards that are also feature switches will still need to do the same. For example, a library that defines a feature switch which guards `RequiresUnreferencedCode` will need to ship with MSBuild targets that disable the feature by default for trimmed apps.
 
 ### Referencing features from `FeatureGuard` and `FeatureSwitch`
 
@@ -322,7 +359,7 @@ public class RuntimeFeature
 
 ```csharp
 [FeatureName("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
-class RequiresDynamicCodeAttribute : FeatureAttribute { }
+class RequiresDynamicCodeAttribute : RequiresFeatureAttribute { }
 ```
 
 and a feature guard for "dynamic code compilation" might look like this:
@@ -337,7 +374,7 @@ public class RuntimeFeature
 The attribute definitions to support this might look like this:
 ```csharp
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-abstract class FeatureAttribute : Attribute { }
+abstract class RequiresFeatureAttribute : Attribute { }
 
 [AttributeUsage(AttributeTargets.Property, Inherited = false)]
 class FeatureSwitchAttribute : Attribute {
@@ -372,6 +409,8 @@ class FeatureNameAttribute : Attribute
 The analyzer would validate that `FeatureGuardAttribute` and `FeatureSwitchAttribute` attribute arguments are derived classes of `FeatureAttribute`, and that `FeatureNameAttribute` is only placed on derived classes of `FeatureAttribute`.
 
 We could use this model even for feature switches similar to `StartupHookSupport`, which don't currently have a `StartupHookSupportAttribute`. There's no need to actually annotate related APIs with the attribute if that is overkill for a small feature. In this case the attribute definition would just serve as metadata that allows us to define a feature switch in a uniform way.
+
+Note that this makes it possible to define custom `Requires` attributes for arbitrary features. While the immediate goal of this proposal is not to enable analyzer support for analysis warnings based on such custom attributes, the model intentionally allows for this so that we could easily open up the analyzer to work for custom features. However, initially support for analysis warnings would be limited to `RequiresUnreferencedCodeAttribute`, `RequiresDynamicCodeAttribute`, and `RequiresAssemblyFilesAttribute`.
 
 ## Comparison with "capability-based analyzer"
 
