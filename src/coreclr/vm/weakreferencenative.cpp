@@ -172,8 +172,7 @@ FCIMPL1(FC_BOOL_RET, ComAwareWeakReferenceNative::HasInteropInfo, Object* pObjec
     _ASSERTE(pObject != nullptr);
 
     SyncBlock* pSyncBlock = pObject->PassiveGetSyncBlock();
-    _ASSERTE(pSyncBlock != nullptr);
-    return pSyncBlock->GetInteropInfoNoCreate() != nullptr;
+    return pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr;
 }
 FCIMPLEND
 

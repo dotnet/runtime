@@ -368,21 +368,32 @@ void RedhawkGCInterface::BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, uint32_t cRefs
 }
 
 // static
-GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_t SizeSection)
+GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
 {
+    ASSERT(allocSize <= commitSize);
+    ASSERT(commitSize <= reservedSize);
+
 #ifdef FEATURE_BASICFREEZE
     segment_info seginfo;
 
     seginfo.pvMem           = pSection;
     seginfo.ibFirstObject   = sizeof(ObjHeader);
-    seginfo.ibAllocated     = SizeSection;
-    seginfo.ibCommit        = seginfo.ibAllocated;
-    seginfo.ibReserved      = seginfo.ibAllocated;
+    seginfo.ibAllocated     = allocSize;
+    seginfo.ibCommit        = commitSize;
+    seginfo.ibReserved      = reservedSize;
 
     return (GcSegmentHandle)GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
 #else // FEATURE_BASICFREEZE
     return NULL;
 #endif // FEATURE_BASICFREEZE
+}
+
+// static
+void RedhawkGCInterface::UpdateFrozenSegment(GcSegmentHandle seg, uint8_t* allocated, uint8_t* committed)
+{
+    ASSERT(allocated <= committed);
+
+    GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment((segment_handle)seg, allocated, committed);
 }
 
 // static
@@ -1112,6 +1123,11 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     UNREFERENCED_PARAMETER(currentPrivateLevel);
     UNREFERENCED_PARAMETER(currentPrivateKeywords);
     // TODO: Linux LTTng
+}
+
+void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg)
+{
+    // TODO: Implementation
 }
 
 uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
