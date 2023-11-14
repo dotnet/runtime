@@ -154,7 +154,7 @@ def build_and_run(coreclr_args, output_mch_name):
     benchmark_path = coreclr_args.benchmark_path
     benchmark_binary = coreclr_args.benchmark_binary
     dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
-    dotnet_exe = "dotnet" #os.path.join(dotnet_directory, "dotnet")
+    dotnet_exe = #os.path.join(dotnet_directory, "dotnet")
 
     artifacts_directory = os.path.join(performance_directory, "artifacts")
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
