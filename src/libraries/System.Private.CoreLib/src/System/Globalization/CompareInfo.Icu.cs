@@ -24,14 +24,15 @@ namespace System.Globalization
             _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
             if (!GlobalizationMode.Invariant)
             {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    return;
-#endif
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                     return;
 #endif
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    return;
+#else
                  _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
+#endif
             }
         }
 
