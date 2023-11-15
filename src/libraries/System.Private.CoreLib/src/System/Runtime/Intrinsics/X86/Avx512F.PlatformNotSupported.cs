@@ -1347,7 +1347,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
         /// </summary>
         public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
-
+        /// <summary>
+        /// __m512d _mm512_add_sd (__m128d a, __m128d b)
+        ///   VADDSD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst{er}
+        /// </summary>
+        public static Vector128<double> AddScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_add_ss (__m128d a, __m128d b)
+        ///   VADDSS xmm1 {k1}{z}, xmm1, xmm1/m128/m32bcst{er}
+        /// </summary>
+        public static Vector128<float> AddScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m512i _mm512_alignr_epi32 (__m512i a, __m512i b, const int count)
         ///   VALIGND zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
@@ -2199,7 +2208,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VDIVPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Divide(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
-
+        /// <summary>
+        /// __m128d _mm512_div_sd (__m128d a, __m128d b)
+        ///   VDIVSD xmm1 {k1}{z}, xmm2, xmm3{er}
+        /// </summary>
+        public static Vector128<double> DivideScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm512_div_ss (__m128d a, __m128d b)
+        ///   VDIVSS xmm1 {k1}{z}, xmm2, xmm3{er}
+        /// </summary>
+        public static Vector128<double> DivideScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m512 _mm512_moveldup_ps (__m512 a)
         ///   VMOVSLDUP zmm1 {k1}{z}, zmm2/m512
@@ -2801,7 +2819,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VMULPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Multiply(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
-
+        /// <summary>
+        /// __m128 _mm128_mul_ss (__m128 a, __m128 b)
+        ///   VMULSS xmm1 {k1}{z}, xmm2, xmm3{er}
+        /// </summary>
+        public static Vector512<float> MultiplyScalar(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm128_mul_sd (__m128 a, __m128 b)
+        ///   VMULSD xmm1 {k1}{z}, xmm2, xmm3{er}
+        /// </summary>
+        public static Vector512<double> MultiplyScalar(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m512i _mm512_mullo_epi32 (__m512i a, __m512i b)
         ///   VPMULLD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
@@ -3394,7 +3421,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSQRTPD zmm1 {k1}{z}, zmm2/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Sqrt(Vector512<double> value) { throw new PlatformNotSupportedException(); }
-
+        /// <summary>
+        /// __m128 _mm_sqrt_ss (__m128 a, __m128 b)
+        ///   VSQRTSS xmm1 {k1}{z}, xmm2{er}
+        /// </summary>
+        public static Vector128<float> SqrtScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_sqrt_sd (__m128 a, __m128 b)
+        ///   VSQRTSD xmm1 {k1}{z}, xmm2{er}
+        /// </summary>
+        public static Vector128<double> SqrtScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// void _mm512_storeu_si512 (__m512i * mem_addr, __m512i a)
         ///   VMOVDQU32 m512 {k1}{z}, zmm1
@@ -3578,6 +3614,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Subtract(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_sub_ss (__m128 a, __m128 b)
+        ///   VSUBSS xmm1 {k1}{z}, xmm2, xmm3{er}
+        /// </summary>
+        public static Vector512<float> SubtractScalar(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_sub_sd (__m128 a, __m128 b)
+        ///   VSUBSD xmm1 {k1}{z}, xmm2, xmm3{er}
+        /// </summary>
+        public static Vector512<double> SubtractScalar(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, int imm)
