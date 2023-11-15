@@ -45,7 +45,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public FeatureChecksValue Union (FeatureChecksValue other)
 		{
 			return new FeatureChecksValue (
-				EnabledFeatures.Union (DisabledFeatures),
+				EnabledFeatures.Union (other.EnabledFeatures),
 				DisabledFeatures.Union (other.DisabledFeatures));
 		}
 

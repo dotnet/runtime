@@ -26,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		class SupportedFeatures {
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
 			[FeatureGuard<RequiresDynamicCodeAttribute>]
 			static bool GuardRequiresDynamicCode => true;
 
@@ -35,6 +36,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute))]
 			[FeatureGuard<RequiresUnreferencedCodeAttribute>]
 			static bool GuardRequiresUnreferencedCode => true;
 
@@ -44,6 +46,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
+			[ExpectedWarning ("IL4000", nameof (RequiresAssemblyFilesAttribute))]
 			[FeatureGuard<RequiresAssemblyFilesAttribute>]
 			static bool GuardRequiresAssemblyFiles => true;
 
@@ -83,6 +86,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[FeatureGuard<RequiresDynamicCodeAttribute>]
 			static bool DirectGuard => RuntimeFeature.IsDynamicCodeSupported;
 
+			// BUG: We're not smart enough to do this analysis yet. Leave it unsupported for now.
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
 			[FeatureGuard<RequiresDynamicCodeAttribute>]
 			static bool AndGuard => RuntimeFeature.IsDynamicCodeSupported && OtherCondition ();
 

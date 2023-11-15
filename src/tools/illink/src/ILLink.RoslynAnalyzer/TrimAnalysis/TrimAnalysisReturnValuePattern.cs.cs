@@ -70,9 +70,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					throw new InvalidOperationException ();
 
 				ValueSet<string>? returnValueSet = ReturnValue.EnabledFeatures.FeatureSet;
+				// If all features are enabled? Should never happen...
+				if (returnValueSet == null)
+					throw new InvalidOperationException ();
 				foreach (string expectedGuard in featureGuardSet) {
 					// TODO: what if it contains both enabled and disabled features?
-					if (returnValueSet?.Contains (expectedGuard) != true) {
+					if (!returnValueSet.Value.Contains (expectedGuard)) {
 						diagnosticContext.AddDiagnostic (
 							DiagnosticId.ReturnValueDoesNotMatchFeatureGuards,
 							OwningSymbol.GetDisplayName (),

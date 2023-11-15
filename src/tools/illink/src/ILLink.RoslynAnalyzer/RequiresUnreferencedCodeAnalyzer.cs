@@ -49,9 +49,7 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
-		public const string UnreferencedCode = nameof (UnreferencedCode);
-
-		internal override string FeatureName => UnreferencedCode;
+		internal override string FeatureName => RequiresUnreferencedCodeAttribute;
 
 		internal override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresUnreferencedCodeAttribute;
 

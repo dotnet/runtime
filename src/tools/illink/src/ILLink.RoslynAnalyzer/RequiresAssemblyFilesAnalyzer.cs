@@ -36,7 +36,7 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresAssemblyFilesAttribute;
 
-		internal override string FeatureName => "AssemblyFiles";
+		internal override string FeatureName => RequiresAssemblyFilesAttribute;
 
 		internal override string RequiresAttributeFullyQualifiedName => RequiresAssemblyFilesAttributeFullyQualifiedName;
 

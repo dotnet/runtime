@@ -53,9 +53,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			foreach (var analyzer in _dataFlowAnalyzerContext.EnabledRequiresAnalyzers) {
 				if (analyzer.IsRequiresGuard (operation.Property, _dataFlowAnalyzerContext)) {
 					var featureCheck = new FeatureChecksValue (analyzer.FeatureName);
-					featureChecks = featureChecks == null
-						? featureCheck
-						: featureChecks.Union (featureCheck);
+					featureChecks = featureChecks.Union (featureCheck);
 				}
 			}
 
