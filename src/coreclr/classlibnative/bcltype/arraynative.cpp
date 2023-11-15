@@ -747,11 +747,11 @@ static void CheckElementType(TypeHandle elementType)
     }
 }
 
-void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, QCall::ObjectHandleOnStack retArray)
+void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray)
 {
     CONTRACTL {
         QCALL_CHECK;
-        PRECONDITION(rank != 0);
+        PRECONDITION(rank > 0);
         PRECONDITION(CheckPointer(pLengths));
         PRECONDITION(CheckPointer(pLowerBounds, NULL_OK));
     } CONTRACTL_END;
@@ -760,11 +760,8 @@ void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT3
 
     TypeHandle typeHnd = pTypeHnd.AsTypeHandle();
 
-    // Negative rank means that the type handle is the array type
-    if (rank < 0)
+    if (createFromArrayType)
     {
-        rank = -rank;
-
         _ASSERTE((INT32)typeHnd.GetRank() == rank);
         _ASSERTE(typeHnd.IsArray());
 

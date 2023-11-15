@@ -1826,6 +1826,10 @@ namespace System.Tests
                 new object[] { typeof(GenericInterface<int>), default(GenericInterface<int>) },
                 new object[] { typeof(AbstractClass), default(AbstractClass) },
                 new object[] { typeof(StaticClass), default(StaticClass) },
+
+                // Arrays of void arrays
+                new object[] { typeof(void).MakeArrayType(), null },
+                new object[] { typeof(void).MakeArrayType(1), null },
             };
         }
 
@@ -1948,18 +1952,13 @@ namespace System.Tests
         [Theory]
         [InlineData(typeof(void))]
         [InlineData(typeof(GenericClass<>))]
-        // not using any by-ref type here as MakeArrayType throws for them, same goes for Type.GetType("SomeByRef[]")
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94086", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
         public void CreateInstanceFromArrayType_NotSupportedArrayType_ThrowsNotSupportedException(Type elementType)
         {
-            foreach (Type type in new Type[] { elementType, elementType.MakeArrayType() /* array of arrays */ })
-            {
-                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(), 0));
-                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(rank: 2), 0, 0));
-                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(rank: 3), 0, 0, 0));
-                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(), new int[1]));
-                Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(type.MakeArrayType(), new int[1], new int[1]));
-            }
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), 0));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(rank: 2), 0, 0));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(rank: 3), 0, 0, 0));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), new int[1]));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), new int[1], new int[1]));
         }
 
         [Theory]
@@ -2073,7 +2072,7 @@ namespace System.Tests
             Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, [22]).GetType());
             Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [0]).GetType());
 
-            Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [22]).GetType(), variableBoundArrayType);
+            Assert.Equal(variableBoundArrayType, Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [22]).GetType());
 
             Assert.Throws<ArgumentException>(() => Array.CreateInstanceFromArrayType(typeof(object[]), [7], [8]));
         }
@@ -2115,7 +2114,7 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstance(typeof(int), new int[] { int.MaxValue }, new int[] { 2 }));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[] { int.MaxValue }, new int[] { 2 }));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstanceFromArrayType(typeof(int).MakeArrayType(1), new int[] { int.MaxValue }, new int[] { 2 }));
         }
 
         [Fact]

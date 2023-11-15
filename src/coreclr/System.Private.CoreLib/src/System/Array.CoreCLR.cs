@@ -15,17 +15,24 @@ namespace System
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstance")]
-        private static unsafe partial void InternalCreate(QCallTypeHandle type, int rank, int* pLengths, int* pLowerBounds, ObjectHandleOnStack retArray);
+        private static unsafe partial void InternalCreate(QCallTypeHandle type, int rank, int* pLengths, int* pLowerBounds,
+            [MarshalAs(UnmanagedType.Bool)] bool fromArrayType, ObjectHandleOnStack retArray);
 
-        private static unsafe Array InternalCreate(RuntimeType type, int rank, int* pLengths, int* pLowerBounds)
+        private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
             Array? retArray = null;
-            InternalCreate(new QCallTypeHandle(ref type), rank, pLengths, pLowerBounds, ObjectHandleOnStack.Create(ref retArray));
+            InternalCreate(new QCallTypeHandle(ref elementType), rank, pLengths, pLowerBounds,
+                fromArrayType: false, ObjectHandleOnStack.Create(ref retArray));
             return retArray!;
         }
 
-        private static unsafe Array InternalCreateFromArrayType(RuntimeType type, int rank, int* pLengths, int* pLowerBounds)
-            => InternalCreate(type, -rank, pLengths, pLowerBounds);
+        private static unsafe Array InternalCreateFromArrayType(RuntimeType arrayType, int rank, int* pLengths, int* pLowerBounds)
+        {
+            Array? retArray = null;
+            InternalCreate(new QCallTypeHandle(ref arrayType), rank, pLengths, pLowerBounds,
+                fromArrayType: true, ObjectHandleOnStack.Create(ref retArray));
+            return retArray!;
+        }
 
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {

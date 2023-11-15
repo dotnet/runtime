@@ -254,7 +254,7 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
 
             if (t.GetArrayRank() != lengths.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices, ExceptionArgument.lengths);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
             // Check to make sure the lengths are all non-negative. Note that we check this here to give
             // a good exception message if they are not; however we check this again inside the execution
@@ -310,9 +310,9 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
 
             if (t.GetArrayRank() != lengths.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices, ExceptionArgument.lengths);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
-            if (lengths.Length == 1 && lowerBounds[0] != 0 && !t.IsSZArray)
+            if (lowerBounds[0] != 0 && t.IsSZArray)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
 
             // Check to make sure the lengths are all non-negative. Note that we check this here to give
