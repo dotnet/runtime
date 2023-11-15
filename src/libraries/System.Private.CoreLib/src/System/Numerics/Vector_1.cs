@@ -664,8 +664,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref T address = ref MemoryMarshal.GetArrayDataReference(destination);
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref address), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref array[0]), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given array starting at the specified index.</summary>
@@ -689,8 +688,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref T address = ref MemoryMarshal.GetArrayDataReference(destination);
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref address, startIndex)), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref array[startIndex]), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
