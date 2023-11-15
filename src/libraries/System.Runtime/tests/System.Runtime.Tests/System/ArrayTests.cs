@@ -2067,11 +2067,11 @@ namespace System.Tests
         public void CreateInstanceFromTemplate_Rank1()
         {
             Type variableBoundArrayType = typeof(object).MakeArrayType(1);
-            Assert.NotEqual(variableBoundArrayType, typeof(object[]));
+            Assert.NotEqual(typeof(object[]), variableBoundArrayType);
 
-            Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, 12).GetType(), typeof(object[]));
-            Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, [22]).GetType(), typeof(object[]));
-            Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [0]).GetType(), typeof(object[]));
+            Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, 12).GetType());
+            Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, [22]).GetType());
+            Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [0]).GetType());
 
             Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [22]).GetType(), variableBoundArrayType);
 
