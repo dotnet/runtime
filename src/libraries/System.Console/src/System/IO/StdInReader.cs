@@ -178,7 +178,7 @@ namespace System.IO
                     {
                         if (freshKeys)
                         {
-                            Echo('\n');
+                            EchoToTerminal('\n');
                         }
                         return true;
                     }
@@ -237,7 +237,7 @@ namespace System.IO
                         }
                         if (freshKeys)
                         {
-                            Echo(' ');
+                            EchoToTerminal(' ');
                         }
                     }
                     else if (keyInfo.Key == ConsoleKey.Clear)
@@ -256,7 +256,7 @@ namespace System.IO
                         }
                         if (freshKeys)
                         {
-                            Echo(keyInfo.KeyChar);
+                            EchoToTerminal(keyInfo.KeyChar);
                         }
                     }
                 }
@@ -327,7 +327,7 @@ namespace System.IO
 
             if (!intercept && keyInfo.KeyChar != '\0')
             {
-                Echo(keyInfo.KeyChar);
+                EchoToTerminal(keyInfo.KeyChar);
             }
 
             return keyInfo;
@@ -374,14 +374,22 @@ namespace System.IO
         /// <summary>Gets whether there's input waiting on stdin.</summary>
         internal static bool StdinReady => Interop.Sys.StdinReady();
 
-        private void Echo(char c)
+        private void EchoToTerminal(char c)
         {
-            ReadOnlySpan<char> chars = [ c ];
             Span<byte> bytes = stackalloc byte[32]; // 32 bytes seems ample
-            int bytesWritten = _echoEncoder.GetBytes(chars, bytes, flush: false);
-            if (bytesWritten == 0)
+            int bytesWritten = 1;
+            if (Ascii.IsValid(c))
             {
-                return;
+                bytes[0] = (byte)c;
+            }
+            else
+            {
+                var chars = new ReadOnlySpan<char>(in c);
+                bytesWritten = _echoEncoder.GetBytes(chars, bytes, flush: false);
+                if (bytesWritten == 0)
+                {
+                    return;
+                }
             }
 
             ConsolePal.WriteToTerminal(bytes.Slice(0, bytesWritten));
