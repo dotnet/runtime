@@ -424,7 +424,7 @@ namespace CoreclrTestLib
             //    the way it will be printed by sos.
 
             StringBuilder addrBuilder = new StringBuilder();
-            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT") ?? string.Empty;
             foreach (var thread in threads)
             {
 
