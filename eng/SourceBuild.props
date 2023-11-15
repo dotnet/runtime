@@ -48,6 +48,7 @@
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) --usemonoruntime</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

@@ -6,6 +6,7 @@ include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
