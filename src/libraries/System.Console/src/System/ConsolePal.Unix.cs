@@ -411,8 +411,10 @@ namespace System
 
         public static (int Left, int Top) GetCursorPosition()
         {
-            if (Console.IsOutputRedirected)
+            if (Console.IsInputRedirected || Console.IsOutputRedirected)
+            {
                 return (0, 0);
+            }
 
             TryGetCursorPosition(out int left, out int top);
             return (left, top);
@@ -438,6 +440,8 @@ namespace System
         /// <param name="reinitializeForRead">Indicates whether this method is called as part of a on-going Read operation.</param>
         internal static bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
         {
+            Debug.Assert(!Console.IsInputRedirected);
+
             left = top = 0;
 
             int cursorVersion;
