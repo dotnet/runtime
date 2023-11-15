@@ -568,7 +568,7 @@ namespace System.Numerics
             }
 
             ref float address = ref MemoryMarshal.GetArrayDataReference(array);
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref address), vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref address), this);
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -597,7 +597,7 @@ namespace System.Numerics
             }
 
             ref float address = ref MemoryMarshal.GetArrayDataReference(array);
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref Unsafe.Add(ref address, index)), vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref Unsafe.Add(ref address, index)), this);
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />.The length of the destination span must be at least 2.</summary>

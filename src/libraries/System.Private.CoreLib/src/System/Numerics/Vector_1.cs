@@ -665,7 +665,7 @@ namespace System.Numerics
             }
 
             ref T address = ref MemoryMarshal.GetArrayDataReference(destination);
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref address), vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref address), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given array starting at the specified index.</summary>
@@ -690,7 +690,7 @@ namespace System.Numerics
             }
 
             ref T address = ref MemoryMarshal.GetArrayDataReference(destination);
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref address, startIndex)), vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref address, startIndex)), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
