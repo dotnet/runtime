@@ -2210,6 +2210,16 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<double> Divide(Vector512<double> left, Vector512<double> right) => Divide(left, right);
         /// <summary>
+        /// __m512 _mm512_div_ps (__m512 a, __m512 b)
+        ///   VDIVPS zmm1 {k1}{z}, zmm2, zmm3{er}
+        /// </summary>
+        public static Vector512<float> Divide(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Divide(left, right, mode);
+        /// <summary>
+        /// __m512d _mm512_div_pd (__m512d a, __m512d b)
+        ///   VDIVPD zmm1 {k1}{z}, zmm2, zmm3{er}
+        /// </summary>
+        public static Vector512<double> Divide(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Divide(left, right, mode);
+        /// <summary>
         /// __m128d _mm_div_sd (__m128d a, __m128d b)
         ///   VDIVSD xmm1 {k1}{z}, xmm2, xmm3{er}
         /// </summary>
@@ -2821,6 +2831,16 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<double> Multiply(Vector512<double> left, Vector512<double> right) => Multiply(left, right);
         /// <summary>
+        /// __m512 _mm512_mul_ps (__m512 a, __m512 b)
+        ///   VMULPS zmm1 {k1}{z}, zmm2, zmm3{er}
+        /// </summary>
+        public static Vector512<float> Multiply(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Multiply(left, right, mode);
+        /// <summary>
+        /// __m512d _mm512_mul_pd (__m512d a, __m512d b)
+        ///   VMULPD zmm1 {k1}{z}, zmm2, zmm3{er}
+        /// </summary>
+        public static Vector512<double> Multiply(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Multiply(left, right, mode);
+        /// <summary>
         /// __m128 _mm128_mul_ss (__m128 a, __m128 b)
         ///   VMULSS xmm1 {k1}{z}, xmm2, xmm3{er}
         /// </summary>
@@ -3422,6 +3442,16 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<double> Sqrt(Vector512<double> value) => Sqrt(value);
         /// <summary>
+        /// __m512 _mm512_sqrt_ps (__m512 a)
+        ///   VSQRTPS zmm1 {k1}{z}, zmm2{er}
+        /// </summary>
+        public static Vector512<float> Sqrt(Vector512<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Sqrt(value, mode);
+        /// <summary>
+        /// __m512d _mm512_sqrt_pd (__m512d a)
+        ///   VSQRTPD zmm1 {k1}{z}, zmm2{er}
+        /// </summary>
+        public static Vector512<double> Sqrt(Vector512<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Sqrt(value, mode);
+        /// <summary>
         /// __m128 _mm_sqrt_ss (__m128 a, __m128 b)
         ///   VSQRTSS xmm1 {k1}{z}, xmm2{er}
         /// </summary>
@@ -3615,6 +3645,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Subtract(Vector512<double> left, Vector512<double> right) => Subtract(left, right);
+        /// <summary>
+        /// __m512 _mm512_sub_ps (__m512 a, __m512 b)
+        ///   VSUBPS zmm1 {k1}{z}, zmm2, zmm3{er}
+        /// </summary>
+        public static Vector512<float> Subtract(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Subtract(left, right, mode);
+        /// <summary>
+        /// __m512d _mm512_sub_pd (__m512d a, __m512d b)
+        ///   VSUBPD zmm1 {k1}{z}, zmm2, zmm3{er}
+        /// </summary>
+        public static Vector512<double> Subtract(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Subtract(left, right, mode);
         /// <summary>
         /// __m128d _mm_sub_ss (__m128 a, __m128 b)
         ///   VSUBSS xmm1 {k1}{z}, xmm2, xmm3{er}
