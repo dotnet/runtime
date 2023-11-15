@@ -2799,6 +2799,7 @@ void           LinearScan::buildIntervals()
         availableRegCount = REG_INT_COUNT;
     }
 
+#if defined(HOST_UNIX) && defined(TARGET_ARM64)
     if ((sizeof(regMaskTP) * 8) > 64)
     {
         // Mask out the bits that are between 64 ~ availableRegCount
@@ -2806,7 +2807,9 @@ void           LinearScan::buildIntervals()
         unsigned __int64 b  = ~0;
         actualRegistersMask = b;
     }
-    else if (availableRegCount < (sizeof(regMaskTP) * 8))
+    else
+#endif // HOST_UNIX && TARGET_ARM64
+    if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
         // Mask out the bits that are between 64 ~ availableRegCount
         actualRegistersMask = (1ULL << availableRegCount) - 1;
