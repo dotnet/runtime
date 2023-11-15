@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BuildAsStandalone>true</BuildAsStandalone>
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/93631 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SelfContext.cs" />

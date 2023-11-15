@@ -5866,7 +5866,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 					code = emit_strx (code, ainfo->reg + part, ins->inst_basereg, offs);
 
 					if (ainfo->storage == ArgSwiftSelf) {
-						code = emit_ldrx (code, ARMREG_R20, ins->inst_basereg, ins->inst_offset);
+						code = emit_ldrx (code, ARMREG_R20, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 					}
 				}
 				break;
@@ -6249,7 +6249,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 		switch (ainfo->storage) {
 		case ArgSwiftError:
-			code = emit_ldrx (code, ARMREG_IP0, arg->inst_basereg, arg->inst_offset);
+			code = emit_ldrx (code, ARMREG_IP0, arg->inst_basereg, GTMREG_TO_INT (arg->inst_offset));
 			arm_strx (code, ARMREG_R21, ARMREG_IP0, 0);
 			break;
 		default:

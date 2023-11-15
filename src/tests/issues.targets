@@ -3277,6 +3277,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
             <Issue>needs native libraries</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'android'" >
@@ -3720,6 +3723,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'linux'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
         </ExcludeList>
     </ItemGroup>
 
