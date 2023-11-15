@@ -503,10 +503,8 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
 
     if (ownerCompositeExecutableName != NULL)
     {
-        //AssemblyBinder *binder = pModule->GetPEAssembly()->GetAssemblyBinder();
-        //return binder->LoadNativeImage(pModule, ownerCompositeExecutableName);
-
-        // TODO: implement
+        AssemblyBinder *binder = pModule->GetPEAssembly()->GetAssemblyBinder();
+        return binder->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
 
     return NULL;
@@ -758,7 +756,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
             int32_t manifestAssemblyCount = 0;
             GUID emptyGuid  = {0};
 
-            // ASSEMBLYBINDERREF binder = pModule != NULL ? pModule->GetPEAssembly()->GetAssemblyBinder() : (ASSEMBLYBINDERREF)ObjectFromHandle(pNativeImage->GetAssemblyBinder());
+            AssemblyBinder* binder = pModule != NULL ? pModule->GetPEAssembly()->GetAssemblyBinder() : pNativeImage->GetAssemblyBinder();
             auto pComponentAssemblyMvids = FindSection(ReadyToRunSectionType::ManifestAssemblyMvids);
             if (pComponentAssemblyMvids != NULL)
             {
@@ -782,20 +780,26 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                     IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
 
                     {
-                        // disabled for CoreLib bootstrap
+                        GCX_COOP();
+
+                        OBJECTREF alc = ObjectFromHandle((OBJECTHANDLE)binder->GetManagedAssemblyLoadContext());
+
+                        GCPROTECT_BEGIN(alc);
 
                         // TODO: GC mode
-                        //MethodDescCallSite methDeclareDependencyOnMvid(METHOD__BINDER_ASSEMBLYBINDER__DECLAREDEPENDENCYONMVID);
-                        //ARG_SLOT args[5] =
-                        //{
-                        //    ObjToArgSlot(binder),
-                        //    PtrToArgSlot(componentMvid),
-                        //    PtrToArgSlot(assemblyName),
-                        //    BoolToArgSlot(pNativeImage != NULL),
-                        //    PtrToArgSlot(pModule != NULL ? pModule->GetSimpleName() : pNativeImage->GetFileName())
-                        //};
+                        MethodDescCallSite methDeclareDependencyOnMvid(METHOD__ASSEMBLYLOADCONTEXT__DECLARE_DEPENDENCY_ON_MVID);
+                        ARG_SLOT args[5] =
+                        {
+                            ObjToArgSlot(alc),
+                            PtrToArgSlot(componentMvid),
+                            PtrToArgSlot(assemblyName),
+                            BoolToArgSlot(pNativeImage != NULL),
+                            PtrToArgSlot(pModule != NULL ? pModule->GetSimpleName() : pNativeImage->GetFileName())
+                        };
 
-                        //methDeclareDependencyOnMvid.Call(args);
+                        methDeclareDependencyOnMvid.Call(args);
+
+                        GCPROTECT_END();
                     }
 
                     manifestAssemblyCount++;

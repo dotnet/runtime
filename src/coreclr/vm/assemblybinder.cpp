@@ -13,11 +13,11 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
     STANDARD_VM_CONTRACT;
 
     BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-    AssemblyBinder* binder = /* componentModule->GetPEAssembly()->GetAssemblyBinder() */ NULL;
+    AssemblyBinder* binder = componentModule->GetPEAssembly()->GetAssemblyBinder();
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
-    // bool isNewNativeImage;
-    NativeImage* nativeImage = /*NativeImage::Open(componentModule, nativeImageName, binder, moduleLoaderAllocator, &isNewNativeImage)*/ NULL;
+    bool isNewNativeImage;
+    NativeImage* nativeImage = NativeImage::Open(componentModule, nativeImageName, binder, moduleLoaderAllocator, &isNewNativeImage);
 
     return nativeImage;
 }
@@ -149,11 +149,11 @@ void AssemblyBinder::AddLoadedAssembly(Assembly* loadedAssembly)
 
 void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName)
 {
-    /*if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
+    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
     {
         alcName.Set(W("Default"));
         return;
-    }*/
+    }
 
     OBJECTREF* alc = reinterpret_cast<OBJECTREF*>(managedALC);
 
@@ -193,11 +193,11 @@ void AssemblyBinder::GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ S
     _ASSERTE(spec != nullptr);
 
     AppDomain* domain = spec->GetAppDomain();
-    AssemblyBinder* binder = /* spec->GetBinder() */ NULL;
-    //if (binder == nullptr)
-    //    binder = spec->GetBinderFromParentAssembly(domain);
+    AssemblyBinder* binder = spec->GetBinder();
+    if (binder == nullptr)
+        binder = spec->GetBinderFromParentAssembly(domain);
 
-    //binder->GetNameForDiagnostics(alcName);
+    binder->GetNameForDiagnostics(alcName);
 }
 
 #endif  //DACCESS_COMPILE
