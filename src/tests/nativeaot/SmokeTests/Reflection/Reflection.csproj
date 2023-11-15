@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
+    <HybridGlobalization Condition="'$(TargetsAppleMobile)' == 'true'">true</HybridGlobalization>
     <!-- There's just too many of these warnings -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);IL3050</NoWarn>
