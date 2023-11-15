@@ -174,7 +174,7 @@ inline unsigned genCountBits(unsigned __int128 bits)
 {
     return BitOperations::PopCount(static_cast<uint64_t>(bits));
 }
-#endif
+#endif // HAS_PRIMITIVE_128
 
 /*****************************************************************************
  *
