@@ -12,8 +12,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime.CompilerServices;
 using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -741,14 +741,14 @@ namespace System
             return size;
         }
 
-        private static IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
+        private static unsafe IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
         {
-            return RuntimeImports.RhpRegisterFrozenSegment(sectionAddress, sectionSize);
+            return RuntimeImports.RhRegisterFrozenSegment((void*)sectionAddress, (nuint)sectionSize, (nuint)sectionSize, (nuint)sectionSize);
         }
 
         private static void _UnregisterFrozenSegment(IntPtr segmentHandle)
         {
-            RuntimeImports.RhpUnregisterFrozenSegment(segmentHandle);
+            RuntimeImports.RhUnregisterFrozenSegment(segmentHandle);
         }
 
         public static long GetAllocatedBytesForCurrentThread()

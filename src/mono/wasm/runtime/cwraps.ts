@@ -32,7 +32,7 @@ const legacy_interop_cwraps: SigLine[] = WasmEnableLegacyJsInterop ? [
     [true, "mono_wasm_array_length_ref", "number", ["number"]],
 ] : [];
 
-const diagnostics_cwraps: SigLine[] = MonoWasmThreads ? [
+const threading_cwraps: SigLine[] = MonoWasmThreads ? [
     // MONO.diagnostics
     [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
     [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
@@ -151,7 +151,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
     [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
 
-    ...diagnostics_cwraps,
+    ...threading_cwraps,
     ...legacy_interop_cwraps,
 ];
 
@@ -172,7 +172,7 @@ export interface t_LegacyCwraps {
     mono_wasm_array_length_ref(array: MonoObjectRef): number;
 }
 
-export interface t_DiagnosticsCwraps {
+export interface t_ThreadingCwraps {
     // MONO.diagnostics
     mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
     mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
@@ -303,7 +303,7 @@ const wrapped_c_functions: t_Cwraps = <any>{};
 
 export default wrapped_c_functions;
 export const legacy_c_functions: t_LegacyCwraps & t_Cwraps = wrapped_c_functions as any;
-export const diagnostics_c_functions: t_DiagnosticsCwraps & t_Cwraps = wrapped_c_functions as any;
+export const threads_c_functions: t_ThreadingCwraps & t_Cwraps = wrapped_c_functions as any;
 export const profiler_c_functions: t_ProfilerCwraps & t_Cwraps = wrapped_c_functions as any;
 
 // see src/mono/wasm/driver.c I52_ERROR_xxx

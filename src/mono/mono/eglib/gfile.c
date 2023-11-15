@@ -104,3 +104,28 @@ g_file_error_from_errno (gint err_no)
 		return G_FILE_ERROR_FAILED;
 	}
 }
+
+FILE *
+g_fopen (const char *path, const char *mode)
+{
+	FILE *fp;
+
+	if (!path)
+		return NULL;
+
+#ifndef HOST_WIN32
+	fp = fopen (path, mode);
+#else
+	gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
+	gunichar2 *wMode = g_utf8_to_utf16 (mode, -1, 0, 0, 0);
+
+	if (!wPath || !wMode)
+		return NULL;
+
+	fp = _wfopen ((wchar_t *) wPath, (wchar_t *) wMode);
+	g_free (wPath);
+	g_free (wMode);
+#endif
+
+	return fp;
+}

@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-using System.Xml.XPath;
 using System.Xml.Serialization;
-using System.Reflection;
+using System.Xml.XPath;
 
 namespace System.Xml.Schema
 {

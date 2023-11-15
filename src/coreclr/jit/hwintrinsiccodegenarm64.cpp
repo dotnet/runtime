@@ -830,7 +830,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_AdvSimd_StoreSelectedScalar:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
@@ -840,11 +839,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     GetEmitter()->emitIns_R_R_I(ins, emitSize, op2Reg, op1Reg, elementIndex, opt);
                 }
-                break;
             }
+            break;
 
+            case NI_AdvSimd_StoreVector64x2AndZip:
+            case NI_AdvSimd_StoreVector64x3AndZip:
+            case NI_AdvSimd_StoreVector64x4AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x2AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x3AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x4AndZip:
             case NI_AdvSimd_StoreVector64x2:
+            case NI_AdvSimd_StoreVector64x3:
+            case NI_AdvSimd_StoreVector64x4:
             case NI_AdvSimd_Arm64_StoreVector128x2:
+            case NI_AdvSimd_Arm64_StoreVector128x3:
+            case NI_AdvSimd_Arm64_StoreVector128x4:
             {
                 unsigned regCount = 0;
 
@@ -864,7 +873,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(argReg == argNode->GetRegNum());
                     argReg = REG_NEXT(argReg);
                 }
-                assert(regCount == 2);
+                assert((ins == INS_st1_2regs && regCount == 2) || (ins == INS_st2 && regCount == 2) ||
+                       (ins == INS_st1_3regs && regCount == 3) || (ins == INS_st3 && regCount == 3) ||
+                       (ins == INS_st1_4regs && regCount == 4) || (ins == INS_st4 && regCount == 4));
 #endif
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
