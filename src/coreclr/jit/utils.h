@@ -827,7 +827,7 @@ public:
 #endif
     }
 
-#if HAS_PRIMITIVE_128
+#if defined(TARGET_ARM64) && defined(HOST_UNIX)
     static void print128x(unsigned __int128 n)
     {
         printf("%lx : ", static_cast<uint64_t>(n));
@@ -850,7 +850,7 @@ public:
         uint32_t result = BitScanForward(static_cast<uint64_t>(value));
         return result;
     }
-#endif // HAS_PRIMITIVE_128
+#endif // TARGET_ARM64 && HOST_UNIX
 
     //------------------------------------------------------------------------
     // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
@@ -906,9 +906,9 @@ public:
 
     static uint32_t PopCount(uint64_t value);
 
-#if HAS_PRIMITIVE_128
+#if defined(TARGET_ARM64) && defined(HOST_UNIX)
     static uint32_t PopCount(unsigned __int128 value);
-#endif // HAS_PRIMITIVE_128
+#endif // TARGET_ARM64 && HOST_UNIX
 
     static uint32_t ReverseBits(uint32_t value);
 
