@@ -738,18 +738,19 @@ void CodeGen::genCodeForBBlist()
                 // Peephole optimization: If this block jumps to the next one, skip emitting the jump
                 // (unless we are jumping between hot/cold sections, or if we need the jump for EH reasons)
                 // (Skip this if optimizations are disabled, unless the block shouldn't have a jump in the first place)
-                const bool tryJumpOpt =
-                    compiler->opts.OptimizationEnabled() || ((block->bbFlags & BBF_NONE_QUIRK) != 0);
-                const bool skipJump = tryJumpOpt && block->JumpsToNext() &&
-                                      ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
-                                      !compiler->fgInDifferentRegions(block, block->GetJumpDest());
-                if (skipJump)
+                if (emitNop)
                 {
-                    if (emitNop)
+                    instGen(INS_nop);
+
+                    const bool tryJumpOpt =
+                        compiler->opts.OptimizationEnabled() || ((block->bbFlags & BBF_NONE_QUIRK) != 0);
+                    const bool skipJump = tryJumpOpt && block->JumpsToNext() &&
+                                          ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
+                                          !compiler->fgInDifferentRegions(block, block->GetJumpDest());
+                    if (skipJump)
                     {
-                        instGen(INS_nop);
+                        break;
                     }
-                    break;
                 }
 #ifdef TARGET_XARCH
                 // If a block was selected to place an alignment instruction because it ended
