@@ -53,7 +53,7 @@ namespace ILLink.RoslynAnalyzer
 
 		internal override string FeatureName => UnreferencedCode;
 
-		private protected override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresUnreferencedCodeAttribute;
+		internal override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresUnreferencedCodeAttribute;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Class;
 
@@ -66,9 +66,19 @@ namespace ILLink.RoslynAnalyzer
 		internal override bool IsAnalyzerEnabled (AnalyzerOptions options) =>
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer);
 
-		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol)
+		private protected override bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation)
 		{
-			return IsAnnotatedFeatureCheck (compilation, propertySymbol);
+			// "IsUnreferencedCodeSupported" is treated as a requires check for testing purposes only, and
+			// is not officially-supported product behavior.
+			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("ILLink.RoslynAnalyzer.TestFeatures");
+			if (runtimeFeaturesType == null)
+				return false;
+
+			var isDynamicCodeSupportedProperty = runtimeFeaturesType.GetMembers ("IsUnreferencedCodeSupported").OfType<IPropertySymbol> ().FirstOrDefault ();
+			if (isDynamicCodeSupportedProperty == null)
+				return false;
+
+			return SymbolEqualityComparer.Default.Equals (propertySymbol, isDynamicCodeSupportedProperty);
 		}
 
 		protected override bool CreateSpecialIncompatibleMembersDiagnostic (

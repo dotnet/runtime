@@ -60,7 +60,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			_featureChecksVisitor = new FeatureChecksVisitor (dataFlowAnalyzerContext);
 		}
 
-		public override FeatureChecksValue? GetConditionValue (IOperation branchValueOperation, StateValue state)
+		public override FeatureChecksValue GetConditionValue (IOperation branchValueOperation, StateValue state)
 		{
 			return _featureChecksVisitor.Visit (branchValueOperation, state);
 		}
@@ -421,6 +421,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					isReturnValue: true
 				);
 			}
+		}
+
+		public override void HandleReturnConditionValue (FeatureChecksValue returnConditionValue, IOperation operation)
+		{
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisReturnValuePattern (returnConditionValue, operation, OwningSymbol));
 		}
 
 		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, FeatureContext featureContext)

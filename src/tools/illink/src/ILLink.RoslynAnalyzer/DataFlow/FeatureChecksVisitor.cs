@@ -25,7 +25,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// (a set features that are checked to be enabled or disabled).
 	// The visitor takes a LocalDataFlowState as an argument, allowing for checks that
 	// depend on the current dataflow state.
-	public class FeatureChecksVisitor : OperationVisitor<StateValue, FeatureChecksValue?>
+	public class FeatureChecksVisitor : OperationVisitor<StateValue, FeatureChecksValue>
 	{
 		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
 
@@ -34,37 +34,41 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
-		public override FeatureChecksValue? VisitArgument (IArgumentOperation operation, StateValue state)
+		public override FeatureChecksValue DefaultVisit (IOperation operation, StateValue state)
+		{
+			// Visiting a non-understood pattern should return the empty set of features, which will
+			// prevent this check from acting as a guard for any feature.
+			return FeatureChecksValue.None;
+		}
+
+		public override FeatureChecksValue VisitArgument (IArgumentOperation operation, StateValue state)
 		{
 			return Visit (operation.Value, state);
 		}
 
-		public override FeatureChecksValue? VisitPropertyReference (IPropertyReferenceOperation operation, StateValue state)
+		public override FeatureChecksValue VisitPropertyReference (IPropertyReferenceOperation operation, StateValue state)
 		{
 			// A single property may serve as a feature check for multiple features.
-			FeatureChecksValue? featureChecks = null;
+			FeatureChecksValue featureChecks = FeatureChecksValue.None;
 			foreach (var analyzer in _dataFlowAnalyzerContext.EnabledRequiresAnalyzers) {
-				if (analyzer.IsRequiresCheck (_dataFlowAnalyzerContext.Compilation, operation.Property)) {
+				if (analyzer.IsRequiresGuard (operation.Property, _dataFlowAnalyzerContext)) {
 					var featureCheck = new FeatureChecksValue (analyzer.FeatureName);
 					featureChecks = featureChecks == null
 						? featureCheck
-						: featureChecks.Value.Union (featureCheck);
+						: featureChecks.Union (featureCheck);
 				}
 			}
 
 			return featureChecks;
 		}
 
-		public override FeatureChecksValue? VisitUnaryOperator (IUnaryOperation operation, StateValue state)
+		public override FeatureChecksValue VisitUnaryOperator (IUnaryOperation operation, StateValue state)
 		{
 			if (operation.OperatorKind is not UnaryOperatorKind.Not)
-				return null;
+				return FeatureChecksValue.None;
 
-			FeatureChecksValue? context = Visit (operation.Operand, state);
-			if (context == null)
-				return null;
-
-			return context.Value.Negate ();
+			FeatureChecksValue context = Visit (operation.Operand, state);
+			return context.Negate ();
 		}
 
 		public bool? GetLiteralBool (IOperation operation)
@@ -83,7 +87,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return value;
 		}
 
-		public override FeatureChecksValue? VisitBinaryOperator (IBinaryOperation operation, StateValue state)
+		public override FeatureChecksValue VisitBinaryOperator (IBinaryOperation operation, StateValue state)
 		{
 			bool expectEqual;
 			switch (operation.OperatorKind) {
@@ -94,36 +98,32 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					expectEqual = false;
 					break;
 				default:
-					return null;
+					return FeatureChecksValue.None;
 			}
 
 			if (GetLiteralBool (operation.LeftOperand) is bool leftBool) {
-				if (Visit (operation.RightOperand, state) is not FeatureChecksValue rightValue)
-					return null;
+				FeatureChecksValue rightValue = Visit (operation.RightOperand, state);
 				return leftBool == expectEqual
 					? rightValue
 					: rightValue.Negate ();
 			}
 
 			if (GetLiteralBool (operation.RightOperand) is bool rightBool) {
-				if (Visit (operation.LeftOperand, state) is not FeatureChecksValue leftValue)
-					return null;
+				FeatureChecksValue leftValue = Visit (operation.LeftOperand, state);
 				return rightBool == expectEqual
 					? leftValue
 					: leftValue.Negate ();
 			}
 
-			return null;
+			return FeatureChecksValue.None;
 		}
 
-		public override FeatureChecksValue? VisitIsPattern (IIsPatternOperation operation, StateValue state)
+		public override FeatureChecksValue VisitIsPattern (IIsPatternOperation operation, StateValue state)
 		{
 			if (GetExpectedValueFromPattern (operation.Pattern) is not bool patternValue)
-				return null;
+				return FeatureChecksValue.None;
 
-			if (Visit (operation.Value, state) is not FeatureChecksValue value)
-				return null;
-
+			FeatureChecksValue value = Visit (operation.Value, state);
 			return patternValue
 				? value
 				: value.Negate ();

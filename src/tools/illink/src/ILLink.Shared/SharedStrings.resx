@@ -1197,4 +1197,11 @@
   <data name="RedundantSuppressionTitle" xml:space="preserve">
     <value>Unused 'UnconditionalSuppressMessageAttribute' found. Consider removing the unused warning suppression.</value>
   </data>
+
+  <data name="ReturnValueDoesNotMatchFeatureGuardsMessage" xml:space="preserve">
+    <value>Return value does not match FeatureGuardAttribute '{1}'.</value>
+  </data>
+  <data name="ReturnValueDoesNotMatchFeatureGuardsTitle" xml:space="preserve">
+    <value>Return value does not match feature guards of the property.</value>
+  </data>
 </root>

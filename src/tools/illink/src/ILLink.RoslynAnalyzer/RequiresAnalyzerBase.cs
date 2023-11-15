@@ -21,7 +21,7 @@ namespace ILLink.RoslynAnalyzer
 
 		internal abstract string FeatureName { get; }
 
-		private protected abstract string RequiresAttributeFullyQualifiedName { get; }
+		internal abstract string RequiresAttributeFullyQualifiedName { get; }
 
 		private protected abstract DiagnosticTargets AnalyzerDiagnosticTargets { get; }
 
@@ -301,46 +301,12 @@ namespace ILLink.RoslynAnalyzer
 		// - false return value indicating that a feature is supported
 		// - feature settings supplied by the project
 		// - custom feature checks defined in library code
-		internal virtual bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) => false;
+		private protected virtual bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation) => false;
 
-		internal bool IsAnnotatedFeatureCheck (Compilation compilation, IPropertySymbol propertySymbol)
+		internal bool IsRequiresGuard (IPropertySymbol propertySymbol, DataFlowAnalyzerContext dataFlowAnalyzerContext)
 		{
-			// Get attributes on the property symbol
-			var attributes = propertySymbol.GetAttributes ();
-			if (attributes.Length == 0)
-				return false;
-
-			// Get "System.Diagnostics.CodeAnalysis" in the compilation? Or just use string?
-			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureGuardAttribute`1");
-			if (featureCheckType == null)
-				return false;
-
-			var requiresAttributeType = compilation.GetTypeByMetadataName (RequiresAttributeFullyQualifiedName);
-			if (requiresAttributeType == null)
-				return false;
-
-			foreach (var attributeData in attributes) {
-				if (IsRequiresFeatureCheck (attributeData))
-					return true;
-			}
-
-			return false;
-
-			bool IsRequiresFeatureCheck (AttributeData attributeData) {
-				var attributeType = attributeData.AttributeClass;
-				if (attributeType == null)
-					return false;
-
-				// Check if attribute type is the same.
-				if (!SymbolEqualityComparer.Default.Equals (attributeType.OriginalDefinition, featureCheckType))
-					return false;
-
-				// Check if the generic argument to the attribute is the Requires attribute.
-				var genericType = attributeType.TypeArguments[0];
-				if (!SymbolEqualityComparer.Default.Equals (genericType, requiresAttributeType))
-					return false;
-				return true;
-			}
+			FeatureContext featureGuards = propertySymbol.GetFeatureGuards (dataFlowAnalyzerContext.Compilation, dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+			return featureGuards.IsEnabled (FeatureName) || IsRequiresCheck (propertySymbol, dataFlowAnalyzerContext.Compilation);
 		}
 
 		internal bool CheckAndCreateRequiresDiagnostic (

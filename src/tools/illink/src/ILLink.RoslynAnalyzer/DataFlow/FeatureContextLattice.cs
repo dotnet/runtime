@@ -15,7 +15,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	{
 		// The set of features known to be enabled in this context.
 		// Null represents "all possible features".
-		private ValueSet<string>? FeatureSet;
+		// NOTE: this means default(FeatureContext) is not the same as FeatureContext.None.
+		public ValueSet<string>? FeatureSet;
 
 		public static readonly FeatureContext All = new FeatureContext (null);
 

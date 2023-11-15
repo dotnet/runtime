@@ -17,8 +17,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// indicates that a feature/capability is available.
 	public record struct FeatureChecksValue : IEquatable<FeatureChecksValue>, INegate<FeatureChecksValue>, IDeepCopyValue<FeatureChecksValue>
 	{
+		// "Top" of a FeatureChecksValue should be "all features enabled and all features disabled".
+		// This is the identity of the union operator. Therefore we track FeatureContext which can represent this.
 		public FeatureContext EnabledFeatures;
 		public FeatureContext DisabledFeatures;
+
+		public static FeatureChecksValue None = new FeatureChecksValue (FeatureContext.None, FeatureContext.None);
 
 		public FeatureChecksValue (string enabledFeature)
 		{
@@ -47,6 +51,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public FeatureChecksValue Intersection (FeatureChecksValue other)
 		{
+			// Intersection with None should naturally give back None.
 			return new FeatureChecksValue (
 				EnabledFeatures.Intersection (other.EnabledFeatures),
 				DisabledFeatures.Intersection (other.DisabledFeatures));

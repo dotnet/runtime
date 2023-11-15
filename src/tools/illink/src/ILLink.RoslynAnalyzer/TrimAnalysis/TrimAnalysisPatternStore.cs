@@ -115,6 +115,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				foreach (var diagnostic in reflectionAccessPattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
+
+			foreach (var returnValuePattern in ReturnValuePatterns.Values) {
+				foreach (var diagnostic in returnValuePattern.CollectDiagnostics (context))
+					yield return diagnostic;
+			}
 		}
 	}
 }

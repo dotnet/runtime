@@ -62,6 +62,9 @@ namespace ILLink.Shared.TrimAnalysis
 			return damt;
 		}
 
+		// TODO: use a similar pattern for getting feature guard annotations on a getter, where the annotation
+		// is actually directly on the property symbol?
+
 		public static DynamicallyAccessedMemberTypes GetMethodReturnValueAnnotation (IMethodSymbol method)
 		{
 			var returnDamt = method.GetDynamicallyAccessedMemberTypesOnReturnType ();

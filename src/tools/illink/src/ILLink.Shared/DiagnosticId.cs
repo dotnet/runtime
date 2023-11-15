@@ -202,6 +202,9 @@ namespace ILLink.Shared
 		GenericRecursionCycle = 3054,
 		CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
 		RequiresDynamicCodeOnStaticConstructor = 3056,
+
+		// Feature guard diagnostic ids.
+		ReturnValueDoesNotMatchFeatureGuards = 4000
 	}
 
 	public static class DiagnosticIdExtensions

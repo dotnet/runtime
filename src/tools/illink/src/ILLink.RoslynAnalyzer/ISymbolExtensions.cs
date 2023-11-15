@@ -1,9 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared.DataFlow;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -34,6 +39,14 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
+		internal static IEnumerable<AttributeData> GetAttributes (this ISymbol member, string attributeName)
+		{
+			foreach (var attr in member.GetAttributes ()) {
+				if (attr.AttributeClass is { } attrClass && attrClass.HasName (attributeName))
+					yield return attr;
+			}
+		}
+
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes (this ISymbol symbol)
 		{
 			if (!TryGetAttribute (symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))
@@ -56,6 +69,61 @@ namespace ILLink.RoslynAnalyzer
 				return DynamicallyAccessedMemberTypes.None;
 
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
+		}
+
+		internal static FeatureContext GetFeatureGuards (
+			this IPropertySymbol propertySymbol,
+			Compilation compilation, // TODO: can remove this?
+			IEnumerable<RequiresAnalyzerBase> enabledRequiresAnalyzers)
+		{
+			// TODO: should this share the attribute decoding logic?
+			// Should it get by name, or by symbol comparison with known attribute type?
+			// foreach (var attr in property.GetAttributes ()) {
+			// 	if (attr.AttributeClass is { } attrClass && attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute)) {
+			// 		var feature = (string) attr.ConstructorArguments[0].Value!;
+			// 		return new FeatureContextValue (feature);
+			// 	}
+			// }
+
+			// Get attributes on the property symbol
+
+			// Get "System.Diagnostics.CodeAnalysis" in the compilation? Or just use string?
+			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureGuardAttribute`1");
+			if (featureCheckType == null)
+				return new FeatureContext (ValueSet<string>.Empty);
+
+			ImmutableArray<string>.Builder featureSet = ImmutableArray.CreateBuilder<string> ();
+			foreach (var attributeData in propertySymbol.GetAttributes ()) {
+				if (!IsRequiresFeatureCheck (attributeData, out string? featureName))
+					continue; // TODO: warn?
+				featureSet.Add (featureName);
+			}
+			return new FeatureContext (new ValueSet<string> (featureSet));
+
+			bool IsRequiresFeatureCheck (AttributeData attributeData, [NotNullWhen (true)] out string? featureName) {
+				featureName = null;
+				var attributeType = attributeData.AttributeClass;
+				if (attributeType == null)
+					return false;
+
+				// Check if attribute type is the same.
+				if (!SymbolEqualityComparer.Default.Equals (attributeType.OriginalDefinition, featureCheckType))
+					return false;
+
+				// Check if the generic argument to the attribute is a Requires attribute that has an enabled analyzer.
+				var genericType = attributeType.TypeArguments[0];
+				foreach (var analyzer in enabledRequiresAnalyzers) {
+					var requiresAttributeType = compilation.GetTypeByMetadataName (analyzer.RequiresAttributeFullyQualifiedName);
+					if (requiresAttributeType == null)
+						continue;
+
+					if (SymbolEqualityComparer.Default.Equals (genericType, requiresAttributeType)) {
+						featureName = analyzer.FeatureName;
+						return true;
+					}
+				}
+				return false;
+			}
 		}
 
 		internal static bool TryGetReturnAttribute (this IMethodSymbol member, string attributeName, [NotNullWhen (returnValue: true)] out AttributeData? attribute)

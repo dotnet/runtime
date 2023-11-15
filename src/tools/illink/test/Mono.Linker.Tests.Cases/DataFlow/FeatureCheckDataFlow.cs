@@ -1119,10 +1119,10 @@ namespace ILLink.RoslynAnalyzer
 		public static bool IsAssemblyFilesSupported => true;
 
 		[FeatureGuard<RequiresDynamicCodeAttribute>]
-		public static bool IsDynamicCodeSupported => true;
+		public static bool IsDynamicCodeSupported => RuntimeFeature.IsDynamicCodeSupported;
 
 		[FeatureGuard<RequiresDynamicCodeAttribute>]
 		[FeatureGuard<RequiresUnreferencedCodeAttribute>]
-		public static bool AreDynamicAndUnreferencedCodeSupported => true;
+		public static bool AreDynamicAndUnreferencedCodeSupported => RuntimeFeature.IsDynamicCodeSupported;
 	}
 }

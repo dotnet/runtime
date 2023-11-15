@@ -25,9 +25,9 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresDynamicCodeAttribute;
 
-		internal override string FeatureName => "DynamicCode";
+		internal override string FeatureName => RequiresDynamicCodeAttribute;
 
-		private protected override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresDynamicCodeAttribute;
+		internal override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresDynamicCodeAttribute;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Class;
 
@@ -40,8 +40,16 @@ namespace ILLink.RoslynAnalyzer
 		internal override bool IsAnalyzerEnabled (AnalyzerOptions options) =>
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer);
 
-		internal override bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) {
-			return IsAnnotatedFeatureCheck (compilation, propertySymbol);
+		private protected override bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation) {
+			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("System.Runtime.CompilerServices.RuntimeFeature");
+			if (runtimeFeaturesType == null)
+				return false;
+
+			var isDynamicCodeSupportedProperty = runtimeFeaturesType.GetMembers ("IsDynamicCodeSupported").OfType<IPropertySymbol> ().FirstOrDefault ();
+			if (isDynamicCodeSupportedProperty == null)
+				return false;
+
+			return SymbolEqualityComparer.Default.Equals (propertySymbol, isDynamicCodeSupportedProperty);
 		}
 
 		protected override bool VerifyAttributeArguments (AttributeData attribute) =>
