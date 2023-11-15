@@ -264,7 +264,7 @@ namespace System
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
         {
             fixed (byte* p = buffer)
             {
@@ -272,8 +272,6 @@ namespace System
                 int count = buffer.Length;
                 while (count > 0)
                 {
-                    int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
-
                     int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
                     if (bytesWritten < 0)
                     {
@@ -299,13 +297,6 @@ namespace System
                         {
                             // Something else... fail.
                             throw Interop.GetExceptionForIoErrno(errorInfo);
-                        }
-                    }
-                    else
-                    {
-                        if (mayChangeCursorPosition)
-                        {
-                            UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
                         }
                     }
 
