@@ -738,8 +738,10 @@ void CodeGen::genCodeForBBlist()
                 // Peephole optimization: If this block jumps to the next one, skip emitting the jump
                 // (unless we are jumping between hot/cold sections, or if we need the jump for EH reasons)
                 // (Skip this if optimizations are disabled, unless the block shouldn't have a jump in the first place)
-                const bool tryJumpOpt = compiler->opts.OptimizationEnabled() || (block->bbFlags & BBF_NONE_QUIRK);
-                const bool skipJump   = tryJumpOpt && block->JumpsToNext() && !(block->bbFlags & BBF_KEEP_BBJ_ALWAYS) &&
+                const bool tryJumpOpt =
+                    compiler->opts.OptimizationEnabled() || ((block->bbFlags & BBF_NONE_QUIRK) != 0);
+                const bool skipJump = tryJumpOpt && block->JumpsToNext() &&
+                                      ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
                                       !compiler->fgInDifferentRegions(block, block->GetJumpDest());
                 if (skipJump)
                 {

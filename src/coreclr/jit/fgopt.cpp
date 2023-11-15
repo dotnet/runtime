@@ -1950,7 +1950,7 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     assert(block->NextIs(bNext));
 
-    if (!block->KindIs(BBJ_ALWAYS) || !block->HasJumpTo(bNext) || (block->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    if (!block->KindIs(BBJ_ALWAYS) || !block->HasJumpTo(bNext) || ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0))
     {
         return false;
     }

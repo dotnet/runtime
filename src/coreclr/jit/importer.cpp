@@ -7578,7 +7578,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     else
                     {
                         assert(block->KindIs(BBJ_ALWAYS));
-                        assert(block->bbFlags & BBF_NONE_QUIRK);
+                        assert((block->bbFlags & BBF_NONE_QUIRK) != 0);
                     }
 
                     if (op1->gtFlags & GTF_GLOB_EFFECT)

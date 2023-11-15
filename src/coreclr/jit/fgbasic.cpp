@@ -5561,7 +5561,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     break;
             }
         }
-        else if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) && bSrc->HasJump() &&
+        else if (bSrc->KindIs(BBJ_ALWAYS) && ((bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) && bSrc->HasJump() &&
                  bSrc->JumpsToNext())
         {
             bSrc->bbFlags |= BBF_NONE_QUIRK;
@@ -6603,7 +6603,8 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         // Look for an insert location:
         // 1. We want blocks that don't end with a fall through,
         // 2. Also, when blk equals nearBlk we may want to insert here.
-        const bool blkJumpsToNext = blk->KindIs(BBJ_ALWAYS) && (blk->bbFlags & BBF_NONE_QUIRK) && blk->JumpsToNext();
+        const bool blkJumpsToNext =
+            blk->KindIs(BBJ_ALWAYS) && ((blk->bbFlags & BBF_NONE_QUIRK) != 0) && blk->JumpsToNext();
         if ((!blk->bbFallsThrough() && !blkJumpsToNext) || (blk == nearBlk))
         {
             bool updateBestBlk = true; // We will probably update the bestBlk
