@@ -101,6 +101,8 @@ namespace System
             }
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures that if we have a TypeHandle of a Rank-1 MdArray, we also generated the SzArray.")]
         private static unsafe Array InternalCreateFromArrayType(RuntimeType arrayType, int rank, int* pLengths, int* pLowerBounds)
         {
             Debug.Assert(arrayType.IsArray);
@@ -129,7 +131,7 @@ namespace System
             }
             else
             {
-                // Create a local copy of the lengths that cannot be motified by the caller
+                // Create a local copy of the lengths that cannot be modified by the caller
                 int* pImmutableLengths = stackalloc int[rank];
                 for (int i = 0; i < rank; i++)
                     pImmutableLengths[i] = pLengths[i];

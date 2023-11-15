@@ -768,52 +768,50 @@ void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT3
 
     if (rank < 0)
     {
-        _ASSERTE((INT32)typeHnd.GetRank() == -rank);
+        rank = -rank;
+
+        _ASSERTE(typeHnd.GetRank() == rank);
         _ASSERTE(typeHnd.IsArray());
 
         CheckElementType(typeHnd.GetArrayElementTypeHandle());
 
-        if (!typeHnd.AsMethodTable()->IsMultiDimArray() && (pLowerBounds == NULL || pLowerBounds[0] == 0))
+        if (!typeHnd.AsMethodTable()->IsMultiDimArray())
         {
+            _ASSERTE(pLowerBounds == NULL || pLowerBounds[0] == 0);
+
             GCX_COOP();
             retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
             goto Done;
         }
-
-        rank = -rank;
     }
     else
     {
         CheckElementType(typeHnd);
 
-        CorElementType CorType = typeHnd.GetSignatureCorElementType();
-
-        CorElementType kind = ELEMENT_TYPE_ARRAY;
-
         // Is it ELEMENT_TYPE_SZARRAY array?
         if (rank == 1 && (pLowerBounds == NULL || pLowerBounds[0] == 0))
         {
+            CorElementType corType = typeHnd.GetSignatureCorElementType();
+
             // Shortcut for common cases
-            if (CorTypeInfo::IsPrimitiveType(CorType))
+            if (CorTypeInfo::IsPrimitiveType(corType))
             {
                 GCX_COOP();
-                retArray.Set(AllocatePrimitiveArray(CorType,pLengths[0]));
-                goto Done;
-            }
-            else
-            if (CorTypeInfo::IsObjRef(CorType))
-            {
-                GCX_COOP();
-                retArray.Set(AllocateObjectArray(pLengths[0],typeHnd));
+                retArray.Set(AllocatePrimitiveArray(corType, pLengths[0]));
                 goto Done;
             }
 
-            kind = ELEMENT_TYPE_SZARRAY;
-            pLowerBounds = NULL;
+            typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd);
+
+            {
+                GCX_COOP();
+                retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
+                goto Done;
+            }
         }
 
         // Find the Array class...
-        typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd, kind, rank);
+        typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd, ELEMENT_TYPE_ARRAY, rank);
     }
 
     {
