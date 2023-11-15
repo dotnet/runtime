@@ -31,8 +31,6 @@ namespace System.IO
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
 
-        private static SafeFileHandle StdInHandle => Interop.Sys.FileDescriptors.STDIN_FILENO;
-
         internal StdInReader(Encoding encoding)
         {
             Debug.Assert(!Console.IsInputRedirected); // stdin is a terminal.
@@ -215,9 +213,9 @@ namespace System.IO
                                 s_clearToEol ??= ConsolePal.TerminalFormatStringsInstance.ClrEol ?? string.Empty;
 
                                 // Move to end of previous line
-                                ConsolePal.SetCursorPosition(StdInHandle, ConsolePal.WindowWidth - 1, top - 1);
+                                ConsolePal.SetTerminalCursorPosition(ConsolePal.WindowWidth - 1, top - 1);
                                 // Clear from cursor to end of the line
-                                ConsolePal.WriteTerminalAnsiString(StdInHandle, s_clearToEol, mayChangeCursorPosition: false);
+                                ConsolePal.WriteTerminalAnsiString(s_clearToEol, mayChangeCursorPosition: false);
                             }
                             else
                             {
@@ -227,7 +225,7 @@ namespace System.IO
                                     s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
                                 }
 
-                                ConsolePal.WriteTerminalAnsiString(StdInHandle, s_moveLeftString);
+                                ConsolePal.WriteTerminalAnsiString(s_moveLeftString);
                             }
                         }
                     }
@@ -247,7 +245,7 @@ namespace System.IO
                         _readLineSB.Clear();
                         if (freshKeys)
                         {
-                            ConsolePal.WriteTerminalAnsiString(StdInHandle, ConsolePal.TerminalFormatStringsInstance.Clear);
+                            ConsolePal.WriteTerminalAnsiString(ConsolePal.TerminalFormatStringsInstance.Clear);
                         }
                     }
                     else if (keyInfo.KeyChar != '\0')
@@ -386,10 +384,7 @@ namespace System.IO
                 return;
             }
 
-            lock (Console.Out) // synchronize with other writers
-            {
-                ConsolePal.Write(StdInHandle, bytes.Slice(0, bytesWritten));
-            }
+            ConsolePal.WriteToTerminal(bytes.Slice(0, bytesWritten));
         }
     }
 }

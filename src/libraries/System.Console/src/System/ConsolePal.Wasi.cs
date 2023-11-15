@@ -304,7 +304,7 @@ namespace System
             }
         }
 
-        internal static void WriteTerminalAnsiString(SafeFileHandle terminalHandle, string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteTerminalAnsiString(string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -323,7 +323,7 @@ namespace System
 
             lock (Console.Out) // synchronize with other writers
             {
-                Write(terminalHandle, data, mayChangeCursorPosition);
+                Write(data, mayChangeCursorPosition);
             }
         }
     }

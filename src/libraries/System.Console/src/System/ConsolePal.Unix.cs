@@ -37,6 +37,7 @@ namespace System
         private static int s_windowWidth;   // Cached WindowWidth, -1 when invalid.
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
+        private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
 
         /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
         public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
@@ -199,7 +200,7 @@ namespace System
                 if (!string.IsNullOrEmpty(titleFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
-                    WriteStdoutAnsiString(ansiStr, mayChangeCursorPosition: false);
+                    WriteTerminalAnsiString(ansiStr, mayChangeCursorPosition: false);
                 }
             }
         }
@@ -208,7 +209,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStringsInstance.Bell, mayChangeCursorPosition: false);
+                WriteTerminalAnsiString(TerminalFormatStringsInstance.Bell, mayChangeCursorPosition: false);
             }
         }
 
@@ -216,7 +217,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
+                WriteTerminalAnsiString(TerminalFormatStringsInstance.Clear);
             }
         }
 
@@ -225,10 +226,10 @@ namespace System
             if (Console.IsOutputRedirected)
                 return;
 
-            SetCursorPosition(Interop.Sys.FileDescriptors.STDOUT_FILENO, left, top);
+            SetTerminalCursorPosition(left, top);
         }
 
-        internal static void SetCursorPosition(SafeFileHandle terminalHandle, int left, int top)
+        public static void SetTerminalCursorPosition(int left, int top)
         {
             lock (Console.Out)
             {
@@ -243,7 +244,7 @@ namespace System
                 if (!string.IsNullOrEmpty(cursorAddressFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
-                    WriteTerminalAnsiString(terminalHandle, ansiStr);
+                    WriteTerminalAnsiString(ansiStr);
                 }
 
                 SetCachedCursorPosition(left, top);
@@ -354,19 +355,18 @@ namespace System
                 // Invalidate before reading cached values.
                 CheckTerminalSettingsInvalidated();
 
-                if (s_windowWidth == -1)
+                Interop.Sys.WinSize winsize;
+                if (s_windowWidth == -1 &&
+                    s_terminalHandle != null &&
+                    Interop.Sys.GetWindowSize(s_terminalHandle, out winsize) == 0)
                 {
-                    Interop.Sys.WinSize winsize;
-                    if (Interop.Sys.GetWindowSize(out winsize) == 0)
-                    {
-                        s_windowWidth = winsize.Col;
-                        s_windowHeight = winsize.Row;
-                    }
-                    else
-                    {
-                        s_windowWidth = TerminalFormatStringsInstance.Columns;
-                        s_windowHeight = TerminalFormatStringsInstance.Lines;
-                    }
+                    s_windowWidth = winsize.Col;
+                    s_windowHeight = winsize.Row;
+                }
+                else
+                {
+                    s_windowWidth = TerminalFormatStringsInstance.Columns;
+                    s_windowHeight = TerminalFormatStringsInstance.Lines;
                 }
                 width = s_windowWidth;
                 height = s_windowHeight;
@@ -402,7 +402,7 @@ namespace System
             {
                 if (!Console.IsOutputRedirected)
                 {
-                    WriteStdoutAnsiString(value ?
+                    WriteTerminalAnsiString(value ?
                         TerminalFormatStringsInstance.CursorVisible :
                         TerminalFormatStringsInstance.CursorInvisible);
                 }
@@ -411,6 +411,9 @@ namespace System
 
         public static (int Left, int Top) GetCursorPosition()
         {
+            if (Console.IsOutputRedirected)
+                return (0, 0);
+
             TryGetCursorPosition(out int left, out int top);
             return (left, top);
         }
@@ -436,13 +439,6 @@ namespace System
         internal static bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
         {
             left = top = 0;
-
-            // Getting the cursor position involves both writing out a request string and
-            // parsing a response string from the terminal.  So if anything is redirected, bail.
-            if (Console.IsInputRedirected || Console.IsOutputRedirected)
-            {
-                return false;
-            }
 
             int cursorVersion;
             lock (Console.Out)
@@ -484,7 +480,7 @@ namespace System
                 {
                     // Write out the cursor position report request.
                     Debug.Assert(!string.IsNullOrEmpty(TerminalFormatStrings.CursorPositionReport));
-                    WriteStdoutAnsiString(TerminalFormatStrings.CursorPositionReport, mayChangeCursorPosition: false);
+                    WriteTerminalAnsiString(TerminalFormatStrings.CursorPositionReport, mayChangeCursorPosition: false);
 
                     // Read the cursor position report (CPR), of the form \ESC[row;colR. This is not
                     // as easy as it sounds.  Prior to the CPR having been supplied to stdin, other
@@ -801,7 +797,7 @@ namespace System
             string evaluatedString = s_fgbgAndColorStrings[fgbgIndex, ccValue]; // benign race
             if (evaluatedString != null)
             {
-                WriteStdoutAnsiString(evaluatedString);
+                WriteTerminalAnsiString(evaluatedString);
                 return;
             }
 
@@ -841,7 +837,7 @@ namespace System
                     int ansiCode = consoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
 
-                    WriteStdoutAnsiString(evaluatedString);
+                    WriteTerminalAnsiString(evaluatedString);
 
                     s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
                 }
@@ -853,7 +849,7 @@ namespace System
         {
             if (ConsoleUtils.EmitAnsiColorCodes)
             {
-                WriteStdoutAnsiString(TerminalFormatStringsInstance.Reset);
+                WriteTerminalAnsiString(TerminalFormatStringsInstance.Reset);
             }
         }
 
@@ -896,16 +892,17 @@ namespace System
                         throw new Win32Exception();
                     }
 
+                    s_terminalHandle = !Console.IsOutputRedirected ? Interop.Sys.FileDescriptors.STDOUT_FILENO :
+                                       !Console.IsInputRedirected  ? Interop.Sys.FileDescriptors.STDIN_FILENO :
+                                       null;
+
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
                     // the native lib later to handle signals that require re-entering the mode.
-                    if (!Console.IsOutputRedirected)
+                    if (s_terminalHandle != null &&
+                        TerminalFormatStringsInstance.KeypadXmit is string keypadXmit)
                     {
-                        string? keypadXmit = TerminalFormatStringsInstance.KeypadXmit;
-                        if (keypadXmit != null)
-                        {
-                            Interop.Sys.SetKeypadXmit(keypadXmit);
-                        }
+                        Interop.Sys.SetKeypadXmit(s_terminalHandle, keypadXmit);
                     }
 
                     if (!Console.IsInputRedirected)
@@ -951,17 +948,29 @@ namespace System
             }
         }
 
-        /// <summary>Writes data from the buffer into the file descriptor.</summary>
-        /// <param name="fd">The file descriptor.</param>
-        /// <param name="buffer">The buffer from which to write data.</param>
-        /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        internal static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
-            // Console initialization might emit data to stdout.
-            // In order to avoid splitting user data we need to
-            // complete it before any writes are performed.
+            Debug.Assert(s_terminalHandle is not null);
+
+            lock (Console.Out) // synchronize with other writers
+            {
+                Write(s_terminalHandle, buffer, mayChangeCursorPosition);
+            }
+        }
+
+        internal static unsafe void WriteFromConsoleStream(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
+        {
             EnsureConsoleInitialized();
 
+            lock (Console.Out) // synchronize with other writers
+            {
+                Write(fd, buffer);
+            }
+        }
+
+        /// <summary>Writes data from the buffer into the file descriptor.</summary>
+        private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        {
             fixed (byte* p = buffer)
             {
                 byte* bufPtr = p;
@@ -1094,7 +1103,7 @@ namespace System
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
 
-        internal static void WriteTerminalAnsiString(SafeFileHandle terminalHandle, string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteTerminalAnsiString(string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -1111,16 +1120,8 @@ namespace System
                 data = Encoding.UTF8.GetBytes(value);
             }
 
-            lock (Console.Out) // synchronize with other writers
-            {
-                Write(terminalHandle, data, mayChangeCursorPosition);
-            }
+            EnsureConsoleInitialized();
+            WriteToTerminal(data, mayChangeCursorPosition);
         }
-
-        /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
-        /// <param name="value">The string to write.</param>
-        /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-       private static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
-            => WriteTerminalAnsiString(Interop.Sys.FileDescriptors.STDOUT_FILENO, value, mayChangeCursorPosition);
     }
 }
