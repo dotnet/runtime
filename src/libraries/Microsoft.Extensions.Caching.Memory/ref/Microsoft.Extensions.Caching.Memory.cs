@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Caching.Distributed
 }
 namespace Microsoft.Extensions.Caching.Memory
 {
-    public partial class MemoryCache : Microsoft.Extensions.Caching.Memory.IMemoryCache, System.IDisposable
+    public partial class MemoryCache : Microsoft.Extensions.Caching.Memory.IMemoryCache, System.IDisposable, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<object, Microsoft.Extensions.Caching.Memory.ICacheEntry>>
     {
         public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor) { }
         public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory) { }
@@ -34,6 +34,8 @@ namespace Microsoft.Extensions.Caching.Memory
         protected virtual void Dispose(bool disposing) { }
         ~MemoryCache() { }
         public Microsoft.Extensions.Caching.Memory.MemoryCacheStatistics? GetCurrentStatistics() { throw null; }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<object, Microsoft.Extensions.Caching.Memory.ICacheEntry>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public void Remove(object key) { }
         public bool TryGetValue(object key, out object? result) { throw null; }
     }
