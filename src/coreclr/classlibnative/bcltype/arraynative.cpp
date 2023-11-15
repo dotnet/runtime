@@ -765,7 +765,7 @@ void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT3
     {
         rank = -rank;
 
-        _ASSERTE(typeHnd.GetRank() == rank);
+        _ASSERTE((INT32)typeHnd.GetRank() == rank);
         _ASSERTE(typeHnd.IsArray());
 
         CheckElementType(typeHnd.GetArrayElementTypeHandle());
