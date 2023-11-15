@@ -474,6 +474,62 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't currently support message mode
+        public void Windows_SetReadModeTo__PipeTransmissionModeMessage()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                // Throws regardless of connection status for the pipe that is set to PipeDirection.In. This is because
+                // as per MSDN, "This mode gives the server the equivalent of GENERIC_READ access to the pipe", which
+                // isn't sufficient to call SetNamedPipeHandleState, as we need FILE_WRITE_ATTRIBUTES as well, or
+                // GENERIC_WRITE instead which includes this permission. Since the readmode can be set for the server
+                // side when creating the named pipe, this issue can be avoided by specifying the desired mode from the
+                // start. In the theoretical case of wanting to create a pipe in message mode, then downgrade the
+                // readmode to byte mode on the server however, this isn't currently possible in the Win32 API.
+                Assert.Throws<UnauthorizedAccessException>(() => server.ReadMode = PipeTransmissionMode.Byte);
+                Assert.Throws<UnauthorizedAccessException>(() => server.ReadMode = PipeTransmissionMode.Message);
+
+                // Can select either message or byte mode on client end of the pipe
+                client.ReadMode = PipeTransmissionMode.Byte;
+                client.ReadMode = PipeTransmissionMode.Message;
+            }
+
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                // Can select either message or byte mode on either end of the pipe
+                server.ReadMode = PipeTransmissionMode.Byte;
+                client.ReadMode = PipeTransmissionMode.Byte;
+                server.ReadMode = PipeTransmissionMode.Message;
+                client.ReadMode = PipeTransmissionMode.Message;
+            }
+
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                // Can select either message or byte mode on either end of the pipe
+                server.ReadMode = PipeTransmissionMode.Byte;
+                client.ReadMode = PipeTransmissionMode.Byte;
+                server.ReadMode = PipeTransmissionMode.Message;
+                client.ReadMode = PipeTransmissionMode.Message;
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't currently support message mode
         public void Windows_SetReadModeTo__PipeTransmissionModeByte()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -484,9 +540,20 @@ namespace System.IO.Pipes.Tests
                 server.WaitForConnection();
                 clientConnect.Wait();
 
-                // Throws regardless of connection status for the pipe that is set to PipeDirection.In
-                Assert.Throws<UnauthorizedAccessException>(() => server.ReadMode = PipeTransmissionMode.Byte);
                 client.ReadMode = PipeTransmissionMode.Byte;
+
+                // Throws regardless of connection status for the pipe that is set to PipeDirection.In. This is because
+                // as per MSDN, "This mode gives the server the equivalent of GENERIC_READ access to the pipe", which
+                // isn't sufficient to call SetNamedPipeHandleState, as we need FILE_WRITE_ATTRIBUTES as well, or
+                // GENERIC_WRITE instead which includes this permission. Since the readmode can be set for the server
+                // side when creating the named pipe, this issue can be avoided by specifying the desired mode from the
+                // start. In the theoretical case of wanting to create a pipe in message mode, then downgrade the
+                // readmode to byte mode on the server however, this isn't currently possible in the Win32 API.
+                Assert.Throws<UnauthorizedAccessException>(() => server.ReadMode = PipeTransmissionMode.Byte);
+                Assert.Throws<UnauthorizedAccessException>(() => server.ReadMode = PipeTransmissionMode.Message);
+
+                // Can't change to message mode on the client for a byte pipe
+                Assert.Throws<System.IO.IOException>(() => client.ReadMode = PipeTransmissionMode.Message);
             }
 
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
@@ -496,9 +563,14 @@ namespace System.IO.Pipes.Tests
                 server.WaitForConnection();
                 clientConnect.Wait();
 
-                // Throws regardless of connection status for the pipe that is set to PipeDirection.In
-                Assert.Throws<UnauthorizedAccessException>(() => client.ReadMode = PipeTransmissionMode.Byte);
+                client.ReadMode = PipeTransmissionMode.Byte;
                 server.ReadMode = PipeTransmissionMode.Byte;
+
+                // Can't change to message mode on the server for a byte pipe
+                Assert.Throws<System.IO.IOException>(() => server.ReadMode = PipeTransmissionMode.Message);
+
+                // Can't change to message mode on the client for a byte pipe
+                Assert.Throws<System.IO.IOException>(() => client.ReadMode = PipeTransmissionMode.Message);
             }
 
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
@@ -510,6 +582,12 @@ namespace System.IO.Pipes.Tests
 
                 server.ReadMode = PipeTransmissionMode.Byte;
                 client.ReadMode = PipeTransmissionMode.Byte;
+
+                // Can't change to message mode on the server for a byte pipe
+                Assert.Throws<System.IO.IOException>(() => server.ReadMode = PipeTransmissionMode.Message);
+
+                // Can't change to message mode on the client for a byte pipe
+                Assert.Throws<System.IO.IOException>(() => client.ReadMode = PipeTransmissionMode.Message);
             }
         }
 

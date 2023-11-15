@@ -43,6 +43,10 @@ namespace System.IO.Pipes
             {
                 access |= Interop.Kernel32.GenericOperations.GENERIC_WRITE;
             }
+            else
+            {
+                access |= Interop.Kernel32.FileOperations.FILE_WRITE_ATTRIBUTES;
+            }
 
             SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
 
