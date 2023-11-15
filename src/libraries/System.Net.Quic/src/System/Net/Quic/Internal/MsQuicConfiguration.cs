@@ -124,17 +124,18 @@ internal static class MsQuicConfiguration
         settings.IsSet.PeerBidiStreamCount = 1;
         settings.PeerBidiStreamCount = (ushort)options.MaxInboundBidirectionalStreams;
 
-        if (options.IdleTimeout != Timeout.InfiniteTimeSpan)
+        if (options.IdleTimeout != TimeSpan.Zero)
         {
             settings.IsSet.IdleTimeoutMs = 1;
-            settings.IdleTimeoutMs = (uint)options.IdleTimeout.TotalMilliseconds;
+            settings.IdleTimeoutMs = options.IdleTimeout != Timeout.InfiniteTimeSpan
+                ? (ulong)options.IdleTimeout.TotalMilliseconds
+                : 0; // 0 disables the timeout
         }
 
-        if (options.KeepAliveInterval != Timeout.InfiniteTimeSpan)
-        {
-            settings.IsSet.KeepAliveIntervalMs = 1;
-            settings.KeepAliveIntervalMs = (uint)options.KeepAliveInterval.TotalMilliseconds;
-        }
+        settings.IsSet.KeepAliveIntervalMs = 1;
+        settings.KeepAliveIntervalMs = options.KeepAliveInterval != Timeout.InfiniteTimeSpan
+            ? (uint)options.KeepAliveInterval.TotalMilliseconds
+            : 0; // 0 disables the keepalive
 
         settings.IsSet.ConnFlowControlWindow = 1;
         settings.ConnFlowControlWindow = (uint)options.InitialReceiveWindowSizes.Connection;
@@ -147,6 +148,11 @@ internal static class MsQuicConfiguration
 
         settings.IsSet.StreamRecvWindowUnidiDefault = 1;
         settings.StreamRecvWindowUnidiDefault = (uint)options.InitialReceiveWindowSizes.UnidirectionalStream;
+
+        settings.IsSet.HandshakeIdleTimeoutMs = 1;
+        settings.HandshakeIdleTimeoutMs = options.HandshakeTimeout != Timeout.InfiniteTimeSpan
+                ? (ulong)options.HandshakeTimeout.TotalMilliseconds
+                : 0; // 0 disables the timeout
 
         QUIC_HANDLE* handle;
 

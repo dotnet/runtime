@@ -210,15 +210,24 @@ public sealed partial class QuicListener : IAsyncDisposable
     {
         bool wrapException = false;
         CancellationToken cancellationToken = default;
+
+        // In certain cases MsQuic will not impose the handshake idle timeout on their side, see
+        // https://github.com/microsoft/msquic/discussions/2705.
+        // This will be assigned to before the linkec CTS is cancelled
+        TimeSpan handshakeTimeout = TimeSpan.Zero;
         try
         {
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
-            linkedCts.CancelAfter(QuicDefaults.HandshakeTimeout);
             cancellationToken = linkedCts.Token;
+
             wrapException = true;
             QuicServerConnectionOptions options = await _connectionOptionsCallback(connection, clientHello, cancellationToken).ConfigureAwait(false);
             wrapException = false;
-            options.Validate(nameof(options)); // Validate and fill in defaults for the options.
+
+            options.Validate(nameof(options));
+            handshakeTimeout = options.HandshakeTimeout;
+            linkedCts.CancelAfter(handshakeTimeout);
+
             await connection.FinishHandshakeAsync(options, clientHello.ServerName, cancellationToken).ConfigureAwait(false);
             if (!_acceptQueue.Writer.TryWrite(connection))
             {
@@ -241,7 +250,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
         catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
         {
-            // Handshake cancelled by QuicDefaults.HandshakeTimeout, probably stalled:
+            // Handshake cancelled by options.HandshakeTimeout, probably stalled:
             // 1. Connection must be killed so dispose it and by that shut it down --> application error code doesn't matter here as this is a transport error.
             // 2. Connection won't be handed out since it's useless --> propagate appropriate exception, listener will pass it to the caller.
 
@@ -250,7 +259,7 @@ public sealed partial class QuicListener : IAsyncDisposable
                 NetEventSource.Error(connection, $"{connection} Connection handshake timed out: {oce}");
             }
 
-            Exception ex = ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), oce));
+            Exception ex = ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, handshakeTimeout), oce));
             await connection.DisposeAsync().ConfigureAwait(false);
             if (!_acceptQueue.Writer.TryWrite(ex))
             {

@@ -34,7 +34,7 @@ internal static partial class QuicDefaults
     public const long MaxErrorCodeValue = (1L << 62) - 1;
 
     /// <summary>
-    /// Our own imposed timeout in the handshake process, since in certain cases MsQuic will not impose theirs, see <see href="https://github.com/microsoft/msquic/discussions/2705"/>.
+    /// Default handshake timeout (same default as MsQuic)
     /// </summary>
     public static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(10);
 }

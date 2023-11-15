@@ -117,7 +117,7 @@ public abstract class QuicConnectionOptions
     /// The upper bound on time when the handshake must complete. If the handshake does not
     /// complete in this time, the connection is aborted.
     /// </summary>
-    public TimeSpan HandshakeTimeout { get; set; } = TimeSpan.FromSeconds(10);
+    public TimeSpan HandshakeTimeout { get; set; } = QuicDefaults.HandshakeTimeout;
 
     /// <summary>
     /// Validates the options and potentially sets platform specific defaults.
