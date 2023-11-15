@@ -557,3 +557,40 @@ Without many finally blocks, we can see that the performance is really extraordi
 1. Serialization/Deserialization of JSON data to an asynchronous stream
 2. ASP.NET servicing of requests where must of the pipeline is converted to the async2 model
 
+## On supporting  span/byref variables in runtime-assisted async code.
+
+It is not a secret that inability to use span and byref with async code causes some amount of grief. The async/span impedance in particular appears to be unnecessarily constraining. That is likely because span caters to a wider audience and thus use of span often intersects with async. A simple search brings up a lot of user concerns, workarounds, and asks to relax the constraint at least partially, if possible -
+
+https://stackoverflow.com/questions/57229123/how-to-use-spanbyte-in-async-method
+
+https://stackoverflow.com/questions/63284335/spant-and-async-methods 
+
+[Span<T> in async methods not supported · Issue #27147 · dotnet/roslyn (github.com)] (https://github.com/dotnet/roslyn/issues/27147) 
+
+https://stackoverflow.com/questions/20868103/ref-and-out-arguments-in-async-method 
+
+[Consider relaxing restrictions of async methods in blocks that do not contain `await`. · Issue 1331 · dotnet/csharplang (github.com)](https://github.com/dotnet/csharplang/issues/1331) Lots of discussions here, including insightful comments by Vance. 
+
+The current situation is that C# does not allow byrefs and byref-likes in async methods in any form – be it parameters, locals or spans. The reason for this restriction is inability to capture byrefs as fields of display types. For consistency all use is forbidden, even if it does not require capture.  
+There are few cases were C# supports transient byrefs by the means of decomposing a byref-producing expression into constituent parts and capturing the parts and re-playing at use sites. Example `staticArray[i].Field += await Somehting();`    That allows to handle a subset of cases, but codegen is far from great.
+
+In runtime-assisted async supporting span and byrefs is not a strict “no”, but there are implications. There are roughly two kinds of byrefs that async implementation would need to deal with. They come with distinct challenges.
+
+**Heap-referencing byrefs** are challenging because GC reporting of byrefs is only naturally supported on stack. Any alternative storage will have to implement a scheme for reporting stored variables for marking/updating purposes. The main challenge here is performance. As we expect the number of tasks to be easily in thousands at a time, O(n) algorithms inevitably result in GC pauses. There are ways to mitigate this, some of which were explored and measured as a part of this experiment.
+
+**Stack-referencing byrefs** do not have to be reported to GC, but must be adjusted when containing frame is reactivated as the referent is either in the current frame and thus now lives in a different stack location, or in one of still suspended caller frames and thus not on the stack at all. In the presence of “ref Span<T> param” and similar, updating upon suspending is also necessary to keep chains of byrefs safely walkable.
+
+In general it would not be a tractable programming model from the user perspective, if we allow only one kind of byrefs and not another as distinction may often only be known at run time.  
+Note that the stack/heap-referencing nature of a byref cannot change while the frame is not active. However that is not completely true if “ref Span<T> param” is allowed. In such case a calee may repoint a byref in a caller frame and switch from stack-pointing to heap-pointing.   
+
+**Stack-referencing byrefs, that lead into sync callers** these are unsafe as the sync caller may exit any or all its stack frames before the Task is resumed.
+
+In the current experiment we have looked into two implementing strategies:
+
+**Stack unwinding with 1:1 stack capture for suspended frames.** In this model byrefs/spans that point to heap or other async callers can be supported as there is a mechanism to report byrefs to the GC. There are some performance challenges, but not without solutions. 
+
+**State machine with managed storage for captured variables.** The current implementation does not support capturing byrefs and byref-likes. On the other hand it can utilize regular GC reporting mechanisms, which has many advantages, notably not having O(n) components that need to run in GC pauses. There are some ideas on how byrefs may be captured and converted into {object, offset} at the next GC, so that not to incur continuous O(n) costs.
+
+## On unmanaged pointers.
+We cannot possibly track unmanaged pointers that refer to the stack across suspensions. Disallowing such scenarios would not be a take-back though since currently C# does not allow `await` in unsafe context, therefore await and unmanaged pointers cannot mix.
+
