@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Specialized;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Xml;
-using System.Globalization;
 using System.Text;
+using System.Xml;
 
 namespace System.Configuration
 {
