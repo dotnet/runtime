@@ -638,6 +638,7 @@ namespace System.Runtime.InteropServices
         StdCall = 3,
         ThisCall = 4,
         FastCall = 5,
+        SwiftCall = 6,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class, Inherited=false)]
     public sealed partial class ClassInterfaceAttribute : System.Attribute
