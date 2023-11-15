@@ -12,8 +12,8 @@ namespace System.Security.Cryptography
         private static readonly ConcurrentDictionary<string, string> s_lateBoundOidToFriendlyName =
             new ConcurrentDictionary<string, string>();
 
-        private static readonly ConcurrentDictionary<string, string?> s_lateBoundFriendlyNameToOid =
-            new ConcurrentDictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, string> s_lateBoundFriendlyNameToOid =
+            new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         //
         // Attempts to map a friendly name to an OID. Returns null if not a known name.
@@ -77,19 +77,13 @@ namespace System.Security.Cryptography
 
             mappedOid = NativeFriendlyNameToOid(friendlyName, oidGroup, fallBackToAllGroups);
 
-            if (shouldUseCache)
+            if (shouldUseCache && mappedOid != null)
             {
                 s_lateBoundFriendlyNameToOid.TryAdd(friendlyName, mappedOid);
 
                 // Don't add the reverse here.  Friendly Name => OID is a case insensitive search,
                 // so the casing provided as input here may not be the 'correct' one.  Just let
                 // ToFriendlyName capture the response and cache it itself.
-
-                // Also, mappedOid could be null here if the lookup failed.  Allowing storing null
-                // means we're able to cache that a lookup failed so we don't repeat it.  It's
-                // theoretically possible, however, the failure could have been intermittent, e.g.
-                // if the call was forced to follow an AD fallback path and the relevant servers
-                // were offline.
             }
 
             return mappedOid;
