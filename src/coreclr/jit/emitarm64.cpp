@@ -944,11 +944,18 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
+            elemsize = id->idOpSize();
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isGeneralRegister(id->idReg1()));   // ddddd
+            assert(isPredicateRegister(id->idReg2())); // MMMM
+            assert(isValidVectorElemsize(elemsize));   // xx
+            break;
+
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             elemsize = id->idOpSize();
             assert(insOptsNone(id->idInsOpt()));
-            assert(isGeneralRegister(id->idReg1()));   // ddddd
+            assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isPredicateRegister(id->idReg2())); // MMMM
             assert(isValidVectorElemsize(elemsize));   // xx
             break;
@@ -999,6 +1006,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_2B: // DV_2B   .Q.........iiiii ......nnnnnddddd      Rd Vn[]    (umov - to general)
         case IF_DV_2H: // DV_2H   X........X...... ......nnnnnddddd      Rd Vn      (fmov - to general)
 
+        case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             return true;
 
         case IF_DV_2C: // DV_2C   .Q.........iiiii ......nnnnnddddd      Vd Rn      (dup/ins - vector from general)
@@ -1031,6 +1039,9 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
+
+        case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
+        case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
 
@@ -13336,11 +13347,19 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
+            code     = emitInsCodeSve(ins, fmt);
+            elemsize = id->idOpSize();
+            code |= insEncodeReg_Rd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Pm(id->idReg2()); // MMMM
+            code |= insEncodeElemsize(elemsize);   // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             code     = emitInsCodeSve(ins, fmt);
             elemsize = id->idOpSize();
-            code |= insEncodeReg_Rd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
             code |= insEncodeReg_Pm(id->idReg2()); // MMMM
             code |= insEncodeElemsize(elemsize);   // xx
             dst += emitOutput_Instr(dst, code);
@@ -15494,10 +15513,14 @@ void emitter::emitDispInsHelp(
             break;
 
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
-        case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
-        case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             emitDispReg(id->idReg1(), id->idInsOpt(), true);          // ddddd
             emitDispPredicateReg(id->idReg2(), id->idInsOpt(), true); // MMMM
+            break;
+
+        case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
+        case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
+            emitDispPredicateReg(id->id->idReg2(), id->idInsOpt(), true); // MMMM
             break;
 
         default:

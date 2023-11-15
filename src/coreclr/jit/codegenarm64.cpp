@@ -6371,6 +6371,22 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // INCP    <Xdn>, <Pm>.<T>
     theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // INCP    <Zdn>.<T>, <Pm>.<T>
 
+    // sqdecp
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // SQDECP  <Xdn>, <Pm>.<T>, <Wdn>
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // SQDECP  <Zdn>.<T>, <Pm>.<T>
+
+    // sqincp
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // SQINCP  <Xdn>, <Pm>.<T>, <Wdn>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // SQINCP  <Zdn>.<T>, <Pm>.<T>
+
+    // uqdecp
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // UQDECP  <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // UQDECP  <Zdn>.<T>, <Pm>.<T>
+
+    // uqincp
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // UQINCP  <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // UQINCP  <Zdn>.<T>, <Pm>.<T>
+
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
