@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Pipelines;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
@@ -40,6 +41,32 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static Task SerializeAsync<TValue>(
             Stream utf8Json,
+            TValue value,
+            JsonSerializerOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+        }
+
+        /// <summary>
+        /// g
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="utf8Json"></param>
+        /// <param name="value"></param>
+        /// <param name="options"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static Task SerializeAsync<TValue>(
+            System.IO.Pipelines.PipeWriter utf8Json,
             TValue value,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -170,6 +197,34 @@ namespace System.Text.Json
         /// </exception>
         public static Task SerializeAsync<TValue>(
             Stream utf8Json,
+            TValue value,
+            JsonTypeInfo<TValue> jsonTypeInfo,
+            CancellationToken cancellationToken = default)
+        {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+        }
+
+        /// <summary>
+        /// tmp
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="utf8Json"></param>
+        /// <param name="value"></param>
+        /// <param name="jsonTypeInfo"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public static Task SerializeAsync<TValue>(
+            PipeWriter utf8Json,
             TValue value,
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
