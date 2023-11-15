@@ -6362,6 +6362,15 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_rev, EA_4BYTE, REG_R10, REG_R5);
     theEmitter->emitIns_R_R(INS_rev16, EA_4BYTE, REG_R11, REG_R6);
 
+    // TODO-SVE: Fix once we add predicate registers
+    // decp
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // DECP    <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // DECP    <Zdn>.<T>, <Pm>.<T>
+
+    // incp
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // INCP    <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R0, REG_R1, INS_OPTS_8B); // INCP    <Zdn>.<T>, <Pm>.<T>
+
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS

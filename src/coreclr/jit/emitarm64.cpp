@@ -943,6 +943,16 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(datasize == EA_8BYTE);
             break;
 
+        case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
+        case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
+        case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
+            elemsize = id->idOpSize();
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isGeneralRegister(id->idReg1()));   // ddddd
+            assert(isPredicateRegister(id->idReg2())); // MMMM
+            assert(isValidVectorElemsize(elemsize));   // xx
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -10573,6 +10583,20 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns an encoding for the specified register used in the 'Pm' position
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_Pm(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(emitter::isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 16;
+}
+
+/*****************************************************************************
+ *
  *  Returns an encoding for the specified condition code.
  */
 
@@ -13311,6 +13335,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
+        case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
+        case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
+            code     = emitInsCodeSve(ins, fmt);
+            elemsize = id->idOpSize();
+            code |= insEncodeReg_Rd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Pm(id->idReg2()); // MMMM
+            code |= insEncodeElemsize(elemsize);   // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -13847,6 +13882,20 @@ void emitter::emitDispVectorElemList(
     {
         emitDispComma();
     }
+}
+
+//------------------------------------------------------------------------
+// emitDispPredicateReg: Display a predicate register name with with an arrangement suffix
+//
+void emitter::emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(isPredicateRegister(reg));
+    printf(emitVectorRegName(reg));
+    emitDispArrangement(opt);
+
+    if (addComma)
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------
@@ -15442,6 +15491,13 @@ void emitter::emitDispInsHelp(
             {
                 emitDispReg(id->idReg1(), size, false);
             }
+            break;
+
+        case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
+        case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
+        case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
+            emitDispReg(id->idReg1(), id->idInsOpt(), true);          // ddddd
+            emitDispPredicateReg(id->idReg2(), id->idInsOpt(), true); // MMMM
             break;
 
         default:
@@ -17627,6 +17683,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
+
+        case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
+        case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
+        case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
 
         default:
