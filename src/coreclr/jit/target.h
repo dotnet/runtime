@@ -80,11 +80,11 @@ inline bool compUnixX86Abi()
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
-#ifdef HOST_UNIX
+#if HAS_PRIMITIVE_128
 #define REGMASK_BITS 128
 #else
 #define REGMASK_BITS 64
-#endif
+#endif // HAS_PRIMITIVE_128
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_LOONGARCH64)
@@ -143,11 +143,11 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-#ifdef HOST_UNIX
+#if HAS_PRIMITIVE_128
 enum _regMask_enum : unsigned __int128
 #else
 enum _regMask_enum : unsigned __int64
-#endif
+#endif // HAS_PRIMITIVE_128
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
@@ -220,11 +220,11 @@ enum _regMask_enum : unsigned
 #if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 #elif defined(TARGET_ARM64)
-#if defined(HOST_UNIX)
+#if HAS_PRIMITIVE_128
 typedef unsigned __int128 regMaskTP;
 #else
 typedef unsigned __int64 regMaskTP;
-#endif // HOST_UNIX
+#endif // HAS_PRIMITIVE_128
 #else
 typedef unsigned regMaskTP;
 #endif
@@ -242,7 +242,7 @@ typedef unsigned regMaskSmall;
 #define REG_MASK_INT_FMT "%08X"
 #define REG_MASK_ALL_FMT "%08X"
 #else
-#if defined(HOST_UNIX) && defined(TARGET_ARM64)
+#if HAS_PRIMITIVE_128
 typedef unsigned __int128 regMaskSmall;
 #else
 typedef unsigned __int64 regMaskSmall;

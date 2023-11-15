@@ -3332,7 +3332,7 @@ uint32_t BitOperations::PopCount(uint64_t value)
 #endif
 }
 
-#ifdef HOST_UNIX
+#if HAS_PRIMITIVE_128
 //------------------------------------------------------------------------
 // BitOperations::PopCount: Returns the population count (number of bits set) of a mask.
 //
@@ -3346,7 +3346,7 @@ uint32_t BitOperations::PopCount(unsigned __int128 value)
 {
     return BitOperations::PopCount(static_cast<uint64_t>(value));
 }
-#endif
+#endif // HAS_PRIMITIVE_128
 
 //------------------------------------------------------------------------
 // BitOperations::ReverseBits: Reverses the bits in an integer value
