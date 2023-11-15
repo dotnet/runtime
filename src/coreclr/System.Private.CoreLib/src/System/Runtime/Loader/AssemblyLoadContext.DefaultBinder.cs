@@ -5,11 +5,25 @@ using System.Diagnostics;
 
 namespace System.Runtime.Loader
 {
-    internal partial class DefaultAssemblyLoadContext
+    public partial class AssemblyLoadContext
     {
         // called by vm
-        private BinderAssembly CreateCoreLib(IntPtr pCoreLibPEImage) => new BinderAssembly(pCoreLibPEImage, true) { Binder = this };
+        private static BinderAssembly InitializeDefault(IntPtr pCoreLibAssembly)
+        {
+            // ensure to touch Default to make it initialized
+            Default.AddLoadedAssembly(pCoreLibAssembly);
+            return new BinderAssembly(Assembly_GetPEImage(pCoreLibAssembly), true) { Binder = Default };
+        }
 
+        // called by VM
+        private static unsafe void SetupBindingPaths(char* trustedPlatformAssemblies, char* platformResourceRoots, char* appPaths)
+        {
+            Default.AppContext.SetupBindingPaths(new string(trustedPlatformAssemblies), new string(platformResourceRoots), new string(appPaths), acquireLock: true);
+        }
+    }
+
+    internal partial class DefaultAssemblyLoadContext
+    {
         // Helper functions
         private int BindAssemblyByNameWorker(BinderAssemblyName assemblyName, out BinderAssembly? coreCLRFoundAssembly, bool excludeAppPaths)
         {
@@ -123,12 +137,6 @@ namespace System.Runtime.Loader
             }
 
             return hr;
-        }
-
-        // called by VM
-        private unsafe void SetupBindingPaths(char* trustedPlatformAssemblies, char* platformResourceRoots, char* appPaths)
-        {
-            AppContext.SetupBindingPaths(new string(trustedPlatformAssemblies), new string(platformResourceRoots), new string(appPaths), acquireLock: true);
         }
     }
 }

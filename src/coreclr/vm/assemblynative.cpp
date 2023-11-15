@@ -156,9 +156,12 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         BINDERASSEMBLYREF pAssembly;
     } gc;
 
+    gc.pBinder = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)(pBinder->GetManagedAssemblyLoadContext()));
+    gc.pAssembly = NULL;
+
     GCPROTECT_BEGIN(gc);
 
-    MethodDescCallSite methBind(METHOD__BINDER_ASSEMBLYBINDER__BINDUSINGPEIMAGE, &gc.pBinder);
+    MethodDescCallSite methBind(METHOD__ASSEMBLYLOADCONTEXT__BIND_USING_PEIMAGE, &gc.pBinder);
     ARG_SLOT args[4] =
     {
         ObjToArgSlot(gc.pBinder),

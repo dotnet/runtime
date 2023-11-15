@@ -70,7 +70,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
         if (m_context.szLocale != NULL)
             SString(SString::Utf8Literal, m_context.szLocale).ConvertToUnicode(sCultureName);
 
-        MethodDescCallSite methSatellite(METHOD__BINDER_ASSEMBLYBINDERCOMMON__BINDTOSYSTEMSATELLITE);
+        MethodDescCallSite methSatellite(METHOD__ASSEMBLYBINDERCOMMON__BIND_TO_SYSTEM_SATELLITE);
         ARG_SLOT args[4] =
         {
             PtrToArgSlot(sSystemDirectory.GetUnicode()),
@@ -86,7 +86,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
 
-        MethodDescCallSite methBindAssemblyByName(METHOD__BINDER_ASSEMBLYBINDER__BINDASSEMBLYBYNAME);
+        MethodDescCallSite methBindAssemblyByName(METHOD__ASSEMBLYLOADCONTEXT__BIND_ASSEMBLY_BY_NAME);
         ARG_SLOT args[3] =
         {
             ObjToArgSlot(gc.pBinder),

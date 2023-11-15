@@ -191,13 +191,5 @@ namespace System.Runtime.Loader
             // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
             ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, useTplSource: false);
         }
-
-        /// <summary>
-        /// Called by the runtime to make sure the default ALC is initialized
-        /// </summary>
-        internal static void InitializeDefaultContext()
-        {
-            _ = Default;
-        }
     }
 }

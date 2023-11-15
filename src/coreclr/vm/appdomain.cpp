@@ -1162,25 +1162,23 @@ void SystemDomain::Init()
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
 
-        ASSEMBLYLOADCONTEXTREF defaultBinder = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext());
-
+        // AdHoc setting logic for CoreLib, since managed code isn't available during CoreLib bootstrap
         {
-            // AdHoc setup for corelib PEAssembly
-            GCPROTECT_BEGIN(defaultBinder);
+            // Initialize managed default binder and set binder assembly for CoreLib
+            MethodDescCallSite initializeDefault(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT);
+            ARG_SLOT arg = PtrToArgSlot(m_pSystemAssembly);
+            OBJECTREF coreLibHostAssembly = initializeDefault.Call_RetOBJECTREF(&arg);
 
-            // Set binder assembly for CoreLib
-            MethodDescCallSite createCoreLib(METHOD__BINDER_DEFAULTASSEMBLYBINDER__CREATECORELIB);
-            ARG_SLOT args[2] =
-            {
-                ObjToArgSlot(defaultBinder),
-                PtrToArgSlot(m_pSystemPEAssembly->GetPEImage())
-            };
-            OBJECTREF coreLibHostAssembly = createCoreLib.Call_RetOBJECTREF(args);
+            // Default binder should be initialized
+            _ASSERTE(GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext() != NULL);
+
             m_pSystemPEAssembly->SetHostAssemblyAdHoc(CreateHandle(coreLibHostAssembly));
 
             m_pSystemAssembly->GetDomainAssembly()->RegisterWithHostAssembly();
 
-            GCPROTECT_END();
+            // Managed and unmanaged representations of CoreLib should be correctly linked
+            _ASSERTE(((BINDERASSEMBLYREF)coreLibHostAssembly)->m_pDomainAssembly == m_pSystemAssembly->GetDomainAssembly());
+            _ASSERTE(ObjectFromHandle(m_pSystemPEAssembly->GetHostAssembly()) == coreLibHostAssembly);
 
             // Add CoreLib to AssemblyBindingCache
             AssemblySpec spec;
@@ -2760,10 +2758,10 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         // AssemblyBinder isn't set for CoreLib during bootstrap
         if (!pPEAssembly->IsSystem())
         {
-        AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
-        // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
-        // marked as collectible
-        pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
+            AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
+            // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
+            // marked as collectible
+            pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
         }
 
         if (pLoaderAllocator == NULL)
@@ -2823,13 +2821,19 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         {
             GCX_COOP();
 
-            MethodDescCallSite methAddLoadedAssem(METHOD__BINDER_ASSEMBLYBINDER__ADDLOADEDASSEMBLY);
+            ASSEMBLYLOADCONTEXTREF managedALC = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)(pPEAssembly->GetAssemblyBinder()->GetManagedAssemblyLoadContext()));
+
+            GCPROTECT_BEGIN(managedALC);
+
+            MethodDescCallSite methAddLoadedAssem(METHOD__ASSEMBLYLOADCONTEXT__ADD_LOADED_EDASSEMBLY);
             ARG_SLOT args[2] =
             {
-                ObjToArgSlot((ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)(pPEAssembly->GetAssemblyBinder()))),
+                ObjToArgSlot(managedALC),
                 PtrToArgSlot(pDomainAssembly->GetAssembly())
             };
             methAddLoadedAssem.Call(args);
+
+            GCPROTECT_END();
         }
     }
     else

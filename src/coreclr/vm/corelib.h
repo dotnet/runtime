@@ -898,7 +898,26 @@ DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_TYPE_RESOLVE,            OnTypeResolve,  
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_RESOLVE,        OnAssemblyResolve,          SM_Assembly_Str_RetAssembly)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  START_ASSEMBLY_LOAD,        StartAssemblyLoad,          SM_RefGuid_RefGuid_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  STOP_ASSEMBLY_LOAD,         StopAssemblyLoad,           SM_RefGuid_RetVoid)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  INITIALIZE_DEFAULT_CONTEXT, InitializeDefaultContext,   SM_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  INITIALIZE_DEFAULT,         InitializeDefault,          SM_IntPtr_RetBinderAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ADD_LOADED_EDASSEMBLY,      AddLoadedAssembly,          IM_IntPtr_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  BIND_USING_PEIMAGE,         BindUsingPEImage,           IM_IntPtr_Bool_RefBinderAssembly_RetInt)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  BIND_ASSEMBLY_BY_NAME,      BindAssemblyByName,         IM_PtrVoid_RefBinderAssembly_RetInt)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  DECLARE_DEPENDENCY_ON_MVID, DeclareDependencyOnMvid,    IM_PtrByte_RefGuid_Bool_PtrByte_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  SETUP_BINDING_PATHS,        SetupBindingPaths,          SM_PtrChar_PtrChar_PtrChar_RetVoid)
+
+DEFINE_CLASS(ASSEMBLYBINDERCOMMON, Loader, AssemblyBinderCommon)
+DEFINE_METHOD(ASSEMBLYBINDERCOMMON, BIND_TO_SYSTEM_SATELLITE, BindToSystemSatellite, SM_PtrChar_PtrChar_PtrChar_RefBinderAssembly_RetInt)
+
+// Managed binder types
+
+DEFINE_CLASS(BINDER_ASSEMBLY, Loader, BinderAssembly)
+DEFINE_CLASS_U(Loader, BinderAssembly, BinderAssemblyObject)
+DEFINE_FIELD_U(m_binder, BinderAssemblyObject, m_binder)
+DEFINE_FIELD_U(m_assemblyName, BinderAssemblyObject, m_assemblyName)
+DEFINE_FIELD_U(m_peImage, BinderAssemblyObject, m_peImage)
+DEFINE_FIELD_U(m_pDomainAssembly, BinderAssemblyObject, m_pDomainAssembly)
+DEFINE_FIELD_U(m_isInTPA, BinderAssemblyObject, m_isInTPA)
+DEFINE_FIELD_U(m_isCoreLib, BinderAssemblyObject, m_isCoreLib)
 
 DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
 DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)
@@ -1190,35 +1209,6 @@ DEFINE_METHOD(EH, RH_RETHROW, RhRethrow, SM_RefExInfo_RefExInfo_RetVoid)
 #ifndef FOR_ILLINK
 DEFINE_CLASS(EXINFO, Runtime, EH+ExInfo)
 #endif // FOR_ILLINK
-
-// Managed binder types
-DEFINE_CLASS(BINDER_ASSEMBLYBINDER, InternalBinder, AssemblyBinder)
-DEFINE_METHOD(BINDER_ASSEMBLYBINDER, GETLOADERALLOCATOR, GetLoaderAllocator, IM_RetLoaderAllocator)
-DEFINE_METHOD(BINDER_ASSEMBLYBINDER, ADDLOADEDASSEMBLY, AddLoadedAssembly, IM_IntPtr_RetVoid)
-DEFINE_METHOD(BINDER_ASSEMBLYBINDER, BINDUSINGPEIMAGE, BindUsingPEImage, IM_IntPtr_Bool_RefBinderAssembly_RetInt)
-DEFINE_METHOD(BINDER_ASSEMBLYBINDER, BINDASSEMBLYBYNAME, BindAssemblyByName, IM_PtrVoid_RefBinderAssembly_RetInt)
-DEFINE_METHOD(BINDER_ASSEMBLYBINDER, DECLAREDEPENDENCYONMVID, DeclareDependencyOnMvid, IM_PtrByte_RefGuid_Bool_PtrByte_RetVoid)
-
-DEFINE_CLASS_U(InternalBinder, AssemblyBinder, AssemblyBinderObject)
-DEFINE_FIELD_U(m_managedALC, AssemblyBinderObject, m_managedALC)
-DEFINE_FIELD_U(m_isDefault, AssemblyBinderObject, m_isDefault)
-
-DEFINE_CLASS(BINDER_DEFAULTASSEMBLYBINDER, InternalBinder, DefaultAssemblyBinder)
-DEFINE_METHOD(BINDER_DEFAULTASSEMBLYBINDER, CTOR, .ctor, IM_RetVoid)
-DEFINE_METHOD(BINDER_DEFAULTASSEMBLYBINDER, SETUP_BINDING_PATHS, SetupBindingPaths, IM_PtrChar_PtrChar_PtrChar_RetVoid)
-DEFINE_METHOD(BINDER_DEFAULTASSEMBLYBINDER, CREATECORELIB, CreateCoreLib, IM_IntPtr_RetBinderAssembly)
-
-DEFINE_CLASS(BINDER_ASSEMBLY, InternalBinder, Assembly)
-DEFINE_CLASS_U(InternalBinder, Assembly, BinderAssemblyObject)
-DEFINE_FIELD_U(m_binder, BinderAssemblyObject, m_binder)
-DEFINE_FIELD_U(m_assemblyName, BinderAssemblyObject, m_assemblyName)
-DEFINE_FIELD_U(m_peImage, BinderAssemblyObject, m_peImage)
-DEFINE_FIELD_U(m_pDomainAssembly, BinderAssemblyObject, m_pDomainAssembly)
-DEFINE_FIELD_U(m_isInTPA, BinderAssemblyObject, m_isInTPA)
-DEFINE_FIELD_U(m_isCoreLib, BinderAssemblyObject, m_isCoreLib)
-
-DEFINE_CLASS(BINDER_ASSEMBLYBINDERCOMMON, InternalBinder, AssemblyBinderCommon)
-DEFINE_METHOD(BINDER_ASSEMBLYBINDERCOMMON, BINDTOSYSTEMSATELLITE, BindToSystemSatellite, SM_PtrChar_PtrChar_PtrChar_RefBinderAssembly_RetInt)
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)

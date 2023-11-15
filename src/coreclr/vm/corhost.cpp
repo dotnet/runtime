@@ -620,23 +620,15 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     {
         GCX_COOP();
 
-        ASSEMBLYLOADCONTEXTREF pBinder = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)pDomain->GetDefaultBinder()->GetManagedAssemblyLoadContext());
-        _ASSERTE(pBinder != NULL);
-
-        GCPROTECT_BEGIN(pBinder);
-
-        MethodDescCallSite methSetupBindingPaths(METHOD__BINDER_DEFAULTASSEMBLYBINDER__SETUP_BINDING_PATHS);
-        ARG_SLOT args[4] =
+        MethodDescCallSite methSetupBindingPaths(METHOD__ASSEMBLYLOADCONTEXT__SETUP_BINDING_PATHS);
+        ARG_SLOT args[3] =
         {
-            ObjToArgSlot(pBinder),
             PtrToArgSlot(pwzTrustedPlatformAssemblies),
             PtrToArgSlot(pwzPlatformResourceRoots),
             PtrToArgSlot(pwzAppPaths)
         };
 
         methSetupBindingPaths.Call(args);
-
-        GCPROTECT_END();
     }
 
 #if defined(TARGET_UNIX)

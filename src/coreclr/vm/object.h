@@ -1440,17 +1440,6 @@ class AssemblyBaseObject : public Object
 NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive);
 #define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
-// managed Internal.Runtime.Binder.AssemblyBinder
-class AssemblyBinderObject : public Object
-{
-    OBJECTREF m_appContext;
-    OBJECTREF m_assemblySimpleNameMvidCheckHash;
-    OBJECTREF m_loadedAssemblies;
-public:
-    CLR_BOOL m_isDefault;
-    INT_PTR m_managedALC;
-};
-
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
 //
@@ -1466,6 +1455,9 @@ class AssemblyLoadContextBaseObject : public Object
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
 #ifdef TARGET_64BIT
+    OBJECTREF     _appContext;
+    OBJECTREF     _assemblySimpleNameMvidCheckHash;
+    OBJECTREF     _loadedAssemblies;
     OBJECTREF     _unloadLock;
     OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
@@ -1477,6 +1469,9 @@ class AssemblyLoadContextBaseObject : public Object
     CLR_BOOL      _isCollectible;
 #else // TARGET_64BIT
     int64_t       _id; // On 32-bit platforms this 64-bit value type is larger than a pointer so JIT places it first
+    OBJECTREF     _appContext;
+    OBJECTREF     _assemblySimpleNameMvidCheckHash;
+    OBJECTREF     _loadedAssemblies;
     OBJECTREF     _unloadLock;
     OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
@@ -1536,8 +1531,6 @@ typedef REF<ThreadBaseObject> THREADBASEREF;
 
 typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 
-typedef REF<AssemblyBinderObject> ASSEMBLYBINDERREF;
-
 typedef REF<BinderAssemblyObject> BINDERASSEMBLYREF;
 
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
@@ -1584,7 +1577,6 @@ typedef PTR_ReflectMethodObject REFLECTMETHODREF;
 typedef PTR_ReflectFieldObject REFLECTFIELDREF;
 typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
-typedef PTR_AssemblyBinderObject ASSEMBLYBINDERREF;
 typedef PTR_BinderAssemblyObject BINDERASSEMBLYREF;
 typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
@@ -1599,7 +1591,8 @@ typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 
 class PEImage;
 
-// managed Internal.Runtime.Binder.Assembly
+#include <pshpack4.h>
+// managed System.Runtime.Loader.BinderAssembly
 class BinderAssemblyObject : public Object
 {
 public:
@@ -1615,6 +1608,7 @@ public:
         return (PTR_AssemblyBinder)m_binder->GetNativeAssemblyBinder();
     }
 };
+#include <poppack.h>
 
 #define PtrToArgSlot(ptr) ((ARG_SLOT)(SIZE_T)(ptr))
 #define ArgSlotToPtr(s)   ((LPVOID)(SIZE_T)(s))

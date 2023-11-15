@@ -72,6 +72,7 @@ namespace System.Runtime.Loader
             return hr;
         }
 
+        // called by vm
         internal virtual int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out BinderAssembly? assembly)
         {
             assembly = null;

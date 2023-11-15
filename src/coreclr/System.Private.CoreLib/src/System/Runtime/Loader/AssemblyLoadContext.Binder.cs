@@ -30,10 +30,9 @@ namespace System.Runtime.Loader
 
     public partial class AssemblyLoadContext
     {
+        // called by vm
         private protected unsafe int BindAssemblyByName(void* pAssemblyNameData, out BinderAssembly? assembly)
-        {
-            return BindUsingAssemblyName(new BinderAssemblyName((AssemblyNameData*)pAssemblyNameData), out assembly);
-        }
+            => BindUsingAssemblyName(new BinderAssemblyName((AssemblyNameData*)pAssemblyNameData), out assembly);
 
         internal ApplicationContext AppContext { get; } = new ApplicationContext();
 
@@ -74,7 +73,7 @@ namespace System.Runtime.Loader
             Environment.FailFast(message);
         }
 
-        // used by vm
+        // called by vm
         private unsafe void DeclareDependencyOnMvid(byte* simpleName, in Guid mvid, bool compositeComponent, byte* imageName)
             => DeclareDependencyOnMvid(new MdUtf8String(simpleName).ToString(), mvid, compositeComponent, new MdUtf8String(imageName).ToString());
 

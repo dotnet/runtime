@@ -251,6 +251,7 @@ namespace System.Runtime.Loader
         // Skipped - the managed binder can't bootstrap CoreLib
         // static Assembly? BindToSystem(string systemDirectory);
 
+        // called by vm
         private static unsafe int BindToSystemSatellite(char* systemDirectory, char* simpleName, char* cultureName, out BinderAssembly? assembly)
         {
             // Satellite assembly's relative path
