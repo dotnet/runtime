@@ -148,5 +148,4 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
         return Success;
     }
 }
-
 #endif

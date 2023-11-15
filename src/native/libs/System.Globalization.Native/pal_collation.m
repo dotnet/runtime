@@ -293,5 +293,4 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
         return result == NSOrderedSame ? 1 : 0;
     }
 }
-
 #endif

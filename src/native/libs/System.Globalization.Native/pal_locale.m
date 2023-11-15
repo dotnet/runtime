@@ -48,26 +48,6 @@ const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
     }
 }
 
-const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path)
-{
-    @autoreleasepool
-    {
-        NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
-        NSString *dataPath = [bundlePath stringByAppendingPathComponent: [NSString stringWithFormat:@"%s", path]];
-
-        return strdup([dataPath UTF8String]);
-    }
-}
-
-const char* GlobalizationNative_GetICUDataPathFallback(void)
-{
-    @autoreleasepool
-    {
-        NSString *dataPath = [[NSBundle mainBundle] pathForResource:@"icudt" ofType:@"dat"];
-        return strdup([dataPath UTF8String]);
-    }
-}
-
 /**
  * Useful constant for the maximum size of the whole locale ID
  * (including the terminating NULL and all keywords).
@@ -773,6 +753,26 @@ int32_t GlobalizationNative_GetLocalesNative(UChar* value, int32_t length)
     }
 }
 
+const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path)
+{
+    @autoreleasepool
+    {
+        NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
+        NSString *dataPath = [bundlePath stringByAppendingPathComponent: [NSString stringWithFormat:@"%s", path]];
+
+        return strdup([dataPath UTF8String]);
+    }
+}
+
+const char* GlobalizationNative_GetICUDataPathFallback(void)
+{
+    @autoreleasepool
+    {
+        NSString *dataPath = [[NSBundle mainBundle] pathForResource:@"icudt" ofType:@"dat"];
+        return strdup([dataPath UTF8String]);
+    }
+}
+
 const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
 {
     @autoreleasepool
@@ -817,7 +817,5 @@ int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
         return false;
     }
 }
-
 #endif
-
 
