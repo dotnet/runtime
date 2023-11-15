@@ -23,8 +23,6 @@ namespace BINDER_SPACE
     class AssemblyName;
     class Assembly;
 
-    class ApplicationContext;
-
     class BindResult;
 };
 

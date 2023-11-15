@@ -5,7 +5,6 @@
 #ifndef __CUSTOM_ASSEMBLY_BINDER_H__
 #define __CUSTOM_ASSEMBLY_BINDER_H__
 
-#include "applicationcontext.hpp"
 #include "defaultassemblybinder.h"
 
 #if !defined(DACCESS_COMPILE)

@@ -26,7 +26,6 @@
 #include "../binder/inc/assemblyname.hpp"
 
 #include "../binder/inc/assemblybindercommon.hpp"
-#include "../binder/inc/applicationcontext.hpp"
 
 HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly)
 {

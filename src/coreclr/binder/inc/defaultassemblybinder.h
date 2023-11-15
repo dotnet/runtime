@@ -5,7 +5,6 @@
 #ifndef __DEFAULT_ASSEMBLY_BINDER_H__
 #define __DEFAULT_ASSEMBLY_BINDER_H__
 
-#include "applicationcontext.hpp"
 #include "assemblybinder.h"
 
 class PEAssembly;

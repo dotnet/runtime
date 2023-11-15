@@ -18,7 +18,6 @@
 #include "strongnameinternal.h"
 #include "object.h"
 
-#include "../binder/inc/applicationcontext.hpp"
 #include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"

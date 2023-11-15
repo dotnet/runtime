@@ -15,7 +15,6 @@
 #include "assemblybindercommon.hpp"
 #include "assemblyname.hpp"
 #include "assembly.hpp"
-#include "applicationcontext.hpp"
 #include "assemblyhashtraits.hpp"
 #include "bindertracing.h"
 #include "bindresult.inl"
@@ -300,8 +299,6 @@ HRESULT AssemblyBinderCommon::CreateDefaultBinder(DefaultAssemblyBinder** ppDefa
             NewHolder<DefaultAssemblyBinder> pBinder;
             SAFE_NEW(pBinder, DefaultAssemblyBinder);
 
-            BINDER_SPACE::ApplicationContext* pApplicationContext = pBinder->GetAppContext();
-            hr = pApplicationContext->Init();
             if (SUCCEEDED(hr))
             {
                 pBinder->SetManagedAssemblyLoadContext(NULL);

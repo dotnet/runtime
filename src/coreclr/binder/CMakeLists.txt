@@ -4,7 +4,6 @@ include_directories(BEFORE "../vm")
 include_directories(BEFORE "inc")
 
 set(BINDER_COMMON_SOURCES
-    applicationcontext.cpp
     assembly.cpp
     assemblybindercommon.cpp
     assemblyname.cpp
@@ -15,8 +14,6 @@ set(BINDER_COMMON_SOURCES
 )
 
 set(BINDER_COMMON_HEADERS
-    inc/applicationcontext.hpp
-    inc/applicationcontext.inl
     inc/assembly.hpp
     inc/assembly.inl
     inc/assemblybindercommon.hpp

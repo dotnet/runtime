@@ -28,7 +28,7 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder
                                            UINT_PTR ptrAssemblyLoadContext,
                                            CustomAssemblyBinder **ppBindContext)
 {
-    HRESULT hr = E_FAIL;
+    HRESULT hr = S_OK;
     EX_TRY
     {
         if(ppBindContext != NULL)
@@ -36,7 +36,6 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder
             NewHolder<CustomAssemblyBinder> pBinder;
 
             SAFE_NEW(pBinder, CustomAssemblyBinder);
-            hr = pBinder->GetAppContext()->Init();
             if(SUCCEEDED(hr))
             {
                 // Save reference to the DefaultBinder that is required to be present.
