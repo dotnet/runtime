@@ -29,7 +29,7 @@ namespace System.ComponentModel
         private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
         private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
         private static readonly Hashtable s_defaultProviders = new Hashtable(); // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
-        private static readonly Hashtable s_defaultProvidersCreated = new Hashtable(); // A table similar to s_defaultProviders but only set after providers are added, in order to reduce locks.
+        private static readonly Hashtable s_defaultProvidersChecked = new Hashtable(); // A table similar to s_defaultProviders but only set after providers are checked, in order to reduce locks.
         private static WeakHashtable? s_associationTable;
         private static int s_metadataVersion;                          // a version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
 
@@ -265,7 +265,7 @@ namespace System.ComponentModel
         {
             bool providerAdded = false;
 
-            if (s_defaultProvidersCreated.ContainsKey(type))
+            if (s_defaultProvidersChecked.ContainsKey(type))
             {
                 return;
             }
@@ -301,7 +301,7 @@ namespace System.ComponentModel
                     }
                 }
 
-                s_defaultProvidersCreated[type] = null;
+                s_defaultProvidersChecked[type] = null;
             }
 
             // If we did not add a provider, check the base class.
