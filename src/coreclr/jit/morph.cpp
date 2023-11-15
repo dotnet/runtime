@@ -12937,8 +12937,8 @@ void Compiler::fgAssertionGen(GenTree* tree)
     };
 
     // For BBJ_COND nodes, we have two assertion out BVs.
-    // apLocal will be stored on bbAssertionOut and be used for false successors.
-    // apLocalIfTrue will be stored on bbAssertionGen and be used for true successors.
+    // apLocal will be stored on bbAssertionOutIfFalse and be used for false successors.
+    // apLocalIfTrue will be stored on bbAssertionOutIfTrue and be used for true successors.
     //
     const bool doCondUpdates = tree->OperIs(GT_JTRUE) && compCurBB->KindIs(BBJ_COND) && (compCurBB->NumSucc() == 2);
 
@@ -13899,10 +13899,19 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
                     //
                     ASSERT_TP assertionsOut = pred->bbAssertionOut;
 
-                    if (pred->KindIs(BBJ_COND) && (pred->NumSucc() == 2) && (block == pred->GetJumpDest()))
+                    if (pred->KindIs(BBJ_COND) && (pred->NumSucc() == 2))
                     {
-                        JITDUMP("Using `if true` assertions from pred " FMT_BB "\n", pred->bbNum);
-                        assertionsOut = pred->bbAssertionGen;
+                        if (block == pred->GetJumpDest())
+                        {
+                            JITDUMP("Using `if true` assertions from pred " FMT_BB "\n", pred->bbNum);
+                            assertionsOut = pred->bbAssertionOutIfTrue;
+                        }
+                        else
+                        {
+                            assert(block == pred->Next());
+                            JITDUMP("Using `if false` assertions from pred " FMT_BB "\n", pred->bbNum);
+                            assertionsOut = pred->bbAssertionOutIfFalse;
+                        }
                     }
 
                     // If this is the first pred, copy (or share, when block is the only successor).
@@ -13963,13 +13972,18 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
     if (optCrossBlockLocalAssertionProp && (block->NumSucc() > 0))
     {
         assert(optLocalAssertionProp);
-        block->bbAssertionOut = BitVecOps::MakeCopy(apTraits, apLocal);
 
         if (block->KindIs(BBJ_COND))
         {
-            // We don't need to make a copy here as this BV
+            // We don't need to make a copy of the if true set; this BV
             // was freshly copied in fgAssertionGen
-            block->bbAssertionGen = apLocalIfTrue;
+            //
+            block->bbAssertionOutIfTrue  = apLocalIfTrue;
+            block->bbAssertionOutIfFalse = BitVecOps::MakeCopy(apTraits, apLocal);
+        }
+        else
+        {
+            block->bbAssertionOut = BitVecOps::MakeCopy(apTraits, apLocal);
         }
     }
 
