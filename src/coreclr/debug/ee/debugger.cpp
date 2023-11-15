@@ -15770,7 +15770,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
     if (success)
     {
         // Check single-step flag
-        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread)))
+        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread)))
         {
             // Can't hijack a thread whose SS-flag is set. This could lead to races
             // with the thread taking the SS-exception.
