@@ -488,7 +488,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
                 // change the kind to something else. Otherwise, we can hit asserts below in fgRemoveBlock that
                 // the leaveBlk BBJ_ALWAYS is not allowed to be a CallAlwaysPairTail.
                 assert(block->KindIs(BBJ_CALLFINALLY));
-                block->SetJumpKind(BBJ_NONE);
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next() DEBUG_ARG(this));
             }
 
             leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
