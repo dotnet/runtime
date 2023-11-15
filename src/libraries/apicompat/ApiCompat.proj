@@ -44,7 +44,7 @@
 
     <!-- Restore and reference assemblies not built in runtime anymore, required for resolving type forward on both comparison sides. -->
     <ApiCompatTypeForwardDestinationPackage Include="System.Data.SqlClient" PackageVersion="$(SystemDataSqlClientVersion)" TargetFramework="netcoreapp2.1" />
-    <ApiCompatTypeForwardDestinationPackage Include="System.Drawing.Common" PackageVersion="$(SystemDrawingCommonVersion)" TargetFramework="net7.0" />
+    <ApiCompatTypeForwardDestinationPackage Include="System.Drawing.Common" PackageVersion="$(SystemDrawingCommonVersion)" TargetFramework="net8.0" />
 
     <!-- Restore and reference assemblies required for resolving type forwards on the baseline (left) side. -->
     <ApiCompatLeftTypeForwardDestinationPackage Include="@(ApiCompatTypeForwardDestinationPackage)"  />

@@ -11,6 +11,7 @@
                                                  '$(SuppressFinalPackageVersion)' == 'true' or
                                                  '$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(ApiCompatNetCoreAppBaselineVersion)</PackageValidationBaselineVersion>
+
     <BeforePack>$(BeforePack);IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging</BeforePack>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludeProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
@@ -35,6 +36,13 @@
 
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
+    <!-- In servicing, the live package is compared against the GA version in strict mode. -->
+    <EnableStrictModeForBaselineValidation>true</EnableStrictModeForBaselineValidation>
+    <!-- In servicing, disable the APICompat rule that validates that the assembly versions must match. -->
+    <NoWarn>$(NoWarn);CP0003</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
