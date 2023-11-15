@@ -78,7 +78,7 @@ Progress on the implementation can be tracked at https://github.com/dotnet/runti
 
 Build the runtime:
 ```sh
-./build.sh mono+libs+clr.hosts /p:ApiCompatGenerateSuppressionFile=true /p:KeepNativeSymbols=true
+./build.sh mono+libs+clr.hosts /p:KeepNativeSymbols=true
 ```
 Build the coreroot:
 ```sh
