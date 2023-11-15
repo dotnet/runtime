@@ -2734,7 +2734,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
 
         case BBJ_ALWAYS:
             // Fall-through successors are assumed correct and are not modified
-            if (blk->JumpsToNext())
+            if (blk->JumpsToNext() && ((blk->bbFlags & BBF_NONE_QUIRK) != 0))
             {
                 break;
             }
@@ -4451,6 +4451,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 //
                 BasicBlock* const clonedTop     = blockMap[loop.lpTop];
                 BasicBlock*       clonedTopPrev = clonedTop->Prev();
+                assert(clonedTopPrev->KindIs(BBJ_ALWAYS, BBJ_COND));
 
                 if (clonedTopPrev->KindIs(BBJ_ALWAYS))
                 {
