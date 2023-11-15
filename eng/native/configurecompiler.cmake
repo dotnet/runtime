@@ -606,6 +606,10 @@ if (CLR_CMAKE_HOST_UNIX)
     # other clang 16.0 suppressions
     add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
     add_compile_options(-Wno-cast-function-type-strict)
+    
+    # clang 18.0 warns about VLAs being a C++ extension by default.
+    # https://github.com/llvm/llvm-project/issues/62836
+    add_compile_options(-Wno-vla-cxx-extension)
   else()
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
