@@ -222,7 +222,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
     assert(fgFirstBBScratch == nullptr);
 
-    BasicBlock* block = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
+    BasicBlock* block = BasicBlock::New(this, BBJ_NONE);
 
     if (fgFirstBB != nullptr)
     {
@@ -3490,18 +3490,18 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         switch (jmpKind)
         {
             case BBJ_SWITCH:
-                curBBdesc = BasicBlock::bbNewBasicBlock(this, swtDsc);
+                curBBdesc = BasicBlock::New(this, swtDsc);
                 break;
 
             case BBJ_COND:
             case BBJ_ALWAYS:
             case BBJ_LEAVE:
                 noway_assert(jmpAddr != DUMMY_INIT(BAD_IL_OFFSET));
-                curBBdesc = BasicBlock::bbNewBasicBlock(this, jmpKind, jmpAddr);
+                curBBdesc = BasicBlock::New(this, jmpKind, jmpAddr);
                 break;
 
             default:
-                curBBdesc = BasicBlock::bbNewBasicBlock(this, jmpKind);
+                curBBdesc = BasicBlock::New(this, jmpKind);
                 break;
         }
 
@@ -4745,7 +4745,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     if (!curr->KindIs(BBJ_SWITCH))
     {
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = BasicBlock::bbNewBasicBlock(this, curr->GetJumpKind(), curr->GetJumpDest());
+        newBlock         = BasicBlock::New(this, curr->GetJumpKind(), curr->GetJumpDest());
         newBlock->bbRefs = 0;
 
         for (BasicBlock* const succ : curr->Succs(this))
@@ -4761,7 +4761,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     else
     {
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = BasicBlock::bbNewBasicBlock(this, curr->GetJumpSwt());
+        newBlock         = BasicBlock::New(this, curr->GetJumpSwt());
         newBlock->bbRefs = 0;
 
         // In the case of a switch statement there's more complicated logic in order to wire up the predecessor lists
@@ -6241,7 +6241,7 @@ BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind,
 {
     // Create a new BasicBlock and chain it in
 
-    BasicBlock* newBlk = BasicBlock::bbNewBasicBlock(this, jumpKind, jumpDest);
+    BasicBlock* newBlk = BasicBlock::New(this, jumpKind, jumpDest);
     newBlk->bbFlags |= BBF_INTERNAL;
 
     fgInsertBBbefore(block, newBlk);
@@ -6283,7 +6283,7 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind,
 {
     // Create a new BasicBlock and chain it in
 
-    BasicBlock* newBlk = BasicBlock::bbNewBasicBlock(this, jumpKind, jumpDest);
+    BasicBlock* newBlk = BasicBlock::New(this, jumpKind, jumpDest);
     newBlk->bbFlags |= BBF_INTERNAL;
 
     fgInsertBBafter(block, newBlk);

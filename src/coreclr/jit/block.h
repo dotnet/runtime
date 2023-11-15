@@ -539,10 +539,10 @@ private:
     };
 
 public:
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBswtDesc* jumpSwt);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
+    static BasicBlock* New(Compiler* compiler);
+    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    static BasicBlock* New(Compiler* compiler, BBswtDesc* jumpSwt);
+    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
 
     BBjumpKinds GetJumpKind() const
     {

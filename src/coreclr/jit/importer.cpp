@@ -5010,7 +5010,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // will be treated as pair and handled correctly.
     if (block->KindIs(BBJ_CALLFINALLY))
     {
-        BasicBlock* dupBlock = BasicBlock::bbNewBasicBlock(this, block->GetJumpKind(), block->GetJumpDest());
+        BasicBlock* dupBlock = BasicBlock::New(this, block->GetJumpKind(), block->GetJumpDest());
         dupBlock->bbFlags    = block->bbFlags;
         fgAddRefPred(dupBlock->GetJumpDest(), dupBlock);
         dupBlock->copyEHRegion(block);

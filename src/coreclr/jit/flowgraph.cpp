@@ -2985,7 +2985,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
+    BasicBlock* newHead = BasicBlock::New(this, BBJ_NONE);
     newHead->bbFlags |= BBF_INTERNAL;
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;

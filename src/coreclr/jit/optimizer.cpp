@@ -8173,11 +8173,11 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     if (isTopEntryLoop)
     {
-        preHead = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
+        preHead = BasicBlock::New(this, BBJ_NONE);
     }
     else
     {
-        preHead = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, entry);
+        preHead = BasicBlock::New(this, BBJ_ALWAYS, entry);
     }
 
     preHead->bbFlags |= BBF_INTERNAL | BBF_LOOP_PREHEADER;
