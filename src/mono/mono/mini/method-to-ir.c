@@ -11154,15 +11154,15 @@ field_access_end:
 				int swift_error_args = 0, swift_self_args = 0;
 				ERROR_DECL (swiftcall_error);
 				for (int i = 0; i < method->signature->param_count; ++i) {
-					MonoClass *klass = mono_class_from_mono_type_internal (method->signature->params [i]);
-					if (klass) {
-						if (klass == swift_error) {
+					MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
+					if (param_klass) {
+						if (param_klass == swift_error) {
 							swift_error_args = swift_self_args = 0;
                             mono_error_set_invalid_program (swiftcall_error, g_strdup_printf ("SwiftError argument must be a reference."), mono_method_full_name (method, TRUE));
 							break;
-						} else if (klass == swift_error_ptr) {
+						} else if (param_klass == swift_error_ptr) {
 							swift_self_args++;
-						} else if (klass == swift_self) {
+						} else if (param_klass == swift_self) {
 							swift_self_args++;
 						}
 					}

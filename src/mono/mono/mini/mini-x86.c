@@ -691,6 +691,13 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 	}
 }
 
+gpointer
+mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, gpointer call_info, int *arg_index)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}
+
 /*
  * mono_arch_get_argument_info:
  * @csig:  a method signature

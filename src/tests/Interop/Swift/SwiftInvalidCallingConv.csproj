@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BuildAsStandalone>true</BuildAsStandalone>
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InvalidCallingConv.cs" />
