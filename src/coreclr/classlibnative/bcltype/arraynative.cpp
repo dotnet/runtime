@@ -722,12 +722,6 @@ FCIMPLEND
 // Check we're allowed to create an array with the given element type.
 static void CheckElementType(TypeHandle elementType)
 {
-    // Checks apply recursively for arrays of arrays etc.
-    while (elementType.IsArray())
-    {
-        elementType = elementType.GetArrayElementTypeHandle();
-    }
-
     // Check for simple types first.
     if (!elementType.IsTypeDesc())
     {
@@ -766,6 +760,7 @@ void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT3
 
     TypeHandle typeHnd = pTypeHnd.AsTypeHandle();
 
+    // Negative rank means that the type handle is the array type
     if (rank < 0)
     {
         rank = -rank;

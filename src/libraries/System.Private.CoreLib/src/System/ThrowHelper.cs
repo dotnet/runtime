@@ -1094,12 +1094,6 @@ namespace System
                     return SR.NotSupported_KeyCollectionSet;
                 case ExceptionResource.NotSupported_ValueCollectionSet:
                     return SR.NotSupported_ValueCollectionSet;
-                case ExceptionResource.NotSupported_ByRefLikeArray:
-                    return SR.NotSupported_ByRefLikeArray;
-                case ExceptionResource.NotSupported_VoidArray:
-                    return SR.NotSupported_VoidArray;
-                case ExceptionResource.NotSupported_OpenType:
-                    return SR.NotSupported_OpenType;
                 case ExceptionResource.InvalidOperation_NullArray:
                     return SR.InvalidOperation_NullArray;
                 case ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted:
@@ -1354,9 +1348,6 @@ namespace System
         Serialization_NullKey,
         NotSupported_KeyCollectionSet,
         NotSupported_ValueCollectionSet,
-        NotSupported_ByRefLikeArray,
-        NotSupported_VoidArray,
-        NotSupported_OpenType,
         InvalidOperation_NullArray,
         TaskT_TransitionToFinal_AlreadyCompleted,
         TaskCompletionSourceT_TrySetException_NullException,

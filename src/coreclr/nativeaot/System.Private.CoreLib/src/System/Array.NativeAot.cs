@@ -57,17 +57,12 @@ namespace System
 
         private static void ValidateElementType(Type elementType)
         {
-            while (elementType.IsArray)
-            {
-                elementType = elementType.GetElementType()!;
-            }
-
             if (elementType.IsByRef || elementType.IsByRefLike)
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ByRefLikeArray);
+                throw new NotSupportedException(SR.NotSupported_ByRefLikeArray);
             if (elementType == typeof(void))
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_VoidArray);
+                throw new NotSupportedException(SR.NotSupported_VoidArray);
             if (elementType.ContainsGenericParameters)
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_OpenType);
+                throw new NotSupportedException(SR.NotSupported_OpenType);
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
