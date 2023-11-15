@@ -124,42 +124,29 @@ internal static class MsQuicConfiguration
         settings.IsSet.PeerBidiStreamCount = 1;
         settings.PeerBidiStreamCount = (ushort)options.MaxInboundBidirectionalStreams;
 
-        if (options.IdleTimeout != TimeSpan.Zero)
+        if (options.IdleTimeout != Timeout.InfiniteTimeSpan)
         {
             settings.IsSet.IdleTimeoutMs = 1;
-            settings.IdleTimeoutMs = options.IdleTimeout != Timeout.InfiniteTimeSpan ? (ulong)options.IdleTimeout.TotalMilliseconds : 0;
+            settings.IdleTimeoutMs = (uint)options.IdleTimeout.TotalMilliseconds;
         }
 
-        if (options.KeepAliveInterval != TimeSpan.Zero)
+        if (options.KeepAliveInterval != Timeout.InfiniteTimeSpan)
         {
             settings.IsSet.KeepAliveIntervalMs = 1;
             settings.KeepAliveIntervalMs = (uint)options.KeepAliveInterval.TotalMilliseconds;
         }
 
-        if (options.InitialConnectionWindowSize > 0)
-        {
-            settings.IsSet.ConnFlowControlWindow = 1;
-            settings.ConnFlowControlWindow = (uint)options.InitialConnectionWindowSize;
-        }
+        settings.IsSet.ConnFlowControlWindow = 1;
+        settings.ConnFlowControlWindow = (uint)options.InitialReceiveWindowSizes.Connection;
 
-        // todo: these values need all to be powers of 2
-        if (options.InitialLocallyInitiatedBidirectionalStreamReceiveWindowSize > 0)
-        {
-            settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
-            settings.StreamRecvWindowBidiLocalDefault = (uint)options.InitialLocallyInitiatedBidirectionalStreamReceiveWindowSize;
-        }
+        settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
+        settings.StreamRecvWindowBidiLocalDefault = (uint)options.InitialReceiveWindowSizes.LocallyInitiatedBidirectionalStream;
 
-        if (options.InitialRemotelyInitiatedBidirectionalStreamReceiveWindowSize > 0)
-        {
-            settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
-            settings.StreamRecvWindowBidiRemoteDefault = (uint)options.InitialRemotelyInitiatedBidirectionalStreamReceiveWindowSize;
-        }
+        settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
+        settings.StreamRecvWindowBidiRemoteDefault = (uint)options.InitialReceiveWindowSizes.RemotelyInitiatedBidirectionalStream;
 
-        if (options.InitialUnidirectionalStreamReceiveWindowSize > 0)
-        {
-            settings.IsSet.StreamRecvWindowUnidiDefault = 1;
-            settings.StreamRecvWindowUnidiDefault = (uint)options.InitialUnidirectionalStreamReceiveWindowSize;
-        }
+        settings.IsSet.StreamRecvWindowUnidiDefault = 1;
+        settings.StreamRecvWindowUnidiDefault = (uint)options.InitialReceiveWindowSizes.UnidirectionalStream;
 
         QUIC_HANDLE* handle;
 

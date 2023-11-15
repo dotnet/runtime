@@ -43,10 +43,7 @@ namespace System.Net.Quic
         public long DefaultStreamErrorCode { get { throw null; } set { } }
         public System.TimeSpan HandshakeTimeout { get { throw null; } set { } }
         public System.TimeSpan IdleTimeout { get { throw null; } set { } }
-        public int InitialConnectionWindowSize { get { throw null; } set { } }
-        public int InitialLocallyInitiatedBidirectionalStreamReceiveWindowSize { get { throw null; } set { } }
-        public int InitialRemotelyInitiatedBidirectionalStreamReceiveWindowSize { get { throw null; } set { } }
-        public int InitialUnidirectionalStreamReceiveWindowSize { get { throw null; } set { } }
+        public System.Net.Quic.QuicReceiveWindowSizes InitialReceiveWindowSizes { get { throw null; } set { } }
         public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
         public int MaxInboundBidirectionalStreams { get { throw null; } set { } }
         public int MaxInboundUnidirectionalStreams { get { throw null; } set { } }
@@ -90,6 +87,14 @@ namespace System.Net.Quic
         public System.Func<System.Net.Quic.QuicConnection, System.Net.Security.SslClientHelloInfo, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.Net.Quic.QuicServerConnectionOptions>> ConnectionOptionsCallback { get { throw null; } set { } }
         public int ListenBacklog { get { throw null; } set { } }
         public System.Net.IPEndPoint ListenEndPoint { get { throw null; } set { } }
+    }
+    public sealed partial class QuicReceiveWindowSizes
+    {
+        public QuicReceiveWindowSizes() { }
+        public int Connection { get { throw null; } set { } }
+        public int LocallyInitiatedBidirectionalStream { get { throw null; } set { } }
+        public int RemotelyInitiatedBidirectionalStream { get { throw null; } set { } }
+        public int UnidirectionalStream { get { throw null; } set { } }
     }
     public sealed partial class QuicServerConnectionOptions : System.Net.Quic.QuicConnectionOptions
     {
