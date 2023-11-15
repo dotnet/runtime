@@ -22,16 +22,6 @@ if(CLR_CMAKE_HOST_UNIX)
     add_definitions(-DFEATURE_OBJCMARSHAL)
   endif(CLR_CMAKE_TARGET_APPLE)
 
-  if(CLR_CMAKE_TARGET_MACCATALYST)
-    add_definitions(-DTARGET_MACCATALYST)
-  endif()
-  if(CLR_CMAKE_TARGET_IOS)
-    add_definitions(-DTARGET_IOS)
-  endif()
-  if(CLR_CMAKE_TARGET_TVOS)
-    add_definitions(-DTARGET_TVOS)
-  endif()
-
   if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
     # Allow 16 byte compare-exchange
     add_compile_options(-mcx16)

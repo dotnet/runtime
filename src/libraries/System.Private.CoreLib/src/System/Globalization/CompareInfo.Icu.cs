@@ -25,7 +25,7 @@ namespace System.Globalization
             if (!GlobalizationMode.Invariant)
             {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
-                    if (GlobalizationMode.Hybrid)
+                if (GlobalizationMode.Hybrid)
                     return;
 #endif
                  _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
