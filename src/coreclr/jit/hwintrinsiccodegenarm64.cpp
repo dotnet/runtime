@@ -830,6 +830,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
@@ -839,8 +840,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     GetEmitter()->emitIns_R_R_I(ins, emitSize, op2Reg, op1Reg, elementIndex, opt);
                 }
+                break;
             }
-            break;
 
             case NI_AdvSimd_StoreVector64x2AndZip:
             case NI_AdvSimd_StoreVector64x3AndZip:
