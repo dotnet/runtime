@@ -226,6 +226,10 @@ const gint8 mini_ins_sreg_counts[] = {
 #undef MINI_OP
 #undef MINI_OP3
 
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
+static GENERATE_TRY_GET_CLASS_REF_WITH_CACHE (swift_error_ref, "System.Runtime.InteropServices.Swift", "SwiftError")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+
 guint32
 mono_alloc_ireg (MonoCompile *cfg)
 {
