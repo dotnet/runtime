@@ -28,6 +28,7 @@ namespace RuntimeEventCounterTests
                 { "gen-2-gc-count", false },
                 { "threadpool-thread-count", false },
                 { "monitor-lock-contention-count", false },
+                { "monitor-wait-count", false },
                 { "threadpool-queue-length", false },
                 { "threadpool-completed-items-count", false },
                 { "alloc-rate", false },

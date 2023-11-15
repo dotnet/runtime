@@ -787,6 +787,7 @@ signal_monitor (gpointer mon_untyped)
 }
 
 static gint64 thread_contentions; /* for Monitor.LockContentionCount */
+static gint64 thread_waits; /* for Monitor.WaitCount */
 
 /* If allow_interruption==TRUE, the method will be interrupted if abort or suspend
  * is requested. In this case it returns -1.
@@ -1340,6 +1341,8 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 
 	LOCK_DEBUG (g_message ("%s: (%d) Unlocked %p lock %p", __func__, id, obj, mon));
 
+	mono_atomic_inc_i64 (&thread_waits);
+
 	/* There's no race between unlocking mon and waiting for the
 	 * event, because auto reset events are sticky, and this event
 	 * is private to this thread.  Therefore even if the event was
@@ -1437,4 +1440,10 @@ gint64
 ves_icall_System_Threading_Monitor_Monitor_get_lock_contention_count (void)
 {
 	return thread_contentions;
+}
+
+gint64
+ves_icall_System_Threading_Monitor_Monitor_get_wait_count (void)
+{
+	return thread_waits;
 }

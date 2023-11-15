@@ -32,6 +32,7 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _workingSetCounter;
         private PollingCounter? _threadPoolThreadCounter;
         private IncrementingPollingCounter? _monitorContentionCounter;
+        private IncrementingPollingCounter? _monitorWaitCounter;
         private PollingCounter? _threadPoolQueueCounter;
         private IncrementingPollingCounter? _completedItemsCounter;
         private IncrementingPollingCounter? _allocRateCounter;
@@ -106,6 +107,7 @@ namespace System.Diagnostics.Tracing
                 _gen0BudgetCounter ??= new PollingCounter("gen-0-gc-budget", this, () => GC.GetGenerationBudget(0) / 1_000_000) { DisplayName = "Gen 0 GC Budget", DisplayUnits = "MB" };
                 _threadPoolThreadCounter ??= new PollingCounter("threadpool-thread-count", this, () => ThreadPool.ThreadCount) { DisplayName = "ThreadPool Thread Count" };
                 _monitorContentionCounter ??= new IncrementingPollingCounter("monitor-lock-contention-count", this, () => Monitor.LockContentionCount) { DisplayName = "Monitor Lock Contention Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+                _monitorWaitCounter ??= new IncrementingPollingCounter("monitor-wait-count", this, () => Monitor.WaitCount) { DisplayName = "Monitor Wait Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _threadPoolQueueCounter ??= new PollingCounter("threadpool-queue-length", this, () => ThreadPool.PendingWorkItemCount) { DisplayName = "ThreadPool Queue Length" };
                 _completedItemsCounter ??= new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _allocRateCounter ??= new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayUnits = "B", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };

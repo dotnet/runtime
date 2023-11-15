@@ -190,5 +190,13 @@ namespace System.Threading
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
         private static partial long GetLockContentionCount();
+
+        /// <summary>
+        /// Gets the number of times there was a pause upon using <see cref="Monitor"/>'s wait so far.
+        /// </summary>
+        public static long WaitCount => GetWaitCount();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorWaitCount")]
+        private static partial long GetWaitCount();
     }
 }

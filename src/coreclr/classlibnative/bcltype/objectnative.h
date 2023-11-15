@@ -41,4 +41,5 @@ public:
 };
 
 extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorLockContentionCount();
+extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorWaitCount();
 #endif // _OBJECTNATIVE_H_

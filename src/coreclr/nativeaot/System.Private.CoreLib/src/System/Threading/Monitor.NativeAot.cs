@@ -172,6 +172,11 @@ namespace System.Threading
         /// </summary>
         public static long LockContentionCount => Lock.ContentionCount;
 
+        /// <summary>
+        /// Gets the number of times there was a pause upon using <see cref="Monitor"/>'s wait so far.
+        /// </summary>
+        public static long WaitCount => Condition.WaitCount;
+
         #endregion
     }
 }

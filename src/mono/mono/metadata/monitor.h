@@ -131,6 +131,10 @@ ICALL_EXPORT
 gint64
 ves_icall_System_Threading_Monitor_Monitor_get_lock_contention_count (void);
 
+ICALL_EXPORT
+gint64
+ves_icall_System_Threading_Monitor_Monitor_get_wait_count (void);
+
 #ifdef HOST_WASM
 void
 mono_set_string_interned_internal (MonoObject* obj);

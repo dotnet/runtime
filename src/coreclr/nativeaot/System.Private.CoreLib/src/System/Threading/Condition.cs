@@ -28,6 +28,9 @@ namespace System.Threading
             return waiter;
         }
 
+        private static long _waitCount;
+        internal static long WaitCount => _waitCount;
+
         private readonly Lock _lock;
         private Waiter? _waitersHead;
         private Waiter? _waitersTail;
@@ -111,6 +114,7 @@ namespace System.Threading
             bool success = false;
             try
             {
+                Interlocked.Increment(ref _waitCount);
                 success = waiter.ev.WaitOne(millisecondsTimeout);
             }
             finally

@@ -458,6 +458,14 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void WaitTest_WaitCountTest()
+        {
+            long initialWaitCount = Monitor.WaitCount;
+            WaitTest();
+            Assert.True(Monitor.WaitCount - initialWaitCount >= 4);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ObjectHeaderSyncBlockTransitionTryEnterRaceTest()
         {
             var threadStarted = new AutoResetEvent(false);

@@ -3426,7 +3426,9 @@ private:
 
 private:
     UINT32 m_monitorLockContentionCount;
+    UINT32 m_monitorWaitCount;
     static UINT64 s_monitorLockContentionCountOverflow;
+    static UINT64 s_monitorWaitCountOverflow;
 
 #ifndef DACCESS_COMPILE
 private:
@@ -3494,6 +3496,24 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         return GetTotalCount(offsetof(Thread, m_monitorLockContentionCount), &s_monitorLockContentionCountOverflow);
+    }
+
+    static void IncrementMonitorWaitCount(Thread *pThread)
+    {
+        WRAPPER_NO_CONTRACT;
+        IncrementCount(pThread, offsetof(Thread, m_monitorWaitCount), &s_monitorWaitCountOverflow);
+    }
+
+    static UINT64 GetMonitorWaitCountOverflow()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetOverflowCount(&s_monitorWaitCountOverflow);
+    }
+
+    static UINT64 GetTotalMonitorWaitCount()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetTotalCount(offsetof(Thread, m_monitorWaitCount), &s_monitorWaitCountOverflow);
     }
 #endif // !DACCESS_COMPILE
 

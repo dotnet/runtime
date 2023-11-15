@@ -2851,6 +2851,7 @@ BOOL SyncBlock::Wait(INT32 timeOut)
 
     OBJECTREF     obj = m_Monitor.GetOwningObject();
 
+    Thread::IncrementMonitorWaitCount(pCurThread);
     m_Monitor.IncrementTransientPrecious();
 
     // While we are in this frame the thread is considered blocked on the

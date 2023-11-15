@@ -375,3 +375,17 @@ extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorLockContentionCount()
     END_QCALL;
     return result;
 }
+
+extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorWaitCount()
+{
+    QCALL_CONTRACT;
+
+    INT64 result = 0;
+
+    BEGIN_QCALL;
+
+    result = (INT64)Thread::GetTotalMonitorWaitCount();
+
+    END_QCALL;
+    return result;
+}

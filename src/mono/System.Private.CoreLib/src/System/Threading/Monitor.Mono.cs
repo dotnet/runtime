@@ -149,5 +149,10 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern long Monitor_get_lock_contention_count();
+
+        public static long WaitCount => Monitor_get_wait_count() + Condition.WaitCount;
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern long Monitor_get_wait_count();
     }
 }

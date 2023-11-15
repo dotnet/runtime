@@ -133,6 +133,7 @@ PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(MethodTable* pMT)
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
 
 UINT64 Thread::s_monitorLockContentionCountOverflow = 0;
+UINT64 Thread::s_monitorWaitCountOverflow = 0;
 
 CrstStatic g_DeadlockAwareCrst;
 
@@ -5316,6 +5317,9 @@ BOOL ThreadStore::RemoveThread(Thread *target)
         InterlockedExchangeAdd64(
             (LONGLONG *)&Thread::s_monitorLockContentionCountOverflow,
             target->m_monitorLockContentionCount);
+        InterlockedExchangeAdd64(
+            (LONGLONG *)&Thread::s_monitorWaitCountOverflow,
+            target->m_monitorWaitCount);
 
         _ASSERTE(s_pThreadStore->m_ThreadCount >= 0);
         _ASSERTE(s_pThreadStore->m_BackgroundThreadCount >= 0);

@@ -329,6 +329,7 @@ namespace System.Threading
     public static partial class Monitor
     {
         public static long LockContentionCount { get { throw null; } }
+        public static long WaitCount { get { throw null; } }
         public static void Enter(object obj) { }
         public static void Enter(object obj, ref bool lockTaken) { }
         public static void Exit(object obj) { }
