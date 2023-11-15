@@ -3928,7 +3928,8 @@ PhaseStatus Compiler::fgSetBlockOrder()
             {
                 case BBJ_COND:
                 case BBJ_ALWAYS:
-                    partiallyInterruptible = EDGE_IS_GC_SAFE(block, block->GetJumpDest());
+                    partiallyInterruptible =
+                        (block->bbFlags & BBF_NONE_QUIRK) || EDGE_IS_GC_SAFE(block, block->GetJumpDest());
                     break;
 
                 case BBJ_SWITCH:
