@@ -1253,7 +1253,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void GetProperties_ReturnsExpected()
+        public void ConcurrentGetProperties_ReturnsExpected()
         {
             const int Timeout = 60000;
             int concurrentCount = Environment.ProcessorCount * 2;
