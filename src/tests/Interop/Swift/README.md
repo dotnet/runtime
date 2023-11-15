@@ -2,9 +2,9 @@
 
 The Swift programming language has a different ABI, runtime environment, and object model, making it challenging to call from the .NET runtime. Existing solutions, like [Binding Tools for Swift](https://github.com/xamarin/binding-tools-for-swift) and [BeyondNet](https://github.com/royalapplications/beyondnet).
 
-This project aims to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences. For a comprehensive .NET Swift interop, the Binding Tools for Swift contains valuable components that could be reused or built upon. 
+This project aims to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences. For a comprehensive .NET Swift interop, the Binding Tools for Swift contains valuable components that could be reused or built upon.
 
-We want to focus on the runtime support for direct P/Invoke interop with Swift, which Xamarin bindings will consume to support running Maui apps with third-party Swift libraries. Ideally, we want to avoid generating extra wrappers and attempt to directly call all kinds of Swift functions. While external tools can be helpful, they may introduce additional complexity, and we intend to integrate them into the .NET toolchain ecosystem. 
+We want to focus on the runtime support for direct P/Invoke interop with Swift, which Xamarin bindings will consume to support running Maui apps with third-party Swift libraries. Ideally, we want to avoid generating extra wrappers and attempt to directly call all kinds of Swift functions. While external tools can be helpful, they may introduce additional complexity, and we intend to integrate them into the .NET toolchain ecosystem.
 
 ## Swift ABI in a nutshell
 
@@ -24,9 +24,9 @@ The Swift runtime keeps a metadata record for every type used in a program, incl
 
 ### Calling convention
 
-In Swift programming language, functions parameters can be passed either by reference or value. This is called "pass-by-X" for consistency. Swift allows l-values parameters to be marked as pass-by-reference with"`in/out`. It's assumed the caller ensures validity and ownership of parameters in both cases. 
+In Swift programming language, functions parameters can be passed either by reference or value. This is called "pass-by-X" for consistency. Swift allows l-values parameters to be marked as pass-by-reference with"`in/out`. It's assumed the caller ensures validity and ownership of parameters in both cases.
 
-According to the calling convention, the `self`` context has dedicated registers, and it is always passed through them since it's heavily used. Methods calling other methods on the same object can share the self context. 
+According to the calling convention, the `self`` context has dedicated registers, and it is always passed through them since it's heavily used. Methods calling other methods on the same object can share the self context.
 
 Here are cases when `self` context is passed via register:
  - Instance methods on class types: pointer to self
