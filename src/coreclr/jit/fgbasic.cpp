@@ -366,7 +366,7 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     fgRemoveBlockAsPred(block);
 
     // Update jump kind after the scrub.
-    block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
+    block->SetJumpKindAndTarget(BBJ_THROW);
 
     // Any block with a throw is rare
     block->bbSetRunRarely();
@@ -2947,7 +2947,7 @@ void Compiler::fgLinkBasicBlocks()
                 BasicBlock* const jumpDest = fgLookupBB(curBBdesc->GetJumpOffs());
                 // Redundantly use SetJumpKindAndTarget() instead of SetJumpDest() just this once,
                 // so we don't break the HasJump() invariant of SetJumpDest().
-                curBBdesc->SetJumpKindAndTarget(curBBdesc->GetJumpKind(), jumpDest DEBUG_ARG(this));
+                curBBdesc->SetJumpKindAndTarget(curBBdesc->GetJumpKind(), jumpDest);
                 fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
                 if (curBBdesc->GetJumpDest()->bbNum <= curBBdesc->bbNum)
@@ -4195,7 +4195,7 @@ void Compiler::fgFixEntryFlowForOSR()
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_NONE));
     fgRemoveRefPred(fgFirstBB->Next(), fgFirstBB);
-    fgFirstBB->SetJumpKindAndTarget(BBJ_ALWAYS, fgOSREntryBB DEBUG_ARG(this));
+    fgFirstBB->SetJumpKindAndTarget(BBJ_ALWAYS, fgOSREntryBB);
     FlowEdge* const edge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
     edge->setLikelihood(1.0);
 
@@ -4802,7 +4802,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     curr->bbFlags &= ~(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
     // Default to fallthru, and add the arc for that.
-    curr->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+    curr->SetJumpKindAndTarget(BBJ_NONE);
     fgAddRefPred(newBlock, curr);
 
     return newBlock;
@@ -5240,7 +5240,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             // Note that we don't do it if bPrev follows a BBJ_CALLFINALLY block (BBF_KEEP_BBJ_ALWAYS),
             // because that would violate our invariant that BBJ_CALLFINALLY blocks are followed by
             // BBJ_ALWAYS blocks.
-            bPrev->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+            bPrev->SetJumpKindAndTarget(BBJ_NONE);
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
@@ -5439,7 +5439,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     if (block->KindIs(BBJ_ALWAYS))
                     {
                         /* bPrev now becomes a BBJ_ALWAYS */
-                        bPrev->SetJumpKindAndTarget(BBJ_ALWAYS, succBlock DEBUG_ARG(this));
+                        bPrev->SetJumpKindAndTarget(BBJ_ALWAYS, succBlock);
                     }
                     break;
 
@@ -5509,7 +5509,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     if ((bPrev == fgFirstBB) || !bPrev->isBBCallAlwaysPairTail())
                     {
                         // It's safe to change the jump type
-                        bPrev->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                        bPrev->SetJumpKindAndTarget(BBJ_NONE);
                     }
                 }
                 break;
@@ -5557,7 +5557,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
             switch (bSrc->GetJumpKind())
             {
                 case BBJ_NONE:
-                    bSrc->SetJumpKindAndTarget(BBJ_ALWAYS, bDst DEBUG_ARG(this));
+                    bSrc->SetJumpKindAndTarget(BBJ_ALWAYS, bDst);
                     JITDUMP("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB "\n",
                             bSrc->bbNum, bSrc->GetJumpDest()->bbNum);
                     break;
@@ -5636,7 +5636,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
             if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) && bSrc->HasJump() &&
                 bSrc->JumpsToNext())
             {
-                bSrc->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                bSrc->SetJumpKindAndTarget(BBJ_NONE);
                 JITDUMP("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
                         " into a BBJ_NONE block\n",
                         bSrc->bbNum, bSrc->Next()->bbNum);

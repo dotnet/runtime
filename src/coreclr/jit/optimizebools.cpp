@@ -1008,7 +1008,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     // Update the flow.
     m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
-    m_b1->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(m_comp));
+    m_b1->SetJumpKindAndTarget(BBJ_NONE);
 
     // Fixup flags.
     m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
@@ -1297,7 +1297,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     if (optReturnBlock)
     {
-        m_b1->SetJumpKindAndTarget(BBJ_RETURN DEBUG_ARG(m_comp));
+        m_b1->SetJumpKindAndTarget(BBJ_RETURN);
         assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->NextIs(m_b2));
         assert(m_b3 != nullptr);
