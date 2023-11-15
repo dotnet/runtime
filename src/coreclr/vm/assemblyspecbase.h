@@ -18,6 +18,12 @@
 #include "../binder/inc/assemblyname.hpp"
 #include "assemblybinder.h"
 
+#include "../binder/inc/defaultassemblybinder.h"
+
+#if !defined(DACCESS_COMPILE)
+#include "../binder/inc/customassemblybinder.h"
+#endif // !defined(DACCESS_COMPILE)
+
 #include "baseassemblyspec.h"
 #include "baseassemblyspec.inl"
 

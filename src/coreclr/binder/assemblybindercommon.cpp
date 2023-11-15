@@ -30,89 +30,6 @@ STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
 
 namespace BINDER_SPACE
 {
-    namespace
-    {
-        //
-        // This defines the assembly equivalence relation
-        //
-        bool IsCompatibleAssemblyVersion(/* in */ AssemblyName *pRequestedName,
-                                         /* in */ AssemblyName *pFoundName)
-        {
-            AssemblyVersion *pRequestedVersion = pRequestedName->GetVersion();
-            AssemblyVersion *pFoundVersion = pFoundName->GetVersion();
-
-            if (!pRequestedVersion->HasMajor())
-            {
-                // An unspecified requested version component matches any value for the same component in the found version,
-                // regardless of lesser-order version components
-                return true;
-            }
-            if (!pFoundVersion->HasMajor() || pRequestedVersion->GetMajor() > pFoundVersion->GetMajor())
-            {
-                // - A specific requested version component does not match an unspecified value for the same component in
-                //   the found version, regardless of lesser-order version components
-                // - Or, the requested version is greater than the found version
-                return false;
-            }
-            if (pRequestedVersion->GetMajor() < pFoundVersion->GetMajor())
-            {
-                // The requested version is less than the found version
-                return true;
-            }
-
-            if (!pRequestedVersion->HasMinor())
-            {
-                return true;
-            }
-            if (!pFoundVersion->HasMinor() || pRequestedVersion->GetMinor() > pFoundVersion->GetMinor())
-            {
-                return false;
-            }
-            if (pRequestedVersion->GetMinor() < pFoundVersion->GetMinor())
-            {
-                return true;
-            }
-
-            if (!pRequestedVersion->HasBuild())
-            {
-                return true;
-            }
-            if (!pFoundVersion->HasBuild() || pRequestedVersion->GetBuild() > pFoundVersion->GetBuild())
-            {
-                return false;
-            }
-            if (pRequestedVersion->GetBuild() < pFoundVersion->GetBuild())
-            {
-                return true;
-            }
-
-            if (!pRequestedVersion->HasRevision())
-            {
-                return true;
-            }
-            if (!pFoundVersion->HasRevision() || pRequestedVersion->GetRevision() > pFoundVersion->GetRevision())
-            {
-                return false;
-            }
-            return true;
-        }
-
-        HRESULT CreateImageAssembly(PEImage                 *pPEImage,
-                                    BindResult              *pBindResult)
-        {
-            HRESULT hr = S_OK;
-            ReleaseHolder<Assembly> pAssembly;
-
-            SAFE_NEW(pAssembly, Assembly);
-            IF_FAIL_GO(pAssembly->Init(pPEImage, /* fIsInTPA */ FALSE ));
-
-            pBindResult->SetResult(pAssembly);
-
-        Exit:
-            return hr;
-        }
-    };
-
     HRESULT AssemblyBinderCommon::TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind)
     {
         HRESULT hr = S_OK;
@@ -177,7 +94,7 @@ namespace BINDER_SPACE
     Exit:
         return hr;
     }
-    \
+    
     /* static */
     HRESULT AssemblyBinderCommon::BindToSystem(SString   &systemDirectory,
                                                PEImage   **ppPEImage)
@@ -258,33 +175,6 @@ namespace BINDER_SPACE
         return hr;
     }
     
-    //
-    // Tests whether a candidate assembly's name matches the requested.
-    // This does not do a version check.  The binder applies version policy
-    // further up the stack once it gets a successful bind.
-    //
-    BOOL TestCandidateRefMatchesDef(AssemblyName *pRequestedAssemblyName,
-                                    AssemblyName *pBoundAssemblyName,
-                                    BOOL tpaListAssembly)
-    {
-        DWORD dwIncludeFlags = AssemblyName::INCLUDE_DEFAULT;
-
-        if (!tpaListAssembly)
-        {
-            if (pRequestedAssemblyName->IsNeutralCulture())
-            {
-                dwIncludeFlags |= AssemblyName::EXCLUDE_CULTURE;
-            }
-        }
-
-        if (pRequestedAssemblyName->GetArchitecture() != peNone)
-        {
-            dwIncludeFlags |= AssemblyName::INCLUDE_ARCHITECTURE;
-        }
-
-        return pBoundAssemblyName->Equals(pRequestedAssemblyName, dwIncludeFlags);
-    }
-
 #if !defined(DACCESS_COMPILE)
 HRESULT AssemblyBinderCommon::CreateDefaultBinder(DefaultAssemblyBinder** ppDefaultBinder)
 {

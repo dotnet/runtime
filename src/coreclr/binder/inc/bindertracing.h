@@ -91,53 +91,6 @@ namespace BinderTracing
     public: // static
         static void TraceAppDomainAssemblyResolve(AssemblySpec *spec, PEAssembly *resultAssembly, Exception *exception = nullptr);
 
-    public:
-        // One of native bindContext or managedALC is expected to be non-zero. If the managed ALC is set, bindContext is ignored.
-        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, AssemblyBinder* bindContext, INT_PTR managedALC, const HRESULT& hr);
-
-        void TraceBindResult(const BINDER_SPACE::BindResult &bindResult, bool mvidMismatch = false);
-
-        void SetFoundAssembly(BINDER_SPACE::Assembly *assembly)
-        {
-            m_pFoundAssembly = assembly;
-        }
-
-        void GoToStage(Stage stage)
-        {
-            assert(m_stage != stage);
-            assert(stage != Stage::NotYetStarted);
-
-            if (!m_tracingEnabled)
-                return;
-
-            // Going to a different stage should only happen if the current
-            // stage failed (or if the binding process wasn't yet started).
-            // Firing the event at this point not only helps timing each binding
-            // stage, but avoids keeping track of which stages were reached to
-            // resolve the assembly.
-            TraceStage(m_stage, m_hr, m_pFoundAssembly);
-            m_stage = stage;
-            m_exceptionMessage.Clear();
-        }
-
-        void SetException(Exception *ex)
-        {
-            if (!m_tracingEnabled)
-                return;
-
-            ex->GetMessage(m_exceptionMessage);
-        }
-
-#ifdef FEATURE_EVENT_TRACE
-        ~ResolutionAttemptedOperation()
-        {
-            if (!m_tracingEnabled)
-                return;
-
-            TraceStage(m_stage, m_hr, m_pFoundAssembly);
-        }
-#endif // FEATURE_EVENT_TRACE
-
     private:
 
         // This must match the ResolutionAttemptedResult value map in ClrEtwAll.man
@@ -150,25 +103,6 @@ namespace BinderTracing
             Failure = 4,
             Exception = 5,
         };
-
-        // A reference to an HRESULT stored in the same scope as this object lets
-        // us determine if the last requested stage was successful or not, regardless
-        // if it was set through a function call (e.g. BindAssemblyByNameWorker()), or
-        // if an exception was thrown and captured by the EX_CATCH_HRESULT() macro.
-        const HRESULT &m_hr;
-
-        Stage m_stage;
-
-        bool m_tracingEnabled;
-
-        BINDER_SPACE::AssemblyName *m_assemblyNameObject;
-        PathString m_assemblyName;
-        SString m_assemblyLoadContextName;
-
-        SString m_exceptionMessage;
-        BINDER_SPACE::Assembly *m_pFoundAssembly;
-
-        void TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly, const WCHAR *errorMessage = nullptr);
     };
 
     // This must match the BindingPathSource value map in ClrEtwAll.man
