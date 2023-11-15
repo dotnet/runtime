@@ -66,9 +66,21 @@ public sealed partial class QuicConnection : IAsyncDisposable
         static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken)
         {
             QuicConnection connection = new QuicConnection();
+
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            linkedCts.CancelAfter(options.HandshakeTimeout);
+
             try
             {
-                await connection.FinishConnectAsync(options, cancellationToken).ConfigureAwait(false);
+                await connection.FinishConnectAsync(options, linkedCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // connect timeout elapsed, since handshake is not done yet, application error code
+                // is not applied yet.
+                await connection.DisposeAsync().ConfigureAwait(false);
+
+                throw new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, options.HandshakeTimeout));
             }
             catch
             {
