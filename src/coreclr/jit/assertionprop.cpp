@@ -5493,10 +5493,9 @@ public:
     //   try region.
     //
     //   It suffices to intersect with only the head 'try' block's assertions,
-    //   since that block dominates all other blocks in the try and we never
-    //   kill assertions in global AP. Note that if we did kill assertions we
-    //   would need to be more careful about our mid-block handling when in a
-    //   try region.
+    //   since that block dominates all other blocks in the try, and since
+    //   assertions are VN-based and can never become false.
+    //
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
         if (VerboseDataflow())

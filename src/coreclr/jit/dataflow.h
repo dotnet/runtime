@@ -58,7 +58,7 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
         }
         else
         {
-            for (FlowEdge* pred = block->bbPreds; pred; pred = pred->getNextPredEdge())
+            for (FlowEdge* pred : block->PredEdges())
             {
                 callback.Merge(block, pred->getSourceBlock(), pred->getDupCount());
             }
@@ -72,10 +72,11 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
             // 1. CSE does not CSE into handlers, so it considers no
             // expressions available at the beginning of handlers;
             //
-            // 2. Assertion prop never kills any assertions, so it is
-            // sufficient to propagate facts from the 'try' head block, since
-            // that block dominates all other blocks in the 'try'. That happens
-            // implicitly below.
+            // 2. Facts in global assertion prop are VN-based and can only
+            // become false because of control flow, so it is sufficient to
+            // propagate facts available into the 'try' head block, since that
+            // block dominates all other blocks in the 'try'. That will happen
+            // as part of processing handlers below.
             //
             block->VisitRegularSuccs(m_pCompiler, [&worklist](BasicBlock* succ) {
                 worklist.insert(worklist.end(), succ);
