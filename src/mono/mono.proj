@@ -85,7 +85,20 @@
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(HostOS)' == 'windows'" 
+                      Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64"
+                      PrivateAssets="all"
+                      Version="$(MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version)"
+                      GeneratePathProperty="true" />
   </ItemGroup>
+
+  <!-- 
+    Like Wasm, Wasi needs a 64-bit python on windows to pinvoke into libClang.dll for offset generation.
+    Only wasi doesn't come with its own python and windows uses 32-bit python, so refer to the transport pack instead.
+  -->
+  <PropertyGroup Condition="'$(HostOS)' == 'windows' and '$(TargetsWasi)' == 'true'">
+    <PythonCmd>$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_34_Python_win-x64)', 'tools', 'python'))</PythonCmd>
+  </PropertyGroup>
 
   <!-- CI specific build options -->
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(Targetsillumos)' == 'true')">
