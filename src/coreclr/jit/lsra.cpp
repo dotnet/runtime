@@ -4838,7 +4838,6 @@ void LinearScan::allocateRegisters()
     {
         RefPosition* nextRefPosition = currentRefPosition.nextRefPosition;
 
-        
         if (compiler->verbose && currentRefPosition.rpNum == 4)
         {
             // __builtin_debugtrap();

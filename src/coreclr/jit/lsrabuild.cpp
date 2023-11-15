@@ -2803,7 +2803,7 @@ void           LinearScan::buildIntervals()
     {
         // Mask out the bits that are between 64 ~ availableRegCount
         // unsigned __int128 a = ((UINT128(1, 0) << 64) - 1);
-        unsigned __int64 b = ~0;
+        unsigned __int64 b  = ~0;
         actualRegistersMask = b;
     }
     else if (availableRegCount < (sizeof(regMaskTP) * 8))

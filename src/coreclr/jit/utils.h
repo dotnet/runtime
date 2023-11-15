@@ -841,10 +841,10 @@ public:
         else
         {
             printf("%lx", lo);
-        }        
+        }
         printf("\n");
     }
-    
+
     FORCEINLINE static uint32_t BitScanForward(unsigned __int128 value)
     {
         uint32_t result = BitScanForward(static_cast<uint64_t>(value));
