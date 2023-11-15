@@ -439,15 +439,11 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void EmitDebugFunctionInfo(IntPtr objWriter, byte[] methodName, int methodSize, uint methodTypeIndex);
         public void EmitDebugFunctionInfo(ObjectNode node, int methodSize)
         {
-            uint methodTypeIndex = 0;
-
-            var methodNode = node as IMethodNode;
-            if (methodNode != null)
+            if (node is IMethodNode methodNode)
             {
-                methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
+                uint methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
+                EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, methodSize, methodTypeIndex);
             }
-
-            EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, methodSize, methodTypeIndex);
         }
 
         [DllImport(NativeObjectWriterFileName)]

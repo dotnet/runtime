@@ -252,12 +252,6 @@ stub_compile_interp_method (MonoMethod *method, MonoError *error)
 	return NULL;
 }
 
-static gboolean
-stub_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
-{
-	return TRUE;
-}
-
 #undef MONO_EE_CALLBACK
 #define MONO_EE_CALLBACK(ret, name, sig) stub_ ## name,
 

@@ -1597,14 +1597,26 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 BuildDef(intrinsicTree);
                 *pDstCount = 1;
                 break;
+
+            case NI_AdvSimd_StoreVector64x2AndZip:
+            case NI_AdvSimd_StoreVector64x3AndZip:
+            case NI_AdvSimd_StoreVector64x4AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x2AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x3AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x4AndZip:
             case NI_AdvSimd_StoreVector64x2:
+            case NI_AdvSimd_StoreVector64x3:
+            case NI_AdvSimd_StoreVector64x4:
             case NI_AdvSimd_Arm64_StoreVector128x2:
+            case NI_AdvSimd_Arm64_StoreVector128x3:
+            case NI_AdvSimd_Arm64_StoreVector128x4:
                 assert(intrin.op1 != nullptr);
                 srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
                 assert(dstCount == 0);
                 buildInternalRegisterUses();
                 *pDstCount = 0;
                 break;
+
             case NI_AdvSimd_LoadAndInsertScalarVector64x2:
             case NI_AdvSimd_LoadAndInsertScalarVector64x3:
             case NI_AdvSimd_LoadAndInsertScalarVector64x4:

@@ -12443,10 +12443,10 @@ namespace System.Runtime
         private object _dummy;
         private int _dummyPrimitive;
         public DependentHandle(object? target, object? dependent) { throw null; }
-        public object? Dependent { get { throw null; } set { } }
-        public bool IsAllocated { get { throw null; } }
-        public object? Target { get { throw null; } set { } }
-        public (object? Target, object? Dependent) TargetAndDependent { get { throw null; } }
+        public object? Dependent { readonly get { throw null; } set { } }
+        public readonly bool IsAllocated { get { throw null; } }
+        public object? Target { readonly get { throw null; } set { } }
+        public readonly (object? Target, object? Dependent) TargetAndDependent { get { throw null; } }
         public void Dispose() { }
     }
     public enum GCLargeObjectHeapCompactionMode
@@ -13473,16 +13473,16 @@ namespace System.Runtime.InteropServices
     public partial struct GCHandle : System.IEquatable<System.Runtime.InteropServices.GCHandle>
     {
         private int _dummyPrimitive;
-        public bool IsAllocated { get { throw null; } }
-        public object? Target { get { throw null; } set { } }
-        public System.IntPtr AddrOfPinnedObject() { throw null; }
+        public readonly bool IsAllocated { get { throw null; } }
+        public object? Target { readonly get { throw null; } set { } }
+        public readonly System.IntPtr AddrOfPinnedObject() { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value) { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value, System.Runtime.InteropServices.GCHandleType type) { throw null; }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
-        public bool Equals(System.Runtime.InteropServices.GCHandle other) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
+        public readonly bool Equals(System.Runtime.InteropServices.GCHandle other) { throw null; }
         public void Free() { }
         public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
         public static explicit operator System.Runtime.InteropServices.GCHandle (System.IntPtr value) { throw null; }
         public static explicit operator System.IntPtr (System.Runtime.InteropServices.GCHandle value) { throw null; }

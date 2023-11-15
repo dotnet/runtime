@@ -7,15 +7,14 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 
-using Internal.Runtime.Augments;
-using Internal.Runtime.TypeLoader;
-
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Execution.FieldAccessors;
 using Internal.Reflection.Execution.MethodInvokers;
 using Internal.Reflection.Execution.PayForPlayExperience;
 using Internal.Reflection.Extensions.NonPortable;
+using Internal.Runtime.Augments;
+using Internal.Runtime.TypeLoader;
 
 namespace Internal.Reflection.Execution
 {
