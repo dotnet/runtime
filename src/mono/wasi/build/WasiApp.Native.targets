@@ -32,7 +32,7 @@
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
     <_MonoComponent Include="hot_reload;debugger" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(UsingWasiRuntimeWorkload)' != 'true'">
     <_MonoComponent Include="marshal-ilgen" />
   </ItemGroup>
 
@@ -263,7 +263,7 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <Target Name="_WasmSelectRuntimeComponentsForLinking" DependsOnTargets="_MonoSelectRuntimeComponents" />
+  <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(UsingWasiRuntimeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
   <Target Name="_GetNativeFilesForLinking" DependsOnTargets="_WasmSelectRuntimeComponentsForLinking" Returns="@(_WasmNativeFileForLinking)">
     <Message Text="MicrosoftNetCoreAppRuntimePackRidNativeDir: $(MicrosoftNetCoreAppRuntimePackRidNativeDir)" Importance="High" />
