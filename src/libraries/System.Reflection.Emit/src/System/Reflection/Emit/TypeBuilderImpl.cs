@@ -75,6 +75,8 @@ namespace System.Reflection.Emit
 
         protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes.All))] Type interfaceType)
         {
+            ThrowIfCreated();
+
             _interfaces ??= new List<Type>();
             _interfaces.Add(interfaceType);
         }
@@ -100,7 +102,7 @@ namespace System.Reflection.Emit
             return this;
         }
 
-        private void ThrowIfTheTypeCreated()
+        private void ThrowIfCreated()
         {
             if (_isCreated)
             {
@@ -115,10 +117,9 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_ConstructorNotAllowedOnInterface);
             }
 
-            ThrowIfTheTypeCreated();
+            ThrowIfCreated();
 
             string name;
-
             if ((attributes & MethodAttributes.Static) == 0)
             {
                 name = ConstructorInfo.ConstructorName;
@@ -148,7 +149,6 @@ namespace System.Reflection.Emit
         {
             // Get the parent class's default constructor and add it to the IL
             ConstructorInfo? con;
-
             if (_typeParent!.IsConstructedGenericType && _typeParent.GetGenericTypeDefinition() is TypeBuilderImpl typeBuilder)
             {
                 con = GetConstructor(_typeParent, typeBuilder.GetConstructor(
@@ -180,6 +180,8 @@ namespace System.Reflection.Emit
 
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
+            ThrowIfCreated();
+
             if (_enumUnderlyingType == null && IsEnum)
             {
                 if ((attributes & FieldAttributes.Static) == 0)
@@ -197,7 +199,9 @@ namespace System.Reflection.Emit
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
             if (_typeParameters != null)
+            {
                 throw new InvalidOperationException();
+            }
 
             var typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
             for (int i = 0; i < names.Length; i++)
@@ -214,6 +218,8 @@ namespace System.Reflection.Emit
 
         protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
+            ThrowIfCreated();
+
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, _module, this);
             _methodDefinitions.Add(methodBuilder);
             return methodBuilder;
@@ -322,6 +328,8 @@ namespace System.Reflection.Emit
             Justification = "System.Object type is preserved via ModulBuilderImpl.s_coreTypes")]
         protected override void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
+            ThrowIfCreated();
+
             if (parent != null)
             {
                 if (parent.IsInterface)
@@ -412,7 +420,7 @@ namespace System.Reflection.Emit
             return ((GetAttributeFlagsImpl() & TypeAttributes.Import) != 0) ? true : false;
         }
 
-        private void ThrowIfTheTypeNotCreated()
+        private void ThrowIfNotCreated()
         {
             if (!_isCreated)
             {
@@ -424,7 +432,7 @@ namespace System.Reflection.Emit
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[]? _)
         {
-            ThrowIfTheTypeNotCreated();
+            ThrowIfNotCreated();
             ArgumentNullException.ThrowIfNull(types);
 
             for (int i = 0; i < types.Length; i++)
@@ -489,7 +497,7 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
-            ThrowIfTheTypeNotCreated();
+            ThrowIfNotCreated();
 
             List<ConstructorInfo> ctors = new();
             foreach (ConstructorBuilderImpl con in _constructorDefinitions)

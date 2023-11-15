@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -9,9 +8,9 @@ namespace System.Reflection.Emit
     internal sealed partial class ConstructorOnTypeBuilderInstantiation : ConstructorInfo
     {
         #region Private Static Members
-        internal static ConstructorInfo GetConstructor(ConstructorInfo Constructor, TypeBuilderInstantiation type)
+        internal static ConstructorInfo GetConstructor(ConstructorInfo constructor, TypeBuilderInstantiation type)
         {
-            return new ConstructorOnTypeBuilderInstantiation(Constructor, type);
+            return new ConstructorOnTypeBuilderInstantiation(constructor, type);
         }
         #endregion
 
@@ -23,8 +22,6 @@ namespace System.Reflection.Emit
         #region Constructor
         internal ConstructorOnTypeBuilderInstantiation(ConstructorInfo constructor, TypeBuilderInstantiation type)
         {
-            Debug.Assert(constructor is ConstructorBuilder || constructor is RuntimeConstructorInfo);
-
             _ctor = constructor;
             _type = type;
         }
@@ -57,7 +54,6 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    Debug.Assert(_ctor is RuntimeConstructorInfo);
                     return _ctor.MetadataToken;
                 }
             }

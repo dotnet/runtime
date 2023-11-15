@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -35,8 +34,6 @@ namespace System.Reflection.Emit
         #region Constructor
         internal FieldOnTypeBuilderInstantiation(FieldInfo field, TypeBuilderInstantiation type)
         {
-            Debug.Assert(field is FieldBuilder || field is RuntimeFieldInfo);
-
             _field = field;
             _type = type;
         }
@@ -64,7 +61,6 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    Debug.Assert(_field is RuntimeFieldInfo);
                     return _field.MetadataToken;
                 }
             }
