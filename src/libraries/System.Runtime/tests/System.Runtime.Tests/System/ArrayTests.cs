@@ -2075,7 +2075,7 @@ namespace System.Tests
 
             Assert.Equal(Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [22]).GetType(), variableBoundArrayType);
 
-            Assert.Throws<ArgumentException>(Array.CreateInstanceFromArrayType(typeof(object[]), [7], [8]));
+            Assert.Throws<ArgumentException>(() => Array.CreateInstanceFromArrayType(typeof(object[]), [7], [8]));
         }
 
         [Theory]
