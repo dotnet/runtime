@@ -99,6 +99,7 @@ emitAttr emitInsLoadStoreSize(instrDesc* id);
 
 emitter::insFormat emitInsFormat(instruction ins);
 emitter::code_t emitInsCode(instruction ins, insFormat fmt);
+emitter::code_t emitInsCodeSve(instruction ins, insFormat fmt);
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + index<<scale +
 // offset]

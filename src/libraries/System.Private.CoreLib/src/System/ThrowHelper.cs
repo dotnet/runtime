@@ -471,6 +471,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowDivideByZeroException()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowOutOfMemoryException_StringTooLong()
         {
             throw new OutOfMemoryException(SR.OutOfMemory_StringTooLong);

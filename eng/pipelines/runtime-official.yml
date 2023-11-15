@@ -26,9 +26,6 @@ variables:
 - template: /eng/pipelines/common/internal-variables.yml
   parameters:
     teamName: dotnet-core-acquisition
-# disable CodeQL here, we have a separate pipeline for it
-- name: Codeql.Enabled
-  value: False
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
