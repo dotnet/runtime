@@ -53,12 +53,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             if (OperatingSystem.IsLinux())
             {
-                Console.WriteLine($"### CGROUPS VERSION: {Interop.cgroups.s_cgroupVersion}");
-                string cgroupsLocation = Interop.cgroups.s_cgroupMemoryPath;
-                if (cgroupsLocation != null)
-                {
-                    Console.WriteLine($"### CGROUPS MEMORY: {cgroupsLocation}");
-                }
+                // needs to be in a separate method due to Mono issue: https://github.com/dotnet/runtime/issues/77513
+                DumpCGroupInformationToConsole();
             }
 
             Console.WriteLine($"### ENVIRONMENT VARIABLES");
@@ -160,6 +156,16 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                         Console.WriteLine($"###\t(Exception: {e.Message})");
                     }
                 }
+            }
+        }
+
+        private static void DumpCGroupInformationToConsole()
+        {
+            Console.WriteLine($"### CGROUPS VERSION: {Interop.cgroups.s_cgroupVersion}");
+            string cgroupsLocation = Interop.cgroups.s_cgroupMemoryPath;
+            if (cgroupsLocation != null)
+            {
+                Console.WriteLine($"### CGROUPS MEMORY: {cgroupsLocation}");
             }
         }
 
