@@ -88,3 +88,10 @@ Build the tests:
 ```sh
 ./src/tests/build.sh -mono debug -tree:Interop/Swift /p:LibrariesConfiguration=Debug
 ```
+--- 
+Build tests in full AOT mode:
+```sh
+./src/tests/build.sh -log:MonoAot -mono_fullaot debug -tree:Interop/Swift /p:LibrariesConfiguration=Debug /p:RuntimeVariant=llvmfullaot
+```
+Run tests in full AOT mode:
+- set `MONO_ENV_OPTIONS=--full-aot` and run as usual
