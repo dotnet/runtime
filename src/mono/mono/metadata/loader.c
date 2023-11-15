@@ -1907,9 +1907,6 @@ mono_method_signature_checked_slow (MonoMethod *m, MonoError *error)
 		case PINVOKE_ATTRIBUTE_CALL_CONV_FASTCALL:
 			conv = MONO_CALL_FASTCALL;
 			break;
-		case PINVOKE_ATTRIBUTE_CALL_CONV_SWIFTCALL:
-			conv = MONO_CALL_SWIFTCALL;
-			break;
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERIC:
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
 		default: {
