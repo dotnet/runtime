@@ -4,9 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
@@ -26,6 +26,8 @@ namespace System.Reflection.Emit
         private Type? _enumUnderlyingType;
 
         internal readonly TypeDefinitionHandle _handle;
+        internal int _firstFieldToken;
+        internal int _firsMethodToken;
         internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
         internal readonly List<FieldBuilderImpl> _fieldDefinitions = new();
         internal List<Type>? _interfaces;

@@ -998,7 +998,8 @@ public class ComVisibleServer
         Assert.Equal<Guid>(new Guid("0ea2cb33-db9f-3655-9240-47ef1dea0f1e"), typeof(INestedInterfaceVisibleTrueNoGuid).GetTypeInfo().GUID);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

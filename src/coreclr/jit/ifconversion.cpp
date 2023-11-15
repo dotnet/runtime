@@ -83,7 +83,7 @@ public:
 bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 {
     // Block should have a single successor or be a return.
-    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->bbJumpKind == BBJ_RETURN))))
+    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->KindIs(BBJ_RETURN)))))
     {
         return false;
     }
@@ -122,7 +122,7 @@ bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 bool OptIfConversionDsc::IfConvertCheckThenFlow()
 {
     m_flowFound           = false;
-    BasicBlock* thenBlock = m_startBlock->bbNext;
+    BasicBlock* thenBlock = m_startBlock->Next();
 
     for (int thenLimit = 0; thenLimit < m_checkLimit; thenLimit++)
     {
@@ -137,7 +137,7 @@ bool OptIfConversionDsc::IfConvertCheckThenFlow()
         {
             // All the Then blocks up to m_finalBlock are in a valid flow.
             m_flowFound = true;
-            if (thenBlock->bbJumpKind == BBJ_RETURN)
+            if (thenBlock->KindIs(BBJ_RETURN))
             {
                 assert(m_finalBlock == nullptr);
                 m_mainOper = GT_RETURN;
@@ -175,7 +175,7 @@ void OptIfConversionDsc::IfConvertFindFlow()
 {
     // First check for flow with no else case. The final block is the destination of the jump.
     m_doElseConversion = false;
-    m_finalBlock       = m_startBlock->bbJumpDest;
+    m_finalBlock       = m_startBlock->GetJumpDest();
     assert(m_finalBlock != nullptr);
     if (!IfConvertCheckThenFlow() || m_flowFound)
     {
@@ -385,14 +385,14 @@ void OptIfConversionDsc::IfConvertDump()
 {
     assert(m_startBlock != nullptr);
     m_comp->fgDumpBlock(m_startBlock);
-    for (BasicBlock* dumpBlock = m_startBlock->bbNext; dumpBlock != m_finalBlock;
+    for (BasicBlock* dumpBlock = m_startBlock->Next(); dumpBlock != m_finalBlock;
          dumpBlock             = dumpBlock->GetUniqueSucc())
     {
         m_comp->fgDumpBlock(dumpBlock);
     }
     if (m_doElseConversion)
     {
-        for (BasicBlock* dumpBlock = m_startBlock->bbJumpDest; dumpBlock != m_finalBlock;
+        for (BasicBlock* dumpBlock = m_startBlock->GetJumpDest(); dumpBlock != m_finalBlock;
              dumpBlock             = dumpBlock->GetUniqueSucc())
         {
             m_comp->fgDumpBlock(dumpBlock);
@@ -553,7 +553,7 @@ void OptIfConversionDsc::IfConvertDump()
 bool OptIfConversionDsc::optIfConvert()
 {
     // Does the block end by branching via a JTRUE after a compare?
-    if (m_startBlock->bbJumpKind != BBJ_COND || m_startBlock->NumSucc() != 2)
+    if (!m_startBlock->KindIs(BBJ_COND) || m_startBlock->NumSucc() != 2)
     {
         return false;
     }
@@ -575,14 +575,14 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Check the Then and Else blocks have a single operation each.
-    if (!IfConvertCheckStmts(m_startBlock->bbNext, &m_thenOperation))
+    if (!IfConvertCheckStmts(m_startBlock->Next(), &m_thenOperation))
     {
         return false;
     }
     assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN));
     if (m_doElseConversion)
     {
-        if (!IfConvertCheckStmts(m_startBlock->bbJumpDest, &m_elseOperation))
+        if (!IfConvertCheckStmts(m_startBlock->GetJumpDest(), &m_elseOperation))
         {
             return false;
         }
@@ -742,8 +742,9 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Update the flow from the original block.
-    m_comp->fgRemoveAllRefPreds(m_startBlock->bbNext, m_startBlock);
-    m_startBlock->bbJumpKind = BBJ_ALWAYS;
+    m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
+    assert(m_startBlock->HasJump());
+    m_startBlock->SetJumpKind(BBJ_ALWAYS);
 
 #ifdef DEBUG
     if (m_comp->verbose)
@@ -789,9 +790,14 @@ PhaseStatus Compiler::optIfConversion()
     {
         OptIfConversionDsc optIfConversionDsc(this, block);
         madeChanges |= optIfConversionDsc.optIfConvert();
-        block = block->bbPrev;
+        block = block->Prev();
     }
 #endif
+
+    if (madeChanges)
+    {
+        fgRenumberBlocks();
+    }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

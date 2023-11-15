@@ -14,7 +14,7 @@ Param(
     [string] $Kind="micro",
     [switch] $LLVM,
     [switch] $MonoInterpreter,
-    [switch] $MonoAOT, 
+    [switch] $MonoAOT,
     [switch] $Internal,
     [switch] $Compare,
     [string] $MonoDotnet="",
@@ -25,8 +25,11 @@ Param(
     [switch] $iOSNativeAOT,
     [switch] $NoDynamicPGO,
     [switch] $PhysicalPromotion,
+    [switch] $NoR2R,
+    [string] $ExperimentName,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
+    [switch] $HybridGlobalization,
     [string] $MauiVersion,
     [switch] $UseLocalCommitTime
 )
@@ -91,6 +94,14 @@ if ($PhysicalPromotion) {
     $Configurations += " PhysicalPromotionType=physicalpromotion"
 }
 
+if ($NoR2R) {
+    $Configurations += " R2RType=nor2r"
+}
+
+if ($ExperimentName) {
+    $Configurations += " ExperimentName=$ExperimentName"
+}
+
 if ($iOSMono) {
     $Configurations += " iOSLlvmBuild=$iOSLlvmBuild"
     $Configurations += " iOSStripSymbols=$iOSStripSymbols"
@@ -98,6 +109,10 @@ if ($iOSMono) {
 
 if ($iOSNativeAOT) {
     $Configurations += " iOSStripSymbols=$iOSStripSymbols"
+}
+
+if ($HybridGlobalization -eq "True") {
+    $Configurations += " HybridGlobalization=True"
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
@@ -117,6 +132,14 @@ if ($PhysicalPromotion) {
     $SetupArguments = "$SetupArguments --physical-promotion"
 }
 
+if ($NoR2R) {
+    $SetupArguments = "$SetupArguments --no-r2r"
+}
+
+if ($ExperimentName) {
+    $SetupArguments = "$SetupArguments --experiment-name '$ExperimentName'"
+}
+
 if ($UseLocalCommitTime) {
     $LocalCommitTime = (git show -s --format=%ci $CommitSha)
     $SetupArguments = "$SetupArguments --commit-time `"$LocalCommitTime`""
@@ -124,7 +147,7 @@ if ($UseLocalCommitTime) {
 
 if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
-    
+
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
@@ -187,8 +210,10 @@ Write-PipelineSetVariable -Name 'UseBaselineCoreRun' -Value "$UseBaselineCoreRun
 Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRepo" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'MonoAOT' -Value "$MonoAOT" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iOSLlvmBuild" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iOSStripSymbols" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'hybridGlobalization' -Value "$HybridGlobalization" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false

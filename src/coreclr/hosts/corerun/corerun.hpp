@@ -552,9 +552,7 @@ namespace pal
             case DT_LNK:
             case DT_UNKNOWN:
                 {
-                    string_t full_filename;
-                    full_filename.append(directory);
-                    full_filename.append(1, pal::dir_delim);
+                    string_t full_filename{directory};
                     full_filename.append(entry->d_name);
                     if (!does_file_exist(full_filename.c_str()))
                         continue;
@@ -572,7 +570,7 @@ namespace pal
             // Make sure if we have an assembly with multiple extensions present,
             // we insert only one version of it.
             if (should_add(entry->d_name))
-                file_list << directory << dir_delim << entry->d_name << env_path_delim;
+                file_list << directory << entry->d_name << env_path_delim;
         }
 
         closedir(dir);

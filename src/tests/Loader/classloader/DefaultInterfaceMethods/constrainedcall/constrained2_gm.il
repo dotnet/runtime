@@ -23,7 +23,7 @@
   }
 }
 
-.class value Adder`1<T> implements class IAdder`1<!T>, class IAdder`1<class [mscorlib]System.String>
+.class public value Adder`1<T> implements class IAdder`1<!T>, class IAdder`1<class [mscorlib]System.String>
 {
   .field private int32 _field
 

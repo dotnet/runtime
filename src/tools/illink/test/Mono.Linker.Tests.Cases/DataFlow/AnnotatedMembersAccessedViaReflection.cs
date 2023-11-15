@@ -8,10 +8,12 @@ using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.DataFlow;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
+	[SandboxDependency ("Dependencies/TestSystemTypeBase.cs")]
 	[ExpectedNoWarnings]
 	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	class AnnotatedMembersAccessedViaReflection
@@ -19,12 +21,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		public static void Main ()
 		{
 			AnnotatedField.Test ();
+			AnnotatedMethodThisParameter.Test ();
 			AnnotatedMethodParameters.Test ();
 			AnnotatedMethodReturnValue.Test ();
 			AnnotatedProperty.Test ();
 			AnnotatedGenerics.Test ();
 			AnnotationOnGenerics.Test ();
 			AnnotationOnInteropMethod.Test ();
+			DelegateCreation.Test ();
 		}
 
 		class AnnotatedField
@@ -150,6 +154,54 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		public class AnnotatedMethodThisParameter : TestSystemTypeBase
+		{
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			public void MethodWithAnnotatedThisParameter ()
+			{ }
+
+			[ExpectedWarning ("IL2111", nameof (MethodWithAnnotatedThisParameter))]
+			static void Reflection ()
+			{
+				typeof (AnnotatedMethodThisParameter).GetMethod (nameof (MethodWithAnnotatedThisParameter)).Invoke (null, null);
+			}
+
+			[ExpectedWarning ("IL2111", nameof (MethodWithAnnotatedThisParameter))]
+			void Ldftn ()
+			{
+				var _ = new Action (MethodWithAnnotatedThisParameter);
+			}
+
+			[ExpectedWarning ("IL2111")]
+			void LdftnOnLambda ()
+			{
+				var _ = new Action (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+					() => MethodWithAnnotatedThisParameter ());
+			}
+
+			[ExpectedWarning ("IL2111")]
+			void LdftnOnLocalMethod ()
+			{
+				var _ = new Action (LocalMethod);
+
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				void LocalMethod ()
+				{
+					MethodWithAnnotatedThisParameter ();
+				}
+			}
+
+			public static void Test ()
+			{
+				var instance = new AnnotatedMethodThisParameter ();
+				Reflection ();
+				instance.Ldftn ();
+				instance.LdftnOnLambda ();
+				instance.LdftnOnLocalMethod ();
+			}
+		}
+
 		class AnnotatedMethodParameters
 		{
 			public static void MethodWithSingleAnnotatedParameter (
@@ -213,11 +265,52 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedMethodParameters).RequiresPublicMethods ();
 			}
 
-			// Action delegate is not handled correctly https://github.com/dotnet/runtime/issues/84918
-			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			static void Ldftn ()
 			{
 				var _ = new Action<Type> (AnnotatedMethodParameters.MethodWithSingleAnnotatedParameter);
+			}
+
+			[RequiresUnreferencedCode ("test")]
+			static void LdftnSuppressedByRequiresUnreferencedCode ()
+			{
+				var _ = new Action<Type> (AnnotatedMethodParameters.MethodWithSingleAnnotatedParameter);
+			}
+
+			[ExpectedWarning ("IL2111")]
+			static void 
+			LdftnOnLambda ()
+			{
+				var _ = new Action<Type> (
+					([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => { });
+			}
+
+			[ExpectedWarning ("IL2111")]
+			static void LdftnOnLocalMethod ()
+			{
+				var _ = new Action<Type> (LocalMethod);
+
+				void LocalMethod (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+				{ }
+			}
+
+			static void LdftnOnLambdaTriggersLamdaAnalysis ()
+			{
+				var _ = new Action<Type> (
+					[ExpectedWarning ("IL2067", nameof (type), nameof (DataFlowTypeExtensions.RequiresAll))]
+					(Type type) => { type.RequiresAll (); });
+			}
+
+			static void LdftnOnLocalMethodTriggersLocalMethodAnalysis ()
+			{
+				var _ = new Action<Type> (LocalMethod);
+
+				[ExpectedWarning ("IL2067", nameof (type), nameof (DataFlowTypeExtensions.RequiresAll))]
+				void LocalMethod (Type type)
+				{
+					type.RequiresAll ();
+				}
 			}
 
 			interface IWithAnnotatedMethod
@@ -225,8 +318,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public void AnnotatedMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] Type type);
 			}
 
-			// Action delegate is not handled correctly https://github.com/dotnet/runtime/issues/84918
-			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			static void Ldvirtftn ()
 			{
 				IWithAnnotatedMethod instance = null;
@@ -236,9 +328,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
+			[ExpectedWarning ("IL2026", "LdftnSuppressedByRequiresUnreferencedCode", "test")]
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
+			[ExpectedWarning ("IL2118", nameof (LdftnOnLambdaTriggersLamdaAnalysis), ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2118", nameof (LdftnOnLocalMethodTriggersLocalMethodAnalysis), ProducedBy = Tool.Trimmer)]
 			static void DynamicallyAccessedMembersAll1 ()
 			{
 				typeof (AnnotatedMethodParameters).RequiresAll ();
@@ -247,9 +342,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
+			[ExpectedWarning ("IL2026", "LdftnSuppressedByRequiresUnreferencedCode", "test")]
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
+			[ExpectedWarning ("IL2118", nameof (LdftnOnLambdaTriggersLamdaAnalysis), ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2118", nameof (LdftnOnLocalMethodTriggersLocalMethodAnalysis), ProducedBy = Tool.Trimmer)]
 			static void DynamicallyAccessedMembersAll2 ()
 			{
 				typeof (AnnotatedMethodParameters).RequiresAll ();
@@ -274,6 +372,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMembers ();
 				DynamicallyAccessedMembersSuppressedByRUC ();
 				Ldftn ();
+				LdftnSuppressedByRequiresUnreferencedCode ();
+				LdftnOnLambda ();
+				LdftnOnLocalMethod ();
+				LdftnOnLambdaTriggersLamdaAnalysis ();
+				LdftnOnLocalMethodTriggersLocalMethodAnalysis ();
 				Ldvirtftn ();
 				DynamicallyAccessedMembersAll1 ();
 				DynamicallyAccessedMembersAll2 ();
@@ -369,8 +472,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var _ = new Func<Type> ((new AnnotatedMethodReturnValue ()).InstanceMethodWithAnnotatedReturnValue);
 			}
 
-			// Action delegate is not handled correctly https://github.com/dotnet/runtime/issues/84918
-			[ExpectedWarning ("IL2111", nameof (VirtualMethodWithAnnotatedReturnValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2111", nameof (VirtualMethodWithAnnotatedReturnValue))]
 			static void LdftnOnVirtual ()
 			{
 				var _ = new Func<Type> ((new AnnotatedMethodReturnValue ()).VirtualMethodWithAnnotatedReturnValue);
@@ -689,8 +791,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			   [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
 			{ }
 
-			// Action delegate is not handled correctly https://github.com/dotnet/runtime/issues/84918
-			[ExpectedWarning ("IL2111", nameof (GenericWithAnnotatedMethod<TestType>.AnnotatedMethod), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2111", nameof (GenericWithAnnotatedMethod<TestType>.AnnotatedMethod))]
 			public static void GenericTypeWithStaticMethodViaLdftn ()
 			{
 				var _ = new Action<Type> (GenericWithAnnotatedMethod<TestType>.AnnotatedMethod);
@@ -708,8 +809,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GenericMethodWithAnnotation<TestType> (typeof (TestType));
 			}
 
-			// Action delegate is not handled correctly https://github.com/dotnet/runtime/issues/84918
-			[ExpectedWarning ("IL2111", nameof (GenericMethodWithAnnotation), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2111", nameof (GenericMethodWithAnnotation))]
 			public static void GenericMethodWithAnnotationViaLdftn ()
 			{
 				var _ = new Action<Type> (GenericMethodWithAnnotation<TestType>);
@@ -781,6 +881,76 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				GetValueWithAnnotatedField ();
 				AcceptValueWithAnnotatedField (default (ValueWithAnnotatedField));
+			}
+		}
+
+		class DelegateCreation
+		{
+			delegate void UnannotatedDelegate (Type type);
+
+			static Action<Type> field;
+
+			static Action<Type> Property { get; set; }
+
+			static Action<Type> MethodReturnValue () => null;
+
+			static event Action<Type> Event;
+
+			static void TestField ()
+			{
+				var d = new UnannotatedDelegate (field);
+				d(typeof(int));
+			}
+
+			static void TestProperty ()
+			{
+				var d = new UnannotatedDelegate (Property);
+				d(typeof(int));
+			}
+
+			[ExpectedWarning ("IL2111")]
+			static void TestLambda ()
+			{
+				var d = new UnannotatedDelegate (
+					([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t) =>
+					{ });
+				d(typeof(int));
+			}
+
+			[ExpectedWarning ("IL2111", "LocalMethod")]
+			static void TestLocalMethod ()
+			{
+				var d = new UnannotatedDelegate (LocalMethod);
+				d(typeof(int));
+
+				void LocalMethod (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+				{ }
+			}
+
+			static void TestMethodReturnValue ()
+			{
+				var d = new UnannotatedDelegate (MethodReturnValue ());
+				d(typeof(int));
+			}
+
+
+			static void TestEvent ()
+			{
+				var d = new UnannotatedDelegate (Event);
+				d(typeof(int));
+			}
+
+			public static void Test ()
+			{
+				// Check that the analyzer is able to analyze delegate creation
+				// with various targets, without hitting an assert.
+				TestField ();
+				TestProperty ();
+				TestLambda ();
+				TestLocalMethod ();
+				TestMethodReturnValue ();
+				TestEvent ();
 			}
 		}
 

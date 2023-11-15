@@ -33,7 +33,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(singleFile, "executing_assembly_location trusted_platform_assemblies assembly_location System.Console")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractionBaseDir.FullName)
+                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionBaseDir.FullName)
                 .Execute()
                 .Should()
                 .Pass()

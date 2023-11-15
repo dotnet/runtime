@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -17,14 +16,25 @@ namespace System.Buffers
 {
     internal static class IndexOfAnyAsciiSearcher
     {
+        public struct AsciiState(Vector128<byte> bitmap, BitVector256 lookup)
+        {
+            public Vector256<byte> Bitmap = Vector256.Create(bitmap, bitmap);
+            public BitVector256 Lookup = lookup;
+
+            public readonly AsciiState CreateInverse() =>
+                new AsciiState(~Bitmap._lower, Lookup.CreateInverse());
+        }
+
+        public struct AnyByteState(Vector128<byte> bitmap0, Vector128<byte> bitmap1, BitVector256 lookup)
+        {
+            public Vector256<byte> Bitmap0 = Vector256.Create(bitmap0, bitmap0);
+            public Vector256<byte> Bitmap1 = Vector256.Create(bitmap1, bitmap1);
+            public BitVector256 Lookup = lookup;
+        }
+
         internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool BitmapContains(ref Vector256<byte> bitmap, char c) =>
-            c <= 127 &&
-            (bitmap.GetElementUnsafe(c & 0xF) & (1 << (c >> 4))) != 0;
-
-        internal static unsafe void ComputeBitmap256(ReadOnlySpan<byte> values, out Vector256<byte> bitmap0, out Vector256<byte> bitmap1, out BitVector256 lookup)
+        internal static unsafe void ComputeAnyByteState(ReadOnlySpan<byte> values, out AnyByteState state)
         {
             // The exact format of these bitmaps differs from the other ComputeBitmap overloads as it's meant for the full [0, 255] range algorithm.
             // See http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
@@ -52,12 +62,10 @@ namespace System.Buffers
                 }
             }
 
-            bitmap0 = Vector256.Create(bitmapSpace0, bitmapSpace0);
-            bitmap1 = Vector256.Create(bitmapSpace1, bitmapSpace1);
-            lookup = lookupLocal;
+            state = new AnyByteState(bitmapSpace0, bitmapSpace1, lookupLocal);
         }
 
-        internal static unsafe void ComputeBitmap<T>(ReadOnlySpan<T> values, out Vector256<byte> bitmap, out BitVector256 lookup)
+        internal static unsafe void ComputeAsciiState<T>(ReadOnlySpan<T> values, out AsciiState state)
             where T : struct, IUnsignedNumber<T>
         {
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(char));
@@ -83,8 +91,7 @@ namespace System.Buffers
                 bitmapLocal[(uint)lowNibble] |= (byte)(1 << highNibble);
             }
 
-            bitmap = Vector256.Create(bitmapSpace, bitmapSpace);
-            lookup = lookupLocal;
+            state = new AsciiState(bitmapSpace, lookupLocal);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -134,14 +141,17 @@ namespace System.Buffers
 
             if (IsVectorizationSupported)
             {
-                Vector128<byte> bitmap = default;
-                if (TryComputeBitmap(asciiValues, (byte*)&bitmap, out bool needleContainsZero))
+                AsciiState state = default;
+
+                if (TryComputeBitmap(asciiValues, (byte*)&state.Bitmap._lower, out bool needleContainsZero))
                 {
-                    Vector256<byte> bitmap256 = Vector256.Create(bitmap, bitmap);
+                    // Only initializing the bitmap here is okay as we can only get here if the search space is long enough
+                    // and we support vectorization, so the IndexOfAnyVectorized implementation will never touch state.Lookup.
+                    state.Bitmap = Vector256.Create(state.Bitmap._lower, state.Bitmap._lower);
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
-                        ? IndexOfAnyVectorized<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref bitmap256)
-                        : IndexOfAnyVectorized<TNegator, Default>(ref searchSpace, searchSpaceLength, ref bitmap256);
+                        ? IndexOfAnyVectorized<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
+                        : IndexOfAnyVectorized<TNegator, Default>(ref searchSpace, searchSpaceLength, ref state);
                     return true;
                 }
             }
@@ -158,14 +168,17 @@ namespace System.Buffers
 
             if (IsVectorizationSupported)
             {
-                Vector128<byte> bitmap = default;
-                if (TryComputeBitmap(asciiValues, (byte*)&bitmap, out bool needleContainsZero))
+                AsciiState state = default;
+
+                if (TryComputeBitmap(asciiValues, (byte*)&state.Bitmap._lower, out bool needleContainsZero))
                 {
-                    Vector256<byte> bitmap256 = Vector256.Create(bitmap, bitmap);
+                    // Only initializing the bitmap here is okay as we can only get here if the search space is long enough
+                    // and we support vectorization, so the LastIndexOfAnyVectorized implementation will never touch state.Lookup.
+                    state.Bitmap = Vector256.Create(state.Bitmap._lower, state.Bitmap._lower);
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
-                        ? LastIndexOfAnyVectorized<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref bitmap256)
-                        : LastIndexOfAnyVectorized<TNegator, Default>(ref searchSpace, searchSpaceLength, ref bitmap256);
+                        ? LastIndexOfAnyVectorized<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
+                        : LastIndexOfAnyVectorized<TNegator, Default>(ref searchSpace, searchSpaceLength, ref state);
                     return true;
                 }
             }
@@ -177,17 +190,35 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int IndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref Vector256<byte> bitmapRef)
+        internal static int IndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
         {
             ref short currentSearchSpace = ref searchSpace;
 
+            if (searchSpaceLength < Vector128<ushort>.Count)
+            {
+                ref short searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+
+                while (!Unsafe.AreSame(ref currentSearchSpace, ref searchSpaceEnd))
+                {
+                    char c = (char)currentSearchSpace;
+                    if (TNegator.NegateIfNeeded(state.Lookup.Contains128(c)))
+                    {
+                        return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace) / sizeof(char));
+                    }
+
+                    currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 1);
+                }
+
+                return -1;
+            }
+
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> bitmap256 = bitmapRef;
+                Vector256<byte> bitmap256 = state.Bitmap;
 
                 if (searchSpaceLength > 2 * Vector256<short>.Count)
                 {
@@ -238,7 +269,7 @@ namespace System.Buffers
                 return -1;
             }
 
-            Vector128<byte> bitmap = bitmapRef._lower;
+            Vector128<byte> bitmap = state.Bitmap._lower;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
@@ -294,17 +325,31 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref Vector256<byte> bitmapRef)
+        internal static int LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
         {
+            if (searchSpaceLength < Vector128<ushort>.Count)
+            {
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
+                {
+                    char c = (char)Unsafe.Add(ref searchSpace, i);
+                    if (TNegator.NegateIfNeeded(state.Lookup.Contains128(c)))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
             ref short currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
             if (Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> bitmap256 = bitmapRef;
+                Vector256<byte> bitmap256 = state.Bitmap;
 
                 if (searchSpaceLength > 2 * Vector256<short>.Count)
                 {
@@ -355,7 +400,7 @@ namespace System.Buffers
                 return -1;
             }
 
-            Vector128<byte> bitmap = bitmapRef._lower;
+            Vector128<byte> bitmap = state.Bitmap._lower;
 
             if (!Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
             {
@@ -409,16 +454,34 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref Vector256<byte> bitmapRef)
+        internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
         {
             ref byte currentSearchSpace = ref searchSpace;
+
+            if (searchSpaceLength < sizeof(ulong))
+            {
+                ref byte searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+
+                while (!Unsafe.AreSame(ref currentSearchSpace, ref searchSpaceEnd))
+                {
+                    byte b = currentSearchSpace;
+                    if (TNegator.NegateIfNeeded(state.Lookup.Contains(b)))
+                    {
+                        return (int)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace);
+                    }
+
+                    currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 1);
+                }
+
+                return -1;
+            }
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> bitmap256 = bitmapRef;
+                Vector256<byte> bitmap256 = state.Bitmap;
 
                 if (searchSpaceLength > Vector256<byte>.Count)
                 {
@@ -467,7 +530,7 @@ namespace System.Buffers
                 return -1;
             }
 
-            Vector128<byte> bitmap = bitmapRef._lower;
+            Vector128<byte> bitmap = state.Bitmap._lower;
 
             if (!Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
             {
@@ -519,16 +582,30 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref Vector256<byte> bitmapRef)
+        internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
         {
+            if (searchSpaceLength < sizeof(ulong))
+            {
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
+                {
+                    byte b = Unsafe.Add(ref searchSpace, i);
+                    if (TNegator.NegateIfNeeded(state.Lookup.Contains(b)))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
             ref byte currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> bitmap256 = bitmapRef;
+                Vector256<byte> bitmap256 = state.Bitmap;
 
                 if (searchSpaceLength > Vector256<byte>.Count)
                 {
@@ -577,7 +654,7 @@ namespace System.Buffers
                 return -1;
             }
 
-            Vector128<byte> bitmap = bitmapRef._lower;
+            Vector128<byte> bitmap = state.Bitmap._lower;
 
             if (!Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
             {
@@ -629,17 +706,35 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int IndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref Vector512<byte> bitmapsRef)
+        internal static int IndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
             where TNegator : struct, INegator
         {
             ref byte currentSearchSpace = ref searchSpace;
+
+            if (!IsVectorizationSupported || searchSpaceLength < sizeof(ulong))
+            {
+                ref byte searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+
+                while (!Unsafe.AreSame(ref currentSearchSpace, ref searchSpaceEnd))
+                {
+                    byte b = currentSearchSpace;
+                    if (TNegator.NegateIfNeeded(state.Lookup.Contains(b)))
+                    {
+                        return (int)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace);
+                    }
+
+                    currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 1);
+                }
+
+                return -1;
+            }
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> bitmap256_0 = bitmapsRef._lower;
-                Vector256<byte> bitmap256_1 = bitmapsRef._upper;
+                Vector256<byte> bitmap256_0 = state.Bitmap0;
+                Vector256<byte> bitmap256_1 = state.Bitmap1;
 
                 if (searchSpaceLength > Vector256<byte>.Count)
                 {
@@ -688,8 +783,8 @@ namespace System.Buffers
                 return -1;
             }
 
-            Vector128<byte> bitmap0 = bitmapsRef._lower._lower;
-            Vector128<byte> bitmap1 = bitmapsRef._upper._lower;
+            Vector128<byte> bitmap0 = state.Bitmap0._lower;
+            Vector128<byte> bitmap1 = state.Bitmap1._lower;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
@@ -743,17 +838,31 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int LastIndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref Vector512<byte> bitmapsRef)
+        internal static int LastIndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
             where TNegator : struct, INegator
         {
+            if (!IsVectorizationSupported || searchSpaceLength < sizeof(ulong))
+            {
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
+                {
+                    byte b = Unsafe.Add(ref searchSpace, i);
+                    if (TNegator.NegateIfNeeded(state.Lookup.Contains(b)))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
             ref byte currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
             {
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
-                Vector256<byte> bitmap256_0 = bitmapsRef._lower;
-                Vector256<byte> bitmap256_1 = bitmapsRef._upper;
+                Vector256<byte> bitmap256_0 = state.Bitmap0;
+                Vector256<byte> bitmap256_1 = state.Bitmap1;
 
                 if (searchSpaceLength > Vector256<byte>.Count)
                 {
@@ -802,8 +911,8 @@ namespace System.Buffers
                 return -1;
             }
 
-            Vector128<byte> bitmap0 = bitmapsRef._lower._lower;
-            Vector128<byte> bitmap1 = bitmapsRef._upper._lower;
+            Vector128<byte> bitmap0 = state.Bitmap0._lower;
+            Vector128<byte> bitmap1 = state.Bitmap1._lower;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)

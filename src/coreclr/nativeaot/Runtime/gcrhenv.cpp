@@ -98,7 +98,7 @@ bool RedhawkGCInterface::InitializeSubsystems()
         GetRuntimeInstance()->EnableConservativeStackReporting();
     }
 
-    HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
+    HRESULT hr = GCHeapUtilities::InitializeGC();
     if (FAILED(hr))
         return false;
 
@@ -129,7 +129,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
-    size_t cbSize = pEEType->get_BaseSize();
+    size_t cbSize = pEEType->GetBaseSize();
 
     if (pEEType->HasComponentSize())
     {
@@ -368,21 +368,32 @@ void RedhawkGCInterface::BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, uint32_t cRefs
 }
 
 // static
-GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_t SizeSection)
+GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
 {
+    ASSERT(allocSize <= commitSize);
+    ASSERT(commitSize <= reservedSize);
+
 #ifdef FEATURE_BASICFREEZE
     segment_info seginfo;
 
     seginfo.pvMem           = pSection;
     seginfo.ibFirstObject   = sizeof(ObjHeader);
-    seginfo.ibAllocated     = SizeSection;
-    seginfo.ibCommit        = seginfo.ibAllocated;
-    seginfo.ibReserved      = seginfo.ibAllocated;
+    seginfo.ibAllocated     = allocSize;
+    seginfo.ibCommit        = commitSize;
+    seginfo.ibReserved      = reservedSize;
 
     return (GcSegmentHandle)GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
 #else // FEATURE_BASICFREEZE
     return NULL;
 #endif // FEATURE_BASICFREEZE
+}
+
+// static
+void RedhawkGCInterface::UpdateFrozenSegment(GcSegmentHandle seg, uint8_t* allocated, uint8_t* committed)
+{
+    ASSERT(allocated <= committed);
+
+    GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment((segment_handle)seg, allocated, committed);
 }
 
 // static
@@ -503,11 +514,11 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
-    ASSERT(pObj1->get_EEType()->IsEquivalentTo(pObj2->get_EEType()));
-    ASSERT(pObj1->get_EEType()->IsValueType());
+    ASSERT(pObj1->GetMethodTable() == pObj2->GetMethodTable());
+    ASSERT(pObj1->GetMethodTable()->IsValueType());
 
-    MethodTable * pEEType = pObj1->get_EEType();
-    size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
+    MethodTable * pEEType = pObj1->GetMethodTable();
+    size_t cbFields = pEEType->GetBaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
 
     uint8_t * pbFields1 = (uint8_t*)pObj1 + sizeof(MethodTable*);
     uint8_t * pbFields2 = (uint8_t*)pObj2 + sizeof(MethodTable*);
@@ -732,10 +743,12 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     UNREFERENCED_PARAMETER(gen);
     UNREFERENCED_PARAMETER(reason);
 
+#ifdef FEATURE_EVENT_TRACE
     if (!fConcurrent)
     {
         ETW::GCLog::WalkHeap();
     }
+#endif // FEATURE_EVENT_TRACE
 }
 
 // Note on last parameter: when calling this for bgc, only ETW
@@ -1110,6 +1123,11 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     UNREFERENCED_PARAMETER(currentPrivateLevel);
     UNREFERENCED_PARAMETER(currentPrivateKeywords);
     // TODO: Linux LTTng
+}
+
+void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg)
+{
+    // TODO: Implementation
 }
 
 uint32_t GCToEEInterface::GetCurrentProcessCpuCount()

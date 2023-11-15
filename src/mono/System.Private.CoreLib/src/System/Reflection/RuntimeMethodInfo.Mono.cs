@@ -27,14 +27,14 @@
 //
 
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 using InteropServicesCallingConvention = System.Runtime.InteropServices.CallingConvention;
 
 namespace System.Reflection
@@ -190,7 +190,7 @@ namespace System.Reflection
                 sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this));
 
             sbName.Append('(');
-            RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
+            RuntimeParameterInfo.FormatParameters(sbName, GetParametersAsSpan(), CallingConvention);
             sbName.Append(')');
 
             return sbName.ToString();

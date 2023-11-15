@@ -3,13 +3,13 @@
 
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -113,7 +113,7 @@ namespace System.Data.SqlTypes
         private static EComparison Compare(SqlGuid x, SqlGuid y)
         {
             // Comparison orders.
-            ReadOnlySpan<byte> rgiGuidOrder = new byte[SizeOfGuid] { 10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3 };
+            ReadOnlySpan<byte> rgiGuidOrder = [10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3];
 
             Debug.Assert(!x.IsNull);
             Debug.Assert(!y.IsNull);

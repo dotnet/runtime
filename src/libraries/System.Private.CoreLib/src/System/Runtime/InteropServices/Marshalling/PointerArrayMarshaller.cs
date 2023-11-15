@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <remarks>
             /// This property represents a potential optimization for the marshaller.
             /// </remarks>
-            // We'll keep the buffer size at a maximum of 200 bytes to avoid overflowing the stack.
+            // We'll keep the buffer size at a maximum of 512 bytes to avoid overflowing the stack.
             public static int BufferSize => 0x200 / sizeof(TUnmanagedElement);
 
             private T*[]? _managedArray;

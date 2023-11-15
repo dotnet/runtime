@@ -27,6 +27,18 @@ namespace System
         public abstract Assembly Assembly { get; }
         public new abstract Module Module { get; }
 
+        public bool IsInterface
+        {
+            get
+            {
+#if !MONO
+                if (this is RuntimeType rt)
+                    return rt.IsInterface;
+#endif
+                return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
+            }
+        }
+
         public bool IsNested => DeclaringType != null;
         public override Type? DeclaringType => null;
         public virtual MethodBase? DeclaringMethod => null;

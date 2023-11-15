@@ -5019,24 +5019,39 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 			MonoGenericContext ctx;
 			MonoMethod *inst, *gshared;
 
-			create_ref_shared_inst (acfg, method, &ctx);
-
-			inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
-			g_assert (is_ok (error)); /* FIXME don't swallow the error */
-
 			sig = mono_method_signature_internal (method);
 			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0])) {
+				/* ref */
+				create_ref_shared_inst (acfg, method, &ctx);
+
+				inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+				g_assert (is_ok (error)); /* FIXME don't swallow the error */
+
 				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
 
 				gshared = mini_get_shared_method_full (m, SHARE_MODE_NONE, error);
 				mono_error_assert_ok (error);
 
 				add_extra_method (acfg, gshared);
+
+				if (acfg->jit_opts & MONO_OPT_GSHAREDVT) {
+					/* gsharedvt */
+					create_gsharedvt_inst (acfg, method, &ctx);
+
+					inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+					g_assert (is_ok (error)); /* FIXME don't swallow the error */
+
+					m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
+
+					gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
+					mono_error_assert_ok (error);
+
+					add_extra_method (acfg, gshared);
+				}
 			}
 		}
 
 		if (!mono_class_is_gtd (klass)) {
-
 			m = mono_marshal_get_delegate_invoke (method, NULL);
 
 			add_method (acfg, m);
@@ -9870,10 +9885,15 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->trimming_eligible_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only && mini_get_interp_callbacks ()->jit_call_can_be_supported (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only)) {
-			// The call back to jit_call_can_be_supported is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
+		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only) {
+			// The call to mono_jit_call_can_be_supported_by_interp is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
 			// When that happens, interpreter needs to have the capability to call the AOT'ed version of that method, since the method body has already been trimmed.
-			fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
+			gboolean skip_trim = FALSE;
+			if (acfg->aot_opts.interp) {
+				skip_trim = (!mono_jit_call_can_be_supported_by_interp (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only) || (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED));
+			}
+			if (!skip_trim)
+				fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
 		}
 	}
 }
@@ -10708,6 +10728,18 @@ execute_system (const char * command)
 
 #ifdef ENABLE_LLVM
 
+#ifdef HOST_WIN32
+#define OPT_NAME "opt.exe"
+#else
+#define OPT_NAME "opt"
+#endif
+
+#ifdef HOST_WIN32
+#define LLC_NAME "llc.exe"
+#else
+#define LLC_NAME "llc"
+#endif
+
 /*
  * emit_llvm_file:
  *
@@ -10735,7 +10767,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.no_opt)
 		return TRUE;
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && LLVM_API_VERSION >= 1400
+#if (defined(TARGET_X86) || defined(TARGET_AMD64))
 	if (acfg->aot_opts.llvm_cpu_attr && strstr (acfg->aot_opts.llvm_cpu_attr, "sse4.2"))
 		/*
 		 * LLVM 14 added a 'crc32' mattr which needs to be explicitly enabled to
@@ -10776,16 +10808,14 @@ emit_llvm_file (MonoAotCompile *acfg)
 	} else {
 #if LLVM_API_VERSION >= 1600
 		/* The safepoints pass requires new pass manager syntax*/
-		opts = g_strdup ("-disable-tail-calls -passes='");
+		opts = g_strdup ("-disable-tail-calls -passes=\"");
 		if (!acfg->aot_opts.llvm_only) {
 			opts = g_strdup_printf ("%sdefault<O2>,", opts);
 		}
-		opts = g_strdup_printf ("%splace-safepoints' -spp-all-backedges", opts);
-#elif LLVM_API_VERSION >= 1300
+		opts = g_strdup_printf ("%splace-safepoints\" -spp-all-backedges", opts);
+#else
 		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
-#else
-		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges");
 #endif
 	}
 
@@ -10810,7 +10840,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		opts = g_strdup_printf ("%s -fp-contract=fast -enable-no-infs-fp-math -enable-no-nans-fp-math -enable-no-signed-zeros-fp-math -enable-no-trapping-fp-math -enable-unsafe-fp-math", opts);
 	}
 
-	command = g_strdup_printf ("\"%sopt\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
+	command = g_strdup_printf ("\"%s" OPT_NAME "\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
 	aot_printf (acfg, "Executing opt: %s\n", command);
 	if (execute_system (command) != 0)
 		return FALSE;
@@ -10885,7 +10915,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		g_string_append_printf (acfg->llc_args, " -mattr=%s", acfg->aot_opts.llvm_cpu_attr);
 	}
 
-	command = g_strdup_printf ("\"%sllc\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
+	command = g_strdup_printf ("\"%s" LLC_NAME "\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
 	g_free (output_fname);
 
 	aot_printf (acfg, "Executing llc: %s\n", command);
@@ -14587,8 +14617,8 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 static MonoMethodSignature * const * const interp_in_static_sigs [] = {
-    &mono_icall_sig_bool_ptr_int32_ptrref,
-    &mono_icall_sig_bool_ptr_ptrref,
+    &mono_icall_sig_boolean_ptr_int32_ptrref,
+    &mono_icall_sig_boolean_ptr_ptrref,
     &mono_icall_sig_int32_int32_ptrref,
     &mono_icall_sig_int32_int32_ptr_ptrref,
     &mono_icall_sig_int32_ptr_int32_ptr,
@@ -14892,7 +14922,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
-		acfg->trimming_eligible_methods_outfile = fopen (acfg->aot_opts.trimming_eligible_methods_outfile, "w+");
+		acfg->trimming_eligible_methods_outfile = g_fopen (acfg->aot_opts.trimming_eligible_methods_outfile, "w");
 		if (!acfg->trimming_eligible_methods_outfile)
 			aot_printerrf (acfg, "Unable to open trimming-eligible-methods-outfile specified file %s\n", acfg->aot_opts.trimming_eligible_methods_outfile);
 		else {

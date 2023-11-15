@@ -12,7 +12,6 @@
     <NoWarn>$(NoWarn);3021</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-android</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -82,7 +81,7 @@
              Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
     <!-- IP parser -->
     <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"

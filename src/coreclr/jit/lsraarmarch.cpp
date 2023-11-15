@@ -30,7 +30,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //                       of an indirection operation.
 //
 // Arguments:
-//    indirTree - GT_IND, GT_STOREIND or block gentree node
+//    indirTree - GT_IND, GT_STOREIND or block GenTree node
 //
 // Return Value:
 //    The number of sources consumed by this node.

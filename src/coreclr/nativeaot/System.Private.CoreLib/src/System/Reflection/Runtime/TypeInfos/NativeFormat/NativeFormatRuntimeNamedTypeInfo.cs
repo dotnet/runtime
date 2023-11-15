@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Text;
 
 using Internal.Metadata.NativeFormat;
 
@@ -111,7 +111,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         public sealed override Type GetGenericTypeDefinition()
         {
             if (_typeDefinition.GenericParameters.GetEnumerator().MoveNext())
-                return this;
+                return this.ToType();
             return base.GetGenericTypeDefinition();
         }
 
@@ -152,18 +152,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
-        {
-            TypeAttributes attr = _typeDefinition.Flags;
-            return attr;
-        }
+        public sealed override TypeAttributes Attributes => _typeDefinition.Flags;
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return _typeDefinitionHandle.GetHashCode();
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {

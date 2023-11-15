@@ -142,7 +142,7 @@ NativeImage *NativeImage::Open(
     SString compositeImageFileName(SString::Utf8, nativeImageFileName);
     SString fullPath;
     fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
-    fullPath += compositeImageFileName;
+    fullPath.Append(compositeImageFileName);
     LPWSTR searchPathsConfig;
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NativeImageSearchPaths, &searchPathsConfig));
 
@@ -194,7 +194,7 @@ NativeImage *NativeImage::Open(
                 }
 
                 fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
-                fullPath += compositeImageFileName;
+                fullPath.Append(compositeImageFileName);
 
                 EX_TRY
                 {

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Reflection.Emit
 {
@@ -45,7 +45,18 @@ namespace System.Reflection.Emit
         internal bool EndsUncondJmpBlk() =>
             (m_flags & EndsUncondJmpBlkFlag) != 0;
 
-        internal int StackChange() =>
+        /// <summary>
+        /// The value of how the IL instruction changes the evaluation stack.
+        /// </summary>
+        /// <remarks>
+        /// The difference between how many elements are popped from the stack and how many are pushed onto the stack as a result of the IL instruction.
+        /// For some IL instructions like <see cref="OpCodes.Call"/> stack change is not fixed and depends on the called reference signature.
+        /// For such <see cref="OpCodes"/> the <see cref="OpCode.EvaluationStackDelta"/> returns 0. In this case you should not rely on
+        /// <see cref="OpCode.EvaluationStackDelta"/> for calculating stack size and/or max stack, instead need to evaluate the reference signature.
+        /// For example, in case the instruction is calling a method reference, need to evaluate the method signature,
+        /// the push count depends on the returning value, the pop count depends on how many parameters passed.
+        /// </remarks>
+        public int EvaluationStackDelta =>
             m_flags >> StackChangeShift;
 
         public OperandType OperandType => (OperandType)(m_flags & OperandTypeMask);

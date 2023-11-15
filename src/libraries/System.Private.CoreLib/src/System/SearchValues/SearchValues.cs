@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
@@ -112,11 +113,9 @@ namespace System.Buffers
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector256<byte> bitmap, out BitVector256 lookup);
-
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && lookup.Contains(0)
-                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(bitmap, lookup)
-                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
+                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values)
+                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values);
             }
 
             // Vector128<char> isn't valid. Treat the values as shorts instead.
@@ -154,6 +153,13 @@ namespace System.Buffers
                 return (Ssse3.IsSupported || PackedSimd.IsSupported) && probabilisticValues.Contains('\0')
                     ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(probabilisticValues)
                     : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(probabilisticValues);
+            }
+
+            // We prefer using the ProbabilisticMap over Latin1CharSearchValues if the former is vectorized.
+            if (!(Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && maxInclusive < 256)
+            {
+                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported.
+                return new Latin1CharSearchValues(values);
             }
 
             return new ProbabilisticCharSearchValues(probabilisticValues);

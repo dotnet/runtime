@@ -16,6 +16,7 @@ Expected: Should return the same exception.
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Foo
 {
@@ -276,7 +277,8 @@ public class Test_CctorThrowInlinedStatic
 	}
 
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		bool pass = true;
 		

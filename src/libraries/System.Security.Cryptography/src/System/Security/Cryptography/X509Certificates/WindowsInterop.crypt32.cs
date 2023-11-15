@@ -3,17 +3,15 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-
-using SafeBCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeBCryptKeyHandle;
-using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
-using X509KeyUsageFlags = System.Security.Cryptography.X509Certificates.X509KeyUsageFlags;
-using SafeNCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle;
-
+using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
+using SafeBCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeBCryptKeyHandle;
+using SafeNCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle;
+using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
+using X509KeyUsageFlags = System.Security.Cryptography.X509Certificates.X509KeyUsageFlags;
 
 internal static partial class Interop
 {

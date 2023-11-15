@@ -35,7 +35,7 @@ public partial class ApkBuilder
     public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
-    public string? RuntimeComponents { get; set; }
+    public string[] RuntimeComponents { get; set; } = Array.Empty<string>();
     public string? DiagnosticPorts { get; set; }
     public bool IsLibraryMode { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
@@ -98,19 +98,9 @@ public partial class ApkBuilder
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
 
-        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        if (!string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
         {
-            bool validDiagnosticsConfig = false;
-
-            if (string.IsNullOrEmpty(RuntimeComponents))
-                validDiagnosticsConfig = false;
-            else if (RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-                validDiagnosticsConfig = true;
-            else if (RuntimeComponents.Contains("diagnostics_tracing", StringComparison.OrdinalIgnoreCase))
-                validDiagnosticsConfig = true;
-
-            if (!validDiagnosticsConfig)
-                throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
+            throw new ArgumentException($"Using DiagnosticPorts requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
         // Try to get the latest build-tools version if not specified
@@ -278,34 +268,19 @@ public partial class ApkBuilder
             if (StaticLinkedRuntime)
             {
                 string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
-                bool staticLinkAllComponents = false;
-                string[] staticLinkedComponents = Array.Empty<string>();
-
-                if (!string.IsNullOrEmpty(RuntimeComponents) && RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-                    staticLinkAllComponents = true;
-                else if (!string.IsNullOrEmpty(RuntimeComponents))
-                    staticLinkedComponents = RuntimeComponents.Split(";");
 
                 // by default, component stubs will be linked and depending on how mono runtime has been build,
                 // stubs can disable or dynamic load components.
                 foreach (string staticComponentStubLib in staticComponentStubLibs)
                 {
                     string componentLibToLink = staticComponentStubLib;
-                    if (staticLinkAllComponents)
+                    foreach (string runtimeComponent in RuntimeComponents)
                     {
-                        // static link component.
-                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                    }
-                    else
-                    {
-                        foreach (string staticLinkedComponent in staticLinkedComponents)
+                        if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
                         {
-                            if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
-                            {
-                                // static link component.
-                                componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                                break;
-                            }
+                            // static link component.
+                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                            break;
                         }
                     }
 
@@ -338,7 +313,6 @@ public partial class ApkBuilder
         string monodroidSource = (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
-            .Replace("%ProjectName%", ProjectName)
             .Replace("%MonoInclude%", monoRuntimeHeaders)
             .Replace("%NativeLibrariesToLink%", nativeLibraries)
             .Replace("%MONODROID_SOURCE%", monodroidSource)
@@ -392,6 +366,9 @@ public partial class ApkBuilder
         Regex checkNumerics = DotNumberRegex();
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
+
+        if (!string.IsNullOrEmpty(ProjectName) && ProjectName.Contains('-'))
+            ProjectName = ProjectName.Replace("-", "_");
 
         string packageId = $"net.dot.{ProjectName}";
 
@@ -461,13 +438,6 @@ public partial class ApkBuilder
         }
 
         // add all *.so files to lib/%abi%/
-        string[] dynamicLinkedComponents = Array.Empty<string>();
-        bool dynamicLinkAllComponents = false;
-        if (!StaticLinkedRuntime && !string.IsNullOrEmpty(RuntimeComponents) && RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-            dynamicLinkAllComponents = true;
-        if (!string.IsNullOrEmpty(RuntimeComponents) && !StaticLinkedRuntime)
-            dynamicLinkedComponents = RuntimeComponents.Split(";");
-
         Directory.CreateDirectory(Path.Combine(OutputDir, "lib", abi));
         foreach (var dynamicLib in dynamicLibs)
         {
@@ -485,18 +455,19 @@ public partial class ApkBuilder
 
             if (dynamicLibName.Contains("libmono-component-", StringComparison.OrdinalIgnoreCase))
             {
-                bool includeComponent = dynamicLinkAllComponents;
-                if (!StaticLinkedRuntime && !includeComponent)
+                bool includeComponent = false;
+                if (!StaticLinkedRuntime)
                 {
-                    foreach (string dynamicLinkedComponent in dynamicLinkedComponents)
+                    foreach (string runtimeComponent in RuntimeComponents)
                     {
-                        if (dynamicLibName.Contains(dynamicLinkedComponent, StringComparison.OrdinalIgnoreCase))
+                        if (dynamicLibName.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
                         {
                             includeComponent = true;
                             break;
                         }
                     }
                 }
+
                 if (!includeComponent)
                 {
                     // make sure dynamic component is not included in package.

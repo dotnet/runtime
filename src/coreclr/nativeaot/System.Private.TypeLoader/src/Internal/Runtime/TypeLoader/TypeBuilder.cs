@@ -6,17 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
     using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
-    using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
     using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
+    using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
 
     internal static class LowLevelListExtensions
@@ -1025,7 +1024,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     unsafe
                     {
-                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRefType);
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRef);
                     }
                     TypeSystemContext.ByRefTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 }
@@ -1034,7 +1033,7 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(typeAsParameterizedType is PointerType);
                     unsafe
                     {
-                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsPointerType);
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsPointer);
                     }
                     TypeSystemContext.PointerTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 }
@@ -1259,7 +1258,7 @@ namespace Internal.Runtime.TypeLoader
                 pointerTypeHandle = EETypeCreator.CreatePointerEEType((uint)pointerType.GetHashCode(), pointeeTypeHandle, pointerType);
                 unsafe
                 {
-                    Debug.Assert(pointerTypeHandle.ToEETypePtr()->IsPointerType);
+                    Debug.Assert(pointerTypeHandle.ToEETypePtr()->IsPointer);
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
@@ -1279,7 +1278,7 @@ namespace Internal.Runtime.TypeLoader
                 byRefTypeHandle = EETypeCreator.CreateByRefEEType((uint)byRefType.GetHashCode(), pointeeTypeHandle, byRefType);
                 unsafe
                 {
-                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRefType);
+                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRef);
                 }
                 TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
 
@@ -1304,7 +1303,7 @@ namespace Internal.Runtime.TypeLoader
                 runtimeTypeHandle = EETypeCreator.CreateFunctionPointerEEType((uint)functionPointerType.GetHashCode(), returnTypeHandle, parameterHandles, functionPointerType);
                 unsafe
                 {
-                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointerType);
+                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointer);
                 }
                 TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(runtimeTypeHandle);
 

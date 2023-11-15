@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.IO;
+using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
-using System.Net.Http.Metrics;
 
 namespace System.Net.Http
 {

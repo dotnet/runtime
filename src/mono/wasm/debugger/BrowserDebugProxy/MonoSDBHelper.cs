@@ -564,16 +564,29 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
-            if (objectId.Scheme == "object")
+            switch (objectId.Scheme)
             {
-                Write(ElementType.Class, objectId.Value);
-            }
-            else if (objectId.Scheme == "valuetype")
-            {
-                if (SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                case "object":
+                {
+                    Write(ElementType.Class, objectId.Value);
+                    break;
+                }
+                case "array":
+                {
+                    Write(ElementType.Array, objectId.Value);
+                    break;
+                }
+                case "valuetype":
+                {
+                    if (!SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                        throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
                     Write(vt.Buffer);
-                else
-                    throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
+                    break;
+                }
+                default:
+                {
+                    throw new NotImplementedException($"Writing object of scheme: {objectId.Scheme} is not supported");
+                }
             }
         }
 
@@ -637,51 +650,53 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
+        public bool WriteConst(PrefixUnaryExpressionSyntax constValue)
+        {
+            switch (constValue.Kind())
+            {
+                case SyntaxKind.UnaryMinusExpression:
+                {
+                    switch (constValue.Operand)
+                    {
+                        case LiteralExpressionSyntax les:
+                        {
+                            return WriteNumber(les.Token.Value, convertToNegative: true);
+                        }
+                        default:
+                        {
+                            // not supported yet
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case SyntaxKind.UnaryPlusExpression:
+                {
+                    switch (constValue.Operand)
+                    {
+                        case LiteralExpressionSyntax les:
+                        {
+                            return WriteNumber(les.Token.Value, convertToNegative: false);
+                        }
+                        default:
+                        {
+                            // not supported yet
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            return false;
+        }
+
         public async Task<bool> WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
         {
             switch (constValue.Kind())
             {
                 case SyntaxKind.NumericLiteralExpression:
                 {
-                    switch (constValue.Token.Value) {
-                        case double d:
-                            Write(ElementType.R8, d);
-                            break;
-                        case float f:
-                            Write(ElementType.R4, f);
-                            break;
-                        case long l:
-                            Write(ElementType.I8, l);
-                            break;
-                        case ulong ul:
-                            Write(ElementType.U8, ul);
-                            break;
-                        case byte b:
-                            Write(ElementType.U1, (int)b);
-                            break;
-                        case sbyte sb:
-                            Write(ElementType.I1, (uint)sb);
-                            break;
-                        case ushort us:
-                            Write(ElementType.U2, (int)us);
-                            break;
-                        case short s:
-                            Write(ElementType.I2, (uint)s);
-                            break;
-                        case uint ui:
-                            Write(ElementType.U4, ui);
-                            break;
-                        case IntPtr ip:
-                            Write(ElementType.I, (int)ip);
-                            break;
-                        case UIntPtr up:
-                            Write(ElementType.U, (uint)up);
-                            break;
-                        default:
-                            Write(ElementType.I4, (int)constValue.Token.Value);
-                            break;
-                    }
-                    return true;
+                    return WriteNumber(constValue.Token.Value);
                 }
                 case SyntaxKind.StringLiteralExpression:
                 {
@@ -713,6 +728,51 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
             return false;
+        }
+
+        public bool WriteNumber(object number, bool convertToNegative=false)
+        {
+            int coeff = convertToNegative ? -1 : 1;
+            switch (number)
+            {
+                case double d:
+                    Write(ElementType.R8, d * coeff);
+                    break;
+                case float f:
+                    Write(ElementType.R4, f * coeff);
+                    break;
+                case long l:
+                    Write(ElementType.I8, l * coeff);
+                    break;
+                case ulong ul:
+                    Write(ElementType.U8, ul);
+                    break;
+                case byte b:
+                    Write(ElementType.U1, (int)b);
+                    break;
+                case sbyte sb:
+                    Write(ElementType.I1, (uint)sb);
+                    break;
+                case ushort us:
+                    Write(ElementType.U2, (int)us);
+                    break;
+                case short s:
+                    Write(ElementType.I2, (uint)s  * coeff);
+                    break;
+                case uint ui:
+                    Write(ElementType.U4, ui);
+                    break;
+                case IntPtr ip:
+                    Write(ElementType.I, (int)ip);
+                    break;
+                case UIntPtr up:
+                    Write(ElementType.U, (uint)up);
+                    break;
+                default:
+                    Write(ElementType.I4, (int)number * coeff);
+                    break;
+            }
+            return true;
         }
 
         public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, ElementType? expectedType, CancellationToken token)
@@ -845,7 +905,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        private const int MINOR_VERSION = 65;
+        private const int MINOR_VERSION = 66;
         private const int MAJOR_VERSION = 2;
 
         private int VmMinorVersion { get; set; }

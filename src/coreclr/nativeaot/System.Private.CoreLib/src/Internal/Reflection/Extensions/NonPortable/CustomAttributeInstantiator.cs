@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 using Internal.Runtime.Augments;
 
@@ -40,11 +40,11 @@ namespace Internal.Reflection.Extensions.NonPortable
             // Find the public constructor that matches the supplied arguments.
             //
             ConstructorInfo? matchingCtor = null;
-            ParameterInfo[]? matchingParameters = null;
+            ReadOnlySpan<ParameterInfo> matchingParameters = default;
             IList<CustomAttributeTypedArgument> constructorArguments = cad.ConstructorArguments;
             foreach (ConstructorInfo ctor in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                ParameterInfo[] parameters = ctor.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> parameters = ctor.GetParametersAsSpan();
                 if (parameters.Length != constructorArguments.Count)
                     continue;
                 int i;
@@ -68,7 +68,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             //
             // Found the right constructor. Instantiate the Attribute.
             //
-            int arity = matchingParameters!.Length;
+            int arity = matchingParameters.Length;
             object?[] invokeArguments = new object[arity];
             for (int i = 0; i < arity; i++)
             {

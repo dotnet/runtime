@@ -49,6 +49,7 @@ CompPhaseNameMacro(PHASE_IMPBYREF_COPY_OMISSION,     "Identify candidates for im
 CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,             "Morph - ByRefs",                 false, -1, false)
 CompPhaseNameMacro(PHASE_PROMOTE_STRUCTS,            "Morph - Promote Structs",        false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_GLOBAL,               "Morph - Global",                 false, -1, false)
+CompPhaseNameMacro(PHASE_POST_MORPH,                 "Post-Morph",                     false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_END,                  "Morph - Finish",                 false, -1, true)
 CompPhaseNameMacro(PHASE_GS_COOKIE,                  "GS Cookie",                      false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS,       "Compute edge weights (1, false)",false, -1, false)
@@ -99,9 +100,9 @@ CompPhaseNameMacro(PHASE_EXPAND_RTLOOKUPS,           "Expand runtime lookups",  
 CompPhaseNameMacro(PHASE_EXPAND_STATIC_INIT,         "Expand static init",             false, -1, true)
 CompPhaseNameMacro(PHASE_EXPAND_TLS,                 "Expand TLS access",              false, -1, true)
 CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,            "Insert GC Polls",                false, -1, true)
+CompPhaseNameMacro(PHASE_CREATE_THROW_HELPERS,       "Create throw helper blocks",     false, -1, true)
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block",     false, -1, true)
 CompPhaseNameMacro(PHASE_RATIONALIZE,                "Rationalize IR",                 false, -1, false)
-CompPhaseNameMacro(PHASE_SIMPLE_LOWERING,            "Do 'simple' lowering",           false, -1, false)
 
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,             "Local var liveness",             true,  -1, false)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INIT,        "Local var liveness init",        false, PHASE_LCLVARLIVENESS, false)

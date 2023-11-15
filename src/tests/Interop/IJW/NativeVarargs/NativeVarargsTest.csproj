@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Native varargs not supported on ARM -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'">true</CLRTestTargetUnsupported>
   </PropertyGroup>

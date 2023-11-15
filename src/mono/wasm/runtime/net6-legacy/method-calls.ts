@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
+import { mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
 import { Module, INTERNAL, loaderHelpers } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
@@ -103,7 +103,7 @@ export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_na
             return;
         }
 
-        const obj = get_js_obj(js_handle);
+        const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
         if (is_nullish(obj)) {
             wrap_error_root(is_exception, "ERR13: Invalid JS object handle '" + js_handle + "' while invoking '" + js_name + "'", resultRoot);
             return;

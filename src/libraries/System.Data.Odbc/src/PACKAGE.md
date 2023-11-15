@@ -13,9 +13,10 @@ This is a basic example of retrieving the results of a query using an [OdbcDataR
 ```cs
 using System.Data.Odbc;
 
+string connectionString = ""; // Fill in
 string queryString = "SELECT DISTINCT CustomerID FROM Orders";
 
-using OdbcConnection connection = new OdbcConnection(queryString);
+using OdbcConnection connection = new OdbcConnection(connectionString);
 using OdbcCommand command = new OdbcCommand(queryString, connection);
 
 connection.Open();

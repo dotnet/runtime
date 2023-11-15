@@ -45,8 +45,8 @@ class SArray
 
     COUNT_T GetAllocation() const;
 
-    void Preallocate(int count) const;
-    void Trim() const;
+    void Preallocate(int count);
+    void Trim();
 
     void Copy(const Iterator &to, const Iterator &from, COUNT_T size);
     void Move(const Iterator &to, const Iterator &from, COUNT_T size);

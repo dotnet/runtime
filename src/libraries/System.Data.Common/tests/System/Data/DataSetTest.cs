@@ -1417,7 +1417,7 @@ namespace System.Data.Tests
                     }
                 }
             }
-            Assert.False(true);
+            Assert.Fail();
         }
 
         /// <summary>

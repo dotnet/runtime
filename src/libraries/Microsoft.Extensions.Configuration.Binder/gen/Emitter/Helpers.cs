@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -81,6 +80,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string section = nameof(section);
                 public const string sectionKey = nameof(sectionKey);
                 public const string services = nameof(services);
+                public const string sp = nameof(sp);
                 public const string temp = nameof(temp);
                 public const string type = nameof(type);
                 public const string typedObj = nameof(typedObj);
@@ -121,6 +121,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string IOptionsChangeTokenSource = nameof(IOptionsChangeTokenSource);
                 public const string IServiceCollection = nameof(IServiceCollection);
                 public const string Length = nameof(Length);
+                public const string Name = nameof(Name);
                 public const string NumberStyles = nameof(NumberStyles);
                 public const string Parse = nameof(Parse);
                 public const string Path = nameof(Path);
@@ -135,30 +136,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string Value = nameof(Value);
             }
 
-            private bool ShouldEmitBindingExtensions() =>
-                ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Any) ||
-                ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Any) ||
-                ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Any);
+            private bool ShouldEmitMethods(MethodsToGen methods) => (_interceptorInfo.MethodsToGen & methods) != 0;
 
-            private void EmitInterceptsLocationAnnotations(Enum generatedBindingOverload)
+            private void EmitInterceptsLocationAnnotations(MethodsToGen overload)
             {
+                IEnumerable<InvocationLocationInfo>? infoList = _interceptorInfo.GetInfo(overload);
+                bool interceptsCalls = infoList is not null;
+
                 // The only time a generated binding method won't have any locations to
                 // intercept is when either of these methods are used as helpers for
                 // other generated OptionsBuilder or ServiceCollection binding extensions.
-                bool interceptsCalls = _sourceGenSpec.InterceptionInfo.TryGetValue(generatedBindingOverload, out List<InterceptorLocationInfo>? infoList);
                 Debug.Assert(interceptsCalls ||
-                    generatedBindingOverload is MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions ||
-                    generatedBindingOverload is MethodsToGen_Extensions_OptionsBuilder.Bind_T_BinderOptions);
+                    overload is MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions ||
+                    overload is MethodsToGen.OptionsBuilderExt_Bind_T_BinderOptions);
 
                 if (interceptsCalls)
                 {
-                    EmitInterceptsLocationAnnotations(infoList);
+                    EmitInterceptsLocationAnnotations(infoList!);
                 }
             }
 
-            private void EmitInterceptsLocationAnnotations(List<InterceptorLocationInfo> infoList)
+            private void EmitInterceptsLocationAnnotations(IEnumerable<InvocationLocationInfo> infoList)
             {
-                foreach (InterceptorLocationInfo info in infoList)
+                foreach (InvocationLocationInfo info in infoList)
                 {
                     _writer.WriteLine($@"[{Identifier.InterceptsLocation}(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
                 }
@@ -231,18 +231,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _emitBlankLineBeforeNextStatement = true;
             }
 
-            private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool voidReturn = false)
+            private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool useThrowIfNullMethod, bool voidReturn = false)
             {
-                string returnExpr = voidReturn
-                    ? "return"
-                    : $"throw new ArgumentNullException(nameof({paramName}))";
-
-                _writer.WriteLine($$"""
+                if (voidReturn)
+                {
+                    _writer.WriteLine($$"""
                     if ({{paramName}} is null)
                     {
-                        {{returnExpr}};
+                        return;
                     }
                     """);
+                }
+                else
+                {
+                    string throwIfNullExpr = useThrowIfNullMethod
+                    ? $"ArgumentNullException.ThrowIfNull({paramName});"
+                    : $$"""
+                    if ({{paramName}} is null)
+                    {
+                        throw new ArgumentNullException(nameof({{paramName}}));
+                    }
+                    """;
+
+                    _writer.WriteLine(throwIfNullExpr);
+                }
 
                 _writer.WriteLine();
             }

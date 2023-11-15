@@ -6,6 +6,10 @@
          we only enable it in specific projects. so to avoid duplicating this property in coreclr, we can first scope it to src/libraries.
          This property needs to be declared before the ..\..\Directory.Build.props import. -->
     <SkipArcadeNoWarnCS1591>true</SkipArcadeNoWarnCS1591>
+
+    <!-- Prevent native-binplace.proj from being treated as a source project, to avoid importing illink targets
+         and thereby avoid hitting a static graph restore bug: https://github.com/dotnet/runtime/issues/92194 -->
+    <IsSourceProject Condition="'$(MSBuildProjectFile)' == 'native-binplace.proj'">false</IsSourceProject>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />

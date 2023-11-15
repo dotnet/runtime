@@ -23,7 +23,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 
 	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
 	if (is_ok (error) && provider_name_utf8) {
-		provider = mono_component_event_pipe ()->create_provider (provider_name_utf8, callback_func, callback_context);
+		provider = mono_component_event_pipe ()->create_provider (provider_name_utf8, (EventPipeCallback)callback_func, callback_context);
 	}
 
 	g_free (provider_name_utf8);

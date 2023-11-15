@@ -6,8 +6,8 @@
 //
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
@@ -30,8 +30,8 @@ namespace System.Runtime
                 !pEEType->IsInterface &&
                 !pEEType->IsArray &&
                 !pEEType->IsString &&
-                !pEEType->IsPointerType &&
-                !pEEType->IsFunctionPointerType &&
+                !pEEType->IsPointer &&
+                !pEEType->IsFunctionPointer &&
                 !pEEType->IsByRefLike;
             if (!isValid)
                 Debug.Assert(false);
@@ -356,7 +356,7 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFast;
 
                 case RuntimeHelperKind.IsInst:
-                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
+                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointer)
                         return (IntPtr)(delegate*<MethodTable*, object, object?>)&TypeCast.IsInstanceOfAny;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfInterface;
@@ -364,7 +364,7 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfClass;
 
                 case RuntimeHelperKind.CastClass:
-                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
+                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointer)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastAny;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastInterface;

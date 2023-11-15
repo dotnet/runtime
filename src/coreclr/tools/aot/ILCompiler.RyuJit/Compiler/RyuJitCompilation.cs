@@ -22,10 +22,9 @@ namespace ILCompiler
     {
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corinfos = new ConditionalWeakTable<Thread, CorInfoImpl>();
         internal readonly RyuJitCompilationOptions _compilationOptions;
-        private readonly ExternSymbolMappedField _hardwareIntrinsicFlags;
-        private readonly Dictionary<string, InstructionSet> _instructionSetMap;
         private readonly ProfileDataManager _profileDataManager;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
+        private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
         private readonly int _parallelism;
 
         public InstructionSetSupport InstructionSetSupport { get; }
@@ -42,29 +41,26 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             ProfileDataManager profileDataManager,
             MethodImportationErrorProvider errorProvider,
+            ReadOnlyFieldPolicy readOnlyFieldPolicy,
             RyuJitCompilationOptions options,
             int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, inliningPolicy, logger)
         {
             _compilationOptions = options;
-            _hardwareIntrinsicFlags = new ExternSymbolMappedField(nodeFactory.TypeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures");
             InstructionSetSupport = instructionSetSupport;
-
-            _instructionSetMap = new Dictionary<string, InstructionSet>();
-            foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(TypeSystemContext.Target.Architecture))
-            {
-                if (instructionSetInfo.ManagedName != "")
-                    _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
-            }
 
             _profileDataManager = profileDataManager;
 
             _methodImportationErrorProvider = errorProvider;
 
+            _readOnlyFieldPolicy = readOnlyFieldPolicy;
+
             _parallelism = parallelism;
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
+
+        public bool IsInitOnly(FieldDesc field) => _readOnlyFieldPolicy.IsReadOnly(field);
 
         public override IEETypeNode NecessaryTypeSymbolIfPossible(TypeDesc type)
         {
@@ -81,6 +77,16 @@ namespace ILCompiler
                 return _nodeFactory.MaximallyConstructableType(type);
 
             return _nodeFactory.NecessaryTypeSymbol(type);
+        }
+
+        public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
+        {
+            bool canPotentiallyConstruct = _devirtualizationManager == null
+                ? true : _devirtualizationManager.CanConstructType(type);
+            if (canPotentiallyConstruct)
+                return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
+
+            return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -212,28 +218,6 @@ namespace ILCompiler
                 else
                     Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
             }
-        }
-
-        public override MethodIL GetMethodIL(MethodDesc method)
-        {
-            TypeDesc owningType = method.OwningType;
-            string intrinsicId = InstructionSetSupport.GetHardwareIntrinsicId(TypeSystemContext.Target.Architecture, owningType);
-            if (!string.IsNullOrEmpty(intrinsicId)
-                && HardwareIntrinsicHelpers.IsIsSupportedMethod(method))
-            {
-                InstructionSet instructionSet = _instructionSetMap[intrinsicId];
-
-                // If this is an instruction set that is optimistically supported, but is not one of the
-                // intrinsics that are known to be always available, emit IL that checks the support level
-                // at runtime.
-                if (!InstructionSetSupport.IsInstructionSetSupported(instructionSet)
-                    && InstructionSetSupport.OptimisticFlags.HasInstructionSet(instructionSet))
-                {
-                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags, instructionSet);
-                }
-            }
-
-            return base.GetMethodIL(method);
         }
     }
 

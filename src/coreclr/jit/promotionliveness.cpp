@@ -242,9 +242,8 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, Bit
             }
 
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
-            // TODO-CQ: We could also try to figure out if a use actually touches the remainder, e.g. in some cases
-            // a struct use may consist only of promoted fields and does not actually use the remainder.
-            MarkIndex(baseIndex, isUse, isFullDefOfRemainder, useSet, defSet);
+            bool isUseOfRemainder     = isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size));
+            MarkIndex(baseIndex, isUseOfRemainder, isFullDefOfRemainder, useSet, defSet);
         }
     }
     else
@@ -300,9 +299,9 @@ void PromotionLiveness::InterBlockLiveness()
     {
         changed = false;
 
-        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->bbPrev)
+        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->Prev())
         {
-            m_hasPossibleBackEdge |= block->bbNext && (block->bbNext->bbNum <= block->bbNum);
+            m_hasPossibleBackEdge |= !block->IsLast() && (block->Next()->bbNum <= block->bbNum);
             changed |= PerBlockLiveness(block);
         }
 
@@ -609,11 +608,9 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
             }
             else
             {
-                // TODO-CQ: We could also try to figure out if a use actually touches the remainder, e.g. in some cases
-                // a struct use may consist only of promoted fields and does not actually use the remainder.
                 BitVecOps::AddElemD(&aggTraits, aggDeaths, 0);
 
-                if (isUse)
+                if (isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size)))
                 {
                     BitVecOps::AddElemD(m_bvTraits, life, baseIndex);
                 }
