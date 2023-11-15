@@ -4522,7 +4522,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             float[] array = new float[4];
             Vector128.Create(2.0f).CopyTo(array);
-            Assert.True(array.SequenceEqual([2.0f, 2.0f, 2.0f, 2.0f]));
+            Assert.True(array.AsSpan().SequenceEqual([2.0f, 2.0f, 2.0f, 2.0f]));
         }
 
         [Fact]
@@ -4530,7 +4530,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             float[] array = new float[5];
             Vector128.Create(2.0f).CopyTo(array, 1);
-            Assert.True(array.SequenceEqual([0.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
+            Assert.True(array.AsSpan().SequenceEqual([0.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
         }
 
         [Fact]
