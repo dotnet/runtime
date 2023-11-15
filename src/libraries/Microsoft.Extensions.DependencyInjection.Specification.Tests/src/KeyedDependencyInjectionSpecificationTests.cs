@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
-using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using System.Linq;
 using System.Security.Cryptography;
+using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {

@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime;
 using System.Diagnostics;
+using System.Runtime;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
