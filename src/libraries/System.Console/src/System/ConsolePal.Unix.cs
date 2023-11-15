@@ -1103,6 +1103,9 @@ namespace System
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
 
+        /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
+        /// <param name="value">The string to write.</param>
+        /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
         internal static void WriteTerminalAnsiString(string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))

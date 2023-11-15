@@ -18,24 +18,20 @@ namespace System
     //       to also change the test class.
     internal static partial class ConsolePal
     {
-        // StdInReader is only used when input isn't redirected and we're working
-        // with an interactive terminal.  In that case, performance isn't critical
-        // and we can use a smaller buffer to minimize working set.
-        // there is no dup on WASI
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.FileDescriptors.STDIN_FILENO), FileAccess.Read,
+            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDIN_FILENO, FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.FileDescriptors.STDOUT_FILENO), FileAccess.Write);
+            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDOUT_FILENO, FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.FileDescriptors.STDERR_FILENO), FileAccess.Write);
+            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDERR_FILENO, FileAccess.Write);
         }
 
         public static Encoding InputEncoding
@@ -254,23 +250,30 @@ namespace System
             }
         }
 
+        internal static unsafe void WriteFromConsoleStream(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
+        {
+            EnsureConsoleInitialized();
+
+            lock (Console.Out) // synchronize with other writers
+            {
+                Write(fd, buffer);
+            }
+        }
+
         /// <summary>Writes data from the buffer into the file descriptor.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        internal static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
-            // Console initialization might emit data to stdout.
-            // In order to avoid splitting user data we need to
-            // complete it before any writes are performed.
-            EnsureConsoleInitialized();
-
             fixed (byte* p = buffer)
             {
                 byte* bufPtr = p;
                 int count = buffer.Length;
                 while (count > 0)
                 {
+                    int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
+
                     int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
                     if (bytesWritten < 0)
                     {
@@ -298,32 +301,17 @@ namespace System
                             throw Interop.GetExceptionForIoErrno(errorInfo);
                         }
                     }
+                    else
+                    {
+                        if (mayChangeCursorPosition)
+                        {
+                            UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
+                        }
+                    }
+
                     count -= bytesWritten;
                     bufPtr += bytesWritten;
                 }
-            }
-        }
-
-        internal static void WriteTerminalAnsiString(string? value, bool mayChangeCursorPosition = true)
-        {
-            if (string.IsNullOrEmpty(value))
-                return;
-
-            scoped Span<byte> data;
-            if (value.Length <= 256) // except for extremely rare cases, ANSI escape strings are very short
-            {
-                data = stackalloc byte[Encoding.UTF8.GetMaxByteCount(value.Length)];
-                int bytesToWrite = Encoding.UTF8.GetBytes(value, data);
-                data = data.Slice(0, bytesToWrite);
-            }
-            else
-            {
-                data = Encoding.UTF8.GetBytes(value);
-            }
-
-            lock (Console.Out) // synchronize with other writers
-            {
-                Write(data, mayChangeCursorPosition);
             }
         }
     }
