@@ -25182,7 +25182,7 @@ void gc_heap::recommission_heap()
 //  mark_stack_array_length             = 0;
 //  mark_stack_array                    = nullptr;
 
-    generation_skip_ratio               = 0;
+    generation_skip_ratio               = 100;
     gen0_must_clear_bricks              = 0;
 
     freeable_uoh_segment                = nullptr;
