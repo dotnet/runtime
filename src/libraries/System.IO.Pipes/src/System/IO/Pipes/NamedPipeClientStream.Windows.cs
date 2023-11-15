@@ -34,6 +34,7 @@ namespace System.IO.Pipes
                 _pipeFlags |= (((int)_impersonationLevel - 1) << 16);
             }
 
+            bool addedWriteAttributesPermission = false;
             int access = 0;
             if ((PipeDirection.In & _direction) != 0)
             {
@@ -46,9 +47,20 @@ namespace System.IO.Pipes
             else
             {
                 access |= Interop.Kernel32.FileOperations.FILE_WRITE_ATTRIBUTES;
+                addedWriteAttributesPermission = true;
             }
 
             SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
+            if (handle.IsInvalid && addedWriteAttributesPermission && (Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_ACCESS_DENIED))
+            {
+                // We need the WriteAttributes permission in order to enable message mode, but for backwards
+                // compatibility and to support pipes that have been created where this permission isn't provided to
+                // the client, we try again and strip this permission if our first attempt to open the pipe with this
+                // fails.
+                access &= ~Interop.Kernel32.FileOperations.FILE_WRITE_ATTRIBUTES;
+
+                handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
+            }
 
             if (handle.IsInvalid)
             {
