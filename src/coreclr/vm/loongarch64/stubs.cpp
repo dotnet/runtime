@@ -1851,10 +1851,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
                 if (pLookup->sizeOffset > 2047)
                 {
-                    // pcaddi  $r21,0
-                    *(DWORD*)p = 0x18000015; p += 4;
-                    // ld.d  $t4,$r21, #dataOffset
-                    *(DWORD*)p = 0x28c002b0 | (dataOffset << 10); p += 4;
+                    // pcaddi  $t4,0
+                    *(DWORD*)p = 0x18000010; p += 4;
+                    // ld.d  $t4,$t4, #dataOffset
+                    *(DWORD*)p = 0x28c00210 | (dataOffset << 10); p += 4;
                     // ldx.d  $t5,$a0,$t4
                     *(DWORD*)p = 0x380c4091; p += 4;
 
