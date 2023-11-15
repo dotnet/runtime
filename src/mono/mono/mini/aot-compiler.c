@@ -9885,10 +9885,15 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->trimming_eligible_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only && mini_get_interp_callbacks ()->jit_call_can_be_supported (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only)) {
-			// The call back to jit_call_can_be_supported is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
+		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only) {
+			// The call to mono_jit_call_can_be_supported_by_interp is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
 			// When that happens, interpreter needs to have the capability to call the AOT'ed version of that method, since the method body has already been trimmed.
-			fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
+			gboolean skip_trim = FALSE;
+			if (acfg->aot_opts.interp) {
+				skip_trim = (!mono_jit_call_can_be_supported_by_interp (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only) || (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED));
+			}
+			if (!skip_trim)
+				fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
 		}
 	}
 }
@@ -14917,7 +14922,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
-		acfg->trimming_eligible_methods_outfile = fopen (acfg->aot_opts.trimming_eligible_methods_outfile, "w+");
+		acfg->trimming_eligible_methods_outfile = g_fopen (acfg->aot_opts.trimming_eligible_methods_outfile, "w");
 		if (!acfg->trimming_eligible_methods_outfile)
 			aot_printerrf (acfg, "Unable to open trimming-eligible-methods-outfile specified file %s\n", acfg->aot_opts.trimming_eligible_methods_outfile);
 		else {

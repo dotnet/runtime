@@ -94,7 +94,7 @@ struct ThreadBuffer
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-    uintptr_t               m_uHijackedReturnValueFlags;            
+    uintptr_t               m_uHijackedReturnValueFlags;
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     Object*                 m_pThreadLocalStatics;
@@ -112,6 +112,9 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
+    void *                  m_alternateStack;                      // ptr to alternate signal stack
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 };
 
 struct ReversePInvokeFrame
@@ -152,7 +155,7 @@ public:
                                                     // For suspension APCs it is mostly harmless, but wasteful and in extreme
                                                     // cases may force the target thread into stack oveflow.
                                                     // We use this flag to avoid sending another APC when one is still going through.
-                                                    // 
+                                                    //
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
     };
@@ -312,6 +315,11 @@ public:
 
     bool                IsActivationPending();
     void                SetActivationPending(bool isPending);
+
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
+    bool EnsureSignalAlternateStack();
+    void FreeSignalAlternateStack();
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

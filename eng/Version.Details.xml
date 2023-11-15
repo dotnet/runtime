@@ -90,14 +90,14 @@
       <Sha>45dd3a73dd5b64b010c4251303b3664bb30df029</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.23563.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.23564.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>23081a1dee285f8882748e5424970c7ebb9255ed</Sha>
+      <Sha>ee8c41af31db5a51bea7b7a76b57b87bc11531e4</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.23527.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.23563.2">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>947ef94c52440c781aeb6ee13e95a9ec9992e444</Sha>
+      <Sha>4f303e492250f07f279adce6e5e97b5707ef7c76</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.23556.2">
@@ -357,18 +357,18 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>8593e77c63776095b4b1ce3e9a931b499b4e481c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.9.0-2.23554.1">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.9.0-2.23559.5">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>5234e4783dbb5b2bf94772eb2168b88d1af90076</Sha>
+      <Sha>65fc4bd08b4bc15f6f00b529f47ffaeead03e434</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.9.0-2.23554.1">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.9.0-2.23559.5">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>5234e4783dbb5b2bf94772eb2168b88d1af90076</Sha>
+      <Sha>65fc4bd08b4bc15f6f00b529f47ffaeead03e434</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.9.0-2.23554.1">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.9.0-2.23559.5">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>5234e4783dbb5b2bf94772eb2168b88d1af90076</Sha>
+      <Sha>65fc4bd08b4bc15f6f00b529f47ffaeead03e434</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23523.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
@@ -397,9 +397,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23560.4">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23563.1">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>e0d2e1c4fa1ad3550f43a9d29f3c7e33652e561f</Sha>
+      <Sha>165040edde65911736ac5310365902003688bc24</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

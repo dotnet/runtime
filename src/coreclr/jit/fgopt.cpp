@@ -453,14 +453,14 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
         // Make sure that the block was marked as removed */
         noway_assert(block->bbFlags & BBF_REMOVED);
 
-        // Some blocks mark the end of trys and catches
-        // and can't be removed. We convert these into
-        // empty blocks of type BBJ_THROW
+        // Some blocks mark the end of trys and catches and can't be removed. We convert these into
+        // empty blocks of type BBJ_THROW.
+
+        const bool  bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
+        BasicBlock* leaveBlk            = bIsBBCallAlwaysPair ? block->Next() : nullptr;
 
         if (block->bbFlags & BBF_DONT_REMOVE)
         {
-            const bool bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
-
             // Unmark the block as removed, clear BBF_INTERNAL, and set BBJ_IMPORTED
 
             JITDUMP("Converting BBF_DONT_REMOVE block " FMT_BB " to BBJ_THROW\n", block->bbNum);
@@ -472,36 +472,47 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             block->bbFlags |= BBF_IMPORTED;
             block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
             block->bbSetRunRarely();
-
-            // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, we just converted it to a BBJ_THROW.
-            // Get rid of the BBJ_ALWAYS block which is now dead.
-            if (bIsBBCallAlwaysPair)
-            {
-                BasicBlock* leaveBlk = block->Next();
-                noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
-
-                leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
-
-                for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
-                {
-                    fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
-                }
-                assert(leaveBlk->bbRefs == 0);
-                assert(leaveBlk->bbPreds == nullptr);
-
-                fgRemoveBlock(leaveBlk, /* unreachable */ true);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-                // We have to clear BBF_FINALLY_TARGET flag on the target node (of BBJ_ALWAYS).
-                fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            }
         }
         else
         {
             /* We have to call fgRemoveBlock next */
             hasUnreachableBlocks = true;
             changed              = true;
+        }
+
+        // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, get rid of the BBJ_ALWAYS block which is now dead.
+        if (bIsBBCallAlwaysPair)
+        {
+            assert(leaveBlk->KindIs(BBJ_ALWAYS));
+
+            if (!block->KindIs(BBJ_THROW))
+            {
+                // We didn't convert the BBJ_CALLFINALLY to a throw, above. Since we already marked it as removed,
+                // change the kind to something else. Otherwise, we can hit asserts below in fgRemoveBlock that
+                // the leaveBlk BBJ_ALWAYS is not allowed to be a CallAlwaysPairTail.
+                assert(block->KindIs(BBJ_CALLFINALLY));
+                block->SetJumpKind(BBJ_NONE);
+            }
+
+            leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+
+            for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
+            {
+                fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
+            }
+            assert(leaveBlk->bbRefs == 0);
+            assert(leaveBlk->bbPreds == nullptr);
+
+            fgRemoveBlock(leaveBlk, /* unreachable */ true);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+            // We have to clear BBF_FINALLY_TARGET flag on the target node (of BBJ_ALWAYS).
+            fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+            // Note: `changed` will already have been set to true by processing the BBJ_CALLFINALLY.
+            // `hasUnreachableBlocks` doesn't need to be set for the leaveBlk itself because we've already called
+            // `fgRemoveBlock` on it.
         }
     }
 
@@ -769,7 +780,6 @@ bool Compiler::fgRemoveDeadBlocks()
 // Notes:
 //   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
 //   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
-//   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
 //
 //   Unreachable blocks will have higher pre and post order numbers than reachable blocks.
 //   Hence they will appear at lower indices in the fgBBReversePostorder array.
@@ -787,6 +797,16 @@ unsigned Compiler::fgDfsReversePostorder()
     // Walk from our primary root.
     //
     fgDfsReversePostorderHelper(fgFirstBB, visited, preorderIndex, postorderIndex);
+
+    // For OSR, walk from the original method entry too.
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr))
+    {
+        if (!BlockSetOps::IsMember(this, visited, fgEntryBB->bbNum))
+        {
+            fgDfsReversePostorderHelper(fgEntryBB, visited, preorderIndex, postorderIndex);
+        }
+    }
 
     // If we didn't end up visiting everything, try the EH roots.
     //

@@ -4,8 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.Caching
 {

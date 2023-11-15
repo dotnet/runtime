@@ -13772,8 +13772,10 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 // Arguments:
 //    block - block in question
+//    highestReachablePostorder - maximum postorder number for a
+//     reachable block.
 //
-void Compiler::fgMorphBlock(BasicBlock* block)
+void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorder)
 {
     JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
 
@@ -13788,6 +13790,8 @@ void Compiler::fgMorphBlock(BasicBlock* block)
         }
         else
         {
+            assert(highestReachablePostorder > 0);
+
             // Determine if this block can leverage assertions from its pred blocks.
             //
             // Some blocks are ineligible.
@@ -13814,7 +13818,19 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     {
                         JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
                                 pred->bbNum);
+                        hasPredAssertions = false;
                         break;
+                    }
+
+                    if (pred->bbPostorderNum > highestReachablePostorder)
+                    {
+                        // This pred was not reachable from the original DFS root set, so
+                        // we can ignore its assertion information.
+                        //
+                        JITDUMP(FMT_BB " ignoring assertions from unreachable pred " FMT_BB
+                                       " [pred postorder num %u, highest reachable %u]\n",
+                                block->bbNum, pred->bbNum, pred->bbPostorderNum, highestReachablePostorder);
+                        continue;
                     }
 
                     // Yes, pred assertions are available. If this is the first pred, copy.
@@ -13938,7 +13954,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         // We are optimizing. Process in RPO.
         //
         fgRenumberBlocks();
-        fgDfsReversePostorder();
+        const unsigned highestReachablePostorder = fgDfsReversePostorder();
 
         // Disallow general creation of new blocks or edges as it
         // would invalidate RPO.
@@ -13970,7 +13986,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         for (unsigned i = 1; i <= bbNumMax; i++)
         {
             BasicBlock* const block = fgBBReversePostorder[i];
-            fgMorphBlock(block);
+            fgMorphBlock(block, highestReachablePostorder);
         }
         assert(bbNumMax == fgBBNumMax);
 
@@ -14431,37 +14447,46 @@ GenTree* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = NULL *
     return topQmark;
 }
 
-/*********************************************************************************
- *
- *  For a castclass helper call,
- *  Importer creates the following tree:
- *      tmp = (op1 == null) ? op1 : ((*op1 == (cse = op2, cse)) ? op1 : helper());
- *
- *  This method splits the qmark expression created by the importer into the
- *  following blocks: (block, asg, cond1, cond2, helper, remainder)
- *  Notice that op1 is the result for both the conditions. So we coalesce these
- *  assignments into a single block instead of two blocks resulting a nested diamond.
- *
- *                       +---------->-----------+
- *                       |          |           |
- *                       ^          ^           v
- *                       |          |           |
- *  block-->asg-->cond1--+-->cond2--+-->helper--+-->remainder
- *
- *  We expect to achieve the following codegen:
- *     mov      rsi, rdx                           tmp = op1                  // asgBlock
- *     test     rsi, rsi                           goto skip if tmp == null ? // cond1Block
- *     je       SKIP
- *     mov      rcx, 0x76543210                    cns = op2                  // cond2Block
- *     cmp      qword ptr [rsi], rcx               goto skip if *tmp == op2
- *     je       SKIP
- *     call     CORINFO_HELP_CHKCASTCLASS_SPECIAL  tmp = helper(cns, tmp)     // helperBlock
- *     mov      rsi, rax
- *  SKIP:                                                                     // remainderBlock
- *     tmp has the result.
- *
- */
-void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
+//------------------------------------------------------------------------
+// fgExpandQmarkForCastInstOf: expand qmark for cast
+//
+// Arguments:
+//   block - block containing the qmark
+//   stmt  - statement containing the qmark
+//
+// Returns:
+//   true if the expansion introduced a throwing block
+//
+// Notes:
+//
+//  For a castclass helper call,
+//  Importer creates the following tree:
+//      tmp = (op1 == null) ? op1 : ((*op1 == (cse = op2, cse)) ? op1 : helper());
+//
+//  This method splits the qmark expression created by the importer into the
+//  following blocks: (block, asg, cond1, cond2, helper, remainder)
+//  Notice that op1 is the result for both the conditions. So we coalesce these
+//  assignments into a single block instead of two blocks resulting a nested diamond.
+//
+//                       +---------->-----------+
+//                       |          |           |
+//                       ^          ^           v
+//                       |          |           |
+//  block-->asg-->cond1--+-->cond2--+-->helper--+-->remainder
+//
+//  We expect to achieve the following codegen:
+//     mov      rsi, rdx                           tmp = op1                  // asgBlock
+//     test     rsi, rsi                           goto skip if tmp == null ? // cond1Block
+//     je       SKIP
+//     mov      rcx, 0x76543210                    cns = op2                  // cond2Block
+//     cmp      qword ptr [rsi], rcx               goto skip if *tmp == op2
+//     je       SKIP
+//     call     CORINFO_HELP_CHKCASTCLASS_SPECIAL  tmp = helper(cns, tmp)     // helperBlock
+//     mov      rsi, rax
+//  SKIP:                                                                     // remainderBlock
+//     tmp has the result.
+//
+bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 {
 #ifdef DEBUG
     if (verbose)
@@ -14471,7 +14496,8 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     }
 #endif // DEBUG
 
-    GenTree* expr = stmt->GetRootNode();
+    bool     introducedThrow = false;
+    GenTree* expr            = stmt->GetRootNode();
 
     GenTree* dst   = nullptr;
     GenTree* qmark = fgGetTopLevelQmark(expr, &dst);
@@ -14584,20 +14610,27 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // Since we are adding helper in the JTRUE false path, reverse the cond2 and add the helper.
     gtReverseCond(cond2Expr);
-    GenTree* helperExprStore =
-        dst->OperIs(GT_STORE_LCL_FLD)
-            ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), true2Expr)
-            : gtNewStoreLclVarNode(dstLclNum, true2Expr)->AsLclVarCommon();
-    Statement* helperStmt = fgNewStmtFromTree(helperExprStore, stmt->GetDebugInfo());
-    fgInsertStmtAtEnd(helperBlock, helperStmt);
-
-    // Finally remove the nested qmark stmt.
-    fgRemoveStmt(block, stmt);
 
     if (true2Expr->OperIs(GT_CALL) && (true2Expr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
     {
+        Statement* helperStmt = fgNewStmtFromTree(true2Expr, stmt->GetDebugInfo());
+        fgInsertStmtAtEnd(helperBlock, helperStmt);
         fgConvertBBToThrowBB(helperBlock);
+        setMethodHasNoReturnCalls();
+        introducedThrow = true;
     }
+    else
+    {
+        GenTree* helperExprStore =
+            dst->OperIs(GT_STORE_LCL_FLD)
+                ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), true2Expr)
+                : gtNewStoreLclVarNode(dstLclNum, true2Expr)->AsLclVarCommon();
+        Statement* helperStmt = fgNewStmtFromTree(helperExprStore, stmt->GetDebugInfo());
+        fgInsertStmtAtEnd(helperBlock, helperStmt);
+    }
+
+    // Finally remove the nested qmark stmt.
+    fgRemoveStmt(block, stmt);
 
 #ifdef DEBUG
     if (verbose)
@@ -14606,74 +14639,86 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
         fgDispBasicBlocks(block, remainderBlock, true);
     }
 #endif // DEBUG
+
+    return introducedThrow;
 }
 
-/*****************************************************************************
- *
- *  Expand a statement with a top level qmark node. There are three cases, based
- *  on whether the qmark has both "true" and "false" arms, or just one of them.
- *
- *     S0;
- *     C ? T : F;
- *     S1;
- *
- *     Generates ===>
- *
- *                       bbj_always
- *                       +---->------+
- *                 false |           |
- *     S0 -->-- ~C -->-- T   F -->-- S1
- *              |            |
- *              +--->--------+
- *              bbj_cond(true)
- *
- *     -----------------------------------------
- *
- *     S0;
- *     C ? T : NOP;
- *     S1;
- *
- *     Generates ===>
- *
- *                 false
- *     S0 -->-- ~C -->-- T -->-- S1
- *              |                |
- *              +-->-------------+
- *              bbj_cond(true)
- *
- *     -----------------------------------------
- *
- *     S0;
- *     C ? NOP : F;
- *     S1;
- *
- *     Generates ===>
- *
- *                false
- *     S0 -->-- C -->-- F -->-- S1
- *              |               |
- *              +-->------------+
- *              bbj_cond(true)
- *
- *  If the qmark assigns to a variable, then create tmps for "then"
- *  and "else" results and assign the temp to the variable as a writeback step.
- */
-void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
+//------------------------------------------------------------------------
+// fgExpandQmarkStmt: expand a qmark into control flow
+//
+// Arguments:
+//   block - block containing the qmark
+//   stmt  - statement containing the qmark
+//
+// Returns:
+//   true if the expansion introduced a throwing block
+//
+// Notes:
+//
+//  Expand a statement with a top level qmark node. There are three cases, based
+//  on whether the qmark has both "true" and "false" arms, or just one of them.
+//
+//     S0;
+//     C ? T : F;
+//     S1;
+//
+//     Generates ===>
+//
+//                       bbj_always
+//                       +---->------+
+//                 false |           |
+//     S0 -->-- ~C -->-- T   F -->-- S1
+//              |            |
+//              +--->--------+
+//              bbj_cond(true)
+//
+//     -----------------------------------------
+//
+//     S0;
+//     C ? T : NOP;
+//     S1;
+//
+//     Generates ===>
+//
+//                 false
+//     S0 -->-- ~C -->-- T -->-- S1
+//              |                |
+//              +-->-------------+
+//              bbj_cond(true)
+//
+//     -----------------------------------------
+//
+//     S0;
+//     C ? NOP : F;
+//     S1;
+//
+//     Generates ===>
+//
+//                false
+//     S0 -->-- C -->-- F -->-- S1
+//              |               |
+//              +-->------------+
+//              bbj_cond(true)
+//
+//  If the qmark assigns to a variable, then create tmps for "then"
+//  and "else" results and assign the temp to the variable as a writeback step.
+//
+bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 {
-    GenTree* expr = stmt->GetRootNode();
+    bool     introducedThrow = false;
+    GenTree* expr            = stmt->GetRootNode();
 
     // Retrieve the Qmark node to be expanded.
     GenTree* dst   = nullptr;
     GenTree* qmark = fgGetTopLevelQmark(expr, &dst);
     if (qmark == nullptr)
     {
-        return;
+        return false;
     }
 
     if (qmark->gtFlags & GTF_QMARK_CAST_INSTOF)
     {
-        fgExpandQmarkForCastInstOf(block, stmt);
-        return;
+        return fgExpandQmarkForCastInstOf(block, stmt);
     }
 
 #ifdef DEBUG
@@ -14816,27 +14861,50 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     if (hasTrueExpr)
     {
-        if (dst != nullptr)
+        if (trueExpr->OperIs(GT_CALL) && (trueExpr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
         {
-            trueExpr = dst->OperIs(GT_STORE_LCL_FLD)
-                           ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), trueExpr)
-                           : gtNewStoreLclVarNode(dstLclNum, trueExpr)->AsLclVarCommon();
+            Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetDebugInfo());
+            fgInsertStmtAtEnd(thenBlock, trueStmt);
+            fgConvertBBToThrowBB(thenBlock);
+            setMethodHasNoReturnCalls();
+            introducedThrow = true;
         }
-        Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetDebugInfo());
-        fgInsertStmtAtEnd(thenBlock, trueStmt);
+        else
+        {
+            if (dst != nullptr)
+            {
+                trueExpr = dst->OperIs(GT_STORE_LCL_FLD) ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(),
+                                                                                dst->AsLclFld()->GetLclOffs(), trueExpr)
+                                                         : gtNewStoreLclVarNode(dstLclNum, trueExpr)->AsLclVarCommon();
+            }
+            Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetDebugInfo());
+            fgInsertStmtAtEnd(thenBlock, trueStmt);
+        }
     }
 
     // Assign the falseExpr into the dst or tmp, insert in elseBlock
     if (hasFalseExpr)
     {
-        if (dst != nullptr)
+        if (falseExpr->OperIs(GT_CALL) && (falseExpr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
         {
-            falseExpr = dst->OperIs(GT_STORE_LCL_FLD)
-                            ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), falseExpr)
-                            : gtNewStoreLclVarNode(dstLclNum, falseExpr)->AsLclVarCommon();
+            Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetDebugInfo());
+            fgInsertStmtAtEnd(elseBlock, falseStmt);
+            fgConvertBBToThrowBB(elseBlock);
+            setMethodHasNoReturnCalls();
+            introducedThrow = true;
         }
-        Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetDebugInfo());
-        fgInsertStmtAtEnd(elseBlock, falseStmt);
+        else
+        {
+            if (dst != nullptr)
+            {
+                falseExpr =
+                    dst->OperIs(GT_STORE_LCL_FLD)
+                        ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), falseExpr)
+                        : gtNewStoreLclVarNode(dstLclNum, falseExpr)->AsLclVarCommon();
+            }
+            Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetDebugInfo());
+            fgInsertStmtAtEnd(elseBlock, falseStmt);
+        }
     }
 
 #ifdef DEBUG
@@ -14846,6 +14914,8 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         fgDispBasicBlocks(block, remainderBlock, true);
     }
 #endif // DEBUG
+
+    return introducedThrow;
 }
 
 /*****************************************************************************
@@ -14856,6 +14926,8 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
 void Compiler::fgExpandQmarkNodes()
 {
+    bool introducedThrows = false;
+
     if (compQmarkUsed)
     {
         for (BasicBlock* const block : Blocks())
@@ -14866,7 +14938,7 @@ void Compiler::fgExpandQmarkNodes()
 #ifdef DEBUG
                 fgPreExpandQmarkChecks(expr);
 #endif
-                fgExpandQmarkStmt(block, stmt);
+                introducedThrows |= fgExpandQmarkStmt(block, stmt);
             }
         }
 #ifdef DEBUG
@@ -14874,6 +14946,13 @@ void Compiler::fgExpandQmarkNodes()
 #endif
     }
     compQmarkRationalized = true;
+
+    // TODO: if qmark expansion created throw blocks, try and merge them
+    //
+    if (introducedThrows)
+    {
+        JITDUMP("Qmark expansion created new throw blocks\n");
+    }
 }
 
 //------------------------------------------------------------------------
