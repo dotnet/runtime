@@ -1156,7 +1156,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
     }
-    GetEmitter()->emitIns_J(INS_jal, block->bbJumpDest);
+    GetEmitter()->emitIns_J(INS_jal, block->GetJumpDest());
 
     BasicBlock* const nextBlock = block->Next();
 
@@ -1179,7 +1179,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->bbJumpDest;
+        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
 
         // Now go to where the finally funclet needs to return to.
         if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -1212,7 +1212,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->bbJumpDest, REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->GetJumpDest(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -1230,7 +1230,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
 
     if (EA_IS_RELOC(size))
     {
-        NYI_RISCV64("EA_IS_RELOC in instGen_Set_Reg_To_Imm-----unimplemented on RISCV64 yet----");
+        assert(genIsValidIntReg(reg));
+        GetEmitter()->emitIns_R_AI(INS_jal, size, reg, imm);
     }
     else
     {
@@ -2581,8 +2582,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
@@ -2674,9 +2675,9 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
     assert(treeNode->OperIs(GT_CMPXCHG));
 
-    GenTree* locOp       = treeNode->gtOpLocation;
-    GenTree* valOp       = treeNode->gtOpValue;
-    GenTree* comparandOp = treeNode->gtOpComparand;
+    GenTree* locOp       = treeNode->Addr();
+    GenTree* valOp       = treeNode->Data();
+    GenTree* comparandOp = treeNode->Comparand();
 
     regNumber target    = treeNode->GetRegNum();
     regNumber loc       = locOp->GetRegNum();
@@ -3968,7 +3969,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(ins != INS_invalid);
     assert(regs != 0);
 
-    emit->emitIns_J(ins, compiler->compCurBB->bbJumpDest, regs); // 5-bits;
+    emit->emitIns_J(ins, compiler->compCurBB->GetJumpDest(), regs); // 5-bits;
 }
 
 //---------------------------------------------------------------------
@@ -6911,10 +6912,12 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
     // Now we can actually use those slot ID's to declare live ranges.
     gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_DO_WORK, &callCnt);
 
+#ifdef FEATURE_REMAP_FUNCTION
     if (compiler->opts.compDbgEnC)
     {
         NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
     }
+#endif // FEATURE_REMAP_FUNCTION
 
     if (compiler->opts.IsReversePInvoke())
     {
@@ -7773,8 +7776,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     assert(genIsValidFloatReg(varDsc->GetArgInitReg()));
                     if (genIsValidIntReg(varDsc->GetArgReg()))
                     {
-                        GetEmitter()->emitIns_Mov(INS_fmv_d_x, EA_PTRSIZE, varDsc->GetArgInitReg(), varDsc->GetArgReg(),
-                                                  false);
+                        emitAttr size = (varDsc->TypeGet() == TYP_FLOAT) ? EA_4BYTE : EA_PTRSIZE;
+                        GetEmitter()->emitIns_Mov(size, varDsc->GetArgInitReg(), varDsc->GetArgReg(), false);
                         regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
                     }
                     else if (varDsc->GetArgInitReg() > REG_ARG_FP_LAST)

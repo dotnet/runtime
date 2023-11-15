@@ -64,7 +64,8 @@ namespace PInvokeTests
             Assert.Equal(managedEnumerator, IEnumeratorNative.PassThroughEnumerator(managedEnumerator));
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

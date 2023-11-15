@@ -100,7 +100,9 @@ typedef struct {
 // sdks/wasm/driver.c is C and uses this
 G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 
+#ifdef DISABLE_THREADS
 void mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs);
+#endif // DISABLE_THREADS
 
 void mono_wasm_print_stack_trace (void);
 

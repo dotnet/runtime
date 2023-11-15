@@ -327,7 +327,7 @@ replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
-replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading DOTNET_")
+replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
 
 # common subparser for asmdiffs and throughput
 base_diff_parser = argparse.ArgumentParser(add_help=False)
@@ -335,9 +335,9 @@ base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. D
 base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
 base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
 base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
-base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading DOTNET_")
-base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading DOTNET_...")
-base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading DOTNET_...")
+base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
+base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
+base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
 
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -1441,14 +1441,17 @@ def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics)
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
-        missing_base = int(base_metrics["Overall"]["Missing compiles"])
-        total_contexts = int(base_metrics["Overall"]["Successful compiles"]) + int(base_metrics["Overall"]["Failing compiles"])
+        missing_base = base_metrics["Overall"]["Missing compiles"]
+        total_contexts = missing_base + base_metrics["Overall"]["Successful compiles"] + base_metrics["Overall"]["Failing compiles"]
 
         if diff_metrics is None:
             logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
         else:
-            missing_diff = int(diff_metrics["Overall"]["Missing compiles"])
-            logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
+            missing_diff = diff_metrics["Overall"]["Missing compiles"]
+            if missing_base == missing_diff:
+                logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
+            else:
+                logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
 
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
@@ -1759,7 +1762,8 @@ def aggregate_diff_metrics(details):
     """
 
     base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
-                    "Contexts with diffs": 0, "Diffed code bytes": 0, "Diff executed instructions": 0}
+                    "Contexts with diffs": 0, "Diffed code bytes": 0, "Diff executed instructions": 0,
+                    "Diffed contexts": 0}
     base_fullopts = base_minopts.copy()
 
     diff_minopts = base_minopts.copy()
@@ -1802,6 +1806,9 @@ def aggregate_diff_metrics(details):
             diff_insts = int(row["Diff instructions"])
             base_dict["Diff executed instructions"] += base_insts
             diff_dict["Diff executed instructions"] += diff_insts
+
+            base_dict["Diffed contexts"] += 1
+            diff_dict["Diffed contexts"] += 1
 
             if row["Has diff"] == "True":
                 base_dict["Contexts with diffs"] += 1
@@ -2148,8 +2155,8 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("")
 
                     if base_metrics is not None and diff_metrics is not None:
-                        base_bytes = int(base_metrics["Overall"]["Diffed code bytes"])
-                        diff_bytes = int(diff_metrics["Overall"]["Diffed code bytes"])
+                        base_bytes = base_metrics["Overall"]["Diffed code bytes"]
+                        diff_bytes = diff_metrics["Overall"]["Diffed code bytes"]
                         logging.info("Total bytes of base: {}".format(base_bytes))
                         logging.info("Total bytes of diff: {}".format(diff_bytes))
                         delta_bytes = diff_bytes - base_bytes
@@ -2254,9 +2261,9 @@ class SuperPMIReplayAsmDiffs:
                             logging.warning("No textual differences found in generated JitDump. Is this an issue with coredistools?")
 
                     if base_metrics is not None and diff_metrics is not None:
-                        missing_base = int(base_metrics["Overall"]["Missing compiles"])
-                        missing_diff = int(diff_metrics["Overall"]["Missing compiles"])
-                        total_contexts = int(base_metrics["Overall"]["Successful compiles"]) + int(base_metrics["Overall"]["Failing compiles"])
+                        missing_base = base_metrics["Overall"]["Missing compiles"]
+                        missing_diff = diff_metrics["Overall"]["Missing compiles"]
+                        total_contexts = missing_base + base_metrics["Overall"]["Successful compiles"] + base_metrics["Overall"]["Failing compiles"]
 
                         if missing_base > 0 or missing_diff > 0:
                             logging.warning("Warning: SuperPMI encountered missing data during the diff. The diff summary printed above may be misleading.")
@@ -2322,16 +2329,17 @@ class SuperPMIReplayAsmDiffs:
         """
 
         def sum_base(row, col):
-            return sum(int(base_metrics[row][col]) for (_, base_metrics, _, _, _, _) in asm_diffs)
+            return sum(base_metrics[row][col] for (_, base_metrics, _, _, _, _) in asm_diffs)
 
         def sum_diff(row, col):
-            return sum(int(diff_metrics[row][col]) for (_, _, diff_metrics, _, _, _) in asm_diffs)
+            return sum(diff_metrics[row][col] for (_, _, diff_metrics, _, _, _) in asm_diffs)
 
-        diffed_contexts = sum_diff("Overall", "Successful compiles")
-        diffed_minopts_contexts = sum_diff("MinOpts", "Successful compiles")
-        diffed_opts_contexts = sum_diff("FullOpts", "Successful compiles")
+        diffed_contexts = sum_diff("Overall", "Diffed contexts")
+        diffed_minopts_contexts = sum_diff("MinOpts", "Diffed contexts")
+        diffed_opts_contexts = sum_diff("FullOpts", "Diffed contexts")
         missing_base_contexts = sum_base("Overall", "Missing compiles")
         missing_diff_contexts = sum_diff("Overall", "Missing compiles")
+        total_contexts = missing_base_contexts + sum_base("Overall", "Successful compiles") + sum_base("Overall", "Failing compiles")
 
         num_contexts_color = "#1460aa"
         write_fh.write("Diffs are based on {} contexts ({} MinOpts, {} FullOpts).\n\n".format(
@@ -2344,19 +2352,19 @@ class SuperPMIReplayAsmDiffs:
             if missing_base_contexts == missing_diff_contexts:
                 write_fh.write("{} contexts: {}\n\n".format(
                     html_color(missed_color, "MISSED"),
-                    html_color(missed_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / diffed_contexts * 100))))
+                    html_color(missed_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100))))
             else:
                 base_color = missed_color if missing_base_contexts > 0 else "green"
                 diff_color = missed_color if missing_diff_contexts > 0 else "green"
                 write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
                     html_color(missed_color, "MISSED"),
-                    html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / diffed_contexts * 100)),
-                    html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / diffed_contexts * 100))))
+                    html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100)),
+                    html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / total_contexts * 100))))
 
         write_jit_options(self.coreclr_args, write_fh)
 
         def has_diffs(row):
-            return int(row["Contexts with diffs"]) > 0
+            return row["Contexts with diffs"] > 0
 
         any_diffs = any(has_diffs(diff_metrics["Overall"]) for (_, _, diff_metrics, _, _, _) in asm_diffs)
         # Exclude entire diffs section?
@@ -2366,8 +2374,8 @@ class SuperPMIReplayAsmDiffs:
                 if not any(has_diffs(diff_metrics[row]) for (_, _, diff_metrics, _, _, _) in asm_diffs):
                     return
 
-                sum_base = sum(int(base_metrics[row]["Diffed code bytes"]) for (_, base_metrics, _, _, _, _) in asm_diffs)
-                sum_diff = sum(int(diff_metrics[row]["Diffed code bytes"]) for (_, _, diff_metrics, _, _, _) in asm_diffs)
+                sum_base = sum(base_metrics[row]["Diffed code bytes"] for (_, base_metrics, _, _, _, _) in asm_diffs)
+                sum_diff = sum(diff_metrics[row]["Diffed code bytes"] for (_, _, diff_metrics, _, _, _) in asm_diffs)
 
                 with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
                     write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
@@ -2379,10 +2387,10 @@ class SuperPMIReplayAsmDiffs:
 
                         write_fh.write("|{}|{:,d}|{}|\n".format(
                             mch_file,
-                            int(base_metrics[row]["Diffed code bytes"]),
+                            base_metrics[row]["Diffed code bytes"],
                             format_delta(
-                                int(base_metrics[row]["Diffed code bytes"]),
-                                int(diff_metrics[row]["Diffed code bytes"]))))
+                                base_metrics[row]["Diffed code bytes"],
+                                diff_metrics[row]["Diffed code bytes"])))
 
             write_pivot_section("Overall")
             write_pivot_section("MinOpts")
@@ -2425,22 +2433,24 @@ class SuperPMIReplayAsmDiffs:
             write_fh.write("|---|--:|--:|--:|--:|--:|\n")
 
             rows = [(mch_file,
-                        int(diff_metrics["Overall"]["Successful compiles"]),
-                        int(diff_metrics["MinOpts"]["Successful compiles"]),
-                        int(diff_metrics["FullOpts"]["Successful compiles"]),
-                        int(base_metrics["Overall"]["Missing compiles"]),
-                        int(diff_metrics["Overall"]["Missing compiles"])) for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
+                        diff_metrics["Overall"]["Diffed contexts"],
+                        diff_metrics["MinOpts"]["Diffed contexts"],
+                        diff_metrics["FullOpts"]["Diffed contexts"],
+                        base_metrics["Overall"]["Missing compiles"],
+                        diff_metrics["Overall"]["Missing compiles"],
+                        base_metrics["Overall"]["Successful compiles"] + base_metrics["Overall"]["Failing compiles"] + base_metrics["Overall"]["Missing compiles"])
+                        for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
 
-            def write_row(name, num_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff):
+            def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
                 write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
                     name,
-                    num_contexts,
+                    diffed_contexts,
                     num_minopts,
                     num_fullopts,
                     num_missed_base,
-                    num_missed_base / num_contexts * 100,
+                    num_missed_base / total_num_contexts * 100,
                     num_missed_diff,
-                    num_missed_diff / num_contexts * 100))
+                    num_missed_diff / total_num_contexts * 100))
 
             for t in rows:
                 write_row(*t)
@@ -2449,7 +2459,7 @@ class SuperPMIReplayAsmDiffs:
                 def sum_row(index):
                     return sum(r[index] for r in rows)
 
-                write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5))
+                write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5), sum_row(6))
 
             write_fh.write("\n\n")
 
@@ -2750,8 +2760,8 @@ class SuperPMIReplayThroughputDiff:
                 (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
 
                 if base_metrics is not None and diff_metrics is not None:
-                    base_instructions = int(base_metrics["Overall"]["Diff executed instructions"])
-                    diff_instructions = int(diff_metrics["Overall"]["Diff executed instructions"])
+                    base_instructions = base_metrics["Overall"]["Diff executed instructions"]
+                    diff_instructions = diff_metrics["Overall"]["Diff executed instructions"]
 
                     logging.info("Total instructions executed by base: {}".format(base_instructions))
                     logging.info("Total instructions executed by diff: {}".format(diff_instructions))
@@ -2822,14 +2832,14 @@ class SuperPMIReplayThroughputDiff:
             return round((diff - base) / base * 100, 2) != 0
 
         def is_significant(row, base, diff):
-            return is_significant_pct(int(base[row]["Diff executed instructions"]), int(diff[row]["Diff executed instructions"]))
+            return is_significant_pct(base[row]["Diff executed instructions"], diff[row]["Diff executed instructions"])
 
         if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
             def write_pivot_section(row):
                 if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
                     return
 
-                pcts = [compute_pct(int(base_metrics[row]["Diff executed instructions"]), int(diff_metrics[row]["Diff executed instructions"])) for (_, base_metrics, diff_metrics) in tp_diffs]
+                pcts = [compute_pct(base_metrics[row]["Diff executed instructions"], diff_metrics[row]["Diff executed instructions"]) for (_, base_metrics, diff_metrics) in tp_diffs]
                 min_pct_str = format_pct(min(pcts))
                 max_pct_str = format_pct(max(pcts))
                 if min_pct_str == max_pct_str:
@@ -2841,8 +2851,8 @@ class SuperPMIReplayThroughputDiff:
                     write_fh.write("|Collection|PDIFF|\n")
                     write_fh.write("|---|--:|\n")
                     for mch_file, base, diff in tp_diffs:
-                        base_instructions = int(base[row]["Diff executed instructions"])
-                        diff_instructions = int(diff[row]["Diff executed instructions"])
+                        base_instructions = base[row]["Diff executed instructions"]
+                        diff_instructions = diff[row]["Diff executed instructions"]
 
                         if is_significant(row, base, diff):
                             write_fh.write("|{}|{}|\n".format(
@@ -2861,8 +2871,8 @@ class SuperPMIReplayThroughputDiff:
                 write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                 write_fh.write("|---|--:|--:|--:|\n")
                 for mch_file, base, diff in tp_diffs:
-                    base_instructions = int(base[row]["Diff executed instructions"])
-                    diff_instructions = int(diff[row]["Diff executed instructions"])
+                    base_instructions = base[row]["Diff executed instructions"]
+                    diff_instructions = diff[row]["Diff executed instructions"]
                     write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
                         mch_file, base_instructions, diff_instructions,
                         compute_and_format_pct(base_instructions, diff_instructions)))
@@ -4262,6 +4272,27 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set diff_jit_option.")
 
+        if coreclr_args.jitoption:
+            for o in coreclr_args.jitoption:
+                if o.startswith("DOTNET_"):
+                    logging.warning("")
+                    logging.warning("WARNING: `-jitoption` starts with DOTNET_ : " + o)
+                    logging.warning("")
+
+        if coreclr_args.base_jit_option:
+            for o in coreclr_args.base_jit_option:
+                if o.startswith("DOTNET_"):
+                    logging.warning("")
+                    logging.warning("WARNING: `-base_jit_option` starts with DOTNET_ : " + o)
+                    logging.warning("")
+
+        if coreclr_args.diff_jit_option:
+            for o in coreclr_args.diff_jit_option:
+                if o.startswith("DOTNET_"):
+                    logging.warning("")
+                    logging.warning("WARNING: `-diff_jit_option` starts with DOTNET_ : " + o)
+                    logging.warning("")
+
 
     if coreclr_args.mode == "collect":
 
@@ -4567,6 +4598,13 @@ def setup_args(args):
                                 "build_type",
                                 coreclr_args.check_build_type,
                                 "Invalid build_type")
+
+        if coreclr_args.jitoption:
+            for o in coreclr_args.jitoption:
+                if o.startswith("DOTNET_"):
+                    logging.warning("")
+                    logging.warning("WARNING: `-jitoption` starts with DOTNET_ : " + o)
+                    logging.warning("")
 
     elif coreclr_args.mode == "asmdiffs":
 

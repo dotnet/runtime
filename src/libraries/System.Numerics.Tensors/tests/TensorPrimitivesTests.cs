@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Sdk;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0
 
@@ -14,14 +15,23 @@ namespace System.Numerics.Tensors.Tests
     public static partial class TensorPrimitivesTests
     {
         #region Test Utilities
-        private const double Tolerance = 0.0001;
-
         public static IEnumerable<object[]> TensorLengthsIncluding0 =>
             TensorLengths.Concat(new object[][] { [0] });
 
         public static IEnumerable<object[]> TensorLengths =>
-            from length in Enumerable.Range(1, 128)
+            from length in Enumerable.Range(1, 256)
             select new object[] { length };
+
+        public static IEnumerable<object[]> VectorLengthAndIteratedRange(float min, float max, float increment)
+        {
+            foreach (int length in new[] { 4, 8, 16 })
+            {
+                for (float f = min; f <= max; f += increment)
+                {
+                    yield return new object[] { length, f };
+                }
+            }
+        }
 
         private static readonly Random s_random = new Random(20230828);
 
@@ -46,6 +56,16 @@ namespace System.Numerics.Tensors.Tests
             // For testing purposes, get a mix of negative and positive values.
             (float)((s_random.NextDouble() * 2) - 1);
 
+        private static void AssertEqualTolerance(double expected, double actual, double tolerance = 0.00001f)
+        {
+            double diff = Math.Abs(expected - actual);
+            if (diff > tolerance &&
+                diff > Math.Max(Math.Abs(expected), Math.Abs(actual)) * tolerance)
+            {
+                throw EqualException.ForMismatchedValues(expected, actual);
+            }
+        }
+
         private static unsafe float MathFMaxMagnitude(float x, float y)
         {
             float ax = MathF.Abs(x), ay = MathF.Abs(y);
@@ -59,6 +79,8 @@ namespace System.Numerics.Tensors.Tests
         }
 
         private static unsafe float UInt32ToSingle(uint i) => *(float*)&i;
+
+        private static unsafe float SingleToUInt32(float f) => *(uint*)&f;
 
         /// <summary>Gets a variety of special values (e.g. NaN).</summary>
         private static IEnumerable<float> GetSpecialValues()
@@ -157,7 +179,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(MathF.Abs(x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Abs(x[i]), destination[i]);
             }
         }
 
@@ -172,7 +194,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(MathF.Abs(xOrig[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Abs(xOrig[i]), x[i]);
             }
         }
 
@@ -207,7 +229,7 @@ namespace System.Numerics.Tensors.Tests
             TensorPrimitives.Add(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] + y[i], destination[i], Tolerance);
+                AssertEqualTolerance(x[i] + y[i], destination[i]);
             }
 
             float[] xOrig = x.Span.ToArray();
@@ -216,7 +238,7 @@ namespace System.Numerics.Tensors.Tests
             TensorPrimitives.Add(x, x, x);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] + xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] + xOrig[i], x[i]);
             }
         }
 
@@ -231,7 +253,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] + xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] + xOrig[i], x[i]);
             }
         }
 
@@ -280,7 +302,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] + y, destination[i], Tolerance);
+                AssertEqualTolerance(x[i] + y, destination[i]);
             }
         }
 
@@ -296,7 +318,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] + y, x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] + y, x[i]);
             }
         }
 
@@ -334,7 +356,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] + y[i]) * multiplier[i], destination[i], Tolerance);
+                AssertEqualTolerance((x[i] + y[i]) * multiplier[i], destination[i]);
             }
         }
 
@@ -349,7 +371,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((xOrig[i] + xOrig[i]) * xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance((xOrig[i] + xOrig[i]) * xOrig[i], x[i]);
             }
         }
 
@@ -404,7 +426,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] + y[i]) * multiplier, destination[i], Tolerance);
+                AssertEqualTolerance((x[i] + y[i]) * multiplier, destination[i]);
             }
         }
 
@@ -420,7 +442,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((xOrig[i] + xOrig[i]) * multiplier, x[i], Tolerance);
+                AssertEqualTolerance((xOrig[i] + xOrig[i]) * multiplier, x[i]);
             }
         }
 
@@ -472,7 +494,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] + y) * multiplier[i], destination[i], Tolerance);
+                AssertEqualTolerance((x[i] + y) * multiplier[i], destination[i]);
             }
         }
 
@@ -488,7 +510,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((xOrig[i] + y) * xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance((xOrig[i] + y) * xOrig[i], x[i]);
             }
         }
 
@@ -540,7 +562,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Cosh(x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Cosh(x[i]), destination[i]);
             }
         }
 
@@ -555,7 +577,41 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Cosh(xOrig[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Cosh(xOrig[i]), x[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Cosh_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            RunForEachSpecialValue(() =>
+            {
+                TensorPrimitives.Cosh(x, destination);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(MathF.Cosh(x[i]), destination[i]);
+                }
+            }, x);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorLengthAndIteratedRange), new object[] { -100f, 100f, 3f })]
+        public static void Cosh_ValueRange(int vectorLength, float element)
+        {
+            float[] x = new float[vectorLength];
+            float[] dest = new float[vectorLength];
+
+            x.AsSpan().Fill(element);
+            TensorPrimitives.Cosh(x, dest);
+
+            float expected = MathF.Cosh(element);
+            foreach (float actual in dest)
+            {
+                AssertEqualTolerance(expected, actual);
             }
         }
 
@@ -603,7 +659,7 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { 1, 1, 1, 1, 1, 0 }, new float[] { 1, 1, 1, 1, 0, 1 }, 0.80f)]
         public static void CosineSimilarity_KnownValues(float[] x, float[] y, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.CosineSimilarity(x, y), Tolerance);
+            AssertEqualTolerance(expectedResult, TensorPrimitives.CosineSimilarity(x, y));
         }
 
         [Theory]
@@ -621,7 +677,7 @@ namespace System.Numerics.Tensors.Tests
                 squareY += y[i] * y[i];
             }
 
-            Assert.Equal(dot / (Math.Sqrt(squareX) * Math.Sqrt(squareY)), TensorPrimitives.CosineSimilarity(x, y), Tolerance);
+            AssertEqualTolerance(dot / (MathF.Sqrt(squareX) * MathF.Sqrt(squareY)), TensorPrimitives.CosineSimilarity(x, y));
         }
         #endregion
 
@@ -648,11 +704,11 @@ namespace System.Numerics.Tensors.Tests
         [Theory]
         [InlineData(new float[] { 3, 2 }, new float[] { 4, 1 }, 1.4142f)]
         [InlineData(new float[] { 0, 4 }, new float[] { 6, 2 }, 6.3245f)]
-        [InlineData(new float[] { 1, 2, 3 }, new float[] { 4, 5, 6 }, 5.1961f)]
+        [InlineData(new float[] { 1, 2, 3 }, new float[] { 4, 5, 6 }, 5.19615f)]
         [InlineData(new float[] { 5, 1, 6, 10 }, new float[] { 7, 2, 8, 4 }, 6.7082f)]
         public static void Distance_KnownValues(float[] x, float[] y, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.Distance(x, y), Tolerance);
+            AssertEqualTolerance(expectedResult, TensorPrimitives.Distance(x, y));
         }
 
         [Theory]
@@ -668,7 +724,7 @@ namespace System.Numerics.Tensors.Tests
                 distance += (x[i] - y[i]) * (x[i] - y[i]);
             }
 
-            Assert.Equal(Math.Sqrt(distance), TensorPrimitives.Distance(x, y), Tolerance);
+            AssertEqualTolerance(MathF.Sqrt(distance), TensorPrimitives.Distance(x, y));
         }
         #endregion
 
@@ -685,7 +741,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] / y[i], destination[i], Tolerance);
+                AssertEqualTolerance(x[i] / y[i], destination[i]);
             }
         }
 
@@ -700,7 +756,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] / xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] / xOrig[i], x[i]);
             }
         }
 
@@ -749,7 +805,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] / y, destination[i], Tolerance);
+                AssertEqualTolerance(x[i] / y, destination[i]);
             }
         }
 
@@ -765,7 +821,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] / y, x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] / y, x[i]);
             }
         }
 
@@ -810,7 +866,7 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { }, new float[] { }, 0)]
         public static void Dot_KnownValues(float[] x, float[] y, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.Dot(x, y), Tolerance);
+            AssertEqualTolerance(expectedResult, TensorPrimitives.Dot(x, y));
         }
 
         [Theory]
@@ -826,7 +882,7 @@ namespace System.Numerics.Tensors.Tests
                 dot += x[i] * y[i];
             }
 
-            Assert.Equal(dot, TensorPrimitives.Dot(x, y), Tolerance);
+            AssertEqualTolerance(dot, TensorPrimitives.Dot(x, y));
         }
         #endregion
 
@@ -842,7 +898,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Exp(x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Exp(x[i]), destination[i]);
             }
         }
 
@@ -857,13 +913,12 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Exp(xOrig[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Exp(xOrig[i]), x[i]);
             }
         }
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Exp_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -874,7 +929,7 @@ namespace System.Numerics.Tensors.Tests
                 TensorPrimitives.Exp(x, destination);
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    Assert.Equal(MathF.Exp(x[i]), destination[i], Tolerance);
+                    AssertEqualTolerance(MathF.Exp(x[i]), destination[i]);
                 }
             }, x);
         }
@@ -1091,7 +1146,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Log(x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Log(x[i]), destination[i]);
             }
         }
 
@@ -1106,7 +1161,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Log(xOrig[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Log(xOrig[i]), x[i]);
             }
         }
 
@@ -1122,7 +1177,7 @@ namespace System.Numerics.Tensors.Tests
                 TensorPrimitives.Log(x, destination);
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    Assert.Equal(MathF.Log(x[i]), destination[i], Tolerance);
+                    AssertEqualTolerance(MathF.Log(x[i]), destination[i]);
                 }
             }, x);
         }
@@ -1158,7 +1213,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Log(x[i], 2), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Log(x[i], 2), destination[i]);
             }
         }
 
@@ -1173,7 +1228,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Log(xOrig[i], 2), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Log(xOrig[i], 2), x[i]);
             }
         }
 
@@ -1189,7 +1244,7 @@ namespace System.Numerics.Tensors.Tests
                 TensorPrimitives.Log2(x, destination);
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    Assert.Equal(MathF.Log(x[i], 2), destination[i], Tolerance);
+                    AssertEqualTolerance(MathF.Log(x[i], 2), destination[i]);
                 }
             }, x);
         }
@@ -1233,7 +1288,28 @@ namespace System.Numerics.Tensors.Tests
             {
                 max = Math.Max(max, f);
             }
+
             Assert.Equal(max, TensorPrimitives.Max(x));
+            Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMax(x)]), SingleToUInt32(TensorPrimitives.Max(x)));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Max_Tensor_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+
+            RunForEachSpecialValue(() =>
+            {
+                float max = float.NegativeInfinity;
+                foreach (float f in x.Span)
+                {
+                    max = Math.Max(max, f);
+                }
+
+                Assert.Equal(max, TensorPrimitives.Max(x));
+                Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMax(x)]), SingleToUInt32(TensorPrimitives.Max(x)));
+            }, x);
         }
 
         [Theory]
@@ -1270,7 +1346,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Max(x[i], y[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Max(x[i], y[i]), destination[i]);
             }
         }
 
@@ -1286,7 +1362,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Max(xOrig[i], y[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Max(xOrig[i], y[i]), x[i]);
             }
 
             xOrig.AsSpan().CopyTo(x.Span);
@@ -1296,7 +1372,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Max(x[i], yOrig[i]), y[i], Tolerance);
+                AssertEqualTolerance(MathF.Max(x[i], yOrig[i]), y[i]);
             }
         }
 
@@ -1313,13 +1389,13 @@ namespace System.Numerics.Tensors.Tests
             TensorPrimitives.Max(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Max(x[i], y[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Max(x[i], y[i]), destination[i]);
             }
 
             TensorPrimitives.Max(y, x, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Max(y[i], x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Max(y[i], x[i]), destination[i]);
             }
         }
 
@@ -1371,12 +1447,32 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
             float maxMagnitude = x[0];
-            foreach (float i in x.Span)
+            foreach (float f in x.Span)
             {
-                maxMagnitude = MathFMaxMagnitude(maxMagnitude, i);
+                maxMagnitude = MathFMaxMagnitude(maxMagnitude, f);
             }
 
-            Assert.Equal(maxMagnitude, TensorPrimitives.MaxMagnitude(x), Tolerance);
+            Assert.Equal(maxMagnitude, TensorPrimitives.MaxMagnitude(x));
+            Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMaxMagnitude(x)]), SingleToUInt32(TensorPrimitives.MaxMagnitude(x)));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MaxMagnitude_Tensor_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+
+            RunForEachSpecialValue(() =>
+            {
+                float maxMagnitude = x[0];
+                foreach (float f in x.Span)
+                {
+                    maxMagnitude = MathFMaxMagnitude(maxMagnitude, f);
+                }
+
+                Assert.Equal(maxMagnitude, TensorPrimitives.MaxMagnitude(x));
+                Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMaxMagnitude(x)]), SingleToUInt32(TensorPrimitives.MaxMagnitude(x)));
+            }, x);
         }
 
         [Theory]
@@ -1415,7 +1511,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMaxMagnitude(x[i], y[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathFMaxMagnitude(x[i], y[i]), destination[i]);
             }
         }
 
@@ -1431,7 +1527,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMaxMagnitude(xOrig[i], y[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathFMaxMagnitude(xOrig[i], y[i]), x[i]);
             }
 
             xOrig.AsSpan().CopyTo(x.Span);
@@ -1441,7 +1537,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMaxMagnitude(x[i], yOrig[i]), y[i], Tolerance);
+                AssertEqualTolerance(MathFMaxMagnitude(x[i], yOrig[i]), y[i]);
             }
         }
 
@@ -1458,13 +1554,13 @@ namespace System.Numerics.Tensors.Tests
             TensorPrimitives.MaxMagnitude(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMaxMagnitude(x[i], y[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathFMaxMagnitude(x[i], y[i]), destination[i]);
             }
 
             TensorPrimitives.MaxMagnitude(y, x, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMaxMagnitude(y[i], x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathFMaxMagnitude(y[i], x[i]), destination[i]);
             }
         }
 
@@ -1522,7 +1618,28 @@ namespace System.Numerics.Tensors.Tests
             {
                 min = Math.Min(min, f);
             }
+
             Assert.Equal(min, TensorPrimitives.Min(x));
+            Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMin(x)]), SingleToUInt32(TensorPrimitives.Min(x)));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Min_Tensor_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+
+            RunForEachSpecialValue(() =>
+            {
+                float min = float.PositiveInfinity;
+                foreach (float f in x.Span)
+                {
+                    min = Math.Min(min, f);
+                }
+
+                Assert.Equal(min, TensorPrimitives.Min(x));
+                Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMin(x)]), SingleToUInt32(TensorPrimitives.Min(x)));
+            }, x);
         }
 
         [Theory]
@@ -1559,7 +1676,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Min(x[i], y[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Min(x[i], y[i]), destination[i]);
             }
         }
 
@@ -1575,7 +1692,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Min(xOrig[i], y[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Min(xOrig[i], y[i]), x[i]);
             }
 
             xOrig.AsSpan().CopyTo(x.Span);
@@ -1585,7 +1702,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Min(x[i], yOrig[i]), y[i], Tolerance);
+                AssertEqualTolerance(MathF.Min(x[i], yOrig[i]), y[i]);
             }
         }
 
@@ -1602,13 +1719,13 @@ namespace System.Numerics.Tensors.Tests
             TensorPrimitives.Min(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Min(x[i], y[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Min(x[i], y[i]), destination[i]);
             }
 
             TensorPrimitives.Min(y, x, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Min(y[i], x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Min(y[i], x[i]), destination[i]);
             }
         }
 
@@ -1660,12 +1777,32 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
             float minMagnitude = x[0];
-            foreach (float i in x.Span)
+            foreach (float f in x.Span)
             {
-                minMagnitude = MathFMinMagnitude(minMagnitude, i);
+                minMagnitude = MathFMinMagnitude(minMagnitude, f);
             }
 
-            Assert.Equal(minMagnitude, TensorPrimitives.MinMagnitude(x), Tolerance);
+            Assert.Equal(minMagnitude, TensorPrimitives.MinMagnitude(x));
+            Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMinMagnitude(x)]), SingleToUInt32(TensorPrimitives.MinMagnitude(x)));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MinMagnitude_Tensor_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+
+            RunForEachSpecialValue(() =>
+            {
+                float minMagnitude = x[0];
+                foreach (float f in x.Span)
+                {
+                    minMagnitude = MathFMinMagnitude(minMagnitude, f);
+                }
+
+                Assert.Equal(minMagnitude, TensorPrimitives.MinMagnitude(x));
+                Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMinMagnitude(x)]), SingleToUInt32(TensorPrimitives.MinMagnitude(x)));
+            }, x);
         }
 
         [Theory]
@@ -1702,7 +1839,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMinMagnitude(x[i], y[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathFMinMagnitude(x[i], y[i]), destination[i]);
             }
         }
 
@@ -1718,7 +1855,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMinMagnitude(xOrig[i], y[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathFMinMagnitude(xOrig[i], y[i]), x[i]);
             }
 
             xOrig.AsSpan().CopyTo(x.Span);
@@ -1728,7 +1865,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMinMagnitude(x[i], yOrig[i]), y[i], Tolerance);
+                AssertEqualTolerance(MathFMinMagnitude(x[i], yOrig[i]), y[i]);
             }
         }
 
@@ -1745,13 +1882,13 @@ namespace System.Numerics.Tensors.Tests
             TensorPrimitives.MinMagnitude(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMinMagnitude(x[i], y[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathFMinMagnitude(x[i], y[i]), destination[i]);
             }
 
             TensorPrimitives.MinMagnitude(y, x, destination);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathFMinMagnitude(y[i], x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathFMinMagnitude(y[i], x[i]), destination[i]);
             }
         }
 
@@ -1802,7 +1939,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] * y[i], destination[i], Tolerance);
+                AssertEqualTolerance(x[i] * y[i], destination[i]);
             }
         }
 
@@ -1817,7 +1954,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] * xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] * xOrig[i], x[i]);
             }
         }
 
@@ -1866,7 +2003,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] * y, destination[i], Tolerance);
+                AssertEqualTolerance(x[i] * y, destination[i]);
             }
         }
 
@@ -1882,7 +2019,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] * y, x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] * y, x[i]);
             }
         }
 
@@ -1920,7 +2057,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] * y[i]) + addend[i], destination[i], Tolerance);
+                AssertEqualTolerance((x[i] * y[i]) + addend[i], destination[i]);
             }
         }
 
@@ -1935,7 +2072,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((xOrig[i] * xOrig[i]) + xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance((xOrig[i] * xOrig[i]) + xOrig[i], x[i]);
             }
         }
 
@@ -1990,7 +2127,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] * y[i]) + addend, destination[i], Tolerance);
+                AssertEqualTolerance((x[i] * y[i]) + addend, destination[i]);
             }
         }
 
@@ -2006,7 +2143,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((xOrig[i] * xOrig[i]) + addend, x[i], Tolerance);
+                AssertEqualTolerance((xOrig[i] * xOrig[i]) + addend, x[i]);
             }
         }
 
@@ -2045,7 +2182,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] * y) + addend[i], destination[i], Tolerance);
+                AssertEqualTolerance((x[i] * y) + addend[i], destination[i]);
             }
         }
 
@@ -2061,7 +2198,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((xOrig[i] * y) + xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance((xOrig[i] * y) + xOrig[i], x[i]);
             }
         }
 
@@ -2100,7 +2237,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(-x[i], destination[i], Tolerance);
+                AssertEqualTolerance(-x[i], destination[i]);
             }
         }
 
@@ -2115,7 +2252,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(-xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance(-xOrig[i], x[i]);
             }
         }
 
@@ -2147,7 +2284,7 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { }, 0f)]
         public static void Norm_KnownValues(float[] x, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.Norm(x), Tolerance);
+            AssertEqualTolerance(expectedResult, TensorPrimitives.Norm(x));
         }
 
         [Theory]
@@ -2162,7 +2299,7 @@ namespace System.Numerics.Tensors.Tests
                 sumOfSquares += x[i] * x[i];
             }
 
-            Assert.Equal(Math.Sqrt(sumOfSquares), TensorPrimitives.Norm(x), Tolerance);
+            AssertEqualTolerance(MathF.Sqrt(sumOfSquares), TensorPrimitives.Norm(x));
         }
         #endregion
 
@@ -2185,22 +2322,23 @@ namespace System.Numerics.Tensors.Tests
                 f *= x[i];
             }
 
-            Assert.Equal(f, TensorPrimitives.Product(x), Tolerance);
+            AssertEqualTolerance(f, TensorPrimitives.Product(x));
         }
 
-        [Fact]
-        public static void Product_KnownValues()
+        [Theory]
+        [InlineData(1, new float[] { 1 })]
+        [InlineData(-2, new float[] { 1, -2 })]
+        [InlineData(-6, new float[] { 1, -2, 3 })]
+        [InlineData(24, new float[] { 1, -2, 3, -4 })]
+        [InlineData(120, new float[] { 1, -2, 3, -4, 5 })]
+        [InlineData(-720, new float[] { 1, -2, 3, -4, 5, -6 })]
+        [InlineData(0, new float[] { 1, -2, 3, -4, 5, -6, 0 })]
+        [InlineData(0, new float[] { 0, 1, -2, 3, -4, 5, -6 })]
+        [InlineData(0, new float[] { 1, -2, 3, 0, -4, 5, -6 })]
+        [InlineData(float.NaN, new float[] { 1, -2, 3, float.NaN, -4, 5, -6 })]
+        public static void Product_KnownValues(float expected, float[] input)
         {
-            Assert.Equal(1, TensorPrimitives.Product([1]));
-            Assert.Equal(-2, TensorPrimitives.Product([1, -2]));
-            Assert.Equal(-6, TensorPrimitives.Product([1, -2, 3]));
-            Assert.Equal(24, TensorPrimitives.Product([1, -2, 3, -4]));
-            Assert.Equal(120, TensorPrimitives.Product([1, -2, 3, -4, 5]));
-            Assert.Equal(-720, TensorPrimitives.Product([1, -2, 3, -4, 5, -6]));
-            Assert.Equal(0, TensorPrimitives.Product([1, -2, 3, -4, 5, -6, 0]));
-            Assert.Equal(0, TensorPrimitives.Product([0, 1, -2, 3, -4, 5, -6]));
-            Assert.Equal(0, TensorPrimitives.Product([1, -2, 3, 0, -4, 5, -6]));
-            Assert.Equal(float.NaN, TensorPrimitives.Product([1, -2, 3, float.NaN, -4, 5, -6]));
+            Assert.Equal(expected, TensorPrimitives.Product(input));
         }
         #endregion
 
@@ -2227,20 +2365,22 @@ namespace System.Numerics.Tensors.Tests
             {
                 f *= x[i] - y[i];
             }
-            Assert.Equal(f, TensorPrimitives.ProductOfDifferences(x, y), Tolerance);
+            AssertEqualTolerance(f, TensorPrimitives.ProductOfDifferences(x, y));
         }
 
-        [Fact]
-        public static void ProductOfDifferences_KnownValues()
+        [Theory]
+        [InlineData(0, new float[] {0 }, new float[] {0})]
+        [InlineData(0, new float[] {1 }, new float[] {1})]
+        [InlineData(1, new float[] {1 }, new float[] {0})]
+        [InlineData(-1, new float[] {0 }, new float[] {1})]
+        [InlineData(-1, new float[] {1, 2, 3, 4, 5 }, new float[] {2, 3, 4, 5, 6})]
+        [InlineData(120, new float[] {1, 2, 3, 4, 5 }, new float[] {0, 0, 0, 0, 0})]
+        [InlineData(-120, new float[] {0, 0, 0, 0, 0 }, new float[] {1, 2, 3, 4, 5})]
+        [InlineData(float.NaN, new float[] {1, 2, float.NaN, 4, 5 }, new float[] {0, 0, 0, 0, 0})]
+        public static void ProductOfDifferences_KnownValues(float expected, float[] x, float[] y)
         {
-            Assert.Equal(0, TensorPrimitives.ProductOfDifferences([0], [0]));
-            Assert.Equal(0, TensorPrimitives.ProductOfDifferences([1], [1]));
-            Assert.Equal(1, TensorPrimitives.ProductOfDifferences([1], [0]));
-            Assert.Equal(-1, TensorPrimitives.ProductOfDifferences([0], [1]));
-            Assert.Equal(-1, TensorPrimitives.ProductOfDifferences([1, 2, 3, 4, 5], [2, 3, 4, 5, 6]));
-            Assert.Equal(120, TensorPrimitives.ProductOfDifferences([1, 2, 3, 4, 5], [0, 0, 0, 0, 0]));
-            Assert.Equal(-120, TensorPrimitives.ProductOfDifferences([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]));
-            Assert.Equal(float.NaN, TensorPrimitives.ProductOfDifferences([1, 2, float.NaN, 4, 5], [0, 0, 0, 0, 0]));
+            Assert.Equal(expected, TensorPrimitives.ProductOfDifferences(x, y));
+
         }
         #endregion
 
@@ -2267,20 +2407,21 @@ namespace System.Numerics.Tensors.Tests
             {
                 f *= x[i] + y[i];
             }
-            Assert.Equal(f, TensorPrimitives.ProductOfSums(x, y), Tolerance);
+            AssertEqualTolerance(f, TensorPrimitives.ProductOfSums(x, y));
         }
 
-        [Fact]
-        public static void ProductOfSums_KnownValues()
+        [Theory]
+        [InlineData(0, new float[] {0 }, new float[] { 0 })]
+        [InlineData(1, new float[] {0 }, new float[] { 1 })]
+        [InlineData(1, new float[] {1 }, new float[] { 0 })]
+        [InlineData(2, new float[] {1 }, new float[] { 1 })]
+        [InlineData(10395, new float[] {1, 2, 3, 4, 5 }, new float[] { 2, 3, 4, 5, 6 })]
+        [InlineData(120, new float[] {1, 2, 3, 4, 5 }, new float[] { 0, 0, 0, 0, 0 })]
+        [InlineData(120, new float[] {0, 0, 0, 0, 0 }, new float[] { 1, 2, 3, 4, 5 })]
+        [InlineData(float.NaN, new float[] {1, 2, float.NaN, 4, 5 }, new float[] { 0, 0, 0, 0, 0 })]
+        public static void ProductOfSums_KnownValues(float expected, float[] x, float[] y)
         {
-            Assert.Equal(0, TensorPrimitives.ProductOfSums([0], [0]));
-            Assert.Equal(1, TensorPrimitives.ProductOfSums([0], [1]));
-            Assert.Equal(1, TensorPrimitives.ProductOfSums([1], [0]));
-            Assert.Equal(2, TensorPrimitives.ProductOfSums([1], [1]));
-            Assert.Equal(10395, TensorPrimitives.ProductOfSums([1, 2, 3, 4, 5], [2, 3, 4, 5, 6]));
-            Assert.Equal(120, TensorPrimitives.ProductOfSums([1, 2, 3, 4, 5], [0, 0, 0, 0, 0]));
-            Assert.Equal(120, TensorPrimitives.ProductOfSums([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]));
-            Assert.Equal(float.NaN, TensorPrimitives.ProductOfSums([1, 2, float.NaN, 4, 5], [0, 0, 0, 0, 0]));
+            Assert.Equal(expected, TensorPrimitives.ProductOfSums(x, y));
         }
         #endregion
 
@@ -2296,7 +2437,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(1f / (1f + MathF.Exp(-x[i])), destination[i], Tolerance);
+                AssertEqualTolerance(1f / (1f + MathF.Exp(-x[i])), destination[i]);
             }
         }
 
@@ -2311,13 +2452,12 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(1f / (1f + MathF.Exp(-xOrig[i])), x[i], Tolerance);
+                AssertEqualTolerance(1f / (1f + MathF.Exp(-xOrig[i])), x[i]);
             }
         }
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Sigmoid_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -2328,7 +2468,7 @@ namespace System.Numerics.Tensors.Tests
                 TensorPrimitives.Sigmoid(x, destination);
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    Assert.Equal(1f / (1f + MathF.Exp(-x[i])), destination[i], Tolerance);
+                    AssertEqualTolerance(1f / (1f + MathF.Exp(-x[i])), destination[i]);
                 }
             }, x);
         }
@@ -2344,15 +2484,14 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(expectedResult[i], dest[i], Tolerance);
+                AssertEqualTolerance(expectedResult[i], dest[i], 0.0001f);
             }
         }
 
-        [Fact]
-        public static void Sigmoid_DestinationLongerThanSource()
+        [Theory]
+        [InlineData(new float[] { -5, -4.5f, -4 }, new float[] { 0.0066f, 0.0109f, 0.0179f })]
+        public static void Sigmoid_DestinationLongerThanSource(float[] x, float[] expectedResult)
         {
-            float[] x = [-5, -4.5f, -4];
-            float[] expectedResult = [0.0066f, 0.0109f, 0.0179f];
             using BoundedMemory<float> dest = CreateTensor(x.Length + 1);
 
             TensorPrimitives.Sigmoid(x, dest);
@@ -2360,7 +2499,7 @@ namespace System.Numerics.Tensors.Tests
             float originalLast = dest[dest.Length - 1];
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(expectedResult[i], dest[i], Tolerance);
+                AssertEqualTolerance(expectedResult[i], dest[i], 0.0001f);
             }
             Assert.Equal(originalLast, dest[dest.Length - 1]);
         }
@@ -2402,7 +2541,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Sinh(x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Sinh(x[i]), destination[i]);
             }
         }
 
@@ -2417,7 +2556,41 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Sinh(xOrig[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Sinh(xOrig[i]), x[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Sinh_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            RunForEachSpecialValue(() =>
+            {
+                TensorPrimitives.Sinh(x, destination);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(MathF.Sinh(x[i]), destination[i]);
+                }
+            }, x);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorLengthAndIteratedRange), new object[] { -100f, 100f, 3f })]
+        public static void Sinh_ValueRange(int vectorLengths, float element)
+        {
+            float[] x = new float[vectorLengths];
+            float[] dest = new float[vectorLengths];
+
+            x.AsSpan().Fill(element);
+            TensorPrimitives.Sinh(x, dest);
+
+            float expected = MathF.Sinh(element);
+            foreach (float actual in dest)
+            {
+                AssertEqualTolerance(expected, actual);
             }
         }
 
@@ -2453,7 +2626,7 @@ namespace System.Numerics.Tensors.Tests
             float expSum = MemoryMarshal.ToEnumerable<float>(x.Memory).Sum(MathF.Exp);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Exp(x[i]) / expSum, destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Exp(x[i]) / expSum, destination[i]);
             }
         }
 
@@ -2469,7 +2642,7 @@ namespace System.Numerics.Tensors.Tests
             float expSum = xOrig.Sum(MathF.Exp);
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Exp(xOrig[i]) / expSum, x[i], Tolerance);
+                AssertEqualTolerance(MathF.Exp(xOrig[i]) / expSum, x[i]);
             }
         }
 
@@ -2485,7 +2658,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(expectedResult[i], dest[i], Tolerance);
+                AssertEqualTolerance(expectedResult[i], dest[i], 0.0001f);
             }
         }
 
@@ -2499,7 +2672,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(expectedResult[i], dest[i], Tolerance);
+                AssertEqualTolerance(expectedResult[i], dest[i]);
             }
         }
 
@@ -2541,7 +2714,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] - y[i], destination[i], Tolerance);
+                AssertEqualTolerance(x[i] - y[i], destination[i]);
             }
         }
 
@@ -2556,7 +2729,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] - xOrig[i], x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] - xOrig[i], x[i]);
             }
         }
 
@@ -2605,7 +2778,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] - y, destination[i], Tolerance);
+                AssertEqualTolerance(x[i] - y, destination[i]);
             }
         }
 
@@ -2621,7 +2794,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(xOrig[i] - y, x[i], Tolerance);
+                AssertEqualTolerance(xOrig[i] - y, x[i]);
             }
         }
 
@@ -2652,24 +2825,25 @@ namespace System.Numerics.Tensors.Tests
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
-            Assert.Equal(MemoryMarshal.ToEnumerable<float>(x.Memory).Sum(), TensorPrimitives.Sum(x), Tolerance);
+            AssertEqualTolerance(MemoryMarshal.ToEnumerable<float>(x.Memory).Sum(), TensorPrimitives.Sum(x));
 
             float sum = 0;
             foreach (float f in x.Span)
             {
                 sum += f;
             }
-            Assert.Equal(sum, TensorPrimitives.Sum(x), Tolerance);
+            AssertEqualTolerance(sum, TensorPrimitives.Sum(x));
         }
 
-        [Fact]
-        public static void Sum_KnownValues()
+        [Theory]
+        [InlineData(0, new float[] { 0 })]
+        [InlineData(1, new float[] { 0, 1 })]
+        [InlineData(6, new float[] { 1, 2, 3 })]
+        [InlineData(0, new float[] { -3, 0, 3 })]
+        [InlineData(float.NaN, new float[] { -3, float.NaN, 3 })]
+        public static void Sum_KnownValues(float expected, float[] x)
         {
-            Assert.Equal(0, TensorPrimitives.Sum([0]));
-            Assert.Equal(1, TensorPrimitives.Sum([0, 1]));
-            Assert.Equal(6, TensorPrimitives.Sum([1, 2, 3]));
-            Assert.Equal(0, TensorPrimitives.Sum([-3, 0, 3]));
-            Assert.Equal(float.NaN, TensorPrimitives.Sum([-3, float.NaN, 3]));
+            Assert.Equal(expected, TensorPrimitives.Sum(x));
         }
         #endregion
 
@@ -2680,24 +2854,25 @@ namespace System.Numerics.Tensors.Tests
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
-            Assert.Equal(Enumerable.Sum(MemoryMarshal.ToEnumerable<float>(x.Memory), MathF.Abs), TensorPrimitives.SumOfMagnitudes(x), Tolerance);
+            AssertEqualTolerance(Enumerable.Sum(MemoryMarshal.ToEnumerable<float>(x.Memory), MathF.Abs), TensorPrimitives.SumOfMagnitudes(x));
 
             float sum = 0;
             foreach (float f in x.Span)
             {
                 sum += MathF.Abs(f);
             }
-            Assert.Equal(sum, TensorPrimitives.SumOfMagnitudes(x), Tolerance);
+            AssertEqualTolerance(sum, TensorPrimitives.SumOfMagnitudes(x));
         }
 
-        [Fact]
-        public static void SumOfMagnitudes_KnownValues()
+        [Theory]
+        [InlineData(0, new float[] { 0 })]
+        [InlineData(1, new float[] { 0, 1 })]
+        [InlineData(6, new float[] { 1, 2, 3 })]
+        [InlineData(6, new float[] { -3, 0, 3 })]
+        [InlineData(float.NaN, new float[] { -3, float.NaN, 3 })]
+        public static void SumOfMagnitudes_KnownValues(float expected, float[] x)
         {
-            Assert.Equal(0, TensorPrimitives.SumOfMagnitudes([0]));
-            Assert.Equal(1, TensorPrimitives.SumOfMagnitudes([0, 1]));
-            Assert.Equal(6, TensorPrimitives.SumOfMagnitudes([1, 2, 3]));
-            Assert.Equal(6, TensorPrimitives.SumOfMagnitudes([-3, 0, 3]));
-            Assert.Equal(float.NaN, TensorPrimitives.SumOfMagnitudes([-3, float.NaN, 3]));
+            Assert.Equal(expected, TensorPrimitives.SumOfMagnitudes(x));
         }
         #endregion
 
@@ -2708,24 +2883,25 @@ namespace System.Numerics.Tensors.Tests
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
-            Assert.Equal(Enumerable.Sum(MemoryMarshal.ToEnumerable<float>(x.Memory), v => v * v), TensorPrimitives.SumOfSquares(x), Tolerance);
+            AssertEqualTolerance(Enumerable.Sum(MemoryMarshal.ToEnumerable<float>(x.Memory), v => v * v), TensorPrimitives.SumOfSquares(x));
 
             float sum = 0;
             foreach (float f in x.Span)
             {
                 sum += f * f;
             }
-            Assert.Equal(sum, TensorPrimitives.SumOfSquares(x), Tolerance);
+            AssertEqualTolerance(sum, TensorPrimitives.SumOfSquares(x));
         }
 
-        [Fact]
-        public static void SumOfSquares_KnownValues()
+        [Theory]
+        [InlineData(0, new float[] { 0 })]
+        [InlineData(1, new float[] { 0, 1 })]
+        [InlineData(14, new float[] { 1, 2, 3 })]
+        [InlineData(18, new float[] { -3, 0, 3 })]
+        [InlineData(float.NaN, new float[] { -3, float.NaN, 3 })]
+        public static void SumOfSquares_KnownValues(float expected, float[] x)
         {
-            Assert.Equal(0, TensorPrimitives.SumOfSquares([0]));
-            Assert.Equal(1, TensorPrimitives.SumOfSquares([0, 1]));
-            Assert.Equal(14, TensorPrimitives.SumOfSquares([1, 2, 3]));
-            Assert.Equal(18, TensorPrimitives.SumOfSquares([-3, 0, 3]));
-            Assert.Equal(float.NaN, TensorPrimitives.SumOfSquares([-3, float.NaN, 3]));
+            Assert.Equal(expected, TensorPrimitives.SumOfSquares(x));
         }
         #endregion
 
@@ -2741,7 +2917,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Tanh(x[i]), destination[i], Tolerance);
+                AssertEqualTolerance(MathF.Tanh(x[i]), destination[i]);
             }
         }
 
@@ -2756,7 +2932,41 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Tanh(xOrig[i]), x[i], Tolerance);
+                AssertEqualTolerance(MathF.Tanh(xOrig[i]), x[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Tanh_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            RunForEachSpecialValue(() =>
+            {
+                TensorPrimitives.Tanh(x, destination);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(MathF.Tanh(x[i]), destination[i]);
+                }
+            }, x);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorLengthAndIteratedRange), new object[] { -11f, 11f, 0.2f })]
+        public static void Tanh_ValueRange(int vectorLengths, float element)
+        {
+            float[] x = new float[vectorLengths];
+            float[] dest = new float[vectorLengths];
+
+            x.AsSpan().Fill(element);
+            TensorPrimitives.Tanh(x, dest);
+
+            float expected = MathF.Tanh(element);
+            foreach (float actual in dest)
+            {
+                AssertEqualTolerance(expected, actual);
             }
         }
 

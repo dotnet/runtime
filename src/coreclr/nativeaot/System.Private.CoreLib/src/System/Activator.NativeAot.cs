@@ -10,9 +10,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Remoting;
-using System.Runtime;
 
 using Internal.Reflection.Augments;
 using Internal.Runtime.CompilerServices;

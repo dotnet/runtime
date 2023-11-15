@@ -395,7 +395,7 @@ public class ArrayMarshal
         Console.WriteLine("CStyle_Array_Int_InOut_ZeroLength");
         int[] iArrLength0 = InitArray<int>(0);
         Assert.True(CStyle_Array_Int_InOut_ZeroLength(iArrLength0));
-        Assert.Equal(0, iArrLength0.Length);
+        Assert.Empty(iArrLength0);
 
         Console.WriteLine("CStyle_Array_Uint_InOut");
         uint[] uiArr = InitArray<uint>(ARRAY_SIZE);
@@ -560,7 +560,7 @@ public class ArrayMarshal
         Console.WriteLine("CStyle_Array_Int_Out_ZeroLength");
         int[] iArrLength0 = new int[0];
         Assert.True(CStyle_Array_Int_Out_ZeroLength(iArrLength0));
-        Assert.Equal(0, iArrLength0.Length);
+        Assert.Empty(iArrLength0);
 
         Console.WriteLine("CStyle_Array_Uint_Out");
         uint[] uiArr = new uint[ARRAY_SIZE];
@@ -652,7 +652,8 @@ public class ArrayMarshal
         Assert.Equal(sum, Get_Multidimensional_Array_Sum(array, ROWS, COLUMNS));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

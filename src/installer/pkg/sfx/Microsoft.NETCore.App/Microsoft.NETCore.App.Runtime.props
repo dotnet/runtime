@@ -7,8 +7,8 @@
     </GetSharedFrameworkFilesForReadyToRunDependsOn>
     <PublishReadyToRun Condition="'$(RuntimeFlavor)' != 'Mono' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(RuntimeFlavor)' == 'Mono' or '$(BuildNativeAOTRuntimePack)' == 'true'">false</PublishReadyToRun>
-    <!-- Disable crossgen on NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris'">false</PublishReadyToRun>
+    <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
+    <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
     <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
     <PublishReadyToRun Condition="'$(TargetOS)'=='freebsd' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
     <!-- Disable crossgen on riscv64. -->

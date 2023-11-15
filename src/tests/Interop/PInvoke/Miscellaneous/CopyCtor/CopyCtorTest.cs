@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
-static unsafe class CopyCtor
+public static unsafe class CopyCtor
 {
     public static unsafe int StructWithCtorTest(StructWithCtor* ptrStruct, ref StructWithCtor refStruct)
     {
@@ -26,7 +26,8 @@ static unsafe class CopyCtor
         return 100;
     }
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         TestDelegate del = (TestDelegate)Delegate.CreateDelegate(typeof(TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
         StructWithCtor s1 = new StructWithCtor();

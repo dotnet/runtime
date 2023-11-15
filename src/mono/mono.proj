@@ -62,6 +62,7 @@
   <!-- default thread suspend for specific platforms -->
   <PropertyGroup>
     <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
+    <MonoThreadSuspend Condition="'$(TargetsBrowser)' == 'true' and '$(MonoWasmBuildVariant)' == 'multithread' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
     <!-- wasm isn't really preemptive, but we don't want safepoints -->
     <MonoThreadSuspend Condition="( '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' ) and '$(MonoThreadSuspend)' == ''">preemptive</MonoThreadSuspend>
     <!-- all other platforms -->
@@ -207,7 +208,7 @@
       <ActualWasiSdkVersion>%(_ActualVersionLines.Identity)</ActualWasiSdkVersion>
       <ExpectedWasiSdkVersion>%(_ExpectedVersionLines.Identity)</ExpectedWasiSdkVersion>
     </PropertyGroup>
-    <Error Text="Expected and actual version of WASI SDK does not match. Please delete $(WASI_SDK_PATH) folder to provision a new version."
+    <Error Text="Expected version: %(_ExpectedVersionLines.Identity) and actual version: %(_ActualVersionLines.Identity) of WASI SDK does not match. Please delete $(WASI_SDK_PATH) folder to provision a new version."
       Condition="'$(ActualWasiSdkVersion)' != '$(ExpectedWasiSdkVersion)'" />
   </Target>
 
@@ -307,6 +308,13 @@
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/lib/pkgconfig" />
     </ItemGroup>
 
+    <!-- x64 Haiku cross build options -->
+    <ItemGroup Condition="'$(TargetsHaiku)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/boot/system/lib/pkgconfig" />
+    </ItemGroup>
+
     <!-- x64 linux cross build options -->
     <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'x64'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
@@ -360,6 +368,7 @@
       <_MonoCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
       <!--<_MonoCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-DUSE_SOFT_INTRINSICS" />
       <_MonoCPPFLAGS Condition="'$(Configuration)' == 'Release'" Include="-DNDEBUG" />
       <_MonoCPPFLAGS Condition="'$(Configuration)' == 'Debug'" Include="-D_DEBUG" />
       <!-- <_MonoCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->
@@ -749,6 +758,7 @@
       <_MonoAOTCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
       <!--<_MonoAOTCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
       <_MonoAOTCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
+      <_MonoAOTCPPFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-DUSE_SOFT_INTRINSICS" />
       <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Release' or '$(_ForceRelease)' == 'true'" Include="-DNDEBUG" />
       <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Debug' and '$(_ForceRelease)' != 'true'" Include="-D_DEBUG" />
       <!-- <_MonoAOTCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->

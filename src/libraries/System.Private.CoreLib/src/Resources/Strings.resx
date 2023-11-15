@@ -1732,9 +1732,6 @@
   <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
     <value>Larger than collection size.</value>
   </data>
-  <data name="ArgumentOutOfRange_BinaryReaderFillBuffer" xml:space="preserve">
-    <value>The number of bytes requested does not fit into BinaryReader's internal buffer.</value>
-  </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
     <value>Argument must be between {0} and {1}.</value>
   </data>
@@ -3437,7 +3434,13 @@
   <data name="SetterHasNoParams" xml:space="preserve">
     <value>Setter must have parameters.</value>
   </data>
-  <data name="SpinLock_Exit_SynchronizationLockException" xml:space="preserve">
+  <data name="Lock_Enter_LockRecursionException" xml:space="preserve">
+    <value>The lock has reached the limit of recursive enters.</value>
+  </data>
+  <data name="Lock_Enter_WaiterCountOverflow_OutOfMemoryException" xml:space="preserve">
+    <value>The lock has reached the limit of how many threads may wait for the lock.</value>
+  </data>
+  <data name="Lock_Exit_SynchronizationLockException" xml:space="preserve">
     <value>The calling thread does not hold the lock.</value>
   </data>
   <data name="SpinLock_IsHeldByCurrentThread" xml:space="preserve">
@@ -4255,6 +4258,30 @@
   </data>
   <data name="Argument_SearchValues_UnsupportedStringComparison" xml:space="preserve">
     <value>SearchValues&lt;string&gt; supports only StringComparison.Ordinal and StringComparison.OrdinalIgnoreCase.</value>
+  </data>
+  <data name="ComVariant_SafeArray_PlatformNotSupported" xml:space="preserve">
+    <value>ComVariants containing SAFEARRAYs are not supported on this platform</value>
+  </data>
+  <data name="ComVariant_SizeMustMatchVariantSize" xml:space="preserve">
+    <value>Size of {0} should be the same size as the value specified by {1}</value>
+  </data>
+  <data name="ComVariant_TypeIsNotSupportedType" xml:space="preserve">
+    <value>Variant type '{0}' is not one of the supported variant types for this operation: [{1}]</value>
+  </data>
+  <data name="ComVariant_VT_DECIMAL_NotSupported_CreateRaw" xml:space="preserve">
+    <value>VT_DECIMAL is not supported in CreateRaw. Use the Create method.</value>
+  </data>
+  <data name="ComVariant_VT_DECIMAL_NotSupported_RawDataRef" xml:space="preserve">
+    <value>VT_DECIMAL is not supported in GetRawDataRef. Use the As method.</value>
+  </data>
+  <data name="ComVariant_VT_VARIANT_In_Variant" xml:space="preserve">
+    <value>VT_VARIANT is not supported in variants.</value>
+  </data>
+  <data name="UnsupportedType" xml:space="preserve">
+    <value>Unsupported type</value>
+  </data>
+  <data name="Reflection_Disabled" xml:space="preserve">
+    <value>This operation is not available because the reflection support was disabled at compile time.</value>
   </data>
   <data name="EE_FileLoad_Error_Generic" xml:space="preserve">
     <value>Could not load file or assembly {0}. {1}</value>

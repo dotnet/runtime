@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace Internal.Cryptography
 {

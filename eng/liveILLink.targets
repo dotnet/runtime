@@ -39,6 +39,13 @@
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>
     </ProjectReference>
+
+    <!-- Need to reference the analyzer project separately, because there's no easy way to get it as a transitive reference of ILLink.Tasks.csproj -->
+    <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(ToolsConfiguration)" />
   </ItemGroup>
 
 </Project>

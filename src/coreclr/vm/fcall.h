@@ -1350,7 +1350,6 @@ typedef UINT16 FC_UINT16_RET;
 
 // FC_TypedByRef should be used for TypedReferences in FCall signatures
 #define FC_TypedByRef   TypedByRef
-#define FC_DECIMAL      DECIMAL
 
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make

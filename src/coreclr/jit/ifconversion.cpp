@@ -175,7 +175,7 @@ void OptIfConversionDsc::IfConvertFindFlow()
 {
     // First check for flow with no else case. The final block is the destination of the jump.
     m_doElseConversion = false;
-    m_finalBlock       = m_startBlock->bbJumpDest;
+    m_finalBlock       = m_startBlock->GetJumpDest();
     assert(m_finalBlock != nullptr);
     if (!IfConvertCheckThenFlow() || m_flowFound)
     {
@@ -392,7 +392,7 @@ void OptIfConversionDsc::IfConvertDump()
     }
     if (m_doElseConversion)
     {
-        for (BasicBlock* dumpBlock = m_startBlock->bbJumpDest; dumpBlock != m_finalBlock;
+        for (BasicBlock* dumpBlock = m_startBlock->GetJumpDest(); dumpBlock != m_finalBlock;
              dumpBlock             = dumpBlock->GetUniqueSucc())
         {
             m_comp->fgDumpBlock(dumpBlock);
@@ -582,7 +582,7 @@ bool OptIfConversionDsc::optIfConvert()
     assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN));
     if (m_doElseConversion)
     {
-        if (!IfConvertCheckStmts(m_startBlock->bbJumpDest, &m_elseOperation))
+        if (!IfConvertCheckStmts(m_startBlock->GetJumpDest(), &m_elseOperation))
         {
             return false;
         }
@@ -743,7 +743,8 @@ bool OptIfConversionDsc::optIfConvert()
 
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
-    m_startBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
+    assert(m_startBlock->HasJump());
+    m_startBlock->SetJumpKind(BBJ_ALWAYS);
 
 #ifdef DEBUG
     if (m_comp->verbose)

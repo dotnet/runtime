@@ -28,7 +28,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const version = get_signature_version(signature);
-        mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
+        mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
 
         const js_function_name = monoStringToString(function_name_root)!;
         const mark = startMeasure();
@@ -350,7 +350,7 @@ export function dynamic_import(module_name: string, module_url: string): Promise
     const newPromise = !promise;
     if (newPromise) {
         mono_log_debug(`importing ES6 module '${module_name}' from '${module_url}'`);
-        promise = import(/* webpackIgnore: true */module_url);
+        promise = import(/*! webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
 

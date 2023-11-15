@@ -11,7 +11,7 @@ import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, mono_wasm_
 import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
-import { mono_wasm_marshal_promise } from "./marshal-to-js";
+import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
 import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_detached } from "./pthreads/worker";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
@@ -35,6 +35,7 @@ import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
 import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
 import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
+import { mono_wasm_browser_entropy } from "./crypto";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -98,13 +99,16 @@ export const mono_wasm_imports = [
     mono_wasm_set_entrypoint_breakpoint,
     mono_wasm_event_pipe_early_startup_callback,
 
+    // src/native/minipal/random.c
+    mono_wasm_browser_entropy,
+
     // corebindings.c
     mono_wasm_release_cs_owned_object,
     mono_wasm_bind_js_function,
     mono_wasm_invoke_bound_function,
     mono_wasm_invoke_import,
     mono_wasm_bind_cs_function,
-    mono_wasm_marshal_promise,
+    mono_wasm_resolve_or_reject_promise,
     mono_wasm_change_case_invariant,
     mono_wasm_change_case,
     mono_wasm_compare_string,

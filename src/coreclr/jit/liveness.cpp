@@ -378,7 +378,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             block->bbMemoryLiveIn  = fullMemoryKindSet;
             block->bbMemoryLiveOut = fullMemoryKindSet;
 
-            switch (block->GetBBJumpKind())
+            switch (block->GetJumpKind())
             {
                 case BBJ_EHFINALLYRET:
                 case BBJ_EHFAULTRET:
@@ -886,7 +886,7 @@ void Compiler::fgExtendDbgLifetimes()
     {
         VarSetOps::ClearD(this, initVars);
 
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_NONE:
                 PREFIX_ASSUME(!block->IsLast());
@@ -896,7 +896,7 @@ void Compiler::fgExtendDbgLifetimes()
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
-                VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
                 break;
 
             case BBJ_CALLFINALLY:
@@ -906,13 +906,13 @@ void Compiler::fgExtendDbgLifetimes()
                     PREFIX_ASSUME(!block->IsLast());
                     VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
                 }
-                VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
                 break;
 
             case BBJ_COND:
                 PREFIX_ASSUME(!block->IsLast());
                 VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
                 break;
 
             case BBJ_SWITCH:

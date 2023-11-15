@@ -905,7 +905,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        private const int MINOR_VERSION = 65;
+        private const int MINOR_VERSION = 66;
         private const int MAJOR_VERSION = 2;
 
         private int VmMinorVersion { get; set; }

@@ -61,6 +61,14 @@
 #define G_EXTERN_C     /* nothing */
 #endif
 
+#if defined(__cplusplus) || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
+#define G_ATTR_NORETURN [[noreturn]]
+#elif (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+#define G_ATTR_NORETURN _Noreturn
+#else
+#error Mono requires _Noreturn (C11 or newer)
+#endif
+
 #ifdef __cplusplus
 
 #define g_cast monoeg_g_cast // in case not inlined (see eglib-remap.h)
@@ -715,10 +723,14 @@ G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
 void           g_log_disabled         (const gchar *log_domain, GLogLevelFlags log_level, const char *file, int line);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
-void           g_assertion_message    (const gchar *format, ...) G_GNUC_NORETURN;
-void           mono_assertion_message_disabled  (const char *file, int line) G_GNUC_NORETURN;
-void           mono_assertion_message  (const char *file, int line, const char *condition) G_GNUC_NORETURN;
-void           mono_assertion_message_unreachable (const char *file, int line) G_GNUC_NORETURN;
+G_ATTR_NORETURN void
+               g_assertion_message    (const gchar *format, ...);
+G_ATTR_NORETURN void
+               mono_assertion_message_disabled  (const char *file, int line);
+G_ATTR_NORETURN void
+               mono_assertion_message  (const char *file, int line, const char *condition);
+G_ATTR_NORETURN void
+               mono_assertion_message_unreachable (const char *file, int line);
 const char *   g_get_assertion_message (void);
 
 #ifndef DISABLE_ASSERT_MESSAGES
@@ -950,6 +962,7 @@ typedef enum {
 
 G_ENUM_FUNCTIONS (GFileTest)
 
+FILE *     g_fopen (const char *path, const char *mode);
 gboolean   g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **gerror);
 GFileError g_file_error_from_errno (gint err_no);
 gint       g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **gerror);

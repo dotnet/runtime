@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <IsManagedCOMClient>true</IsManagedCOMClient>
     <UseManagedCOMServer>true</UseManagedCOMServer>
@@ -26,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="Server/CMakeLists.txt" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="../NETServer/NETServer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>

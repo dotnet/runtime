@@ -13,15 +13,14 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
-
 using CONNECTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._CONNECTED_e__Struct;
-using SHUTDOWN_INITIATED_BY_TRANSPORT_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_TRANSPORT_e__Struct;
-using SHUTDOWN_INITIATED_BY_PEER_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_PEER_e__Struct;
-using SHUTDOWN_COMPLETE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_COMPLETE_e__Struct;
 using LOCAL_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._LOCAL_ADDRESS_CHANGED_e__Struct;
 using PEER_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_ADDRESS_CHANGED_e__Struct;
-using PEER_STREAM_STARTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_STREAM_STARTED_e__Struct;
 using PEER_CERTIFICATE_RECEIVED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_CERTIFICATE_RECEIVED_e__Struct;
+using PEER_STREAM_STARTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_STREAM_STARTED_e__Struct;
+using SHUTDOWN_COMPLETE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_COMPLETE_e__Struct;
+using SHUTDOWN_INITIATED_BY_PEER_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_PEER_e__Struct;
+using SHUTDOWN_INITIATED_BY_TRANSPORT_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_TRANSPORT_e__Struct;
 
 namespace System.Net.Quic;
 
@@ -38,13 +37,6 @@ namespace System.Net.Quic;
 /// </remarks>
 public sealed partial class QuicConnection : IAsyncDisposable
 {
-#if DEBUG
-    /// <summary>
-    /// The actual secret structure wrapper passed to MsQuic.
-    /// </summary>
-    private readonly MsQuicTlsSecret? _tlsSecret;
-#endif
-
     /// <summary>
     /// Returns <c>true</c> if QUIC is supported on the current machine and can be used; otherwise, <c>false</c>.
     /// </summary>
@@ -152,6 +144,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
+
+#if DEBUG
+    /// <summary>
+    /// Will contain TLS secret after CONNECTED event is received and store it into SSLKEYLOGFILE.
+    /// MsQuic holds the underlying pointer so this object can be disposed only after connection native handle gets closed.
+    /// </summary>
+    private readonly MsQuicTlsSecret? _tlsSecret;
+#endif
+
     /// <summary>
     /// The remote endpoint used for this connection.
     /// </summary>
@@ -467,6 +468,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         QuicAddr localAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
         _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&localAddress);
 
+#if DEBUG
+        _tlsSecret?.WriteSecret();
+#endif
+
         if (NetEventSource.Log.IsEnabled())
         {
             NetEventSource.Info(this, $"{this} Connection connected {LocalEndPoint} -> {RemoteEndPoint} for {_negotiatedApplicationProtocol} protocol");
@@ -596,9 +601,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return;
         }
 
-#if DEBUG
-        _tlsSecret?.Dispose();
-#endif
         // Check if the connection has been shut down and if not, shut it down.
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {

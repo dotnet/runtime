@@ -56,6 +56,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? ISet_Unbound { get; }
         public INamedTypeSymbol? ISet { get; }
         public INamedTypeSymbol? List { get; }
+        public INamedTypeSymbol Enum { get; }
+        public INamedTypeSymbol? ArgumentNullException { get; }
+        public INamedTypeSymbol? SerializationInfo { get; }
+        public INamedTypeSymbol? IntPtr { get; }
+        public INamedTypeSymbol? UIntPtr { get; }
+        public INamedTypeSymbol? MemberInfo  { get; }
+        public INamedTypeSymbol? ParameterInfo { get; }
+        public INamedTypeSymbol? Delegate   { get; }
 
         public KnownTypeSymbols(CSharpCompilation compilation)
         {
@@ -102,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             ISet = compilation.GetBestTypeByMetadataName(typeof(ISet<>));
 
             // Used for type equivalency checks for unbound generics. The parameters of the types
-            // retured by the Roslyn Get*Type* APIs are not unbound, so we construct unbound
+            // returned by the Roslyn Get*Type* APIs are not unbound, so we construct unbound
             // generics to equal those corresponding to generic types in the input type graphs.
             GenericICollection_Unbound = GenericICollection.ConstructUnboundGenericType();
             GenericIDictionary_Unbound = GenericIDictionary?.ConstructUnboundGenericType();
@@ -113,6 +121,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             IReadOnlyList_Unbound = compilation.GetBestTypeByMetadataName(typeof(IReadOnlyList<>))?.ConstructUnboundGenericType();
             IReadOnlySet_Unbound = compilation.GetBestTypeByMetadataName("System.Collections.Generic.IReadOnlySet`1")?.ConstructUnboundGenericType();
             ISet_Unbound = ISet?.ConstructUnboundGenericType();
+
+            // needed to be able to know if a member exist inside the compilation unit
+            Enum = compilation.GetSpecialType(SpecialType.System_Enum);
+            ArgumentNullException = compilation.GetBestTypeByMetadataName(typeof(ArgumentNullException));
+
+            SerializationInfo = compilation.GetBestTypeByMetadataName(typeof(System.Runtime.Serialization.SerializationInfo));
+            MemberInfo = compilation.GetBestTypeByMetadataName(typeof(System.Reflection.MemberInfo));
+            ParameterInfo = compilation.GetBestTypeByMetadataName(typeof(System.Reflection.ParameterInfo));
+            IntPtr = Compilation.GetSpecialType(SpecialType.System_IntPtr);
+            UIntPtr = Compilation.GetSpecialType(SpecialType.System_UIntPtr);
+            Delegate = Compilation.GetSpecialType(SpecialType.System_Delegate);
         }
     }
 }

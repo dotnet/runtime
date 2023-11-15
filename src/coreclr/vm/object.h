@@ -116,7 +116,7 @@ struct RCW;
     (((size) + PTRALIGNCONST) & (~PTRALIGNCONST))
 #endif //!PtrAlign
 
-// code:Object is the respesentation of an managed object on the GC heap.
+// code:Object is the representation of an managed object on the GC heap.
 //
 // See  code:#ObjectModel for some important subclasses of code:Object
 //

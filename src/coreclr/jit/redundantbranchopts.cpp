@@ -49,7 +49,7 @@ PhaseStatus Compiler::optRedundantBranches()
                 bool madeChangesThisBlock = m_compiler->optRedundantRelop(block);
 
                 BasicBlock* const bbNext = block->Next();
-                BasicBlock* const bbJump = block->bbJumpDest;
+                BasicBlock* const bbJump = block->GetJumpDest();
 
                 madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
 
@@ -567,7 +567,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     const bool domIsSameRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Same) ||
                                                 (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
 
-                    BasicBlock* const trueSuccessor  = domBlock->bbJumpDest;
+                    BasicBlock* const trueSuccessor  = domBlock->GetJumpDest();
                     BasicBlock* const falseSuccessor = domBlock->Next();
 
                     // If we can trace the flow from the dominating relop, we can infer its value.
@@ -602,7 +602,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         //
                         const bool relopIsTrue = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
                         JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
-                                domBlock->bbJumpDest->bbNum, domBlock->bbNum, dspTreeID(tree),
+                                domBlock->GetJumpDest()->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsTrue ? "true" : "false");
                         relopValue = relopIsTrue ? 1 : 0;
                         break;
@@ -710,7 +710,7 @@ struct JumpThreadInfo
 {
     JumpThreadInfo(Compiler* comp, BasicBlock* block)
         : m_block(block)
-        , m_trueTarget(block->bbJumpDest)
+        , m_trueTarget(block->GetJumpDest())
         , m_falseTarget(block->Next())
         , m_fallThroughPred(nullptr)
         , m_ambiguousVNBlock(nullptr)
@@ -1072,8 +1072,8 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
     // latter should prove useful in subsequent work, where we aim to enable jump
     // threading in cases where block has side effects.
     //
-    BasicBlock* const domTrueSuccessor  = domIsSameRelop ? domBlock->bbJumpDest : domBlock->Next();
-    BasicBlock* const domFalseSuccessor = domIsSameRelop ? domBlock->Next() : domBlock->bbJumpDest;
+    BasicBlock* const domTrueSuccessor  = domIsSameRelop ? domBlock->GetJumpDest() : domBlock->Next();
+    BasicBlock* const domFalseSuccessor = domIsSameRelop ? domBlock->Next() : domBlock->GetJumpDest();
     JumpThreadInfo    jti(this, block);
 
     for (BasicBlock* const predBlock : block->PredBlocks())
@@ -1460,9 +1460,8 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
             // Possibly defer this until after early out below.
             //
-            jti.m_fallThroughPred->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-            jti.m_fallThroughPred->bbJumpDest = jti.m_block;
-            modifiedFlow                      = true;
+            jti.m_fallThroughPred->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_block DEBUG_ARG(this));
+            modifiedFlow = true;
         }
         else
         {
@@ -1532,7 +1531,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         fgRemoveStmt(jti.m_block, lastStmt);
         JITDUMP("  repurposing " FMT_BB " to always jump to " FMT_BB "\n", jti.m_block->bbNum, jti.m_trueTarget->bbNum);
         fgRemoveRefPred(jti.m_falseTarget, jti.m_block);
-        jti.m_block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+        jti.m_block->SetJumpKind(BBJ_ALWAYS);
     }
     else if (falsePredsWillReuseBlock)
     {
@@ -1541,7 +1540,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", jti.m_block->bbNum,
                 jti.m_falseTarget->bbNum);
         fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
-        jti.m_block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+        jti.m_block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
     }
 
     // Now reroute the flow from the predecessors.

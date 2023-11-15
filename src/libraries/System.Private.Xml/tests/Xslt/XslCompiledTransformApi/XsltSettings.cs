@@ -164,7 +164,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                         return;
 
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         return;
                 }
             }
@@ -184,7 +184,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                         return;
 
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         return;
                 }
             }
@@ -230,7 +230,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                         return;
 
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         return;
                 }
             }
@@ -246,7 +246,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                         return;
 
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         return;
                 }
             }
@@ -273,7 +273,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 StringWriter sw = Transform();
                 _output.WriteLine("Execution of the scripts was allowed even when XsltSettings.EnableScript is false");
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XsltException ex)
             {

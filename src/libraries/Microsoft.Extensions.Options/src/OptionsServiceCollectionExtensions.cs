@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="name">The name of the options instance.</param>
-        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that configure calls can be chained in it.</returns>
         public static OptionsBuilder<TOptions> AddOptionsWithValidateOnStart<
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(
             this IServiceCollection services,
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TValidateOptions">The <see cref="IValidateOptions{TOptions}"/> validator type.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="name">The name of the options instance.</param>
-        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that configure calls can be chained in it.</returns>
         public static OptionsBuilder<TOptions> AddOptionsWithValidateOnStart<
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>(

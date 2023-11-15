@@ -501,8 +501,7 @@ void BlockCountInstrumentor::RelocateProbes()
                 //
                 if (pred->KindIs(BBJ_NONE))
                 {
-                    pred->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
-                    pred->bbJumpDest = block;
+                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block DEBUG_ARG(m_comp));
                 }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
@@ -783,7 +782,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
             GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
 
             // Interlocked increment
-            result = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+            result = comp->gtNewAtomicNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
         }
 
         if (scalable)
@@ -945,7 +944,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         visitor->VisitBlock(block);
         nBlocks++;
 
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_CALLFINALLY:
             {
@@ -1018,7 +1017,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // We're leaving a try or catch, not a handler.
                     // Treat this as a normal edge.
                     //
-                    BasicBlock* const target = block->bbJumpDest;
+                    BasicBlock* const target = block->GetJumpDest();
 
                     // In some bad IL cases we may not have a target.
                     // In others we may see something other than LEAVE be most-nested in a try.
@@ -1554,8 +1553,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         //
                         if (block->KindIs(BBJ_NONE))
                         {
-                            block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
-                            block->bbJumpDest = target;
+                            block->SetJumpKindAndTarget(BBJ_ALWAYS, target DEBUG_ARG(m_comp));
                         }
 
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
@@ -1697,8 +1695,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 //
                 if (pred->KindIs(BBJ_NONE))
                 {
-                    pred->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
-                    pred->bbJumpDest = block;
+                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block DEBUG_ARG(m_comp));
                 }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
@@ -3803,8 +3800,8 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(block->bbJumpDest != nullptr);
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->bbJumpDest, block);
+        assert(block->HasJump());
+        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);
         return;
@@ -3922,7 +3919,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 //
 void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
 {
-    switch (block->GetBBJumpKind())
+    switch (block->GetJumpKind())
     {
         case BBJ_SWITCH:
             MarkInterestingSwitches(block, info);
@@ -4016,8 +4013,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->bbJumpSwt->bbsCount;
-    BasicBlock** const jumpTab      = block->bbJumpSwt->bbsDstTab;
+    const unsigned     caseCount    = block->GetJumpSwt()->bbsCount;
+    BasicBlock** const jumpTab      = block->GetJumpSwt()->bbsDstTab;
     unsigned           dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
@@ -4043,7 +4040,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
         return;
     }
 
-    if (block->bbJumpSwt->bbsHasDefault && (dominantCase == caseCount - 1))
+    if (block->GetJumpSwt()->bbsHasDefault && (dominantCase == caseCount - 1))
     {
         // Dominant case is the default case.
         // This effectively gets peeled already, so defer.
@@ -4057,9 +4054,9 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->bbJumpSwt->bbsHasDominantCase  = true;
-    block->bbJumpSwt->bbsDominantCase     = dominantCase;
-    block->bbJumpSwt->bbsDominantFraction = fraction;
+    block->GetJumpSwt()->bbsHasDominantCase  = true;
+    block->GetJumpSwt()->bbsDominantCase     = dominantCase;
+    block->GetJumpSwt()->bbsDominantFraction = fraction;
 }
 
 //------------------------------------------------------------------------
@@ -4435,7 +4432,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     }
                     else if (bSrc->KindIs(BBJ_ALWAYS))
                     {
-                        bOnlyNext = bSrc->bbJumpDest;
+                        bOnlyNext = bSrc->GetJumpDest();
                     }
                     else
                     {
@@ -4456,7 +4453,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 }
                 else if (bDst->KindIs(BBJ_ALWAYS))
                 {
-                    bOnlyNext = bDst->bbJumpDest;
+                    bOnlyNext = bDst->GetJumpDest();
                 }
                 else
                 {
@@ -4687,7 +4684,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->GetBBJumpKind())
+            switch (bSrc->GetJumpKind())
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
@@ -4763,7 +4760,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     BasicBlock* otherDst;
                     if (bSrc->NextIs(bDst))
                     {
-                        otherDst = bSrc->bbJumpDest;
+                        otherDst = bSrc->GetJumpDest();
                     }
                     else
                     {

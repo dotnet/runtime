@@ -3,17 +3,16 @@
 
 
 using System;
-using System.Threading;
 using System.Collections.Generic;
+using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Reflection.Runtime.General;
-
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
+using System.Threading;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -22,6 +21,12 @@ namespace Internal.Runtime.TypeLoader
 {
     internal class Callbacks : TypeLoaderCallbacks
     {
+        public override bool TryGetOwningTypeForMethodDictionary(IntPtr dictionary, out RuntimeTypeHandle owningType)
+        {
+            // PERF: computing NameAndSignature and the instantiation (that we discard) was useless
+            return TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(dictionary, out owningType, out _, out _);
+        }
+
         public override TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader)
         {
             return ModuleList.Instance.GetModuleForMetadataReader(reader);
@@ -144,13 +149,13 @@ namespace Internal.Runtime.TypeLoader
 
         public void VerifyTypeLoaderLockHeld()
         {
-            if (!_typeLoaderLock.IsAcquired)
+            if (!_typeLoaderLock.IsHeldByCurrentThread)
                 Environment.FailFast("TypeLoaderLock not held");
         }
 
         public void RunUnderTypeLoaderLock(Action action)
         {
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 action();
             }
@@ -160,7 +165,7 @@ namespace Internal.Runtime.TypeLoader
         {
             IntPtr result;
 
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 try
                 {
@@ -191,7 +196,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (type.RuntimeTypeHandle.IsNull())
             {
-                using (LockHolder.Hold(_typeLoaderLock))
+                using (_typeLoaderLock.EnterScope())
                 {
                     // Now that we hold the lock, we may find that existing types can now find
                     // their associated RuntimeTypeHandle. Flush the type builder states as a way
@@ -340,7 +345,7 @@ namespace Internal.Runtime.TypeLoader
             if (TryLookupConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle))
                 return true;
 
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 return TypeBuilder.TryBuildGenericType(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
             }
@@ -351,7 +356,7 @@ namespace Internal.Runtime.TypeLoader
             if (TryLookupFunctionPointerTypeForComponents(returnTypeHandle, parameterHandles, isUnmanaged, out runtimeTypeHandle))
                 return true;
 
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 return TypeBuilder.TryBuildFunctionPointerType(returnTypeHandle, parameterHandles, isUnmanaged, out runtimeTypeHandle);
             }
@@ -390,7 +395,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
 
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 if (isMdArray && (rank < MDArray.MinRank) && (rank > MDArray.MaxRank))
                 {
@@ -432,7 +437,7 @@ namespace Internal.Runtime.TypeLoader
             if (TryGetPointerTypeForTargetType_LookupOnly(pointeeTypeHandle, out pointerTypeHandle))
                 return true;
 
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 if (TypeSystemContext.PointerTypesCache.TryGetValue(pointeeTypeHandle, out pointerTypeHandle))
                     return true;
@@ -461,7 +466,7 @@ namespace Internal.Runtime.TypeLoader
             if (TryGetByRefTypeForTargetType_LookupOnly(pointeeTypeHandle, out byRefTypeHandle))
                 return true;
 
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 if (TypeSystemContext.ByRefTypesCache.TryGetValue(pointeeTypeHandle, out byRefTypeHandle))
                     return true;
@@ -525,7 +530,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
 
-            using (LockHolder.Hold(_typeLoaderLock))
+            using (_typeLoaderLock.EnterScope())
             {
                 bool success = TypeBuilder.TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
 

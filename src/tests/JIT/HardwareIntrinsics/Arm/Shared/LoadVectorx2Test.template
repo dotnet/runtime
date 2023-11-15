@@ -78,7 +78,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     throw new ArgumentException("Invalid value of alignment");
                 }
 
-                this.inArray = new byte[alignment * 2];
+                this.inArray = new byte[alignment * 2 * 2];
                 this.outArray1 = new byte[alignment * 2];
                 this.outArray2 = new byte[alignment * 2];
 
@@ -142,7 +142,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public {TestName}Test()
         {
             Succeeded = true;
-            for (var i = 0; i < OpElementCount; i++) { _data[i] = {NextValueOp2}; }
+            for (var i = 0; i < DestElementCount; i++) { _data[i] = {NextValueOp2}; }
             _dataTable = new DataTable(new {Op1BaseType}[OpElementCount], new {Op1BaseType}[OpElementCount], _data, LargestVectorSize);
         }
 

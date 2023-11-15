@@ -25,6 +25,8 @@ Param(
     [switch] $iOSNativeAOT,
     [switch] $NoDynamicPGO,
     [switch] $PhysicalPromotion,
+    [switch] $NoR2R,
+    [string] $ExperimentName,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
     [switch] $HybridGlobalization,
@@ -92,6 +94,14 @@ if ($PhysicalPromotion) {
     $Configurations += " PhysicalPromotionType=physicalpromotion"
 }
 
+if ($NoR2R) {
+    $Configurations += " R2RType=nor2r"
+}
+
+if ($ExperimentName) {
+    $Configurations += " ExperimentName=$ExperimentName"
+}
+
 if ($iOSMono) {
     $Configurations += " iOSLlvmBuild=$iOSLlvmBuild"
     $Configurations += " iOSStripSymbols=$iOSStripSymbols"
@@ -120,6 +130,14 @@ if ($NoDynamicPGO) {
 
 if ($PhysicalPromotion) {
     $SetupArguments = "$SetupArguments --physical-promotion"
+}
+
+if ($NoR2R) {
+    $SetupArguments = "$SetupArguments --no-r2r"
+}
+
+if ($ExperimentName) {
+    $SetupArguments = "$SetupArguments --experiment-name '$ExperimentName'"
 }
 
 if ($UseLocalCommitTime) {

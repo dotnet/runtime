@@ -723,7 +723,7 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
 }
 
 #define register_opcode_emulation(opcode, name, sig, func, no_wrapper) \
-	(register_opcode_emulation ((opcode), &mono_get_jit_icall_info ()->name, #name, (sig), func, #func, (no_wrapper)))
+	(register_opcode_emulation ((opcode), &mono_get_jit_icall_info ()->name, #name, (sig), (gpointer)func, #func, (no_wrapper)))
 
 /*
  * For JIT icalls implemented in C.
@@ -740,10 +740,10 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  */
 #ifdef DISABLE_JIT
 #define register_icall(func, sig, avoid_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (avoid_wrapper), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, NULL, (sig), (avoid_wrapper), NULL))
 #else
 #define register_icall(func, sig, avoid_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (avoid_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (avoid_wrapper), #func))
 #endif
 
 #define register_icall_no_wrapper(func, sig) register_icall (func, sig, TRUE)
@@ -761,7 +761,7 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  * This also passes last parameter c_symbol=NULL since there is not a directly linkable symbol.
  */
 #define register_dyn_icall(func, name, sig, save) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->name, (func), #name, (sig), (save), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->name, (gconstpointer)func, #name, (sig), (save), NULL))
 
 MonoLMF *
 mono_get_lmf (void)
@@ -5561,4 +5561,29 @@ mono_invoke_runtime_init_callback (void)
 
 		mono_atomic_xchg_i64 ((volatile gint64 *)&runtime_init_thread_id, (gint64)G_MAXUINT64);
 	}
+}
+
+gboolean
+mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
+{
+	if (sig->param_count > 10)
+		return FALSE;
+	if (sig->pinvoke)
+		return FALSE;
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		return FALSE;
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return FALSE;
+	if (!is_llvm_only && method->is_inflated)
+		return FALSE;
+	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
+	return TRUE;
 }

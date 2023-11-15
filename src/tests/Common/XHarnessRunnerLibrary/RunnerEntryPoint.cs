@@ -14,30 +14,33 @@ public static class RunnerEntryPoint
         TestSummary> runTestsCallback,
         string assemblyName,
         string? filter,
-        HashSet<string> testExclusionList)
+        Dictionary<string, string> testExclusionTable)
     {
         // If an exclusion list is passed as a filter, treat it as though no filter is provided here.
         if (filter?.StartsWith("--exclusion-list=") == true)
         {
             filter = null;
         }
+
         ApplicationEntryPoint? entryPoint = null;
+
         if (OperatingSystem.IsAndroid())
         {
-            entryPoint = new AndroidEntryPoint(new SimpleDevice(assemblyName), runTestsCallback, assemblyName, filter, testExclusionList);
+            entryPoint = new AndroidEntryPoint(new SimpleDevice(assemblyName), runTestsCallback, assemblyName, filter, testExclusionTable);
         }
         if (OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
         {
-            entryPoint = new AppleEntryPoint(new SimpleDevice(assemblyName), runTestsCallback, assemblyName, filter, testExclusionList);
+            entryPoint = new AppleEntryPoint(new SimpleDevice(assemblyName), runTestsCallback, assemblyName, filter, testExclusionTable);
         }
         if (OperatingSystem.IsBrowser())
         {
-            entryPoint = new WasmEntryPoint(runTestsCallback, assemblyName, filter, testExclusionList);
+            entryPoint = new WasmEntryPoint(runTestsCallback, assemblyName, filter, testExclusionTable);
         }
         if (entryPoint is null)
         {
             throw new InvalidOperationException("The XHarness runner library test runner is only supported on mobile+wasm platforms. Use the XUnitWrapperLibrary-based runner on desktop platforms.");
         }
+
         bool anyFailedTests = false;
         entryPoint.TestsCompleted += (o, e) => anyFailedTests = e.FailedTests > 0;
         await entryPoint.RunAsync();
@@ -55,20 +58,20 @@ public static class RunnerEntryPoint
         private readonly Func<TestFilter?, TestSummary> _runTestsCallback;
         private readonly string _assemblyName;
         private readonly string? _methodNameToRun;
-        private readonly HashSet<string> _testExclusionList;
+        private readonly Dictionary<string, string> _testExclusionTable;
 
         public AppleEntryPoint(
             IDevice device,
             Func<TestFilter?, TestSummary> runTestsCallback,
             string assemblyName,
             string? methodNameToRun,
-            HashSet<string> testExclusionList)
+            Dictionary<string, string> testExclusionTable)
         {
             Device = device;
             _runTestsCallback = runTestsCallback;
             _assemblyName = assemblyName;
             _methodNameToRun = methodNameToRun;
-            _testExclusionList = testExclusionList;
+            _testExclusionTable = testExclusionTable;
         }
 
         protected override IDevice? Device { get; }
@@ -76,7 +79,7 @@ public static class RunnerEntryPoint
         protected override bool IsXunit => true;
         protected override TestRunner GetTestRunner(LogWriter logWriter)
         {
-            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList, writeBase64TestResults: true);
+            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionTable, writeBase64TestResults: true);
             if (_methodNameToRun is not null)
             {
                 runner.SkipMethod(_methodNameToRun, isExcluded: false);
@@ -93,20 +96,20 @@ public static class RunnerEntryPoint
         private readonly Func<TestFilter?, TestSummary> _runTestsCallback;
         private readonly string _assemblyName;
         private readonly string? _methodNameToRun;
-        private readonly HashSet<string> _testExclusionList;
+        private readonly Dictionary<string, string> _testExclusionTable;
 
         public AndroidEntryPoint(
             IDevice device,
             Func<TestFilter?, TestSummary> runTestsCallback,
             string assemblyName,
             string? methodNameToRun,
-            HashSet<string> testExclusionList)
+            Dictionary<string, string> testExclusionTable)
         {
             Device = device;
             _runTestsCallback = runTestsCallback;
             _assemblyName = assemblyName;
             _methodNameToRun = methodNameToRun;
-            _testExclusionList = testExclusionList;
+            _testExclusionTable = testExclusionTable;
         }
 
         protected override IDevice? Device { get; }
@@ -114,7 +117,7 @@ public static class RunnerEntryPoint
         protected override bool IsXunit => true;
         protected override TestRunner GetTestRunner(LogWriter logWriter)
         {
-            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList, writeBase64TestResults: false);
+            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionTable, writeBase64TestResults: false);
             if (_methodNameToRun is not null)
             {
                 runner.SkipMethod(_methodNameToRun, isExcluded: false);
@@ -145,24 +148,24 @@ public static class RunnerEntryPoint
         private readonly Func<TestFilter?, TestSummary> _runTestsCallback;
         private readonly string _assemblyName;
         private readonly string? _methodNameToRun;
-        private readonly HashSet<string> _testExclusionList;
+        private readonly Dictionary<string, string> _testExclusionTable;
 
         public WasmEntryPoint(
             Func<TestFilter?, TestSummary> runTestsCallback,
             string assemblyName,
             string? methodNameToRun,
-            HashSet<string> testExclusionList)
+            Dictionary<string, string> testExclusionTable)
         {
             _runTestsCallback = runTestsCallback;
             _assemblyName = assemblyName;
             _methodNameToRun = methodNameToRun;
-            _testExclusionList = testExclusionList;
+            _testExclusionTable = testExclusionTable;
         }
         protected override int? MaxParallelThreads => 1;
         protected override bool IsXunit => true;
         protected override TestRunner GetTestRunner(LogWriter logWriter)
         {
-            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList, writeBase64TestResults: true);
+            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionTable, writeBase64TestResults: true);
             if (_methodNameToRun is not null)
             {
                 runner.SkipMethod(_methodNameToRun, isExcluded: false);
@@ -180,7 +183,7 @@ public static class RunnerEntryPoint
             BundleIdentifier = "net.dot." + assemblyName;
         }
 
-        public string BundleIdentifier {get;}
+        public string BundleIdentifier { get; }
 
         public string? UniqueIdentifier { get; }
 

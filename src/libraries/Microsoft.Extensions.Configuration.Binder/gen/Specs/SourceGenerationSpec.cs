@@ -10,5 +10,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public required InterceptorInfo InterceptorInfo { get; init; }
         public required BindingHelperInfo BindingHelperInfo { get; init; }
         public required ImmutableEquatableArray<TypeSpec> ConfigTypes { get; init; }
+        public required bool EmitEnumParseMethod { get; set; }
+        public required bool EmitGenericParseEnum { get; set; }
+        public required bool EmitThrowIfNullMethod { get; set; }
     }
 }

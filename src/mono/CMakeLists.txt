@@ -6,6 +6,7 @@ include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
@@ -17,17 +18,13 @@ if (MSVC)
     add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
 
-  # FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4090>) # W1: const problem
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4100>) # W4: unreferenced formal parameter
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4152>) # W4: nonstandard extension, function/data pointer conversion in expression
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4201>) # W4: nonstandard extension used: nameless struct/union
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4210>) # W4: nonstandard extension used: function given file scope
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4505>) # W4: unreferenced function with internal linkage has been removed
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # W4: unreachable code
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # W4: assignment within conditional expression
+
+  # FIXME we should investigate these mismatches at some point
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -284,6 +281,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W4)   # set warning level 4
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>) # 'struct_name' : structure was padded due to __declspec(align())
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
@@ -304,6 +302,10 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "sunos")
   add_definitions(-DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2)
 elseif(CLR_CMAKE_HOST_OS STREQUAL "freebsd")
   set(HOST_FREEBSD 1)
+elseif(CLR_CMAKE_HOST_OS STREQUAL "haiku")
+  set(HOST_HAIKU 1)
+  add_definitions(-D_GNU_SOURCE -D_BSD_SOURCE -D_REENTRANT)
+  add_definitions(-D_THREAD_SAFE)
 else()
   message(FATAL_ERROR "Host '${CLR_CMAKE_HOST_OS}' not supported.")
 endif()
@@ -368,6 +370,9 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "sunos")
 elseif(TARGET_SYSTEM_NAME STREQUAL "freebsd")
   set(TARGET_UNIX 1)
   set(TARGET_FREEBSD 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "haiku")
+  set(TARGET_UNIX 1)
+  set(TARGET_HAIKU 1)
 else()
   message(FATAL_ERROR "Target '${TARGET_SYSTEM_NAME}' not supported.")
 endif()
@@ -768,6 +773,9 @@ elseif(TARGET_FREEBSD)
   set(HAVE_SYS_ICU 1)
   set(ICU_INCLUDEDIR "${CROSS_ROOTFS}/usr/local/include")
   set(ICU_LIBDIR "${CROSS_ROOTFS}/usr/local/lib")
+elseif(HOST_HAIKU)
+  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
 else()
   message(FATAL_ERROR "Unknown host")
 endif()
@@ -824,7 +832,6 @@ else()
   set(EGLIB_BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
   if(GCC)
     set(EGLIB_GNUC_UNUSED "__attribute__((__unused__))")
-    set(EGLIB_GNUC_NORETURN "__attribute__((__noreturn__))")
     if(HOST_AMD64 OR HOST_X86)
       set(EGLIB_BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
     endif()

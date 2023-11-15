@@ -87,7 +87,7 @@ public static class TestUtils
         if (expected?.Equals(actual) == true)
             return;
 
-        throw new AssertActualExpectedException(
+        throw EqualException.ForMismatchedValues(
             expected, actual,
             $"[{label}]\n");
     }

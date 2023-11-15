@@ -157,6 +157,14 @@ while (($# > 0)); do
       physicalpromotion=true
       shift 1
       ;;
+    --nor2r)
+      nor2r=true
+      shift 1
+      ;;
+    --experimentname)
+      experimentname=$2
+      shift 2
+      ;;
     --compare)
       compare=true
       shift 1
@@ -249,6 +257,8 @@ while (($# > 0)); do
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
       echo "  --physicalpromotion            Set for runs with physical promotion"
+      echo "  --nor2r                        Set for No R2R runs"
+      echo "  --experimentname <value>       Set Experiment Name"
       echo ""
       exit 1
       ;;
@@ -371,7 +381,15 @@ if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
 
-if [[ "${hybridglobalization,,}" == "true" ]]; then # convert to lowercase to test
+if [[ "$nor2r" == "true" ]]; then
+    configurations="$configurations R2RType=nor2r"
+fi
+
+if [[ ! -z "$experimentname" ]]; then
+    configurations="$configurations ExperimentName=$experimentname"
+fi
+
+if [[ "$(echo "$hybridglobalization" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then # convert to lowercase to test
     configurations="$configurations HybridGlobalization=True" # Force True for consistency
 fi
 
@@ -421,7 +439,7 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     using_wasm=true
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
-    wasm_args="--experimental-wasm-eh --expose_wasm"
+    wasm_args="--expose_wasm"
     if [ "$javascript_engine" == "v8" ]; then
         # for es6 module support
         wasm_args="$wasm_args --module"
@@ -464,6 +482,14 @@ fi
 
 if [[ "$physicalpromotion" == "true" ]]; then
     setup_arguments="$setup_arguments --physical-promotion"
+fi
+
+if [[ "$nor2r" == "true" ]]; then
+    setup_arguments="$setup_arguments --no-r2r"
+fi
+
+if [[ ! -z "$experimentname" ]]; then
+    setup_arguments="$setup_arguments --experiment-name '$experimentname'"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

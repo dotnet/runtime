@@ -2,18 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime;
 
 namespace Internal.Runtime
 {
     // Extensions to MethodTable that are specific to the use in the CoreLib.
     internal unsafe partial struct MethodTable
     {
-#if !INPLACE_RUNTIME
-        internal static MethodTable* GetArrayEEType()
+        internal MethodTable* GetArrayEEType()
         {
-
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
+            return MethodTable.Of<Array>();
         }
-#endif
+
+        internal Exception GetClasslibException(ExceptionIDs id)
+        {
+            return RuntimeExceptionHelpers.GetRuntimeException(id);
+        }
     }
 }

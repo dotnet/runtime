@@ -2,4 +2,19 @@
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <UseAppHost Condition="'$(UseAppHost)' == '' and '$(SelfContained)' != 'true'">false</UseAppHost>
+  </PropertyGroup>
+
+  <!-- Override target from targetingpacks.targets. Use Version instead of ProductVersion (written into runtimeconfig.json).
+       Host tests are run against the built shared framework that has the normal version (with suffixes)  -->
+  <Target Name="UpdateRuntimeFrameworkVersion"
+          Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <RuntimeFramework Version="$(Version)"
+                        Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
+    </ItemGroup>
+  </Target>
 </Project>
