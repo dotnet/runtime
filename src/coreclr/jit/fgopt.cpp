@@ -1541,10 +1541,6 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 // cur->bbNext or cur->bbPrev in the code that
                 // follows.
                 fgUnlinkBlock(cur);
-                if (!cur->IsFirst() && (nxt != nullptr) && cur->Prev()->bbFallsThrough())
-                {
-                    fgAddRefPred(nxt, cur->Prev());
-                }
             }
             else
             {
