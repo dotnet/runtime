@@ -7,7 +7,7 @@
     <MinorVersion>0</MinorVersion>
     <PatchVersion>1</PatchVersion>
     <SdkBandVersion>8.0.100</SdkBandVersion>
-    <PackageVersionNet7>7.0.14</PackageVersionNet7>
+    <PackageVersionNet7>7.0.$([MSBuild]::Add($(PatchVersion),14))</PackageVersionNet7>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet7)').Build),11))</PackageVersionNet6>
     <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>
@@ -85,7 +85,7 @@
   <PropertyGroup>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
-    <MicrosoftDotNetApiCompatTaskVersion>8.0.100-rtm.23520.8</MicrosoftDotNetApiCompatTaskVersion>
+    <MicrosoftDotNetApiCompatTaskVersion>8.0.100</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23556.5</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23556.5</MicrosoftDotNetCodeAnalysisVersion>
@@ -127,7 +127,7 @@
     <SystemCollectionsImmutableVersion>7.0.0</SystemCollectionsImmutableVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
     <SystemDataSqlClientVersion>4.8.5</SystemDataSqlClientVersion>
-    <SystemDrawingCommonVersion>7.0.0</SystemDrawingCommonVersion>
+    <SystemDrawingCommonVersion>8.0.0</SystemDrawingCommonVersion>
     <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
     <SystemReflectionMetadataVersion>7.0.0</SystemReflectionMetadataVersion>
