@@ -33,6 +33,7 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 
     return error;
 #else
+    (void)fd;
     memset(windowSize, 0, sizeof(WinSize)); // managed out param must be initialized
     errno = ENOTSUP;
     return -1;

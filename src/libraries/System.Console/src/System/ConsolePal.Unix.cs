@@ -969,6 +969,9 @@ namespace System
         }
 
         /// <summary>Writes data from the buffer into the file descriptor.</summary>
+        /// <param name="fd">The file descriptor.</param>
+        /// <param name="buffer">The buffer from which to write data.</param>
+        /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
         private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
             fixed (byte* p = buffer)

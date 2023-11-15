@@ -25,6 +25,7 @@
 
 int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 {
+    (void)fd;
     assert(windowSize != NULL);
     memset(windowSize, 0, sizeof(WinSize)); // managed out param must be initialized
     errno = ENOTSUP;
@@ -46,6 +47,7 @@ int32_t SystemNative_IsATty(intptr_t fd)
 DEBUGNOTRETURN
 void SystemNative_SetKeypadXmit(intptr_t fd, const char* terminfoString)
 {
+    (void)fd;
     assert(terminfoString != NULL);
     assert_msg(false, "Not supported on WASI", 0);
 }
