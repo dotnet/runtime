@@ -13,9 +13,9 @@
 #pragma warning disable IDE0036, SA1129
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
 

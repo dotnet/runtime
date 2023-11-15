@@ -71,7 +71,7 @@ namespace System.Runtime
         /// <see cref="DependentHandle(object?, object?)"/> and has not yet been disposed.
         /// </summary>
         /// <remarks>This property is thread-safe.</remarks>
-        public bool IsAllocated => (nint)_handle != 0;
+        public readonly bool IsAllocated => (nint)_handle != 0;
 
         /// <summary>
         /// Gets or sets the target object instance for the current handle. The target can only be set to a <see langword="null"/> value
@@ -83,7 +83,7 @@ namespace System.Runtime
         /// <remarks>This property is thread-safe.</remarks>
         public object? Target
         {
-            get
+            readonly get
             {
                 IntPtr handle = _handle;
 
@@ -120,7 +120,7 @@ namespace System.Runtime
         /// <remarks>This property is thread-safe.</remarks>
         public object? Dependent
         {
-            get
+            readonly get
             {
                 IntPtr handle = _handle;
 
@@ -154,7 +154,7 @@ namespace System.Runtime
         /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
         /// <remarks>This property is thread-safe.</remarks>
-        public (object? Target, object? Dependent) TargetAndDependent
+        public readonly (object? Target, object? Dependent) TargetAndDependent
         {
             get
             {
@@ -176,7 +176,7 @@ namespace System.Runtime
         /// </summary>
         /// <returns>The target object instance, if present.</returns>
         /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
-        internal object? UnsafeGetTarget()
+        internal readonly object? UnsafeGetTarget()
         {
             return InternalGetTarget(_handle);
         }
@@ -191,7 +191,7 @@ namespace System.Runtime
         /// The signature is also kept the same as the one for the internal call, to improve the codegen.
         /// Note that <paramref name="dependent"/> is required to be on the stack (or it might not be tracked).
         /// </remarks>
-        internal object? UnsafeGetTargetAndDependent(out object? dependent)
+        internal readonly object? UnsafeGetTargetAndDependent(out object? dependent)
         {
             return InternalGetTargetAndDependent(_handle, out dependent);
         }
@@ -200,7 +200,7 @@ namespace System.Runtime
         /// Sets the dependent object instance for the current handle to <see langword="null"/>.
         /// </summary>
         /// <remarks>This method mirrors the <see cref="Target"/> setter, but without allocation and input checks.</remarks>
-        internal void UnsafeSetTargetToNull()
+        internal readonly void UnsafeSetTargetToNull()
         {
             InternalSetTargetToNull(_handle);
         }
@@ -209,7 +209,7 @@ namespace System.Runtime
         /// Sets the dependent object instance for the current handle.
         /// </summary>
         /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
-        internal void UnsafeSetDependent(object? dependent)
+        internal readonly void UnsafeSetDependent(object? dependent)
         {
             InternalSetDependent(_handle, dependent);
         }

@@ -1082,7 +1082,9 @@ namespace System.Tests
             Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_Division(Int128MaxValuePlusOne, 2U));
             Assert.Equal(Int128MaxValue, DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_Division(MaxValue, 2U));
 
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_Division(Zero, 0U));
             Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_Division(One, 0U));
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_Division(MaxValue, 0U));
         }
 
         [Fact]
@@ -1094,7 +1096,9 @@ namespace System.Tests
             Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_CheckedDivision(Int128MaxValuePlusOne, 2U));
             Assert.Equal(Int128MaxValue, DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_CheckedDivision(MaxValue, 2U));
 
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_CheckedDivision(Zero, 0U));
             Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_CheckedDivision(One, 0U));
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<UInt128, UInt128, UInt128>.op_CheckedDivision(MaxValue, 0U));
         }
 
         //

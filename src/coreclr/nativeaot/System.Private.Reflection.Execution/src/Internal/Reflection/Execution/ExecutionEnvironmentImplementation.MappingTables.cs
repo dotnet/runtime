@@ -1,30 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
-
-using global::Internal.Runtime.Augments;
-using global::Internal.Runtime.CompilerServices;
-using global::Internal.Runtime.TypeLoader;
-
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Execution.MethodInvokers;
-using global::Internal.Reflection.Execution.FieldAccessors;
-
-using global::Internal.Metadata.NativeFormat;
-
-using global::System.Runtime.InteropServices;
-
-using global::Internal.Runtime;
-using global::Internal.NativeFormat;
-
 using System.Reflection.Runtime.General;
 using System.Threading;
 
-using CanonicalFormKind = global::Internal.TypeSystem.CanonicalFormKind;
+using global::Internal.Metadata.NativeFormat;
+using global::Internal.NativeFormat;
+using global::Internal.Reflection.Core.Execution;
+using global::Internal.Reflection.Execution.FieldAccessors;
+using global::Internal.Reflection.Execution.MethodInvokers;
+using global::Internal.Runtime;
+using global::Internal.Runtime.Augments;
+using global::Internal.Runtime.CompilerServices;
+using global::Internal.Runtime.TypeLoader;
+using global::System;
+using global::System.Collections.Generic;
+using global::System.Reflection;
+using global::System.Runtime.InteropServices;
 
+using CanonicalFormKind = global::Internal.TypeSystem.CanonicalFormKind;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
