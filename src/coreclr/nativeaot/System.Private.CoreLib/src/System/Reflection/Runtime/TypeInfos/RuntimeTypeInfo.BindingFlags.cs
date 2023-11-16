@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.General;
 
 namespace System.Reflection.Runtime.TypeInfos
 {

@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
 using System.Collections.Generic;
-using Debug = System.Diagnostics.Debug;
+using System.Reflection;
+using System.Text;
 
 using global::Internal.Metadata.NativeFormat;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.TypeLoader
 {

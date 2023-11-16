@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Xml;
 using System.Collections;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization; // For SR
 using System.Security;
 using System.Text;
-using System.Globalization;
+using System.Xml;
 
 
 namespace System.Xml
