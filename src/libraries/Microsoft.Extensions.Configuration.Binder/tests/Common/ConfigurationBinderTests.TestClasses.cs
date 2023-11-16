@@ -112,17 +112,41 @@ namespace Microsoft.Extensions
 
         public record RecordWhereParametersHaveDefaultValue(string Name, string Address, int Age = 42);
 
-        public record ClassWhereParametersHaveDefaultValue
+        public class ClassWhereParametersHaveDefaultValue
         {
             public string? Name { get; }
             public string Address { get; }
             public int Age { get; }
+            public float F { get; }
+            public double D { get; }
+            public decimal M { get; }
+            public StringComparison SC { get; }
+            public char C { get; }
+            public int? NAge { get; }
+            public float? NF { get; }
+            public double? ND { get; }
+            public decimal? NM { get; }
+            public StringComparison? NSC { get; }
+            public char? NC { get; }
 
-            public ClassWhereParametersHaveDefaultValue(string? name, string address, int age = 42)
+            public ClassWhereParametersHaveDefaultValue(string? name = "John Doe", string address = "1 Microsoft Way",
+                int age = 42, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M, StringComparison sc = StringComparison.Ordinal, char c = 'q',
+                int? nage = 42, float? nf = 42.0f, double? nd = 3.14159, decimal? nm = 3.1415926535897932384626433M, StringComparison? nsc = StringComparison.Ordinal, char? nc = 'q')
             {
                 Name = name;
                 Address = address;
                 Age = age;
+                F = f;
+                D = d;
+                M = m;
+                SC = sc;
+                C = c;
+                NAge = nage;
+                NF = nf;
+                ND = nd;
+                NM = nm;
+                NSC = nsc;
+                NC = nc;
             }
         }
 
@@ -132,6 +156,13 @@ namespace Microsoft.Extensions
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorDefaultValues(string color = "blue", int length = 15, decimal height = 5.946238490567943927384M, EditorBrowsableState eb = EditorBrowsableState.Never)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+            public decimal Height { get; } = height;
+            public EditorBrowsableState EB { get;} = eb;
+        }
         public record RecordTypeOptions(string Color, int Length);
 
         public record Line(string Color, int Length, int Thickness);

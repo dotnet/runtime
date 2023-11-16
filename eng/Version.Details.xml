@@ -99,9 +99,9 @@
       <Sha>0af50f733332e8c148f7f2debef2cb90504840d5</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.23516.4">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.23556.3">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>b4fa7f2e1e65ef49881be2ab2df27624280a8c55</Sha>
+      <Sha>fa4c0e8f53ef2541a23e519af4dfb86cb88e1bae</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.23518.1">
@@ -338,25 +338,25 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>0aaeafef60933f87b0b50350313bb2fd77defb5d</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23561.3">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23565.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>c68e08c656a1e9b058fe22cc0546dbbd245c85fb</Sha>
+      <Sha>5914dbda1860830a56179692058d94c9f615deda</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.23561.3">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.23565.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>c68e08c656a1e9b058fe22cc0546dbbd245c85fb</Sha>
+      <Sha>5914dbda1860830a56179692058d94c9f615deda</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.23561.3">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.23565.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>c68e08c656a1e9b058fe22cc0546dbbd245c85fb</Sha>
+      <Sha>5914dbda1860830a56179692058d94c9f615deda</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.23561.3">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.23565.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>c68e08c656a1e9b058fe22cc0546dbbd245c85fb</Sha>
+      <Sha>5914dbda1860830a56179692058d94c9f615deda</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23523.2">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23563.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>8e108a21d0c7d8fa2050a1bdd4d4ba50d2b8df13</Sha>
+      <Sha>12d02e5c2310be6460f896bc3aeb0ddf1e8926bc</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="8.0.0-beta.23558.5">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -383,18 +383,22 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>b4d9a1334d5189172977ba8fddd00bda70161e4a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-rtm.23520.8">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>7e33fd449381b337c290a801057fdcd68c4b7220</Sha>
+      <Sha>e9d13cbe7e8c1d52ce276a8655f52a87e1017c46</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="8.0.100-rtm.23551.6">
+      <Uri>https://github.com/dotnet/sdk</Uri>
+      <Sha>e9d13cbe7e8c1d52ce276a8655f52a87e1017c46</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23561.3">
+    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23565.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>c68e08c656a1e9b058fe22cc0546dbbd245c85fb</Sha>
+      <Sha>5914dbda1860830a56179692058d94c9f615deda</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23561.3">
+    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23565.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>c68e08c656a1e9b058fe22cc0546dbbd245c85fb</Sha>
+      <Sha>5914dbda1860830a56179692058d94c9f615deda</Sha>
     </Dependency>
     <!-- Necessary for source-build. This allows the package to be retrieved from previously-source-built artifacts
          and flow in as dependencies of the packages produced by runtime. -->
