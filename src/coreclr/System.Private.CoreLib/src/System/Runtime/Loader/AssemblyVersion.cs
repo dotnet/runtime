@@ -3,7 +3,7 @@
 
 namespace System.Runtime.Loader
 {
-    internal record struct AssemblyVersion
+    internal struct AssemblyVersion : IEquatable<AssemblyVersion>
     {
         public int Major;
         public int Minor;
@@ -27,5 +27,16 @@ namespace System.Runtime.Loader
         public bool HasBuild => Build != Unspecified;
 
         public bool HasRevision => Revision != Unspecified;
+
+        public bool Equals(AssemblyVersion other) =>
+            Major == other.Major &&
+            Minor == other.Minor &&
+            Build == other.Build &&
+            Revision == other.Revision;
+
+        public override bool Equals(object? obj)
+            => obj is AssemblyVersion other && Equals(other);
+
+        public override int GetHashCode() => HashCode.Combine(Major, Minor, Build, Revision);
     }
 }

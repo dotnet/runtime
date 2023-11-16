@@ -349,7 +349,7 @@ namespace System.Runtime.Loader
 
                 if (fEquals && ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_VERSION) != 0))
                 {
-                    fEquals = Version == other.Version;
+                    fEquals = Version.Equals(other.Version);
                 }
 
                 if (fEquals && ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_RETARGETABLE) != 0))

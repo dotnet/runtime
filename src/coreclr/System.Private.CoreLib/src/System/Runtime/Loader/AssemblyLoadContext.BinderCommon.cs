@@ -301,14 +301,14 @@ namespace System.Runtime.Loader
         {
             // Look for already cached binding failure (ignore PA, every PA will lock the context)
 
-            if (applicationContext.FailureCache.TryGetValue(new FailureCacheKey(assemblyName), out int hr))
+            if (applicationContext.FailureCache.TryGetValue((assemblyName.SimpleName, assemblyName.Version), out int hr))
             {
                 if (hr < 0) // FAILED(hr)
                 {
                     if (hr == HResults.E_FILENOTFOUND && skipFailureChecking)
                     {
                         // Ignore pre-existing transient bind error (re-bind will succeed)
-                        applicationContext.FailureCache.Remove(new FailureCacheKey(assemblyName));
+                        applicationContext.FailureCache.Remove((assemblyName.SimpleName, assemblyName.Version));
                     }
 
                     return hr; // goto LogExit
@@ -929,7 +929,7 @@ namespace System.Runtime.Loader
             Debug.Assert(bindResult.Assembly.AssemblyName != null);
 
             // Look for already cached binding failure (ignore PA, every PA will lock the context)
-            if (!applicationContext.FailureCache.ContainsKey(new FailureCacheKey(bindResult.Assembly.AssemblyName))) // hr == S_OK
+            if (!applicationContext.FailureCache.ContainsKey((bindResult.Assembly.AssemblyName.SimpleName, bindResult.Assembly.AssemblyName.Version))) // hr == S_OK
             {
                 int hr = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName, out BinderAssembly? assembly);
                 if (hr >= 0 && assembly != null)
