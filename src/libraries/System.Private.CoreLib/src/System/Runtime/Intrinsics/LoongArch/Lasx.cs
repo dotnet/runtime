@@ -143,8 +143,8 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector256<sbyte> Multiply(Vector256<sbyte> left, Vector256<sbyte> right) => Multiply(left, right);
 
         /// <summary>
-        /// uint8x32_t TODO_u8 (uint8x32_t a, uint8x32_t b)
-        ///   LASX: TODO Xd.32B, Xj.32B, Xk.32B
+        /// uint8x32_t xvmul_b_u8 (uint8x32_t a, uint8x32_t b)
+        ///   LASX: XVMUL.B Xd.32B, Xj.32B, Xk.32B
         /// </summary>
         public static Vector256<byte> Multiply(Vector256<byte> left, Vector256<byte> right) => Multiply(left, right);
 
@@ -155,20 +155,20 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector256<short> Multiply(Vector256<short> left, Vector256<short> right) => Multiply(left, right);
 
         /// <summary>
-        /// uint16x16_t TODO_u16 (uint16x16_t a, uint16x16_t b)
-        ///   LASX: TODO Xd.16H, Xj.16H, Xk.16H
+        /// uint16x16_t xvmul_h_u16 (uint16x16_t a, uint16x16_t b)
+        ///   LASX: XVMUL.H Xd.16H, Xj.16H, Xk.16H
         /// </summary>
         public static Vector256<ushort> Multiply(Vector256<ushort> left, Vector256<ushort> right) => Multiply(left, right);
 
         /// <summary>
         /// int32x8_t xvmul_w_s32 (int32x8_t a, int32x8_t b)
-        ///   LASX: XVMULW Xd.8S, Xj.8S, Xk.8S
+        ///   LASX: XVMULW Xd.8W, Xj.8W, Xk.8W
         /// </summary>
         public static Vector256<int> Multiply(Vector256<int> left, Vector256<int> right) => Multiply(left, right);
 
         /// <summary>
-        /// uint32x8_t TODO_u32 (uint32x8_t a, uint32x8_t b)
-        ///   LASX: TODO Xd.8S, Xj.8S, Xk.8S
+        /// uint32x8_t xvmul_w_u32 (uint32x8_t a, uint32x8_t b)
+        ///   LASX: XVMUL.W Xd.8W, Xj.8W, Xk.8W
         /// </summary>
         public static Vector256<uint> Multiply(Vector256<uint> left, Vector256<uint> right) => Multiply(left, right);
 
@@ -179,8 +179,8 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector256<long> Multiply(Vector256<long> left, Vector256<long> right) => Multiply(left, right);
 
         /// <summary>
-        /// uint64x4_t TODO_u64 (uint64x4_t a, uint64x4_t b)
-        ///   LASX: TODO Xd.4D, Xj.4D, Xk.4D
+        /// uint64x4_t xvmul_d_u64 (uint64x4_t a, uint64x4_t b)
+        ///   LASX: XVMUL.D Xd.4D, Xj.4D, Xk.4D
         /// </summary>
         public static Vector256<ulong> Multiply(Vector256<ulong> left, Vector256<ulong> right) => Multiply(left, right);
 
@@ -195,6 +195,54 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LASX: XVFMUL.D Xd.4D, Xj.4D, Xk.4D
         /// </summary>
         public static Vector256<double> Multiply(Vector256<double> left, Vector256<double> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int8x32_t xvmuh_b_s8 (int8x32_t a, int8x32_t b)
+        ///   LASX: XVMUH.B Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector256<sbyte> MultiplyHight(Vector256<sbyte> left, Vector256<sbyte> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// uint8x32_t xvmuh_bu_u8 (uint8x32_t a, uint8x32_t b)
+        ///   LASX: XVMUH.BU Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector256<byte> MultiplyHight(Vector256<byte> left, Vector256<byte> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// int16x16_t xvmuh_h_s16 (int16x16_t a, int16x16_t b)
+        ///   LASX: XVMUH.H Vd.16H, Vj.16H, Vk.16H
+        /// </summary>
+        public static Vector256<short> MultiplyHight(Vector256<short> left, Vector256<short> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// uint16x16_t xvmuh_hu_u16 (uint16x16_t a, uint16x16_t b)
+        ///   LASX: XVMUH.HU Vd.16H, Vj.16H, Vk.16H
+        /// </summary>
+        public static Vector256<ushort> MultiplyHight(Vector256<ushort> left, Vector256<ushort> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// int32x8_t xvmuh_w_s32 (int32x8_t a, int32x8_t b)
+        ///   LASX: VMUL.W Vd.8W, Vj.8W, Vk.8W
+        /// </summary>
+        public static Vector256<int> MultiplyHight(Vector256<int> left, Vector256<int> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// uint32x8_t xvmuh_wu_u32 (uint32x8_t a, uint32x8_t b)
+        ///   LASX: XVMUH.WU Vd.8W, Vj.8W, Vk.8W
+        /// </summary>
+        public static Vector256<uint> MultiplyHight(Vector256<uint> left, Vector256<uint> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// int64x4_t xvmuh_d_s64 (int64x4_t a, int64x4_t b)
+        ///   LASX: XVMUH.D Vd.4D, Vj.4D, Vk.4D
+        /// </summary>
+        public static Vector256<long> MultiplyHight(Vector256<long> left, Vector256<long> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// uint64x4_t xvmuh_du_u64 (uint64x4_t a, uint64x4_t b)
+        ///   LASX: XVMUH.DU Vd.4D, Vj.4D, Vk.4D
+        /// </summary>
+        public static Vector256<ulong> MultiplyHight(Vector256<ulong> left, Vector256<ulong> right) => MultiplyHight(left, right);
 
         /// <summary>
         /// int8x32_t xvdiv_b_s8 (int8x32_t a, int8x32_t b)
@@ -222,13 +270,13 @@ namespace System.Runtime.Intrinsics.LoongArch
 
         /// <summary>
         /// int32x8_t xvdiv_w_s32 (int32x8_t a, int32x8_t b)
-        ///   LASX: XVDIV.WU Xd.8S, Xj.8S, Xk.8S
+        ///   LASX: XVDIV.W Xd.8W, Xj.8W, Xk.8W
         /// </summary>
         public static Vector256<int> Divide(Vector256<int> left, Vector256<int> right) => Divide(left, right);
 
         /// <summary>
         /// uint32x8_t xvdiv_wu_u32 (uint32x8_t a, uint32x8_t b)
-        ///   LASX: XVDIV.WU Xd.8S, Xj.8S, Xk.8S
+        ///   LASX: XVDIV.WU Xd.8W, Xj.8W, Xk.8W
         /// </summary>
         public static Vector256<uint> Divide(Vector256<uint> left, Vector256<uint> right) => Divide(left, right);
 
@@ -255,6 +303,54 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LASX: XVFDIV.D Xd.4D, Xj.4D, Xk.4D
         /// </summary>
         public static Vector256<double> Divide(Vector256<double> left, Vector256<double> right) => Divide(left, right);
+
+        /// <summary>
+        /// int8x32_t xvmod_b_s8 (int8x32_t a, int8x32_t b)
+        ///   LASX: XVMOD.B Xd.32B, Xj.32B, Xk.32B
+        /// </summary>
+        public static Vector256<sbyte> Modulo(Vector256<sbyte> left, Vector256<sbyte> right) => Modulo(left, right);
+
+        /// <summary>
+        /// uint8x32_t xvmod_bu_u8 (uint8x32_t a, uint8x32_t b)
+        ///   LASX: XVMOD.BU Xd.32B, Xj.32B, Xk.32B
+        /// </summary>
+        public static Vector256<byte> Modulo(Vector256<byte> left, Vector256<byte> right) => Modulo(left, right);
+
+        /// <summary>
+        /// int16x16_t xvmod_h_s16 (int16x16_t a, int16x16_t b)
+        ///   LASX: XVMOD.H Xd.16H, Xj.16H, Xk.16H
+        /// </summary>
+        public static Vector256<short> Modulo(Vector256<short> left, Vector256<short> right) => Modulo(left, right);
+
+        /// <summary>
+        /// uint16x16_t xvmod_hu_u16 (uint16x16_t a, uint16x16_t b)
+        ///   LASX: XVMOD.HU Xd.16H, Xj.16H, Xk.16H
+        /// </summary>
+        public static Vector256<ushort> Modulo(Vector256<ushort> left, Vector256<ushort> right) => Modulo(left, right);
+
+        /// <summary>
+        /// int32x8_t xvmod_w_s32 (int32x8_t a, int32x8_t b)
+        ///   LASX: XVMOD.W Xd.8W, Xj.8W, Xk.8W
+        /// </summary>
+        public static Vector256<int> Modulo(Vector256<int> left, Vector256<int> right) => Modulo(left, right);
+
+        /// <summary>
+        /// uint32x8_t xvmod_wu_u32 (uint32x8_t a, uint32x8_t b)
+        ///   LASX: XVMOD.WU Xd.8W, Xj.8W, Xk.8W
+        /// </summary>
+        public static Vector256<uint> Modulo(Vector256<uint> left, Vector256<uint> right) => Modulo(left, right);
+
+        /// <summary>
+        /// int64x4_t xvmod_d_s64 (int64x4_t a, int64x4_t b)
+        ///   LASX: XVMOD.D Xd.4D, Xj.4D, Xk.4D
+        /// </summary>
+        public static Vector256<long> Modulo(Vector256<long> left, Vector256<long> right) => Modulo(left, right);
+
+        /// <summary>
+        /// uint64x4_t xvmod_du_u64 (uint64x4_t a, uint64x4_t b)
+        ///   LASX: XVMOD.DU Xd.4D, Xj.4D, Xk.4D
+        /// </summary>
+        public static Vector256<ulong> Modulo(Vector256<ulong> left, Vector256<ulong> right) => Modulo(left, right);
 
         /// <summary>
         /// float32x8_t xvfmadd_s_f32 (float32x8_t a, float32x8_t b, float32x8_t c)
@@ -1182,7 +1278,7 @@ namespace System.Runtime.Intrinsics.LoongArch
 
         /// <summary>
         /// void xvst_f32 (float32_t * ptr, float32x8_t val)
-        ///   LASX: XVST { Xd.8S }, Rj, si12
+        ///   LASX: XVST { Xd.8W }, Rj, si12
         /// </summary>
         public static unsafe void Store(float* address, Vector256<float> source) => Store(address, source);
 
@@ -1206,7 +1302,7 @@ namespace System.Runtime.Intrinsics.LoongArch
 
         /// <summary>
         /// int32x8_t xvneg_w_s32 (int32x8_t a)
-        ///   LASX: XVNEG.W Xd.8S, Xj.8S
+        ///   LASX: XVNEG.W Xd.8W, Xj.8W
         /// </summary>
         public static Vector256<int> Negate(Vector256<int> value) => Negate(value);
 
@@ -1244,37 +1340,145 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x16_t xvmulwod_h_b_s8 (int8x32_t a, int8x32_t b)
         ///   LASX: XVMULWOD.H.B Xd.16H, Xj.32B, Xk.32B
         /// </summary>
-        public static Vector256<short> MultiplyWideningUpper(Vector256<sbyte> left, Vector256<sbyte> right) => MultiplyWideningUpper(left, right);
-
-        /// <summary>
-        /// uint16x16_t xvmulwod_h_bu_u8 (uint8x32_t a, uint8x32_t b)
-        ///   LASX: XVMULWOD.H.BU Xd.16H, Xj.32B, Xk.32B
-        /// </summary>
-        public static Vector256<ushort> MultiplyWideningUpper(Vector256<byte> left, Vector256<byte> right) => MultiplyWideningUpper(left, right);
+        public static Vector256<short> MultiplyWideningOdd(Vector256<sbyte> left, Vector256<sbyte> right) => MultiplyWideningOdd(left, right);
 
         /// <summary>
         /// int32x8_t xvmulwod_w_h_s16 (int16x16_t a, int16x16_t b)
-        ///   LASX: XVMULWOD.W.H Xd.8S, Xj.16H, Xk.16H
+        ///   LASX: XVMULWOD.W.H Xd.8W, Xj.16H, Xk.16H
         /// </summary>
-        public static Vector256<int> MultiplyWideningUpper(Vector256<short> left, Vector256<short> right) => MultiplyWideningUpper(left, right);
-
-        /// <summary>
-        /// uint32x8_t xvmulwod_w_hu_u16 (uint16x16_t a, uint16x16_t b)
-        ///   LASX: XVMULWOD.W.HU Xd.8S, Xj.16H, Xk.16H
-        /// </summary>
-        public static Vector256<uint> MultiplyWideningUpper(Vector256<ushort> left, Vector256<ushort> right) => MultiplyWideningUpper(left, right);
+        public static Vector256<int> MultiplyWideningOdd(Vector256<short> left, Vector256<short> right) => MultiplyWideningOdd(left, right);
 
         /// <summary>
         /// int64x4_t xvmulwod_d_w_s32 (int32x8_t a, int32x8_t b)
-        ///   LASX: XVMULWOD.D.W Xd.4D, Xj.8S, Xk.8S
+        ///   LASX: XVMULWOD.D.W Xd.4D, Xj.8W, Xk.8W
         /// </summary>
-        public static Vector256<long> MultiplyWideningUpper(Vector256<int> left, Vector256<int> right) => MultiplyWideningUpper(left, right);
+        public static Vector256<long> MultiplyWideningOdd(Vector256<int> left, Vector256<int> right) => MultiplyWideningOdd(left, right);
 
         /// <summary>
-        /// uint64x4_t xvmulwod_d_wu_u32 (uint32x8_t a, uint32x8_t b)
-        ///   LASX: XVMULWOD.D.WU Xd.4D, Xj.8S, Xk.8S
+        /// int128x2_t xvmulwod_q_d_s64 (int64x4_t a, int64x4_t b)
+        ///   LASX: XVMULWOD.Q.D Xd.2Q, Xj.4D, Xk.4D
         /// </summary>
-        public static Vector256<ulong> MultiplyWideningUpper(Vector256<uint> left, Vector256<uint> right) => MultiplyWideningUpper(left, right);
+        public static Vector256<long> MultiplyWideningOdd(Vector256<long> left, Vector256<long> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int16x16_t xvmulwev_h_b_s8 (int8x32_t a, int8x32_t b)
+        ///   LASX: XVMULWEV.H.B Xd.16H, Xj.32B, Xk.32B
+        /// </summary>
+        public static Vector256<short> MultiplyWideningEven(Vector256<sbyte> left, Vector256<sbyte> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int32x8_t xvmulwev_w_h_s16 (int16x16_t a, int16x16_t b)
+        ///   LASX: XVMULWEV.W.H Xd.8W, Xj.16H, Xk.16H
+        /// </summary>
+        public static Vector256<int> MultiplyWideningEven(Vector256<short> left, Vector256<short> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int64x4_t xvmulwev_d_w_s32 (int32x8_t a, int32x8_t b)
+        ///   LASX: XVMULWEV.D.W Xd.4D, Xj.8W, Xk.8W
+        /// </summary>
+        public static Vector256<long> MultiplyWideningEven(Vector256<int> left, Vector256<int> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int128x2_t xvmulwev_q_d_s64 (int64x4_t a, int64x4_t b)
+        ///   LASX: XVMULWEV.Q.D Xd.2Q, Xj.4D, Xk.4D
+        /// </summary>
+        public static Vector256<long> MultiplyWideningEven(Vector256<long> left, Vector256<long> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// uint16x16_t xvmulwod_hu_bu_u8 (uint8x32_t a, uint8x32_t b)
+        ///   LASX: XVMULWOD.H.BU Xd.16H, Xj.32B, Xk.32B
+        /// </summary>
+        public static Vector256<ushort> MultiplyWideningOdd(Vector256<byte> left, Vector256<byte> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// uint32x8_t xvmulwod_wu_hu_u16 (uint16x16_t a, uint16x16_t b)
+        ///   LASX: XVMULWOD.W.HU Xd.8W, Xj.16H, Xk.16H
+        /// </summary>
+        public static Vector256<uint> MultiplyWideningOdd(Vector256<ushort> left, Vector256<ushort> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// uint64x4_t xvmulwod_du_wu_u32 (uint32x8_t a, uint32x8_t b)
+        ///   LASX: XVMULWOD.D.WU Xd.4D, Xj.8W, Xk.8W
+        /// </summary>
+        public static Vector256<ulong> MultiplyWideningOdd(Vector256<uint> left, Vector256<uint> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// uint128x2_t xvmulwod_qu_du_u64 (uint64x4_t a, uint64x4_t b)
+        ///   LASX: XVMULWOD.Q.DU Xd.2Q, Xj.4D, Xk.4D
+        /// </summary>
+        public static Vector256<ulong> MultiplyWideningOdd(Vector256<ulong> left, Vector256<ulong> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// uint16x16_t xvmulwev_hu_bu_u8 (uint8x32_t a, uint8x32_t b)
+        ///   LASX: XVMULWEV.H.BU Xd.16H, Xj.32B, Xk.32B
+        /// </summary>
+        public static Vector256<ushort> MultiplyWideningEven(Vector256<byte> left, Vector256<byte> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// uint32x8_t xvmulwev_wu_hu_u16 (uint16x16_t a, uint16x16_t b)
+        ///   LASX: XVMULWEV.W.HU Xd.8W, Xj.16H, Xk.16H
+        /// </summary>
+        public static Vector256<uint> MultiplyWideningEven(Vector256<ushort> left, Vector256<ushort> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// uint64x4_t xvmulwev_du_wu_u32 (uint32x8_t a, uint32x8_t b)
+        ///   LASX: XVMULWEV.D.WU Xd.4D, Xj.8W, Xk.8W
+        /// </summary>
+        public static Vector256<ulong> MultiplyWideningEven(Vector256<uint> left, Vector256<uint> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// uint128x2_t xvmulwev_qu_du_u64 (uint64x4_t a, uint64x4_t b)
+        ///   LASX: XVMULWEV.Q.DU Xd.2Q, Xj.4D, Xk.4D
+        /// </summary>
+        public static Vector256<ulong> MultiplyWideningEven(Vector256<ulong> left, Vector256<ulong> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int16x16_t xvmulwod_h_bu_s8 (uint8x32_t a, int8x32_t b)
+        ///   LASX: XVMULWOD.H.BU.B Xd.16H, Xj.32B, Xk.32B
+        /// </summary>
+        public static Vector256<short> MultiplyWideningOdd(Vector256<byte> left, Vector256<sbyte> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int32x8_t xvmulwod_w_hu_s16 (uint16x16_t a, int16x16_t b)
+        ///   LASX: XVMULWOD.W.HU.H Xd.8W, Xj.16H, Xk.16H
+        /// </summary>
+        public static Vector256<int> MultiplyWideningOdd(Vector256<ushort> left, Vector256<short> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int64x4_t xvmulwod_d_wu_s32 (uint32x8_t a, int32x8_t b)
+        ///   LASX: XVMULWOD.D.WU.W Xd.4D, Xj.8W, Xk.8W
+        /// </summary>
+        public static Vector256<long> MultiplyWideningOdd(Vector256<uint> left, Vector256<int> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int128x2_t xvmulwod_q_du_s64 (uint64x4_t a, int64x4_t b)
+        ///   LASX: XVMULWOD.Q.DU.D Xd.2Q, Xj.4D, Xk.4D
+        /// </summary>
+        public static Vector256<long> MultiplyWideningOdd(Vector256<ulong> left, Vector256<long> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int16x16_t xvmulwev_h_bu_s8 (uint8x32_t a, int8x32_t b)
+        ///   LASX: XVMULWEV.H.BU.B Xd.16H, Xj.32B, Xk.32B
+        /// </summary>
+        public static Vector256<short> MultiplyWideningEven(Vector256<byte> left, Vector256<sbyte> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int32x8_t xvmulwev_w_hu_s16 (uint16x16_t a, int16x16_t b)
+        ///   LASX: XVMULWEV.W.HU.H Xd.8W, Xj.16H, Xk.16H
+        /// </summary>
+        public static Vector256<int> MultiplyWideningEven(Vector256<ushort> left, Vector256<short> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int64x4_t xvmulwev_d_wu_s32 (uint32x8_t a, int32x8_t b)
+        ///   LASX: XVMULWEV.D.WU.W Xd.4D, Xj.8W, Xk.8W
+        /// </summary>
+        public static Vector256<long> MultiplyWideningEven(Vector256<uint> left, Vector256<int> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int128x2_t xvmulwev_q_du_s64 (uint64x4_t a, int64x4_t b)
+        ///   LASX: XVMULWEV.Q.DU.D Xd.2Q, Xj.4D, Xk.4D
+        /// </summary>
+        public static Vector256<long> MultiplyWideningEven(Vector256<ulong> left, Vector256<long> right) => MultiplyWideningEven(left, right);
 
         /// <summary>
         /// int8x32_t xvssub_b_s8 (int8x32_t a, int8x32_t b)
@@ -1355,76 +1559,382 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector256<int> Average(Vector256<int> left, Vector256<int> right) => Average(left, right);
 
         /// <summary>
-        /// uint32x8_t xvavg_wu_u32 (uint32x8_t a, uint32x8_t b)
+        /// uint32x8_t xvavg_wu_u32(uint32x8_t a, uint32x8_t b)
         ///   LASX: XVAVG.WU Xd.8S, Xj.8S, Xk.8S
         /// </summary>
         public static Vector256<uint> Average(Vector256<uint> left, Vector256<uint> right) => Average(left, right);
 
         /// <summary>
-        /// int64x4_t xvavg_d_s64 (int64x4_t a, int64x4_t b)
+        /// int64x4_t xvavg_d_s64(int64x4_t a, int64x4_t b)
         ///   LASX: XVAVG.D Xd.4D, Xj.4D, Xk.4D
         /// </summary>
         public static Vector256<long> Average(Vector256<long> left, Vector256<long> right) => Average(left, right);
 
         /// <summary>
-        /// uint64x4_t xvavg_du_u64 (uint64x4_t a, uint64x4_t b)
+        /// uint64x4_t xvavg_du_u64(uint64x4_t a, uint64x4_t b)
         ///   LASX: XVAVG.DU Xd.4D, Xj.4D, Xk.4D
         /// </summary>
         public static Vector256<ulong> Average(Vector256<ulong> left, Vector256<ulong> right) => Average(left, right);
 
         /// <summary>
-        /// int16x16_t xvexth_h_b_s8 (int8x32_t a)
+        /// int16x16_t xvsllwil_h_b_s8(int8x32_t a, uint8_t ui3)
+        ///   LASX: XVSLLWIL.H.B Xd.16H, Xj.32B, ui3
+        /// </summary>
+        public static Vector256<short> SignExtendWideningLowerAndShiftLeftEach128(Vector256<sbyte> value, byte shift) => SignExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// int16x16_t xvsllwil_h_b_u8(uint8x32_t a, uint8_t ui3)
+        ///   LASX: XVSLLWIL.H.B Xd.16H, Xj.32B, ui3
+        /// </summary>
+        public static Vector256<short> SignExtendWideningLowerAndShiftLeftEach128(Vector256<byte> value, byte shift) => SignExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// int32x8_t xvsllwil_w_h_s16(int16x4_t a, uint8_t ui4)
+        ///   LASX: XVSLLWIL.W.H Xd.8W, Xj.4H, ui4
+        /// </summary>
+        public static Vector256<int> SignExtendWideningLowerAndShiftLeftEach128(Vector256<short> value, byte shift) => SignExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// int32x8_t xvsllwil_w_h_u16(uint16x4_t a, uint8_t ui4)
+        ///   LASX: XVSLLWIL.W.H Xd.8W, Xj.4H, ui4
+        /// </summary>
+        public static Vector256<int> SignExtendWideningLowerAndShiftLeftEach128(Vector256<ushort> value, byte shift) => SignExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// int64x4_t xvsllwil_d_w_s32(int32x2_t a, uint8_t ui5)
+        ///   LASX: XVSLLWIL.D.W Xd.4D, Xj.2W, ui5
+        /// </summary>
+        public static Vector256<long> SignExtendWideningLowerAndShiftLeftEach128(Vector256<int> value, byte shift) => SignExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// int64x4_t xvsllwil_d_w_u32(uint32x2_t a, uint8_t ui5)
+        ///   LASX: XVSLLWIL.D.W Xd.4D, Xj.2W, ui5
+        /// </summary>
+        public static Vector256<long> SignExtendWideningLowerAndShiftLeftEach128(Vector256<uint> value, byte shift) => SignExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// uint16x16_t xvsllwil_hu_bu_u8(uint8x32_t a, uint8_t ui3)
+        ///   LASX: XVSLLWIL.HU.BU Xd.16H, Xj.32B, ui3
+        /// </summary>
+        public static Vector256<ushort> ZeroExtendWideningLowerAndShiftLeftEach128(Vector256<byte> value, byte shift) => ZeroExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// int16x16_t xvsllwil_hu_bu_s8(int8x32_t a, uint8_t ui3)
+        ///   LASX: XVSLLWIL.HU.BU Xd.16H, Xj.32B, ui3
+        /// </summary>
+        public static Vector256<short> ZeroExtendWideningLowerAndShiftLeftEach128(Vector256<sbyte> value, byte shift) => ZeroExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// uint32x8_t xvsllwil_wu_hu_u16(uint16x16_t a, uint8_t ui4)
+        ///   LASX: XVSLLWIL.WU.HU Xd.8W, Xj.16H, ui4
+        /// </summary>
+        public static Vector256<uint> ZeroExtendWideningLowerAndShiftLeftEach128(Vector256<ushort> value, byte shift) => ZeroExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// int32x8_t xvsllwil_wu_hu_s16(int16x16_t a, uint8_t ui4)
+        ///   LASX: XVSLLWIL.WU.HU Xd.8W, Xj.16H, ui4
+        /// </summary>
+        public static Vector256<int> ZeroExtendWideningLowerAndShiftLeftEach128(Vector256<short> value, byte shift) => ZeroExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// uint64x4_t xvsllwil_du_wu_u32(uint32x8_t a, uint8_t ui5)
+        ///   LASX: XVSLLWIL.DU.WU Xd.4D, Xj.8W, ui5
+        /// </summary>
+        public static Vector256<ulong> ZeroExtendWideningLowerAndShiftLeftEach128(Vector256<uint> value, byte shift) => ZeroExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// int64x4_t xvsllwil_du_wu_s32(int32x8_t a, uint8_t ui5)
+        ///   LASX: XVSLLWIL.DU.WU Xd.4D, Xj.8W, ui5
+        /// </summary>
+        public static Vector256<long> ZeroExtendWideningLowerAndShiftLeftEach128(Vector256<int> value, byte shift) => ZeroExtendWideningLowerAndShiftLeftEach128(value, shift);
+
+        /// <summary>
+        /// uint128x2_t xvextl_qu_du_s64(int64x4_t a)
+        ///   LASX: XVEXTL.QU.DU Xd.2Q, Xj.D
+        /// </summary>
+        public static Vector256<ulong> ZeroExtendWideningLowerEach128(Vector256<long> value) => ZeroExtendWideningLowerEach128(value);
+
+        /// <summary>
+        /// uint128x2_t xvextl_qu_du_u64(uint64x4_t a)
+        ///   LASX: XVEXTL.QU.DU Xd.2Q, Xj.D
+        /// </summary>
+        public static Vector256<ulong> ZeroExtendWideningLowerEach128(Vector256<ulong> value) => ZeroExtendWideningLowerEach128(value);
+
+        /// <summary>
+        /// int16x16_t vext2xv_h_b_s8(int8x16_t a)
+        ///   LASX: VEXT2XV.H.B Xd.16H, Xj.16B
+        /// </summary>
+        public static Vector256<short> SignExtendWideningLower(Vector128<sbyte> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int16x16_t vext2xv_h_b_u8(uint8x16_t a)
+        ///   LASX: VEXT2XV.H.B Xd.16H, Xj.16B
+        /// </summary>
+        public static Vector256<short> SignExtendWideningLower(Vector128<byte> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int32x8_t vext2xv_w_b_s8(int8x8_t a)
+        ///   LASX: VEXT2XV.W.B Xd.8W, Xj.8B
+        /// </summary>
+        public static Vector256<int> SignExtendWideningLower(Vector64<sbyte> value, byte shift) => SignExtendWideningLower(value, shift);
+        //public static Vector256<int> SignExtendWideningLower(Vector128<sbyte> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int32x8_t vext2xv_w_b_u8(uint8x8_t a)
+        ///   LASX: VEXT2XV.W.B Xd.8W, Xj.8B
+        /// </summary>
+        public static Vector256<int> SignExtendWideningLower(Vector64<byte> value, byte shift) => SignExtendWideningLower(value, shift);
+        //public static Vector256<int> SignExtendWideningLower(Vector128<byte> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_d_b_s8(int8x4_t a)
+        ///   LASX: VEXT2XV.D.B Xd.4D, Xj.4B
+        /// </summary>
+        public static Vector256<long> SignExtendWideningLower(Vector64<sbyte> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_d_b_u8(uint8x4_t a)
+        ///   LASX: VEXT2XV.D.B Xd.4D, Xj.4B
+        /// </summary>
+        public static Vector256<long> SignExtendWideningLower(Vector64<byte> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int32x8_t vext2xv_w_h_s16(int16x8_t a)
+        ///   LASX: VEXT2XV.W.H Xd.8W, Xj.8H
+        /// </summary>
+        public static Vector256<int> SignExtendWideningLower(Vector128<short> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int32x8_t vext2xv_w_h_u16(uint16x8_t a)
+        ///   LASX: VEXT2XV.W.H Xd.8W, Xj.8H
+        /// </summary>
+        public static Vector256<int> SignExtendWideningLower(Vector128<ushort> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_d_h_u16(int16x4_t a)
+        ///   LASX: VEXT2XV.D.H Xd.4D, Xj.4H
+        /// </summary>
+        public static Vector256<long> SignExtendWideningLower(Vector64<short> value, byte shift) => SignExtendWideningLower(value, shift);
+        //public static Vector256<long> SignExtendWideningLower(Vector128<short> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_d_h_u16(uint16x4_t a)
+        ///   LASX: VEXT2XV.D.H Xd.4D, Xj.4H
+        /// </summary>
+        public static Vector256<long> SignExtendWideningLower(Vector64<ushort> value, byte shift) => SignExtendWideningLower(value, shift);
+        //public static Vector256<long> SignExtendWideningLower(Vector128<ushort> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_d_w_s32(int32x2_t a)
+        ///   LASX: VEXT2XV.D.W Xd.4D, Xj.2W
+        /// </summary>
+        public static Vector256<long> SignExtendWideningLower(Vector128<int> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_d_w_u32(uint32x2_t a)
+        ///   LASX: VEXT2XV.D.W Xd.4D, Xj.2W
+        /// </summary>
+        public static Vector256<long> SignExtendWideningLower(Vector128<uint> value, byte shift) => SignExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// uint16x16_t vext2xv_hu_bu_u8(uint8x16_t a)
+        ///   LASX: VEXT2XV.HU.BU Xd.16H, Xj.16B
+        /// </summary>
+        public static Vector256<ushort> ZeroExtendWideningLower(Vector128<byte> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int16x16_t vext2xv_hu_bu_s8(int8x16_t a)
+        ///   LASX: VEXT2XV.HU.BU Xd.16H, Xj.16B
+        /// </summary>
+        public static Vector256<short> ZeroExtendWideningLower(Vector128<sbyte> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// uint32x8_t vext2xv_wu_bu_u8(uint8x8_t a)
+        ///   LASX: VEXT2XV.WU.BU Xd.8W, Xj.8B
+        /// </summary>
+        public static Vector256<uint> ZeroExtendWideningLower(Vector64<byte> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int32x8_t vext2xv_wu_bu_s8(int8x8_t a)
+        ///   LASX: VEXT2XV.WU.BU Xd.8W, Xj.8B
+        /// </summary>
+        public static Vector256<int> ZeroExtendWideningLower(Vector64<sbyte> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// uint64x4_t vext2xv_du_bu_u8(uint8x4_t a)
+        ///   LASX: VEXT2XV.DU.BU Xd.4D, Xj.4B
+        /// </summary>
+        public static Vector256<ulong> ZeroExtendWideningLower(Vector64<byte> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_du_bu_s8(int8x4_t a)
+        ///   LASX: VEXT2XV.DU.BU Xd.4D, Xj.4B
+        /// </summary>
+        public static Vector256<long> ZeroExtendWideningLower(Vector64<sbyte> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// uint32x8_t vext2xv_wu_hu_u16(uint16x8_t a)
+        ///   LASX: VEXT2XV.WU.HU Xd.8W, Xj.8H
+        /// </summary>
+        public static Vector256<uint> ZeroExtendWideningLower(Vector128<ushort> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int32x8_t vext2xv_wu_hu_s16(int16x8_t a)
+        ///   LASX: VEXT2XV.WU.HU Xd.8W, Xj.8H
+        /// </summary>
+        public static Vector256<int> ZeroExtendWideningLower(Vector128<short> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// uint64x4_t vext2xv_du_hu_u16(uint16x4_t a)
+        ///   LASX: VEXT2XV.DU.HU Xd.4D, Xj.4H
+        /// </summary>
+        public static Vector256<ulong> ZeroExtendWideningLower(Vector64<ushort> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_du_hu_s16(int16x4_t a)
+        ///   LASX: VEXT2XV.DU.HU Xd.4D, Xj.4H
+        /// </summary>
+        public static Vector256<long> ZeroExtendWideningLower(Vector64<short> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// uint64x4_t vext2xv_du_wu_u32(uint32x4_t a)
+        ///   LASX: VEXT2XV.DU.WU Xd.4D, Xj.4W
+        /// </summary>
+        public static Vector256<ulong> ZeroExtendWideningLower(Vector128<uint> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int64x4_t vext2xv_du_wu_s32(int32x4_t a)
+        ///   LASX: VEXT2XV.DU.WU Xd.4D, Xj.4W
+        /// </summary>
+        public static Vector256<long> ZeroExtendWideningLower(Vector128<int> value, byte shift) => ZeroExtendWideningLower(value, shift);
+
+        /// <summary>
+        /// int16x16_t xvexth_h_b_s8(int8x32_t a)
         ///   LASX: XVEXTH.H.B Xd.16H, Xj.32B
         /// </summary>
-        public static Vector256<short> SignExtendWideningUpper(Vector256<sbyte> value) => SignExtendWideningUpper(value);
+        public static Vector256<short> SignExtendWideningUpperEach128(Vector256<sbyte> value) => SignExtendWideningUpperEach128(value);
 
         /// <summary>
-        /// int32x8_t xvexth_w_h_s16 (int16x16_t a)
-        ///   LASX: XVEXTH.W.H Xd.8S, Xj.16H
+        /// int32x8_t xvexth_w_h_s16(int16x16_t a)
+        ///   LASX: XVEXTH.W.H Xd.8W, Xj.16H
         /// </summary>
-        public static Vector256<int> SignExtendWideningUpper(Vector256<short> value) => SignExtendWideningUpper(value);
+        public static Vector256<int> SignExtendWideningUpperEach128(Vector256<short> value) => SignExtendWideningUpperEach128(value);
 
         /// <summary>
-        /// int64x4_t xvexth_d_w_s32 (int32x8_t a)
-        ///   LASX: XVEXTH.D.W Xd.4D, Xj.8S
+        /// int64x4_t xvexth_d_w_s32(int32x8_t a)
+        ///   LASX: XVEXTH.D.W Xd.4D, Xj.8W
         /// </summary>
-        public static Vector256<long> SignExtendWideningUpper(Vector256<int> value) => SignExtendWideningUpper(value);
+        public static Vector256<long> SignExtendWideningUpperEach128(Vector256<int> value) => SignExtendWideningUpperEach128(value);
 
         /// <summary>
-        /// uint16x16_t xvexth_HU_BU_u8 (uint8x32_t a)
+        /// int128x2_t xvexth_d_w_s64(int64x4_t a)
+        ///   LASX: XVEXTH.Q.D Xd.2Q, Xj.4D
+        /// </summary>
+        public static Vector256<long> SignExtendWideningUpperEach128(Vector256<long> value) => SignExtendWideningUpperEach128(value);
+
+        /// <summary>
+        /// int16x16_t xvexth_HU_BU_s8(int8x32_t a)
         ///   LASX: XVEXTH.HU.BU Xd.16H, Xj.32B
         /// </summary>
-        public static Vector256<short> ZeroExtendWideningUpper(Vector256<sbyte> value) => ZeroExtendWideningUpper(value);
+        public static Vector256<short> ZeroExtendWideningUpperEach128(Vector256<sbyte> value) => ZeroExtendWideningUpperEach128(value);
 
         /// <summary>
-        /// uint16x16_t xvexth_HU_BU_u8 (uint8x32_t a)
+        /// uint16x16_t xvexth_HU_BU_u8(uint8x32_t a)
         ///   LASX: XVEXTH.HU.BU Xd.16H, Xj.32B
         /// </summary>
-        public static Vector256<ushort> ZeroExtendWideningUpper(Vector256<byte> value) => ZeroExtendWideningUpper(value);
+        public static Vector256<ushort> ZeroExtendWideningUpperEach128(Vector256<byte> value) => ZeroExtendWideningUpperEach128(value);
 
         /// <summary>
-        /// uint32x8_t xvexth_WU_HU_u16 (uint16x16_t a)
-        ///   LASX: XVEXTH.WU.HU Xd.8S, Xj.16H
+        /// int32x8_t xvexth_WU_HU_s16(int16x16_t a)
+        ///   LASX: XVEXTH.WU.HU Xd.8W, Xj.16H
         /// </summary>
-        public static Vector256<int> ZeroExtendWideningUpper(Vector256<short> value) => ZeroExtendWideningUpper(value);
+        public static Vector256<int> ZeroExtendWideningUpperEach128(Vector256<short> value) => ZeroExtendWideningUpperEach128(value);
 
         /// <summary>
-        /// uint32x8_t xvexth_WU_HU_u16 (uint16x16_t a)
-        ///   LASX: XVEXTH.WU.HU Xd.8S, Xj.16H
+        /// uint32x8_t xvexth_WU_HU_u16(uint16x16_t a)
+        ///   LASX: XVEXTH.WU.HU Xd.8W, Xj.16H
         /// </summary>
-        public static Vector256<uint> ZeroExtendWideningUpper(Vector256<ushort> value) => ZeroExtendWideningUpper(value);
+        public static Vector256<uint> ZeroExtendWideningUpperEach128(Vector256<ushort> value) => ZeroExtendWideningUpperEach128(value);
 
         /// <summary>
-        /// uint64x4_t xvexth_DU_WU_u32 (uint32x8_t a)
-        ///   LASX: XVEXTH.DU.WU Xd.4D, Xj.8S
+        /// int64x4_t xvexth_DU_WU_s32(uint32x8_t a)
+        ///   LASX: XVEXTH.DU.WU Xd.4D, Xj.8W
         /// </summary>
-        public static Vector256<long> ZeroExtendWideningUpper(Vector256<int> value) => ZeroExtendWideningUpper(value);
+        public static Vector256<long> ZeroExtendWideningUpperEach128(Vector256<int> value) => ZeroExtendWideningUpperEach128(value);
 
         /// <summary>
-        /// uint64x4_t xvexth_DU_WU_u32 (uint32x8_t a)
-        ///   LASX: XVEXTH.DU.WU Xd.4D, Xj.8S
+        /// uint64x4_t xvexth_DU_WU_u32(uint32x8_t a)
+        ///   LASX: XVEXTH.DU.WU Xd.4D, Xj.8W
         /// </summary>
-        public static Vector256<ulong> ZeroExtendWideningUpper(Vector256<uint> value) => ZeroExtendWideningUpper(value);
+        public static Vector256<ulong> ZeroExtendWideningUpperEach128(Vector256<uint> value) => ZeroExtendWideningUpperEach128(value);
+
+        /// <summary>
+        /// int128x2_t xvexth_DU_WU_s64(int64x4_t a)
+        ///   LASX: XVEXTH.QU.DU Xd.2Q, Xj.4D
+        /// </summary>
+        public static Vector256<ulong> ZeroExtendWideningUpperEach128(Vector256<long> value) => ZeroExtendWideningUpperEach128(value);
+
+        /// <summary>
+        /// uint128x2_t xvexth_DU_WU_u64(uint64x4_t a)
+        ///   LASX: XVEXTH.QU.DU Xd.2Q, Xj.4D
+        /// </summary>
+        public static Vector256<ulong> ZeroExtendWideningUpperEach128(Vector256<ulong> value) => ZeroExtendWideningUpperEach128(value);
+
+
+        ------------------------
+        ///// <summary>
+        ///// int16x16_t xvexth_h_b_s8 (int8x32_t a)
+        /////   LASX: XVEXTH.H.B Xd.16H, Xj.32B
+        ///// </summary>
+        //public static Vector256<short> SignExtendWideningUpper(Vector256<sbyte> value) => SignExtendWideningUpper(value);
+
+        ///// <summary>
+        ///// int32x8_t xvexth_w_h_s16 (int16x16_t a)
+        /////   LASX: XVEXTH.W.H Xd.8S, Xj.16H
+        ///// </summary>
+        //public static Vector256<int> SignExtendWideningUpper(Vector256<short> value) => SignExtendWideningUpper(value);
+
+        ///// <summary>
+        ///// int64x4_t xvexth_d_w_s32 (int32x8_t a)
+        /////   LASX: XVEXTH.D.W Xd.4D, Xj.8S
+        ///// </summary>
+        //public static Vector256<long> SignExtendWideningUpper(Vector256<int> value) => SignExtendWideningUpper(value);
+
+        ///// <summary>
+        ///// uint16x16_t xvexth_HU_BU_u8 (uint8x32_t a)
+        /////   LASX: XVEXTH.HU.BU Xd.16H, Xj.32B
+        ///// </summary>
+        //public static Vector256<short> ZeroExtendWideningUpper(Vector256<sbyte> value) => ZeroExtendWideningUpper(value);
+
+        ///// <summary>
+        ///// uint16x16_t xvexth_HU_BU_u8 (uint8x32_t a)
+        /////   LASX: XVEXTH.HU.BU Xd.16H, Xj.32B
+        ///// </summary>
+        //public static Vector256<ushort> ZeroExtendWideningUpper(Vector256<byte> value) => ZeroExtendWideningUpper(value);
+
+        ///// <summary>
+        ///// uint32x8_t xvexth_WU_HU_u16 (uint16x16_t a)
+        /////   LASX: XVEXTH.WU.HU Xd.8S, Xj.16H
+        ///// </summary>
+        //public static Vector256<int> ZeroExtendWideningUpper(Vector256<short> value) => ZeroExtendWideningUpper(value);
+
+        ///// <summary>
+        ///// uint32x8_t xvexth_WU_HU_u16 (uint16x16_t a)
+        /////   LASX: XVEXTH.WU.HU Xd.8S, Xj.16H
+        ///// </summary>
+        //public static Vector256<uint> ZeroExtendWideningUpper(Vector256<ushort> value) => ZeroExtendWideningUpper(value);
+
+        ///// <summary>
+        ///// uint64x4_t xvexth_DU_WU_u32 (uint32x8_t a)
+        /////   LASX: XVEXTH.DU.WU Xd.4D, Xj.8S
+        ///// </summary>
+        //public static Vector256<long> ZeroExtendWideningUpper(Vector256<int> value) => ZeroExtendWideningUpper(value);
+
+        ///// <summary>
+        ///// uint64x4_t xvexth_DU_WU_u32 (uint32x8_t a)
+        /////   LASX: XVEXTH.DU.WU Xd.4D, Xj.8S
+        ///// </summary>
+        //public static Vector256<ulong> ZeroExtendWideningUpper(Vector256<uint> value) => ZeroExtendWideningUpper(value);
 
         /// <summary>
         /// int8x32_t xvand_v_s8 (int8x32_t a, int8x32_t b)
@@ -1605,6 +2115,246 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LASX: XVOR.V Xd.32B, Xj.32B, Xk.32B
         /// </summary>
         public static Vector256<double> Or(Vector256<double> left, Vector256<double> right) => Or(left, right);
+
+        /// <summary>
+        /// uint8x32_t xvnori_b_u8 (uint8x32_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<byte> Not(Vector256<byte> value) => Not(value);
+
+        /// <summary>
+        /// float64x4_t xvnori_b_f64 (float64x4_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<double> Not(Vector256<double> value) => Not(value);
+
+        /// <summary>
+        /// int16x16_t xvnori_b_s16 (int16x16_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<short> Not(Vector256<short> value) => Not(value);
+
+        /// <summary>
+        /// int32x8_t xvnori_b_s32 (int32x8_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<int> Not(Vector256<int> value) => Not(value);
+
+        /// <summary>
+        /// int64x4_t xvnori_b_s64 (int64x4_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<long> Not(Vector256<long> value) => Not(value);
+
+        /// <summary>
+        /// int8x32_t xvnori_b_s8 (int8x32_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<sbyte> Not(Vector256<sbyte> value) => Not(value);
+
+        /// <summary>
+        /// float32x8_t xvnori_b_f32 (float32x8_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<float> Not(Vector256<float> value) => Not(value);
+
+        /// <summary>
+        /// uint16x16_t xvnori_b_u16 (uint16x16_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<ushort> Not(Vector256<ushort> value) => Not(value);
+
+        /// <summary>
+        /// uint32x8_t xvnori_b_u32 (uint32x8_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// </summary>
+        public static Vector256<uint> Not(Vector256<uint> value) => Not(value);
+
+        /// <summary>
+        /// uint64x4_t xvnori_b_u64 (uint64x4_t a)
+        ///   LASX: XVNORI.B Vd.32B, Vj.32B, 0
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector256<ulong> Not(Vector256<ulong> value) => Not(value);
+
+        /// <summary>
+        /// int8x32_t xvnor_v_s8 (int8x32_t a, int8x32_t b)
+        ///   LASX: XVNOR.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector256<sbyte> NotOr(Vector256<sbyte> left, Vector256<sbyte> right) => NotOr(left, right);
+
+        /// <summary>
+        /// uint8x32_t xvnor_v_u8 (uint8x32_t a, uint8x32_t b)
+        ///   LASX: XVNOR.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector256<byte> NotOr(Vector256<byte> left, Vector256<byte> right) => NotOr(left, right);
+
+        /// <summary>
+        /// int16x16_t xvnor_v_s16 (int16x16_t a, int16x16_t b)
+        ///   LASX: XVNOR.V Vd.16H, Vj.16H, Vk.16H
+        /// </summary>
+        public static Vector256<short> NotOr(Vector256<short> left, Vector256<short> right) => NotOr(left, right);
+
+        /// <summary>
+        /// uint16x16_t xvnor_v_u16 (uint16x16_t a, uint16x16_t b)
+        ///   LASX: XVNOR.V Vd.16H, Vj.16H, Vk.16H
+        /// </summary>
+        public static Vector256<ushort> NotOr(Vector256<ushort> left, Vector256<ushort> right) => NotOr(left, right);
+
+        /// <summary>
+        /// int32x8_t xvnor_v_s32 (int32x8_t a, int32x8_t b)
+        ///   LASX: XVNOR.V Vd.8W, Vj.8W, Vk.8W
+        /// </summary>
+        public static Vector256<int> NotOr(Vector256<int> left, Vector256<int> right) => NotOr(left, right);
+
+        /// <summary>
+        /// uint32x8_t xvnor_v_u32 (uint32x8_t a, uint32x8_t b)
+        ///   LASX: XVNOR.V Vd.8W, Vj.8W, Vk.8W
+        /// </summary>
+        public static Vector256<uint> NotOr(Vector256<uint> left, Vector256<uint> right) => NotOr(left, right);
+
+        /// <summary>
+        /// int64x4_t xvnor_v_s64 (int64x4_t a, int64x4_t b)
+        ///   LASX: XVNOR.V Vd.4D, Vj.4D, Vk.4D
+        /// </summary>
+        public static Vector256<long> NotOr(Vector256<long> left, Vector256<long> right) => NotOr(left, right);
+
+        /// <summary>
+        /// uint64x4_t xvnor_v_u64 (uint64x4_t a, uint64x4_t b)
+        ///   LASX: XVNOR.V Vd.4D, Vj.4D, Vk.4D
+        /// </summary>
+        public static Vector256<ulong> NotOr(Vector256<ulong> left, Vector256<ulong> right) => NotOr(left, right);
+
+        /// <summary>
+        /// float32x8_t xvnor_v_f32 (float32x8_t a, float32x8_t b)
+        ///   LASX: XVNOR.V Vd.8S, Vj.8S, Vk.8S
+        /// </summary>
+        public static Vector256<float> NotOr(Vector256<float> left, Vector256<float> right) => NotOr(left, right);
+
+        /// <summary>
+        /// float64x4_t xvnor_v_f64 (float64x4_t a, float64x4_t b)
+        ///   LASX: XVNOR.V Vd.4D, Vj.4D, Vk.4D
+        /// </summary>
+        public static Vector256<double> NotOr(Vector256<double> left, Vector256<double> right) => NotOr(left, right);
+
+        /// <summary>
+        /// uint8x8_t xvorn_u8 (uint8x8_t a, uint8x8_t b)
+        /// </summary>
+        public static Vector64<byte> OrNot(Vector64<byte> left, Vector64<byte> right) => OrNot(left, right);
+
+        /// <summary>
+        /// float64x1_t xvorn_f64 (float64x1_t a, float64x1_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<double> OrNot(Vector64<double> left, Vector64<double> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int16x4_t xvorn_s16 (int16x4_t a, int16x4_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<short> OrNot(Vector64<short> left, Vector64<short> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int32x2_t xvorn_s32 (int32x2_t a, int32x2_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<int> OrNot(Vector64<int> left, Vector64<int> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int64x1_t xvorn_s64 (int64x1_t a, int64x1_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<long> OrNot(Vector64<long> left, Vector64<long> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int8x8_t xvorn_s8 (int8x8_t a, int8x8_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<sbyte> OrNot(Vector64<sbyte> left, Vector64<sbyte> right) => OrNot(left, right);
+
+        /// <summary>
+        /// float32x2_t xvorn_f32 (float32x2_t a, float32x2_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<float> OrNot(Vector64<float> left, Vector64<float> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint16x4_t xvorn_u16 (uint16x4_t a, uint16x4_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<ushort> OrNot(Vector64<ushort> left, Vector64<ushort> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint32x2_t xvorn_u32 (uint32x2_t a, uint32x2_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<uint> OrNot(Vector64<uint> left, Vector64<uint> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint64x1_t xvorn_u64 (uint64x1_t a, uint64x1_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector64<ulong> OrNot(Vector64<ulong> left, Vector64<ulong> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int8x32_t xvorn_v_s8 (int8x32_t a, int8x32_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector256<sbyte> OrNot(Vector256<sbyte> left, Vector256<sbyte> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint8x32_t xvorn_v_u8 (uint8x32_t a, uint8x32_t b)
+        ///   LASX: XVORN.V Vd.32B, Vj.32B, Vk.32B
+        /// </summary>
+        public static Vector256<byte> OrNot(Vector256<byte> left, Vector256<byte> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int16x16_t xvor_v_s16 (int16x16_t a, int16x16_t b)
+        ///   LASX: XVORN.V Vd.16H, Vj.16H, Vk.16H
+        /// </summary>
+        public static Vector256<short> OrNot(Vector256<short> left, Vector256<short> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint16x16_t xvor_v_u16 (uint16x16_t a, uint16x16_t b)
+        ///   LASX: XVORN.V Vd.16H, Vj.16H, Vk.16H
+        /// </summary>
+        public static Vector256<ushort> OrNot(Vector256<ushort> left, Vector256<ushort> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int32x8_t xvorn_v_s32 (int32x8_t a, int32x8_t b)
+        ///   LASX: XVORN.V Vd.8W, Vj.8W, Vk.8W
+        /// </summary>
+        public static Vector256<int> OrNot(Vector256<int> left, Vector256<int> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint32x8_t xvorn_v_u32 (uint32x8_t a, uint32x8_t b)
+        ///   LASX: XVORN.V Vd.8W, Vj.8W, Vk.8W
+        /// </summary>
+        public static Vector256<uint> OrNot(Vector256<uint> left, Vector256<uint> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int64x4_t xvorn_v_s64 (int64x4_t a, int64x4_t b)
+        ///   LASX: XVORN.V Vd.4D, Vj.4D, Vk.4D
+        /// </summary>
+        public static Vector256<long> OrNot(Vector256<long> left, Vector256<long> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint64x4_t xvorn_v_u64 (uint64x4_t a, uint64x4_t b)
+        ///   LASX: XVORN.V Vd.4D, Vj.4D, Vk.4D
+        /// </summary>
+        public static Vector256<ulong> OrNot(Vector256<ulong> left, Vector256<ulong> right) => OrNot(left, right);
+
+        /// <summary>
+        /// float32x8_t xvorn_v_f32 (float32x8_t a, float32x8_t b)
+        ///   LASX: XVORN.V Vd.8S, Vj.8S, Vk.8S
+        /// </summary>
+        public static Vector256<float> OrNot(Vector256<float> left, Vector256<float> right) => OrNot(left, right);
+
+        /// <summary>
+        /// float64x4_t xvorn_v_f64 (float64x4_t a, float64x4_t b)
+        ///   LASX: XVORN.V Vd.4D, Vj.4D, Vk.4D
+        /// </summary>
+        public static Vector256<double> OrNot(Vector256<double> left, Vector256<double> right) => OrNot(left, right);
 
         /// <summary>
         /// int8x32_t xvxor_v_s8 (int8x32_t a, int8x32_t b)

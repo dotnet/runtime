@@ -143,8 +143,8 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<sbyte> Multiply(Vector128<sbyte> left, Vector128<sbyte> right) => Multiply(left, right);
 
         /// <summary>
-        /// uint8x16_t TODO_u8 (uint8x16_t a, uint8x16_t b)
-        ///   LSX: TODO Vd.16B, Vj.16B, Vk.16B
+        /// uint8x16_t vmul_b_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VMUL.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<byte> Multiply(Vector128<byte> left, Vector128<byte> right) => Multiply(left, right);
 
@@ -155,20 +155,20 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<short> Multiply(Vector128<short> left, Vector128<short> right) => Multiply(left, right);
 
         /// <summary>
-        /// uint16x8_t TODO_u16 (uint16x8_t a, uint16x8_t b)
-        ///   LSX: TODO Vd.8H, Vj.8H, Vk.8H
+        /// uint16x8_t vmul_h_u16 (uint16x8_t a, uint16x8_t b)
+        ///   LSX: VMUL.H Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<ushort> Multiply(Vector128<ushort> left, Vector128<ushort> right) => Multiply(left, right);
 
         /// <summary>
         /// int32x4_t vmul_w_s32 (int32x4_t a, int32x4_t b)
-        ///   LSX: VMULW Vd.4S, Vj.4S, Vk.4S
+        ///   LSX: VMUL.W Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<int> Multiply(Vector128<int> left, Vector128<int> right) => Multiply(left, right);
 
         /// <summary>
-        /// uint32x4_t TODO_u32 (uint32x4_t a, uint32x4_t b)
-        ///   LSX: TODO Vd.4S, Vj.4S, Vk.4S
+        /// uint32x4_t vmul_u32 (uint32x4_t a, uint32x4_t b)
+        ///   LSX: VMUL.W Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<uint> Multiply(Vector128<uint> left, Vector128<uint> right) => Multiply(left, right);
 
@@ -179,8 +179,8 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<long> Multiply(Vector128<long> left, Vector128<long> right) => Multiply(left, right);
 
         /// <summary>
-        /// uint64x2_t TODO_u64 (uint64x2_t a, uint64x2_t b)
-        ///   LSX: TODO Vd.2D, Vj.2D, Vk.2D
+        /// uint64x2_t vmul_u64 (uint64x2_t a, uint64x2_t b)
+        ///   LSX: VMUL.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<ulong> Multiply(Vector128<ulong> left, Vector128<ulong> right) => Multiply(left, right);
 
@@ -195,6 +195,54 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VFMUL.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int8x16_t vmuh_b_s8 (int8x16_t a, int8x16_t b)
+        ///   LSX: VMUH.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> MultiplyHight(Vector128<sbyte> left, Vector128<sbyte> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// uint8x16_t vmuh_b_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VMUH.BU Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> MultiplyHight(Vector128<byte> left, Vector128<byte> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// int16x8_t vmuh_h_s16 (int16x8_t a, int16x8_t b)
+        ///   LSX: VMUH.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> MultiplyHight(Vector128<short> left, Vector128<short> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmuh_hu_u16 (uint16x8_t a, uint16x8_t b)
+        ///   LSX: VMUH.HU Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> MultiplyHight(Vector128<ushort> left, Vector128<ushort> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// int32x4_t vmuh_w_s32 (int32x4_t a, int32x4_t b)
+        ///   LSX: VMUL.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> MultiplyHight(Vector128<int> left, Vector128<int> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmuh_wu_u32 (uint32x4_t a, uint32x4_t b)
+        ///   LSX: VMUH.WU Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> MultiplyHight(Vector128<uint> left, Vector128<uint> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// int64x2_t vmuh_d_s64 (int64x2_t a, int64x2_t b)
+        ///   LSX: VMUH.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> MultiplyHight(Vector128<long> left, Vector128<long> right) => MultiplyHight(left, right);
+
+        /// <summary>
+        /// uint64x2_t vmuh_du_u64 (uint64x2_t a, uint64x2_t b)
+        ///   LSX: VMUH.DU Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> MultiplyHight(Vector128<ulong> left, Vector128<ulong> right) => MultiplyHight(left, right);
 
         /// <summary>
         /// int8x16_t vdiv_b_s8 (int8x16_t a, int8x16_t b)
@@ -222,13 +270,13 @@ namespace System.Runtime.Intrinsics.LoongArch
 
         /// <summary>
         /// int32x4_t vdiv_w_s32 (int32x4_t a, int32x4_t b)
-        ///   LSX: VDIV.WU Vd.4S, Vj.4S, Vk.4S
+        ///   LSX: VDIV.W Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<int> Divide(Vector128<int> left, Vector128<int> right) => Divide(left, right);
 
         /// <summary>
         /// uint32x4_t vdiv_wu_u32 (uint32x4_t a, uint32x4_t b)
-        ///   LSX: VDIV.WU Vd.4S, Vj.4S, Vk.4S
+        ///   LSX: VDIV.WU Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<uint> Divide(Vector128<uint> left, Vector128<uint> right) => Divide(left, right);
 
@@ -255,6 +303,54 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VFDIV.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) => Divide(left, right);
+
+        /// <summary>
+        /// int8x16_t vmod_b_s8 (int8x16_t a, int8x16_t b)
+        ///   LSX: VMOD.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> Modulo(Vector128<sbyte> left, Vector128<sbyte> right) => Modulo(left, right);
+
+        /// <summary>
+        /// uint8x16_t vmod_bu_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VMOD.BU Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> Modulo(Vector128<byte> left, Vector128<byte> right) => Modulo(left, right);
+
+        /// <summary>
+        /// int16x8_t vmod_h_s16 (int16x8_t a, int16x8_t b)
+        ///   LSX: VMOD.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> Modulo(Vector128<short> left, Vector128<short> right) => Modulo(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmod_hu_u16 (uint16x8_t a, uint16x8_t b)
+        ///   LSX: VMOD.HU Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> Modulo(Vector128<ushort> left, Vector128<ushort> right) => Modulo(left, right);
+
+        /// <summary>
+        /// int32x4_t vmod_w_s32 (int32x4_t a, int32x4_t b)
+        ///   LSX: VMOD.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> Modulo(Vector128<int> left, Vector128<int> right) => Modulo(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmod_wu_u32 (uint32x4_t a, uint32x4_t b)
+        ///   LSX: VMOD.WU Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> Modulo(Vector128<uint> left, Vector128<uint> right) => Modulo(left, right);
+
+        /// <summary>
+        /// int64x2_t vmod_d_s64 (int64x2_t a, int64x2_t b)
+        ///   LSX: VMOD.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> Modulo(Vector128<long> left, Vector128<long> right) => Modulo(left, right);
+
+        /// <summary>
+        /// uint64x2_t vmod_du_u64 (uint64x2_t a, uint64x2_t b)
+        ///   LSX: VMOD.DU Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> Modulo(Vector128<ulong> left, Vector128<ulong> right) => Modulo(left, right);
 
         /// <summary>
         /// float32x4_t vfmadd_s_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
@@ -1349,6 +1445,18 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<double> Negate(Vector128<double> value) => Negate(value);
 
         /// <summary>
+        /// float64x1_t fneg_d_f64 (float64x1_t a)
+        ///   LSX: FNEG.D Fd, Fj
+        /// </summary>
+        public static Vector64<double> NegateScalar(Vector64<double> value) => NegateScalar(value);
+
+        /// <summary>
+        /// float32_t fneg_s_f32 (float32_t a)
+        ///   LSX: FNEG.S Fd, Fj
+        /// </summary>
+        public static Vector64<float> NegateScalar(Vector64<float> value) => NegateScalar(value);
+
+        /// <summary>
         /// float32x4_t vfmsub_s_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
         ///   LSX: VFMSUB.S Vd.4S, Vj.4S, Vk.4S
         /// </summary>
@@ -1364,259 +1472,379 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x8_t vmulwod_h_b_s8 (int8x16_t a, int8x16_t b)
         ///   LSX: VMULWOD.H.B Vd.8H, Vj.16B, Vk.16B
         /// </summary>
-        public static Vector128<short> MultiplyWideningUpper(Vector128<sbyte> left, Vector128<sbyte> right) => MultiplyWideningUpper(left, right);
-
-        /// <summary>
-        /// uint16x8_t vmulwod_h_bu_u8 (uint8x16_t a, uint8x16_t b)
-        ///   LSX: VMULWOD.H.BU Vd.8H, Vj.16B, Vk.16B
-        /// </summary>
-        public static Vector128<ushort> MultiplyWideningUpper(Vector128<byte> left, Vector128<byte> right) => MultiplyWideningUpper(left, right);
+        public static Vector128<short> MultiplyWideningOdd(Vector128<sbyte> left, Vector128<sbyte> right) => MultiplyWideningOdd(left, right);
 
         /// <summary>
         /// int32x4_t vmulwod_w_h_s16 (int16x8_t a, int16x8_t b)
-        ///   LSX: VMULWOD.W.H Vd.4S, Vj.8H, Vk.8H
+        ///   LSX: VMULWOD.W.H Vd.4W, Vj.8H, Vk.8H
         /// </summary>
-        public static Vector128<int> MultiplyWideningUpper(Vector128<short> left, Vector128<short> right) => MultiplyWideningUpper(left, right);
-
-        /// <summary>
-        /// uint32x4_t vmulwod_w_hu_u16 (uint16x8_t a, uint16x8_t b)
-        ///   LSX: VMULWOD.W.HU Vd.4S, Vj.8H, Vk.8H
-        /// </summary>
-        public static Vector128<uint> MultiplyWideningUpper(Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningUpper(left, right);
+        public static Vector128<int> MultiplyWideningOdd(Vector128<short> left, Vector128<short> right) => MultiplyWideningOdd(left, right);
 
         /// <summary>
         /// int64x2_t vmulwod_d_w_s32 (int32x4_t a, int32x4_t b)
-        ///   LSX: VMULWOD.D.W Vd.2D, Vj.4S, Vk.4S
+        ///   LSX: VMULWOD.D.W Vd.2D, Vj.4W, Vk.4W
         /// </summary>
-        public static Vector128<long> MultiplyWideningUpper(Vector128<int> left, Vector128<int> right) => MultiplyWideningUpper(left, right);
+        public static Vector128<long> MultiplyWideningOdd(Vector128<int> left, Vector128<int> right) => MultiplyWideningOdd(left, right);
 
         /// <summary>
-        /// uint64x2_t vmulwod_d_wu_u32 (uint32x4_t a, uint32x4_t b)
-        ///   LSX: VMULWOD.D.WU Vd.2D, Vj.4S, Vk.4S
+        /// int128x1_t vmulwod_q_d_s64 (int64x2_t a, int64x2_t b)
+        ///   LSX: VMULWOD.Q.D Vd.Q, Vj.2D, Vk.2D
         /// </summary>
-        public static Vector128<ulong> MultiplyWideningUpper(Vector128<uint> left, Vector128<uint> right) => MultiplyWideningUpper(left, right);
+        public static Vector128<long> MultiplyWideningOdd(Vector128<long> left, Vector128<long> right) => MultiplyWideningOdd(left, right);
 
         /// <summary>
-        /// int8x16_t vssub_b_s8 (int8x16_t a, int8x16_t b)
+        /// int16x8_t vmulwev_h_b_s8 (int8x16_t a, int8x16_t b)
+        ///   LSX: VMULWEV.H.B Vd.8H, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<short> MultiplyWideningEven(Vector128<sbyte> left, Vector128<sbyte> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int32x4_t vmulwev_w_h_s16 (int16x8_t a, int16x8_t b)
+        ///   LSX: VMULWEV.W.H Vd.4W, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<int> MultiplyWideningEven(Vector128<short> left, Vector128<short> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int64x2_t vmulwev_d_w_s32 (int32x4_t a, int32x4_t b)
+        ///   LSX: VMULWEV.D.W Vd.2D, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<long> MultiplyWideningEven(Vector128<int> left, Vector128<int> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int128x1_t vmulwev_q_d_s64 (int64x2_t a, int64x2_t b)
+        ///   LSX: VMULWEV.Q.D Vd.Q, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> MultiplyWideningEven(Vector128<long> left, Vector128<long> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmulwod_hu_bu_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VMULWOD.H.BU Vd.8H, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<ushort> MultiplyWideningOdd(Vector128<byte> left, Vector128<byte> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmulwod_wu_hu_u16 (uint16x8_t a, uint16x8_t b)
+        ///   LSX: VMULWOD.W.HU Vd.4W, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<uint> MultiplyWideningOdd(Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// uint64x2_t vmulwod_du_wu_u32 (uint32x4_t a, uint32x4_t b)
+        ///   LSX: VMULWOD.D.WU Vd.2D, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<ulong> MultiplyWideningOdd(Vector128<uint> left, Vector128<uint> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// uint128x1_t vmulwod_qu_du_u64 (uint64x2_t a, uint64x2_t b)
+        ///   LSX: VMULWOD.Q.DU Vd.Q, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> MultiplyWideningOdd(Vector128<ulong> left, Vector128<ulong> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmulwev_hu_bu_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VMULWEV.H.BU Vd.8H, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<ushort> MultiplyWideningEven(Vector128<byte> left, Vector128<byte> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmulwev_wu_hu_u16 (uint16x8_t a, uint16x8_t b)
+        ///   LSX: VMULWEV.W.HU Vd.4W, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<uint> MultiplyWideningEven(Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// uint64x2_t vmulwev_du_wu_u32 (uint32x4_t a, uint32x4_t b)
+        ///   LSX: VMULWEV.D.WU Vd.2D, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<ulong> MultiplyWideningEven(Vector128<uint> left, Vector128<uint> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// uint128x1_t vmulwev_qu_du_u64 (uint64x2_t a, uint64x2_t b)
+        ///   LSX: VMULWEV.Q.DU Vd.Q, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> MultiplyWideningEven(Vector128<ulong> left, Vector128<ulong> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int16x8_t vmulwod_h_bu_s8 (uint8x16_t a, int8x16_t b)
+        ///   LSX: VMULWOD.H.BU.B Vd.8H, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<short> MultiplyWideningOdd(Vector128<byte> left, Vector128<sbyte> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int32x4_t vmulwod_w_hu_s16 (uint16x8_t a, int16x8_t b)
+        ///   LSX: VMULWOD.W.HU.H Vd.4W, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<int> MultiplyWideningOdd(Vector128<ushort> left, Vector128<short> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int64x2_t vmulwod_d_wu_s32 (uint32x4_t a, int32x4_t b)
+        ///   LSX: VMULWOD.D.WU.W Vd.2D, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<long> MultiplyWideningOdd(Vector128<uint> left, Vector128<int> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int128x1_t vmulwod_q_du_s64 (uint64x2_t a, int64x2_t b)
+        ///   LSX: VMULWOD.Q.DU.D Vd.Q, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> MultiplyWideningOdd(Vector128<ulong> left, Vector128<long> right) => MultiplyWideningOdd(left, right);
+
+        /// <summary>
+        /// int16x8_t vmulwev_h_bu_s8 (uint8x16_t a, int8x16_t b)
+        ///   LSX: VMULWEV.H.BU.B Vd.8H, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<short> MultiplyWideningEven(Vector128<byte> left, Vector128<sbyte> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int32x4_t vmulwev_w_hu_s16 (uint16x8_t a, int16x8_t b)
+        ///   LSX: VMULWEV.W.HU.H Vd.4W, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<int> MultiplyWideningEven(Vector128<ushort> left, Vector128<short> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int64x2_t vmulwev_d_wu_s32 (uint32x4_t a, int32x4_t b)
+        ///   LSX: VMULWEV.D.WU.W Vd.2D, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<long> MultiplyWideningEven(Vector128<uint> left, Vector128<int> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int128x1_t vmulwev_q_du_s64 (uint64x2_t a, int64x2_t b)
+        ///   LSX: VMULWEV.Q.DU.D Vd.Q, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> MultiplyWideningEven(Vector128<ulong> left, Vector128<long> right) => MultiplyWideningEven(left, right);
+
+        /// <summary>
+        /// int8x16_t vssub_b_s8(int8x16_t a, int8x16_t b)
         ///   LSX: VSSUB.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<sbyte> SubtractSaturate(Vector128<sbyte> left, Vector128<sbyte> right) => SubtractSaturate(left, right);
 
         /// <summary>
-        /// uint8x16_t vssub_bu_u8 (uint8x16_t a, uint8x16_t b)
+        /// uint8x16_t vssub_bu_u8(uint8x16_t a, uint8x16_t b)
         ///   LSX: VSSUB.BU Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right) => SubtractSaturate(left, right);
 
         /// <summary>
-        /// int16x8_t vssub_h_s16 (int16x8_t a, int16x8_t b)
+        /// int16x8_t vssub_h_s16(int16x8_t a, int16x8_t b)
         ///   LSX: VSSUB.H Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<short> SubtractSaturate(Vector128<short> left, Vector128<short> right) => SubtractSaturate(left, right);
 
         /// <summary>
-        /// uint16x8_t vssub_hu_u16 (uint16x8_t a, uint16x8_t b)
+        /// uint16x8_t vssub_hu_u16(uint16x8_t a, uint16x8_t b)
         ///   LSX: VSSUB.HU Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<ushort> SubtractSaturate(Vector128<ushort> left, Vector128<ushort> right) => SubtractSaturate(left, right);
 
         /// <summary>
-        /// int32x4_t vssub_w_s32 (int32x4_t a, int32x4_t b)
+        /// int32x4_t vssub_w_s32(int32x4_t a, int32x4_t b)
         ///   LSX: VSSUB.W Vd.4S, Vj.4S, Vk.4S
         /// </summary>
         public static Vector128<int> SubtractSaturate(Vector128<int> left, Vector128<int> right) => SubtractSaturate(left, right);
 
         /// <summary>
-        /// uint32x4_t vssub_wu_u32 (uint32x4_t a, uint32x4_t b)
+        /// uint32x4_t vssub_wu_u32(uint32x4_t a, uint32x4_t b)
         ///   LSX: VSSUB.WU Vd.4S, Vj.4S, Vk.4S
         /// </summary>
         public static Vector128<uint> SubtractSaturate(Vector128<uint> left, Vector128<uint> right) => SubtractSaturate(left, right);
 
         /// <summary>
-        /// int64x2_t vssub_d_s64 (int64x2_t a, int64x2_t b)
+        /// int64x2_t vssub_d_s64(int64x2_t a, int64x2_t b)
         ///   LSX: VSSUB.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<long> SubtractSaturate(Vector128<long> left, Vector128<long> right) => SubtractSaturate(left, right);
 
         /// <summary>
-        /// uint64x2_t vssub_du_u64 (uint64x2_t a, uint64x2_t b)
+        /// uint64x2_t vssub_du_u64(uint64x2_t a, uint64x2_t b)
         ///   LSX: VSSUB.DU Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<ulong> SubtractSaturate(Vector128<ulong> left, Vector128<ulong> right) => SubtractSaturate(left, right);
 
         /// <summary>
-        /// int8x16_t vavg_b_s8 (int8x16_t a, int8x16_t b)
+        /// int8x16_t vavg_b_s8(int8x16_t a, int8x16_t b)
         ///   LSX: VAVG.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<sbyte> Average(Vector128<sbyte> left, Vector128<sbyte> right) => Average(left, right);
 
         /// <summary>
-        /// uint8x16_t vavg_bu_u8 (uint8x16_t a, uint8x16_t b)
+        /// uint8x16_t vavg_bu_u8(uint8x16_t a, uint8x16_t b)
         ///   LSX: VAVG.BU Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<byte> Average(Vector128<byte> left, Vector128<byte> right) => Average(left, right);
 
         /// <summary>
-        /// int16x8_t vavg_h_s16 (int16x8_t a, int16x8_t b)
+        /// int16x8_t vavg_h_s16(int16x8_t a, int16x8_t b)
         ///   LSX: VAVG.H Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<short> Average(Vector128<short> left, Vector128<short> right) => Average(left, right);
 
         /// <summary>
-        /// uint16x8_t vavg_hu_u16 (uint16x8_t a, uint16x8_t b)
+        /// uint16x8_t vavg_hu_u16(uint16x8_t a, uint16x8_t b)
         ///   LSX: VAVG.HU Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<ushort> Average(Vector128<ushort> left, Vector128<ushort> right) => Average(left, right);
 
         /// <summary>
-        /// int32x4_t vavg_w_s32 (int32x4_t a, int32x4_t b)
-        ///   LSX: VAVG.W Vd.4S, Vj.4S, Vk.4S
+        /// int32x4_t vavg_w_s32(int32x4_t a, int32x4_t b)
+        ///   LSX: VAVG.W Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<int> Average(Vector128<int> left, Vector128<int> right) => Average(left, right);
 
         /// <summary>
-        /// uint32x4_t vavg_wu_u32 (uint32x4_t a, uint32x4_t b)
-        ///   LSX: VAVG.WU Vd.4S, Vj.4S, Vk.4S
+        /// uint32x4_t vavg_wu_u32(uint32x4_t a, uint32x4_t b)
+        ///   LSX: VAVG.WU Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<uint> Average(Vector128<uint> left, Vector128<uint> right) => Average(left, right);
 
         /// <summary>
-        /// int64x2_t vavg_d_s64 (int64x2_t a, int64x2_t b)
+        /// int64x2_t vavg_d_s64(int64x2_t a, int64x2_t b)
         ///   LSX: VAVG.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<long> Average(Vector128<long> left, Vector128<long> right) => Average(left, right);
 
         /// <summary>
-        /// uint64x2_t vavg_du_u64 (uint64x2_t a, uint64x2_t b)
+        /// uint64x2_t vavg_du_u64(uint64x2_t a, uint64x2_t b)
         ///   LSX: VAVG.DU Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<ulong> Average(Vector128<ulong> left, Vector128<ulong> right) => Average(left, right);
 
         /// <summary>
-        /// int16x8_t vext2xv_h_b_s8 (int8x16_t a)
-        ///   LSX: VEXT2XV.H.B Vd.8H, Vj.16B
+        /// int16x8_t vsllwil_h_b_s8(int8x16_t a, uint8_t ui3)
+        ///   LSX: VSLLWIL.H.B Vd.8H, Vj.16B, ui3
         /// </summary>
-        public static Vector128<short> SignExtendWideningLower(Vector128<sbyte> value) => SignExtendWideningLower(value);
-
-        ///// <summary>
-        ///// int32x4_t vext2xv_w_b_s8 (int8x16_t a)
-        /////   LSX: VEXT2XV.W.B Vd.4W, Vj.16B
-        ///// </summary>
-        //public static Vector128<int> SignExtendWideningLower(Vector128<sbyte> value) => SignExtendWideningLower(value);
-
-        ///// <summary>
-        ///// int64x2_t vext2xv_d_b_s8 (int8x16_t a)
-        /////   LSX: VEXT2XV.D.B Vd.2D, Vj.16B
-        ///// </summary>
-        //public static Vector128<long> SignExtendWideningLower(Vector128<sbyte> value) => SignExtendWideningLower(value);
+        public static Vector128<short> SignExtendWideningLowerAndShiftLeft(Vector64<sbyte> value, byte shift) => SignExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// int32x4_t vext2xv_w_h_s16 (int16x8_t a)
-        ///   LSX: VEXT2XV.W.H Vd.4W, Vj.8H
+        /// int32x4_t vsllwil_w_h_s16(int16x4_t a, uint8_t ui4)
+        ///   LSX: VSLLWIL.W.H Vd.4W, Vj.4H, ui4
         /// </summary>
-        public static Vector128<int> SignExtendWideningLower(Vector128<short> value) => SignExtendWideningLower(value);
-
-        ///// <summary>
-        ///// int64x2_t vext2xv_d_h_s16 (int16x8_t a)
-        /////   LSX: VEXT2XV.D.H Vd.2D, Vj.8H
-        ///// </summary>
-        //public static Vector128<long> SignExtendWideningLower(Vector128<short> value) => SignExtendWideningLower(value);
+        public static Vector128<int> SignExtendWideningLowerAndShiftLeft(Vector64<short> value, byte shift) => SignExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// int64x2_t vext2xv_d_w_s32 (int32x4_t a)
-        ///   LSX: VEXT2XV.D.W Vd.2D, Vj.4W
+        /// int64x2_t vsllwil_d_w_s32(int32x2_t a, uint8_t ui5)
+        ///   LSX: VSLLWIL.D.W Vd.2D, Vj.2W, ui5
         /// </summary>
-        public static Vector128<long> SignExtendWideningLower(Vector128<int> value) => SignExtendWideningLower(value);
+        public static Vector128<long> SignExtendWideningLowerAndShiftLeft(Vector64<int> value, byte shift) => SignExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// uint16x8_t vext2xv_hu_bu_u8 (uint8x16_t a)
-        ///   LSX: VEXT2XV.HU.BU Vd.8H, Vj.16B
+        /// uint16x8_t vsllwil_hu_bu_u8(uint8x16_t a, uint8_t ui3)
+        ///   LSX: VSLLWIL.HU.BU Vd.8H, Vj.16B, ui3
         /// </summary>
-        public static Vector128<ushort> ZeroExtendWideningLower(Vector128<byte> value) => ZeroExtendWideningLower(value);
+        public static Vector128<ushort> ZeroExtendWideningLowerAndShiftLeft(Vector64<byte> value, byte shift) => ZeroExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// int16x8_t vext2xv_hu_bu_u8 (int8x16_t a)
-        ///   LSX: VEXT2XV.HU.BU Vd.8H, Vj.16B
+        /// int16x8_t vsllwil_hu_bu_s8(int8x16_t a, uint8_t ui3)
+        ///   LSX: VSLLWIL.HU.BU Vd.8H, Vj.16B, ui3
         /// </summary>
-        public static Vector128<short> ZeroExtendWideningLower(Vector128<sbyte> value) => ZeroExtendWideningLower(value);
+        public static Vector128<short> ZeroExtendWideningLowerAndShiftLeft(Vector64<sbyte> value, byte shift) => ZeroExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// uint32x4_t vext2xv_wu_hu_u16 (uint16x8_t a)
-        ///   LSX: VEXT2XV.WU.HU Vd.4W, Vj.8H
+        /// uint32x4_t vsllwil_wu_hu_u16(uint16x8_t a, uint8_t ui4)
+        ///   LSX: VSLLWIL.WU.HU Vd.4W, Vj.8H, ui4
         /// </summary>
-        public static Vector128<uint> ZeroExtendWideningLower(Vector128<ushort> value) => ZeroExtendWideningLower(value);
+        public static Vector128<uint> ZeroExtendWideningLowerAndShiftLeft(Vector64<ushort> value, byte shift) => ZeroExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// int32x4_t vext2xv_wu_hu_u16 (int16x8_t a)
-        ///   LSX: VEXT2XV.WU.HU Vd.4W, Vj.8H
+        /// int32x4_t vsllwil_wu_hu_s16(int16x8_t a, uint8_t ui4)
+        ///   LSX: VSLLWIL.WU.HU Vd.4W, Vj.8H, ui4
         /// </summary>
-        public static Vector128<int> ZeroExtendWideningLower(Vector128<short> value) => ZeroExtendWideningLower(value);
+        public static Vector128<int> ZeroExtendWideningLowerAndShiftLeft(Vector64<short> value, byte shift) => ZeroExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// uint64x2_t vext2xv_du_wu_u32 (uint32x4_t a)
-        ///   LSX: VEXT2XV.DU.WU Vd.2D, Vj.4W
+        /// uint64x2_t vsllwil_du_wu_u32(uint32x4_t a, uint8_t ui5)
+        ///   LSX: VSLLWIL.DU.WU Vd.2D, Vj.4W, ui5
         /// </summary>
-        public static Vector128<ulong> ZeroExtendWideningLower(Vector128<uint> value) => ZeroExtendWideningLower(value);
+        public static Vector128<ulong> ZeroExtendWideningLowerAndShiftLeft(Vector64<uint> value, byte shift) => ZeroExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// int64x2_t vext2xv_du_wu_u32 (int32x4_t a)
-        ///   LSX: VEXT2XV.DU.WU Vd.2D, Vj.4W
+        /// int64x2_t vsllwil_du_wu_s32(int32x4_t a, uint8_t ui5)
+        ///   LSX: VSLLWIL.DU.WU Vd.2D, Vj.4W, ui5
         /// </summary>
-        public static Vector128<long> ZeroExtendWideningLower(Vector128<int> value) => ZeroExtendWideningLower(value);
+        public static Vector128<long> ZeroExtendWideningLowerAndShiftLeft(Vector64<int> value, byte shift) => ZeroExtendWideningLowerAndShiftLeft(value, shift);
 
         /// <summary>
-        /// int16x8_t vexth_h_b_s8 (int8x16_t a)
+        /// uint128x1_t vextl_qu_du_s64(int64_t a)
+        ///   LSX: VEXTL.QU.DU Vd.Q, Vj.D
+        /// </summary>
+        public static Vector128<ulong> ZeroExtendWideningLower(Vector64<long> value) => ZeroExtendWideningLower(value);
+
+        /// <summary>
+        /// uint128x1_t vextl_qu_du_u64(uint64_t a)
+        ///   LSX: VEXTL.QU.DU Vd.Q, Vj.D
+        /// </summary>
+        public static Vector128<ulong> ZeroExtendWideningLower(Vector64<ulong> value) => ZeroExtendWideningLower(value);
+
+        /// <summary>
+        /// int16x8_t vexth_h_b_s8(int8x16_t a)
         ///   LSX: VEXTH.H.B Vd.8H, Vj.16B
         /// </summary>
         public static Vector128<short> SignExtendWideningUpper(Vector128<sbyte> value) => SignExtendWideningUpper(value);
 
         /// <summary>
-        /// int32x4_t vexth_w_h_s16 (int16x8_t a)
-        ///   LSX: VEXTH.W.H Vd.4S, Vj.8H
+        /// int32x4_t vexth_w_h_s16(int16x8_t a)
+        ///   LSX: VEXTH.W.H Vd.4W, Vj.8H
         /// </summary>
         public static Vector128<int> SignExtendWideningUpper(Vector128<short> value) => SignExtendWideningUpper(value);
 
         /// <summary>
-        /// int64x2_t vexth_d_w_s32 (int32x4_t a)
-        ///   LSX: VEXTH.D.W Vd.2D, Vj.4S
+        /// int64x2_t vexth_d_w_s32(int32x4_t a)
+        ///   LSX: VEXTH.D.W Vd.2D, Vj.4W
         /// </summary>
         public static Vector128<long> SignExtendWideningUpper(Vector128<int> value) => SignExtendWideningUpper(value);
 
         /// <summary>
-        /// uint16x8_t vexth_HU_BU_u8 (uint8x16_t a)
+        /// int128x1_t vexth_d_w_s64(int64x2_t a)
+        ///   LSX: VEXTH.Q.D Vd.Q, Vj.2D
+        /// </summary>
+        public static Vector128<long> SignExtendWideningUpper(Vector128<long> value) => SignExtendWideningUpper(value);
+
+        /// <summary>
+        /// int16x8_t vexth_HU_BU_s8(int8x16_t a)
         ///   LSX: VEXTH.HU.BU Vd.8H, Vj.16B
         /// </summary>
         public static Vector128<short> ZeroExtendWideningUpper(Vector128<sbyte> value) => ZeroExtendWideningUpper(value);
 
         /// <summary>
-        /// uint16x8_t vexth_HU_BU_u8 (uint8x16_t a)
+        /// uint16x8_t vexth_HU_BU_u8(uint8x16_t a)
         ///   LSX: VEXTH.HU.BU Vd.8H, Vj.16B
         /// </summary>
         public static Vector128<ushort> ZeroExtendWideningUpper(Vector128<byte> value) => ZeroExtendWideningUpper(value);
 
         /// <summary>
-        /// uint32x4_t vexth_WU_HU_u16 (uint16x8_t a)
-        ///   LSX: VEXTH.WU.HU Vd.4S, Vj.8H
+        /// int32x4_t vexth_WU_HU_s16(int16x8_t a)
+        ///   LSX: VEXTH.WU.HU Vd.4W, Vj.8H
         /// </summary>
         public static Vector128<int> ZeroExtendWideningUpper(Vector128<short> value) => ZeroExtendWideningUpper(value);
 
         /// <summary>
-        /// uint32x4_t vexth_WU_HU_u16 (uint16x8_t a)
-        ///   LSX: VEXTH.WU.HU Vd.4S, Vj.8H
+        /// uint32x4_t vexth_WU_HU_u16(uint16x8_t a)
+        ///   LSX: VEXTH.WU.HU Vd.4W, Vj.8H
         /// </summary>
         public static Vector128<uint> ZeroExtendWideningUpper(Vector128<ushort> value) => ZeroExtendWideningUpper(value);
 
         /// <summary>
-        /// uint64x2_t vexth_DU_WU_u32 (uint32x4_t a)
-        ///   LSX: VEXTH.DU.WU Vd.2D, Vj.4S
+        /// int64x2_t vexth_DU_WU_s32(uint32x4_t a)
+        ///   LSX: VEXTH.DU.WU Vd.2D, Vj.4W
         /// </summary>
         public static Vector128<long> ZeroExtendWideningUpper(Vector128<int> value) => ZeroExtendWideningUpper(value);
 
         /// <summary>
-        /// uint64x2_t vexth_DU_WU_u32 (uint32x4_t a)
-        ///   LSX: VEXTH.DU.WU Vd.2D, Vj.4S
+        /// uint64x2_t vexth_DU_WU_u32(uint32x4_t a)
+        ///   LSX: VEXTH.DU.WU Vd.2D, Vj.4W
         /// </summary>
         public static Vector128<ulong> ZeroExtendWideningUpper(Vector128<uint> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// int128x1_t vexth_DU_WU_s64(int64x2_t a)
+        ///   LSX: VEXTH.QU.DU Vd.Q, Vj.2D
+        /// </summary>
+        public static Vector128<ulong> ZeroExtendWideningUpper(Vector128<long> value) => ZeroExtendWideningUpper(value);
+
+        /// <summary>
+        /// uint128x1_t vexth_DU_WU_u64(uint64x2_t a)
+        ///   LSX: VEXTH.QU.DU Vd.Q, Vj.2D
+        /// </summary>
+        public static Vector128<ulong> ZeroExtendWideningUpper(Vector128<ulong> value) => ZeroExtendWideningUpper(value);
 
         /// <summary>
         /// int8x16_t vand_v_s8 (int8x16_t a, int8x16_t b)
@@ -1739,6 +1967,66 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<double> AndNot(Vector128<double> left, Vector128<double> right) => AndNot(left, right);
 
         /// <summary>
+        /// uint8x8_t vor_u8 (uint8x8_t a, uint8x8_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<byte> Or(Vector64<byte> left, Vector64<byte> right) => Or(left, right);
+
+        /// <summary>
+        /// float64x1_t vor_f64 (float64x1_t a, float64x1_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<double> Or(Vector64<double> left, Vector64<double> right) => Or(left, right);
+
+        /// <summary>
+        /// int16x4_t vor_s16 (int16x4_t a, int16x4_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<short> Or(Vector64<short> left, Vector64<short> right) => Or(left, right);
+
+        /// <summary>
+        /// int32x2_t vor_s32 (int32x2_t a, int32x2_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<int> Or(Vector64<int> left, Vector64<int> right) => Or(left, right);
+
+        /// <summary>
+        /// int64x1_t vor_s64 (int64x1_t a, int64x1_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<long> Or(Vector64<long> left, Vector64<long> right) => Or(left, right);
+
+        /// <summary>
+        /// int8x8_t vor_s8 (int8x8_t a, int8x8_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<sbyte> Or(Vector64<sbyte> left, Vector64<sbyte> right) => Or(left, right);
+
+        /// <summary>
+        /// float32x2_t vor_f32 (float32x2_t a, float32x2_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<float> Or(Vector64<float> left, Vector64<float> right) => Or(left, right);
+
+        /// <summary>
+        /// uint16x4_t vor_u16 (uint16x4_t a, uint16x4_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<ushort> Or(Vector64<ushort> left, Vector64<ushort> right) => Or(left, right);
+
+        /// <summary>
+        /// uint32x2_t vor_u32 (uint32x2_t a, uint32x2_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<uint> Or(Vector64<uint> left, Vector64<uint> right) => Or(left, right);
+
+        /// <summary>
+        /// uint64x1_t vor_u64 (uint64x1_t a, uint64x1_t b)
+        ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<ulong> Or(Vector64<ulong> left, Vector64<ulong> right) => Or(left, right);
+
+        /// <summary>
         /// int8x16_t vor_v_s8 (int8x16_t a, int8x16_t b)
         ///   LSX: VOR.V Vd.16B, Vj.16B, Vk.16B
         /// </summary>
@@ -1799,73 +2087,253 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<double> Or(Vector128<double> left, Vector128<double> right) => Or(left, right);
 
         /// <summary>
-        /// int8x16_t vor_v_s8 (int8x16_t a, int8x16_t b)
+        /// uint8x8_t vnori_b_u8 (uint8x8_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<byte> Not(Vector64<byte> value) => Not(value);
+
+        /// <summary>
+        /// float64x1_t vnori_b_f64 (float64x1_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<double> Not(Vector64<double> value) => Not(value);
+
+        /// <summary>
+        /// int16x4_t vnori_b_s16 (int16x4_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<short> Not(Vector64<short> value) => Not(value);
+
+        /// <summary>
+        /// int32x2_t vnori_b_s32 (int32x2_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<int> Not(Vector64<int> value) => Not(value);
+
+        /// <summary>
+        /// int64x1_t vnori_b_s64 (int64x1_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<long> Not(Vector64<long> value) => Not(value);
+
+        /// <summary>
+        /// int8x8_t vnori_b_s8 (int8x8_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<sbyte> Not(Vector64<sbyte> value) => Not(value);
+
+        /// <summary>
+        /// float32x2_t vnori_b_f32 (float32x2_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<float> Not(Vector64<float> value) => Not(value);
+
+        /// <summary>
+        /// uint16x4_t vnori_b_u16 (uint16x4_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<ushort> Not(Vector64<ushort> value) => Not(value);
+
+        /// <summary>
+        /// uint32x2_t vnori_b_u32 (uint32x2_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<uint> Not(Vector64<uint> value) => Not(value);
+
+        /// <summary>
+        /// uint64x1_t vnori_b_u64 (uint64x1_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector64<ulong> Not(Vector64<ulong> value) => Not(value);
+
+        /// <summary>
+        /// uint8x16_t vnori_b_u8 (uint8x16_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<byte> Not(Vector128<byte> value) => Not(value);
+
+        /// <summary>
+        /// float64x2_t vnori_b_f64 (float64x2_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<double> Not(Vector128<double> value) => Not(value);
+
+        /// <summary>
+        /// int16x8_t vnori_b_s16 (int16x8_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<short> Not(Vector128<short> value) => Not(value);
+
+        /// <summary>
+        /// int32x4_t vnori_b_s32 (int32x4_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<int> Not(Vector128<int> value) => Not(value);
+
+        /// <summary>
+        /// int64x2_t vnori_b_s64 (int64x2_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<long> Not(Vector128<long> value) => Not(value);
+
+        /// <summary>
+        /// int8x16_t vnori_b_s8 (int8x16_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<sbyte> Not(Vector128<sbyte> value) => Not(value);
+
+        /// <summary>
+        /// float32x4_t vnori_b_f32 (float32x4_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<float> Not(Vector128<float> value) => Not(value);
+
+        /// <summary>
+        /// uint16x8_t vnori_b_u16 (uint16x8_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<ushort> Not(Vector128<ushort> value) => Not(value);
+
+        /// <summary>
+        /// uint32x4_t vnori_b_u32 (uint32x4_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// </summary>
+        public static Vector128<uint> Not(Vector128<uint> value) => Not(value);
+
+        /// <summary>
+        /// uint64x2_t vnori_b_u64 (uint64x2_t a)
+        ///   LSX: VNORI.B Vd.16B, Vj.16B, 0
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<ulong> Not(Vector128<ulong> value) => Not(value);
+
+        /// <summary>
+        /// int8x16_t vnor_v_s8 (int8x16_t a, int8x16_t b)
         ///   LSX: VNOR.V Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<sbyte> NotOr(Vector128<sbyte> left, Vector128<sbyte> right) => NotOr(left, right);
 
         /// <summary>
-        /// uint8x16_t vor_v_u8 (uint8x16_t a, uint8x16_t b)
+        /// uint8x16_t vnor_v_u8 (uint8x16_t a, uint8x16_t b)
         ///   LSX: VNOR.V Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<byte> NotOr(Vector128<byte> left, Vector128<byte> right) => NotOr(left, right);
 
         /// <summary>
-        /// int16x8_t vor_v_s16 (int16x8_t a, int16x8_t b)
+        /// int16x8_t vnor_v_s16 (int16x8_t a, int16x8_t b)
         ///   LSX: VNOR.V Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<short> NotOr(Vector128<short> left, Vector128<short> right) => NotOr(left, right);
 
         /// <summary>
-        /// uint16x8_t vor_v_u16 (uint16x8_t a, uint16x8_t b)
+        /// uint16x8_t vnor_v_u16 (uint16x8_t a, uint16x8_t b)
         ///   LSX: VNOR.V Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<ushort> NotOr(Vector128<ushort> left, Vector128<ushort> right) => NotOr(left, right);
 
         /// <summary>
-        /// int32x4_t vor_v_s32 (int32x4_t a, int32x4_t b)
+        /// int32x4_t vnor_v_s32 (int32x4_t a, int32x4_t b)
         ///   LSX: VNOR.V Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<int> NotOr(Vector128<int> left, Vector128<int> right) => NotOr(left, right);
 
         /// <summary>
-        /// uint32x4_t vor_v_u32 (uint32x4_t a, uint32x4_t b)
+        /// uint32x4_t vnor_v_u32 (uint32x4_t a, uint32x4_t b)
         ///   LSX: VNOR.V Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<uint> NotOr(Vector128<uint> left, Vector128<uint> right) => NotOr(left, right);
 
         /// <summary>
-        /// int64x2_t vor_v_s64 (int64x2_t a, int64x2_t b)
+        /// int64x2_t vnor_v_s64 (int64x2_t a, int64x2_t b)
         ///   LSX: VNOR.V Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<long> NotOr(Vector128<long> left, Vector128<long> right) => NotOr(left, right);
 
         /// <summary>
-        /// uint64x2_t vor_v_u64 (uint64x2_t a, uint64x2_t b)
+        /// uint64x2_t vnor_v_u64 (uint64x2_t a, uint64x2_t b)
         ///   LSX: VNOR.V Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<ulong> NotOr(Vector128<ulong> left, Vector128<ulong> right) => NotOr(left, right);
 
         /// <summary>
-        /// float32x4_t vor_v_f32 (float32x4_t a, float32x4_t b)
+        /// float32x4_t vnor_v_f32 (float32x4_t a, float32x4_t b)
         ///   LSX: VNOR.V Vd.4S, Vj.4S, Vk.4S
         /// </summary>
         public static Vector128<float> NotOr(Vector128<float> left, Vector128<float> right) => NotOr(left, right);
 
         /// <summary>
-        /// float64x2_t vor_v_f64 (float64x2_t a, float64x2_t b)
+        /// float64x2_t vnor_v_f64 (float64x2_t a, float64x2_t b)
         ///   LSX: VNOR.V Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<double> NotOr(Vector128<double> left, Vector128<double> right) => NotOr(left, right);
 
         /// <summary>
-        /// int8x16_t vor_v_s8 (int8x16_t a, int8x16_t b)
+        /// uint8x8_t vorn_u8 (uint8x8_t a, uint8x8_t b)
+        /// </summary>
+        public static Vector64<byte> OrNot(Vector64<byte> left, Vector64<byte> right) => OrNot(left, right);
+
+        /// <summary>
+        /// float64x1_t vorn_f64 (float64x1_t a, float64x1_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<double> OrNot(Vector64<double> left, Vector64<double> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int16x4_t vorn_s16 (int16x4_t a, int16x4_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<short> OrNot(Vector64<short> left, Vector64<short> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int32x2_t vorn_s32 (int32x2_t a, int32x2_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<int> OrNot(Vector64<int> left, Vector64<int> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int64x1_t vorn_s64 (int64x1_t a, int64x1_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<long> OrNot(Vector64<long> left, Vector64<long> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int8x8_t vorn_s8 (int8x8_t a, int8x8_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<sbyte> OrNot(Vector64<sbyte> left, Vector64<sbyte> right) => OrNot(left, right);
+
+        /// <summary>
+        /// float32x2_t vorn_f32 (float32x2_t a, float32x2_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<float> OrNot(Vector64<float> left, Vector64<float> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint16x4_t vorn_u16 (uint16x4_t a, uint16x4_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<ushort> OrNot(Vector64<ushort> left, Vector64<ushort> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint32x2_t vorn_u32 (uint32x2_t a, uint32x2_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<uint> OrNot(Vector64<uint> left, Vector64<uint> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint64x1_t vorn_u64 (uint64x1_t a, uint64x1_t b)
+        ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector64<ulong> OrNot(Vector64<ulong> left, Vector64<ulong> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int8x16_t vorn_v_s8 (int8x16_t a, int8x16_t b)
         ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<sbyte> OrNot(Vector128<sbyte> left, Vector128<sbyte> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint8x16_t vor_v_u8 (uint8x16_t a, uint8x16_t b)
+        /// uint8x16_t vorn_v_u8 (uint8x16_t a, uint8x16_t b)
         ///   LSX: VORN.V Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<byte> OrNot(Vector128<byte> left, Vector128<byte> right) => OrNot(left, right);
@@ -1883,40 +2351,100 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<ushort> OrNot(Vector128<ushort> left, Vector128<ushort> right) => OrNot(left, right);
 
         /// <summary>
-        /// int32x4_t vor_v_s32 (int32x4_t a, int32x4_t b)
+        /// int32x4_t vorn_v_s32 (int32x4_t a, int32x4_t b)
         ///   LSX: VORN.V Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<int> OrNot(Vector128<int> left, Vector128<int> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint32x4_t vor_v_u32 (uint32x4_t a, uint32x4_t b)
+        /// uint32x4_t vorn_v_u32 (uint32x4_t a, uint32x4_t b)
         ///   LSX: VORN.V Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<uint> OrNot(Vector128<uint> left, Vector128<uint> right) => OrNot(left, right);
 
         /// <summary>
-        /// int64x2_t vor_v_s64 (int64x2_t a, int64x2_t b)
+        /// int64x2_t vorn_v_s64 (int64x2_t a, int64x2_t b)
         ///   LSX: VORN.V Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<long> OrNot(Vector128<long> left, Vector128<long> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint64x2_t vor_v_u64 (uint64x2_t a, uint64x2_t b)
+        /// uint64x2_t vorn_v_u64 (uint64x2_t a, uint64x2_t b)
         ///   LSX: VORN.V Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) => OrNot(left, right);
 
         /// <summary>
-        /// float32x4_t vor_v_f32 (float32x4_t a, float32x4_t b)
+        /// float32x4_t vorn_v_f32 (float32x4_t a, float32x4_t b)
         ///   LSX: VORN.V Vd.4S, Vj.4S, Vk.4S
         /// </summary>
         public static Vector128<float> OrNot(Vector128<float> left, Vector128<float> right) => OrNot(left, right);
 
         /// <summary>
-        /// float64x2_t vor_v_f64 (float64x2_t a, float64x2_t b)
+        /// float64x2_t vorn_v_f64 (float64x2_t a, float64x2_t b)
         ///   LSX: VORN.V Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<double> OrNot(Vector128<double> left, Vector128<double> right) => OrNot(left, right);
+
+        /// <summary>
+        /// uint8x8_t vxor_u8 (uint8x8_t a, uint8x8_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<byte> Xor(Vector64<byte> left, Vector64<byte> right) => Xor(left, right);
+
+        /// <summary>
+        /// float64x1_t vxor_f64 (float64x1_t a, float64x1_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<double> Xor(Vector64<double> left, Vector64<double> right) => Xor(left, right);
+
+        /// <summary>
+        /// int16x4_t vxor_s16 (int16x4_t a, int16x4_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<short> Xor(Vector64<short> left, Vector64<short> right) => Xor(left, right);
+
+        /// <summary>
+        /// int32x2_t vxor_s32 (int32x2_t a, int32x2_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<int> Xor(Vector64<int> left, Vector64<int> right) => Xor(left, right);
+
+        /// <summary>
+        /// int64x1_t vxor_s64 (int64x1_t a, int64x1_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<long> Xor(Vector64<long> left, Vector64<long> right) => Xor(left, right);
+
+        /// <summary>
+        /// int8x8_t vxor_s8 (int8x8_t a, int8x8_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<sbyte> Xor(Vector64<sbyte> left, Vector64<sbyte> right) => Xor(left, right);
+
+        /// <summary>
+        /// float32x2_t vxor_f32 (float32x2_t a, float32x2_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<float> Xor(Vector64<float> left, Vector64<float> right) => Xor(left, right);
+
+        /// <summary>
+        /// uint16x4_t vxor_u16 (uint16x4_t a, uint16x4_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<ushort> Xor(Vector64<ushort> left, Vector64<ushort> right) => Xor(left, right);
+
+        /// <summary>
+        /// uint32x2_t vxor_u32 (uint32x2_t a, uint32x2_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<uint> Xor(Vector64<uint> left, Vector64<uint> right) => Xor(left, right);
+
+        /// <summary>
+        /// uint64x1_t vxor_u64 (uint64x1_t a, uint64x1_t b)
+        ///   LSX: VXOR.V Vd.8B, Vj.8B, Vk.8B
+        /// </summary>
+        public static Vector64<ulong> Xor(Vector64<ulong> left, Vector64<ulong> right) => Xor(left, right);
 
         /// <summary>
         /// int8x16_t vxor_v_s8 (int8x16_t a, int8x16_t b)
@@ -2535,6 +3063,7 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VSETANYEQZ.D cd, Vj.2D
         /// </summary>
         public static bool HasElementsIsZero(Vector128<long> value) => HasElementsIsZero(value);
+
         /// <summary>
         /// bool vsetanyeqz_w_u64 (uint64x2_t value)
         ///   LSX: VSETANYEQZ.D cd, Vj.2D
