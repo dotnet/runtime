@@ -1,14 +1,17 @@
 setlocal ENABLEEXTENSIONS
 pushd %~dp0
-
+set ASYNC_ROSLYN_COMMIT=046d22fad72ac726d36d93b0e9d186574e77207b
 set ASYNC_SUFFIX=async-7
+set ASYNC_ROSLYN_BRANCH=demos/async2-experiment
 
 cd ..
-pushd dotnet-roslyn
+if not exist async-roslyn-repo git clone -b %ASYNC_ROSLYN_BRANCH% -o async_roslyn_remote https://github.com/dotnet/runtimelab.git async-roslyn-repo
 
-git fetch AzDo dev/vsadov/a2
+pushd async-roslyn-repo
+
+git fetch async_roslyn_remote %ASYNC_ROSLYN_BRANCH%
 rem when updating this, make sure to update the ASYNC_SUFFIX above and the versions.props file
-git checkout 046d22fad72ac726d36d93b0e9d186574e77207b
+git checkout %ASYNC_ROSLYN_COMMIT%
 
 call restore.cmd
 call build.cmd -c release
