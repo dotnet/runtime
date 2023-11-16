@@ -571,7 +571,7 @@ BaseDomain::BaseDomain()
         FORBID_FAULT;
     }
     CONTRACTL_END;
-    
+
     m_pDefaultBinder = NULL;
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
@@ -682,7 +682,7 @@ void BaseDomain::ClearBinderContext()
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
-    
+
     if (m_pDefaultBinder)
     {
         delete m_pDefaultBinder;
@@ -3596,7 +3596,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                         // IsSystem on the PEAssembly should be false, even for CoreLib satellites
                         result = PEAssembly::Open(boundAssembly);
                     }
-                    
+
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
                     AssemblyBinder* pBinder = result->GetAssemblyBinder();
                     _ASSERTE(pBinder != NULL);

@@ -31,8 +31,6 @@ extern "C" void QCALLTYPE LogThreadPoolIOPack(_In_z_ void* nativeOverlapped, _In
 extern "C" void QCALLTYPE LogContentionLockCreated(void* LockID, void* AssociatedObjectID, uint16_t ClrInstanceID);
 extern "C" void QCALLTYPE LogContentionStart(uint8_t ContentionFlags, uint16_t ClrInstanceID, void* LockID, void* AssociatedObjectID, uint64_t LockOwnerThreadID);
 extern "C" void QCALLTYPE LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs);
-extern "C" void QCALLTYPE LogResolutionAttempted(uint16_t CLRInstanceId, LPCWSTR AssemblyName, uint16_t Stage, LPCWSTR AssemblyLoadContext, uint16_t Result, LPCWSTR ResultAssemblyName, LPCWSTR ResultAssemblyPath, LPCWSTR ErrorMessage, LPCGUID ActivityId, LPCGUID RelatedActivityId);
-extern "C" void QCALLTYPE LogKnownPathProbed(uint16_t CLRInstanceId, LPCWSTR FilePath, uint16_t Source, int32_t Result, LPCGUID ActivityId, LPCGUID RelatedActivityId);
 #endif // defined(FEATURE_PERFTRACING)
 
 #endif //_NATIVEEVENTSOURCE_H_

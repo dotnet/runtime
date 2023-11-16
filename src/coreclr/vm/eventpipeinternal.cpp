@@ -282,17 +282,4 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(UINT64 sessionI
     return result;
 }
 
-extern "C" uint16_t QCALLTYPE EventPipeInternal_GetClrInstanceId()
-{
-    QCALL_CONTRACT;
-
-    uint16_t result = 0;
-    BEGIN_QCALL;
-
-    result = GetClrInstanceId();
-
-    END_QCALL;
-    return result;
-}
-
 #endif // FEATURE_PERFTRACING

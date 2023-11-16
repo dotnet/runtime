@@ -94,8 +94,6 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(
     UINT64 sessionID,
     INT32 timeoutMs);
 
-extern "C" uint16_t QCALLTYPE EventPipeInternal_GetClrInstanceId();
-
 #endif // FEATURE_PERFTRACING
 
 #endif // __EVENTPIPEINTERNAL_H__

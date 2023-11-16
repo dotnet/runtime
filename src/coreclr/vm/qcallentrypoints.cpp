@@ -299,8 +299,6 @@ static const Entry s_QCall[] =
     DllImportEntry(LogContentionLockCreated)
     DllImportEntry(LogContentionStart)
     DllImportEntry(LogContentionStop)
-    DllImportEntry(LogResolutionAttempted)
-    DllImportEntry(LogKnownPathProbed)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)
     DllImportEntry(EventPipeInternal_GetSessionInfo)
@@ -313,7 +311,6 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_GetNextEvent)
     DllImportEntry(EventPipeInternal_SignalSession)
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
-    DllImportEntry(EventPipeInternal_GetClrInstanceId)
 #endif
 #if defined(TARGET_UNIX)
     DllImportEntry(CloseHandle)

@@ -92,12 +92,6 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
     if "Contention" in symbol:
         return
 
-    # Fired by managed binder
-    if "ResolutionAttempted" in symbol:
-        return
-    if "KnownPathProbed" in symbol:
-        return
-
     evtLevel = eventNode.getAttribute("level")[4:]
     evtKeywords = ""
     # Write the event attribute.
