@@ -37,7 +37,7 @@ static inline char* minipal_getexepath(void)
         return NULL;
     }
 
-    char path_buf[path_length];
+    char* path_buf = (char*)alloca(path_length);
     if (_NSGetExecutablePath(path_buf, &path_length) != 0)
     {
         errno = EINVAL;
