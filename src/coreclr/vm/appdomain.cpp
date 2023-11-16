@@ -2819,6 +2819,9 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         if (registerNewAssembly && !pDomainAssembly->GetAssembly()->IsSystem()) // CoreLib bootstrap
         {
+            // Ensure to call AddLoadedAssembly under load lock
+            BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+
             GCX_COOP();
 
             ASSEMBLYLOADCONTEXTREF managedALC = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)(pPEAssembly->GetAssemblyBinder()->GetManagedAssemblyLoadContext()));

@@ -36,24 +36,16 @@ namespace System.Runtime.Loader
 
         internal ApplicationContext AppContext { get; } = new ApplicationContext();
 
-        // NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
-
         // called by vm
+        // ensure to call with BaseDomain::LoadLockHolder in native (from native binder)
         private void AddLoadedAssembly(IntPtr loadedAssembly)
         {
-            // BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-            // TODO: is the lock shared outside this type?
-            lock (_loadLock)
-            {
-                _loadedAssemblies.Add(loadedAssembly);
+            _loadedAssemblies.Add(loadedAssembly);
 
-                // #ifdef FEATURE_READYTORUN
-                DeclareLoadedAssembly(loadedAssembly);
-                // #endif // FEATURE_READYTORUN
-            }
+            // #ifdef FEATURE_READYTORUN
+            DeclareLoadedAssembly(loadedAssembly);
+            // #endif // FEATURE_READYTORUN
         }
-
-        // static void GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString& alcName);
 
         //# ifdef FEATURE_READYTORUN
 
@@ -190,8 +182,6 @@ namespace System.Runtime.Loader
         // provides a best-effort match to prevent problems, not perfection
         private readonly Dictionary<string, SimpleNameToExpectedMVIDAndRequiringAssembly> _assemblySimpleNameMvidCheckHash = new Dictionary<string, SimpleNameToExpectedMVIDAndRequiringAssembly>();
         private readonly List<IntPtr> _loadedAssemblies = new List<IntPtr>();
-
-        private static readonly object _loadLock = new object();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetMDImport")]
         private static partial IntPtr Assembly_GetMDImport(IntPtr pAssembly);
