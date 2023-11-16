@@ -757,12 +757,6 @@ inline size_t unsigned_abs(__int64 x)
 #define FEATURE_LOOP_ALIGN 0
 #endif
 
-#if defined(TARGET_ARM64) && defined(HOST_UNIX)
-#define HAS_PRIMITIVE_128 1
-#else
-#define HAS_PRIMITIVE_128 0
-#endif
-
 #define CLFLG_MAXOPT                                                                                                   \
     (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADSTORE | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS | \
      CLFLG_INLINING | CLFLG_STRUCTPROMOTE)

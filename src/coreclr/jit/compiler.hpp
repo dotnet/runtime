@@ -172,9 +172,9 @@ inline unsigned genLog2(unsigned __int128 value)
 
 inline unsigned genCountBits(unsigned __int128 bits)
 {
-    return BitOperations::PopCount(static_cast<uint64_t>(bits));
+    return BitOperations::PopCount(bits);
 }
-#endif // HAS_PRIMITIVE_128
+#endif
 
 /*****************************************************************************
  *

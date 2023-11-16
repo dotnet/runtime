@@ -64,6 +64,12 @@ inline bool compUnixX86Abi()
 #error Unsupported or unset target architecture
 #endif
 
+#if defined(TARGET_ARM64) && defined(HOST_UNIX)
+#define HAS_PRIMITIVE_128 1
+#else
+#define HAS_PRIMITIVE_128 0
+#endif
+
 /*****************************************************************************/
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
