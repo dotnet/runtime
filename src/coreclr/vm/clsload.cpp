@@ -3636,7 +3636,7 @@ VOID ClassLoader::AddAvailableClassHaveLock(
                 pszName = pszNameSpace = "Invalid TypeDef token";
                 pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
             }
-            NameHandle nameHandleEncloser(pModule, classdef);
+            NameHandle nameHandleEncloser(pModule, enclosing);
             nameHandleEncloser.SetName(pszEnclosingNameSpace, pszEnclosingName);
 
             pEncloser = pClassHash->FindByNameHandle(&nameHandleEncloser);
