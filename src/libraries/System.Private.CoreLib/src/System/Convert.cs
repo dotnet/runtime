@@ -3098,7 +3098,7 @@ namespace System
             }
 
             HexConverter.EncodeToUtf16(source, destination);
-            charsWritten = source.Length  * 2;
+            charsWritten = source.Length * 2;
             return true;
         }
 
@@ -3175,7 +3175,7 @@ namespace System
             }
 
             HexConverter.EncodeToUtf16(source, destination, HexConverter.Casing.Lower);
-            charsWritten = source.Length  * 2;
+            charsWritten = source.Length * 2;
             return true;
         }
     }  // class Convert
