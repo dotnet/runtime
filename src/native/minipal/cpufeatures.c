@@ -34,6 +34,9 @@
 #ifndef HWCAP_ASIMDDP
 #define HWCAP_ASIMDDP   (1 << 20)
 #endif
+#ifndef HWCAP_SVE
+#define HWCAP_SVE   (1 << 22)
+#endif
 
 #endif
 
