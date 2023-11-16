@@ -37,7 +37,7 @@ PTR_VOID EEClassHashEntry::GetData()
     }
     CONTRACTL_END;
 
-    return m_Data;
+    return VolatileLoadWithoutBarrier(&m_Data);
 }
 
 #ifndef DACCESS_COMPILE
