@@ -412,8 +412,35 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
 {
-    NYI_RISCV64("GetUnwindSizeFromUnwindHeader-----unimplemented on RISCV64 yet----");
-    return 0;
+    //  0x00 -> INVALID
+    //  0x1F -> 48b   -> +2B
+    //  0x3F -> 64b   -> +4B
+    //  0x7F -> >=80b -> +4B or more
+    //  0x7F : 0xFF -> unused right now
+
+    unsigned size = 1; // 32b
+
+    switch (b1)
+    {
+        case 0x00:
+            size = 0; // INVALID!
+            break;
+        case 0x1F: // 48b
+            size = 2;
+            break;
+        case 0x3F: // 64b
+            size = 4;
+            break;
+        case 0x5F: // 48b
+            size = 2;
+            break;
+        case 0x7F: // >=80b
+            size = 4;
+            break;
+    }
+
+    assert(1 <= size && size <= 4);
+    return size;
 }
 
 #endif // DEBUG
