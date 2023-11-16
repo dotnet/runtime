@@ -99,7 +99,7 @@ struct SeqPointInfo {
 #define PARAM_REGS 8
 #define FP_PARAM_REGS 8
 #define CTX_REGS 2
-#define CTX_REGS_OFFSET 20
+#define CTX_REGS_OFFSET ARMREG_R20
 
 typedef struct {
 	host_mgreg_t res, res2;
@@ -271,12 +271,10 @@ struct CallInfo {
 };
 
 typedef struct {
-	/* General registers + ARMREG_R8 for indirect returns */
-	host_mgreg_t gregs [PARAM_REGS + 1];
+	/* General registers + context registers + ARMREG_R8 for indirect returns */
+	host_mgreg_t gregs [PARAM_REGS + CTX_REGS + 1];
 	/* Floating registers */
 	double fregs [FP_PARAM_REGS];
-	/* Context registers */
-	host_mgreg_t cregs [CTX_REGS];
 	/* Stack usage, used for passing params on stack */
 	guint32 stack_size;
 	guint8* stack;

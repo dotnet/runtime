@@ -126,7 +126,7 @@ static guint8* emit_brx (guint8 *code, int reg);
 static guint8* emit_blrx (guint8 *code, int reg);
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_REF_WITH_CACHE (swift_error_ref, "System.Runtime.InteropServices.Swift", "SwiftError")
+static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
 
 const char*
@@ -1875,7 +1875,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		}
 
 		if (sig->call_convention == MONO_CALL_SWIFTCALL) {
-			MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ref_class ();
+			MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
 			if (klass) {
@@ -1919,9 +1919,9 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 		case ArgInIReg:
 			return &ccontext->gregs [ainfo->reg];
 		case ArgSwiftSelf:
-			return &ccontext->cregs [ARMREG_R20 - CTX_REGS_OFFSET];
+			return &ccontext->gregs [PARAM_REGS + 1 + ARMREG_R20 - CTX_REGS_OFFSET];
 		case ArgSwiftError:
-			return &ccontext->cregs [ARMREG_R21 - CTX_REGS_OFFSET];
+			return &ccontext->gregs [PARAM_REGS + 1 + ARMREG_R21 - CTX_REGS_OFFSET];
 		case ArgInFReg:
 		case ArgInFRegR4:
 		case ArgHFA:

@@ -227,7 +227,7 @@ const gint8 mini_ins_sreg_counts[] = {
 #undef MINI_OP3
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_REF_WITH_CACHE (swift_error_ref, "System.Runtime.InteropServices.Swift", "SwiftError")
+static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
 
 guint32
@@ -11153,7 +11153,7 @@ field_access_end:
 
 			if (method->wrapper_type == MONO_CALL_SWIFTCALL) {
 				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-				MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ref_class ();
+				MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 				int swift_error_args = 0, swift_self_args = 0;
 				ERROR_DECL (swiftcall_error);
@@ -11176,9 +11176,9 @@ field_access_end:
 				}
 
 				if (!is_ok (swiftcall_error)) {
-                    emit_invalid_program_with_msg (cfg, swiftcall_error, method, cmethod);
-                    mono_error_cleanup (swiftcall_error);
-                }
+					emit_invalid_program_with_msg (cfg, swiftcall_error, method, cmethod);
+					mono_error_cleanup (swiftcall_error);
+				}
 			}
 
 			CHECK_STACK (jit_icall_info->sig->param_count);

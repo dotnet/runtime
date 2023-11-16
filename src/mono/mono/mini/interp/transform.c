@@ -62,7 +62,7 @@ static int stack_type [] = {
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (intrinsic_klass, "System.Runtime.CompilerServices", "IntrinsicAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (doesnotreturn_klass, "System.Diagnostics.CodeAnalysis", "DoesNotReturnAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_REF_WITH_CACHE (swift_error_ref, "System.Runtime.InteropServices.Swift", "SwiftError")
+static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
 
 static gboolean generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error);
@@ -3750,7 +3750,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	if (csignature->call_convention == MONO_CALL_SWIFTCALL) {
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-		MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ref_class ();
+		MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 		int swift_error_args = 0, swift_self_args = 0;
 		for (int i = 0; i < csignature->param_count; ++i) {

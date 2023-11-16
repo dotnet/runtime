@@ -979,9 +979,9 @@ mono_class_try_get_##shortname##_class (void)	\
 }
 
 
-#define GENERATE_TRY_GET_CLASS_REF_WITH_CACHE(shortname,name_space,name) \
+#define GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE(shortname,name_space,name) \
 MonoClass*	\
-mono_class_try_get_##shortname##_class (void)	\
+mono_class_try_get_##shortname##_ptr_class (void)	\
 {	\
 	static volatile MonoClass *tmp_class;	\
 	static volatile gboolean inited;	\

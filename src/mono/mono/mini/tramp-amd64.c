@@ -1099,7 +1099,7 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 
 	/* set all context registers from CallContext */
 	for (i = 0; i < CTX_REGS; i++)
-		amd64_mov_reg_membase (code, ctx_regs [i], AMD64_R11, MONO_STRUCT_OFFSET (CallContext, gregs) + ctx_regs [i] * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
+		amd64_mov_reg_membase (code, i + CTX_REGS_OFFSET, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + CTX_REGS_OFFSET) * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
 
 	/* load target addr */
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_targetaddr, sizeof (target_mgreg_t));
@@ -1118,7 +1118,7 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 
 	/* set all context registers to CallContext */
 	for (i = 0; i < CTX_REGS; i++)
-		amd64_mov_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, gregs) + ctx_regs [i] * sizeof (target_mgreg_t), ctx_regs [i], sizeof (target_mgreg_t));
+		amd64_mov_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + CTX_REGS_OFFSET) * sizeof (target_mgreg_t), i + CTX_REGS_OFFSET, sizeof (target_mgreg_t));
 
 #if TARGET_WIN32
 	amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, 0);

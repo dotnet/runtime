@@ -305,7 +305,6 @@ DECL_OFFSET(SeqPointInfo, bp_addrs)
 
 DECL_OFFSET(CallContext, gregs)
 DECL_OFFSET(CallContext, fregs)
-DECL_OFFSET(CallContext, cregs)
 DECL_OFFSET(CallContext, stack_size)
 DECL_OFFSET(CallContext, stack)
 #endif
