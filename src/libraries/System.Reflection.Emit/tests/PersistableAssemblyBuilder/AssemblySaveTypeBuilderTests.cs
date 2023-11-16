@@ -74,7 +74,7 @@ namespace System.Reflection.Emit.Tests
                 Type typeFromDisk = typesFromDisk[i];
 
                 AssemblySaveTools.AssertTypeProperties(sourceType, typeFromDisk);
-                AssemblySaveTools.AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
+                AssemblySaveTools.AssertMethods(sourceType.GetMethods(BindingFlags.DeclaredOnly), typeFromDisk.GetMethods(BindingFlags.DeclaredOnly));
                 AssemblySaveTools.AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
             }
         }
@@ -99,6 +99,7 @@ namespace System.Reflection.Emit.Tests
             {
                 TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod);
                 tb.DefineMethod("TestMethod", MethodAttributes.Public);
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -134,7 +135,9 @@ namespace System.Reflection.Emit.Tests
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract, null, new Type[] { typeof(IOneMethod)});
                 tb.AddInterfaceImplementation(typeof(INoMethod));
-                tb.DefineNestedType("NestedType", TypeAttributes.Interface | TypeAttributes.Abstract);
+                TypeBuilder nestedType = tb.DefineNestedType("NestedType", TypeAttributes.Interface | TypeAttributes.Abstract);
+                tb.CreateType();
+                nestedType.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -172,6 +175,7 @@ namespace System.Reflection.Emit.Tests
                 {
                     SetVariousGenericParameterValues(typeParams);
                 }
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
@@ -235,6 +239,7 @@ namespace System.Reflection.Emit.Tests
                 {
                     SetVariousGenericParameterValues(typeParams);
                 }
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
@@ -265,6 +270,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(arrayType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), arrayType, typeof(int[,,,]) });
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
@@ -298,6 +304,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(byrefType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), byrefType });
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
@@ -325,6 +332,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(pointerType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), pointerType });
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
@@ -362,6 +370,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(genericType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), genericType });
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
@@ -439,6 +448,7 @@ namespace System.Reflection.Emit.Tests
                 Type genericType = tb.MakeGenericType(typeParams);
                 mb.SetReturnType(methodParams[0]);
                 mb.SetParameters(new Type[] { typeof(INoMethod), genericType, typeParams[1] });
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
@@ -473,13 +483,13 @@ namespace System.Reflection.Emit.Tests
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface1", TypeAttributes.Interface | TypeAttributes.Abstract);
                 GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters(new string[] { "U", "T" });
-                typeParams[1].SetInterfaceConstraints(new Type[] { typeof(INoMethod), typeof(IOneMethod) });
+                typeParams[1].SetInterfaceConstraints(new [] { typeof(INoMethod), typeof(IOneMethod) });
                 MethodBuilder m11 = tb.DefineMethod("TwoParameters", MethodAttributes.Public);
                 MethodBuilder m12 = tb.DefineMethod("FiveTypeParameters", MethodAttributes.Public);
                 MethodBuilder m13 = tb.DefineMethod("OneParameter", MethodAttributes.Public);
                 m11.DefineGenericParameters(new string[] { "M", "N" });
                 GenericTypeParameterBuilder[] methodParams = m12.DefineGenericParameters(new string[] { "A", "B", "C", "D", "F" });
-                methodParams[2].SetInterfaceConstraints(new Type[] { typeof(IMultipleMethod) });
+                methodParams[2].SetInterfaceConstraints(new [] { typeof(IMultipleMethod) });
                 m13.DefineGenericParameters(new string[] { "T" });
                 TypeBuilder tb2 = mb.DefineType("TestInterface2", TypeAttributes.Interface | TypeAttributes.Abstract);
                 tb2.DefineGenericParameters(new string[] { "TFirst", "TSecond", "TThird" });
@@ -488,12 +498,15 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder tb3 = mb.DefineType("TestType");
                 GenericTypeParameterBuilder[] typePar = tb3.DefineGenericParameters(new string[] { "TOne" });
                 typePar[0].SetBaseTypeConstraint(typeof(EmptyTestClass));
+                tb3.CreateType();
+                tb2.CreateType();
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Module m = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First();
-                Type[] type1Params = m.GetTypes()[0].GetGenericArguments();
+                Type[] type1Params = m.GetTypes()[2].GetGenericArguments();
                 Type[] type2Params = m.GetTypes()[1].GetGenericArguments();
-                Type[] type3Params = m.GetTypes()[2].GetGenericArguments();
+                Type[] type3Params = m.GetTypes()[0].GetGenericArguments();
 
                 Assert.Equal("U", type1Params[0].Name);
                 Assert.Empty(type1Params[0].GetTypeInfo().GetGenericParameterConstraints());
@@ -505,10 +518,10 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal("TOne", type3Params[0].Name);
                 Assert.Equal(nameof(EmptyTestClass), type3Params[0].GetTypeInfo().GetGenericParameterConstraints()[0].Name);
 
-                Type[] method11Params = m.GetTypes()[0].GetMethod("TwoParameters").GetGenericArguments();
-                Type[] method12Params = m.GetTypes()[0].GetMethod("FiveTypeParameters").GetGenericArguments();
+                Type[] method11Params = m.GetTypes()[2].GetMethod("TwoParameters").GetGenericArguments();
+                Type[] method12Params = m.GetTypes()[2].GetMethod("FiveTypeParameters").GetGenericArguments();
                 Assert.Equal(nameof(IMultipleMethod), method12Params[2].GetTypeInfo().GetGenericParameterConstraints()[0].Name);
-                Type[] method13Params = m.GetTypes()[0].GetMethod("OneParameter").GetGenericArguments();
+                Type[] method13Params = m.GetTypes()[2].GetMethod("OneParameter").GetGenericArguments();
                 Type[] method21Params = m.GetTypes()[1].GetMethod("TestMethod").GetGenericArguments();
                 
                 Assert.Equal("M", method11Params[0].Name);

@@ -122,13 +122,15 @@ namespace System.Reflection.Emit
 
             WriteCustomAttributes(_customAttributes, moduleHandle);
 
-            PrePopulateTypeMembersTokens();
+            _typeDefinitions.Sort((x, y) => x.MetadataToken.CompareTo(y.MetadataToken));
 
             // All generic parameters for all types and methods should be written in specific order
             List<GenericTypeParameterBuilderImpl> genericParams = new();
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
             {
+                typeBuilder.ThrowIfNotCreated();
+
                 EntityHandle parent = default;
                 if (typeBuilder.BaseType is not null)
                 {
@@ -142,6 +144,7 @@ namespace System.Reflection.Emit
                 {
                     foreach (GenericTypeParameterBuilderImpl param in typeBuilder.GenericTypeParameters)
                     {
+                        param._parentHandle = typeHandle;
                         genericParams.Add(param);
                     }
                 }
@@ -185,19 +188,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        // Need to pre populate all type members tokens so that they can be referenced from other type's metadata
-        private void PrePopulateTypeMembersTokens()
-        {
-            foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
-            {
-                typeBuilder._firsMethodToken = _nextMethodDefRowId;
-                typeBuilder._firstFieldToken = _nextFieldDefRowId;
-                PrePopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
-                PrePopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
-            }
-        }
-
-        private void PrePopulateFieldDefinitionHandles(List<FieldBuilderImpl> fieldDefinitions)
+        private void PopulateFieldDefinitionHandles(List<FieldBuilderImpl> fieldDefinitions)
         {
             foreach (FieldBuilderImpl field in fieldDefinitions)
             {
@@ -205,12 +196,21 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void PrePopulateMethodDefinitionHandles(List<MethodBuilderImpl> methods)
+        private void PopulateMethodDefinitionHandles(List<MethodBuilderImpl> methods)
         {
             foreach (MethodBuilderImpl method in methods)
             {
                 method._handle = MetadataTokens.MethodDefinitionHandle(_nextMethodDefRowId++);
             }
+        }
+
+        internal void PopulateTypeAndItsMembersTokens(TypeBuilderImpl typeBuilder)
+        {
+            typeBuilder._handle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
+            typeBuilder._firsMethodToken = _nextMethodDefRowId;
+            typeBuilder._firstFieldToken = _nextFieldDefRowId;
+            PopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
+            PopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
         }
 
         private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
@@ -557,14 +557,18 @@ namespace System.Reflection.Emit
                 return fb._handle;
             }
 
+            if (member is ConstructorBuilderImpl ctor && Equals(ctor.Module))
+            {
+                return ctor._methodBuilder._handle;
+            }
+
             return GetMemberReference(member);
         }
 
         internal TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent,
             Type[]? interfaces, PackingSize packingSize, int typesize, TypeBuilderImpl? enclosingType)
         {
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle, interfaces, packingSize, typesize, enclosingType);
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, interfaces, packingSize, typesize, enclosingType);
             _typeDefinitions.Add(_type);
             return _type;
         }
@@ -605,8 +609,7 @@ namespace System.Reflection.Emit
 
         protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType)
         {
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            EnumBuilderImpl enumBuilder = new EnumBuilderImpl(name, underlyingType, visibility, this, typeHandle);
+            EnumBuilderImpl enumBuilder = new EnumBuilderImpl(name, underlyingType, visibility, this);
             _typeDefinitions.Add(enumBuilder._typeBuilder);
             return enumBuilder;
         }
@@ -618,8 +621,7 @@ namespace System.Reflection.Emit
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle, interfaces, packingSize, typesize, null);
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, interfaces, packingSize, typesize, null);
             _typeDefinitions.Add(_type);
             return _type;
         }

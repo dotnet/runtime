@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         private Type? _enumUnderlyingType;
         private bool _isCreated;
 
-        internal readonly TypeDefinitionHandle _handle;
+        internal TypeDefinitionHandle _handle;
         internal int _firstFieldToken;
         internal int _firsMethodToken;
         internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module,
-            TypeDefinitionHandle handle, Type[]? interfaces, PackingSize packingSize, int typeSize, TypeBuilderImpl? enclosingType)
+            Type[]? interfaces, PackingSize packingSize, int typeSize, TypeBuilderImpl? enclosingType)
         {
             _name = fullName;
             _module = module;
@@ -45,7 +45,6 @@ namespace System.Reflection.Emit
             _packingSize = packingSize;
             _typeSize = typeSize;
             SetParent(parent);
-            _handle = handle;
             _declaringType = enclosingType;
 
             // Extract namespace from fullName
@@ -97,6 +96,8 @@ namespace System.Reflection.Emit
             {
                 DefineDefaultConstructor(MethodAttributes.Public);
             }
+
+            _module.PopulateTypeAndItsMembersTokens(this);
 
             _isCreated = true;
             return this;
@@ -208,7 +209,7 @@ namespace System.Reflection.Emit
             {
                 string name = names[i];
                 ArgumentNullException.ThrowIfNull(name, nameof(names));
-                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _handle);
+                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this);
             }
 
             return _typeParameters = typeParameters;
@@ -420,7 +421,7 @@ namespace System.Reflection.Emit
             return ((GetAttributeFlagsImpl() & TypeAttributes.Import) != 0) ? true : false;
         }
 
-        private void ThrowIfNotCreated()
+        internal void ThrowIfNotCreated()
         {
             if (!_isCreated)
             {

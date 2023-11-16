@@ -47,6 +47,8 @@ namespace System.Reflection.Emit.Tests
                 {
                     tb.DefineField(field.Name, field.FieldType, field.Attributes);
                 }
+
+                tb.CreateType();
             }
         }
 
@@ -135,6 +137,8 @@ namespace System.Reflection.Emit.Tests
             {
                 MethodInfo sourceMethod = sourceMethods[j];
                 MethodInfo methodFromDisk = methodsFromDisk[j];
+                if (methodFromDisk.Name == ".ctor")
+                    continue;
 
                 Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                 Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);

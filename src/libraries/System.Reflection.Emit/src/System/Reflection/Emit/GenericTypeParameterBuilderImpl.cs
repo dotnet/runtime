@@ -22,12 +22,11 @@ namespace System.Reflection.Emit
         private MethodBuilderImpl? _methodBuilder;
         internal EntityHandle _parentHandle;
 
-        internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder, EntityHandle parentHandle)
+        internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder)
         {
             _name = name;
             _genParamPosition = genParamPosition;
             _type = typeBuilder;
-            _parentHandle = parentHandle;
         }
 
         public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder)
