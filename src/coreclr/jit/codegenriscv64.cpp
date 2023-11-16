@@ -4020,6 +4020,23 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
     return callerSPtoSPdelta;
 }
 
+// Produce generic and unoptimized code for loading constant to register and dereferencing it
+// at the end
+static void emitLoadConstAtAddr(emitter* emit, regNumber dstRegister, ssize_t imm)
+{
+    ssize_t high = (imm >> 32) & 0xffffffff;
+    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, dstRegister, (((high + 0x800) >> 12) & 0xfffff));
+    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, (high & 0xfff));
+
+    ssize_t low = imm & 0xffffffff;
+    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstRegister, dstRegister, 11);
+    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, ((low >> 21) & 0x7ff));
+
+    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstRegister, dstRegister, 11);
+    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, ((low >> 10) & 0x7ff));
+    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, dstRegister, dstRegister, (low & 0x3ff));
+}
+
 /*****************************************************************************
  *  Emit a call to a helper function.
  */
@@ -4062,17 +4079,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
         else
         {
-            ssize_t high = (((ssize_t)pAddr) >> 32) & 0xffffffff;
-            GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, callTarget, (((high + 0x800) >> 12) & 0xfffff));
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, (high & 0xfff));
-
-            ssize_t low = ((ssize_t)pAddr) & 0xffffffff;
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, callTarget, callTarget, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, ((low >> 21) & 0x7ff));
-
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, callTarget, callTarget, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, ((low >> 10) & 0x7ff));
-            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, callTarget, callTarget, (low & 0x3ff));
+            emitLoadConstAtAddr(GetEmitter(), callTarget, (ssize_t)pAddr);
         }
         regSet.verifyRegUsed(callTarget);
 
@@ -7180,9 +7187,23 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 
         if (addr == nullptr)
         {
-            NYI_RISCV64("part of genJumpToThrowHlpBlk_la-----unimplemented on RISCV64 yet----");
             callType   = emitter::EC_INDIR_R;
             callTarget = REG_DEFAULT_HELPER_CALL_TARGET;
+            if (compiler->opts.compReloc)
+            {
+                ssize_t imm = (3 + 1) << 2;
+                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+                emit->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
+            }
+            else
+            {
+                ssize_t imm = 9 << 2;
+                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+                // TODO-RISCV64-CQ: In the future we may consider using emitter::emitLoadImmediate instead,
+                // which is less straightforward but offers slightly better codegen.
+                emitLoadConstAtAddr(GetEmitter(), callTarget, (ssize_t)pAddr);
+            }
+            regSet.verifyRegUsed(callTarget);
         }
         else
         { // INS_OPTS_C
