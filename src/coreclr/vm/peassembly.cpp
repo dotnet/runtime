@@ -875,7 +875,11 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
     // we have.)
     SafeComHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    RETURN new PEAssembly(NULL, pEmit, FALSE);
+
+    {
+        GCX_COOP();
+        RETURN new PEAssembly(NULL, pEmit, FALSE);
+    }
 }
 
 #endif // #ifndef DACCESS_COMPILE
