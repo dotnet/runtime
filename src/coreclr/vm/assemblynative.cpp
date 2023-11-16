@@ -1389,13 +1389,33 @@ extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvo
 }
 
 // static
-extern "C" void QCALLTYPE AssemblyNative_TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr)
+extern "C" void QCALLTYPE AssemblyNative_TracePathProbed(LPCWSTR filePath, uint16_t source, HRESULT hr)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    BinderTracing::PathProbed(filePath, BinderTracing::PathSource::SatelliteSubdirectory, hr);
+    BinderTracing::PathProbed(filePath, static_cast<BinderTracing::PathSource>(source), hr);
+
+    END_QCALL;
+}
+
+// static
+extern "C" void QCALLTYPE AssemblyNative_TraceResolutionAttempted(LPCWSTR assemblyName, uint16_t stage, LPCWSTR assemblyLoadContextName, uint16_t result, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath, LPCWSTR errorMsg)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    FireEtwResolutionAttempted(
+        GetClrInstanceId(),
+        assemblyName,
+        stage,
+        assemblyLoadContextName,
+        result,
+        resultAssemblyName,
+        resultAssemblyPath,
+        errorMsg);
 
     END_QCALL;
 }

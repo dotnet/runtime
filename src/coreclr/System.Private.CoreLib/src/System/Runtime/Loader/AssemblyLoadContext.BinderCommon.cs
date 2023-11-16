@@ -284,7 +284,7 @@ namespace System.Runtime.Loader
                 assembly = null;
             }
 
-            NativeRuntimeEventSource.Log.KnownPathProbed(sCoreLibSatellite, (ushort)pathSource, hr);
+            AssemblyLoadContext.TracePathProbed(sCoreLibSatellite, pathSource, hr);
 
             return hr;
         }
@@ -477,7 +477,7 @@ namespace System.Runtime.Loader
 
             hr = GetAssembly(relativePath, isInTPA: false, out BinderAssembly? assembly, bundleFileLocation);
 
-            NativeRuntimeEventSource.Log.KnownPathProbed(relativePath, (ushort)PathSource.Bundle, hr);
+            AssemblyLoadContext.TracePathProbed(relativePath, PathSource.Bundle, hr);
 
             // Missing files are okay and expected when probing
             if (hr == HResults.E_FILENOTFOUND)
@@ -516,7 +516,7 @@ namespace System.Runtime.Loader
             {
                 string fileName = Path.Combine(relativePath, bindingPath);
                 int hr = GetAssembly(fileName, isInTPA: false, out BinderAssembly? assembly);
-                NativeRuntimeEventSource.Log.KnownPathProbed(fileName, (ushort)pathSource, hr);
+                AssemblyLoadContext.TracePathProbed(fileName, pathSource, hr);
 
                 // Missing files are okay and expected when probing
                 if (hr == HResults.E_FILENOTFOUND)
@@ -591,13 +591,13 @@ namespace System.Runtime.Loader
                 string fileName = fileNameWithoutExtension + ".dll";
 
                 int hr = GetAssembly(fileName, isInTPA: false, out BinderAssembly? assembly);
-                NativeRuntimeEventSource.Log.KnownPathProbed(fileName, (ushort)pathSource, hr);
+                AssemblyLoadContext.TracePathProbed(fileName, pathSource, hr);
 
                 if (hr < 0)
                 {
                     fileName = fileNameWithoutExtension + ".exe";
                     hr = GetAssembly(fileName, isInTPA: false, out assembly);
-                    NativeRuntimeEventSource.Log.KnownPathProbed(fileName, (ushort)pathSource, hr);
+                    AssemblyLoadContext.TracePathProbed(fileName, pathSource, hr);
                 }
 
                 // Since we're probing, file not founds are ok and we should just try another
@@ -689,7 +689,7 @@ namespace System.Runtime.Loader
                         {
                             int hr = GetAssembly(assemblyFilePath, isInTPA: true, out tpaAssembly, bundleFileLocation);
 
-                            NativeRuntimeEventSource.Log.KnownPathProbed(assemblyFilePath, (ushort)PathSource.Bundle, hr);
+                            AssemblyLoadContext.TracePathProbed(assemblyFilePath, PathSource.Bundle, hr);
 
                             if (hr != HResults.E_FILENOTFOUND)
                             {
@@ -717,7 +717,7 @@ namespace System.Runtime.Loader
                     Debug.Assert(tpaFileName != null);
 
                     int hr = GetAssembly(tpaFileName, isInTPA: true, out tpaAssembly);
-                    NativeRuntimeEventSource.Log.KnownPathProbed(tpaFileName, (ushort)PathSource.ApplicationAssemblies, hr);
+                    AssemblyLoadContext.TracePathProbed(tpaFileName, PathSource.ApplicationAssemblies, hr);
 
                     bindResult.SetAttemptResult(hr, tpaAssembly);
 

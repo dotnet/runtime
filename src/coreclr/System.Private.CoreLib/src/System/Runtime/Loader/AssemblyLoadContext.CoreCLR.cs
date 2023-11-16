@@ -38,20 +38,18 @@ namespace System.Runtime.Loader
         internal static extern bool IsTracingEnabled();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolvingHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
+        internal static partial void TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
+        internal static partial void TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
+        internal static partial void TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
+        internal static void TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult) => TracePathProbed(filePath, PathSource.SatelliteSubdirectory, hResult);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TracePathProbed", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial void TracePathProbed(string filePath, PathSource source, int hResult);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
@@ -192,4 +190,15 @@ namespace System.Runtime.Loader
             ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, useTplSource: false);
         }
     }
+
+    // This must match the BindingPathSource value map in ClrEtwAll.man
+    internal enum PathSource : ushort
+    {
+        ApplicationAssemblies,
+        Unused,
+        AppPaths,
+        PlatformResourceRoots,
+        SatelliteSubdirectory,
+        Bundle
+    };
 }

@@ -231,25 +231,17 @@ namespace System.Runtime.Loader.Tracing
                 }
             }
 
-            NativeRuntimeEventSource.Log.ResolutionAttempted(
+            TraceResolutionAttempted(
                 _assemblyName,
-                (ushort)stage,
+                stage,
                 _assemblyLoadContextName,
-                (ushort)result,
+                result,
                 resultAssemblyName,
                 resultAssemblyPath,
                 errorMsg);
         }
-    }
 
-    // This must match the BindingPathSource value map in ClrEtwAll.man
-    internal enum PathSource : ushort
-    {
-        ApplicationAssemblies,
-        Unused,
-        AppPaths,
-        PlatformResourceRoots,
-        SatelliteSubdirectory,
-        Bundle
-    };
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolutionAttempted", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void TraceResolutionAttempted(string assemblyName, Stage stage, string assemblyLoadContextName, Result result, string resultAssemblyName, string resultAssemblyPath, string errorMsg);
+    }
 }

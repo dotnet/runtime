@@ -138,8 +138,9 @@ extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyResolveHandlerInvoked(LPCW
 
 extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, bool isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath);
 
-extern "C" void QCALLTYPE AssemblyNative_TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr);
+extern "C" void QCALLTYPE AssemblyNative_TracePathProbed(LPCWSTR filePath, uint16_t source, HRESULT hr);
 
+extern "C" void QCALLTYPE AssemblyNative_TraceResolutionAttempted(LPCWSTR assemblyName, uint16_t stage, LPCWSTR assemblyLoadContextName, uint16_t result, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath, LPCWSTR errorMsg);
 
 extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(QCall::AssemblyHandle assembly, UINT8* metadataDelta, INT32 metadataDeltaLength, UINT8* ilDelta, INT32 ilDeltaLength, UINT8* pdbDelta, INT32 pdbDeltaLength);
 
