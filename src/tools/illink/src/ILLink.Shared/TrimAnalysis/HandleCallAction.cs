@@ -1468,19 +1468,19 @@ namespace ILLink.Shared.TrimAnalysis
 			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors : DynamicallyAccessedMemberTypes.None);
 
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForMethods (MemberTypes? memberTypes) =>
-			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods : DynamicallyAccessedMemberTypes.None) |
+			(HasMemberType (memberTypes, MemberTypes.Method) ? DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods : DynamicallyAccessedMemberTypes.None) |
 			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods : DynamicallyAccessedMemberTypes.None);
 
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForFields (MemberTypes? memberTypes) =>
-			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields : DynamicallyAccessedMemberTypes.None) |
+			(HasMemberType (memberTypes, MemberTypes.Field) ? DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields : DynamicallyAccessedMemberTypes.None) |
 			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields : DynamicallyAccessedMemberTypes.None);
 
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForProperties (MemberTypes? memberTypes) =>
-			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties : DynamicallyAccessedMemberTypes.None) |
+			(HasMemberType (memberTypes, MemberTypes.Property) ? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties : DynamicallyAccessedMemberTypes.None) |
 			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties : DynamicallyAccessedMemberTypes.None);
 
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForEvents (MemberTypes? memberTypes) =>
-			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents : DynamicallyAccessedMemberTypes.None) |
+			(HasMemberType (memberTypes, MemberTypes.Event) ? DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents : DynamicallyAccessedMemberTypes.None) |
 			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents : DynamicallyAccessedMemberTypes.None);
 
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForMembers (MemberTypes? memberTypes) =>
