@@ -601,9 +601,9 @@ void CodeGen::genCodeForBBlist()
 
         /* Both stacks should always be empty on exit from a basic block */
         noway_assert(genStackLevel == 0);
-        bool emitNop = false;
 
 #ifdef TARGET_AMD64
+        bool emitNop = false;
         // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
         // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
         // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
@@ -738,19 +738,21 @@ void CodeGen::genCodeForBBlist()
                 // Peephole optimization: If this block jumps to the next one, skip emitting the jump
                 // (unless we are jumping between hot/cold sections, or if we need the jump for EH reasons)
                 // (Skip this if optimizations are disabled, unless the block shouldn't have a jump in the first place)
-                if (emitNop)
+                const bool tryJumpOpt =
+                    compiler->opts.OptimizationEnabled() || ((block->bbFlags & BBF_NONE_QUIRK) != 0);
+                const bool skipJump = tryJumpOpt && block->JumpsToNext() &&
+                                      ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
+                                      !compiler->fgInDifferentRegions(block, block->GetJumpDest());
+                if (skipJump)
                 {
-                    instGen(INS_nop);
-
-                    const bool tryJumpOpt =
-                        compiler->opts.OptimizationEnabled() || ((block->bbFlags & BBF_NONE_QUIRK) != 0);
-                    const bool skipJump = tryJumpOpt && block->JumpsToNext() &&
-                                          ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
-                                          !compiler->fgInDifferentRegions(block, block->GetJumpDest());
-                    if (skipJump)
+#ifdef TARGET_AMD64
+                    if (emitNop)
                     {
-                        break;
+                        instGen(INS_nop);
                     }
+#endif // TARGET_AMD64
+
+                    break;
                 }
 #ifdef TARGET_XARCH
                 // If a block was selected to place an alignment instruction because it ended
