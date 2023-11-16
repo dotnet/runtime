@@ -1627,6 +1627,8 @@ extern "C" LPCWSTR QCALLTYPE PEImage_GetPath(PEImage * pPEImage)
     result = pPEImage->GetPath().GetUnicode();
 
     END_QCALL;
+
+    return result;
 }
 
 extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly)
