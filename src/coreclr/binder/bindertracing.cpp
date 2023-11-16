@@ -95,7 +95,7 @@ namespace
             _ASSERTE(pPEAssembly != nullptr);
             pPEAssembly->GetDisplayName(request.RequestingAssembly);
 
-            AssemblyBinder *binder = /*pPEAssembly->GetAssemblyBinder()*/ NULL;
+            AssemblyBinder *binder = pPEAssembly->GetAssemblyBinder();
 
             binder->GetNameForDiagnostics(request.RequestingAssemblyLoadContext);
         }

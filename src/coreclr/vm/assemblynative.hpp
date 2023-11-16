@@ -165,6 +165,8 @@ extern "C" void QCALLTYPE PEImage_Release(PEImage * pPEImage);
 
 extern "C" void QCALLTYPE PEImage_GetMVID(PEImage * pPEImage, GUID* pMVID);
 
+extern "C" LPCWSTR QCALLTYPE PEImage_GetPath(PEImage * pPEImage);
+
 extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly);
 
 extern "C" void QCALLTYPE DomainAssembly_EnsureReferenceBinder(DomainAssembly * pDomainAssembly, AssemblyBinder * pBinder);

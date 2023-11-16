@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Runtime.Loader.Tracing
 {
@@ -24,7 +25,7 @@ namespace System.Runtime.Loader.Tracing
     // which is used to determine the success or failure of a stage either at the moment this
     // class is destructed (e.g. last stage), or when moving from one stage to another.  (This
     // is especially useful if the HRESULT is captured from an exception handler.)
-    internal ref struct ResolutionAttemptedOperation
+    internal ref partial struct ResolutionAttemptedOperation
     {
         // This must match the ResolutionAttemptedStage value map in ClrEtwAll.man
         public enum Stage : ushort
@@ -59,17 +60,11 @@ namespace System.Runtime.Loader.Tracing
         private string _assemblyLoadContextName = string.Empty;
         private string? _exceptionMessage;
 
-        internal static bool IsEnabled()
-        {
-            return true;
-        }
-
-        // One of native bindContext or binder is expected to be non-zero. If the managed ALC is set, binder is ignored.
         public ResolutionAttemptedOperation(BinderAssemblyName? assemblyName, AssemblyLoadContext binder, ref int hResult)
         {
             _hr = ref hResult;
             _stage = Stage.NotYetStarted;
-            _tracingEnabled = IsEnabled();
+            _tracingEnabled = AssemblyLoadContext.IsTracingEnabled();
             _assemblyNameObject = assemblyName;
 
             if (!_tracingEnabled)
@@ -155,11 +150,10 @@ namespace System.Runtime.Loader.Tracing
             TraceStage(_stage, _hr, _foundAssembly);
         }
 
-        // Foo
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string PEImage_GetPath(IntPtr pPEImage);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_GetPath", StringMarshalling = StringMarshalling.Utf16)]
+        private static unsafe partial char* PEImage_GetPath(IntPtr pPEImage);
 
-        public void TraceStage(Stage stage, int hResult, BinderAssembly? resultAssembly, string? customError = null)
+        private unsafe void TraceStage(Stage stage, int hResult, BinderAssembly? resultAssembly, string? customError = null)
         {
             if (!_tracingEnabled || stage == Stage.NotYetStarted)
                 return;
@@ -170,7 +164,7 @@ namespace System.Runtime.Loader.Tracing
             if (resultAssembly != null)
             {
                 resultAssemblyName = resultAssembly.AssemblyName.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_VERSION | AssemblyNameIncludeFlags.INCLUDE_PUBLIC_KEY_TOKEN);
-                resultAssemblyPath = PEImage_GetPath(resultAssembly.PEImage);
+                resultAssemblyPath = new string(PEImage_GetPath(resultAssembly.PEImage));
             }
 
             Result result;

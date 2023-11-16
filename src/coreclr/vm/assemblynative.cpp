@@ -1615,6 +1615,19 @@ extern "C" void QCALLTYPE PEImage_GetMVID(PEImage * pPEImage, GUID* pMVID)
     END_QCALL;
 }
 
+extern "C" LPCWSTR QCALLTYPE PEImage_GetPath(PEImage * pPEImage)
+{
+    QCALL_CONTRACT;
+
+    LPCWSTR result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pPEImage->GetPath().GetUnicode();
+
+    END_QCALL;
+}
+
 extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly)
 {
     QCALL_CONTRACT;

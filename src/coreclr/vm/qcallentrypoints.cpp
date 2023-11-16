@@ -201,6 +201,7 @@ static const Entry s_QCall[] =
     DllImportEntry(PEImage_BinderAcquirePEImage)
     DllImportEntry(PEImage_Release)
     DllImportEntry(PEImage_GetMVID)
+    DllImportEntry(PEImage_GetPath)
     DllImportEntry(DomainAssembly_GetPEAssembly)
     DllImportEntry(DomainAssembly_EnsureReferenceBinder)
     DllImportEntry(PEAssembly_GetHostAssembly)
