@@ -37,4 +37,14 @@ internal static partial class QuicDefaults
     /// Default handshake timeout (same default as MsQuic)
     /// </summary>
     public static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Default initial_max_data value.
+    /// </summary>
+    public static int DefaultConnectionMaxData = 16 * 1024 * 1024;
+
+    /// <summary>
+    /// Default initial_max_stream_data_* value.
+    /// </summary>
+    public static int DefaultStreamMaxData = 64 * 1024;
 }

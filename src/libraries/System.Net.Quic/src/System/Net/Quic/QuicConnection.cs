@@ -76,8 +76,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                // connect timeout elapsed, since handshake is not done yet, application error code
-                // is not applied yet.
+                // handshake timeout elapsed, tear down the connection.
+                // Note that since handshake is not done yet, application error code is not sent.
                 await connection.DisposeAsync().ConfigureAwait(false);
 
                 throw new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, options.HandshakeTimeout));

@@ -8,29 +8,29 @@ using System.Threading;
 namespace System.Net.Quic;
 
 /// <summary>
-/// Collection of receive window sizes for <see cref="QuicConnection"/> as a whole and individual <see cref="QuicStream"/> types.
+/// Collection of receive window sizes for <see cref="QuicConnection"/> as a whole and for individual <see cref="QuicStream"/> types.
 /// </summary>
 public sealed class QuicReceiveWindowSizes
 {
     /// <summary>
     /// The initial flow-control window size for the connection.
     /// </summary>
-    public int Connection { get; set; } = 16 * 1024 * 1024;
+    public int Connection { get; set; } = QuicDefaults.DefaultConnectionMaxData;
 
     /// <summary>
     /// The initial flow-control window size for locally initiated bidirectional streams.
     /// </summary>
-    public int LocallyInitiatedBidirectionalStream { get; set; } = 64 * 1024;
+    public int LocallyInitiatedBidirectionalStream { get; set; } = QuicDefaults.DefaultStreamMaxData;
 
     /// <summary>
     /// The initial flow-control window size for remotely initiated bidirectional streams.
     /// </summary>
-    public int RemotelyInitiatedBidirectionalStream { get; set; } = 64 * 1024;
+    public int RemotelyInitiatedBidirectionalStream { get; set; } = QuicDefaults.DefaultStreamMaxData;
 
     /// <summary>
     /// The initial flow-control window size for (remotely initiated) unidirectional streams.
     /// </summary>
-    public int UnidirectionalStream { get; set; } = 64 * 1024;
+    public int UnidirectionalStream { get; set; } = QuicDefaults.DefaultStreamMaxData;
 
     internal void Validate(string argumentName)
     {
@@ -110,12 +110,16 @@ public abstract class QuicConnectionOptions
 
     /// <summary>
     /// The interval at which keep alive packets are sent on the connection.
+    /// Value <see cref="TimeSpan.Zero"/> means underlying implementation default timeout.
+    /// Default <see cref="Timeout.InfiniteTimeSpan"/> means never sending keep alive packets.
     /// </summary>
     public TimeSpan KeepAliveInterval { get; set; } = Timeout.InfiniteTimeSpan;
 
     /// <summary>
     /// The upper bound on time when the handshake must complete. If the handshake does not
     /// complete in this time, the connection is aborted.
+    /// Value <see cref="TimeSpan.Zero"/> means underlying implementation default timeout.
+    /// Default timeout is 10 seconds.
     /// </summary>
     public TimeSpan HandshakeTimeout { get; set; } = QuicDefaults.HandshakeTimeout;
 

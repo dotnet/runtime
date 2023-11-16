@@ -213,12 +213,13 @@ public sealed partial class QuicListener : IAsyncDisposable
 
         // In certain cases MsQuic will not impose the handshake idle timeout on their side, see
         // https://github.com/microsoft/msquic/discussions/2705.
-        // This will be assigned to before the linkec CTS is cancelled
+        // This will be assigned to before the linked CTS is cancelled
         TimeSpan handshakeTimeout = QuicDefaults.HandshakeTimeout;
         try
         {
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
             cancellationToken = linkedCts.Token;
+            // initial timeout for retrieving connection options
             linkedCts.CancelAfter(handshakeTimeout);
 
             wrapException = true;

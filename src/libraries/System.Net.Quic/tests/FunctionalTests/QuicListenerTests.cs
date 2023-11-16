@@ -135,10 +135,12 @@ namespace System.Net.Quic.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
         [OuterLoop("Exercises several seconds long timeout.")]
-        public async Task AcceptConnectionAsync_SlowOptionsCallback_TimesOut(bool useCancellationToken)
+        public async Task AcceptConnectionAsync_SlowOptionsCallback_TimesOut(bool useCancellationToken, bool clientShorterTimeout)
         {
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
             // Stall the options callback to force the timeout.
@@ -156,13 +158,31 @@ namespace System.Net.Quic.Tests
             };
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
-            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
-            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await listener.AcceptConnectionAsync());
-            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), exception.Message);
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.HandshakeTimeout = clientShorterTimeout ? TimeSpan.FromSeconds(2) : TimeSpan.FromSeconds(20);
 
-            // Connect attempt should be stopped with "UserCanceled".
-            var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
-            Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+
+            if (clientShorterTimeout)
+            {
+                // Client gave up earlier than server and aborts the handshake, server should get UserCanceled
+                // TLS alert
+                var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
+                Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+
+                var exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await connectTask);
+                Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, clientOptions.HandshakeTimeout), exception.Message);
+            }
+            else
+            {
+                // handshake timed out on server side, expect ConnectionTimeout
+                Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await listener.AcceptConnectionAsync());
+                Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), exception.Message);
+
+                // Server aborts the handshake while client is still waiting, so UserCanceled alert is expected
+                var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
+                Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+            }
         }
 
         [Fact]
