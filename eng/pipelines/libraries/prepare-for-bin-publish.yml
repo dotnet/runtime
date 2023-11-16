@@ -14,7 +14,6 @@ steps:
           ref/**
           runtime/**
           testhost/**
-          XUnitLogChecker/**
 
   - task: CopyFiles@2
     displayName: Prepare bin folders to publish

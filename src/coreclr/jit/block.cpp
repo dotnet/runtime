@@ -105,6 +105,12 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 
 FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
 {
+    unsigned tryIndex;
+    if (!bbIsExFlowBlock(blk, &tryIndex))
+    {
+        return blk->bbPreds;
+    }
+
     BlockToFlowEdgeMap* ehPreds = GetBlockToEHPreds();
     FlowEdge*           res;
     if (ehPreds->Lookup(blk, &res))
@@ -113,76 +119,129 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
     }
 
     res = blk->bbPreds;
-    unsigned tryIndex;
-    if (bbIsExFlowBlock(blk, &tryIndex))
+    // Add all blocks handled by this handler (except for second blocks of BBJ_CALLFINALLY/BBJ_ALWAYS pairs;
+    // these cannot cause transfer to the handler...)
+    // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
+    // something like:
+    //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->Next(); bb = bb->Next())
+    //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
+    // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
+    // more than one sequence of contiguous blocks.  We need to find a better way to do this.
+    for (BasicBlock* const bb : Blocks())
     {
-        // Find the first block of the try.
-        EHblkDsc*   ehblk    = ehGetDsc(tryIndex);
-        BasicBlock* tryStart = ehblk->ebdTryBeg;
-        for (BasicBlock* const tryStartPredBlock : tryStart->PredBlocks())
+        if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallAlwaysPairTail())
         {
-            res = new (this, CMK_FlowEdge) FlowEdge(tryStartPredBlock, res);
+            res = new (this, CMK_FlowEdge) FlowEdge(bb, res);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
             genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
         }
+    }
 
-        // Now add all blocks handled by this handler (except for second blocks of BBJ_CALLFINALLY/BBJ_ALWAYS pairs;
-        // these cannot cause transfer to the handler...)
-        // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
-        // something like:
-        //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->Next(); bb = bb->Next())
-        //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
-        // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
-        // more than one sequence of contiguous blocks.  We need to find a better way to do this.
-        for (BasicBlock* const bb : Blocks())
+    EHblkDsc* ehblk = ehGetDsc(tryIndex);
+    if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+    {
+        // block is a finally or fault handler; all enclosing filters are predecessors
+        unsigned enclosing = ehblk->ebdEnclosingTryIndex;
+        while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallAlwaysPairTail())
+            EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
+            if (enclosingDsc->HasFilter())
             {
-                res = new (this, CMK_FlowEdge) FlowEdge(bb, res);
-
-#if MEASURE_BLOCK_SIZE
-                genFlowNodeCnt += 1;
-                genFlowNodeSize += sizeof(FlowEdge);
-#endif // MEASURE_BLOCK_SIZE
-            }
-        }
-
-        if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
-        {
-            // block is a finally or fault handler; all enclosing filters are predecessors
-            unsigned enclosing = ehblk->ebdEnclosingTryIndex;
-            while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
-            {
-                EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
-                if (enclosingDsc->HasFilter())
+                for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
+                     filterBlk             = filterBlk->Next())
                 {
-                    for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
-                         filterBlk             = filterBlk->Next())
-                    {
-                        res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
 
-                        assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
-                            return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
-                        }) == BasicBlockVisit::Abort);
-                    }
+                    assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                        return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+                    }) == BasicBlockVisit::Abort);
                 }
-
-                enclosing = enclosingDsc->ebdEnclosingTryIndex;
             }
+
+            enclosing = enclosingDsc->ebdEnclosingTryIndex;
         }
+    }
 
 #ifdef DEBUG
-        unsigned hash = SsaStressHashHelper();
-        if (hash != 0)
-        {
-            res = ShuffleHelper(hash, res);
-        }
-#endif // DEBUG
-        ehPreds->Set(blk, res);
+    unsigned hash = SsaStressHashHelper();
+    if (hash != 0)
+    {
+        res = ShuffleHelper(hash, res);
     }
+#endif // DEBUG
+    ehPreds->Set(blk, res);
+    return res;
+}
+
+//------------------------------------------------------------------------
+// BlockDominancePreds:
+//   Return list of dominance predecessors. This is the set that we know for
+//   sure contains a block that was fully executed before control reached
+//   'blk'.
+//
+// Arguments:
+//    blk - Block to get dominance predecessors for.
+//
+// Returns:
+//    List of edges.
+//
+// Remarks:
+//    Differs from BlockPredsWithEH only in the treatment of handler blocks;
+//    enclosed blocks are never dominance preds, while all predecessors of
+//    blocks in the 'try' are (currently only the first try block expected).
+//
+FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
+{
+    unsigned tryIndex;
+    if (!bbIsExFlowBlock(blk, &tryIndex))
+    {
+        return blk->bbPreds;
+    }
+
+    EHblkDsc* ehblk = ehGetDsc(tryIndex);
+    if (!ehblk->HasFinallyOrFaultHandler() || (ehblk->ebdHndBeg != blk))
+    {
+        return ehblk->ebdTryBeg->bbPreds;
+    }
+
+    // Finally/fault handlers can be preceded by enclosing filters due to 2
+    // pass EH, so add those and keep them cached.
+    BlockToFlowEdgeMap* domPreds = GetDominancePreds();
+    FlowEdge*           res;
+    if (domPreds->Lookup(blk, &res))
+    {
+        return res;
+    }
+
+    res = ehblk->ebdTryBeg->bbPreds;
+    if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+    {
+        // block is a finally or fault handler; all enclosing filters are predecessors
+        unsigned enclosing = ehblk->ebdEnclosingTryIndex;
+        while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
+            if (enclosingDsc->HasFilter())
+            {
+                for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
+                     filterBlk             = filterBlk->Next())
+                {
+                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+
+                    assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                        return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+                    }) == BasicBlockVisit::Abort);
+                }
+            }
+
+            enclosing = enclosingDsc->ebdEnclosingTryIndex;
+        }
+    }
+
+    domPreds->Set(blk, res);
     return res;
 }
 
