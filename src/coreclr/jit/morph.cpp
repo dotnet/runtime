@@ -14133,6 +14133,8 @@ PhaseStatus Compiler::fgMorphBlocks()
     }
 #endif
 
+    fgGlobalMorphDone = true;
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 

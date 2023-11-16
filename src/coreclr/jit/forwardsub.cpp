@@ -125,6 +125,8 @@ PhaseStatus Compiler::fgForwardSub()
         changed |= fgForwardSubBlock(block);
     }
 
+    fgSsaChecksEnabled = false;
+
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -139,12 +141,27 @@ PhaseStatus Compiler::fgForwardSub()
 //
 bool Compiler::fgForwardSubBlock(BasicBlock* block)
 {
+    if (block->bbStmtList != nullptr)
+    {
+        Statement* last   = block->lastStmt();
+        block->bbStmtList = block->FirstNonPhiDef();
+        if (block->bbStmtList != nullptr)
+        {
+            block->bbStmtList->SetPrevStmt(last);
+        }
+    }
+
     Statement* stmt     = block->firstStmt();
     Statement* lastStmt = block->lastStmt();
     bool       changed  = false;
 
     while (stmt != lastStmt)
     {
+        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+        {
+            lcl->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+        }
+
         Statement* const prevStmt    = stmt->GetPrevStmt();
         Statement* const nextStmt    = stmt->GetNextStmt();
         bool const       substituted = fgForwardSubStatement(stmt);
@@ -168,6 +185,14 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
             // Move on to the next.
             //
             stmt = nextStmt;
+        }
+    }
+
+    if (lastStmt != nullptr)
+    {
+        for (GenTreeLclVarCommon* lcl : lastStmt->LocalsTreeList())
+        {
+            lcl->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
         }
     }
 

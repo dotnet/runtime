@@ -4531,7 +4531,6 @@ void Compiler::fgDebugCheckSsa()
     }
 
     assert(fgSsaPassesCompleted > 0);
-    assert(fgDomsComputed);
 
     // This class visits the flow graph the same way the SSA builder does.
     // In particular it may skip over blocks that SSA did not rename.

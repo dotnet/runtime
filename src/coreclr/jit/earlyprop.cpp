@@ -102,7 +102,7 @@ PhaseStatus Compiler::optEarlyProp()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    assert(fgSsaPassesCompleted == 1);
+    assert(fgSsaPassesCompleted >= 1);
     unsigned numChanges = 0;
 
     for (BasicBlock* const block : Blocks())

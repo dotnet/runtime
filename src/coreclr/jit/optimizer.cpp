@@ -6458,8 +6458,11 @@ void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
         }
     };
 
-    SsaRecordingVisitor srv(this, block);
-    srv.WalkTree(&tree, nullptr);
+    if (fgSsaChecksEnabled)
+    {
+        SsaRecordingVisitor srv(this, block);
+        srv.WalkTree(&tree, nullptr);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -8094,9 +8097,6 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         INDEBUG(loop.lpValidatePreHeader());
         return false;
     }
-
-    // Assert that we haven't created SSA. It is assumed that we create all loop pre-headers before building SSA.
-    assert(fgSsaPassesCompleted == 0);
 
     BasicBlock* head  = loop.lpHead;
     BasicBlock* top   = loop.lpTop;

@@ -4721,6 +4721,22 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
 
+    bool earlySSA = opts.OptimizationEnabled() && fgDidEarlyLiveness && !compQmarkUsed;
+#ifdef DEBUG
+    earlySSA &= JitConfig.JitNoForwardSub() == 0;
+#endif
+
+    if (earlySSA)
+    {
+        // Do an early pass of liveness for forward sub and morph. This data is
+        // valid until after morph.
+        //
+        DoPhase(this, PHASE_EARLY_SSA, &Compiler::fgSsaBuild);
+
+        m_blockToEHPreds = nullptr;
+        m_dominancePreds = nullptr;
+    }
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
