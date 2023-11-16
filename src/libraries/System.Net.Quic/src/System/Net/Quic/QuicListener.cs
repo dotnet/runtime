@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -217,7 +218,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         TimeSpan handshakeTimeout = QuicDefaults.HandshakeTimeout;
         try
         {
-            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ShutdownCancellationToken);
             cancellationToken = linkedCts.Token;
             // initial timeout for retrieving connection options
             linkedCts.CancelAfter(handshakeTimeout);
@@ -237,6 +238,28 @@ public sealed partial class QuicListener : IAsyncDisposable
             {
                 // Channel has been closed, dispose the connection as it'll never be handed out.
                 await connection.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (connection.ShutdownCancellationToken.IsCancellationRequested)
+        {
+            // Connection closed by peer
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(connection, $"{connection} Connection closed by remote peer");
+            }
+
+            // retrieve the exception which failed the handshake, the parameters are not going to be
+            // validated because the inner _connectedTcs is already transitioned to faulted state
+            ValueTask task = connection.FinishHandshakeAsync(null!, null!, default);
+            Debug.Assert(task.IsFaulted);
+
+            // unwrap AggregateException and propagate it to the accept queue
+            Exception ex = task.AsTask().Exception!.InnerException!;
+
+            await connection.DisposeAsync().ConfigureAwait(false);
+            if (!_acceptQueue.Writer.TryWrite(ex))
+            {
+                // Channel has been closed, connection is already disposed, do nothing.
             }
         }
         catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)

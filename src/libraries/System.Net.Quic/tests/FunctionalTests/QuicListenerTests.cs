@@ -186,6 +186,35 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [OuterLoop("Exercises several seconds long timeout.")]
+        public async Task AcceptConnectionAsync_ClientCancels_FiresOptionCallbackCancellationToken()
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = async (connection, hello, cancellationToken) =>
+            {
+                // default timeout for callback is 10s, wait for 5s for cancellation from client
+                // terminating the connection mid-handshake
+                var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(TimeSpan.FromSeconds(5), cancellationToken));
+                Assert.True(cancellationToken.IsCancellationRequested);
+                Assert.Equal(cancellationToken, oce.CancellationToken);
+                ExceptionDispatchInfo.Throw(oce);
+                return null; // unreached;
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.HandshakeTimeout = TimeSpan.FromSeconds(0.1);
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+
+            var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
+            Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+
+            var exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await connectTask);
+            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, clientOptions.HandshakeTimeout), exception.Message);
+        }
+
+        [Fact]
         public async Task AcceptConnectionAsync_ListenerDisposed_Throws()
         {
             var serverDisposed = new TaskCompletionSource();
@@ -372,7 +401,7 @@ namespace System.Net.Quic.Tests
 
             // Try to create a listener on the same port.
             SocketException ex = await Assert.ThrowsAsync<SocketException>(() => CreateQuicListener((IPEndPoint)s.LocalEndPoint).AsTask());
-            Assert.Equal(SocketError.AddressAlreadyInUse, ((SocketException)ex).SocketErrorCode );
+            Assert.Equal(SocketError.AddressAlreadyInUse, ((SocketException)ex).SocketErrorCode);
         }
 
         [Fact]

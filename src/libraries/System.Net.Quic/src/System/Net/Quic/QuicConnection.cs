@@ -105,6 +105,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private readonly ValueTaskSource _connectedTcs = new ValueTaskSource();
     private readonly ValueTaskSource _shutdownTcs = new ValueTaskSource();
 
+    private readonly CancellationTokenSource _shutdownCancellationTokenSource = new CancellationTokenSource();
+    internal CancellationToken ShutdownCancellationToken => _shutdownCancellationTokenSource.Token;
+
     private readonly Channel<QuicStream> _acceptQueue = Channel.CreateUnbounded<QuicStream>(new UnboundedChannelOptions()
     {
         SingleWriter = true
@@ -509,6 +512,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
         _shutdownTcs.TrySetResult();
+        _shutdownCancellationTokenSource.Cancel();
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
