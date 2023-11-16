@@ -91,15 +91,14 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
 
         // Do var-sized data individually per field
         // No name in event, so just the null terminator
-        LPCWSTR wszName = NULL;
         m_pBulkTypeEventBuffer[iSize++] = 0;
         m_pBulkTypeEventBuffer[iSize++] = 0;
 
         // Type parameter count
-        DWORD cTypeParams = target.cTypeParameters;
+        ULONG cTypeParams = target.cTypeParameters;
         ULONG *ptrInt = (ULONG*)(m_pBulkTypeEventBuffer + iSize);
         *ptrInt = cTypeParams;
-        iSize += 4;
+        iSize += sizeof(ULONG);
 
         // Type parameter array
         if (cTypeParams == 1)
@@ -283,7 +282,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
     // EEType for GC statics are not fully populated and they do not have a valid TypeManager. We will identify them by checking for `ElementType_Unknown`.
-    // Specifically, the TypeManagerHandle _value). We will not be able to get the osModuleHandle for these
+    // We will not be able to get the osModuleHandle for these
     ULONGLONG osModuleHandle = 0;
     if (pEEType->GetElementType() != ElementType_Unknown)
     {
