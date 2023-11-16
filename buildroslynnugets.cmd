@@ -5,7 +5,7 @@ set ASYNC_SUFFIX=async-7
 set ASYNC_ROSLYN_BRANCH=demos/async2-experiment
 
 cd ..
-if not exist async-roslyn-repo git clone -b %ASYNC_ROSLYN_BRANCH% -o async_roslyn_remote https://github.com/dotnet/runtimelab.git async-roslyn-repo
+if not exist async-roslyn-repo git clone -b %ASYNC_ROSLYN_BRANCH% -o async_roslyn_remote https://github.com/dotnet/roslyn.git async-roslyn-repo
 
 pushd async-roslyn-repo
 
