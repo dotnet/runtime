@@ -1242,7 +1242,7 @@ namespace System.Runtime.Loader
                     if (fFailLoad)
                     {
                         // string name = assemblyName.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_ALL);
-                        throw new InvalidOperationException("Dynamically emitted assemblies are unsupported during host-based resolution."); // IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED
+                        throw new InvalidOperationException(SR.Host_AssemblyResolver_DynamicallyEmittedAssemblies_Unsupported);
                     }
 
                     // For collectible assemblies, ensure that the parent loader allocator keeps the assembly's loader allocator

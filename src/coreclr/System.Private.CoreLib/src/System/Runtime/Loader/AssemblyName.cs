@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 using System.Numerics;
 using System.Reflection;
 
@@ -84,10 +85,10 @@ namespace System.Runtime.Loader
             // Get name and metadata
             scope.GetAssemblyProps(
                 mda,
-                out var pvPublicKeyToken,
-                out var dwPublicKeyToken,
-                out var dwHashAlgId,
-                out var assemblyName,
+                out byte* pvPublicKeyToken,
+                out uint dwPublicKeyToken,
+                out uint dwHashAlgId,
+                out string? assemblyName,
                 &amd,
                 out uint flags);
 
@@ -109,7 +110,10 @@ namespace System.Runtime.Loader
                 const int MAX_PATH_FNAME = 260;
                 if (assemblyName.Length >= MAX_PATH_FNAME)
                 {
-                    throw new Exception("FUSION_E_INVALID_NAME");
+                    throw new FileLoadException
+                    {
+                        HResult = HResults.FUSION_E_INVALID_NAME
+                    };
                 }
 
                 SimpleName = assemblyName;
@@ -130,7 +134,10 @@ namespace System.Runtime.Loader
             else
             {
                 // We no longer support WindowsRuntime assembly.
-                throw new Exception("FUSION_E_INVALID_NAME");
+                throw new FileLoadException
+                {
+                    HResult = HResults.FUSION_E_INVALID_NAME
+                };
             }
 
             // Set the assembly version
