@@ -46,12 +46,12 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
 
     struct
     {
-        ASSEMBLYLOADCONTEXTREF pBinder;
+        OBJECTREF pBinder;
         BINDERASSEMBLYREF pPrivAsm;
     } gc;
 
     // Have a default binding context setup
-    gc.pBinder = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)GetBinderFromParentAssembly(pAppDomain)->GetManagedAssemblyLoadContext());
+    gc.pBinder = ObjectFromHandle((OBJECTHANDLE)GetBinderFromParentAssembly(pAppDomain)->GetManagedAssemblyLoadContext());
     gc.pPrivAsm = NULL;
 
     _ASSERTE(gc.pBinder != NULL);
@@ -84,7 +84,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
 
-        MethodDescCallSite methBindAssemblyByName(METHOD__ASSEMBLYLOADCONTEXT__BIND_ASSEMBLY_BY_NAME);
+        MethodDescCallSite methBindAssemblyByName(METHOD__ASSEMBLYLOADCONTEXT__BIND_ASSEMBLY_BY_NAME, &gc.pBinder);
         ARG_SLOT args[3] =
         {
             ObjToArgSlot(gc.pBinder),

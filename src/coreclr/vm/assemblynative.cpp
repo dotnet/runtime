@@ -152,11 +152,11 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     GCX_COOP();
 
     struct {
-        ASSEMBLYLOADCONTEXTREF pBinder;
+        OBJECTREF pBinder;
         BINDERASSEMBLYREF pAssembly;
     } gc;
 
-    gc.pBinder = (ASSEMBLYLOADCONTEXTREF)ObjectFromHandle((OBJECTHANDLE)(pBinder->GetManagedAssemblyLoadContext()));
+    gc.pBinder = ObjectFromHandle((OBJECTHANDLE)(pBinder->GetManagedAssemblyLoadContext()));
     gc.pAssembly = NULL;
 
     GCPROTECT_BEGIN(gc);
