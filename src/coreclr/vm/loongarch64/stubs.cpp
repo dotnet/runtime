@@ -1793,11 +1793,13 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->offsets[i] >= 0);
             if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
-                codeSize += (pLookup->sizeOffset > 2047 ? 24 : 16);
+                // if( > 2047) (4*5 bytes) else 4*4 bytes for instructions.
+                codeSize += (pLookup->sizeOffset > 2047 ? 20 : 16);
                 indirectionsDataSize += (pLookup->sizeOffset > 2047 ? 4 : 0);
             }
 
-            codeSize += (pLookup->offsets[i] > 2047 ? 8 : 4); // if( > 2047) (8 bytes) else 4 bytes for instructions.
+            // if( > 2047) (8 bytes) else 4 bytes for instructions.
+            codeSize += (pLookup->offsets[i] > 2047 ? 8 : 4);
             indirectionsDataSize += (pLookup->offsets[i] > 2047 ? 4 : 0); // 4 bytes for storing indirection offset values
         }
 
