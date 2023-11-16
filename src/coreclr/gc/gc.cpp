@@ -25424,7 +25424,7 @@ int gc_heap::calculate_new_heap_count ()
         min_pause = min (dynamic_heap_count_data.samples[i].gc_pause_time, min_pause);
     }
 
-    dprintf (6666, ("checing if samples are stable %Id %Id %Id, min tcp %.3f, min pause %I64d",
+    dprintf (6666, ("checking if samples are stable %Id %Id %Id, min tcp %.3f, min pause %I64d",
         dynamic_heap_count_data.samples[0].gc_survived_size, dynamic_heap_count_data.samples[1].gc_survived_size, dynamic_heap_count_data.samples[2].gc_survived_size,
         min_tcp, min_pause));
 
@@ -25449,15 +25449,15 @@ int gc_heap::calculate_new_heap_count ()
         median_throughput_cost_percent = min_tcp;
     }
 
-    // If changing the heap count takes very little time, we should feel free to change it more preciously and frequently.
+    // If changing the heap count takes very little time, we should feel free to change it more precisely and frequently.
     // Instead of 20% we could make this a proportional value.
-    bool precious_count_change_p = false;
+    bool precise_count_change_p = false;
     float change_pause_percent = (float)change_heap_count_time / (float)min_pause;
     dprintf (6666, ("last heap change took %I64d / min gc pause is %I64d = %d%%", change_heap_count_time, min_pause, (int)(change_pause_percent * 100.0)));
 
     if (change_pause_percent < 0.5)
     {
-        precious_count_change_p = true;
+        precise_count_change_p = true;
     }
 
     // apply exponential smoothing and use 1/3 for the smoothing factor
@@ -25545,11 +25545,21 @@ int gc_heap::calculate_new_heap_count ()
 
     if (median_throughput_cost_percent > 10.0f)
     {
-        // ramp up more agressively - use as many heaps as it would take to bring
-        // the tcp down to 5%
+        // ramp up more aggressively - use as many heaps as it would take to bring
+        // the tcp down to 5% - unless precisely adjusting and we're close to 10%
         new_n_heaps = (int)(n_heaps * (median_throughput_cost_percent / 5.0));
         dprintf (6666, ("[CHP0] tcp %.3f -> %d * %.3f = %d", median_throughput_cost_percent, n_heaps, (median_throughput_cost_percent / 5.0), new_n_heaps));
         new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
+
+        if (precise_count_change_p)
+        {
+            // scale 10 -> 0.5, 50 -> 1
+            float scale = (median_throughput_cost_percent + 30) / 80;
+            new_n_heaps = (int)(scale * (new_n_heaps - n_heaps) + n_heaps);
+            dprintf (6666, ("[CHP0] precisely adjusting to 10%% -> %d  heaps (max %d)", new_n_heaps, (n_max_heaps - extra_heaps)));
+            new_n_heaps = max (new_n_heaps, n_heaps + 1);
+            new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
+        }
     }
     // if the median tcp is 10% or less, react slower
     else if ((smoothed_median_throughput_cost_percent > 5.0f) || (median_gen2_tcp_percent > 10.0f))
@@ -25563,9 +25573,9 @@ int gc_heap::calculate_new_heap_count ()
             dprintf (6666, ("[CHP2] tcp %.3f > 10, %d + %d = %d", median_gen2_tcp_percent, n_heaps, step_up, (n_heaps + step_up)));
         }
 
-        if (precious_count_change_p && (smoothed_median_throughput_cost_percent > 5.0f))
+        if (precise_count_change_p && (smoothed_median_throughput_cost_percent > 5.0f))
         {
-            step_up = (int)((float)n_heaps * smoothed_median_throughput_cost_percent / 5.0f) - n_heaps;
+            step_up = (int)((float)n_heaps * (smoothed_median_throughput_cost_percent - 5.0f) / 10.0f);
             dprintf (6666, ("[CHP2] precisely adjusting to 5%% -> %d more heaps (max %d)", step_up, (n_max_heaps - extra_heaps - n_heaps)));
             step_up = max (step_up, 1);
             step_up = min (step_up, n_max_heaps - extra_heaps - n_heaps);
