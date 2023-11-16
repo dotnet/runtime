@@ -962,6 +962,8 @@ void EEStartupHelper()
         }
 #endif // _DEBUG
 
+        // Initialize managed binder. Ensure g_fEEStarted and COM initialized before executing managed code.
+        SystemDomain::System()->PostStartInit();
 
 ErrExit: ;
     }

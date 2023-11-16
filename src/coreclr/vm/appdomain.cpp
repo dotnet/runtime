@@ -1161,30 +1161,6 @@ void SystemDomain::Init()
 
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
-
-        // AdHoc setting logic for CoreLib, since managed code isn't available during CoreLib bootstrap
-        {
-            // Initialize managed default binder and set binder assembly for CoreLib
-            MethodDescCallSite initializeDefault(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT);
-            ARG_SLOT arg = PtrToArgSlot(m_pSystemAssembly);
-            OBJECTREF coreLibHostAssembly = initializeDefault.Call_RetOBJECTREF(&arg);
-
-            // Default binder should be initialized
-            _ASSERTE(GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext() != NULL);
-
-            m_pSystemPEAssembly->SetHostAssemblyAdHoc(CreateHandle(coreLibHostAssembly));
-
-            m_pSystemAssembly->GetDomainAssembly()->RegisterWithHostAssembly();
-
-            // Managed and unmanaged representations of CoreLib should be correctly linked
-            _ASSERTE(((BINDERASSEMBLYREF)coreLibHostAssembly)->m_pDomainAssembly == m_pSystemAssembly->GetDomainAssembly());
-            _ASSERTE(ObjectFromHandle(m_pSystemPEAssembly->GetHostAssembly()) == coreLibHostAssembly);
-
-            // Add CoreLib to AssemblyBindingCache
-            AssemblySpec spec;
-            spec.InitializeSpec(m_pSystemPEAssembly);
-            GetAppDomain()->AddAssemblyToCache(&spec, m_pSystemAssembly->GetDomainAssembly());
-        }
     }
 
 #ifdef _DEBUG
@@ -1195,6 +1171,43 @@ void SystemDomain::Init()
         ClrSleepEx(20, TRUE);
     }
 #endif // _DEBUG
+}
+
+void SystemDomain::PostStartInit()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    GCX_COOP();
+
+    // AdHoc setting logic for CoreLib, since managed code isn't available during CoreLib bootstrap
+
+    // Initialize managed default binder and set binder assembly for CoreLib
+    MethodDescCallSite initializeDefault(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT);
+    ARG_SLOT arg = PtrToArgSlot(m_pSystemAssembly);
+    OBJECTREF coreLibHostAssembly = initializeDefault.Call_RetOBJECTREF(&arg);
+
+    // Default binder should be initialized
+    _ASSERTE(GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext() != NULL);
+
+    m_pSystemPEAssembly->SetHostAssemblyAdHoc(CreateHandle(coreLibHostAssembly));
+
+    m_pSystemAssembly->GetDomainAssembly()->RegisterWithHostAssembly();
+
+    // Managed and unmanaged representations of CoreLib should be correctly linked
+    _ASSERTE(((BINDERASSEMBLYREF)coreLibHostAssembly)->m_pDomainAssembly == m_pSystemAssembly->GetDomainAssembly());
+    _ASSERTE(ObjectFromHandle(m_pSystemPEAssembly->GetHostAssembly()) == coreLibHostAssembly);
+
+    // Add CoreLib to AssemblyBindingCache
+    AssemblySpec spec;
+    spec.InitializeSpec(m_pSystemPEAssembly);
+    GetAppDomain()->AddAssemblyToCache(&spec, m_pSystemAssembly->GetDomainAssembly());
 }
 
 void SystemDomain::LazyInitGlobalStringLiteralMap()
