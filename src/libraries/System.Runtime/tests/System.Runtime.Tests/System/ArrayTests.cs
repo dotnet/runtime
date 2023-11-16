@@ -1826,10 +1826,6 @@ namespace System.Tests
                 new object[] { typeof(GenericInterface<int>), default(GenericInterface<int>) },
                 new object[] { typeof(AbstractClass), default(AbstractClass) },
                 new object[] { typeof(StaticClass), default(StaticClass) },
-
-                // Arrays of void arrays
-                new object[] { typeof(void).MakeArrayType(), null },
-                new object[] { typeof(void).MakeArrayType(1), null },
             };
         }
 
@@ -1950,10 +1946,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(typeof(void))]
         [InlineData(typeof(GenericClass<>))]
-        // not using any by-ref type here as MakeArrayType throws for them, same goes for Type.GetType("SomeByRef[]")	
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94086", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
         public void CreateInstanceFromArrayType_NotSupportedArrayType_ThrowsNotSupportedException(Type elementType)
         {
             Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), 0));

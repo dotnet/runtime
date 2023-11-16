@@ -58,7 +58,12 @@ namespace System
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
-            ValidateElementType(elementType);
+            if (elementType.IsByRef || elementType.IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLikeArray);
+            if (elementType == typeof(void))
+                throw new NotSupportedException(SR.NotSupported_VoidArray);
+            if (elementType.ContainsGenericParameters)
+                throw new NotSupportedException(SR.NotSupported_OpenType);
 
             if (pLowerBounds != null)
             {
@@ -93,7 +98,8 @@ namespace System
             Debug.Assert(arrayType.IsArray);
             Debug.Assert(arrayType.GetArrayRank() == rank);
 
-            ValidateElementType(arrayType.GetElementType());
+            if (arrayType.ContainsGenericParameters)
+                throw new NotSupportedException(SR.NotSupported_OpenType);
 
             if (pLowerBounds != null)
             {
@@ -123,16 +129,6 @@ namespace System
 
                 return NewMultiDimArray(eeType, pImmutableLengths, rank);
             }
-        }
-
-        private static void ValidateElementType(Type elementType)
-        {
-            if (elementType.IsByRef || elementType.IsByRefLike)
-                throw new NotSupportedException(SR.NotSupported_ByRefLikeArray);
-            if (elementType == typeof(void))
-                throw new NotSupportedException(SR.NotSupported_VoidArray);
-            if (elementType.ContainsGenericParameters)
-                throw new NotSupportedException(SR.NotSupported_OpenType);
         }
 
         public unsafe void Initialize()
