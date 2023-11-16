@@ -2067,7 +2067,10 @@ namespace System.Tests
             Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, [22]).GetType());
             Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [0]).GetType());
 
-            Assert.Equal(variableBoundArrayType, Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [22]).GetType());
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                Assert.Equal(variableBoundArrayType, Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [22]).GetType());
+            }
 
             Assert.Throws<ArgumentException>(() => Array.CreateInstanceFromArrayType(typeof(object[]), [7], [8]));
         }
