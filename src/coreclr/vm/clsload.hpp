@@ -734,6 +734,7 @@ public:
     TypeHandle LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoadLevel level = CLASS_LOADED,
                                            Module* pLookInThisModuleOnly=NULL);
 
+    mdTypeDef LookupTypeDefTokenThatMatchesTypeRef(mdTypeRef typeRef);
 public:
     // Looks up class in the local module table, if it is there it succeeds,
     // Otherwise it fails, This is meant only for optimizations etc

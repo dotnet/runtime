@@ -4047,45 +4047,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                     if (TypeFromToken(dwByValueClassToken) == mdtTypeRef)
                     {
                         // It's a typeref - check if it's a class that has a static field of itself
-                        LPCUTF8 pszNameSpace;
-                        LPCUTF8 pszClassName;
-                        if (FAILED(pInternalImport->GetNameOfTypeRef(dwByValueClassToken, &pszNameSpace, &pszClassName)))
-                        {
-                            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
-                        }
-
-                        if (IsStrLongerThan((char *)pszClassName, MAX_CLASS_NAME)
-                            || IsStrLongerThan((char *)pszNameSpace, MAX_CLASS_NAME)
-                            || (strlen(pszClassName) + strlen(pszNameSpace) + 1 >= MAX_CLASS_NAME))
-                        {
-                            BuildMethodTableThrowException(BFA_TYPEREG_NAME_TOO_LONG, mdMethodDefNil);
-                        }
-
-                        mdToken tkRes;
-                        if (FAILED(pInternalImport->GetResolutionScopeOfTypeRef(dwByValueClassToken, &tkRes)))
-                        {
-                            BuildMethodTableThrowException(BFA_BAD_TYPEREF_TOKEN, dwByValueClassToken);
-                        }
-
-                        if (TypeFromToken(tkRes) == mdtTypeRef)
-                        {
-                            if (!pInternalImport->IsValidToken(tkRes))
-                            {
-                                BuildMethodTableThrowException(BFA_BAD_TYPEREF_TOKEN, mdMethodDefNil);
-                            }
-                        }
-                        else
-                        {
-                            tkRes = mdTokenNil;
-                        }
-
-                        if (FAILED(pInternalImport->FindTypeDef(pszNameSpace,
-                                                                pszClassName,
-                                                                tkRes,
-                                                                &dwByValueClassToken)))
-                        {
-                            dwByValueClassToken = mdTokenNil;
-                        }
+                        dwByValueClassToken = GetModule()->GetClassLoader()->LookupTypeDefTokenThatMatchesTypeRef(dwByValueClassToken);
                     } // If field is static typeref
 
                     BOOL selfref = IsSelfReferencingStaticValueTypeField(dwByValueClassToken,

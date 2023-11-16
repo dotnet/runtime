@@ -434,8 +434,98 @@ EEClassHashEntry_t* ClassLoader::InsertValue(EEClassHashTable *pClassHash, EECla
 
 }
 
-#endif // #ifndef DACCESS_COMPILE
+mdTypeDef ClassLoader::LookupTypeDefTokenThatMatchesTypeRef(mdTypeRef typeRef)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
 
+    _ASSERTE(TypeFromToken(typeRef) == mdtTypeRef);
+    mdToken mdFoundTypeToken;
+
+    Module* pModule = GetAssembly()->GetModule();
+
+    NameHandle nhTypeRef(pModule, typeRef);
+
+    LPCUTF8 pszNameSpace;
+    LPCUTF8 pszClassName;
+    if (FAILED(pModule->GetMDImport()->GetNameOfTypeRef(typeRef, &pszNameSpace, &pszClassName)))
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    nhTypeRef.SetName(pszNameSpace, pszClassName);
+
+#ifdef FEATURE_READYTORUN
+    if (pModule->IsReadyToRun())
+    {
+        if (pModule->GetReadyToRunInfo()->HasHashtableOfTypes() && pModule->GetAvailableClassHash() == NULL)
+        {
+            // For R2R modules, we only search the hashtable of token types stored in the module's image, and don't fallback
+            // to searching m_pAvailableClasses or m_pAvailableClassesCaseIns (in fact, we don't even allocate them for R2R modules).
+            // Also note that type lookups in R2R modules only support case sensitive lookups.
+            if (pModule->GetReadyToRunInfo()->TryLookupTypeTokenFromName(&nhTypeRef, &mdFoundTypeToken))
+            {
+                if (TypeFromToken(mdFoundTypeToken) == mdtTypeDef)
+                {
+                    return mdFoundTypeToken;
+                }
+            }
+            return mdTypeDefNil;
+        }
+        if (pModule->GetAvailableClassHash() == NULL)
+        {
+            // Old R2R image generated without the hashtable of types.
+            // We fallback to the slow path of creating the hashtable dynamically
+            // at execution time in that scenario.
+            // Take the lock. To make sure the table is not being built by another thread.
+            ClassLoader::AvailableClasses_LockHolder lh(this);
+
+            if (m_cUnhashedModules != 0)
+            {
+                // Note: This codepath is only valid for R2R scenarios
+                LazyPopulateCaseSensitiveHashTables();
+            }
+        }
+    }
+#endif
+
+    EEClassHashEntry_t* entry = pModule->GetAvailableClassHash()->FindByNameHandle(&nhTypeRef);
+    if (entry != NULL)
+    {
+        HashDatum Data = entry->GetData();
+        if ((dac_cast<TADDR>(Data) & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
+        {
+            TypeHandle t = TypeHandle::FromPtr(Data);
+            if (!t.IsTypeDesc())
+            {
+                MethodTable *pMT = t.AsMethodTable();
+                if (pMT->GetModule() == pModule)
+                {
+                    return pMT->GetCl();
+                }
+            }
+        }
+        else
+        {
+            mdFoundTypeToken = pModule->GetAvailableClassHash()->UncompressModuleAndClassDef(Data);
+            if (TypeFromToken(mdFoundTypeToken) == mdtTypeDef)
+            {
+                return mdFoundTypeToken;
+            }
+        }
+    }
+
+    return mdTypeDefNil;
+}
+
+#endif // #ifndef DACCESS_COMPILE
 
 void ClassLoader::GetClassValue(NameHandleTable nhTable,
                                     const NameHandle *pName,
