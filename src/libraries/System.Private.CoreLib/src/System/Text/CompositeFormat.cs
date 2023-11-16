@@ -340,14 +340,9 @@ namespace System.Text
             static bool TryMoveNext(ReadOnlySpan<char> format, ref int pos, out char nextChar)
             {
                 pos++;
-                if ((uint)pos >= (uint)format.Length)
-                {
-                    nextChar = '\0';
-                    return false;
-                }
-
-                nextChar = format[pos];
-                return true;
+                bool endOfSpan = (uint)pos >= (uint)format.Length;
+                nextChar = endOfSpan ? '\0' : format[pos];
+                return !endOfSpan;
             }
         }
     }
