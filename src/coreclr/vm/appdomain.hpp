@@ -1073,7 +1073,7 @@ public:
     }
 
 #endif // DACCESS_COMPILE
-    
+
     DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
 
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
@@ -1122,7 +1122,7 @@ protected:
     JitListLock      m_JITLock;
     ListLock         m_ILStubGenLock;
     ListLock         m_NativeTypeLoadLock;
-    
+
     DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
 
     IGCHandleStore* m_handleStore;
@@ -1966,7 +1966,7 @@ public:
 public:
     RCWRefCache *GetRCWRefCache();
 #endif // FEATURE_COMWRAPPERS
-    
+
     DefaultAssemblyBinder *CreateDefaultBinder();
 
     void SetIgnoreUnhandledExceptions()

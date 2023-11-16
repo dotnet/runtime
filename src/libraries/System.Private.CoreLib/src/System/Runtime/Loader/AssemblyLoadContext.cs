@@ -39,14 +39,14 @@ namespace System.Runtime.Loader
             Interlocked.CompareExchange(ref s_allContexts, new Dictionary<long, WeakReference<AssemblyLoadContext>>(), null) ??
             s_allContexts;
 
-        #region private data members
+#region private data members
         // If you modify this field, you must also update the
         // AssemblyLoadContextBaseObject structure in object.h
         // and MonoManagedAssemblyLoadContext in object-internals.h
 
         // Contains the reference to VM's representation of the AssemblyLoadContext
         private readonly IntPtr _nativeAssemblyLoadContext;
-        #endregion
+#endregion
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;

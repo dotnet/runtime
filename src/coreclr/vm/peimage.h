@@ -264,7 +264,7 @@ public:
     static IJWFixupData* GetIJWData(void* pBase);
     static PTR_LoaderHeap GetDllThunkHeap(void* pBase);
     static void UnloadIJWModule(void* pBase);
-    
+
 private:
 
     // ------------------------------------------------------------

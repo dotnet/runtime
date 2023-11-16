@@ -786,7 +786,6 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 
                         GCPROTECT_BEGIN(alc);
 
-                        // TODO: GC mode
                         MethodDescCallSite methDeclareDependencyOnMvid(METHOD__ASSEMBLYLOADCONTEXT__DECLARE_DEPENDENCY_ON_MVID);
                         ARG_SLOT args[5] =
                         {

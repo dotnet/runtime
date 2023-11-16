@@ -24,7 +24,7 @@ class AssemblyNative
     friend class DomainAssembly;
 
 public:
-    
+
     static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths = false);
 
     // static FCALLs
