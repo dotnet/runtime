@@ -320,8 +320,6 @@ namespace System.Text.Json.Nodes
             JsonNode? node;
             switch (_parent)
             {
-                case null:
-                    return;
                 case JsonObject jsonObject:
                     node = ConvertFromValue(value);
                     jsonObject.SetItem(GetPropertyName(), node);
