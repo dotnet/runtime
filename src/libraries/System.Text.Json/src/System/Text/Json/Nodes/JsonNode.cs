@@ -349,6 +349,11 @@ namespace System.Text.Json.Nodes
             Parent = parent;
         }
 
+        /// <summary>
+        /// Adaptation of the equivalent JsonValue.Create factory method extended
+        /// to support arbitrary <see cref="JsonElement"/> and <see cref="JsonNode"/> values.
+        /// TODO consider making public cf. https://github.com/dotnet/runtime/issues/70427
+        /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal static JsonNode? ConvertFromValue<T>(T? value, JsonNodeOptions? options = null)
