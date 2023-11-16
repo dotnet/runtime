@@ -244,6 +244,9 @@ def build_and_run(coreclr_args, output_mch_name):
         dir_to_native = os.path.join(benchmarks_dll_dir, f"runtimes/{RID}/native/")
         if os.path.exists(dir_to_native):
             copy_directory(dir_to_native, benchmarks_dll_core_root, verbose_copy=True)
+
+        if platform.system() == "Darwin":
+            copy_directory("runtimes/osx/native/", benchmarks_dll_core_root, verbose_copy=True)
         # End copy PowerShell dependencies.
 
         # Copy the original 'core_root' to the benchmarks' 'core_root'.
