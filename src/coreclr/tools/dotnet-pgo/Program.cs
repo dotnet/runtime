@@ -165,7 +165,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 .UseVersion()
                 .UseExtendedHelp(PgoRootCommand.GetExtendedHelp))
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableParseErrorReporting = true
             }.Invoke(args);
 
         public static void PrintWarning(string warning)
