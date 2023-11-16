@@ -284,6 +284,26 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
                                                ClassLoadLevel level)
 {
     WRAPPER_NO_CONTRACT;
+
+    CQuickBytes qbszNamespace;
+
+    if (nameSpace == NULL)
+    {
+        LPCUTF8 szFullyQualifiedName = name;
+        nameSpace = "";
+
+        if ((name = ns::FindSep(szFullyQualifiedName)) != NULL)
+        {
+            SIZE_T d = name - szFullyQualifiedName;
+            nameSpace = qbszNamespace.SetString(szFullyQualifiedName, d);
+            name++;
+        }
+        else
+        {
+            name = szFullyQualifiedName;
+        }
+    }
+
     NameHandle nameHandle(nameSpace, name);
     return LoadTypeByNameThrowing(pAssembly, &nameHandle, fNotFound, fLoadTypes, level);
 }
