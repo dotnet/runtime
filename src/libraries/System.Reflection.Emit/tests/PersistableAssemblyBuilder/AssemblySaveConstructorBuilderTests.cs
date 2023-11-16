@@ -61,11 +61,10 @@ namespace System.Reflection.Emit.Tests
             constructorILGenerator.Emit(OpCodes.Ret);
             type.CreateType();
 
-            /* TODO: Enable this when we can get/create parameters from MethodBuilder 
             Type genericParent = type.MakeGenericType(typeof(int));
             TypeBuilder derived = ((ModuleBuilder)type.Module).DefineType("Derived");
             derived.SetParent(genericParent);
-            derived.DefineDefaultConstructor(MethodAttributes.Public);*/
+            derived.DefineDefaultConstructor(MethodAttributes.Public);
 
             Type genericList = typeof(List<>).MakeGenericType(typeof(int));
             TypeBuilder type2 = ab.GetDynamicModule("MyModule").DefineType("Type2");

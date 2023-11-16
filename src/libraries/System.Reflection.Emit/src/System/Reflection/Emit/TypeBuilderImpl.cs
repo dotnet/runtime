@@ -103,7 +103,7 @@ namespace System.Reflection.Emit
             return this;
         }
 
-        private void ThrowIfCreated()
+        internal void ThrowIfCreated()
         {
             if (_isCreated)
             {

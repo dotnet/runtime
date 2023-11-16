@@ -13,7 +13,7 @@ namespace System.Reflection.Emit
     internal sealed class MethodBuilderImpl : MethodBuilder
     {
         private Type _returnType;
-        private Type[]? _parameterTypes;
+        internal Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
 
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
-        internal ParameterBuilderImpl[]? _parameters;
+        internal ParameterBuilderImpl[]? _parameterBuilders;
         internal MethodDefinitionHandle _handle;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
             if (parameterTypes != null)
             {
                 _parameterTypes = new Type[parameterTypes.Length];
-                _parameters = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
+                _parameterBuilders = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
                 for (int i = 0; i < parameterTypes.Length; i++)
                 {
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
@@ -126,14 +126,18 @@ namespace System.Reflection.Emit
 
         protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
         {
-            if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
+            _declaringType.ThrowIfCreated();
 
-            _parameters ??= new ParameterBuilderImpl[1];
+            if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
+            {
+                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
+            }
+
+            _parameterBuilders ??= new ParameterBuilderImpl[1];
 
             attributes &= ~ParameterAttributes.ReservedMask;
             ParameterBuilderImpl parameter = new ParameterBuilderImpl(this, position, attributes, strParamName);
-            _parameters[position] = parameter;
+            _parameterBuilders[position] = parameter;
             return parameter;
         }
 
@@ -198,8 +202,10 @@ namespace System.Reflection.Emit
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
+            _declaringType.ThrowIfCreated();
             _methodImplFlags = attributes;
         }
+
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
@@ -211,7 +217,7 @@ namespace System.Reflection.Emit
             if (parameterTypes != null)
             {
                 _parameterTypes = new Type[parameterTypes.Length];
-                _parameters = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
+                _parameterBuilders = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
                 for (int i = 0; i < parameterTypes.Length; i++)
                 {
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
@@ -219,6 +225,7 @@ namespace System.Reflection.Emit
             }
             // TODO: Add support for other parameters: returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypeRequiredCustomModifiers and parameterTypeOptionalCustomModifiers
         }
+
         public override string Name => _name;
         public override MethodAttributes Attributes => _attributes;
         public override CallingConventions CallingConvention => _callingConventions;
@@ -250,7 +257,34 @@ namespace System.Reflection.Emit
         public override MethodImplAttributes GetMethodImplementationFlags()
             => _methodImplFlags;
 
-        public override ParameterInfo[] GetParameters() => Array.Empty<ParameterInfo>(); // TODO: Workaround until derive the ParameterBuilder from ParameterInfo
+        public override ParameterInfo[] GetParameters()
+        {
+            // This is called from ILGenerator when Emit(OpCode, ConstructorInfo) when the ctor is
+            // instance of 'ConstructorOnTypeBuilderInstantiation', so we could not throw here even
+            // the type was not baked. Runtime implementation throws when the type is not baked.
+
+            if (_parameterTypes == null)
+            {
+                return Array.Empty<ParameterInfo>();
+            }
+
+            _parameterBuilders ??= new ParameterBuilderImpl[_parameterTypes.Length + 1]; // parameter 0 reserved for return type
+            ParameterInfo[] parameters = new ParameterInfo[_parameterTypes.Length];
+
+            for (int i = 0; i < _parameterTypes.Length; i++)
+            {
+                if (_parameterBuilders[i + 1] == null)
+                {
+                    parameters[i] = new ParameterInfoWrapper(new ParameterBuilderImpl(this, i, ParameterAttributes.None, null), _parameterTypes[i]);
+                }
+                else
+                {
+                    parameters[i] = new ParameterInfoWrapper(_parameterBuilders[i + 1], _parameterTypes[i]);
+                }
+            }
+
+            return parameters;
+        }
 
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
              => throw new NotSupportedException(SR.NotSupported_DynamicModule);

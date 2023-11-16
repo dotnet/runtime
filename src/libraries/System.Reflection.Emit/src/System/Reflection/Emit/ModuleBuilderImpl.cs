@@ -242,9 +242,9 @@ namespace System.Reflection.Emit
                     }
                 }
 
-                if (method._parameters != null)
+                if (method._parameterBuilders != null)
                 {
-                    foreach (ParameterBuilderImpl parameter in method._parameters)
+                    foreach (ParameterBuilderImpl parameter in method._parameterBuilders)
                     {
                         if (parameter != null)
                         {
@@ -272,6 +272,7 @@ namespace System.Reflection.Emit
                 }
             }
         }
+
         private void FillMemberReferences(ILGeneratorImpl il)
         {
             foreach (KeyValuePair<MemberInfo, BlobWriter> pair in il.GetMemberReferences())

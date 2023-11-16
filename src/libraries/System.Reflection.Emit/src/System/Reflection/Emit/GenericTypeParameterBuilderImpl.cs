@@ -84,7 +84,7 @@ namespace System.Reflection.Emit
         public override bool IsGenericParameter => true;
         public override bool IsConstructedGenericType => false;
         public override bool ContainsGenericParameters => _type.ContainsGenericParameters;
-        public override MethodBase? DeclaringMethod => throw new NotImplementedException();
+        public override MethodBase? DeclaringMethod => _type.DeclaringMethod;
         public override Type? BaseType => _parent;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public override Guid GUID => throw new NotSupportedException();

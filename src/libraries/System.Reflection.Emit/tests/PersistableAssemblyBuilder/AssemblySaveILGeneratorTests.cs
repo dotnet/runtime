@@ -518,7 +518,6 @@ namespace System.Reflection.Emit.Tests
                 longMethodIL.Emit(OpCodes.Ret);
                 anotherType.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
-                Console.WriteLine(file.Path);
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Module moduleFromFile = assemblyFromDisk.Modules.First();
@@ -654,8 +653,42 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
+
+
+        /*[Fact] // TODO: Resolve MethodBuilderInstantiation access
+        public void ReferenceConstructedGenericMethod()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+                GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+                genericMethod.SetSignature(null, null, null, new[] { methodParams[0] }, null, null);
+                ILGenerator ilg = genericMethod.GetILGenerator();
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(object) });
+                ilg.Emit(OpCodes.Ldarg_0);
+                ilg.EmitCall(OpCodes.Call, writeLineObj, null);
+                ilg.Emit(OpCodes.Ret);
+                MethodBuilder mainMethod = type.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
+                ilg = mainMethod.GetILGenerator();
+                //MethodInfo SampleOfGM = TypeBuilder.GetMethod(type, genericMethod);
+                MethodInfo GMOfString = genericMethod.MakeGenericMethod(typeof(string));
+                ilg.Emit(OpCodes.Ldstr, "Hello, world!");
+                ilg.EmitCall(OpCodes.Call, GMOfString, null);
+                ilg.Emit(OpCodes.Ret);
+                type.CreateType();
+                saveMethod.Invoke(ab, new[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type myTypeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                Assert.True(myTypeFromDisk.IsGenericType);
+                Assert.True(myTypeFromDisk.IsGenericTypeDefinition);
+            }
+        }*/
+
         [Fact]
-        public void ReferenceConstructedMethodFieldTest()
+        public void ReferenceConstructedGenericMethodFieldOfConstructedType()
         {
             using (TempFile file = TempFile.Create())
             {
@@ -717,9 +750,9 @@ internal class Dummy
                 saveMethod.Invoke(ab, new[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                Assert.True(typeFromDisk.IsGenericType);
-                Assert.True(typeFromDisk.IsGenericTypeDefinition);
+                Type myTypeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                Assert.True(myTypeFromDisk.IsGenericType);
+                Assert.True(myTypeFromDisk.IsGenericTypeDefinition);
             }
         }
 
