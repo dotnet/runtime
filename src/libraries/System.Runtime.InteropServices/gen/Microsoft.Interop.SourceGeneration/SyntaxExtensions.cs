@@ -102,6 +102,7 @@ namespace Microsoft.Interop
                 return modifiers;
             }
 
+            // https://github.com/dotnet/csharplang/blob/main/meetings/2018/LDM-2018-04-04.md#ordering-of-ref-and-partial-keywords
             int idxPartial = modifiers.IndexOf(SyntaxKind.PartialKeyword);
             int idxRef = modifiers.IndexOf(SyntaxKind.RefKeyword);
 
