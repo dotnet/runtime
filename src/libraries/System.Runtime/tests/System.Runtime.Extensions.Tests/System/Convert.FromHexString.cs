@@ -101,7 +101,7 @@ namespace System.Tests
                 Span<char> currentBufferLower = bufferLower.Slice(0, i * 2);
                 tryHex = Convert.TryToHexStringLower(data, currentBufferLower, out written);
                 Assert.True(tryHex);
-                AssertExtensions.SequenceEqual(currentBuffer, currentBufferLower);
+                AssertExtensions.SequenceEqual(hex.ToLowerInvariant().AsSpan(), currentBufferLower);
                 Assert.Equal(hex.Length, written);
 
                 TestSequence(data, hex);
