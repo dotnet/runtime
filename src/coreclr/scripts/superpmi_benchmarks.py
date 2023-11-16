@@ -232,7 +232,7 @@ def build_and_run(coreclr_args, output_mch_name):
             dir_to_microsoft_management_infrastructure_dll = os.path.join(benchmarks_dll_dir, f"runtimes/{RID}/lib/netstandard1.6/")
             if os.path.exists(dir_to_microsoft_management_infrastructure_dll):
                 copy_directory(dir_to_microsoft_management_infrastructure_dll, benchmarks_dll_core_root, verbose_copy=True)
-        else
+        else:
             copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/unix/lib/netstandard1.6/"), benchmarks_dll_core_root, verbose_copy=True)
         # End copy PowerShell dependencies.
 
