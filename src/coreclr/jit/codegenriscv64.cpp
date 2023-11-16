@@ -3379,9 +3379,10 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     GetEmitter()->emitIns_R_R(ins, EA_8BYTE, treeNode->GetRegNum(), op1->GetRegNum());
 
     // This part emulates the "flush to zero" option because the RISC-V specification does not provide it.
-    GetEmitter()->emitIns_R_I_I(INS_csrrci, EA_8BYTE, tmpReg, 22, 1);
-    GetEmitter()->emitIns_R_R_I(INS_andi, EA_8BYTE, tmpReg, tmpReg, 22);
-    GetEmitter()->emitIns_R_R_I(INS_beq, EA_8BYTE, tmpReg, REG_R0, 8);
+    unsigned mask = 16; // NV = 1 | DZ = 0 | OF = 0 | UF = 0 | NX = 0
+    GetEmitter()->emitIns_R_I_I(INS_csrrci, EA_8BYTE, tmpReg, mask, 1/*fflags*/);
+    GetEmitter()->emitIns_R_R_I(INS_andi, EA_8BYTE, tmpReg, tmpReg, mask);
+    GetEmitter()->emitIns_R_R_I(INS_beq, EA_8BYTE, tmpReg, REG_R0,  2 << 2);
     GetEmitter()->emitIns_R_R_I(INS_addiw, EA_8BYTE, treeNode->GetRegNum(), REG_R0, 0);
 
     if (dstSize == EA_4BYTE)

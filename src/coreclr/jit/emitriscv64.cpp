@@ -702,6 +702,9 @@ void emitter::emitIns_R_R_I(
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
     {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert(isValidSimm12(imm));
         code |= reg1 << 7;
         code |= reg2 << 15;
         code |= imm << 20;
@@ -733,6 +736,9 @@ void emitter::emitIns_R_I_I(
 
     if (INS_csrrwi <= ins && ins <= INS_csrrci)
     {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isValidUimm5(imm1));
+        assert(isValidSimm12(imm2));
         code |= reg1 << 7;
         code |= imm1 << 15;
         code |= imm2 << 20;
@@ -3398,7 +3404,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char* rd = RegNames[(code >> 7) & 0x1f];
-            int csrtype = (((int)code) >> 20);
+            int csrtype = (code >> 20);
             if (opcode2 <= 0x3)
             {
                 const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -3420,17 +3426,17 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                int imm12 = (((int)code) >> 15);
+                int imm5 = ((code >> 15) & 0x1f);
                 switch (opcode2)
                 {
-                    case 0x5: // CSRRW
-                        printf("csrrwi           %s, %d, %s\n", rd, csrtype, imm12);
+                    case 0x5: // CSRRWI
+                        printf("csrrwi           %s, %d, %s\n", rd, csrtype, imm5);
                         return;
-                    case 0x6: // CSRRS
-                        printf("csrrsi           %s, %d, %s\n", rd, csrtype, imm12);
+                    case 0x6: // CSRRSI
+                        printf("csrrsi           %s, %d, %s\n", rd, csrtype, imm5);
                         return;
-                    case 0x7: // CSRRC
-                        printf("csrrci           %s, %d, %s\n", rd, csrtype, imm12);
+                    case 0x7: // CSRRCI
+                        printf("csrrci           %s, %d, %s\n", rd, csrtype, imm5);
                         return;
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);

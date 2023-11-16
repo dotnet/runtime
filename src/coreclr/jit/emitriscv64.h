@@ -106,6 +106,12 @@ static bool isValidUimm11(ssize_t value)
     return (0 == (value >> 11));
 }
 
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding.
+static bool isValidUimm5(ssize_t value)
+{
+    return (0 == (value >> 5));
+}
+
 // Returns true if 'value' is a legal signed immediate 20 bit encoding.
 static bool isValidSimm20(ssize_t value)
 {
