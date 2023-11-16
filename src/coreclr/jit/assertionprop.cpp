@@ -559,6 +559,18 @@ void Compiler::optAssertionInit(bool isLocalProp)
             optCrossBlockLocalAssertionProp = false;
         }
 
+#ifdef DEBUG
+        // Disable per method via range
+        //
+        static ConfigMethodRange s_range;
+        s_range.EnsureInit(JitConfig.JitEnableCrossBlockLocalAssertionPropRange());
+        if (!s_range.Contains(info.compMethodHash()))
+        {
+            JITDUMP("Disabling cross-block assertion prop by config range\n");
+            optCrossBlockLocalAssertionProp = false;
+        }
+#endif
+
         // Disable if too many locals
         //
         // The typical number of local assertions is roughly proportional
