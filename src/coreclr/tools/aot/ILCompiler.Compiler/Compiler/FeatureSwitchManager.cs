@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -19,27 +17,6 @@ using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 using MethodDebugInformation = Internal.IL.MethodDebugInformation;
-
-namespace System.Diagnostics.CodeAnalysis
-{
-    internal class FeatureGuardAttribute : Attribute
-    {
-        public Type RequiresAttributeType { get; }
-        public FeatureGuardAttribute (Type requiresAttributeType)
-        {
-            RequiresAttributeType = requiresAttributeType;
-        }
-    }
-
-    internal sealed class FeatureGuardAttribute<T> : FeatureGuardAttribute
-        where T : Attribute
-    {
-        public FeatureGuardAttribute () : base (typeof (T))
-        {
-        }
-    }
-}
-
 
 namespace ILCompiler
 {
@@ -61,132 +38,9 @@ namespace ILCompiler
                 AssemblyFeatureInfo info = _hashtable.GetOrCreateValue(ecmaMethod.Module);
                 if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
                     return result;
-
-                // HERE: get the feature switch value.
-                if (TryGetConstantFeatureCheckValue (ecmaMethod, out bool? value))
-                    return BodySubstitution.Create (value.Value ? 1 : 0);
             }
 
             return null;
-        }
-
-        private static bool TryGetConstantFeatureCheckValue (EcmaMethod ecmaMethod, [NotNullWhen (true)] out bool? value)
-        {
-            value = null;
-            if (!ecmaMethod.Signature.IsStatic)
-                return false;
-
-            if ((ecmaMethod.Attributes & MethodAttributes.SpecialName) == 0)
-                return false;
-
-            if (ecmaMethod.OwningType is not EcmaType declaringType)
-                return false;
-
-            MetadataReader reader = declaringType.MetadataReader;
-
-            foreach (PropertyDefinitionHandle propertyHandle in reader.GetTypeDefinition(declaringType.Handle).GetProperties())
-            {
-                // Check if the property matches the method.
-                PropertyDefinition property = reader.GetPropertyDefinition(propertyHandle);
-                var accessors = property.GetAccessors();
-                var getter = accessors.Getter;
-                if (getter.IsNil)
-                    continue;
-
-                if (getter == ecmaMethod.Handle) {
-                    // found it!
-                    var featureCheckAttr = ProcessFeatureGuardAttribute (property);
-                    if (featureCheckAttr is null)
-                        return false;
-                    
-                    // Hard-code the assumption that a RUC feature is disabled.
-                    value = false;
-                    return true;
-                }
-                // 
-            }
-
-            return false;
-
-            FeatureGuardAttribute ProcessFeatureGuardAttribute (PropertyDefinition property)
-            {
-                CustomAttributeHandleCollection customAttributeHandles = property.GetCustomAttributes();
-                CustomAttributeHandle caHandle = reader.GetCustomAttributeHandle(customAttributeHandles, "System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute`1");
-                if (caHandle.IsNil)
-                    return null;
-                var ca = reader.GetCustomAttribute(caHandle);
-
-                var ctor = reader.GetMemberReference((MemberReferenceHandle)ca.Constructor);
-                var ctorParent = ctor.Parent;
-                if (ctorParent.Kind is not HandleKind.TypeSpecification)
-                    return null;
-
-                // TODO: should we support the non-generic version?
-
-                // Check if it's a generic attribute type
-                var typeSpec = reader.GetTypeSpecification((TypeSpecificationHandle)ctorParent);
-                var typeSig = typeSpec.Signature;
-                var typeSigReader = reader.GetBlobReader(typeSig);
-                var typeSigKind = typeSigReader.ReadSignatureTypeCode();
-                if (typeSigKind is not SignatureTypeCode.GenericTypeInstance)
-                    return null;
-
-                // (CLASS | VALUETYPE)
-                int kind = typeSigReader.ReadCompressedInteger();
-                if (kind != (int)SignatureTypeKind.Class && kind != (int)SignatureTypeKind.ValueType)
-                    return null;
-
-                // Generic TypeDefOrRefOrSpecEncoded
-                // read the generic typedef that's instantiated handle.
-                var genType = typeSigReader.ReadTypeHandle();
-                // TODO: need to support TypeDefinition too.
-                // Skip for now...
-                if (genType.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeReference))
-                    throw new NotImplementedException();
-
-                // GenArgCount
-                int genArgCount = typeSigReader.ReadCompressedInteger();
-                if (genArgCount != 1)
-                    return null;
-
-                // Probably don't need to validate the type again.
-                // Maybe do it in debug mode.
-
-                var genArgTypeCode = typeSigReader.ReadSignatureTypeCode();
-                if (genArgTypeCode is not SignatureTypeCode.TypeHandle)
-                    return null;
-
-                var genArgTypeHandle = typeSigReader.ReadTypeHandle();
-                // TODO: need to handle TypeDef too, probably. not actually sure.
-                // seems to be a typeref in this test.
-                if (genArgTypeHandle.Kind is HandleKind.TypeDefinition)
-                    throw new NotImplementedException();
-                if (genArgTypeHandle.Kind is not HandleKind.TypeReference)
-                    return null;
-                var genArgTypeRef = reader.GetTypeReference((TypeReferenceHandle)genArgTypeHandle);
-                // TODO: use stringComparer same as attribute decoder.
-                var genArgTypeRefName = reader.GetString(genArgTypeRef.Name);
-                var genArgTypeRefNamespace = reader.GetString(genArgTypeRef.Namespace);
-                if (genArgTypeRefNamespace is not "System.Diagnostics.CodeAnalysis")
-                    return null;
-
-                switch (genArgTypeRefName) {
-                case "RequiresUnreferencedCodeAttribute":
-                    return new FeatureGuardAttribute<RequiresUnreferencedCodeAttribute>();
-                case "RequiresDynamicCodeAttribute":
-                    return new FeatureGuardAttribute<RequiresDynamicCodeAttribute>();
-                case "RequiresAssemblyFilesAttribute":
-                    return new FeatureGuardAttribute<RequiresAssemblyFilesAttribute>();
-                }
-                return null;
-
-                // BlobReader blobReader = reader.GetBlobReader(reader.GetCustomAttribute(ca).Value);
-                // Get the attribute type.
-                // TODO: Read custom attributes using the approach in https://github.com/dotnet/runtime/pull/72561/files.
-
-                // OK. this isn't going to be the prettiest.
-
-            }
         }
 
         private object GetSubstitution(FieldDesc field)

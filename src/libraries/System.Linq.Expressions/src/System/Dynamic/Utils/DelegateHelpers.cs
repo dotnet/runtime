@@ -15,7 +15,7 @@ namespace System.Dynamic.Utils
     {
         // This can be flipped to false using feature switches at publishing time
         [FeatureGuard<RequiresDynamicCode>]
-        internal static bool CanEmitObjectArrayDelegate => true;
+        internal static bool CanEmitObjectArrayDelegate => RuntimeFeature.IsDynamicCodeSupported;
 
         // Separate class so that the it can be trimmed away and doesn't get conflated
         // with the Reflection.Emit statics below.

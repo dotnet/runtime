@@ -246,8 +246,7 @@ namespace Mono.Linker
 				CodeOptimizations.RemoveLinkAttributes |
 				CodeOptimizations.RemoveSubstitutions |
 				CodeOptimizations.RemoveDynamicDependencyAttribute |
-				CodeOptimizations.OptimizeTypeHierarchyAnnotations |
-				CodeOptimizations.SubstituteFeatureChecks;
+				CodeOptimizations.OptimizeTypeHierarchyAnnotations;
 
 			DisableEventSourceSpecialHandling = true;
 
@@ -1145,12 +1144,5 @@ namespace Mono.Linker
 		/// Otherwise, type annotation will only be applied with calls to object.GetType()
 		/// </summary>
 		OptimizeTypeHierarchyAnnotations = 1 << 24,
-
-		/// <summary>
-		/// Substitute "featuredefault" settings for substitution XMLs, and
-		/// FeatureGuard<RequiresUnreferencedCodeAttribute> properties for features not
-		/// explicitly given values on the command-line.
-		/// </summary>
-		SubstituteFeatureChecks = 1 << 25,
 	}
 }

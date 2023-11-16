@@ -56,10 +56,6 @@ namespace System.ComponentModel.Design
             }
         }
 
-        private static void SerializeWithBinaryFormatter(Stream o, string cryptoKey, DesigntimeLicenseContext context)
-        {
-        }
-
         private sealed class StreamWrapper : Stream
         {
             private readonly Stream _stream;
