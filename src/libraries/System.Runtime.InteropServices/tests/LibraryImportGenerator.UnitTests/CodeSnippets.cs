@@ -382,19 +382,19 @@ namespace LibraryImportGenerator.UnitTests
             {
                 public ref partial struct RSPublic
                 {
-                    [LibraryImport("DNE")]
+                    [LibraryImport("DoesNotExist")]
                     public static partial int Method();
                 }
 
                 internal ref partial struct RSInternal
                 {
-                    [LibraryImport("DNE")]
+                    [LibraryImport("DoesNotExist")]
                     public static partial int Method();
                 }
 
                 private ref partial struct RSPrivate
                 {
-                    [LibraryImport("DNE")]
+                    [LibraryImport("DoesNotExist")]
                     public static partial int Method();
                 }
             }
@@ -403,19 +403,19 @@ namespace LibraryImportGenerator.UnitTests
             {
                 public ref partial struct RSPublic
                 {
-                    [LibraryImport("DNE")]
+                    [LibraryImport("DoesNotExist")]
                     public static partial int Method();
                 }
 
                 internal ref partial struct RSInternal
                 {
-                    [LibraryImport("DNE")]
+                    [LibraryImport("DoesNotExist")]
                     public static partial int Method();
                 }
 
                 private ref partial struct RSPrivate
                 {
-                    [LibraryImport("DNE")]
+                    [LibraryImport("DoesNotExist")]
                     public static partial int Method();
                 }
             }
