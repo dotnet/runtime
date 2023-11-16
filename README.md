@@ -1,3 +1,19 @@
+# .NET Runtime - Async2 Experiment
+
+This branch contains experimental fork of CoreCLR [.NET runtime](http://github.com/dotnet/runtime) where we explore implementing async directly in the runtime instead of generating state machines in the IL compiler (Roslyn).
+
+## Samples
+
+See the tests in src/tests/loader/async.
+
+## Documentation
+
+- Before building, run the buildroslynugets.cmd script, it will build a variant of the Roslyn compiler that can be used to test this codebase. Otherwise follow the standard developer workflow.
+- [Async Experiment Issue](https://github.com/dotnet/runtimelab/issues/2398)
+- [Design and details](docs\design\features\runtime-handled-tasks.md)
+
+---
+
 # .NET Runtime
 
 In order to build in this repo, you must have set up a Roslyn repo parallel to this repo with the name dotnet-roslyn, and it must have a remote called AzDo which has the updated compiler in it. Then you must run buildroslynnugets.cmd to create a local copy of the compiler for use in the repo. The equivalent work has not yet been done for running on Unix-like platforms.
