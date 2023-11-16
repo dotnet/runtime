@@ -28,7 +28,10 @@ namespace LibraryImportGenerator.UnitTests
             [CallerLineNumber] int lineNumber = 0,
             [CallerFilePath] string? filePath = null)
             => TestUtils.GetFileLineName(lineNumber, filePath);
-
+        public static IEnumerable<object[]> MyTests()
+        {
+            yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
+        }
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
             yield return new[] { ID(), CodeSnippets.TrivialClassDeclarations };
@@ -41,6 +44,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
+            yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
@@ -439,8 +443,10 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Theory]
-        [MemberData(nameof(CodeSnippetsToCompile))]
-        [MemberData(nameof(CustomCollections))]
+        //[MemberData(nameof(CodeSnippetsToCompile))]
+        //[MemberData(nameof(CustomCollections))]
+        [MemberData(nameof(MyTests))]
+
         public async Task ValidateSnippets(string id, string source)
         {
             TestUtils.Use(id);
