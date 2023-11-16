@@ -336,7 +336,7 @@
 
   <!-- Packaging -->
   <PropertyGroup>
-    <GitHubRepositoryName>runtime</GitHubRepositoryName>
+    <GitHubRepositoryName>runtimelab</GitHubRepositoryName>
     <RepositoryUrl>https://github.com/dotnet/$(GitHubRepositoryName)</RepositoryUrl>
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <Owners>microsoft,dotnetframework</Owners>
