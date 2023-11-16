@@ -13102,6 +13102,7 @@ namespace System.Runtime.CompilerServices
         public const string PortablePdb = "PortablePdb";
         public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
         public const string VirtualStaticsInInterfaces = "VirtualStaticsInInterfaces";
+        [FeatureGuard<RequiresDynamicCodeAttribute>]
         public static bool IsDynamicCodeCompiled { get { throw null; } }
         [FeatureGuard<RequiresDynamicCodeAttribute>]
         public static bool IsDynamicCodeSupported { get { throw null; } }
