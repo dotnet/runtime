@@ -223,17 +223,27 @@ def build_and_run(coreclr_args, output_mch_name):
 
         # Begin copy PowerShell dependencies.
         if is_windows:
+            RID = "win-" + arch
+        elif platform.system() == "Darwin":
+            RID = "osx-" + arch
+        else:
+            RID = "linux-" + arch
+
+        if is_windows:
             copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/win/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
         else:
             copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/unix/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
 
         if is_windows:
-            RID = "win-" + arch
             dir_to_microsoft_management_infrastructure_dll = os.path.join(benchmarks_dll_dir, f"runtimes/{RID}/lib/netstandard1.6/")
             if os.path.exists(dir_to_microsoft_management_infrastructure_dll):
                 copy_directory(dir_to_microsoft_management_infrastructure_dll, benchmarks_dll_core_root, verbose_copy=True)
         else:
             copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/unix/lib/netstandard1.6/"), benchmarks_dll_core_root, verbose_copy=True)
+
+        dir_to_native = os.path.join(benchmarks_dll_dir, f"runtimes/{RID}/native/")
+        if os.path.exists(dir_to_native):
+            copy_directory(dir_to_native, benchmarks_dll_core_root, verbose_copy=True)
         # End copy PowerShell dependencies.
 
         # Copy the original 'core_root' to the benchmarks' 'core_root'.
