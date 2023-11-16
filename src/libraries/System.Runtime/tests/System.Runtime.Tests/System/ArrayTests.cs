@@ -1952,6 +1952,8 @@ namespace System.Tests
         [Theory]
         [InlineData(typeof(void))]
         [InlineData(typeof(GenericClass<>))]
+        // not using any by-ref type here as MakeArrayType throws for them, same goes for Type.GetType("SomeByRef[]")	
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94086", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
         public void CreateInstanceFromArrayType_NotSupportedArrayType_ThrowsNotSupportedException(Type elementType)
         {
             Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), 0));
