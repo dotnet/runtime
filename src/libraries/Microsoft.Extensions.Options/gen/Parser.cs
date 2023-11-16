@@ -687,7 +687,7 @@ namespace Microsoft.Extensions.Options.Generators
             var model = new ValidatedModel(
                 GetFQN(mt),
                 mt.Name,
-                false,
+                ModelSelfValidates(mt),
                 membersToValidate);
 
             var validatorTypeName = "__" + mt.Name + "Validator__";

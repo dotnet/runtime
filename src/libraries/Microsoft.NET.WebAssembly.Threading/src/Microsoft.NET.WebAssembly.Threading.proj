@@ -12,6 +12,7 @@
     <NoWarn>$(NoWarn);NU5128;NU5131;PKV004</NoWarn>
     <!-- Place assemblies in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <ItemGroup>
