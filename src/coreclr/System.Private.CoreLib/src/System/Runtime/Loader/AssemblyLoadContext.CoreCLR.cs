@@ -51,6 +51,9 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TracePathProbed", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void TracePathProbed(string filePath, PathSource source, int hResult);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolutionAttempted", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial void TraceResolutionAttempted(string assemblyName, Tracing.Stage stage, string assemblyLoadContextName, Tracing.Result result, string resultAssemblyName, string resultAssemblyPath, string errorMsg);
+
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {

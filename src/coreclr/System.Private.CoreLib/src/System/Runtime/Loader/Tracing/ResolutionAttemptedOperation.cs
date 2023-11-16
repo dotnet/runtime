@@ -2,12 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Runtime.Loader.Tracing
 {
+    // This must match the ResolutionAttemptedStage value map in ClrEtwAll.man
+    internal enum Stage : ushort
+    {
+        FindInLoadContext = 0,
+        AssemblyLoadContextLoad = 1,
+        ApplicationAssemblies = 2,
+        DefaultAssemblyLoadContextFallback = 3,
+        ResolveSatelliteAssembly = 4,
+        AssemblyLoadContextResolvingEvent = 5,
+        AppDomainAssemblyResolveEvent = 6,
+        NotYetStarted = 0xffff, // Used as flag to not fire event; not present in value map
+    };
+
+    // This must match the ResolutionAttemptedResult value map in ClrEtwAll.man
+    internal enum Result : ushort
+    {
+        Success = 0,
+        AssemblyNotFound = 1,
+        IncompatibleVersion = 2,
+        MismatchedAssemblyName = 3,
+        Failure = 4,
+        Exception = 5,
+    };
+
     // An object of this class manages firing events for all the stages during a binder resolving
     // attempt operation.  It has minimal cost if tracing for this event is disabled.
     //
@@ -25,32 +46,8 @@ namespace System.Runtime.Loader.Tracing
     // which is used to determine the success or failure of a stage either at the moment this
     // class is destructed (e.g. last stage), or when moving from one stage to another.  (This
     // is especially useful if the HRESULT is captured from an exception handler.)
-    internal ref partial struct ResolutionAttemptedOperation
+    internal ref struct ResolutionAttemptedOperation
     {
-        // This must match the ResolutionAttemptedStage value map in ClrEtwAll.man
-        public enum Stage : ushort
-        {
-            FindInLoadContext = 0,
-            AssemblyLoadContextLoad = 1,
-            ApplicationAssemblies = 2,
-            DefaultAssemblyLoadContextFallback = 3,
-            ResolveSatelliteAssembly = 4,
-            AssemblyLoadContextResolvingEvent = 5,
-            AppDomainAssemblyResolveEvent = 6,
-            NotYetStarted = 0xffff, // Used as flag to not fire event; not present in value map
-        };
-
-        // This must match the ResolutionAttemptedResult value map in ClrEtwAll.man
-        private enum Result : ushort
-        {
-            Success = 0,
-            AssemblyNotFound = 1,
-            IncompatibleVersion = 2,
-            MismatchedAssemblyName = 3,
-            Failure = 4,
-            Exception = 5,
-        };
-
         private ref readonly int _hr;
         private Stage _stage;
         private bool _tracingEnabled;
@@ -150,9 +147,6 @@ namespace System.Runtime.Loader.Tracing
             TraceStage(_stage, _hr, _foundAssembly);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_GetPath", StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial char* PEImage_GetPath(IntPtr pPEImage);
-
         private unsafe void TraceStage(Stage stage, int hResult, BinderAssembly? resultAssembly, string? customError = null)
         {
             if (!_tracingEnabled || stage == Stage.NotYetStarted)
@@ -164,7 +158,7 @@ namespace System.Runtime.Loader.Tracing
             if (resultAssembly != null)
             {
                 resultAssemblyName = resultAssembly.AssemblyName.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_VERSION | AssemblyNameIncludeFlags.INCLUDE_PUBLIC_KEY_TOKEN);
-                resultAssemblyPath = new string(PEImage_GetPath(resultAssembly.PEImage));
+                resultAssemblyPath = new string(AssemblyBinderCommon.PEImage_GetPath(resultAssembly.PEImage));
             }
 
             Result result;
@@ -231,7 +225,7 @@ namespace System.Runtime.Loader.Tracing
                 }
             }
 
-            TraceResolutionAttempted(
+            AssemblyLoadContext.TraceResolutionAttempted(
                 _assemblyName,
                 stage,
                 _assemblyLoadContextName,
@@ -240,8 +234,5 @@ namespace System.Runtime.Loader.Tracing
                 resultAssemblyPath,
                 errorMsg);
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolutionAttempted", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void TraceResolutionAttempted(string assemblyName, Stage stage, string assemblyLoadContextName, Result result, string resultAssemblyName, string resultAssemblyPath, string errorMsg);
     }
 }

@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -34,7 +33,7 @@ namespace System.Runtime.Loader
     internal static partial class AssemblyBinderCommon
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquireImport")]
-        public static unsafe partial IntPtr BinderAcquireImport(IntPtr pPEImage, int* pdwPAFlags);
+        internal static unsafe partial IntPtr BinderAcquireImport(IntPtr pPEImage, int* pdwPAFlags);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquirePEImage", StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
@@ -44,6 +43,9 @@ namespace System.Runtime.Loader
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_GetMVID")]
         internal static partial void PEImage_GetMVID(IntPtr pPEImage, out Guid mvid);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_GetPath", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial char* PEImage_GetPath(IntPtr pPEImage);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_AppIsBundle")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -1143,7 +1145,7 @@ namespace System.Runtime.Loader
                 {
                     // Step 2 (of CustomAssemblyBinder::BindAssemblyByName) - Invoke Load method
                     // This is not invoked for TPA Binder since it always returns NULL.
-                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.AssemblyLoadContextLoad);
+                    tracer.GoToStage(Stage.AssemblyLoadContextLoad);
 
                     refLoadedAssembly = binder.ResolveUsingLoad(refAssemblyName);
                     if (refLoadedAssembly != null)
@@ -1156,7 +1158,7 @@ namespace System.Runtime.Loader
                     // Step 3 (of CustomAssemblyBinder::BindAssemblyByName)
                     if (!fResolvedAssembly && !isSatelliteAssemblyRequest)
                     {
-                        tracer.GoToStage(ResolutionAttemptedOperation.Stage.DefaultAssemblyLoadContextFallback);
+                        tracer.GoToStage(Stage.DefaultAssemblyLoadContextFallback);
 
                         // If we could not resolve the assembly using Load method, then attempt fallback with TPA Binder.
                         // Since TPA binder cannot fallback to itself, this fallback does not happen for binds within TPA binder.
@@ -1176,7 +1178,7 @@ namespace System.Runtime.Loader
                     // Step 4 (of CustomAssemblyBinder::BindAssemblyByName)
 
                     // Attempt to resolve it using the ResolveSatelliteAssembly method.
-                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.ResolveSatelliteAssembly);
+                    tracer.GoToStage(Stage.ResolveSatelliteAssembly);
 
                     refLoadedAssembly = binder.ResolveSatelliteAssembly(refAssemblyName);
                     if (refLoadedAssembly != null)
@@ -1194,7 +1196,7 @@ namespace System.Runtime.Loader
 
                     // If we couldn't resolve the assembly using TPA LoadContext as well, then
                     // attempt to resolve it using the Resolving event.
-                    tracer.GoToStage(ResolutionAttemptedOperation.Stage.AssemblyLoadContextResolvingEvent);
+                    tracer.GoToStage(Stage.AssemblyLoadContextResolvingEvent);
 
                     refLoadedAssembly = binder.ResolveUsingEvent(refAssemblyName);
                     if (refLoadedAssembly != null)
