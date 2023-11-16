@@ -273,6 +273,8 @@ protected:
     DPTR(VALUE) BaseFindFirstEntryByHash(DacEnumerableHashValue iHash, LookupContext *pContext);
     DPTR(VALUE) BaseFindNextEntryByHash(LookupContext *pContext);
 
+    static DacEnumerableHashValue BaseValuePtrToHash(DPTR(VALUE) pValue);
+
     PTR_Module GetModule()
     {
         return m_pModule;

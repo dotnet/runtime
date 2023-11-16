@@ -332,14 +332,13 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueUsingPreallocatedEntry(EEClassH
 
     pNewEntry->SetData(Data);
     pNewEntry->SetEncloser(pEncloser);
-    pNewEntry->SetHash(Hash(pszNamespace, pszClassName, pEncloser != NULL ? pEncloser->GetHash() : 0));
 
 #ifdef _DEBUG
     pNewEntry->DebugKey[0] = pszNamespace;
     pNewEntry->DebugKey[1] = pszClassName;
 #endif
 
-    BaseInsertEntry(pNewEntry->GetHash(), pNewEntry);
+    BaseInsertEntry(Hash(pszNamespace, pszClassName, pEncloser != NULL ? GetHash(pEncloser) : 0), pNewEntry);
 
     return pNewEntry;
 }
@@ -736,7 +735,7 @@ BOOL EEClassHashTable::IsNested(const NameHandle* pName, mdToken *mdEncloser)
         return FALSE;
 }
 
-EEClassHashEntry_t * EEClassHashTable::FindByNameHandle(const NameHandle* pName)
+PTR_EEClassHashEntry EEClassHashTable::FindByNameHandle(const NameHandle* pName)
 {
     // TODO remove this pointless local
     EEClassHashTable *pTable = this;
@@ -779,9 +778,9 @@ EEClassHashEntry_t * EEClassHashTable::FindByNameHandle(const NameHandle* pName)
         {
             // The enclosing hash is always based on the entry from the case sensitive table
             // A NameHandle bucket is always the entry in the CaseSensitive table
-            enclosingHash = pName->GetBucket().GetClassHashBasedEntryValue()->GetHash();
+            enclosingHash = GetHash(pName->GetBucket().GetClassHashBasedEntryValue());
         }
-        hash = Hash(pszNamespace, pszName, pName->GetBucket().IsNull() ? 0 : pName->GetBucket().GetClassHashBasedEntryValue()->GetHash());
+        hash = Hash(pszNamespace, pszName, enclosingHash);
         break;
     }
 

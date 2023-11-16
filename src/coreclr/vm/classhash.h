@@ -39,8 +39,6 @@ typedef struct EEClassHashEntry
     PTR_VOID GetData();
     void SetData(PTR_VOID data) DAC_EMPTY();
 
-    DWORD GetHash() { return m_hash; } // Get the case sensitive hash value for this hash entry
-    void SetHash(DWORD hash) { m_hash = hash; }
 
 private:
     PTR_VOID    m_Data;     // Either the token (if EECLASSHASH_TYPEHANDLE_DISCR), or the type handle encoded
@@ -51,7 +49,6 @@ private:
                                         // reference to the enclosing type
                                         // (which must be in this same
                                         // hash).
-    DWORD       m_hash;     // Hash of this entry. Used for computing nested type hashes.
 } EEClassHashEntry_t;
 
 // The hash type itself. All common logic is provided by the DacEnumerableHashTable templated base class. See
@@ -74,7 +71,7 @@ public:
     EEClassHashEntry_t *AllocNewEntry(AllocMemTracker *pamTracker);
     EEClassHashTable   *MakeCaseInsensitiveTable(Module *pModule, AllocMemTracker *pamTracker);
 
-    EEClassHashEntry_t * FindByNameHandle(const NameHandle* pName);
+    PTR_EEClassHashEntry FindByNameHandle(const NameHandle* pName);
 
     BOOL     CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2);
 
@@ -94,6 +91,11 @@ public:
                                               mdTypeDef *pCL);
     static mdToken UncompressModuleAndClassDef(PTR_VOID Data);
 
+    static DWORD HashEntryToHash(PTR_EEClassHashEntry entry)
+    {
+        return BaseValuePtrToHash(entry);
+    }
+
 private:
 #ifndef DACCESS_COMPILE
     EEClassHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets) :
@@ -110,5 +112,11 @@ private:
 
     PTR_EEClassHashTable m_pCaseSensitiveTable;  // This will be a recursive pointer for the case sensitive table
 };
+
+inline DWORD GetHash(PTR_EEClassHashEntry eeclassHashEntry)
+{
+    // This is only safe, as the only allocator for the EEClassHashEntry type is the hash table
+    return EEClassHashTable::HashEntryToHash(eeclassHashEntry);
+}
 
 #endif // !__CLASS_HASH_INCLUDED

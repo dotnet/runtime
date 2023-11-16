@@ -83,15 +83,15 @@ public:
     EntryType GetEntryType() const { return m_EntryType; }
     bool IsNull() const { return m_EntryType == EntryType::IsNullEntry; }
 
-    const HashedTypeEntry& SetClassHashBasedEntryValue(EEClassHashEntry_t * pClassHashEntry)
+    const HashedTypeEntry& SetClassHashBasedEntryValue(PTR_EEClassHashEntry pClassHashEntry)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_EntryType = EntryType::IsHashedClassEntry;
-        m_pClassHashEntry = dac_cast<PTR_EEClassHashEntry>(pClassHashEntry);
+        m_pClassHashEntry = pClassHashEntry;
         return *this;
     }
-    EEClassHashEntry_t * GetClassHashBasedEntryValue() const
+    PTR_EEClassHashEntry GetClassHashBasedEntryValue() const
     {
         LIMITED_METHOD_CONTRACT;
 

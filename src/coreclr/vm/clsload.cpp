@@ -549,7 +549,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
     CONTRACTL_END
 
 
-    EEClassHashEntry_t  *pBucket = NULL;
+    PTR_EEClassHashEntry pBucket = NULL;
 
     needsToBuildHashtable = FALSE;
 
@@ -1116,7 +1116,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
         return TRUE;
     }
 
-    EEClassHashEntry_t * pBucket = foundEntry.GetClassHashBasedEntryValue();
+    PTR_EEClassHashEntry pBucket = foundEntry.GetClassHashBasedEntryValue();
 
     if (pBucket == NULL)
     {
@@ -1166,7 +1166,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
     if (pName->GetTable() == nhCaseInsensitive)
     {
         _ASSERTE(Data);
-        pBucket = PTR_EEClassHashEntry(Data);
+        pBucket = dac_cast<PTR_EEClassHashEntry>(dac_cast<TADDR>((Data)));
         Data = pBucket->GetData();
     }
 
