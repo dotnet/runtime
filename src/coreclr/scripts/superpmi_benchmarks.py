@@ -222,7 +222,12 @@ def build_and_run(coreclr_args, output_mch_name):
             os.makedirs(benchmarks_dll_core_root)
 
         # Begin copy PowerShell dependencies.
-        copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/win/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
+        if is_windows:
+            copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/win/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
+        elif platform.system() == "Darwin":
+            copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/linux/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
+        else:
+            copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/osx/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
 
         if is_windows:
             RID = "win-" + arch
