@@ -410,8 +410,59 @@ namespace ILLink.Shared.TrimAnalysis
 
 					// Go over all types we've seen
 					foreach (var value in instanceValue) {
-						// Mark based on bitfield requirements
-						_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+						if (value is SystemTypeValue systemTypeValue) {
+							foreach (var stringParam in argumentValues[0]) {
+								if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported (bindingFlags) && !MemberTypesAreUnsupported (memberTypes)) {
+									// determine if we've got a prefix (for example, abc* searches for anything starting with abc)
+									var isPrefix = stringValue.Contents.EndsWith('*');
+									var name = stringValue.Contents;
+									if (isPrefix) name = name.Substring(0, name.Length - 1);
+
+									// we may not need to search for constructors depending on the value of 'name', since they're always named '.ctor' (II.10.5.1)
+									DynamicallyAccessedMemberTypes requiredMemberTypes2 = requiredMemberTypes;
+									if (isPrefix ? !".ctor".StartsWith(name) : name != ".ctor") {
+										requiredMemberTypes2 &= ~(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors);
+									}
+
+									AddReturnValue (MultiValueLattice.Top); // Initialize return value (so that it's not autofilled if there are no matching members)
+
+									// search for all the things we want by name
+									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)) != 0) {
+										MarkConstructorsOnType (systemTypeValue.RepresentedType, bindingFlags, parameterCount: null);
+									}
+									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)) != 0) {
+										MarkEventsOnTypeHierarchyWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags);
+									}
+									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)) != 0) {
+										MarkFieldsOnTypeHierarchyWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags);
+									}
+									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)) != 0) {
+										foreach (var methodValue in ProcessGetMethodByNameWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags))
+											AddReturnValue (methodValue);
+									}
+									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)) != 0) {
+										MarkPropertiesOnTypeHierarchyWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags);
+									}
+									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)) != 0) {
+										foreach (var nestedTypeValue in GetNestedTypesOnTypeWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags)) {
+											MarkType (nestedTypeValue.RepresentedType);
+											AddReturnValue (nestedTypeValue);
+										}
+									}
+								} else if (stringParam is NullValue) {
+									// type.GetMember(null, ...) throws - so track empty value set as its result
+									AddReturnValue (MultiValueLattice.Top);
+								} else {
+									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+								}
+							}
+						} else if (value is NullValue) {
+							// null.GetMember(...) throws - so track empty value set as its result
+							AddReturnValue (MultiValueLattice.Top);
+						} else {
+							// Mark based on bitfield requirements
+							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+						}
 					}
 				}
 				break;
@@ -1227,6 +1278,23 @@ namespace ILLink.Shared.TrimAnalysis
 				yield return NullValue.Instance;
 		}
 
+		private IEnumerable<MultiValue> ProcessGetMethodByNameWithPrefix (TypeProxy type, string methodName, bool nameIsPrefix, BindingFlags? bindingFlags)
+		{
+			bool foundAny = false;
+			foreach (var method in GetMethodsOnTypeHierarchyWithPrefix (type, methodName, nameIsPrefix, bindingFlags)) {
+				MarkMethod (method.RepresentedMethod);
+				yield return method;
+				foundAny = true;
+			}
+
+			// If there were no methods found the API will return null at runtime, so we should
+			// track the null as a return value as well.
+			// This also prevents warnings in such case, since if we don't set the return value it will be
+			// "unknown" and consumers may warn.
+			if (!foundAny)
+				yield return NullValue.Instance;
+		}
+
 		private bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, in MethodProxy calledMethod, ImmutableArray<GenericParameterValue> genericParameters)
 		{
 			bool hasRequirements = false;
@@ -1524,5 +1592,15 @@ namespace ILLink.Shared.TrimAnalysis
 
 		// Only used for internal diagnostic purposes (not even for warning messages)
 		private partial string GetContainingSymbolDisplayName ();
+
+		private partial void MarkEventsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
+
+		private partial void MarkFieldsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
+
+		private partial void MarkPropertiesOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
+
+		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchyWithPrefix (TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
+
+		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnTypeWithPrefix (TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
 	}
 }
