@@ -483,10 +483,11 @@ In addition, these experiments use the JIT focused implementation of `async2`. T
 These benchmarks are gathered by running the async2-eh-microbench in varying configurations.
 - NoSuspend vs Suspend - Suspend indicates that the async function awaits `Task.Yield()` before completing.
 - `Return` vs `Throw` - `Return` indicates that the iteration finishes by returning up the call stack via return instructions, and `Throw` indicates that each iteration terminated via a `throw new Exception()`.
-- `Task` vs `ValueTask` vs `Async2` - The benchmark has 3 functions which are written with the same C# code, but with different syntax using different async implementation strategies.
+- `Task` vs `ValueTask` vs `Async2` vs `Async2Capture` - The benchmark has 4 functions which are written with the same C# code, but with different syntax using different async implementation strategies.
 With `Task`, the function signature is `async Task<long> RunTask(int depth)`
 With `ValueTask`, the function signature is `async ValueTask<long> RunTask(int depth)`
-With `Task`, the function signature is `async2 long RunTask(int depth)`
+With `Async2`, the function signature is `async2 long RunTask(int depth)`
+With `Async2Capture`, the function signature is `async2 long RunTask(int depth)`, and the body of the function contains a try/finally which saves/restores the Sync and ExecutionContext. This is intended to (imperfectly) measure the cost of adjusting the runtime async model to behave exactly like the existing async model.
 
 When a graph does not specify one of the config options, the graph is a relative performance gathered by dividing the iters/250ms that the benchmark produces between the two options, and then multiplying by 100 to produce a percentage. 
 
@@ -516,6 +517,25 @@ This higher performance is likely due to the relatively large size of the async 
 In addition, in this graph, only data out to a depth of 16 is presented, as the performance of throwing with new async at higher stack depths would make looking at the data for other depths difficult.
 (It reaches a level of 3851% of the performance of the traditional async function at a stack depth of 64). Not shown is the performance of `ValueTask` based async code. It is extremely close to that of the `Task` based variant.
 
+## Impact on performance of capturing/restoring ExecutionContext and SynchronizationContext
+
+![RelativePerfWithCapture](async2-vs-async2capture-relative-performance.svg)
+
+The Async2Capture variant of the testing is intended to show the impact that capturing/restoring `ExecutionContext` and `SynchronizationContext` would have on performance of the runtime generated async logic.
+In this graph, taller bars are better, and if capture had no cost, they would all be expected to be at 100%.
+The variant of code does not necessarily represent all of the costs involved in a real implementation, notably, on restore it does not attempt to ensure that the code resumes respecting the correct `SynchronizationContext` or `TaskScheduler` rules, but its probably fairly accurate for NoSuspend measurements.
+In addition, in this data we can see that the cost of the try/finally results in performance unfortunately similar to that of the `async Task` based implementation in the "Throw Suspend" scenario.
+This could likely be optimized to have performance similar to that of the higher performance runtime async model. (As the contents of the finally are well known, and would not require the entire EH machinery to be invoked.)
+
+As we can see from the graph, the performance impact on NoSuspend cases is between 20%-30% for this somewhat complex function.
+This test also fails to measure the impact of losing the ability to inline small helper functions which was expected to be one of the significant wins in practice of the new async logic.
+
+![RelativePerfWithCapture2](async-vs-async2capture-relative-performance.svg)
+
+However, while this is a substantial performance loss relative to the full speed runtime async model, the overall performance of this model relative to our existing model still shows a nice performance win.
+Looking at this graph, the performance win from a fully capturing model is not terrible.
+We may wish to strongly consider implementing a variant of this where individual methods could choose to have capture or not.
+This would allow the new model to be fully drop in, but customers could opt into higher performance/logic which can support inlining.
 
 ## Impact of try/finally regions on throw performance
 ![ThrowPerfDifferingFinallys](throw-perf-with-different-number-of-finally-on-stack.svg)
@@ -533,15 +553,15 @@ Without many finally blocks, we can see that the performance is really extraordi
 4. The performance of Task Throw NoSuspend and Task Throw Suspend is effectively the same.
 
 ## Raw data from EH microbenchmark
-| Stack Depth | Task Return NoSuspend | ValueTask Return NoSuspend | Async2 Return NoSuspend | Task Throw NoSuspend | ValueTask Throw NoSuspend | Async2 Throw NoSuspend | Task Return Suspend | ValueTask Return Suspend | Async2 Return Suspend | Task Throw Suspend | ValueTask Throw Suspend | Async2 Throw Suspend |
-| ----- | --------------------- | -------------------------- | ----------------------- | -------------------- | ------------------------- | ---------------------- | ------------------- | ------------------------ | --------------------- | ------------------ | ----------------------- | -------------------- |
-| 1     | 7,976,995.00          | 7,994,790.00               | 13,966,110.00           | 21,630.00            | 21,789.00                 | 46,434.00              | 589,057.00          | 574,660.00               | 629,310.00            | 15,563.00          | 15,584.00               | 21,208.00            |
-| 2     | 4,738,359.00          | 5,036,613.00               | 11,573,294.00           | 13,781.00            | 13,359.00                 | 38,975.00              | 390,167.00          | 349,900.00               | 617,464.00            | 9,806.00           | 9,740.00                | 21,514.00            |
-| 4     | 2,884,153.00          | 2,924,123.00               | 8,340,047.00            | 7,717.00             | 7,477.00                  | 29,887.00              | 276,584.00          | 265,590.00               | 577,707.00            | 5,778.00           | 5,495.00                | 21,288.00            |
-| 8     | 1,274,335.00          | 1,324,960.00               | 5,308,395.00            | 4,068.00             | 4,001.00                  | 20,358.00              | 217,067.00          | 198,172.00               | 474,723.00            | 3,476.00           | 3,376.00                | 20,877.00            |
-| 16    | 536,064.00            | 533,731.00                 | 2,888,828.00            | 2,104.00             | 2,063.00                  | 12,941.00              | 132,636.00          | 106,605.00               | 315,191.00            | 1,912.00           | 1,909.00                | 20,496.00            |
-| 32    | 263,823.00            | 249,821.00                 | 1,157,832.00            | 1,032.00             | 989.00                    | 7,319.00               | 71,989.00           | 55,860.00                | 184,699.00            | 973.00             | 949.00                  | 19,379.00            |
-| 64    | 113,187.00            | 114,845.00                 | 488,245.00              | 484.00               | 473.00                    | 3,936.00               | 37,086.00           | 28,365.00                | 98,769.00             | 458.00             | 456.00                  | 17,565.00            |
+| Stack Depth | Task Return NoSuspend | ValueTask Return NoSuspend | Async2 Return NoSuspend | Task Throw NoSuspend | ValueTask Throw NoSuspend | Async2 Throw NoSuspend | Task Return Suspend | ValueTask Return Suspend | Async2 Return Suspend | Task Throw Suspend | ValueTask Throw Suspend | Async2 Throw Suspend | Async2Capture Return NoSuspend | Async2Capture Throw NoSuspend | Async2Capture Return Suspend | Async2Capture Throw Suspend |
+| ----- | --------------------- | -------------------------- | ----------------------- | -------------------- | ------------------------- | ---------------------- | ------------------- | ------------------------ | --------------------- | ------------------ | ----------------------- | -------------------- | --------------------- | ------------------ | ----------------------- | -------------------- |
+| 1     | 7,976,995.00          | 7,994,790.00               | 13,966,110.00           | 21,630.00            | 21,789.00                 | 46,434.00              | 589,057.00          | 574,660.00               | 629,310.00            | 15,563.00          | 15,584.00               | 21,208.00            | 12249438.00           | 45002.00           | 624336.00               | 21005.00             |
+| 2     | 4,738,359.00          | 5,036,613.00               | 11,573,294.00           | 13,781.00            | 13,359.00                 | 38,975.00              | 390,167.00          | 349,900.00               | 617,464.00            | 9,806.00           | 9,740.00                | 21,514.00            | 9306011.00            | 37769.00           | 594730.00               | 13163.00             |
+| 4     | 2,884,153.00          | 2,924,123.00               | 8,340,047.00            | 7,717.00             | 7,477.00                  | 29,887.00              | 276,584.00          | 265,590.00               | 577,707.00            | 5,778.00           | 5,495.00                | 21,288.00            | 6438143.00            | 28318.00           | 543293.00               | 7253.00              |
+| 8     | 1,274,335.00          | 1,324,960.00               | 5,308,395.00            | 4,068.00             | 4,001.00                  | 20,358.00              | 217,067.00          | 198,172.00               | 474,723.00            | 3,476.00           | 3,376.00                | 20,877.00            | 3836147.00            | 18871.00           | 412340.00               | 4160.00              |
+| 16    | 536,064.00            | 533,731.00                 | 2,888,828.00            | 2,104.00             | 2,063.00                  | 12,941.00              | 132,636.00          | 106,605.00               | 315,191.00            | 1,912.00           | 1,909.00                | 20,496.00            | 2083270.00            | 11978.00           | 275944.00               | 2234.00              |
+| 32    | 263,823.00            | 249,821.00                 | 1,157,832.00            | 1,032.00             | 989.00                    | 7,319.00               | 71,989.00           | 55,860.00                | 184,699.00            | 973.00             | 949.00                  | 19,379.00            | 861826.00             | 6705.00            | 156610.00               | 1133.00              |
+| 64    | 113,187.00            | 114,845.00                 | 488,245.00              | 484.00               | 473.00                    | 3,936.00               | 37,086.00           | 28,365.00                | 98,769.00             | 458.00             | 456.00                  | 17,565.00            | 393380.00             | 3654.00            | 83977.00                | 593.00               |
 
 | Finally blocks on stack | Task Throw NoSuspend | Async2 Throw NoSuspend | Task Throw Suspend | Async2 Throw Suspend |
 | ----------------------- | -------------------- | ---------------------- | ------------------ | -------------------- |

@@ -50,6 +50,7 @@ public class Async2EHMicrobench
             for (int j = 0; j < 40; j++)
             {
                 await warmupBm.Run("Async2");
+                await warmupBm.Run("Async2WithContextSaveRestore");
                 await warmupBm.Run("Task");
                 await warmupBm.Run("ValueTask");
             }
@@ -60,6 +61,7 @@ public class Async2EHMicrobench
 
         Console.WriteLine("Warmup done, running benchmark");
         await RunBench(yieldFrequency, depth, finallyRate, throwOrReturn, "Async2");
+        await RunBench(yieldFrequency, depth, finallyRate, throwOrReturn, "Async2WithContextSaveRestore");
         await RunBench(yieldFrequency, depth, finallyRate, throwOrReturn, "Task");
         await RunBench(yieldFrequency, depth, finallyRate, throwOrReturn, "ValueTask");
     }
@@ -104,6 +106,8 @@ public class Async2EHMicrobench
         {
             if (type == "Async2")
                 return await RunAsync2(_depth);
+            if (type == "Async2WithContextSaveRestore")
+                return await RunAsync2WithContextSaveRestore(_depth);
             if (type == "Task")
                 return await RunTask(_depth);
             if (type == "ValueTask")
@@ -240,6 +244,119 @@ public class Async2EHMicrobench
 
             Sink = (int)liveState1 + (int)liveState2 + (int)(1 / liveState3) + depth;
             return result;
+        }
+
+        public class FakeSyncContext {}
+        public class FakeExecContext
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void RestoreChangedContextToThread(FakeThread thread, FakeExecContext execContext, FakeExecContext newExecContext)
+            {
+            }
+        }
+        public class FakeThread
+        {
+            public FakeSyncContext _syncContext;
+            public FakeExecContext _execContext;
+        }
+        [ThreadStatic]
+        public static FakeThread CurrentThread;
+
+        // This case is used to test the impact of save/restore of the sync and execution context on performance
+        // The intent here is to measure what the performance impact of maintaining the current async semantics with
+        // the new implementation.
+        public async2 Task<long> RunAsync2WithContextSaveRestore(int depth)
+        {
+            FakeThread thread = CurrentThread;
+            if (thread == null)
+            {
+                CurrentThread = new FakeThread();
+                thread = CurrentThread;
+            }
+
+            FakeExecContext? previousExecutionCtx = thread._execContext;
+            FakeSyncContext? previousSyncCtx = thread._syncContext;
+
+            try
+            {
+                int liveState1 = depth * 3 + _yieldCount;
+                int liveState2 = depth;
+                double liveState3 = _yieldCount;
+
+                if (depth == 0)
+                {
+                    int currentAwaitCount = 0;
+
+                    while (currentAwaitCount < _yieldCount)
+                    {
+                        currentAwaitCount++;
+                        await Task.Yield();
+                    }
+
+                    if (_throwOrReturn)
+                        throw new Exception();
+                    return 8375983;
+                }
+
+                long result = 0;
+
+                if (depth == _depth)
+                {
+                    int time = Warmup ? 5 : 250;
+
+                    Stopwatch timer = Stopwatch.StartNew();
+
+                    long numIters = 0;
+
+                    while (timer.ElapsedMilliseconds < time)
+                    {
+                        try
+                        {
+                            result = await RunAsync2WithContextSaveRestore(depth - 1);
+                        }
+                        catch (Exception e)
+                        {
+
+                        }
+                        numIters++;
+
+                    }
+                    return numIters;
+                }
+                else if ((depth % _finallyRate) == 0)
+                {
+                    try
+                    {
+                        result = await RunAsync2WithContextSaveRestore(depth - 1);
+                    }
+                    finally
+                    {
+                        Sink = (int)liveState1 + (int)liveState2 + (int)(1 / liveState3) + depth;
+                    }
+                }
+                else
+                {
+                    result = await RunAsync2WithContextSaveRestore(depth - 1);
+                }
+
+                Sink = (int)liveState1 + (int)liveState2 + (int)(1 / liveState3) + depth;
+                return result;
+            }
+            finally
+            {
+                // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+                if (previousSyncCtx != thread._syncContext)
+                {
+                    // Restore changed SynchronizationContext back to previous
+                    thread._syncContext = previousSyncCtx;
+                }
+
+                FakeExecContext? currentExecutionCtx = thread._execContext;
+                if (previousExecutionCtx != currentExecutionCtx)
+                {
+                    FakeExecContext.RestoreChangedContextToThread(thread, previousExecutionCtx, currentExecutionCtx);
+                }
+            }
         }
 
         public async2 Task<long> RunAsync2(int depth)
