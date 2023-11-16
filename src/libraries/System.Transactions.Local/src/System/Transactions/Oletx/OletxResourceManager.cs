@@ -79,7 +79,7 @@ internal sealed class OletxResourceManager
                 {
                     if (resourceManagerShim == null)
                     {
-                        OletxTransactionManager.DtcTransactionManagerLock.AcquireReaderLock( -1 );
+                        OletxTransactionManager.DtcTransactionManagerLock.AcquireReaderLock(-1);
                         try
                         {
                             Guid rmGuid = ResourceManagerIdentifier;

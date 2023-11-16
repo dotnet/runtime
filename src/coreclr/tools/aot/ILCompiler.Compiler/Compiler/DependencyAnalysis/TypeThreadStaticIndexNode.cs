@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
                     // an index in the containing storage.
                     // We use a negative index to indicate that. Any negative value would work.
                     // For the purpose of natvis we will encode the offset of the type storage within the block.
-                    typeTlsIndex = - (_inlinedThreadStatics.GetTypeStorageOffset(_type) + factory.Target.PointerSize);
+                    typeTlsIndex = (-1 * (_inlinedThreadStatics.GetTypeStorageOffset(_type) + factory.Target.PointerSize));
 
                     // the type of the storage block for inlined threadstatics, if present,
                     // is serialized as the item #0 among other storage block types.

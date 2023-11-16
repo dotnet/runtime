@@ -1155,7 +1155,7 @@ dotnet_diagnostic.SA1018.severity = warning
 dotnet_diagnostic.SA1020.severity = warning
 
 # SA1021: Negative sign should be preceded by a space
-dotnet_diagnostic.SA1021.severity = none
+dotnet_diagnostic.SA1021.severity = warning
 
 # SA1023: Dereference symbol '*' should not be preceded by a space."
 dotnet_diagnostic.SA1023.severity = none
