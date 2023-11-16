@@ -1252,6 +1252,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
+        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
         [Fact]
         public void ConcurrentGetProperties_ReturnsExpected()
         {
