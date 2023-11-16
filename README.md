@@ -9,7 +9,7 @@ See the tests in src/tests/loader/async.
 ## Documentation
 
 - Before building, run the buildroslynugets.cmd script, it will build a variant of the Roslyn compiler that can be used to test this codebase. Otherwise follow the standard developer workflow.
-- [Async Experiment Issue](https://github.com/dotnet/runtimelab/issues/2398)
+- [Async Experiment Issue](https://github.com/dotnet/runtimelab/issues/94620)
 - [Design and details](docs\design\features\runtime-handled-tasks.md)
 
 ---
