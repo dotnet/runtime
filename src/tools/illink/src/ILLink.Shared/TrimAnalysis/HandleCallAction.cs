@@ -373,12 +373,18 @@ namespace ILLink.Shared.TrimAnalysis
 					}
 
 					BindingFlags? bindingFlags;
+					MemberTypes? memberTypes;
 					if (calledMethod.HasMetadataParametersCount (1)) {
+						// Assume a default value for MemberTypes for methods that don't use MemberTypes as a parameter
+						memberTypes = MemberTypes.All;
 						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
 						bindingFlags = BindingFlags.Public | BindingFlags.Instance;
-					} else if (calledMethod.HasMetadataParametersCount (2) && calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.BindingFlags"))
+					} else if (calledMethod.HasMetadataParametersCount (2) && calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.BindingFlags")) {
+						// Assume a default value for MemberTypes for methods that don't use MemberTypes as a parameter
+						memberTypes = MemberTypes.All;
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
-					else if (calledMethod.HasMetadataParametersCount (3) && calledMethod.HasParameterOfType ((ParameterIndex) 3, "System.Reflection.BindingFlags")) {
+					} else if (calledMethod.HasMetadataParametersCount (3) && calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.MemberTypes") && calledMethod.HasParameterOfType ((ParameterIndex) 3, "System.Reflection.BindingFlags")) {
+						memberTypes = GetMemberTypesFromValue (argumentValues[1]);
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[2]);
 					} else // Non recognized intrinsic
 						throw new ArgumentException ($"Reflection call '{calledMethod.GetDisplayName ()}' inside '{GetContainingSymbolDisplayName ()}' is an unexpected intrinsic.");
@@ -393,6 +399,11 @@ namespace ILLink.Shared.TrimAnalysis
 							DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes;
 					} else {
 						requiredMemberTypes = GetDynamicallyAccessedMemberTypesFromBindingFlagsForMembers (bindingFlags);
+					}
+					if (!MemberTypesAreUnsupported(memberTypes)) {
+						DynamicallyAccessedMemberTypes requiredMemberTypesMaskFromMemberTypes;
+						requiredMemberTypesMaskFromMemberTypes = GetDynamicallyAccessedMemberTypesFromMemberTypesForMembers (memberTypes);
+						requiredMemberTypes &= requiredMemberTypesMaskFromMemberTypes;
 					}
 
 					var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, requiredMemberTypes);
@@ -1352,6 +1363,7 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		internal static BindingFlags? GetBindingFlagsFromValue (in MultiValue parameter) => (BindingFlags?) parameter.AsConstInt ();
+		internal static MemberTypes? GetMemberTypesFromValue (in MultiValue parameter) => (MemberTypes?) parameter.AsConstInt ();
 
 		internal static bool BindingFlagsAreUnsupported (BindingFlags? bindingFlags)
 		{
@@ -1379,6 +1391,29 @@ namespace ILLink.Shared.TrimAnalysis
 
 			BindingFlags flags = bindingFlags.Value;
 			return (flags & ~(UnderstoodBindingFlags | IgnorableBindingFlags)) != 0;
+		}
+
+		internal static bool MemberTypesAreUnsupported (MemberTypes? memberTypes)
+		{
+			if (memberTypes == null)
+				return true;
+
+			// Member types we understand
+			const MemberTypes UnderstoodMemberTypes =
+				MemberTypes.Constructor |
+				MemberTypes.Event |
+				MemberTypes.Field |
+				MemberTypes.Method |
+				MemberTypes.Property |
+				MemberTypes.TypeInfo |
+				MemberTypes.NestedType;
+
+			// Member types that don't affect binding outside InvokeMember (that we don't analyze).
+			const MemberTypes IgnorableMemberTypes =
+				MemberTypes.Custom;
+
+			MemberTypes flags = memberTypes.Value;
+			return (flags & ~(UnderstoodMemberTypes | IgnorableMemberTypes)) != 0;
 		}
 
 		internal static bool HasBindingFlag (BindingFlags? bindingFlags, BindingFlags? search) => bindingFlags != null && (bindingFlags & search) == search;
@@ -1420,6 +1455,41 @@ namespace ILLink.Shared.TrimAnalysis
 			GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags) |
 			GetDynamicallyAccessedMemberTypesFromBindingFlagsForProperties (bindingFlags) |
 			GetDynamicallyAccessedMemberTypesFromBindingFlagsForNestedTypes (bindingFlags);
+
+		internal static bool HasMemberType (MemberTypes? memberTypes, MemberTypes? search) => memberTypes != null && (memberTypes & search) == search;
+
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForNestedTypes (MemberTypes? memberTypes) =>
+			(HasMemberType (memberTypes, MemberTypes.TypeInfo) ? DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes : DynamicallyAccessedMemberTypes.None) |
+			(HasMemberType (memberTypes, MemberTypes.NestedType) ? DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes : DynamicallyAccessedMemberTypes.None) |
+			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes : DynamicallyAccessedMemberTypes.None);
+
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForConstructors (MemberTypes? memberTypes) =>
+			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors : DynamicallyAccessedMemberTypes.None) |
+			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors : DynamicallyAccessedMemberTypes.None);
+
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForMethods (MemberTypes? memberTypes) =>
+			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods : DynamicallyAccessedMemberTypes.None) |
+			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods : DynamicallyAccessedMemberTypes.None);
+
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForFields (MemberTypes? memberTypes) =>
+			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields : DynamicallyAccessedMemberTypes.None) |
+			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields : DynamicallyAccessedMemberTypes.None);
+
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForProperties (MemberTypes? memberTypes) =>
+			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties : DynamicallyAccessedMemberTypes.None) |
+			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties : DynamicallyAccessedMemberTypes.None);
+
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForEvents (MemberTypes? memberTypes) =>
+			(HasMemberType (memberTypes, MemberTypes.Constructor) ? DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents : DynamicallyAccessedMemberTypes.None) |
+			(MemberTypesAreUnsupported (memberTypes) ? DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents : DynamicallyAccessedMemberTypes.None);
+
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromMemberTypesForMembers (MemberTypes? memberTypes) =>
+			GetDynamicallyAccessedMemberTypesFromMemberTypesForConstructors (memberTypes) |
+			GetDynamicallyAccessedMemberTypesFromMemberTypesForEvents (memberTypes) |
+			GetDynamicallyAccessedMemberTypesFromMemberTypesForFields (memberTypes) |
+			GetDynamicallyAccessedMemberTypesFromMemberTypesForMethods (memberTypes) |
+			GetDynamicallyAccessedMemberTypesFromMemberTypesForProperties (memberTypes) |
+			GetDynamicallyAccessedMemberTypesFromMemberTypesForNestedTypes (memberTypes);
 
 		/// <Summary>
 		/// Returns true if the method is a .ctor for System.Type or a type that derives from System.Type (i.e. fields and params of this type can have DynamicallyAccessedMembers annotations)
