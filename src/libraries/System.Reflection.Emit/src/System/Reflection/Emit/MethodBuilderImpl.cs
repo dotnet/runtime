@@ -42,7 +42,7 @@ namespace System.Reflection.Emit
                 // turn on the has this calling convention
                 callingConventions |= CallingConventions.HasThis;
             }
-            else if ((attributes & MethodAttributes.Virtual) != 0 && (attributes & MethodAttributes.Abstract) == 0)
+            else if ((attributes & (MethodAttributes.Virtual | MethodAttributes.Abstract)) == MethodAttributes.Virtual)
             {
                 throw new ArgumentException(SR.Argument_NoStaticVirtual);
             }

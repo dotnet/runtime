@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -14,7 +15,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineConstructorsTest()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
             ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public);
             ConstructorBuilder constructor2 = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(int) });
             ILGenerator il = constructor2.GetILGenerator();
@@ -46,7 +47,6 @@ namespace System.Reflection.Emit.Tests
             Assert.Empty(child.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
         }
 
-
         [Fact]
         public void DefineDefaultConstructor_GenericParentCreated_Works()
         {
@@ -60,6 +60,9 @@ namespace System.Reflection.Emit.Tests
             constructorILGenerator.Emit(OpCodes.Stfld, field);
             constructorILGenerator.Emit(OpCodes.Ret);
             type.CreateType();
+
+            Assert.True(type.IsGenericTypeDefinition);
+            Assert.Equal("T", type.GetGenericTypeDefinition().GetGenericArguments()[0].Name);
 
             Type genericParent = type.MakeGenericType(typeof(int));
             TypeBuilder derived = ((ModuleBuilder)type.Module).DefineType("Derived");
