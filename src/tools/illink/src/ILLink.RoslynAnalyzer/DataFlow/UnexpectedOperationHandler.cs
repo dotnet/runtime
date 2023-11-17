@@ -20,8 +20,6 @@ namespace Microsoft.CodeAnalysis
 			if (operation.Kind is OperationKind.None)
 				return;
 
-			// This can happen for a field assignment in an attribute instance.
-			// TODO: validate against the field attributes.
 			if (operation.Kind is OperationKind.Invalid)
 				return;
 
