@@ -7517,7 +7517,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				method->dynamic case; for other wrapper types assume the code knows
 				what its doing and added its own GC transitions */
 
-				gboolean skip_gc_trans = fsig->suppress_gc_transition;
+				gboolean skip_gc_trans = mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION);
 				if (!skip_gc_trans) {
 #if 0
 					fprintf (stderr, "generating wrapper for calli in method %s with wrapper type %s\n", method->name, mono_wrapper_type_to_str (method->wrapper_type));
@@ -11151,7 +11151,7 @@ field_access_end:
 			const MonoJitICallId jit_icall_id = (MonoJitICallId)token;
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
 
-			if (method->wrapper_type == MONO_CALL_SWIFTCALL) {
+			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
 				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 				MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 				MonoClass *swift_self = mono_class_try_get_swift_self_class ();

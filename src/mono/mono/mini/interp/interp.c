@@ -1711,7 +1711,7 @@ ves_pinvoke_method (
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		int arg_index;
 		gpointer data = mono_arch_get_swift_error (&ccontext, sig, call_info, &arg_index);
 

@@ -29,7 +29,6 @@ typedef enum {
 	MONO_CALL_THISCALL,
 	MONO_CALL_FASTCALL,
 	MONO_CALL_VARARG = 0x05,
-	MONO_CALL_SWIFTCALL = 0x06,
 	/* unused, */
 	/* unused, */
 	MONO_CALL_UNMANAGED_MD = 0x09, /* default unmanaged calling convention, with additional attributed encoded in modopts */

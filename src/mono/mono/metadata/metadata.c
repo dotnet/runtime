@@ -2570,7 +2570,7 @@ metadata_signature_set_modopt_call_conv (MonoMethodSignature *sig, MonoType *cmo
 	if (count == 0)
 		return;
 	int base_callconv = sig->call_convention;
-	gboolean suppress_gc_transition = sig->suppress_gc_transition;
+	gboolean suppress_gc_transition = mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION);
 	for (uint8_t i = 0; i < count; ++i) {
 		gboolean req = FALSE;
 		MonoType *cmod = mono_type_get_custom_modifier (cmod_type, i, &req, error);
@@ -2604,9 +2604,6 @@ metadata_signature_set_modopt_call_conv (MonoMethodSignature *sig, MonoType *cmo
 		} else if (!strcmp (name, "Fastcall")) {
 			base_callconv = MONO_CALL_FASTCALL;
 			continue;
-		} else if (!strcmp (name, "Swift")) {
-			base_callconv = MONO_CALL_SWIFTCALL;
-			continue;
 		}
 
 		/* Check for known calling convention modifiers */
@@ -2616,7 +2613,8 @@ metadata_signature_set_modopt_call_conv (MonoMethodSignature *sig, MonoType *cmo
 		}
 	}
 	sig->call_convention = base_callconv;
-	sig->suppress_gc_transition = suppress_gc_transition;
+	if (suppress_gc_transition)
+		sig->ext_callconv |= MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION;
 }
 
 /**
@@ -2679,10 +2677,13 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	case MONO_CALL_STDCALL:
 	case MONO_CALL_THISCALL:
 	case MONO_CALL_FASTCALL:
-	case MONO_CALL_SWIFTCALL:
 	case MONO_CALL_UNMANAGED_MD:
 		method->pinvoke = 1;
 		break;
+	}
+
+	if (mono_method_signature_has_ext_callconv (method, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		method->pinvoke = 1;
 	}
 
 	if (call_convention != 0xa) {
@@ -5722,7 +5723,6 @@ mono_metadata_check_call_convention_category (unsigned int call_convention)
 	case MONO_CALL_STDCALL:
 	case MONO_CALL_THISCALL:
 	case MONO_CALL_FASTCALL:
-	case MONO_CALL_SWIFTCALL:
 	case MONO_CALL_UNMANAGED_MD:
 		return 2;
 	case MONO_CALL_VARARG:
@@ -8134,7 +8134,6 @@ mono_guid_signature_append_method (GString *res, MonoMethodSignature *sig)
 	case MONO_CALL_STDCALL: g_string_append (res, "unmanaged stdcall "); break;
 	case MONO_CALL_THISCALL: g_string_append (res, "unmanaged thiscall "); break;
 	case MONO_CALL_FASTCALL: g_string_append (res, "unmanaged fastcall "); break;
-	case MONO_CALL_SWIFTCALL: g_string_append (res, "unmanaged swiftcall "); break;
 	case MONO_CALL_VARARG: g_string_append (res, "vararg "); break;
 	default: break;
 	}

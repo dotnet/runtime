@@ -3402,7 +3402,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			 * the InterpMethod pointer. FIXME
 			 */
 			native = csignature->pinvoke || method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE;
-			if (!method->dynamic && !method->wrapper_type && csignature->pinvoke && !csignature->suppress_gc_transition) {
+			if (!method->dynamic && !method->wrapper_type && csignature->pinvoke && !mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION)) {
 				// native calli needs a wrapper
 				target_method = mono_marshal_get_native_func_wrapper_indirect (method->klass, csignature, FALSE);
 				calli = FALSE;
@@ -3748,7 +3748,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	int *call_args = create_call_args (td, num_args);
 
-	if (csignature->call_convention == MONO_CALL_SWIFTCALL) {
+	if (mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 		MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
@@ -3866,7 +3866,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 #endif
 			// When using the Swift calling convention, emit MINT_CALLI_NAT opcode to manage context registers.
-			default_cconv = default_cconv && csignature->call_convention != MONO_CALL_SWIFTCALL;
+			default_cconv = default_cconv && !mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SWIFTCALL);
 
 			// FIXME calli receives both the args offset and sometimes another arg for the frame pointer,
 			// therefore some args are in the param area, while the fp is not. We should differentiate for

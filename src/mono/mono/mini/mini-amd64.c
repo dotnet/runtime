@@ -1081,7 +1081,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			g_assert_not_reached ();
 		}
 
-		if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
@@ -1670,7 +1670,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 
 	/* We use the callee saved registers for global allocation */
 	regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
-	if (cfg->method->signature->call_convention != MONO_CALL_SWIFTCALL) {
+	if (!mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		regs = g_list_prepend (regs, (gpointer)AMD64_R12);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 	}

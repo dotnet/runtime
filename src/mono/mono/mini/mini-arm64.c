@@ -1874,7 +1874,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			}
 		}
 
-		if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
@@ -2607,7 +2607,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	/* r28 is reserved for cfg->arch.args_reg */
 	/* r27 is reserved for the imt argument */
 	for (i = ARMREG_R19; i <= ARMREG_R26; ++i) {
-		if (!(cfg->method->signature->call_convention == MONO_CALL_SWIFTCALL && (i == ARMREG_R20 || i == ARMREG_R21)))
+		if (!(mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && (i == ARMREG_R20 || i == ARMREG_R21)))
 			regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
 	}
 
@@ -2714,7 +2714,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->used_int_regs |= 1 << ARMREG_R28;
 	}
 
-	if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		g_assert (!(cfg->used_int_regs & (1 << ARMREG_R20)));
 		cfg->used_int_regs |= 1 << ARMREG_R20;
 		g_assert (!(cfg->used_int_regs & (1 << ARMREG_R21)));
