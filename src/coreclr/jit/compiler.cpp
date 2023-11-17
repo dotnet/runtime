@@ -5204,9 +5204,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif
 
         const bool hasProf = fgHaveProfileData();
-        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s%s]\n", methodsCompiled, fullName,
-               compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
-               info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
+        printf("%4d: %sJIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s%s]\n", methodsCompiled,
+               opts.altJit ? "ALT" : "", fullName, compGetTieringName(), osrBuffer, hasProf ? " with " : "",
+               hasProf ? compGetPgoSourceName() : "", info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
     }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
@@ -5816,6 +5816,17 @@ bool Compiler::skipMethod()
         return true;
     }
 
+    if (opts.altJit)
+    {
+        static ConfigMethodRange AltJitRange;
+        AltJitRange.EnsureInit(JitConfig.AltJitRange());
+        const unsigned hash = impInlineRoot()->info.compMethodHash();
+        if (!AltJitRange.Contains(hash))
+        {
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -6238,7 +6249,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         }
         return CORJIT_SKIPPED;
     }
-
 #endif // DEBUG
 
     /* Setup an error trap */

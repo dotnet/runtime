@@ -15,6 +15,7 @@
 /// JIT
 ///
 CONFIG_INTEGER(AltJitLimit, W("AltJitLimit"), 0)               // Max number of functions to use altjit for (decimal)
+CONFIG_STRING(AltJitRange, W("AltJitRange"))                   // Range of methods to compile with altjit
 CONFIG_INTEGER(AltJitSkipOnAssert, W("AltJitSkipOnAssert"), 0) // If AltJit hits an assert, fall back to the fallback
                                                                // JIT. Useful in conjunction with
                                                                // DOTNET_ContinueOnAssert=1
