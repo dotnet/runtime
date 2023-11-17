@@ -1710,6 +1710,7 @@ ves_pinvoke_method (
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 	if (sig->call_convention == MONO_CALL_SWIFTCALL) {
 		int arg_index;
 		gpointer data = mono_arch_get_swift_error (&ccontext, sig, call_info, &arg_index);
@@ -1720,6 +1721,7 @@ ves_pinvoke_method (
 			*(gpointer*)result->data.p = *(gpointer*)data;
 		}
 	}
+#endif
 	if (!context->has_resume_state) {
 		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig, call_info);
 	}
