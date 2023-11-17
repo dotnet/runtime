@@ -22,7 +22,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			DefineFeatureGuard.Test ();
 			GuardBodyValidation.Test ();
 			InvalidFeatureGuards.Test ();
-			FeatureSwitchBehavior.Test ();
 		}
 
 		class DefineFeatureGuard {
@@ -385,12 +384,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestNonBooleanProperty ();
 				TestNonStaticProperty ();
 				TestMethod ();
-			}
-		}
-
-		class FeatureSwitchBehavior {
-			public static void Test ()
-			{
 			}
 		}
 
