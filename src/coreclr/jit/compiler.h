@@ -9705,23 +9705,24 @@ public:
         bool disAlignment; // Display alignment boundaries in disassembly code
         bool disCodeBytes; // Display instruction code bytes in disassembly code
 #ifdef DEBUG
-        bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
-        bool dspCode;                  // Display native code generated
-        bool dspEHTable;               // Display the EH table reported to the VM
-        bool dspDebugInfo;             // Display the Debug info reported to the VM
-        bool dspInstrs;                // Display the IL instructions intermixed with the native code output
-        bool dspLines;                 // Display source-code lines intermixed with native code output
-        bool dmpHex;                   // Display raw bytes in hex of native code output
-        bool varNames;                 // Display variables names in native code output
-        bool disAsmSpilled;            // Display native code when any register spilling occurs
-        bool disasmWithGC;             // Display GC info interleaved with disassembly.
-        bool disAddr;                  // Display process address next to each instruction in disassembly code
-        bool disAsm2;                  // Display native code after it is generated using external disassembler
-        bool dspOrder;                 // Display names of each of the methods that we ngen/jit
-        bool dspUnwind;                // Display the unwind info output
-        bool compLongAddress;          // Force using large pseudo instructions for long address
-                                       // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
-        bool dspGCtbls;                // Display the GC tables
+        bool compProcedureSplittingEH;  // Separate cold code from hot code for functions with EH
+        bool dspCode;                   // Display native code generated
+        bool dspEHTable;                // Display the EH table reported to the VM
+        bool dspDebugInfo;              // Display the Debug info reported to the VM
+        bool dspInstrs;                 // Display the IL instructions intermixed with the native code output
+        bool dspLines;                  // Display source-code lines intermixed with native code output
+        bool dmpHex;                    // Display raw bytes in hex of native code output
+        bool varNames;                  // Display variables names in native code output
+        bool disAsmSpilled;             // Display native code when any register spilling occurs
+        bool disasmWithGC;              // Display GC info interleaved with disassembly.
+        bool disAddr;                   // Display process address next to each instruction in disassembly code
+        bool disAsm2;                   // Display native code after it is generated using external disassembler
+        bool dspOrder;                  // Display names of each of the methods that we ngen/jit
+        bool dspUnwind;                 // Display the unwind info output
+        bool compLongAddress;           // Force using large pseudo instructions for long address
+                                        // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
+        bool dspGCtbls;                 // Display the GC tables
+        const WCHAR* disAsmHexDumpFile; // Writes the raw bytes in hex of native code to the specified file
 #endif
 
 // Default numbers used to perform loop alignment. All the numbers are chosen

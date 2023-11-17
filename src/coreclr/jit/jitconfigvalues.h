@@ -677,6 +677,10 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)
+CONFIG_STRING(JitDisasmHexDumpFile, W("JitDisasmHexDumpFile"))
+#endif // DEBUG
+
+#if defined(DEBUG)
 #if defined(TARGET_ARM64)
 // JitSaveFpLrWithCalleeSavedRegisters:
 //    0: use default frame type decision

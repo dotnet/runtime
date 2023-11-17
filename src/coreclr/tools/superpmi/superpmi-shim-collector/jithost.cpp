@@ -86,6 +86,7 @@ bool RecordVariable(const WCHAR* key)
         W("JitInlinePolicyDumpXml"),
         W("JitInlineReplayFile"),
         W("JitFunctionFile")
+        W("JitDisasmHexDumpFile")
     };
 
     for (const WCHAR* ignoredVar : s_ignoredVars)

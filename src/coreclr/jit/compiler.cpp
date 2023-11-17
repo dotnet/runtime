@@ -2847,6 +2847,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compLongAddress = false;
     opts.optRepeat       = false;
 
+    opts.disAsmHexDumpFile = nullptr;
+
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
 #endif // LATE_DISASM
@@ -2930,6 +2932,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitLateDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
+
+        const WCHAR* disAsmHexDumpFile = JitConfig.JitDisasmHexDumpFile();
+        if (disAsmHexDumpFile != nullptr)
+        {
+            opts.disAsmHexDumpFile = disAsmHexDumpFile;
+        }
 
         // This one applies to both Ngen/Jit Disasm output: DOTNET_JitDasmWithAddress=1
         if (JitConfig.JitDasmWithAddress() != 0)

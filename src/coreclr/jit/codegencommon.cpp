@@ -2097,6 +2097,26 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     getDisAssembler().disAsmCode((BYTE*)*codePtr, finalHotCodeSize, (BYTE*)coldCodePtr, finalColdCodeSize);
 #endif // LATE_DISASM
 
+#ifdef DEBUG
+    if ((compiler->opts.disAsm || compiler->verbose) && compiler->opts.disAsmHexDumpFile)
+    {
+        FILE*   hexDmpf;
+        errno_t ec = _wfopen_s(&hexDmpf, compiler->opts.disAsmHexDumpFile, W("at")); // NOTE: file append mode
+        if (ec == 0)
+        {
+            assert(hexDmpf);
+
+            BYTE* addr = (BYTE*)*codePtr + compiler->GetEmitter()->writeableOffset;
+            for (unsigned int i = 0; i < codeSize; i++)
+            {
+                fprintf(hexDmpf, "%02X", *addr++);
+            }
+
+            fclose(hexDmpf);
+        }
+    }
+#endif // DEBUG
+
     /* Report any exception handlers to the VM */
 
     genReportEH();
