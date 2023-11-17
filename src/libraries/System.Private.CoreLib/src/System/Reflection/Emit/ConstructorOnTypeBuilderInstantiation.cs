@@ -42,22 +42,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(bool inherit) { return _ctor.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return _ctor.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return _ctor.IsDefined(attributeType, inherit); }
-        public override int MetadataToken
-        {
-            get
-            {
-                ConstructorBuilder? cb = _ctor as ConstructorBuilder;
-
-                if (cb != null)
-                {
-                    return cb.MetadataToken;
-                }
-                else
-                {
-                    return _ctor.MetadataToken;
-                }
-            }
-        }
+        public override int MetadataToken => _ctor.MetadataToken;
         public override Module Module => _ctor.Module;
         #endregion
 

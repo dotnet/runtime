@@ -18,7 +18,7 @@ namespace System.Reflection.Emit
         private readonly AssemblyBuilderImpl _assemblyBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
         private readonly Dictionary<Type, EntityHandle> _typeReferences = new();
-        private readonly Dictionary<MemberInfo, MemberReferenceHandle> _memberReferences = new();
+        private readonly Dictionary<MemberInfo, EntityHandle> _memberReferences = new();
         private readonly List<TypeBuilderImpl> _typeDefinitions = new();
         private readonly Dictionary<ConstructorInfo, MemberReferenceHandle> _ctorReferences = new();
         private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
@@ -372,13 +372,26 @@ namespace System.Reflection.Emit
 
         private TypeSpecificationHandle AddTypeSpecification(Type type) =>
             _metadataBuilder.AddTypeSpecification(
-                signature: _metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetTypeSignature(type, this)));
+                signature: _metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetTypeSpecificationSignature(type, this)));
 
-        private MemberReferenceHandle GetMemberReference(MemberInfo member)
+        private MethodSpecificationHandle AddMethodSpecification(EntityHandle methodHandle, Type[] genericArgs) =>
+            _metadataBuilder.AddMethodSpecification(
+                method: methodHandle,
+                instantiation: _metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetMethodSpecificationSignature(genericArgs, this)));
+
+        private EntityHandle GetMemberReference(MemberInfo member)
         {
             if (!_memberReferences.TryGetValue(member, out var memberHandle))
             {
-                memberHandle = AddMemberReference(member.Name, GetTypeReferenceOrSpecificationHandle(member.DeclaringType!), GetMemberSignature(member));
+                if (member is MethodInfo method && method.IsConstructedGenericMethod)
+                {
+                    memberHandle = AddMethodSpecification(GetMemberReference(method.GetGenericMethodDefinition()), method.GetGenericArguments());
+                }
+                else
+                {
+                    memberHandle = AddMemberReference(member.Name, GetTypeHandle(member.DeclaringType!), GetMemberSignature(member));
+                }
+
                 _memberReferences.Add(member, memberHandle);
             }
 

@@ -653,9 +653,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-
-
-        /*[Fact] // TODO: Resolve MethodBuilderInstantiation access
+        [Fact]
         public void ReferenceConstructedGenericMethod()
         {
             using (TempFile file = TempFile.Create())
@@ -672,7 +670,6 @@ namespace System.Reflection.Emit.Tests
                 ilg.Emit(OpCodes.Ret);
                 MethodBuilder mainMethod = type.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
                 ilg = mainMethod.GetILGenerator();
-                //MethodInfo SampleOfGM = TypeBuilder.GetMethod(type, genericMethod);
                 MethodInfo GMOfString = genericMethod.MakeGenericMethod(typeof(string));
                 ilg.Emit(OpCodes.Ldstr, "Hello, world!");
                 ilg.EmitCall(OpCodes.Call, GMOfString, null);
@@ -681,11 +678,16 @@ namespace System.Reflection.Emit.Tests
                 saveMethod.Invoke(ab, new[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type myTypeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                Assert.True(myTypeFromDisk.IsGenericType);
-                Assert.True(myTypeFromDisk.IsGenericTypeDefinition);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodInfo genericMethodFromDisk = typeFromDisk.GetMethod("GM");
+                Assert.True(genericMethodFromDisk.IsGenericMethod);
+                Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
+                byte[] ilBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
+                Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
+                Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
             }
-        }*/
+        }
 
         [Fact]
         public void ReferenceConstructedGenericMethodFieldOfConstructedType()
@@ -727,7 +729,7 @@ namespace System.Reflection.Emit.Tests
                 ilg.EmitCall(OpCodes.Call, GMOfString, null);
                 ilg.Emit(OpCodes.Ret);
                 dummy.CreateType();
-/* TODO: verify 'MyType<string>.GM<string>("HelloWorld");' emitted correctly after 'MethodBuilderImpl.GetParameters()' implemented
+/* Generated IL would like this in C#:
 public class MyType<T>
 {
 	public T Field;
@@ -744,15 +746,37 @@ internal class Dummy
 {
 	public static void Main()
 	{
-		MyType<string>.GM<string>("HelloWorld");
+		MyType<string>.GM("HelloWorld");
 	}
 }               */
                 saveMethod.Invoke(ab, new[] { file.Path });
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type myTypeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                Module module = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First();
+                Type myTypeFromDisk = module.GetType("MyType");
                 Assert.True(myTypeFromDisk.IsGenericType);
                 Assert.True(myTypeFromDisk.IsGenericTypeDefinition);
+                Assert.Equal("T", myTypeFromDisk.GetGenericArguments()[0].Name);
+                Assert.Equal("T", myTypeFromDisk.GetField("Field").FieldType.Name);
+                MethodInfo genericMethodFromDisk = myTypeFromDisk.GetMethod("GM");
+                Assert.True(genericMethodFromDisk.IsGenericMethod);
+                Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
+                Assert.Equal(1, genericMethodFromDisk.GetMethodBody().LocalVariables.Count);
+                Assert.Equal("MyType[U]", genericMethodFromDisk.GetMethodBody().LocalVariables[0].LocalType.ToString());
+                byte[] gmIlBytes = genericMethodFromDisk.GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Newobj.Value, gmIlBytes[0]);
+                Assert.Equal(OpCodes.Stloc_0.Value, gmIlBytes[5]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[6]);
+                Assert.Equal(OpCodes.Ldarg_0.Value, gmIlBytes[7]);
+                Assert.Equal(OpCodes.Stfld.Value, gmIlBytes[8]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[13]);
+                Assert.Equal(OpCodes.Ldfld.Value, gmIlBytes[14]);
+                Assert.Equal(OpCodes.Box.Value, gmIlBytes[19]);
+                Assert.Equal(OpCodes.Call.Value, gmIlBytes[24]);
+                Assert.Equal(OpCodes.Ret.Value, gmIlBytes[29]);
+                byte[] ilBytes = module.GetType("Dummy").GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
+                Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
+                Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
             }
         }
 

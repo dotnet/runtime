@@ -225,4 +225,7 @@
   <data name="Argument_ShouldNotSpecifyExceptionType" xml:space="preserve">
     <value>Should not specify exception type for catch clause for filter block.</value>
   </data>
+  <data name="Arg_NotGenericMethodDefinition" xml:space="preserve">
+    <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
+  </data>
 </root>

@@ -49,22 +49,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(bool inherit) { return _field.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return _field.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return _field.IsDefined(attributeType, inherit); }
-        public override int MetadataToken
-        {
-            get
-            {
-                FieldBuilder? fb = _field as FieldBuilder;
-
-                if (fb != null)
-                {
-                    return fb.MetadataToken;
-                }
-                else
-                {
-                    return _field.MetadataToken;
-                }
-            }
-        }
+        public override int MetadataToken => _field.MetadataToken;
         public override Module Module => _field.Module;
         #endregion
 
