@@ -3411,13 +3411,13 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 switch (opcode2)
                 {
                     case 0x1: // CSRRW
-                        printf("csrrw           %s, %d, %s\n", rd, csrtype, rs1);
+                        printf("csrrw           %s, %d, %d\n", rd, csrtype, rs1);
                         return;
                     case 0x2: // CSRRS
-                        printf("csrrs           %s, %d, %s\n", rd, csrtype, rs1);
+                        printf("csrrs           %s, %d, %d\n", rd, csrtype, rs1);
                         return;
                     case 0x3: // CSRRC
-                        printf("csrrc           %s, %d, %s\n", rd, csrtype, rs1);
+                        printf("csrrc           %s, %d, %d\n", rd, csrtype, rs1);
                         return;
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);
@@ -3426,17 +3426,17 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                int imm5 = ((code >> 15) & 0x1f);
+                uint imm5 = ((code >> 15) & 0x1f);
                 switch (opcode2)
                 {
                     case 0x5: // CSRRWI
-                        printf("csrrwi           %s, %d, %s\n", rd, csrtype, imm5);
+                        printf("csrrwi           %s, %d, %d\n", rd, csrtype, imm5);
                         return;
                     case 0x6: // CSRRSI
-                        printf("csrrsi           %s, %d, %s\n", rd, csrtype, imm5);
+                        printf("csrrsi           %s, %d, %d\n", rd, csrtype, imm5);
                         return;
                     case 0x7: // CSRRCI
-                        printf("csrrci           %s, %d, %s\n", rd, csrtype, imm5);
+                        printf("csrrci           %s, %d, %d\n", rd, csrtype, imm5);
                         return;
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);
