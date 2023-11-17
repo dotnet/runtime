@@ -3,8 +3,8 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    [AttributeUsage(AttributeTargets.Property, Inherited=false, AllowMultiple = true)]
-    internal class FeatureGuardAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
+    public sealed class FeatureGuardAttribute : Attribute
     {
         public Type RequiresAttributeType { get; }
 

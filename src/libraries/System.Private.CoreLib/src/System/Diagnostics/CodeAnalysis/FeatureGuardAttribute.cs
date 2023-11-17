@@ -3,13 +3,13 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    [AttributeUsage(AttributeTargets.Property, Inherited=false, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
     internal
 #endif
-        class FeatureGuardAttribute : Attribute
+        sealed class FeatureGuardAttribute : Attribute
     {
         public Type RequiresAttributeType { get; }
 

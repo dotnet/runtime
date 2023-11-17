@@ -1088,18 +1088,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	}
 }
 
-namespace System.Diagnostics.CodeAnalysis
-{
-	[AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
-	internal sealed class FeatureGuardAttribute<T> : Attribute
-		where T : Attribute
-	{
-		public FeatureGuardAttribute()
-		{
-		}
-	}
-}
-
 namespace System.Runtime.CompilerServices
 {
 	class RuntimeFeature

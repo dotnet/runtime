@@ -88,7 +88,7 @@ namespace ILLink.RoslynAnalyzer
 			// Get attributes on the property symbol
 
 			// Get "System.Diagnostics.CodeAnalysis" in the compilation? Or just use string?
-			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureGuardAttribute`1");
+			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureGuardAttribute");
 			if (featureCheckType == null)
 				return new FeatureContext (ValueSet<string>.Empty);
 
@@ -110,14 +110,21 @@ namespace ILLink.RoslynAnalyzer
 				if (!SymbolEqualityComparer.Default.Equals (attributeType.OriginalDefinition, featureCheckType))
 					return false;
 
-				// Check if the generic argument to the attribute is a Requires attribute that has an enabled analyzer.
-				var genericType = attributeType.TypeArguments[0];
+				// Check if the argument to the attribute is a Requires attribute that has an enabled analyzer.
+				TypedConstant argument = attributeData.ConstructorArguments[0];
+				// Should be a typeof... get the referenced type.
+				if (argument.Kind != TypedConstantKind.Type)
+					return false;
+				// what's the referenced type?
+				var requiresArgumentType = argument.Value as INamedTypeSymbol;
+				if (requiresArgumentType == null)
+					return false;
 				foreach (var analyzer in enabledRequiresAnalyzers) {
 					var requiresAttributeType = compilation.GetTypeByMetadataName (analyzer.RequiresAttributeFullyQualifiedName);
 					if (requiresAttributeType == null)
 						continue;
 
-					if (SymbolEqualityComparer.Default.Equals (genericType, requiresAttributeType)) {
+					if (SymbolEqualityComparer.Default.Equals (requiresArgumentType, requiresAttributeType)) {
 						featureName = analyzer.FeatureName;
 						return true;
 					}
