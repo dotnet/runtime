@@ -1957,3 +1957,14 @@ void FillStubCodePage(BYTE* pageBase, const void* code, SIZE_T codeSize, SIZE_T 
 }
 
 #endif // !DACCESS_COMPILE
+
+double ComputeTicksDeltaInNanosecond(LARGE_INTEGER startTicks, LARGE_INTEGER endTicks)
+{
+    static LARGE_INTEGER freq;
+    if (freq.QuadPart == 0)
+        QueryPerformanceFrequency(&freq);
+
+    const double NsPerSecond = 1000 * 1000 * 1000;
+    LONGLONG elapsedTicks = endTicks.QuadPart - startTicks.QuadPart;
+    return (elapsedTicks * NsPerSecond) / freq.QuadPart;
+}

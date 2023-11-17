@@ -1153,6 +1153,19 @@ namespace ETW
             } ContentionFlags;
         } ContentionStructs;
     };
+
+    class WaitHandleLog
+    {
+    public:
+        typedef union _WaitHandleStructs
+        {
+            typedef  enum _WaitReason {
+                Unknown=0,
+                MonitorWait=1
+            } WaitReason;
+        } WaitHandleStructs;
+    };
+
     // Class to wrap all Interop logic for ETW
     class InteropLog
     {

@@ -2506,17 +2506,6 @@ inline void LogContention()
 #define LogContention()
 #endif
 
-double ComputeElapsedTimeInNanosecond(LARGE_INTEGER startTicks, LARGE_INTEGER endTicks)
-{
-    static LARGE_INTEGER freq;
-    if (freq.QuadPart == 0)
-        QueryPerformanceFrequency(&freq);
-
-    const double NsPerSecond = 1000 * 1000 * 1000;
-    LONGLONG elapsedTicks = endTicks.QuadPart - startTicks.QuadPart;
-    return (elapsedTicks * NsPerSecond) / freq.QuadPart;
-}
-
 BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 {
     STATIC_CONTRACT_THROWS;
@@ -2692,7 +2681,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
         LARGE_INTEGER endTicks;
         QueryPerformanceCounter(&endTicks);
 
-        double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
+        double elapsedTimeInNanosecond = ComputeTicksDeltaInNanosecond(startTicks, endTicks);
 
         // Fire a contention end event for a managed contention
         FireEtwContentionStop_V1(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), elapsedTimeInNanosecond);
@@ -2851,15 +2840,6 @@ BOOL SyncBlock::Wait(INT32 timeOut)
 
     OBJECTREF     obj = m_Monitor.GetOwningObject();
 
-    LARGE_INTEGER startTicks = { {0} };
-    bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
-
-    if (isContentionKeywordEnabled)
-    {
-        QueryPerformanceCounter(&startTicks);
-        FireEtwWaitStart_V1(GetClrInstanceId(), this, OBJECTREFToObject(obj));
-    }
-
     m_Monitor.IncrementTransientPrecious();
 
     // While we are in this frame the thread is considered blocked on the
@@ -2875,6 +2855,8 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     {
         GCX_PREEMP();
 
+        syncState.m_Object = obj;
+
         // remember how many times we synchronized
         syncState.m_EnterCount = LeaveMonitorCompletely();
         _ASSERTE(syncState.m_EnterCount > 0);
@@ -2883,16 +2865,6 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     }
     GCPROTECT_END();
     m_Monitor.DecrementTransientPrecious();
-
-    if (isContentionKeywordEnabled)
-    {
-        LARGE_INTEGER endTicks;
-        QueryPerformanceCounter(&endTicks);
-
-        double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
-
-        FireEtwWaitStop_V1(GetClrInstanceId(), elapsedTimeInNanosecond);
-    }
 
     return !isTimedOut;
 }
