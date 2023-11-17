@@ -114,18 +114,9 @@ public:
     // Below are the remainder of each struct in the bulk type event (i.e., the
     // variable-sized data). The var-sized fields are copied into the event individually
     // (not directly), so they don't need to have the same layout as in the ETW manifest
-
-    // This is really a denorm of the size already stored in rgTypeParameters, but we
-    // need a persistent place to stash this away so EventDataDescCreate & EventWrite
-    // have a reliable place to copy it from.  This is filled in at the last minute,
-    // when sending the event.
     ULONG cTypeParameters;
 
-    // If > 1 type parameter, this is an array of their MethodTable*'s
-    NewArrayHolder<ULONGLONG> rgTypeParameters;
-
-    // If exactly one type parameter, this is its MethodTable*.  (If != 1 type parameter,
-    // this is 0.)
+    // We only expect one type parameter
     ULONGLONG ullSingleTypeParameter;
 };
 

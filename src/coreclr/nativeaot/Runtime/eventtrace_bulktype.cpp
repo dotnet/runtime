@@ -22,7 +22,6 @@
 
 BulkTypeValue::BulkTypeValue()
     : cTypeParameters(0)
-    , rgTypeParameters()
     , ullSingleTypeParameter(0)
 {
     LIMITED_METHOD_CONTRACT;
@@ -47,7 +46,6 @@ void BulkTypeValue::Clear()
     ZeroMemory(&fixedSizedData, sizeof(fixedSizedData));
     cTypeParameters = 0;
     ullSingleTypeParameter = 0;
-    rgTypeParameters.Release();
 }
 
 //---------------------------------------------------------------------------------------
@@ -106,10 +104,9 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
             memcpy(m_pBulkTypeEventBuffer + iSize, &target.ullSingleTypeParameter, sizeof(ULONGLONG) * cTypeParams);
             iSize += sizeof(ULONGLONG) * cTypeParams;
         }
-        else
+        else if (cTypeParams > 1)
         {
-            memcpy(m_pBulkTypeEventBuffer + iSize, target.rgTypeParameters.GetValue(), sizeof(ULONGLONG) * cTypeParams);
-            iSize += sizeof(ULONGLONG) * cTypeParams;
+            ASSERT_UNCONDITIONALLY("unexpected value of cTypeParams greater than 1");
         }
     }
 
@@ -380,7 +377,6 @@ void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
     // We're about to recursively call ourselves for the type parameters, so make a
     // local copy of their type handles first (else, as we log them we could flush
     // and clear out m_rgBulkTypeValues, thus trashing pVal)
-    NewArrayHolder<ULONGLONG> rgTypeParameters;
     DWORD cTypeParams = pVal->cTypeParameters;
     if (cTypeParams == 1)
     {
@@ -388,17 +384,8 @@ void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
     }
     else if (cTypeParams > 1)
     {
-        rgTypeParameters = new (nothrow) ULONGLONG[cTypeParams];
-        for (DWORD i=0; i < cTypeParams; i++)
-        {
-            rgTypeParameters[i] = pVal->rgTypeParameters[i];
-        }
-
-        // Recursively log any referenced parameter types
-        for (DWORD i=0; i < cTypeParams; i++)
-        {
-            LogTypeAndParameters(rgTypeParameters[i]);
-        }
+        
+        ASSERT_UNCONDITIONALLY("unexpected value of cTypeParams greater than 1");
     }
 }
 
