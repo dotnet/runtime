@@ -69,7 +69,6 @@ namespace System.Reflection
         CallConvStdcall = 0x0300,
         CallConvThiscall = 0x0400,
         CallConvFastcall = 0x0500,
-        CallConvSwift = 0x0600,
 
         MaxValue = 0xFFFF,
     }
