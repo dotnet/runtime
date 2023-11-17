@@ -3,7 +3,7 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    [AttributeUsage(AttributeTargets.Property, Inherited=false)]
+    [AttributeUsage(AttributeTargets.Property, Inherited=false, AllowMultiple = true)]
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
@@ -16,20 +16,6 @@ namespace System.Diagnostics.CodeAnalysis
         public FeatureGuardAttribute(Type requiresAttributeType)
         {
             RequiresAttributeType = requiresAttributeType;
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-    internal
-#endif
-        sealed class FeatureGuardAttribute<T> : FeatureGuardAttribute
-            where T : Attribute
-    {
-        public FeatureGuardAttribute() : base(typeof(T))
-        {
         }
     }
 }

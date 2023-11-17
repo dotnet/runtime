@@ -9,7 +9,7 @@ namespace System.Runtime.CompilerServices
     {
         public static bool IsDynamicCodeSupported => false;
 
-        [FeatureGuard<RequiresDynamicCodeAttribute>]
+        [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeCompiled => false;
     }
 }

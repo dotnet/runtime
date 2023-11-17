@@ -1104,7 +1104,7 @@ namespace System.Runtime.CompilerServices
 {
 	class RuntimeFeature
 	{
-		[FeatureGuard<RequiresDynamicCodeAttribute>]
+		[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
 		public static bool IsDynamicCodeSupported => true;
 	}
 }
@@ -1113,16 +1113,16 @@ namespace ILLink.RoslynAnalyzer
 {
 	class TestFeatures
 	{
-		[FeatureGuard<RequiresUnreferencedCodeAttribute>]
+		[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 		public static bool IsUnreferencedCodeSupported => true;
-		[FeatureGuard<RequiresAssemblyFilesAttribute>]
+		[FeatureGuard(typeof(RequiresAssemblyFilesAttribute))]
 		public static bool IsAssemblyFilesSupported => true;
 
-		[FeatureGuard<RequiresDynamicCodeAttribute>]
+		[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
 		public static bool IsDynamicCodeSupported => RuntimeFeature.IsDynamicCodeSupported;
 
-		[FeatureGuard<RequiresDynamicCodeAttribute>]
-		[FeatureGuard<RequiresUnreferencedCodeAttribute>]
+		[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+		[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 		public static bool AreDynamicAndUnreferencedCodeSupported => RuntimeFeature.IsDynamicCodeSupported;
 	}
 }

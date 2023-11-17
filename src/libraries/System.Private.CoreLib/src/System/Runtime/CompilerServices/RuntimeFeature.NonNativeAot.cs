@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
             get;
         } = AppContext.TryGetSwitch("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", out bool isDynamicCodeSupported) ? isDynamicCodeSupported : true;
 
-        [FeatureGuard<RequiresDynamicCodeAttribute>]
+        [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeCompiled
         {
 #if MONO
