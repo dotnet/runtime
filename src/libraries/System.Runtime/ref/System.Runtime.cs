@@ -8404,12 +8404,6 @@ namespace System.Diagnostics.CodeAnalysis
         public string DiagnosticId { get { throw null; } }
         public string? UrlFormat { get; set; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
-    public sealed class FeatureGuardAttribute : Attribute
-    {
-        public FeatureGuardAttribute(Type requiresAttributeType) { }
-        public Type RequiresAttributeType { get { throw null; } }
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
     {

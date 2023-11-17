@@ -42,6 +42,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		FeatureChecksVisitor _featureChecksVisitor;
 
+		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
+
 		public TrimAnalysisVisitor (
 			Compilation compilation,
 			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
@@ -56,6 +58,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			_multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;
 			_featureChecksVisitor = new FeatureChecksVisitor (dataFlowAnalyzerContext);
+			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
 		public override FeatureChecksValue GetConditionValue (IOperation branchValueOperation, StateValue state)
@@ -428,16 +431,19 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (OwningSymbol is not IMethodSymbol method)
 				return;
 
-			// FeatureGuard validation needs to happen only for static boolean properties.
-			if (method.MethodKind != MethodKind.PropertyGet ||
-				method.ReturnType.SpecialType != SpecialType.System_Boolean ||
-				!method.IsStatic)
+			// FeatureGuard validation needs to happen only for properties.
+			if (method.MethodKind != MethodKind.PropertyGet)
 				return;
 
 			IPropertySymbol propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;
+			var featureGuards = propertySymbol.GetFeatureGuardAnnotations (Compilation, _dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+
+			// If there are no feature guards, there is nothing to validate.
+			if (featureGuards.IsEmpty())
+				return;
 
 			TrimAnalysisPatterns.Add (
-				new TrimAnalysisReturnValuePattern (returnConditionValue, operation, propertySymbol));
+				new TrimAnalysisReturnValuePattern (returnConditionValue, featureGuards, operation, propertySymbol));
 		}
 
 		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, FeatureContext featureContext)

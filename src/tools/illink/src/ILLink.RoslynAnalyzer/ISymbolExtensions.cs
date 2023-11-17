@@ -71,7 +71,7 @@ namespace ILLink.RoslynAnalyzer
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
 		}
 
-		internal static ValueSet<string> GetFeatureGuards (
+		internal static ValueSet<string> GetFeatureGuardAnnotations (
 			this IPropertySymbol propertySymbol,
 			Compilation compilation, // TODO: can remove this?
 			IEnumerable<RequiresAnalyzerBase> enabledRequiresAnalyzers)
