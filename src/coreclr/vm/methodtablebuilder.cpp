@@ -12247,6 +12247,140 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
     return TRUE;
 }
 
+static int64_t TypeLoadCallCount = 0;
+static int64_t TypeLoadTickCount = 0;
+
+struct TypeLoadTiming
+{
+    int64_t Ticks;
+    TypeHandle Type;
+};
+
+const int RING_BUFFER_SIZE = 65536;
+
+static TypeLoadTiming TypeLoadTimingRingBuffer[RING_BUFFER_SIZE];
+static volatile long TypeLoadRingBufferIndex = 0;
+static volatile HANDLE LogFileHandle = INVALID_HANDLE_VALUE;
+static volatile int64_t TimerFrequency = 0;
+
+int64_t GetPreciseTickCount()
+{
+    int64_t result;
+    QueryPerformanceCounter((LARGE_INTEGER *)&result);
+    return result;
+}
+
+void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks)
+{
+    InterlockedAdd64(&TypeLoadTickCount, ticks);
+    InterlockedIncrement64(&TypeLoadCallCount);
+    long timingIndex = InterlockedIncrement(&TypeLoadRingBufferIndex) - 1;
+    if (timingIndex >= 0 && timingIndex < RING_BUFFER_SIZE)
+    {
+        TypeLoadTimingRingBuffer[timingIndex].Ticks = ticks;
+        TypeLoadTimingRingBuffer[timingIndex].Type = type;
+    }
+}
+
+void DumpTimingInfo(const char *action, int64_t callCount, int64_t tickCount)
+{
+#if !defined(DACCESS_COMPILE)
+    static Crst lock(CrstPEImage);
+    
+    CrstHolder holder(&lock);
+
+    static long timingCallCount = 0;
+    static char buffer[1024];
+    
+    if (LogFileHandle == INVALID_HANDLE_VALUE)
+    {
+        QueryPerformanceFrequency((LARGE_INTEGER *)&TimerFrequency);
+        
+        LogFileHandle = CreateFileA("c:\\triage\\functions\\timing-info.txt",
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            NULL,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
+        const char *titleLine = "CALLS/INDEX |      TICKS |         SECS | ACTION\n";
+        WriteFile(LogFileHandle, titleLine, (DWORD)strlen(titleLine), nullptr, nullptr);
+        fputs(titleLine, stdout);
+    }
+    
+    snprintf(buffer, sizeof(buffer), "%11lld | %10lld | %12.9f | %s\n", callCount, tickCount, tickCount / (double)TimerFrequency, action);
+    fputs(buffer, stdout);
+    WriteFile(LogFileHandle, buffer, (DWORD)strlen(buffer), nullptr, nullptr);
+#endif
+}
+
+void FlushTimingInfo()
+{
+    if (LogFileHandle != INVALID_HANDLE_VALUE)
+    {
+        FlushFileBuffers(LogFileHandle);
+        CloseHandle(LogFileHandle);
+        LogFileHandle = INVALID_HANDLE_VALUE;
+    }
+}
+
+static const int TypeNameBufferSize = 65536;
+static char TypeNameBuffer[TypeNameBufferSize];
+
+char *FormatTypeName(char *typeBuffer, TypeHandle type)
+{
+    if (type.IsTypeDesc())
+    {
+        SString buffer;
+        type.AsTypeDesc()->GetName(buffer);
+        strcpy(typeBuffer, buffer.GetUTF8());
+        typeBuffer += strlen(typeBuffer);
+        return typeBuffer;
+    }
+    
+    MethodTable *pMT = type.AsMethodTable();
+    {
+        SString buffer;
+        pMT->_GetFullyQualifiedNameForClassNestedAware(buffer);
+        strcpy(typeBuffer, buffer.GetUTF8());
+    }
+    typeBuffer += strlen(typeBuffer);
+
+    Instantiation instantiation = pMT->GetInstantiation();
+    if (!instantiation.IsEmpty())
+    {
+        for (DWORD argIndex = 0; argIndex < instantiation.GetNumArgs(); argIndex++)
+        {
+            strcpy(typeBuffer, argIndex == 0 ? "<" : ", ");
+            typeBuffer += strlen(typeBuffer);
+            typeBuffer = FormatTypeName(typeBuffer, instantiation[argIndex]);
+        }
+        *typeBuffer++ = '>';
+        *typeBuffer = 0;
+    }
+    return typeBuffer;
+}
+
+void DumpTypeLoadTimingInfo()
+{
+
+    for (int32_t ringBufferIndex = 0; ringBufferIndex < TypeLoadRingBufferIndex; ringBufferIndex++)
+    {
+        TypeLoadTiming& timing = TypeLoadTimingRingBuffer[ringBufferIndex];
+        char *typeBuffer = FormatTypeName(TypeNameBuffer, timing.Type);
+
+        if (typeBuffer >= TypeNameBuffer + TypeNameBufferSize)
+        {
+            CrashDumpAndTerminateProcess(STATUS_STACK_BUFFER_OVERRUN);
+        }
+        
+        DumpTimingInfo(TypeNameBuffer, ringBufferIndex, timing.Ticks);
+    }
+
+    DumpTimingInfo("LoadTypeHandleForTypeKey", TypeLoadCallCount, TypeLoadTickCount);
+}
+
 //---------------------------------------------------------------------------------------
 //
 // This service is called for normal classes -- and for the pseudo class we invent to
@@ -12260,6 +12394,8 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     Instantiation     inst,
     AllocMemTracker * pamTracker)
 {
+    int64_t startTicks = GetPreciseTickCount();
+    
     CONTRACT(TypeHandle)
     {
         STANDARD_VM_CHECK;

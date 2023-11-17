@@ -2559,9 +2559,26 @@ CHECK AppDomain::CheckCanExecuteManagedCode(MethodDesc* pMD)
 
 #endif // !DACCESS_COMPILE
 
+static int64_t AssemblyLoadCallCount = 0;
+static int64_t AssemblyLoadTickCount = 0;
+
+int64_t GetPreciseTickCount();
+void DumpTimingInfo(const char *action, int64_t callCount, int64_t tickCount);
+
+void DumpAssemblyLoadTimingInfo()
+{
+#ifndef DACCESS_COMPILE
+    DumpTimingInfo("AppDomain::LoadDomainAssembly", AssemblyLoadCallCount, AssemblyLoadTickCount);
+#endif
+}
+
 void AppDomain::LoadDomainAssembly(DomainAssembly *pFile,
                                FileLoadLevel targetLevel)
 {
+#ifndef DACCESS_COMPILE
+    int64_t startTicks = GetPreciseTickCount();
+#endif
+
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -2601,6 +2618,9 @@ void AppDomain::LoadDomainAssembly(DomainAssembly *pFile,
 
         LoadDomainAssembly(pLockEntry, targetLevel);
     }
+
+    InterlockedAdd64(&AssemblyLoadTickCount, GetPreciseTickCount() - startTicks);
+    InterlockedIncrement64(&AssemblyLoadCallCount);
 
 #else // DACCESS_COMPILE
     DacNotImpl();

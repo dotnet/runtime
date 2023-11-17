@@ -3232,13 +3232,15 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
 }
 
 
+int64_t GetPreciseTickCount();
+void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks);
+
 //
 TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
                                                  TypeHandle typeHnd,
                                                  ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                  const InstantiationContext *pInstContext/*=NULL*/)
 {
-
     CONTRACTL
     {
         INSTANCE_CHECK;
@@ -3265,6 +3267,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 #if defined(FEATURE_EVENT_TRACE)
     UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
 #endif
+    int64_t startTicks = GetPreciseTickCount();
 
     ClassLoadLevel currentLevel = typeHnd.IsNull() ? CLASS_LOAD_BEGIN : typeHnd.GetLoadLevel();
     ClassLoadLevel targetLevelUnderLock = targetLevel < CLASS_DEPENDENCIES_LOADED ? targetLevel : (ClassLoadLevel) (CLASS_DEPENDENCIES_LOADED-1);
@@ -3278,6 +3281,8 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     _ASSERTE(typeHnd.GetLoadLevel() >= targetLevelUnderLock);
 
     PushFinalLevels(typeHnd, targetLevel, pInstContext);
+
+    RecordTypeLoadTime(typeHnd, GetPreciseTickCount() - startTicks);
 
 #if defined(FEATURE_EVENT_TRACE)
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
