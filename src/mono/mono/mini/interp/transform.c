@@ -5033,8 +5033,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->cbb = new_bb;
 
 			if (new_bb->stack_height >= 0) {
-				if (new_bb->stack_height > 0)
+				if (new_bb->stack_height > 0) {
+					if (link_bblocks)
+						merge_stack_type_information (td->stack, new_bb->stack_state, new_bb->stack_height);
+					// This is relevant only for copying the vars associated with the values on the stack
 					memcpy (td->stack, new_bb->stack_state, new_bb->stack_height * sizeof(td->stack [0]));
+				}
 				td->sp = td->stack + new_bb->stack_height;
 			} else if (link_bblocks) {
 				/* This bblock is not branched to. Initialize its stack state */
