@@ -677,7 +677,8 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)
-CONFIG_STRING(JitDisasmHexDumpFile, W("JitDisasmHexDumpFile"))
+CONFIG_METHODSET(JitRawHexCode, W("JitRawHexCode"))
+CONFIG_STRING(JitRawHexCodeFile, W("JitRawHexCodeFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)
