@@ -5,8 +5,9 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ILLink.Shared;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -305,8 +306,8 @@ namespace ILLink.RoslynAnalyzer
 
 		internal bool IsRequiresGuard (IPropertySymbol propertySymbol, DataFlowAnalyzerContext dataFlowAnalyzerContext)
 		{
-			FeatureContext featureGuards = propertySymbol.GetFeatureGuards (dataFlowAnalyzerContext.Compilation, dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
-			return featureGuards.IsEnabled (FeatureName) || IsRequiresCheck (propertySymbol, dataFlowAnalyzerContext.Compilation);
+			ValueSet<string> featureGuards = propertySymbol.GetFeatureGuards (dataFlowAnalyzerContext.Compilation, dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+			return featureGuards.Contains (FeatureName) || IsRequiresCheck (propertySymbol, dataFlowAnalyzerContext.Compilation);
 		}
 
 		internal bool CheckAndCreateRequiresDiagnostic (

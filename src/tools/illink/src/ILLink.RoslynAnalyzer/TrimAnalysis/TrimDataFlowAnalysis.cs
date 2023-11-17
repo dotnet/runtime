@@ -43,9 +43,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			IOperation operationBlock)
 			: base (context, operationBlock, initialContext: FeatureContext.None)
 		{
-			TrimAnalysisPatterns = new TrimAnalysisPatternStore (
-				lattice.LocalStateLattice.Lattice.ValueLattice,
-				lattice.ContextLattice);
+			TrimAnalysisPatterns = new TrimAnalysisPatternStore (lattice.LocalStateLattice.Lattice.ValueLattice, lattice.ContextLattice);
 			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 

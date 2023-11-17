@@ -34,14 +34,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			DisabledFeatures = disabled;
 		}
 
-		public FeatureChecksValue Union (FeatureChecksValue other)
+		public FeatureChecksValue And (FeatureChecksValue other)
 		{
 			return new FeatureChecksValue (
 				ValueSet<string>.Union (EnabledFeatures.DeepCopy (), other.EnabledFeatures.DeepCopy ()),
 				ValueSet<string>.Union (DisabledFeatures.DeepCopy (), other.DisabledFeatures.DeepCopy ()));
 		}
 
-		public FeatureChecksValue Intersection (FeatureChecksValue other)
+		public FeatureChecksValue Or (FeatureChecksValue other)
 		{
 			return new FeatureChecksValue (
 				ValueSet<string>.Intersection (EnabledFeatures.DeepCopy (), other.EnabledFeatures.DeepCopy ()),

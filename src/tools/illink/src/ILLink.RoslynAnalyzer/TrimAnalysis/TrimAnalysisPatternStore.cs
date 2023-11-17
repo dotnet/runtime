@@ -89,10 +89,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 
 			Debug.Assert (existingPattern == pattern, "Return values should be identical");
-
-			// Should be equal.
-			// throw new System.InvalidOperationException ("Multiple return values for the same operation");
-			// ReturnValuePatterns[pattern.Operation] = pattern.Merge (FeatureChecksLattice, existingPattern);
 		}
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
