@@ -7,6 +7,32 @@
 
 #define SUCCESS 1
 
+static const EVP_MD* g_evpFetchMd5 = NULL;
+static pthread_once_t g_evpFetch = PTHREAD_ONCE_INIT;
+
+static void EnsureFetchEvpMdAlgorithms(void)
+{
+    // This is called from a pthread_once - this method should not be called directly.
+
+#if NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_MD_fetch))
+    {
+        ERR_clear_error();
+
+        // Try to fetch an MD5 implementation that will work regardless if
+        // FIPS is enforced or not.
+        g_evpFetchMd5 = EVP_MD_fetch(NULL, "MD5", "-fips");
+    }
+#endif
+
+    // No error queue impact.
+    // If EVP_MD_fetch is unavailable, use the implicit loader. If it failed, use the implicit loader as a last resort.
+    if (g_evpFetchMd5 == NULL)
+    {
+        g_evpFetchMd5 = EVP_md5();
+    }
+}
+
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
     ERR_clear_error();
@@ -147,8 +173,8 @@ int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 
 const EVP_MD* CryptoNative_EvpMd5()
 {
-    // No error queue impact.
-    return EVP_md5();
+    pthread_once(&g_evpFetch, EnsureFetchEvpMdAlgorithms);
+    return g_evpFetchMd5;
 }
 
 const EVP_MD* CryptoNative_EvpSha1()
