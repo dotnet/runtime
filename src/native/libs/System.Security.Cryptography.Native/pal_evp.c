@@ -6,6 +6,7 @@
 #include "pal_utilities.h"
 
 #include <assert.h>
+#include <pthread.h>
 
 #define SUCCESS 1
 
