@@ -466,8 +466,9 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             awaitableProxy._notifier = state.Notifier;
-            Continuation head = state.SentinelContinuation!.Next!;
-            state.SentinelContinuation.Next = null;
+            Continuation sentinelContinuation = state.SentinelContinuation!;
+            Continuation head = sentinelContinuation.Next!;
+            sentinelContinuation.Next = null;
             return head;
         }
 
