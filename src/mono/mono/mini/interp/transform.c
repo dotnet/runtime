@@ -3749,6 +3749,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int *call_args = create_call_args (td, num_args);
 
 	if (mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 		MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
@@ -3771,6 +3772,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			mono_error_set_invalid_program (error, "Method signature contains multiple SwiftSelf/SwiftError arguments.");
 			return FALSE;
 		}
+#else
+		mono_error_set_not_implemented (error, "CallConvSwift is not supported on this platform.");
+		return FALSE;
+#endif
 	}
 
 	// We overwrite it with the return local, save it for future use
