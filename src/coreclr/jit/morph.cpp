@@ -12940,12 +12940,13 @@ void Compiler::fgAssertionGen(GenTree* tree)
     // apLocal will be stored on bbAssertionOutIfFalse and be used for false successors.
     // apLocalIfTrue will be stored on bbAssertionOutIfTrue and be used for true successors.
     //
-    const bool doCondUpdates = tree->OperIs(GT_JTRUE) && compCurBB->KindIs(BBJ_COND) && (compCurBB->NumSucc() == 2);
+    const bool makeCondAssertions =
+        tree->OperIs(GT_JTRUE) && compCurBB->KindIs(BBJ_COND) && (compCurBB->NumSucc() == 2);
 
     // Intialize apLocalIfTrue if we might look for it later,
     // even if it ends up identical to apLocal.
     //
-    if (doCondUpdates)
+    if (makeCondAssertions)
     {
         apLocalIfTrue = BitVecOps::MakeCopy(apTraits, apLocal);
     }
@@ -12957,7 +12958,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
 
     AssertionInfo info = tree->GetAssertionInfo();
 
-    if (doCondUpdates)
+    if (makeCondAssertions)
     {
         // Update apLocal and apIfTrue with suitable assertions
         // from the JTRUE
@@ -13897,9 +13898,10 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
                     // Yes, pred assertions are available.
                     // If the pred is (a non-degenerate) BBJ_COND, fetch the appropriate out set.
                     //
-                    ASSERT_TP assertionsOut = pred->bbAssertionOut;
+                    ASSERT_TP  assertionsOut     = pred->bbAssertionOut;
+                    const bool useCondAssertions = pred->KindIs(BBJ_COND) && (pred->NumSucc() == 2);
 
-                    if (pred->KindIs(BBJ_COND) && (pred->NumSucc() == 2))
+                    if (useCondAssertions)
                     {
                         if (block == pred->GetJumpDest())
                         {
@@ -13919,7 +13921,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
                     //
                     if (!hasPredAssertions)
                     {
-                        if (block->NumSucc() == 1)
+                        if (pred->NumSucc() == 1)
                         {
                             apLocal = assertionsOut;
                         }
