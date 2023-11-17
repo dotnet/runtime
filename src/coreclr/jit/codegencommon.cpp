@@ -379,6 +379,13 @@ void CodeGen::genMarkLabelsForCodegen()
         switch (block->GetJumpKind())
         {
             case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
+                // No label needed if jumping to the next block
+                if (block->JumpsToNext() && ((block->bbFlags & BBF_NONE_QUIRK) != 0))
+                {
+                    break;
+                }
+
+                FALLTHROUGH;
             case BBJ_COND:
             case BBJ_EHCATCHRET:
                 JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
