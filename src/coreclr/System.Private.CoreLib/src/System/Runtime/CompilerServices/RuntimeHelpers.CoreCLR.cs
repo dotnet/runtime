@@ -466,7 +466,9 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             awaitableProxy._notifier = state.Notifier;
-            return state.SentinelContinuation!.Next!;
+            Continuation head = state.SentinelContinuation!.Next!;
+            state.SentinelContinuation.Next = null;
+            return head;
         }
 
         private static async Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)
