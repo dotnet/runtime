@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "openssl.h"
 #include "pal_evp.h"
 #include "pal_utilities.h"
 
@@ -15,7 +16,7 @@ static void EnsureFetchEvpMdAlgorithms(void)
 {
     // This is called from a pthread_once - this method should not be called directly.
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(EVP_MD_fetch))
     {
         ERR_clear_error();
@@ -47,6 +48,13 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
         // we'll do it here.
         ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
+    }
+
+    // For OpenSSL 1.x, set the non-FIPS allow flag for MD5. OpenSSL 3 does this differently with EVP_MD_fetch
+    // and no longer has this flag.
+    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM && type == EVP_md5())
+    {
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
     }
 
     int ret = EVP_DigestInit_ex(ctx, type, NULL);
