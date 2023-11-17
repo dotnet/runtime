@@ -73,29 +73,14 @@ namespace ILLink.RoslynAnalyzer
 
 		internal static ValueSet<string> GetFeatureGuardAnnotations (
 			this IPropertySymbol propertySymbol,
-			Compilation compilation, // TODO: can remove this?
 			IEnumerable<RequiresAnalyzerBase> enabledRequiresAnalyzers)
 		{
-			// TODO: should this share the attribute decoding logic?
-			// Should it get by name, or by symbol comparison with known attribute type?
-			// foreach (var attr in property.GetAttributes ()) {
-			// 	if (attr.AttributeClass is { } attrClass && attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute)) {
-			// 		var feature = (string) attr.ConstructorArguments[0].Value!;
-			// 		return new FeatureContextValue (feature);
-			// 	}
-			// }
-
-			// Get attributes on the property symbol
-
-			// Get "System.Diagnostics.CodeAnalysis" in the compilation? Or just use string?
-			// Probably should just use string.
 			ImmutableArray<string>.Builder featureSet = ImmutableArray.CreateBuilder<string> ();
 			foreach (var attributeData in propertySymbol.GetAttributes ()) {
-				if (!IsFeatureGuardAttribute (attributeData, out string? featureName))
-					continue;
-				featureSet.Add (featureName);
+				if (IsFeatureGuardAttribute (attributeData, out string? featureName))
+					featureSet.Add (featureName);
 			}
-			return new ValueSet<string> (featureSet);
+			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
 
 			bool IsFeatureGuardAttribute (AttributeData attributeData, [NotNullWhen (true)] out string? featureName) {
 				featureName = null;
@@ -107,7 +92,7 @@ namespace ILLink.RoslynAnalyzer
 
 				foreach (var analyzer in enabledRequiresAnalyzers) {
 					if (featureType.HasName (analyzer.RequiresAttributeFullyQualifiedName)) {
-						featureName = analyzer.FeatureName;
+						featureName = analyzer.RequiresAttributeFullyQualifiedName;
 						return true;
 					}
 				}

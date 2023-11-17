@@ -20,8 +20,6 @@ namespace ILLink.RoslynAnalyzer
 	{
 		private protected abstract string RequiresAttributeName { get; }
 
-		internal abstract string FeatureName { get; }
-
 		internal abstract string RequiresAttributeFullyQualifiedName { get; }
 
 		private protected abstract DiagnosticTargets AnalyzerDiagnosticTargets { get; }
@@ -310,13 +308,14 @@ namespace ILLink.RoslynAnalyzer
 			if (!propertySymbol.IsStatic || propertySymbol.Type.SpecialType != SpecialType.System_Boolean)
 				return false;
 
-			ValueSet<string> featureGuards = propertySymbol.GetFeatureGuardAnnotations (dataFlowAnalyzerContext.Compilation, dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+			ValueSet<string> featureGuards = propertySymbol.GetFeatureGuardAnnotations (dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
 			return featureGuards.Contains (featureName);
 		}
 
 		internal bool IsFeatureGuard (IPropertySymbol propertySymbol, DataFlowAnalyzerContext dataFlowAnalyzerContext)
 		{
-			return IsAnnotatedFeatureGuard (propertySymbol, dataFlowAnalyzerContext, FeatureName) || IsRequiresCheck (propertySymbol, dataFlowAnalyzerContext.Compilation);
+			return IsAnnotatedFeatureGuard (propertySymbol, dataFlowAnalyzerContext, RequiresAttributeFullyQualifiedName)
+				|| IsRequiresCheck (propertySymbol, dataFlowAnalyzerContext.Compilation);
 		}
 
 		internal bool CheckAndCreateRequiresDiagnostic (
@@ -328,7 +327,7 @@ namespace ILLink.RoslynAnalyzer
 			[NotNullWhen (true)] out Diagnostic? diagnostic)
 		{
 			// Warnings are not emitted if the featureContext says the feature is available.
-			if (featureContext.IsEnabled (FeatureName)) {
+			if (featureContext.IsEnabled (RequiresAttributeFullyQualifiedName)) {
 				diagnostic = null;
 				return false;
 			}

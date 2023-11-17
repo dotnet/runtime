@@ -49,8 +49,6 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
-		internal override string FeatureName => RequiresUnreferencedCodeAttribute;
-
 		internal override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresUnreferencedCodeAttribute;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Class;

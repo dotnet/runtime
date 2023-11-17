@@ -51,7 +51,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			FeatureChecksValue featureChecks = FeatureChecksValue.None;
 			foreach (var analyzer in _dataFlowAnalyzerContext.EnabledRequiresAnalyzers) {
 				if (analyzer.IsFeatureGuard (operation.Property, _dataFlowAnalyzerContext)) {
-					var featureCheck = new FeatureChecksValue (analyzer.FeatureName);
+					var featureCheck = new FeatureChecksValue (analyzer.RequiresAttributeFullyQualifiedName);
 					featureChecks = featureChecks.And (featureCheck);
 				}
 			}

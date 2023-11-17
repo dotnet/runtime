@@ -25,8 +25,6 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override string RequiresAttributeName => RequiresDynamicCodeAttribute;
 
-		internal override string FeatureName => RequiresDynamicCodeAttribute;
-
 		internal override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresDynamicCodeAttribute;
 
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Class;

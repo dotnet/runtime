@@ -436,7 +436,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 
 			IPropertySymbol propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;
-			var featureGuards = propertySymbol.GetFeatureGuardAnnotations (Compilation, _dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+			var featureGuards = propertySymbol.GetFeatureGuardAnnotations (_dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
 
 			// If there are no feature guards, there is nothing to validate.
 			if (featureGuards.IsEmpty())
