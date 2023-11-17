@@ -379,13 +379,25 @@ void CodeGen::genMarkLabelsForCodegen()
         switch (block->GetJumpKind())
         {
             case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
-                // No label needed if jumping to the next block
-                if (block->JumpsToNext() && ((block->bbFlags & BBF_NONE_QUIRK) != 0))
+            {
+                // Peephole optimization: If this block jumps to the next one, skip emitting the jump
+                // (unless we are jumping between hot/cold sections, or if we need the jump for EH reasons)
+                // (Skip this if optimizations are disabled, unless the block shouldn't have a jump in the first place)
+                const bool tryJumpOpt =
+                    compiler->opts.OptimizationEnabled() || ((block->bbFlags & BBF_NONE_QUIRK) != 0);
+                const bool skipJump = tryJumpOpt && block->JumpsToNext() && !block->hasAlign() &&
+                                      ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
+                                      !compiler->fgInDifferentRegions(block, block->GetJumpDest());
+
+                // If we can skip this jump, don't create a label for the target
+                if (skipJump)
                 {
+                    block->bbFlags |= BBF_SKIP_JMP;
                     break;
                 }
 
                 FALLTHROUGH;
+            }
             case BBJ_COND:
             case BBJ_EHCATCHRET:
                 JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
