@@ -11152,12 +11152,12 @@ field_access_end:
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
 
 			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
-				ERROR_DECL (swiftcall_error);
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 				MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 				int swift_error_args = 0, swift_self_args = 0;
+				ERROR_DECL (swiftcall_error);
 				for (int i = 0; i < method->signature->param_count; ++i) {
 					MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
 					if (param_klass) {

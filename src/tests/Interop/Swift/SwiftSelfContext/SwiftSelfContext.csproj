@@ -7,7 +7,7 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="SelfContext.cs" />
+    <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />

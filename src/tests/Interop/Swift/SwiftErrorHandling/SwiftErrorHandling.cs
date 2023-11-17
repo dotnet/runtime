@@ -10,20 +10,20 @@ using Xunit;
 
 public class ErrorHandlingTests
 {
-    private const string SwiftLib = "libErrorHandling.dylib";
+    private const string SwiftLib = "libSwiftErrorHandling.dylib";
 
-    [DllImport(SwiftLib, EntryPoint = "$s13ErrorHandling05setMyA7Message5bytes6lengthySPys5UInt8VG_SitF")]
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message5bytes6lengthySPys5UInt8VG_SitF")]
     public static extern void SetErrorMessage(byte[] strBytes, int length);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s13ErrorHandling018conditionallyThrowA004willD0SiSb_tKF")]
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0SiSb_tKF")]
     public unsafe static extern nint conditionallyThrowError(bool willThrow, SwiftError* error);
 
-    [DllImport(SwiftLib, EntryPoint = "$s13ErrorHandling05getMyA7Message4fromSPys5UInt8VGSgSPyAA0dA0OG_tF")]
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05getMyB7Message4fromSPys5UInt8VGSgSPyAA0eB0OG_tF")]
     public static extern IntPtr GetErrorMessage(IntPtr handle);
 
     [Fact]
-    public unsafe static int TestEntryPoint()
+    public unsafe static void TestSwiftErrorThrown()
     {
         const string expectedErrorMessage = "Catch me if you can!";
         SetErrorMessageForSwift(expectedErrorMessage);
@@ -32,19 +32,39 @@ public class ErrorHandlingTests
 
         // This will throw an error
         conditionallyThrowError(true, &error);
-        if (error.Value == IntPtr.Zero) { 
-            return 101;
+
+        if (error.Value == IntPtr.Zero)
+        {
+            Assert.Fail("A Swift error was expected to be thrown.");
         }
+
         string errorMessage = GetErrorMessageFromSwift(error, expectedErrorMessage.Length);
-        Assert.Equal(expectedErrorMessage, errorMessage);
+        if (errorMessage != expectedErrorMessage)
+        {
+            Assert.Fail("The error message retrieved from Swift does not match the expected message.");
+        }
+    }
+
+    [Fact]
+    public unsafe static void TestSwiftErrorNotThrown()
+    {
+        const string expectedErrorMessage = "Catch me if you can!";
+        SetErrorMessageForSwift(expectedErrorMessage);
+
+        SwiftError error;
 
         // This will not throw an error
-        int result = (int) conditionallyThrowError(false, &error);
-        if (error.Value != IntPtr.Zero) { 
-            return 102;
+        int result = (int)conditionallyThrowError(false, &error);
+
+        if (error.Value != IntPtr.Zero)
+        {
+            Assert.Fail("No Swift error was expected to be thrown.");
         }
-        Assert.Equal(42, result);
-        return 100;
+
+        if (result != 42)
+        {
+            Assert.Fail("The result from Swift does not match the expected value.");
+        }
     }
     
     private static void SetErrorMessageForSwift(string message)

@@ -9,27 +9,28 @@ using Xunit;
 
 public class SelfContextTests
 {
-    private const string SwiftLib = "libSelfContext.dylib";
+    private const string SwiftLib = "libSwiftSelfContext.dylib";
 
-    [DllImport(SwiftLib, EntryPoint = "$s11SelfContext0A7LibraryC11getInstanceSvyFZ")]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext0B7LibraryC11getInstanceSvyFZ")]
     public static extern IntPtr getInstance();
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s11SelfContext0A7LibraryC14getMagicNumberSiyF")]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext0B7LibraryC14getMagicNumberSiyF")]
     public static extern nint getMagicNumber(SwiftSelf self);
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestSwiftSelfContext()
     {
         IntPtr pointer = getInstance();
         SwiftSelf self = new SwiftSelf(pointer);
 
         if (self.Value == IntPtr.Zero) {
-            return 101;
+            Assert.Fail("Failed to obtain an instance of SwiftSelf from the Swift library.");
+        } else {
+            int result = (int)getMagicNumber(self);
+            if (result != 42) {
+                Assert.Fail("The result from Swift does not match the expected value.");
+            }
         }
-
-        int result = (int) getMagicNumber(self);
-        Assert.Equal(42, result);
-        return 100;
     }
 }
