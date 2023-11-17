@@ -34,19 +34,22 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 		// TODO: is Merge actually needed? If not, remove TConditionValue and lattice from change.
-		public TrimAnalysisReturnValuePattern Merge (
-			FeatureChecksLattice lattice,
-			TrimAnalysisReturnValuePattern other)
-		{
-			Debug.Assert (Operation == other.Operation);
-			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
+		// Can we ever see same opration/owningsymbol Merge with different return value?
+		// Can the FeatureChecksValue ever be different?
+		// Can it ever change after the initial analysis? Probably not if we don't do const prop.
+		// public TrimAnalysisReturnValuePattern Merge (
+		// 	FeatureChecksLattice lattice,
+		// 	TrimAnalysisReturnValuePattern other)
+		// {
+		// 	Debug.Assert (Operation == other.Operation);
+		// 	Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
 
-			// NOTE: all patterns should use Meet. Not union/intersection!
-			return new TrimAnalysisReturnValuePattern (
-				lattice.Meet (ReturnValue, other.ReturnValue),
-				Operation,
-				OwningSymbol);
-		}
+		// 	// NOTE: all patterns should use Meet. Not union/intersection!
+		// 	return new TrimAnalysisReturnValuePattern (
+		// 		lattice.Meet (ReturnValue, other.ReturnValue),
+		// 		Operation,
+		// 		OwningSymbol);
+		// }
 
 		// TODO: avoid creating patterns for everything other than property symbols?
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)

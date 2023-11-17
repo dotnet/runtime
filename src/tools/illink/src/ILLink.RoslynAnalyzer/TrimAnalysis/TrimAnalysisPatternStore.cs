@@ -19,12 +19,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		readonly Dictionary<IOperation, TrimAnalysisReturnValuePattern> ReturnValuePatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
 		readonly FeatureContextLattice FeatureContextLattice;
-		readonly FeatureChecksLattice FeatureChecksLattice;
 
 		public TrimAnalysisPatternStore (
 			ValueSetLattice<SingleValue> lattice,
-			FeatureContextLattice featureContextLattice,
-			FeatureChecksLattice featureChecksLattice)
+			FeatureContextLattice featureContextLattice)
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
 			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
@@ -33,7 +31,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ReturnValuePatterns = new Dictionary<IOperation, TrimAnalysisReturnValuePattern> ();
 			Lattice = lattice;
 			FeatureContextLattice = featureContextLattice;
-			FeatureChecksLattice = featureChecksLattice;
 		}
 
 		public void Add (TrimAnalysisAssignmentPattern trimAnalysisPattern, bool isReturnValue)
@@ -91,7 +88,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			ReturnValuePatterns[pattern.Operation] = pattern.Merge (FeatureChecksLattice, existingPattern);
+			Debug.Assert (existingPattern == pattern, "Return values should be identical");
+
+			// Should be equal.
+			// throw new System.InvalidOperationException ("Multiple return values for the same operation");
+			// ReturnValuePatterns[pattern.Operation] = pattern.Merge (FeatureChecksLattice, existingPattern);
 		}
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)

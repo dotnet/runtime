@@ -18,13 +18,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// - field
 	// - parameter
 	// - method return
-	public abstract class LocalDataFlowVisitor<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> :
-		OperationWalker<LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice>, TValue>,
+	public abstract class LocalDataFlowVisitor<TValue, TContext, TValueLattice, TContextLattice, TConditionValue> :
+		OperationWalker<LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>, TValue>,
 		ITransfer<
 			BlockProxy,
-			LocalStateAndContext<TValue, TContext, TConditionValue>,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice>,
-			LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice>,
+			LocalStateAndContext<TValue, TContext>,
+			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>,
+			LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice>,
 			TConditionValue>
 		// This struct constraint prevents warnings due to possible null returns from the visitor methods.
 		// Note that this assumes that default(TValue) is equal to the TopValue.
@@ -32,10 +32,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		where TContext : struct, IEquatable<TContext>
 		where TValueLattice : ILattice<TValue>
 		where TContextLattice : ILattice<TContext>
-		where TConditionValue : struct, IEquatable<TConditionValue>, INegate<TConditionValue>
-		where TConditionLattice : ILattice<TConditionValue>
+		where TConditionValue : struct, INegate<TConditionValue>
 	{
-		protected readonly LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> LocalStateAndContextLattice;
+		protected readonly LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> LocalStateAndContextLattice;
 
 		protected readonly InterproceduralStateLattice<TValue, TValueLattice> InterproceduralStateLattice;
 
@@ -59,7 +58,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public LocalDataFlowVisitor (
 			Compilation compilation,
-			LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> lattice,
+			LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph cfg,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
@@ -74,11 +73,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			InterproceduralState = interproceduralState;
 		}
 
-		public abstract void ApplyCondition (TConditionValue condition, ref LocalStateAndContext<TValue, TContext, TConditionValue> localContextState);
+		public abstract void ApplyCondition (TConditionValue condition, ref LocalStateAndContext<TValue, TContext> localContextState);
 
 		public TConditionValue? Transfer (
 			BlockProxy block,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			foreach (IOperation operation in block.Block.Operations)
 				Visit (operation, state);
@@ -132,7 +131,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public abstract TConditionValue GetConditionValue (
 			IOperation branchValueOperation,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state);
+			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state);
 
 		public abstract TValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation, in TContext context);
 
@@ -172,12 +171,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			IOperation operation,
 			in TContext context);
 
-		public override TValue VisitLocalReference (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitLocalReference (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			return GetLocal (operation, state);
 		}
 
-		TValue ProcessBinderCall (IOperation operation, string methodName, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state) {
+		TValue ProcessBinderCall (IOperation operation, string methodName, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state) {
 			var assemblyType = Compilation.GetTypeByMetadataName ("Microsoft.CSharp.RuntimeBinder.Binder");
 			Debug.Assert (assemblyType != null);
 			if (assemblyType == null)
@@ -189,16 +188,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return ProcessMethodCall (operation, method, null, ImmutableArray<IArgumentOperation>.Empty, state);
 		}
 
-		public override TValue VisitDynamicInvocation (IDynamicInvocationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitDynamicInvocation (IDynamicInvocationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessBinderCall (operation, "InvokeMember", state);
 
-		public override TValue VisitDynamicObjectCreation (IDynamicObjectCreationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitDynamicObjectCreation (IDynamicObjectCreationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessBinderCall (operation, "InvokeConstructor", state);
 
-		public override TValue VisitDynamicMemberReference (IDynamicMemberReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitDynamicMemberReference (IDynamicMemberReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessBinderCall (operation, operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write) ? "SetMember" : "GetMember", state);
 
-		public override TValue VisitDynamicIndexerAccess (IDynamicIndexerAccessOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitDynamicIndexerAccess (IDynamicIndexerAccessOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessBinderCall (operation, operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write) ? "SetIndex" : "GetIndex", state);
 
 		bool IsReferenceToCapturedVariable (ILocalReferenceOperation localReference)
@@ -212,7 +211,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return !ReferenceEquals (local.ContainingSymbol, OwningSymbol);
 		}
 
-		TValue GetLocal (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		TValue GetLocal (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			var local = new LocalKey (operation.Local);
 			if (IsReferenceToCapturedVariable (operation))
@@ -225,7 +224,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return state.Get (local);
 		}
 
-		void SetLocal (ILocalReferenceOperation operation, TValue value, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state, bool merge = false)
+		void SetLocal (ILocalReferenceOperation operation, TValue value, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge = false)
 		{
 			var local = new LocalKey (operation.Local);
 			if (IsReferenceToCapturedVariable (operation))
@@ -241,7 +240,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			state.Set (local, newValue);
 		}
 
-		TValue ProcessSingleTargetAssignment (IOperation targetOperation, IAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state, bool merge)
+		TValue ProcessSingleTargetAssignment (IOperation targetOperation, IAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge)
 		{
 			switch (targetOperation) {
 			case IFieldReferenceOperation:
@@ -386,12 +385,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return Visit (operation.Value, state);
 		}
 
-		public override TValue VisitSimpleAssignment (ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitSimpleAssignment (ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			return ProcessAssignment (operation, state);
 		}
 
-		public override TValue VisitCompoundAssignment (ICompoundAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitCompoundAssignment (ICompoundAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			return ProcessAssignment (operation, state);
 		}
@@ -400,7 +399,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// The resulting value of a compound assignment isn't important for our dataflow analysis
 		// (we don't model addition of integers, for example), so we just treat these the same
 		// as normal assignments.
-		TValue ProcessAssignment (IAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		TValue ProcessAssignment (IAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			var targetOperation = operation.Target;
 			if (targetOperation is not IFlowCaptureReferenceOperation flowCaptureReference)
@@ -443,7 +442,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return value;
 		}
 
-		public override TValue VisitEventAssignment (IEventAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitEventAssignment (IEventAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			var eventReference = (IEventReferenceOperation) operation.EventReference;
 			TValue instanceValue = Visit (eventReference.Instance, state);
@@ -463,7 +462,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 		}
 
-		TValue GetFlowCaptureValue (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		TValue GetFlowCaptureValue (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			Debug.Assert (!IsLValueFlowCapture (operation.Id),
 				$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
@@ -474,7 +473,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 
 		// Similar to VisitLocalReference
-		public override TValue VisitFlowCaptureReference (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitFlowCaptureReference (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			if (operation.IsInitialization) {
 				// This capture reference is a temporary byref. This can happen for string
@@ -519,7 +518,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// Similar to VisitSimpleAssignment when assigning to a local, but for values which are captured without a
 		// corresponding local variable. The "flow capture" is like a local assignment, and the "flow capture reference"
 		// is like a local reference.
-		public override TValue VisitFlowCapture (IFlowCaptureOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitFlowCapture (IFlowCaptureOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			if (IsLValueFlowCapture (operation.Id)) {
 				// Should never see an l-value flow capture of another flow capture.
@@ -558,16 +557,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 		}
 
-		public override TValue VisitExpressionStatement (IExpressionStatementOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitExpressionStatement (IExpressionStatementOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			Visit (operation.Operation, state);
 			return TopValue;
 		}
 
-		public override TValue VisitInvocation (IInvocationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitInvocation (IInvocationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 			=> ProcessMethodCall (operation, operation.TargetMethod, operation.Instance, operation.Arguments, state);
 
-		public override TValue VisitDelegateCreation (IDelegateCreationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitDelegateCreation (IDelegateCreationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			Visit (operation.Target, state);
 
@@ -611,7 +610,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation, TContext context);
 
-		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			if (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write)) {
 				// Property references may be passed as ref/out parameters.
@@ -635,7 +634,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleMethodCallHelper (getMethod!, instanceValue, arguments.ToImmutableArray (), operation, state);
 		}
 
-		public override TValue VisitEventReference (IEventReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitEventReference (IEventReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			// Writing to an event should not go through this path.
 			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
@@ -648,7 +647,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return TopValue;
 		}
 
-		public override TValue VisitImplicitIndexerReference (IImplicitIndexerReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitImplicitIndexerReference (IImplicitIndexerReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			if (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write)) {
 				// Implicit indexer references may be passed as ref/out parameters.
@@ -669,7 +668,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleMethodCallHelper (getMethod, instanceValue, ImmutableArray.Create (indexArgumentValue), operation, state);
 		}
 
-		public override TValue VisitArrayElementReference (IArrayElementReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitArrayElementReference (IArrayElementReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
 				return TopValue;
@@ -684,7 +683,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleArrayElementRead (Visit (operation.ArrayReference, state), Visit (operation.Indices[0], state), operation);
 		}
 
-		public override TValue VisitInlineArrayAccess (IInlineArrayAccessOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitInlineArrayAccess (IInlineArrayAccessOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
 			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
@@ -693,12 +692,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleArrayElementRead (Visit (operation.Instance, state), Visit (operation.Argument, state), operation);
 		}
 
-		public override TValue VisitArgument (IArgumentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitArgument (IArgumentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			return Visit (operation.Value, state);
 		}
 
-		public override TValue VisitReturn (IReturnOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitReturn (IReturnOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			if (operation.ReturnedValue != null) {
 				var value = Visit (operation.ReturnedValue, state);
@@ -710,13 +709,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return TopValue;
 		}
 
-		public override TValue VisitConversion (IConversionOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitConversion (IConversionOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			var operandValue = Visit (operation.Operand, state);
 			return operation.OperatorMethod == null ? operandValue : TopValue;
 		}
 
-		public override TValue VisitObjectCreation (IObjectCreationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitObjectCreation (IObjectCreationOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			if (operation.Constructor == null)
 				return TopValue;
@@ -724,7 +723,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return ProcessMethodCall (operation, operation.Constructor, null, operation.Arguments, state);
 		}
 
-		public override TValue VisitFlowAnonymousFunction (IFlowAnonymousFunctionOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+		public override TValue VisitFlowAnonymousFunction (IFlowAnonymousFunctionOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			// The containing symbol of a lambda is either another method, or a field (for field initializers).
 			// For property initializers, the containing symbol is the compiler-generated backing field.
@@ -742,7 +741,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			TValue instance,
 			ImmutableArray<TValue> arguments,
 			IOperation operation,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			var value = HandleMethodCall (calledMethod, instance, arguments, operation, state.Current.Context);
 
@@ -818,7 +817,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			IMethodSymbol method,
 			IOperation? instance,
 			ImmutableArray<IArgumentOperation> arguments,
-			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> state)
+			LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
 			TValue instanceValue = Visit (instance, state);
 

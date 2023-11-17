@@ -6,24 +6,22 @@ using ILLink.Shared.DataFlow;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
-	public class LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice>
-		: IDataFlowState<LocalStateAndContext<TValue, TContext, TConditionValue>, LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice>>
+	public class LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>
+		: IDataFlowState<LocalStateAndContext<TValue, TContext>, LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice>>
 		where TValue : struct, IEquatable<TValue>
 		where TContext : struct, IEquatable<TContext>
 		where TValueLattice : ILattice<TValue>
 		where TContextLattice : ILattice<TContext>
-		where TConditionValue : struct, IEquatable<TConditionValue>
-		where TConditionLattice : ILattice<TConditionValue>
 	{
-		LocalStateAndContext<TValue, TContext, TConditionValue> current;
-		public LocalStateAndContext<TValue, TContext, TConditionValue> Current {
+		LocalStateAndContext<TValue, TContext> current;
+		public LocalStateAndContext<TValue, TContext> Current {
 			get => current;
 			set => current = value;
 		}
 
-		public Box<LocalStateAndContext<TValue, TContext, TConditionValue>>? Exception { get; set; }
+		public Box<LocalStateAndContext<TValue, TContext>>? Exception { get; set; }
 
-		public LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice, TConditionValue, TConditionLattice> Lattice { get; init; }
+		public LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> Lattice { get; init; }
 
 		public void Set (LocalKey key, TValue value)
 		{

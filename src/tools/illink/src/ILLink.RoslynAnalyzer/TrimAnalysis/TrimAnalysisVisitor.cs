@@ -19,9 +19,8 @@ using StateValue = ILLink.RoslynAnalyzer.DataFlow.LocalDataFlowState<
 	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>,
 	ILLink.RoslynAnalyzer.DataFlow.FeatureContext,
 	ILLink.Shared.DataFlow.ValueSetLattice<ILLink.Shared.DataFlow.SingleValue>,
-	ILLink.RoslynAnalyzer.DataFlow.FeatureContextLattice,
-	ILLink.RoslynAnalyzer.DataFlow.FeatureChecksValue,
-	ILLink.RoslynAnalyzer.DataFlow.FeatureChecksLattice>;
+	ILLink.RoslynAnalyzer.DataFlow.FeatureContextLattice
+	>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
@@ -30,8 +29,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		FeatureContext,
 		ValueSetLattice<SingleValue>,
 		FeatureContextLattice,
-		FeatureChecksValue,
-		FeatureChecksLattice>
+		FeatureChecksValue>
 	{
 		public readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
 
@@ -46,7 +44,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public TrimAnalysisVisitor (
 			Compilation compilation,
-			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice, FeatureChecksValue, FeatureChecksLattice> lattice,
+			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
@@ -65,7 +63,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			return _featureChecksVisitor.Visit (branchValueOperation, state);
 		}
 
-		public override void ApplyCondition (FeatureChecksValue featureChecksValue,  ref LocalStateAndContext<MultiValue, FeatureContext, FeatureChecksValue> currentState)
+		public override void ApplyCondition (FeatureChecksValue featureChecksValue,  ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
 		{
 			currentState.Context = currentState.Context.Union (featureChecksValue.EnabledFeatures);
 		}
