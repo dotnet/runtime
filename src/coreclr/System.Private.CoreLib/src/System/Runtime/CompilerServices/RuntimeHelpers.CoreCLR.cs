@@ -462,7 +462,7 @@ namespace System.Runtime.CompilerServices
             public void GetResult() {}
         }
 
-        private static Continuation GetHeadContinuation(AwaitableProxy awaitableProxy)
+        private static Continuation UnlinkHeadContinuation(AwaitableProxy awaitableProxy)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             awaitableProxy._notifier = state.Notifier;
@@ -496,7 +496,7 @@ namespace System.Runtime.CompilerServices
 
             while (true)
             {
-                Continuation headContinuation = GetHeadContinuation(awaitableProxy);
+                Continuation headContinuation = UnlinkHeadContinuation(awaitableProxy);
                 await awaitableProxy;
                 Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
@@ -529,7 +529,7 @@ namespace System.Runtime.CompilerServices
 
             while (true)
             {
-                Continuation headContinuation = GetHeadContinuation(awaitableProxy);
+                Continuation headContinuation = UnlinkHeadContinuation(awaitableProxy);
                 await awaitableProxy;
                 Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
@@ -566,7 +566,7 @@ namespace System.Runtime.CompilerServices
 
             while (true)
             {
-                Continuation headContinuation = GetHeadContinuation(awaitableProxy);
+                Continuation headContinuation = UnlinkHeadContinuation(awaitableProxy);
                 await awaitableProxy;
                 Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
@@ -599,7 +599,7 @@ namespace System.Runtime.CompilerServices
 
             while (true)
             {
-                Continuation headContinuation = GetHeadContinuation(awaitableProxy);
+                Continuation headContinuation = UnlinkHeadContinuation(awaitableProxy);
                 await awaitableProxy;
                 Continuation? finalResult = DispatchContinuations(headContinuation, out Exception? ex);
                 if (finalResult != null)
