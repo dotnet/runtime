@@ -2120,7 +2120,6 @@ void CodeGen::genEmitUnwindDebugGCandEH()
             FILE* dmpf = jitstdout();
 
             fprintf(dmpf, "Generated native code for %s:\n", compiler->info.compFullName);
-            fprintf(dmpf, "\n");
             hexDump(dmpf, addr, codeSize);
             fprintf(dmpf, "\n\n");
         }
