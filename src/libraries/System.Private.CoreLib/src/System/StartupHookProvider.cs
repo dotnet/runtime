@@ -18,11 +18,7 @@ namespace System
         private const string InitializeMethodName = "Initialize";
         private const string DisallowedSimpleAssemblyNameSuffix = ".dll";
 
-#pragma warning disable IL4000
-        // Suppression can be removed once we have feature switch attributes
-        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
         private static bool IsSupported => AppContext.TryGetSwitch("System.StartupHookProvider.IsSupported", out bool isSupported) ? isSupported : true;
-#pragma warning restore IL4000
 
         private struct StartupHookNameOrPath
         {
@@ -63,7 +59,9 @@ namespace System
             // Call each startup hook
             for (int i = 0; i < startupHooks.Length; i++)
             {
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 CallStartupHook(startupHooks[i]);
+#pragma warning restore IL2026
             }
         }
 
@@ -80,7 +78,9 @@ namespace System
 
             ParseStartupHook(ref startupHook, new string(pStartupHookPart));
 
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             CallStartupHook(startupHook);
+#pragma warning restore IL2026
         }
 
         private static void ParseStartupHook(ref StartupHookNameOrPath startupHook, string startupHookPart)

@@ -25,13 +25,12 @@ namespace System.Text.Json
                 options.Key.ClearCaches();
             }
 
-            // TODO: FeatureCheck means this will be removed by default. EVEN if the feature settings say to turn it on.
-            // Because not all platforms have an XML for the "true" case that would override this at link time.
-            // SO for features that need to support being turned _ON_ in an incompatible scenario, you must define
-            // an XML that can stub true. This will win over the attributes.
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
+                // Flush the dynamic method cache
+#pragma warning disable IL3050 // The analyzer doesn't understand runtime feature conditions: https://github.com/dotnet/linker/issues/2715
                 ReflectionEmitCachingMemberAccessor.Clear();
+#pragma warning restore IL3050
             }
         }
     }
