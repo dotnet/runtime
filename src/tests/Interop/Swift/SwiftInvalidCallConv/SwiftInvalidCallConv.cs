@@ -35,7 +35,7 @@ public class InvalidCallingConvTests
         try
         {
             FuncWithTwoSelfParameters(self, self);
-            Assert.Fail("FuncWithTwoSelfParameters should have thrown InvalidProgramException");
+            Assert.Fail("FuncWithTwoSelfParameters should have thrown InvalidProgramException. Invalid due to multiple SwiftSelf arguments.");
         }
         catch (InvalidProgramException e) { }
     }
@@ -48,7 +48,7 @@ public class InvalidCallingConvTests
         try
         {
             FuncWithTwoErrorParameters(&error, &error);
-            Assert.Fail("FuncWithTwoErrorParameters should have thrown InvalidProgramException");
+            Assert.Fail("FuncWithTwoErrorParameters should have thrown InvalidProgramException. Invalid due to multiple SwiftError arguments.");
         }
         catch (InvalidProgramException e) { }
     }
@@ -62,7 +62,7 @@ public class InvalidCallingConvTests
         try
         {
             FuncWithMixedParameters(self, self, &error, &error);
-            Assert.Fail("FuncWithMixedParameters should have thrown InvalidProgramException");
+            Assert.Fail("FuncWithMixedParameters should have thrown InvalidProgramException. Invalid due to multiple SwiftSelf/SwiftError arguments.");
         }
         catch (InvalidProgramException e) { }
     }
@@ -75,7 +75,7 @@ public class InvalidCallingConvTests
         try
         {
             FuncWithSwiftErrorAsArg(error);
-            Assert.Fail("FuncWithSwiftErrorAsArg should have thrown InvalidProgramException");
+            Assert.Fail("FuncWithSwiftErrorAsArg should have thrown InvalidProgramException. Invalid due to SwiftError not passed as a pointer.");
         }
         catch (InvalidProgramException e) { }
     }

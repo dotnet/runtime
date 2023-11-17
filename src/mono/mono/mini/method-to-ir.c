@@ -11163,7 +11163,7 @@ field_access_end:
 					if (param_klass) {
 						if (param_klass == swift_error) {
 							swift_error_args = swift_self_args = 0;
-                            mono_error_set_invalid_program (swiftcall_error, g_strdup_printf ("SwiftError argument must be a reference."), mono_method_full_name (method, TRUE));
+                            mono_error_set_invalid_program (swiftcall_error, g_strdup_printf ("SwiftError argument must be a pointer."), mono_method_full_name (method, TRUE));
 							break;
 						} else if (param_klass == swift_error_ptr) {
 							swift_self_args++;
