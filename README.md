@@ -2,9 +2,25 @@
 
 This branch contains experimental fork of CoreCLR [.NET runtime](http://github.com/dotnet/runtime) where we explore implementing async directly in the runtime instead of generating state machines in the IL compiler (Roslyn).
 
+## Current status
+
+We support two prototypes: a JIT-based codegen prototype, and an unwinder-only based prototype.
+The prototypes are described in detail in the design document, see below.
+The former prototype is the default; the latter can be switched to by setting `DOTNET_RuntimeAsyncViaJitGeneratedStateMachines=0`. 
+
+Current support in the prototypes looks like the following:
+
+| **Feature/characteristic**               |  **JIT based state machines**  |  **Unwinder based state machines**  |
+|------------------------------------------|:------------------------------:|:-----------------------------------:|
+| **Generics**                             |               ❌               |                  ❌                 |
+| **Byrefs live across suspension points** |               ❌               |                  ✅                 |
+| **Exception handling**                   |               ✅               |                  ❌                 |
+| **Returns via return buffers**           |               ✅               |                  ❌                 |
+
+
 ## Samples
 
-See the tests in src/tests/loader/async.
+See the tests in [src/tests/Loader/async](src/tests/Loader/async).
 
 ## Documentation
 

@@ -153,6 +153,8 @@ Async2 methods will not be visible in reflection via the `Type.GetMethod`, `Type
 
 The general design is to leverage the notion that a normal code generated function at a function call point is effectively a state machine. The index for resumption is the IP that returning to the function will set, and the stackframe + saved registers are the current state of the state machine. I believe we can achieve performance comparable to synchronous code with this scheme for non-suspended scenarios, and we may achieve acceptable overall performance as an async mechanism if suspension is relatively rare.
 
+To enable this prototype, set `DOTNET_RuntimeAsyncViaJitGeneratedStateMachines=0`.
+
 ### JIT Code changes
 1. Do not allow InlinedCallFrames to be linked to the frame chain across a suspend (Or disable p/invoke inlining in these methods)
 2. Report frame pointers as ByRef
@@ -226,6 +228,8 @@ Once the `ResumptionFunc` has setup the global state to have the correct bits in
 In the second prototype we leave it up to the JIT to generate the state machines for async2 functions.
 When awaiting an async2 function from within an async2 function the JIT generates suspension code to capture the live state in a continuation.
 In addition, the JIT generates code for each of these suspension points to be able to resume from the continuation that was created.
+
+This prototype is enabled by default, or when `DOTNET_RuntimeAsyncViaJitGeneratedStateMachines=1`.
 
 ### Suspension
 

@@ -654,7 +654,7 @@ CONFIG_INTEGER(JitEnableHeadTailMerge, W("JitEnableHeadTailMerge"), 1)
 CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
 // Should JIT generate state machines for async2 methods?
-CONFIG_INTEGER(RuntimeAsyncViaJitGeneratedStateMachines, W("RuntimeAsyncViaJitGeneratedStateMachines"), 0)
+CONFIG_INTEGER(RuntimeAsyncViaJitGeneratedStateMachines, W("RuntimeAsyncViaJitGeneratedStateMachines"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
