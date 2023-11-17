@@ -740,7 +740,7 @@ void CodeGen::genCodeForBBlist()
                 // (Skip this if optimizations are disabled, unless the block shouldn't have a jump in the first place)
                 const bool tryJumpOpt =
                     compiler->opts.OptimizationEnabled() || ((block->bbFlags & BBF_NONE_QUIRK) != 0);
-                const bool skipJump = tryJumpOpt && block->JumpsToNext() &&
+                const bool skipJump = tryJumpOpt && block->JumpsToNext() && !block->hasAlign() &&
                                       ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
                                       !compiler->fgInDifferentRegions(block, block->GetJumpDest());
                 if (skipJump)
