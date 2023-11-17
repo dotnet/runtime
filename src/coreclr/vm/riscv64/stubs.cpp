@@ -1248,6 +1248,14 @@ static unsigned RTypeInstr(unsigned opcode, unsigned funct3, unsigned funct7, un
     return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (funct7 << 25);
 }
 
+static unsigned UTypeInstr(unsigned opcode, unsigned rd, int imm20)
+{
+    _ASSERTE(!(opcode >> 7));
+    _ASSERTE(!(rd >> 5));
+    _ASSERTE(StubLinkerCPU::isValidUimm20(imm20));
+    return opcode | (rd << 7) | (imm20 << 12);
+}
+
 void StubLinkerCPU::EmitLoad(IntReg dest, IntReg srcAddr, int offset)
 {
     Emit32(ITypeInstr(0x3, 0x3, dest, srcAddr, offset));  // ld
@@ -1507,6 +1515,61 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 //
 // Allocation of dynamic helpers
 //
+enum Riscv64_registers
+{
+    REG_ZERO,
+    REG_RA,
+    REG_SP,
+    REG_GP,
+    REG_TP,
+    REG_T0,
+    REG_T1,
+    REG_T2,
+    REG_FP,
+    REG_S1,
+    REG_A0,
+    REG_A1,
+    REG_A2,
+    REG_A3,
+    REG_A4,
+    REG_A5,
+    REG_A6,
+    REG_A7,
+    REG_S2,
+    REG_S3,
+    REG_S4,
+    REG_S5,
+    REG_S6,
+    REG_S7,
+    REG_S8,
+    REG_S9,
+    REG_S10,
+    REG_S11,
+    REG_T3,
+    REG_T4,
+    REG_T5,
+    REG_T6
+};
+
+enum Riscv64_asm_instructions
+{
+    INSTR_AUIPC = 0x17,
+    INSTR_LUI = 0x37,
+    INSTR_ADD = 0x33,
+    INSTR_ADDI = 0x13,
+    INSTR_LD = 0x3,
+    INSTR_LW = 0x3,
+    INSTR_JALR = 0x67,
+};
+
+enum Riscv64_funct3
+{
+    FUNCT3_ADD = 0,
+    FUNCT3_ADDI = 0,
+    FUNCT3_LD = 0x3,
+    FUNCT3_LW = 0x2,
+    FUNCT3_JALR = 0,
+};
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
@@ -1538,22 +1601,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
 
-    *(DWORD*)p = 0x00000297;// auipc t0, 0
-    p += 4;
-    *(DWORD*)p = 0x0102b503;// ld a0, 16(t0)
-    p += 4;
-    *(DWORD*)p = 0x0182b283;// ld t0, 24(t0)
-    p += 4;
-    *(DWORD*)p = 0x00028067;// jr t0
-    p += 4;
-
-    // label:
-    // arg
-    *(TADDR*)p = arg;
-    p += 8;
-    // target
-    *(PCODE*)p = target;
-    p += 8;
+    EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -1563,13 +1611,13 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 {
     STANDARD_VM_CONTRACT;
 
-    *(DWORD*)p = 0x0000297;// auipc t0, 0
+    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = 0x0102b503;// ld a0, 16(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 16);// ld a0, 16(t0)
     p += 4;
-    *(DWORD*)p = 0x0182b283;// ld t0, 24(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 24);;// ld t0, 24(t0)
     p += 4;
-    *(DWORD*)p = 0x00028067;// jr t0
+    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr zero, 0(t0)
     p += 4;
 
     // label:
@@ -1598,19 +1646,18 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
 
     BEGIN_DYNAMIC_HELPER_EMIT(48);
 
-    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
     p += 4;
-   *(DWORD*)p = 0x0182b503;// ld a0, 24(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 24);// ld a0, 24(t0)
     p += 4;
-    *(DWORD*)p = 0x0202b583;// ld a1, 32(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A1, REG_T0, 32);// ld a1, 32(t0)
     p += 4;
-    *(DWORD*)p = 0x0282b283;// ld t0, 40(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 40);// ld t0, 40(t0)
     p += 4;
-    *(DWORD*)p = 0x00028067;// jr t0
+    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr x0, 0(t0)
     p += 4;
 
-    // nop, padding to make 8 byte aligned
-    *(DWORD*)p = 0x00000013;
+    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1633,19 +1680,18 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 
     BEGIN_DYNAMIC_HELPER_EMIT(40);
 
-    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = 0x00050593;// mv a1, a0
+    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_A1, REG_A0, 0);// addi a1, a0, 0
     p += 4;
-    *(DWORD*)p = 0x0182b503;// ld a0, 24(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 24);// ld a0, 24(t0)
     p += 4;
-    *(DWORD*)p = 0x0202b283;// ld t0, 32(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 32);// ld t0, 32(t0)
     p += 4;
-    *(DWORD*)p = 0x00028067;// jr t0
+    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr x0, 0(t0)
     p += 4;
 
-    // nop, padding to make 8 byte aligned
-    *(DWORD*)p = 0x00000013;
+    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1665,7 +1711,7 @@ PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 
     BEGIN_DYNAMIC_HELPER_EMIT(4);
 
-    *(DWORD*)p = 0x00008067;// ret
+    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -1677,13 +1723,13 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
     BEGIN_DYNAMIC_HELPER_EMIT(24);
 
-    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = 0x0102b503;// ld a0, 16(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 16);// ld a0, 16(t0)
     p += 4;
-    *(DWORD*)p = 0x00008067;// ret
+    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
     p += 4;
-    *(DWORD*)p = 0x00000013;// nop, padding to make 8 byte aligned
+    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1700,17 +1746,17 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
 
-    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = 0x0182b503;// ld a0,24(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 24);// ld a0, 24(t0)
     p += 4;
-    *(DWORD*)p = 0x00053503;// ld a0,0(a0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_A0, 0);// ld a0,0(a0)
     p += 4;
-    *(DWORD*)p = 0x00050513 | ((offset & 0xfff)<<20);// addi a0,a0,offset
+    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_A0, REG_A0, ((offset & 0xfff)<<20));// addi a0, a0, offset
     p += 4;
-    *(DWORD*)p = 0x00008067;// ret
+    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
     p += 4;
-    *(DWORD*)p = 0x00000013;// nop, padding to make 8 byte aligned
+    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1727,13 +1773,13 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
 
-    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = 0x0102b603;// ld a2,16(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A2, REG_T0, 16);// ld a2,16(t0)
     p += 4;
-    *(DWORD*)p = 0x0182b283;// ld t0,24(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 24);// ld t0,24(t0)
     p += 4;
-    *(DWORD*)p = 0x00028067;// jr t0
+    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr x0, 0(t0)
     p += 4;
 
     // label:
@@ -1753,15 +1799,17 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     BEGIN_DYNAMIC_HELPER_EMIT(48);
 
-    *(DWORD*)p = 0x00000297;// auipc t0, 0
+    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = 0x0182b603;// ld a2,24(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A2, REG_T0, 24);// ld a2,24(t0)
     p += 4;
-    *(DWORD*)p = 0x0202b683;// ld a3,32(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A3, REG_T0, 32);// ld a3,32(t0)
     p += 4;
-    *(DWORD*)p = 0x0282b283;// ld t0,40(t0)
+    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 40);;// ld t0,40(t0)
     p += 4;
-    *(DWORD*)p = 0x00028067;// jr t0
+    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr x0, 0(t0)
+    p += 4;
+    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1812,7 +1860,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         int indirectionsDataSize = 0;
         if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
         {
-            codeSize += 4; //mv t2, 0
+            //mv t2, a0
+            codeSize += 4;
         }
 
         for (WORD i = 0; i < pLookup->indirections; i++) {
@@ -1823,7 +1872,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 indirectionsDataSize += (pLookup->sizeOffset > 2047 ? 4 : 0);
             }
 
-            codeSize += (pLookup->offsets[i] > 2047 ? 16 : 4); // if( > 2047) (8 bytes) else 4 bytes for instructions.
+            codeSize += (pLookup->offsets[i] > 2047 ? 16 : 4); // if( > 2047) (16 bytes) else 4 bytes for instructions.
             indirectionsDataSize += (pLookup->offsets[i] > 2047 ? 4 : 0); // 4 bytes for storing indirection offset values
         }
 
@@ -1831,11 +1880,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         if (pLookup->testForNull)
         {
-            codeSize += 12; // ori-beq-jalr
+            codeSize += 12; // beq-ret-ori
 
             //padding for 8-byte align (required by EmitHelperWithArg)
-            if (codeSize & 0x7)
-                codeSize += 4;
+            codeSize += ALIGN_UP(codeSize, 8);
 
             codeSize += 32; // size of EmitHelperWithArg
         }
@@ -1855,19 +1903,20 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         if (indirectionsDataSize)
         {
-            // auipc  t4, 0
-            *(DWORD*)p = 0x00000e97;
+            _ASSERTE(codeSize < 2047);
+
+            //auipc t4, 0
+            *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T4, 0);
             p += 4;
         }
 
         if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
         {
-            // mv  t2, a0
-            *(DWORD*)p = 0x00050393;
+            *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_T2, REG_A0, 0);// addi t2, a0, 0
             p += 4;
         }
 
-        BYTE* pBLECall = NULL;
+        BYTE* pBLTCall = NULL;
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
@@ -1877,60 +1926,50 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
                 if (pLookup->sizeOffset > 2047)
                 {
-                    // auipc  t4, 0
-                    *(DWORD*)p = 0x00000297; p += 4;
-                    // lw  t4, dataOffset(t4)
-                    *(DWORD*)p = 0x000eae83 | (dataOffset << 20); p += 4;
-                    // add  t5, a0, t4
-                    *(DWORD*)p = 0x01d50f33; p += 4;
-                    // ld  t5, 0(t5)
-                    *(DWORD*)p = 0x000f3f03; 
+                    *(DWORD*)p = ITypeInstr(INSTR_LW, FUNCT3_LW, REG_T4, REG_T4, (dataOffset << 20));// lw  t4, dataOffset(t4)
+                    p += 4;
+                    *(DWORD*)p = RTypeInstr(INSTR_ADD, FUNCT3_ADD, 0, REG_T5, REG_A0, REG_T4);// add  t5, a0, t4
+                    p += 4;
+                    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T5, REG_T5, 0);// ld  t5, 0(t5)
+                    p += 4;
 
                     // move to next indirection offset data
-                    dataOffset = dataOffset - 16 + 4; // subtract 16 as we have moved PC by 16 and add 4 as next data is at 4 bytes from previous data
+                    dataOffset += 4;
                 }
                 else
                 {
-                    // ld  t5, #(pLookup->sizeOffset)(a0)
-                    *(DWORD*)p = 0x00053f03 | ((UINT32)pLookup->sizeOffset << 20); p += 4;
-                    dataOffset -= 4; // subtract 4 as we have moved PC by 4
+                    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T5, REG_A0, ((UINT32)pLookup->sizeOffset << 20));// ld  t5, #(pLookup->sizeOffset)(a0)
+                    p += 4;
                 }
                 // lui  t4, (slotOffset&0xfffff000)>>12
-                *(DWORD*)p = 0x00000eb7 | ((((UINT32)slotOffset & 0xfffff000) >> 12) << 12); p += 4;
-                // addi  t4, t4, (slotOffset&0xfff)
-                *(DWORD*)p = 0x000e8e93 | ((slotOffset & 0xfff) << 20); p += 4;
-                dataOffset -= 8;
+                *(DWORD*)p = UTypeInstr(INSTR_LUI, REG_T4, ((((UINT32)slotOffset & 0xfffff000) >> 12) << 12));
+                p += 4;
+                *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_T4, REG_T4, ((slotOffset & 0xfff) << 20));// addi  t4, REG_T4, (slotOffset&0xfff)
+                p += 4;
                 // blt  t4, t5, CALL HELPER
-                pBLECall = p;       // Offset filled later
-                *(DWORD*)p = 0x01eec063; p += 4;
-                dataOffset -= 4;
+                pBLTCall = p;       // Offset filled later
+                *(DWORD*)p = 0x01eec063;
+                p += 4;
             }
 
             if(pLookup->offsets[i] > 2047)
             {
                 _ASSERTE(dataOffset < 2047);
-                // auipc  t4, 0
-                *(DWORD*)p = 0x00000297;
+                *(DWORD*)p = ITypeInstr(INSTR_LW, FUNCT3_LW, REG_T4, REG_T4, ((dataOffset & 0xfff) << 20));// lw  t4, dataOffset(t4)
                 p += 4;
-                // lw  t4, dataOffset(t4)
-                *(DWORD*)p = 0x000eae83 | ((dataOffset & 0xfff) << 20);
+                *(DWORD*)p = RTypeInstr(INSTR_ADD, FUNCT3_ADD, 0, REG_A0, REG_A0, REG_T4);// add  a0, a0, t4
                 p += 4;
-                // add a0, a0, t4
-                *(DWORD*)p = 0x01d50533; 
-                // lw  a0, 0(a0)
-                *(DWORD*)p = 0x00052503; 
+                *(DWORD*)p = ITypeInstr(INSTR_LW, FUNCT3_LW, REG_A0, REG_A0, 0);// lw  a0, 0(a0)
                 p += 4;
                 // move to next indirection offset data
-                dataOffset = dataOffset - 16 + 4; // subtract 16 as we have moved PC by 16 and add 4 as next data is at 4 bytes from previous data
+                dataOffset += 4; // add 4 as next data is at 4 bytes from previous data
             }
             else
             {
                 // offset must be 8 byte aligned
                 _ASSERTE((pLookup->offsets[i] & 0x7) == 0);
-                // ld  a0, #(pLookup->offsets[i])(a0)
-                *(DWORD*)p = 0x00053503 | ((UINT32)pLookup->offsets[i] << 20);
+                *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_A0, ((UINT32)pLookup->offsets[i] << 20));// ld  a0, #(pLookup->offsets[i])(a0)
                 p += 4;
-                dataOffset -= 4; // subtract 4 as we have moved PC by 4
             }
         }
 
@@ -1938,31 +1977,28 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         if (!pLookup->testForNull)
         {
             _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
-            // ret
-            *(DWORD*)p = 0x00008067;
+            *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
             p += 4;
         }
         else
         {
             // beq  a0, x0, CALL HELPER:
-            *(DWORD*)p = 0x00050063;
+            *(DWORD*)p = 0x00050463;
             p += 4;
 
-            // ret
-            *(DWORD*)p = 0x00008067;
+            *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
             p += 4;
 
             // CALL HELPER:
-            if(pBLECall != NULL)
-                *(DWORD*)pBLECall |= ((UINT32)(p - pBLECall) << 8);
+            if(pBLTCall != NULL)
+                *(DWORD*)pBLTCall |= ((UINT32)(p - pBLTCall) << 7);
 
-            // ori  a0,t2,0
-            *(DWORD*)p = 0x0003e513;
+            *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_A0, REG_T2, 0);// addi  a0, t2, 0
             p += 4;
             if ((uintptr_t)(p - old_p) & 0x7)
             {
                 // nop, padding for 8-byte align (required by EmitHelperWithArg)
-                *(DWORD*)p = 0x00000013;
+                *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);
                 p += 4;
             }
 
