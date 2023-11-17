@@ -63,9 +63,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			return _featureChecksVisitor.Visit (branchValueOperation, state);
 		}
 
-		public override void ApplyCondition (FeatureChecksValue featureChecksValue,  ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
+		public override void ApplyCondition (FeatureChecksValue featureChecksValue, ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
 		{
-			currentState.Context = currentState.Context.Union (featureChecksValue.EnabledFeatures);
+			currentState.Context = currentState.Context.Union (new FeatureContext (featureChecksValue.EnabledFeatures));
 		}
 
 		// Override visitor methods to create tracked values when visiting operations
@@ -423,6 +423,17 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override void HandleReturnConditionValue (FeatureChecksValue returnConditionValue, IOperation operation)
 		{
+			// Return statements should only happen inside of method bodies.
+			Debug.Assert (OwningSymbol is IMethodSymbol);
+			if (OwningSymbol is not IMethodSymbol method)
+				return;
+
+			// FeatureGuard validation needs to happen only relevant for static boolean properties.
+			if (method.MethodKind != MethodKind.PropertyGet ||
+				method.ReturnType.SpecialType != SpecialType.System_Boolean ||
+				!method.IsStatic)
+				return;
+
 			TrimAnalysisPatterns.Add (
 				new TrimAnalysisReturnValuePattern (returnConditionValue, operation, OwningSymbol));
 		}
