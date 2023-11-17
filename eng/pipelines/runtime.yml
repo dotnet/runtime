@@ -380,6 +380,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  extraHelixArguments: /p:IsXUnitLogCheckerSupported=false
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
