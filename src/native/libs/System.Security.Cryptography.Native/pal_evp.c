@@ -5,6 +5,7 @@
 #include "pal_evp.h"
 
 #include <assert.h>
+#include <pthread.h>
 
 #define SUCCESS 1
 
