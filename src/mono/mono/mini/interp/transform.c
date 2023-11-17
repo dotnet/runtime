@@ -7572,6 +7572,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					td->sp = td->stack;
 					++td->ip;
+					link_bblocks = FALSE;
 					break;
 
 				case CEE_MONO_LD_DELEGATE_METHOD_PTR:
