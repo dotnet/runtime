@@ -714,6 +714,21 @@ public:
 
     BasicBlockFlags bbFlags;
 
+    bool HasFlag(const BasicBlockFlags flag) const
+    {
+        return ((bbFlags & flag) != 0);
+    }
+
+    void SetFlag(const BasicBlockFlags flag)
+    {
+        bbFlags |= flag;
+    }
+
+    void RemoveFlag(const BasicBlockFlags flag)
+    {
+        bbFlags &= ~flag;
+    }
+
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_GAINED) == 0);
 
@@ -724,23 +739,23 @@ public:
 
     bool isRunRarely() const
     {
-        return ((bbFlags & BBF_RUN_RARELY) != 0);
+        return HasFlag(BBF_RUN_RARELY);
     }
     bool isLoopHead() const
     {
-        return ((bbFlags & BBF_LOOP_HEAD) != 0);
+        return HasFlag(BBF_LOOP_HEAD);
     }
 
     bool isLoopAlign() const
     {
-        return ((bbFlags & BBF_LOOP_ALIGN) != 0);
+        return HasFlag(BBF_LOOP_ALIGN);
     }
 
     void unmarkLoopAlign(Compiler* comp DEBUG_ARG(const char* reason));
 
     bool hasAlign() const
     {
-        return ((bbFlags & BBF_HAS_ALIGN) != 0);
+        return HasFlag(BBF_HAS_ALIGN);
     }
 
 #ifdef DEBUG
@@ -773,23 +788,23 @@ public:
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
     {
-        return ((this->bbFlags & BBF_PROF_WEIGHT) != 0);
+        return this->HasFlag(BBF_PROF_WEIGHT);
     }
 
     // setBBProfileWeight -- Set the profile-derived weight for a basic block
     // and update the run rarely flag as appropriate.
     void setBBProfileWeight(weight_t weight)
     {
-        this->bbFlags |= BBF_PROF_WEIGHT;
+        this->SetFlag(BBF_PROF_WEIGHT);
         this->bbWeight = weight;
 
         if (weight == BB_ZERO_WEIGHT)
         {
-            this->bbFlags |= BBF_RUN_RARELY;
+            this->SetFlag(BBF_RUN_RARELY);
         }
         else
         {
-            this->bbFlags &= ~BBF_RUN_RARELY;
+            this->RemoveFlag(BBF_RUN_RARELY);
         }
     }
 
@@ -813,20 +828,20 @@ public:
 
         if (bSrc->hasProfileWeight())
         {
-            this->bbFlags |= BBF_PROF_WEIGHT;
+            this->SetFlag(BBF_PROF_WEIGHT);
         }
         else
         {
-            this->bbFlags &= ~BBF_PROF_WEIGHT;
+            this->RemoveFlag(BBF_PROF_WEIGHT);
         }
 
         if (this->bbWeight == BB_ZERO_WEIGHT)
         {
-            this->bbFlags |= BBF_RUN_RARELY;
+            this->SetFlag(BBF_RUN_RARELY);
         }
         else
         {
-            this->bbFlags &= ~BBF_RUN_RARELY;
+            this->RemoveFlag(BBF_RUN_RARELY);
         }
     }
 
@@ -838,11 +853,11 @@ public:
 
         if (this->bbWeight == BB_ZERO_WEIGHT)
         {
-            this->bbFlags |= BBF_RUN_RARELY;
+            this->SetFlag(BBF_RUN_RARELY);
         }
         else
         {
-            this->bbFlags &= ~BBF_RUN_RARELY;
+            this->RemoveFlag(BBF_RUN_RARELY);
         }
     }
 
@@ -869,8 +884,7 @@ public:
     {
         if (this->bbWeight == BB_ZERO_WEIGHT)
         {
-            this->bbFlags &= ~BBF_RUN_RARELY;  // Clear any RarelyRun flag
-            this->bbFlags &= ~BBF_PROF_WEIGHT; // Clear any profile-derived flag
+            this->RemoveFlag((BBF_RUN_RARELY | BBF_PROF_WEIGHT));
             this->bbWeight = 1;
         }
     }
@@ -1526,12 +1540,12 @@ public:
 
     void SetDominatedByExceptionalEntryFlag()
     {
-        bbFlags |= BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY;
+        SetFlag(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
     }
 
     bool IsDominatedByExceptionalEntryFlag() const
     {
-        return (bbFlags & BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY) != 0;
+        return HasFlag(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
     }
 
 #ifdef DEBUG
