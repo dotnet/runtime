@@ -56,6 +56,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresAssemblyFiles ();
 			}
 
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void CallTestDynamicAndUnreferencedCodeGuarded ()
+			{
+				RequiresDynamicCode ();
+				RequiresUnreferencedCode ();
+			}
+
+			static void CallTestDynamicAndUnreferencedCodeUnguarded ()
+			{
+				if (TestFeatureGuards.GuardDynamicCodeAndUnreferencedCode) {
+					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
+				}
+			}
+
 			public static void Test ()
 			{
 				CanDefineGuardForRequiresDynamicCode ();
@@ -284,5 +300,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[RequiresAssemblyFiles (nameof (RequiresAssemblyFiles))]
 		static void RequiresAssemblyFiles () { }
+
+		class TestFeatureGuards
+		{
+
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			public static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported;
+		}
 	}
 }

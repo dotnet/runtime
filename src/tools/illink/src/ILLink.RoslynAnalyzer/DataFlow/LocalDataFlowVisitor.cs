@@ -87,11 +87,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			if (branchValueOperation == null)
 				return null;
 
-			// TODO: notice that we separately visit the branch value, and get the condition value.
-			// Really, these two should be part of the same operation handled by the visitor, in case the
-			// condition value depends on some side effects while visiting the branch.
-			// But I can't think of a case where that would hold. Because the condition value is an abstract
-			// representation that is supposed to represent _both_ branches, and not be based on a specific value.
 			var branchValue = Visit (branchValueOperation, state);
 			TConditionValue conditionValue = GetConditionValue (branchValueOperation, state);
 			if (block.Block.ConditionKind != ControlFlowConditionKind.None) {
