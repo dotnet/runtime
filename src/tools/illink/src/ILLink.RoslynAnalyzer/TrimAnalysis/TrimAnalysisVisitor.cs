@@ -428,14 +428,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (OwningSymbol is not IMethodSymbol method)
 				return;
 
-			// FeatureGuard validation needs to happen only relevant for static boolean properties.
+			// FeatureGuard validation needs to happen only for static boolean properties.
 			if (method.MethodKind != MethodKind.PropertyGet ||
 				method.ReturnType.SpecialType != SpecialType.System_Boolean ||
 				!method.IsStatic)
 				return;
 
+			IPropertySymbol propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;
+
 			TrimAnalysisPatterns.Add (
-				new TrimAnalysisReturnValuePattern (returnConditionValue, operation, OwningSymbol));
+				new TrimAnalysisReturnValuePattern (returnConditionValue, operation, propertySymbol));
 		}
 
 		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, FeatureContext featureContext)

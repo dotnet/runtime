@@ -71,7 +71,7 @@ namespace ILLink.RoslynAnalyzer
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
 		}
 
-		internal static FeatureContext GetFeatureGuards (
+		internal static ValueSet<string> GetFeatureGuards (
 			this IPropertySymbol propertySymbol,
 			Compilation compilation, // TODO: can remove this?
 			IEnumerable<RequiresAnalyzerBase> enabledRequiresAnalyzers)
@@ -90,7 +90,7 @@ namespace ILLink.RoslynAnalyzer
 			// Get "System.Diagnostics.CodeAnalysis" in the compilation? Or just use string?
 			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureGuardAttribute");
 			if (featureCheckType == null)
-				return new FeatureContext (ValueSet<string>.Empty);
+				return ValueSet<string>.Empty;
 
 			ImmutableArray<string>.Builder featureSet = ImmutableArray.CreateBuilder<string> ();
 			foreach (var attributeData in propertySymbol.GetAttributes ()) {
@@ -98,7 +98,7 @@ namespace ILLink.RoslynAnalyzer
 					continue; // TODO: warn?
 				featureSet.Add (featureName);
 			}
-			return new FeatureContext (new ValueSet<string> (featureSet));
+			return new ValueSet<string> (featureSet);
 
 			bool IsRequiresFeatureCheck (AttributeData attributeData, [NotNullWhen (true)] out string? featureName) {
 				featureName = null;
