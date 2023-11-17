@@ -19,54 +19,49 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	{
 		public static void Main ()
 		{
-			SupportedFeatures.Test ();
-			FeatureGuardTargets.Test ();
-			FeatureGuardBodyValidation.Test ();
+			DefineFeatureGuard.Test ();
+			GuardBodyValidation.Test ();
+			InvalidFeatureGuards.Test ();
 			FeatureSwitchBehavior.Test ();
 		}
 
-		class SupportedFeatures {
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+		class DefineFeatureGuard {
 			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool GuardRequiresDynamicCode => true;
+			static bool GuardDynamicCode => RuntimeFeature.IsDynamicCodeSupported;
 
-			static void CanDefineGuardForRequiresDynamicCode ()
+			static void TestGuardDynamicCode ()
 			{
-				if (GuardRequiresDynamicCode)
+				if (GuardDynamicCode)
 					RequiresDynamicCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute))]
 			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
-			static bool GuardRequiresUnreferencedCode => true;
+			static bool GuardUnreferencedCode => TestFeatures.IsUnreferencedCodeSupported;
 
-			static void CanDefineGuardForRequiresUnreferencedCode ()
+			static void TestGuardUnreferencedCode ()
 			{
-				if (GuardRequiresUnreferencedCode)
+				if (GuardUnreferencedCode)
 					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresAssemblyFilesAttribute))]
 			[FeatureGuard(typeof(RequiresAssemblyFilesAttribute))]
-			static bool GuardRequiresAssemblyFiles => true;
+			static bool GuardAssemblyFiles => TestFeatures.IsAssemblyFilesSupported;
 
-			static void CanDefineGuardForRequiresAssemblyFiles ()
+			static void TestGuardAssemblyFiles ()
 			{
-				if (GuardRequiresAssemblyFiles)
+				if (GuardAssemblyFiles)
 					RequiresAssemblyFiles ();
 			}
 
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			static void CallTestDynamicAndUnreferencedCodeGuarded ()
-			{
-				RequiresDynamicCode ();
-				RequiresUnreferencedCode ();
-			}
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported;
 
-			static void CallTestDynamicAndUnreferencedCodeUnguarded ()
+			static void TestMultipleGuards ()
 			{
-				if (TestFeatureGuards.GuardDynamicCodeAndUnreferencedCode) {
+				if (GuardDynamicCodeAndUnreferencedCode) {
 					RequiresDynamicCode ();
 					RequiresUnreferencedCode ();
 				}
@@ -74,86 +69,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
-				CanDefineGuardForRequiresDynamicCode ();
-				CanDefineGuardForRequiresUnreferencedCode ();
-				CanDefineGuardForRequiresAssemblyFiles ();
+				TestGuardDynamicCode ();
+				TestGuardUnreferencedCode ();
+				TestGuardAssemblyFiles ();
+				TestMultipleGuards ();
 			}
 		}
 
-		class FeatureGuardTargets {
-			public static void Test ()
-			{
-			}
-		}
-
-		class FeatureGuardBodyValidation {
+		class GuardBodyValidation {
 			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
 			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
 			static bool ReturnTrueGuard => true;
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool ReturnFalseGuard => false;
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool OtherConditionGuard => OtherCondition ();
-
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool DirectGuard => RuntimeFeature.IsDynamicCodeSupported;
-
-			// BUG: We're not smart enough to do this analysis yet. Leave it unsupported for now.
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool AndGuard => RuntimeFeature.IsDynamicCodeSupported && OtherCondition ();
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool OrGuard => RuntimeFeature.IsDynamicCodeSupported || OtherCondition ();
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool NotGuard => !RuntimeFeature.IsDynamicCodeSupported;
-
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool NotNotGuard => !!RuntimeFeature.IsDynamicCodeSupported;
-
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool EqualsTrueGuard => RuntimeFeature.IsDynamicCodeSupported == true;
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool EqualsFalseGuard => RuntimeFeature.IsDynamicCodeSupported == false;
-
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool TrueEqualsGuard => true == RuntimeFeature.IsDynamicCodeSupported;
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool FalseEqualsGuard => false == RuntimeFeature.IsDynamicCodeSupported;
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool NotEqualsTrueGuard => RuntimeFeature.IsDynamicCodeSupported != true;
-
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool NotEqualsFalseGuard => RuntimeFeature.IsDynamicCodeSupported != false;
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool TrueNotEqualsGuard => true != RuntimeFeature.IsDynamicCodeSupported;
-
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool FalseNotEqualsGuard => false != RuntimeFeature.IsDynamicCodeSupported;
-
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool IsTrueGuard => RuntimeFeature.IsDynamicCodeSupported is true;
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool IsFalseGuard => RuntimeFeature.IsDynamicCodeSupported is false;
-
-			static bool OtherCondition () => true;
 
 			static void TestReturnTrueGuard ()
 			{
@@ -161,11 +87,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool ReturnFalseGuard => false;
+
 			static void TestReturnFalseGuard ()
 			{
 				if (ReturnFalseGuard)
 					RequiresDynamicCode ();
 			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool OtherConditionGuard => OtherCondition ();
 
 			static void TestOtherConditionGuard ()
 			{
@@ -173,11 +107,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool DirectGuard => RuntimeFeature.IsDynamicCodeSupported;
+
 			static void TestDirectGuard ()
 			{
 				if (DirectGuard)
 					RequiresDynamicCode ();
 			}
+
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool IndirectGuard => DirectGuard;
+
+			static void TestIndirectGuard ()
+			{
+				if (IndirectGuard)
+					RequiresDynamicCode ();
+			}
+
+			// BUG: We're not smart enough to do this analysis yet. Leave it unsupported for now.
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool AndGuard => RuntimeFeature.IsDynamicCodeSupported && OtherCondition ();
 
 			static void TestAndGuard ()
 			{
@@ -185,11 +136,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool OrGuard => RuntimeFeature.IsDynamicCodeSupported || OtherCondition ();
+
 			static void TestOrGuard ()
 			{
 				if (OrGuard)
 					RequiresDynamicCode ();
 			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool NotGuard => !RuntimeFeature.IsDynamicCodeSupported;
 
 			static void TestNotGuard ()
 			{
@@ -197,11 +156,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool NotNotGuard => !!RuntimeFeature.IsDynamicCodeSupported;
+
 			static void TestNotNotGuard ()
 			{
 				if (NotNotGuard)
 					RequiresDynamicCode ();
 			}
+
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool EqualsTrueGuard => RuntimeFeature.IsDynamicCodeSupported == true;
 
 			static void TestEqualsTrueGuard ()
 			{
@@ -209,11 +174,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool EqualsFalseGuard => RuntimeFeature.IsDynamicCodeSupported == false;
+
 			static void TestEqualsFalseGuard ()
 			{
 				if (EqualsFalseGuard)
 					RequiresDynamicCode ();
 			}
+
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool TrueEqualsGuard => true == RuntimeFeature.IsDynamicCodeSupported;
 
 			static void TestTrueEqualsGuard ()
 			{
@@ -221,11 +193,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool FalseEqualsGuard => false == RuntimeFeature.IsDynamicCodeSupported;
+
 			static void TestFalseEqualsGuard ()
 			{
 				if (FalseEqualsGuard)
 					RequiresDynamicCode ();
 			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool NotEqualsTrueGuard => RuntimeFeature.IsDynamicCodeSupported != true;
 
 			static void TestNotEqualsTrueGuard ()
 			{
@@ -233,11 +213,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool NotEqualsFalseGuard => RuntimeFeature.IsDynamicCodeSupported != false;
+
 			static void TestNotEqualsFalseGuard ()
 			{
 				if (NotEqualsFalseGuard)
 					RequiresDynamicCode ();
 			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool TrueNotEqualsGuard => true != RuntimeFeature.IsDynamicCodeSupported;
 
 			static void TestTrueNotEqualsGuard ()
 			{
@@ -245,11 +232,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool FalseNotEqualsGuard => false != RuntimeFeature.IsDynamicCodeSupported;
+
 			static void TestFalseNotEqualsGuard ()
 			{
 				if (FalseNotEqualsGuard)
 					RequiresDynamicCode ();
 			}
+
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool IsTrueGuard => RuntimeFeature.IsDynamicCodeSupported is true;
 
 			static void TestIsTrueGuard ()
 			{
@@ -257,9 +250,68 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresDynamicCode ();
 			}
 
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool IsFalseGuard => RuntimeFeature.IsDynamicCodeSupported is false;
+
 			static void TestIsFalseGuard ()
 			{
 				if (IsFalseGuard)
+					RequiresDynamicCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool IfGuard {
+				get {
+					if (RuntimeFeature.IsDynamicCodeSupported)
+						return true;
+					return false;
+				}
+			}
+
+			static void TestIfGuard ()
+			{
+				if (IfGuard)
+					RequiresDynamicCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool ElseGuard {
+				get {
+					if (!RuntimeFeature.IsDynamicCodeSupported)
+						return false;
+					else
+						return true;
+				}
+			}
+
+			static void TestElseGuard ()
+			{
+				if (ElseGuard)
+					RequiresDynamicCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool TernaryIfGuard => RuntimeFeature.IsDynamicCodeSupported ? true : false;
+
+			static void TestTernaryIfGuard ()
+			{
+				if (TernaryIfGuard)
+					RequiresDynamicCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool TernaryElseGuard => !RuntimeFeature.IsDynamicCodeSupported ? false : true;
+
+			static void TestTernaryElseGuard ()
+			{
+				if (TernaryElseGuard)
 					RequiresDynamicCode ();
 			}
 
@@ -269,6 +321,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestReturnFalseGuard ();
 				TestOtherConditionGuard ();
 				TestDirectGuard ();
+				TestIndirectGuard ();
 				TestAndGuard ();
 				TestOrGuard ();
 				TestNotGuard ();
@@ -283,6 +336,55 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestFalseNotEqualsGuard ();
 				TestIsTrueGuard ();
 				TestIsFalseGuard ();
+				TestIfGuard ();
+				TestElseGuard ();
+				TestTernaryIfGuard ();
+				TestTernaryElseGuard ();
+			}
+		}
+
+		class InvalidFeatureGuards {
+			[ExpectedWarning ("IL4001")]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static int NonBooleanProperty => 0;
+
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCodeAttribute))]
+			static void TestNonBooleanProperty ()
+			{
+				if (NonBooleanProperty == 0)
+					RequiresDynamicCode ();
+			}
+
+			[ExpectedWarning ("IL4001")]
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			bool NonStaticProperty => true;
+
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCodeAttribute))]
+			static void TestNonStaticProperty ()
+			{
+				var instance = new InvalidFeatureGuards ();
+				if (instance.NonStaticProperty)
+					RequiresDynamicCode ();
+			}
+
+			// No warning for this case because we don't validate that the attribute usage matches
+			// the expected AttributeUsage.Property for assemblies that define their own version
+			// of FeatureGuardAttribute.
+			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			static bool Method () => true;
+
+			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCodeAttribute))]
+			static void TestMethod ()
+			{
+				if (Method ())
+					RequiresDynamicCode ();
+			}
+
+			public static void Test ()
+			{
+				TestNonBooleanProperty ();
+				TestNonStaticProperty ();
+				TestMethod ();
 			}
 		}
 
@@ -301,12 +403,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[RequiresAssemblyFiles (nameof (RequiresAssemblyFiles))]
 		static void RequiresAssemblyFiles () { }
 
-		class TestFeatureGuards
-		{
-
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
-			public static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported;
-		}
+		static bool OtherCondition () => true;
 	}
 }

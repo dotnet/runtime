@@ -8,7 +8,5 @@ namespace ILLink.RoslynAnalyzer
 		public static bool IsUnreferencedCodeSupported => true;
 
 		public static bool IsAssemblyFilesSupported => true;
-
-		public static bool IsDynamicCodeSupported => true;
 	}
 }

@@ -88,43 +88,25 @@ namespace ILLink.RoslynAnalyzer
 			// Get attributes on the property symbol
 
 			// Get "System.Diagnostics.CodeAnalysis" in the compilation? Or just use string?
-			var featureCheckType = compilation.GetTypeByMetadataName ("System.Diagnostics.CodeAnalysis.FeatureGuardAttribute");
-			if (featureCheckType == null)
-				return ValueSet<string>.Empty;
-
+			// Probably should just use string.
 			ImmutableArray<string>.Builder featureSet = ImmutableArray.CreateBuilder<string> ();
 			foreach (var attributeData in propertySymbol.GetAttributes ()) {
-				if (!IsRequiresFeatureCheck (attributeData, out string? featureName))
-					continue; // TODO: warn?
+				if (!IsFeatureGuardAttribute (attributeData, out string? featureName))
+					continue;
 				featureSet.Add (featureName);
 			}
 			return new ValueSet<string> (featureSet);
 
-			bool IsRequiresFeatureCheck (AttributeData attributeData, [NotNullWhen (true)] out string? featureName) {
+			bool IsFeatureGuardAttribute (AttributeData attributeData, [NotNullWhen (true)] out string? featureName) {
 				featureName = null;
-				var attributeType = attributeData.AttributeClass;
-				if (attributeType == null)
+				if (attributeData.AttributeClass is not { } attrClass || !attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute))
 					return false;
 
-				// Check if attribute type is the same.
-				if (!SymbolEqualityComparer.Default.Equals (attributeType.OriginalDefinition, featureCheckType))
+				if (attributeData.ConstructorArguments is not [TypedConstant { Value: INamedTypeSymbol featureType }])
 					return false;
 
-				// Check if the argument to the attribute is a Requires attribute that has an enabled analyzer.
-				TypedConstant argument = attributeData.ConstructorArguments[0];
-				// Should be a typeof... get the referenced type.
-				if (argument.Kind != TypedConstantKind.Type)
-					return false;
-				// what's the referenced type?
-				var requiresArgumentType = argument.Value as INamedTypeSymbol;
-				if (requiresArgumentType == null)
-					return false;
 				foreach (var analyzer in enabledRequiresAnalyzers) {
-					var requiresAttributeType = compilation.GetTypeByMetadataName (analyzer.RequiresAttributeFullyQualifiedName);
-					if (requiresAttributeType == null)
-						continue;
-
-					if (SymbolEqualityComparer.Default.Equals (requiresArgumentType, requiresAttributeType)) {
+					if (featureType.HasName (analyzer.RequiresAttributeFullyQualifiedName)) {
 						featureName = analyzer.FeatureName;
 						return true;
 					}

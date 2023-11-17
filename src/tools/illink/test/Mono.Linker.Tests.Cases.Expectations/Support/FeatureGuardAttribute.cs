@@ -3,7 +3,8 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    [AttributeUsage(AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
+    // Allow AttributeTargets.Method for testing invalid usages of a custom FeatureGuardAttribute
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method, Inherited=false, AllowMultiple=true)]
     public sealed class FeatureGuardAttribute : Attribute
     {
         public Type RequiresAttributeType { get; }
