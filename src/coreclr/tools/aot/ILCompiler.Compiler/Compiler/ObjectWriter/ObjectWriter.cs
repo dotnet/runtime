@@ -403,12 +403,10 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
+                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode and IMethodNode methodNode)
                     {
                         bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                        uint methodTypeIndex = node is IMethodNode methodNode && hasSequencePoints ?
-                            _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) :
-                            0;
+                        uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
                         string methodName = GetMangledName(symbolDefinitionNode);
 
                         if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
