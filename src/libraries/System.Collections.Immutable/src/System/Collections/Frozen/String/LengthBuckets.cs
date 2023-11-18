@@ -55,8 +55,8 @@ namespace System.Collections.Frozen
             }
 
             // Instead of creating a dictionary of lists or a multi-dimensional array
-            // we rent a single dimension array, where every bucket has five slots.
-            // The bucket starts at (key.Length - minLength) * 5.
+            // we rent a single dimension array, where every bucket has seven slots.
+            // The bucket starts at (key.Length - minLength) * 7.
             // Each value is an index of the key from _keys array
             // or just NullSentinel, which represents "null".
             int[] buckets = ArrayPool<int>.Shared.Rent(arraySize);
