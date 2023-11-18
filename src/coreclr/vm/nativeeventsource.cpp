@@ -189,4 +189,24 @@ extern "C" void QCALLTYPE LogContentionStop(uint8_t ContentionFlags, uint16_t Cl
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE LogWaitHandleWaitStart(uint16_t ClrInstanceID, uint32_t WaitSource, void* AssociatedObjectID)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwWaitHandleWaitStart(ClrInstanceID, WaitSource, AssociatedObjectID);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE LogWaitHandleWaitStop(uint16_t ClrInstanceID, uint32_t WaitSource, double DurationNs)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwWaitHandleWaitStop(ClrInstanceID, WaitSource, DurationNs);
+
+    END_QCALL;
+}
+
 #endif // FEATURE_PERFTRACING

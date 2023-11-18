@@ -32,6 +32,8 @@ namespace System.Diagnostics.Tracing
             public const string IOEnqueue = "NativeOverlapped={0};\nOverlapped={1};\nMultiDequeues={2};\nClrInstanceID={3}";
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
             public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
+            public const string WaitHandleWaitStart = "ClrInstanceID={0};\nWaitSource={1};\nAssociatedObjectID={2}";
+            public const string WaitHandleWaitStop = "ClrInstanceID={0};\nWaitSource={1};\nDurationNs={2}";
         }
 
         // The task definitions for the ETW manifest
@@ -43,6 +45,7 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadPool = (EventTask)23;
             public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
             public const EventTask ThreadPoolMinMaxThreads = (EventTask)38;
+            public const EventTask WaitHandle = (EventTask)39;
         }
 
         public static partial class Opcodes // this name and visibility is important for EventSource
@@ -74,6 +77,12 @@ namespace System.Diagnostics.Tracing
             Starvation,
             ThreadTimedOut,
             CooperativeBlocking,
+        }
+
+        public enum WaitHandleWaitSourceMap : uint
+        {
+            Unknown,
+            MonitorWait,
         }
 
         [Event(90, Level = EventLevel.Informational, Message = Messages.ContentionLockCreated, Task = Tasks.Contention, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ContentionKeyword)]
@@ -319,6 +328,26 @@ namespace System.Diagnostics.Tracing
             {
                 LogThreadPoolMinMaxThreads(MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID);
             }
+        }
+
+        [Event(301, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStart, Task = Tasks.WaitHandle, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
+        public void WaitHandleWaitStart(
+            WaitHandleWaitSourceMap WaitSource,
+            nint AssociatedObjectID,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
+            LogWaitHandleWaitStart(ClrInstanceID, WaitSource, AssociatedObjectID);
+        }
+
+        [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandle, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
+        public void WaitHandleWaitStop(
+            WaitHandleWaitSourceMap WaitSource,
+            double DurationNs,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
+            LogWaitHandleWaitStop(ClrInstanceID, WaitSource, DurationNs);
         }
     }
 }

@@ -107,6 +107,18 @@ namespace System.Threading
             Waiter waiter = GetWaiterForCurrentThread();
             AddWaiter(waiter);
 
+            bool isWaitHandleKeywordEnabled = NativeRuntimeEventSource.Log.IsEnabled(
+                EventLevel.Informational,
+                NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
+            long waitStartTimeTicks = 0;
+            if (isWaitHandleKeywordEnabled)
+            {
+                waitStartTimeTicks = Stopwatch.GetTimestamp();
+                NativeRuntimeEventSource.Log.WaitHandleWaitStart(
+                    NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait,
+                    0);
+            }
+
             uint recursionCount = _lock.ExitAll();
             bool success = false;
             try
@@ -130,6 +142,15 @@ namespace System.Threading
                     // So, we need to manually reset the event.
                     //
                     waiter.ev.Reset();
+                }
+
+                if (isWaitHandleKeywordEnabled)
+                {
+                    long waitEndTimeTicks = Stopwatch.GetTimestamp();
+                    double waitDurationNs = (waitEndTimeTicks - waitStartTimeTicks) * 1_000_000_000.0 / Stopwatch.Frequency;
+                    NativeRuntimeEventSource.Log.WaitHandleWaitStop(
+                        NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait,
+                        waitDurationNs);
                 }
 
                 AssertIsNotInList(waiter);

@@ -132,5 +132,17 @@ namespace System.Diagnostics.Tracing
         {
             RuntimeImports.NativeRuntimeEventSource_LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
         }
+
+        [NonEvent]
+        internal static partial void LogWaitHandleWaitStart(
+            ushort ClrInstanceID,
+            WaitHandleWaitSourceMap WaitSource,
+            IntPtr AssociatedObjectID);
+
+        [NonEvent]
+        internal static partial void LogWaitHandleWaitStop(
+            ushort ClrInstanceID,
+            WaitHandleWaitSourceMap WaitSource,
+            double DurationNs);
     }
 }

@@ -3180,14 +3180,14 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     param.dwRet = (DWORD) -1;
 
     LARGE_INTEGER startTicks;
-    bool isWaitHandleKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_WAIT_HANDLE_KEYWORD);
+    bool isWaitHandleKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_WAIT_HANDLE_KEYWORD);
     if (isWaitHandleKeywordEnabled)
     {
         QueryPerformanceCounter(&startTicks);
         FireEtwWaitHandleWaitStart(
-            ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
             GetClrInstanceId(),
-            syncState ? OBJECTREFToObject(syncState->m_Object) : NULL);
+            ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
+            syncState ? syncState->m_Object : NULL);
     }
 
     EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
@@ -3215,9 +3215,8 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
 
         double elapsedTimeInNanosecond = ComputeTicksDeltaInNanosecond(startTicks, endTicks);
         FireEtwWaitHandleWaitStop(
-            ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
             GetClrInstanceId(),
-            syncState ? OBJECTREFToObject(syncState->m_Object) : NULL,
+            ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
             elapsedTimeInNanosecond);
     }
 

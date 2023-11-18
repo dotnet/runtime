@@ -2839,6 +2839,7 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     PendingSync   syncState(walk);
 
     OBJECTREF     obj = m_Monitor.GetOwningObject();
+    syncState.m_Object = OBJECTREFToObject(obj);
 
     m_Monitor.IncrementTransientPrecious();
 
@@ -2854,8 +2855,6 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     GCPROTECT_BEGIN(obj);
     {
         GCX_PREEMP();
-
-        syncState.m_Object = obj;
 
         // remember how many times we synchronized
         syncState.m_EnterCount = LeaveMonitorCompletely();

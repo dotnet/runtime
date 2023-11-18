@@ -1159,10 +1159,10 @@ namespace ETW
     public:
         typedef union _WaitHandleStructs
         {
-            typedef  enum _WaitReason {
+            typedef  enum _WaitSource {
                 Unknown=0,
                 MonitorWait=1
-            } WaitReason;
+            } WaitSource;
         } WaitHandleStructs;
     };
 

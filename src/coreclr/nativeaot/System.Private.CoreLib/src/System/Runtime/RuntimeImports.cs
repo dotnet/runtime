@@ -826,6 +826,20 @@ namespace System.Runtime
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static unsafe partial void NativeRuntimeEventSource_LogExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, long hresult);
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStart(
+            ushort ClrInstanceID,
+            WaitHandleWaitSourceMap WaitSource,
+            IntPtr AssociatedObjectID);
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStop(
+           ushort ClrInstanceID,
+            WaitHandleWaitSourceMap WaitSource,
+            double DurationNs);
 #endif // FEATURE_PERFTRACING
 
         //

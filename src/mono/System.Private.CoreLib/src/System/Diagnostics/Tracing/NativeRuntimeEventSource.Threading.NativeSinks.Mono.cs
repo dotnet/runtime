@@ -97,5 +97,18 @@ namespace System.Diagnostics.Tracing
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
+
+        [NonEvent]
+        private static extern void LogWaitHandleWaitStart(
+            WaitHandleWaitSourceMap WaitSource,
+            IntPtr AssociatedObjectID,
+            ushort ClrInstanceID);
+
+        [NonEvent]
+        private static extern void LogWaitHandleWaitStop(
+            WaitHandleWaitSourceMap WaitSource,
+            IntPtr AssociatedObjectID,
+            double DurationNs,
+            ushort ClrInstanceID);
     }
 }

@@ -417,5 +417,5 @@
 #define FireEtwAppDomainAssemblyResolveHandlerInvoked(ClrInstanceId, assemblyName, handlerName, resultAssemblyName, resultAssemblyPath) 0
 #define FireEtwAssemblyLoadFromResolveHandlerInvoked(ClrInstanceId, assemblyName, isTrackedAssembly, requestingAssemblyPath, requestedAssemblyPath) 0
 #define FireEtwEventSource(eventID, eventName, eventSourceName, payload) 0
-#define FireEtwWaitHandleWaitStart(WaitSource, ClrInstanceID, AssociatedObjectID) 0
-#define FireEtwWaitHandleWaitStop(WaitSource, ClrInstanceID, AssociatedObjectID, DurationNs) 0
+#define FireEtwWaitHandleWaitStart(ClrInstanceID, WaitSource, AssociatedObjectID) 0
+#define FireEtwWaitHandleWaitStop(ClrInstanceID, WaitSource, DurationNs) 0
