@@ -22,6 +22,7 @@ namespace System.Diagnostics.Tracing
             public const EventKeywords ContentionKeyword = (EventKeywords)0x4000;
             public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
             public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
+            public const EventKeywords WaitHandleKeyword = (EventKeywords)0x40000000000;
         }
 
         [NonEvent]
@@ -134,15 +135,21 @@ namespace System.Diagnostics.Tracing
         }
 
         [NonEvent]
-        internal static partial void LogWaitHandleWaitStart(
+        internal static void LogWaitHandleWaitStart(
             ushort ClrInstanceID,
             WaitHandleWaitSourceMap WaitSource,
-            IntPtr AssociatedObjectID);
+            IntPtr AssociatedObjectID)
+        {
+            RuntimeImports.NativeRuntimeEventSource_LogWaitHandleWaitStart(ClrInstanceID, (uint)WaitSource, AssociatedObjectID);
+        }
 
         [NonEvent]
-        internal static partial void LogWaitHandleWaitStop(
+        internal static void LogWaitHandleWaitStop(
             ushort ClrInstanceID,
             WaitHandleWaitSourceMap WaitSource,
-            double DurationNs);
+            double DurationNs)
+        {
+            RuntimeImports.NativeRuntimeEventSource_LogWaitHandleWaitStop(ClrInstanceID, (uint)WaitSource, DurationNs);
+        }
     }
 }

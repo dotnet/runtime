@@ -17,6 +17,7 @@ namespace System.Diagnostics.Tracing
             public const EventKeywords ContentionKeyword = (EventKeywords)0x4000;
             public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
             public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
+            public const EventKeywords WaitHandleKeyword = (EventKeywords)0x40000000000;
         }
 
         private static partial class Messages

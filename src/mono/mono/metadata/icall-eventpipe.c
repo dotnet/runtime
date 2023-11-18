@@ -778,4 +778,26 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop 
 	mono_error_set_pending_exception (error);
 }
 
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_WaitHandleWaitStart (
+	uint16_t clr_instance_id,
+	uint32_t wait_source,
+	intptr_t associated_object_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.WaitHandleWaitStart");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_WaitHandleWaitStop (
+	uint16_t clr_instance_id,
+	uint32_t wait_source,
+	double duration_ns)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.WaitHandleWaitStop");
+	mono_error_set_pending_exception (error);
+}
+
 #endif /* ENABLE_PERFTRACING */

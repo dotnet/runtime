@@ -90,7 +90,7 @@
                     <keyword name="ProfilerKeyword" mask="0x20000000000"
                              message="$(string.RuntimePublisher.ProfilerKeywordMessage)" symbol="CLR_PROFILER_KEYWORD" />
                     <keyword name="WaitHandleKeyword" mask="0x40000000000"
-                             message="$(string.RuntimePublisher.WaitHandleKeywordMessage)" symbol="CLR_WAIT_HANDLE_KEYWORD"/>
+                             message="$(string.RuntimePublisher.WaitHandleKeywordMessage)" symbol="CLR_WAITHANDLE_KEYWORD"/>
                 </keywords>
                 <!--Tasks-->
                 <tasks>

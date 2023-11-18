@@ -102,12 +102,12 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogExceptionThrown(
 
 EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStart(uint16_t ClrInstanceID, uint32_t WaitSource, intptr_t AssociatedObjectID)
 {
-    FireEtwWaitHandleWaitStart(ClrInstanceID, (const unsigned char)(WaitSource), reinterpret_cast<const void*>(AssociatedObjectID));
+    FireEtwWaitHandleWaitStart(ClrInstanceID, WaitSource, reinterpret_cast<const void*>(AssociatedObjectID));
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID, uint32_t WaitSource, double DurationNs)
 {
-    FireEtwWaitHandleWaitStop(ClrInstanceID, (const unsigned char)(WaitSource), DurationNs);
+    FireEtwWaitHandleWaitStop(ClrInstanceID, WaitSource, DurationNs);
 }
 
 #endif // FEATURE_PERFTRACING

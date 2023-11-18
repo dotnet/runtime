@@ -3180,7 +3180,7 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     param.dwRet = (DWORD) -1;
 
     LARGE_INTEGER startTicks;
-    bool isWaitHandleKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_WAIT_HANDLE_KEYWORD);
+    bool isWaitHandleKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_WAITHANDLE_KEYWORD);
     if (isWaitHandleKeywordEnabled)
     {
         QueryPerformanceCounter(&startTicks);

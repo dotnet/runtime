@@ -310,6 +310,8 @@ static const Entry s_QCall[] =
     DllImportEntry(LogContentionLockCreated)
     DllImportEntry(LogContentionStart)
     DllImportEntry(LogContentionStop)
+    DllImportEntry(LogWaitHandleWaitStart)
+    DllImportEntry(LogWaitHandleWaitStop)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)
     DllImportEntry(EventPipeInternal_GetSessionInfo)
