@@ -8985,6 +8985,8 @@
                 <string id="RuntimePublisher.ResolutionAttempted.IncompatibleVersion" value="IncompatibleVersion" />
                 <string id="RuntimePublisher.ResolutionAttempted.Failure" value="Failure" />
                 <string id="RuntimePublisher.ResolutionAttempted.Exception" value="Exception" />
+                <string id="RuntimePublisher.WaitHandle.UnknownMapMessage" value="Unknown" />
+                <string id="RuntimePublisher.WaitHandle.MonitorWaitMapMessage" value="MonitorWait" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />
