@@ -12457,6 +12457,14 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
         candidates &= ~busyRegs;
 
+#ifdef TARGET_ARM
+        // For TYP_DOUBLE on ARM, we can only use register for which the odd half is also available.
+        if (currentInterval->registerType == TYP_DOUBLE)
+        {
+            candidates &= ~(busyRegs >> 1);
+        }
+#endif // TARGET_ARM
+
 #ifdef DEBUG
         inUseOrBusyRegsMask |= busyRegs;
 #endif
