@@ -16,15 +16,19 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisReturnValuePattern> ReturnValuePatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
 		readonly FeatureContextLattice FeatureContextLattice;
 
-		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice, FeatureContextLattice featureContextLattice)
+		public TrimAnalysisPatternStore (
+			ValueSetLattice<SingleValue> lattice,
+			FeatureContextLattice featureContextLattice)
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
 			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
 			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
+			ReturnValuePatterns = new Dictionary<IOperation, TrimAnalysisReturnValuePattern> ();
 			Lattice = lattice;
 			FeatureContextLattice = featureContextLattice;
 		}
@@ -77,6 +81,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
+		public void Add (TrimAnalysisReturnValuePattern pattern)
+		{
+			if (!ReturnValuePatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				ReturnValuePatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			Debug.Assert (existingPattern == pattern, "Return values should be identical");
+		}
+
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			foreach (var assignmentPattern in AssignmentPatterns.Values) {
@@ -96,6 +110,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			foreach (var reflectionAccessPattern in ReflectionAccessPatterns.Values) {
 				foreach (var diagnostic in reflectionAccessPattern.CollectDiagnostics (context))
+					yield return diagnostic;
+			}
+
+			foreach (var returnValuePattern in ReturnValuePatterns.Values) {
+				foreach (var diagnostic in returnValuePattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 		}

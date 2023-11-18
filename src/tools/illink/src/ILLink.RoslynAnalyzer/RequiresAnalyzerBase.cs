@@ -5,8 +5,9 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ILLink.Shared;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -19,9 +20,7 @@ namespace ILLink.RoslynAnalyzer
 	{
 		private protected abstract string RequiresAttributeName { get; }
 
-		internal abstract string FeatureName { get; }
-
-		private protected abstract string RequiresAttributeFullyQualifiedName { get; }
+		internal abstract string RequiresAttributeFullyQualifiedName { get; }
 
 		private protected abstract DiagnosticTargets AnalyzerDiagnosticTargets { get; }
 
@@ -301,7 +300,23 @@ namespace ILLink.RoslynAnalyzer
 		// - false return value indicating that a feature is supported
 		// - feature settings supplied by the project
 		// - custom feature checks defined in library code
-		internal virtual bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) => false;
+		private protected virtual bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation) => false;
+
+		internal static bool IsAnnotatedFeatureGuard (IPropertySymbol propertySymbol, DataFlowAnalyzerContext dataFlowAnalyzerContext, string featureName)
+		{
+			// Only respect FeatureGuardAttribute on static boolean properties.
+			if (!propertySymbol.IsStatic || propertySymbol.Type.SpecialType != SpecialType.System_Boolean)
+				return false;
+
+			ValueSet<string> featureGuards = propertySymbol.GetFeatureGuardAnnotations (dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+			return featureGuards.Contains (featureName);
+		}
+
+		internal bool IsFeatureGuard (IPropertySymbol propertySymbol, DataFlowAnalyzerContext dataFlowAnalyzerContext)
+		{
+			return IsAnnotatedFeatureGuard (propertySymbol, dataFlowAnalyzerContext, RequiresAttributeFullyQualifiedName)
+				|| IsRequiresCheck (propertySymbol, dataFlowAnalyzerContext.Compilation);
+		}
 
 		internal bool CheckAndCreateRequiresDiagnostic (
 			IOperation operation,
@@ -312,7 +327,7 @@ namespace ILLink.RoslynAnalyzer
 			[NotNullWhen (true)] out Diagnostic? diagnostic)
 		{
 			// Warnings are not emitted if the featureContext says the feature is available.
-			if (featureContext.IsEnabled (FeatureName)) {
+			if (featureContext.IsEnabled (RequiresAttributeFullyQualifiedName)) {
 				diagnostic = null;
 				return false;
 			}

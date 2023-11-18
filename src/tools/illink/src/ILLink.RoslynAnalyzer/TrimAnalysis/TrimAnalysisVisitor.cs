@@ -42,6 +42,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		FeatureChecksVisitor _featureChecksVisitor;
 
+		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
+
 		public TrimAnalysisVisitor (
 			Compilation compilation,
 			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
@@ -56,14 +58,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			_multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;
 			_featureChecksVisitor = new FeatureChecksVisitor (dataFlowAnalyzerContext);
+			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
-		public override FeatureChecksValue? GetConditionValue (IOperation branchValueOperation, StateValue state)
+		public override FeatureChecksValue GetConditionValue (IOperation branchValueOperation, StateValue state)
 		{
 			return _featureChecksVisitor.Visit (branchValueOperation, state);
 		}
 
-		public override void ApplyCondition (FeatureChecksValue featureChecksValue,  ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
+		public override void ApplyCondition (FeatureChecksValue featureChecksValue, ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
 		{
 			currentState.Context = currentState.Context.Union (new FeatureContext (featureChecksValue.EnabledFeatures));
 		}
@@ -419,6 +422,28 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					isReturnValue: true
 				);
 			}
+		}
+
+		public override void HandleReturnConditionValue (FeatureChecksValue returnConditionValue, IOperation operation)
+		{
+			// Return statements should only happen inside of method bodies.
+			Debug.Assert (OwningSymbol is IMethodSymbol);
+			if (OwningSymbol is not IMethodSymbol method)
+				return;
+
+			// FeatureGuard validation needs to happen only for properties.
+			if (method.MethodKind != MethodKind.PropertyGet)
+				return;
+
+			IPropertySymbol propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;
+			var featureGuards = propertySymbol.GetFeatureGuardAnnotations (_dataFlowAnalyzerContext.EnabledRequiresAnalyzers);
+
+			// If there are no feature guards, there is nothing to validate.
+			if (featureGuards.IsEmpty())
+				return;
+
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisReturnValuePattern (returnConditionValue, featureGuards, operation, propertySymbol));
 		}
 
 		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, FeatureContext featureContext)
