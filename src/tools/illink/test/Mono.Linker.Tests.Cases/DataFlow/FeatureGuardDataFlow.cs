@@ -14,6 +14,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
+	// FeatureGuardAttribute is currently only supported by the analyzer.
+	// The same guard behavior is achieved for ILLink/ILCompiler using substitutions.
+	// Note: the XML must be passed as an embedded resource named ILLink.Substitutions.xml,
+	// not as a separate substitution file, for it to work with NativeAot.
+	// Related: https://github.com/dotnet/runtime/issues/88647
+	[SetupCompileResource ("FeatureGuardDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)]
 	public class FeatureGuardDataFlow
 	{
@@ -262,6 +268,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool IsNotTrueGuard => TestFeatures.IsUnreferencedCodeSupported is not true;
+
+			static void TestIsNotTrueGuard ()
+			{
+				if (IsNotTrueGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool IsNotFalseGuard => TestFeatures.IsUnreferencedCodeSupported is not false;
+
+			static void TestIsNotFalseGuard ()
+			{
+				if (IsNotFalseGuard)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IsFalseGuard => TestFeatures.IsUnreferencedCodeSupported is false;
 
 			static void TestIsFalseGuard ()
@@ -346,6 +371,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestFalseNotEqualsGuard ();
 				TestIsTrueGuard ();
 				TestIsFalseGuard ();
+				TestIsNotTrueGuard ();
+				TestIsNotFalseGuard ();
 				TestIfGuard ();
 				TestElseGuard ();
 				TestTernaryIfGuard ();
@@ -354,7 +381,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		class InvalidFeatureGuards {
-			[ExpectedWarning ("IL4001")]
+			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer)]
 			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static int NonBooleanProperty => 0;
 
