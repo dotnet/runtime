@@ -12,10 +12,9 @@ namespace System.Collections.Frozen
             IEqualityComparer<string> comparer,
             int minimumLength,
             int maximumLengthDiff,
-            ulong lengthFilter,
             int hashIndex,
             int hashCount)
-            : base(entries, comparer, minimumLength, maximumLengthDiff, lengthFilter, hashIndex, hashCount)
+            : base(entries, comparer, minimumLength, maximumLengthDiff, hashIndex, hashCount)
         {
         }
 

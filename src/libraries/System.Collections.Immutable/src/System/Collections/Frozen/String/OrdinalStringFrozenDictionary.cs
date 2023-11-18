@@ -16,7 +16,6 @@ namespace System.Collections.Frozen
         private readonly TValue[] _values;
         private readonly int _minimumLength;
         private readonly int _maximumLengthDiff;
-        private readonly ulong _lengthFilter;
 
         internal OrdinalStringFrozenDictionary(
             string[] keys,
@@ -24,7 +23,6 @@ namespace System.Collections.Frozen
             IEqualityComparer<string> comparer,
             int minimumLength,
             int maximumLengthDiff,
-            ulong lengthFilter,
             int hashIndex = -1,
             int hashCount = -1) :
             base(comparer)
@@ -38,7 +36,6 @@ namespace System.Collections.Frozen
 
             _minimumLength = minimumLength;
             _maximumLengthDiff = maximumLengthDiff;
-            _lengthFilter = lengthFilter;
 
             HashIndex = hashIndex;
             HashCount = hashCount;
@@ -67,6 +64,7 @@ namespace System.Collections.Frozen
         private protected int HashCount { get; }
         private protected abstract bool Equals(string? x, string? y);
         private protected abstract int GetHashCode(string s);
+        private protected virtual bool CheckLengthQuick(string key) => true;
         private protected override string[] KeysCore => _keys;
         private protected override TValue[] ValuesCore => _values;
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_keys, _values);
@@ -77,7 +75,7 @@ namespace System.Collections.Frozen
         {
             if ((uint)(key.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                if ((_lengthFilter & (1UL << (key.Length % 64))) > 0)
+                if (CheckLengthQuick(key))
                 {
                     int hashCode = GetHashCode(key);
                     _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
