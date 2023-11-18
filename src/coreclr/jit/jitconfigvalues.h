@@ -678,6 +678,11 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)
+CONFIG_METHODSET(JitRawHexCode, W("JitRawHexCode"))
+CONFIG_STRING(JitRawHexCodeFile, W("JitRawHexCodeFile"))
+#endif // DEBUG
+
+#if defined(DEBUG)
 #if defined(TARGET_ARM64)
 // JitSaveFpLrWithCalleeSavedRegisters:
 //    0: use default frame type decision

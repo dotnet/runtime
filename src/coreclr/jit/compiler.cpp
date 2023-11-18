@@ -2836,7 +2836,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspInstrs       = false;
     opts.dspLines        = false;
     opts.varNames        = false;
-    opts.dmpHex          = false;
     opts.disAsmSpilled   = false;
     opts.disAddr         = false;
     opts.dspCode         = false;
