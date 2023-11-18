@@ -801,8 +801,15 @@ namespace System.Runtime.InteropServices
         private static partial int BindMoniker(IntPtr pmk, uint grfOpt, ref Guid iidResult, out IntPtr ppvResult);
 
         [SupportedOSPlatform("windows")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void ChangeWrapperHandleStrength(object otp, bool fIsWeak);
+        public static void ChangeWrapperHandleStrength(object otp, bool fIsWeak)
+        {
+            ArgumentNullException.ThrowIfNull(otp);
+
+            ChangeWrapperHandleStrength(ObjectHandleOnStack.Create(ref otp), fIsWeak);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_ChangeWrapperHandleStrength")]
+        private static partial void ChangeWrapperHandleStrength(ObjectHandleOnStack otp, [MarshalAs(UnmanagedType.Bool)] bool fIsWeak);
 #endif // FEATURE_COMINTEROP
 
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -127,8 +127,6 @@ public:
     static FCDECL1(int, GetStartComSlot, ReflectClassBaseObject* tUNSAFE);
     static FCDECL1(int, GetEndComSlot, ReflectClassBaseObject* tUNSAFE);
 
-    static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
-
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
 #endif // FEATURE_COMINTEROP
@@ -147,6 +145,7 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak);
 #endif
 
 #endif

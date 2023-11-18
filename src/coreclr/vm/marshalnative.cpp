@@ -1221,32 +1221,31 @@ FCIMPL1(int, MarshalNative::GetEndComSlot, ReflectClassBaseObject* tUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL2(void, MarshalNative::ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak)
+extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(oref);
+    BEGIN_QCALL;
 
-    if(oref == NULL)
-        COMPlusThrowArgumentNull(W("otp"));
+    GCX_COOP();
 
-    if (
-        !oref->GetMethodTable()->IsComImport())
+    if (!otp.Get()->GetMethodTable()->IsComImport())
     {
+        OBJECTREF oref = otp.Get();
+        GCPROTECT_BEGIN(oref);
+
         CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);
 
-        if (pWrap == NULL)
-            COMPlusThrowOM();
-        if (fIsWeak != 0)
+        if (fIsWeak)
             pWrap->MarkHandleWeak();
         else
             pWrap->ResetHandleStrength();
+
+        GCPROTECT_END();
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 //====================================================================
 // Helper function used in the COM slot to method info mapping.
