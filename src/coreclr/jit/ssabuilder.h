@@ -67,7 +67,8 @@ private:
     void InsertPhi(BasicBlock* block, unsigned lclNum);
 
     // Add a new GT_PHI_ARG node to an existing GT_PHI node
-    void AddPhiArg(
+    template <bool mayBeDuplicate>
+    void           AddPhiArg(
         BasicBlock* block, Statement* stmt, GenTreePhi* phi, unsigned lclNum, unsigned ssaNum, BasicBlock* pred);
 
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires

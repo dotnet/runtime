@@ -530,38 +530,59 @@ void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
 // AddPhiArg: Ensure an existing GT_PHI node contains an appropriate PhiArg
 //    for an ssa def arriving via pred
 //
-// Arguments:
-//    block  - The block that contains the statement
-//    stmt   - The statement that contains the GT_PHI node
-//    lclNum - The variable number
-//    ssaNum - The SSA number
-//    pred   - The predecessor block
+// Type Arguments:
+//    mayBeDuplicate - Whether this (pred, SSA) name is potentially a duplicate
+//    (due to EH flow).
 //
-void SsaBuilder::AddPhiArg(
+// Arguments:
+//    block          - The block that contains the statement
+//    stmt           - The statement that contains the GT_PHI node
+//    lclNum         - The variable number
+//    ssaNum         - The SSA number
+//    pred           - The predecessor block
+//
+template <bool mayBeDuplicate>
+void           SsaBuilder::AddPhiArg(
     BasicBlock* block, Statement* stmt, GenTreePhi* phi, unsigned lclNum, unsigned ssaNum, BasicBlock* pred)
 {
     // If there's already a phi arg for this pred, it had better have
     // matching ssaNum, unless this block is a handler entry.
     //
-    const bool isHandlerEntry = m_pCompiler->bbIsHandlerBeg(block);
-
-    for (GenTreePhi::Use& use : phi->Uses())
+    if (mayBeDuplicate)
     {
-        GenTreePhiArg* const phiArg = use.GetNode()->AsPhiArg();
+        // For handlers we may try to insert duplicate (Pred, SSANum) pairs:
+        //
+        // 1. Multiple of the try region preds can have the same SSANum for
+        // some local on exit; for each of these we'll try to insert it to
+        // model the value of the local at the beginning of the try region.
+        //
+        // 2. We can store the same value to the same local multiple times in
+        // the same block; each of these we'll try to add to the handler.
+        //
+        assert(m_pCompiler->bbIsHandlerBeg(block));
 
-        if (phiArg->gtPredBB == pred)
+        for (GenTreePhi::Use& use : phi->Uses())
         {
-            if (phiArg->GetSsaNum() == ssaNum)
+            GenTreePhiArg* const phiArg = use.GetNode()->AsPhiArg();
+
+            if ((phiArg->gtPredBB == pred) && (phiArg->GetSsaNum() == ssaNum))
             {
                 // We already have this (pred, ssaNum) phiArg
                 return;
             }
-
-            // Add another ssaNum for this pred?
-            // Should only be possible at handler entries.
-            //
-            noway_assert(isHandlerEntry);
         }
+    }
+    else
+    {
+#ifdef DEBUG
+        for (GenTreePhi::Use& use : phi->Uses())
+        {
+            GenTreePhiArg* const phiArg = use.GetNode()->AsPhiArg();
+
+            assert(((phiArg->gtPredBB != pred) || (phiArg->GetSsaNum() != ssaNum)) &&
+                   "Unexpected duplicate (Pred, SSANum)");
+        }
+#endif
     }
 
     // Didn't find a match, add a new phi arg
@@ -959,7 +980,7 @@ void SsaBuilder::AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, uns
             if (phiDef->GetLclNum() == lclNum)
             {
                 // It's the definition for the right local.  Add "ssaNum" to the RHS.
-                AddPhiArg(succ, stmt, phiDef->Data()->AsPhi(), lclNum, ssaNum, block);
+                AddPhiArg</* mayBeDuplicate */ true>(succ, stmt, phiDef->Data()->AsPhi(), lclNum, ssaNum, block);
 #ifdef DEBUG
                 phiFound = true;
 #endif
@@ -1148,7 +1169,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
 //
 void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
 {
-    block->VisitAllSuccs(m_pCompiler, [this, block](BasicBlock* succ) {
+    block->VisitRegularSuccs(m_pCompiler, [this, block](BasicBlock* succ) {
         // Walk the statements for phi nodes.
         for (Statement* const stmt : succ->Statements())
         {
@@ -1164,7 +1185,7 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
             unsigned       lclNum = store->GetLclNum();
             unsigned       ssaNum = m_renameStack.Top(lclNum);
 
-            AddPhiArg(succ, stmt, phi, lclNum, ssaNum, block);
+            AddPhiArg</* mayBeDuplicate */ false>(succ, stmt, phi, lclNum, ssaNum, block);
         }
 
         // Now handle memory.
@@ -1288,7 +1309,7 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                     GenTreePhi* phi    = tree->AsLclVar()->Data()->AsPhi();
                     unsigned    ssaNum = m_renameStack.Top(lclNum);
 
-                    AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, succ);
+                    AddPhiArg</* mayBeDuplicate */ true>(handlerStart, stmt, phi, lclNum, ssaNum, succ);
                 }
 
                 // Now handle memory.
