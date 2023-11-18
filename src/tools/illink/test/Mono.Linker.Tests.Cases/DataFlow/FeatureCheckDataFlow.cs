@@ -17,7 +17,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Note: the XML must be passed as an embedded resource named ILLink.Substitutions.xml,
 	// not as a separate substitution file, for it to work with NativeAot.
 	// Related: https://github.com/dotnet/runtime/issues/88647
-	[SetupCompileResource ("FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
+	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" },
+		resources: new object[] { new [] { "FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
 	[IgnoreSubstitutions (false)]
 	public class FeatureCheckDataFlow
 	{
