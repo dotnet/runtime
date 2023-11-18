@@ -52,8 +52,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresAssemblyFiles ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
 			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
 			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported;
@@ -76,195 +76,206 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		class GuardBodyValidation {
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ReturnTrueGuard => true;
 
 			static void TestReturnTrueGuard ()
 			{
 				if (ReturnTrueGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ReturnFalseGuard => false;
 
 			static void TestReturnFalseGuard ()
 			{
 				if (ReturnFalseGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool OtherConditionGuard => OtherCondition ();
 
 			static void TestOtherConditionGuard ()
 			{
 				if (OtherConditionGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool DirectGuard => RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool DirectGuard => TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestDirectGuard ()
 			{
 				if (DirectGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IndirectGuard => DirectGuard;
 
 			static void TestIndirectGuard ()
 			{
 				if (IndirectGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			// BUG: We're not smart enough to do this analysis yet. Leave it unsupported for now.
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool AndGuard => RuntimeFeature.IsDynamicCodeSupported && OtherCondition ();
+			// Analyzer doesn't understand this pattern because it compiles into a CFG that effectively
+			// looks like this:
+			//
+			//     bool tmp;
+			//     if (TestFeatures.IsUnreferencedCodeSupported)
+			//         tmp = OtherCondition ();
+			//     else
+			//         tmp = false;
+			//     return tmp;
+			//
+			// The analyzer doesn't do constant propagation of the boolean, so it doesn't know that
+			// the return value is always false when TestFeatures.IsUnreferencedCodeSupported is false.
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool AndGuard => TestFeatures.IsUnreferencedCodeSupported && OtherCondition ();
 
 			static void TestAndGuard ()
 			{
 				if (AndGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool OrGuard => RuntimeFeature.IsDynamicCodeSupported || OtherCondition ();
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool OrGuard => TestFeatures.IsUnreferencedCodeSupported || OtherCondition ();
 
 			static void TestOrGuard ()
 			{
 				if (OrGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool NotGuard => !RuntimeFeature.IsDynamicCodeSupported;
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool NotGuard => !TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestNotGuard ()
 			{
 				if (NotGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool NotNotGuard => !!RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool NotNotGuard => !!TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestNotNotGuard ()
 			{
 				if (NotNotGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool EqualsTrueGuard => RuntimeFeature.IsDynamicCodeSupported == true;
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool EqualsTrueGuard => TestFeatures.IsUnreferencedCodeSupported == true;
 
 			static void TestEqualsTrueGuard ()
 			{
 				if (EqualsTrueGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool EqualsFalseGuard => RuntimeFeature.IsDynamicCodeSupported == false;
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool EqualsFalseGuard => TestFeatures.IsUnreferencedCodeSupported == false;
 
 			static void TestEqualsFalseGuard ()
 			{
 				if (EqualsFalseGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool TrueEqualsGuard => true == RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool TrueEqualsGuard => true == TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestTrueEqualsGuard ()
 			{
 				if (TrueEqualsGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool FalseEqualsGuard => false == RuntimeFeature.IsDynamicCodeSupported;
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool FalseEqualsGuard => false == TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestFalseEqualsGuard ()
 			{
 				if (FalseEqualsGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool NotEqualsTrueGuard => RuntimeFeature.IsDynamicCodeSupported != true;
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool NotEqualsTrueGuard => TestFeatures.IsUnreferencedCodeSupported != true;
 
 			static void TestNotEqualsTrueGuard ()
 			{
 				if (NotEqualsTrueGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool NotEqualsFalseGuard => RuntimeFeature.IsDynamicCodeSupported != false;
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool NotEqualsFalseGuard => TestFeatures.IsUnreferencedCodeSupported != false;
 
 			static void TestNotEqualsFalseGuard ()
 			{
 				if (NotEqualsFalseGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool TrueNotEqualsGuard => true != RuntimeFeature.IsDynamicCodeSupported;
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool TrueNotEqualsGuard => true != TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestTrueNotEqualsGuard ()
 			{
 				if (TrueNotEqualsGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool FalseNotEqualsGuard => false != RuntimeFeature.IsDynamicCodeSupported;
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool FalseNotEqualsGuard => false != TestFeatures.IsUnreferencedCodeSupported;
 
 			static void TestFalseNotEqualsGuard ()
 			{
 				if (FalseNotEqualsGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool IsTrueGuard => RuntimeFeature.IsDynamicCodeSupported is true;
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool IsTrueGuard => TestFeatures.IsUnreferencedCodeSupported is true;
 
 			static void TestIsTrueGuard ()
 			{
 				if (IsTrueGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool IsFalseGuard => RuntimeFeature.IsDynamicCodeSupported is false;
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool IsFalseGuard => TestFeatures.IsUnreferencedCodeSupported is false;
 
 			static void TestIsFalseGuard ()
 			{
 				if (IsFalseGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool IfGuard {
 				get {
-					if (RuntimeFeature.IsDynamicCodeSupported)
+					if (TestFeatures.IsUnreferencedCodeSupported)
 						return true;
 					return false;
 				}
@@ -273,15 +284,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void TestIfGuard ()
 			{
 				if (IfGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool ElseGuard {
 				get {
-					if (!RuntimeFeature.IsDynamicCodeSupported)
+					if (!TestFeatures.IsUnreferencedCodeSupported)
 						return false;
 					else
 						return true;
@@ -291,27 +302,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void TestElseGuard ()
 			{
 				if (ElseGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool TernaryIfGuard => RuntimeFeature.IsDynamicCodeSupported ? true : false;
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool TernaryIfGuard => TestFeatures.IsUnreferencedCodeSupported ? true : false;
 
 			static void TestTernaryIfGuard ()
 			{
 				if (TernaryIfGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
-			static bool TernaryElseGuard => !RuntimeFeature.IsDynamicCodeSupported ? false : true;
+			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool TernaryElseGuard => !TestFeatures.IsUnreferencedCodeSupported ? false : true;
 
 			static void TestTernaryElseGuard ()
 			{
 				if (TernaryElseGuard)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
 			public static void Test ()
@@ -344,39 +355,39 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class InvalidFeatureGuards {
 			[ExpectedWarning ("IL4001")]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static int NonBooleanProperty => 0;
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
 			static void TestNonBooleanProperty ()
 			{
 				if (NonBooleanProperty == 0)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4001")]
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			bool NonStaticProperty => true;
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
 			static void TestNonStaticProperty ()
 			{
 				var instance = new InvalidFeatureGuards ();
 				if (instance.NonStaticProperty)
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
 			// No warning for this case because we don't validate that the attribute usage matches
 			// the expected AttributeUsage.Property for assemblies that define their own version
 			// of FeatureGuardAttribute.
-			[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static bool Method () => true;
 
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCodeAttribute))]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
 			static void TestMethod ()
 			{
 				if (Method ())
-					RequiresDynamicCode ();
+					RequiresUnreferencedCode ();
 			}
 
 			public static void Test ()
