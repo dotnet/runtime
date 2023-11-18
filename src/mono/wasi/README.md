@@ -16,6 +16,9 @@ or for just native rebuild
 ```.sh
 ./build.sh -bl -os wasi -subset mono.runtime+libs.native+mono.wasiruntime -c Debug
 ```
+You can enable full assertion messages for local release builds using
+`-p:MonoEnableAssertMessages=true`
+
 
 ### 3. Run it
 
