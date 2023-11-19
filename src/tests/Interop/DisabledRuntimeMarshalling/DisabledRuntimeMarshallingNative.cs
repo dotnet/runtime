@@ -25,7 +25,11 @@ public unsafe class DisabledRuntimeMarshallingNative
 
     public struct StructWithShortAndBoolWithMarshalAs
     {
+#if DISABLE_RUNTIME_MARSHALLING
         [MarshalAs(UnmanagedType.VariantBool)]
+#else
+        [MarshalAs(UnmanagedType.U1)]
+#endif
         bool b;
         short s;
         int padding;
@@ -41,6 +45,10 @@ public unsafe class DisabledRuntimeMarshallingNative
     public struct StructWithWCharAndShort
     {
         short s;
+#if DISABLE_RUNTIME_MARSHALLING
+#else
+        [MarshalAs(UnmanagedType.U2)]
+#endif
         char c;
 
         public StructWithWCharAndShort(short s, char c)
@@ -54,7 +62,11 @@ public unsafe class DisabledRuntimeMarshallingNative
     public struct StructWithWCharAndShortWithMarshalAs
     {
         short s;
+#if DISABLE_RUNTIME_MARSHALLING
         [MarshalAs(UnmanagedType.U1)]
+#else
+        [MarshalAs(UnmanagedType.U2)]
+#endif
         char c;
 
         public StructWithWCharAndShortWithMarshalAs(short s, char c)
@@ -76,6 +88,7 @@ public unsafe class DisabledRuntimeMarshallingNative
         }
     }
 
+#if DISABLE_RUNTIME_MARSHALLING
     public struct StructWithString
     {
         string s;
@@ -89,6 +102,7 @@ public unsafe class DisabledRuntimeMarshallingNative
     [StructLayout(LayoutKind.Sequential)]
     public class LayoutClass
     {}
+#endif
 
     [StructLayout(LayoutKind.Auto)]
     public struct AutoLayoutStruct
@@ -106,25 +120,110 @@ public unsafe class DisabledRuntimeMarshallingNative
         SequentialWithAutoLayoutField field;
     }
 
+#if DISABLE_RUNTIME_MARSHALLING
     public enum ByteEnum : byte
     {
         Value = 42
     }
+#endif
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+#if !DISABLE_RUNTIME_MARSHALLING
+    [return:MarshalAs(UnmanagedType.U1)]
+#endif
     public static extern bool CheckStructWithShortAndBool(StructWithShortAndBool str, short s, bool b);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+#if DISABLE_RUNTIME_MARSHALLING
     public static extern bool CheckStructWithShortAndBool(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.I4)] bool b);
+#else
+    [return:MarshalAs(UnmanagedType.U1)]
+    public static extern bool CheckStructWithShortAndBool(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.Bool)] bool b);
+#endif
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+#if !DISABLE_RUNTIME_MARSHALLING
+    [return:MarshalAs(UnmanagedType.U1)]
+#endif
     public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShort str, short s, char c);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+#if DISABLE_RUNTIME_MARSHALLING
     public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShortWithMarshalAs str, short s, char c);
+#else
+    [return:MarshalAs(UnmanagedType.U1)]
+    public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShortWithMarshalAs str, short s, [MarshalAs(UnmanagedType.U1)] char c);
+#endif
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+#if !DISABLE_RUNTIME_MARSHALLING
+    [return:MarshalAs(UnmanagedType.U1)]
+#endif
     public static extern bool CheckStructWithWCharAndShort(StructWithShortAndGeneric<char> str, short s, char c);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+#if !DISABLE_RUNTIME_MARSHALLING
+    [return:MarshalAs(UnmanagedType.U1)]
+#endif
     public static extern bool CheckStructWithWCharAndShort(StructWithShortAndGeneric<short> str, short s, short c);
 
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+#if !DISABLE_RUNTIME_MARSHALLING
+    [return:MarshalAs(UnmanagedType.U1)]
+#endif
+    public static extern bool CallCheckStructWithShortAndBoolCallback(delegate* unmanaged<StructWithShortAndBool, short, bool, bool> cb, StructWithShortAndBool str, short s, bool b);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolWithVariantBoolCallback();
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
+#if !DISABLE_RUNTIME_MARSHALLING
+    [return:MarshalAs(UnmanagedType.U1)]
+#endif
+    public static extern bool GetByteAsBool(byte b);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(AutoLayoutStruct s);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutField s);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutNestedField s);
+
+#if DISABLE_RUNTIME_MARSHALLING
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    [return:MarshalAs(UnmanagedType.U1)]
+    public static extern bool CheckStructWithShortAndBoolWithVariantBool(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
+#else
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    [return:MarshalAs(UnmanagedType.U1)]
+    public static extern bool CheckStructWithShortAndBoolWithVariantBool(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
+#endif
+
+    // Apply the UnmanagedFunctionPointer attributes with the default calling conventions so that Mono's AOT compiler
+    // recognizes that these delegate types are used in interop and should have managed->native thunks generated for them.
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    public delegate bool CheckStructWithShortAndBoolCallback(StructWithShortAndBool str, short s, bool b);
+
+#if DISABLE_RUNTIME_MARSHALLING
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    public delegate bool CheckStructWithShortAndBoolWithVariantBoolCallback(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
+#else
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    public delegate bool CheckStructWithShortAndBoolWithMarshalAsAndVariantBoolCallback(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
+#endif
+
+    [UnmanagedCallersOnly]
+    public static bool CheckStructWithShortAndBoolManaged(StructWithShortAndBool str, short s, bool b)
+    {
+        return str.s == s && str.b == b;
+    }
+
+#if DISABLE_RUNTIME_MARSHALLING
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", CharSet = CharSet.Ansi)]
     public static extern void CheckStringWithAnsiCharSet(string s);
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", CharSet = CharSet.Unicode)]
@@ -144,15 +243,6 @@ public unsafe class DisabledRuntimeMarshallingNative
     public static extern int CallWithHResultSwap();
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
-    public static extern void CallWithAutoLayoutStruct(AutoLayoutStruct s);
-
-    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
-    public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutField s);
-
-    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
-    public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutNestedField s);
-
-    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWithByRef(ref int i);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
@@ -161,24 +251,8 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWithInt128(Int128 i);
 
-    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-    public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
-
-    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-    public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolWithVariantBoolCallback();
-
-    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-    public static extern bool CallCheckStructWithShortAndBoolCallback(delegate* unmanaged<StructWithShortAndBool, short, bool, bool> cb, StructWithShortAndBool str, short s, bool b);
-
-    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
-    public static extern bool GetByteAsBool(byte b);
-
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
     public static extern byte GetEnumUnderlyingValue(ByteEnum b);
-
-    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "CheckStructWithShortAndBoolWithVariantBool")]
-    [return:MarshalAs(UnmanagedType.U1)]
-    public static extern bool CheckStructWithShortAndBoolWithVariantBool_FailureExpected(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(Nullable<int> s);
@@ -194,17 +268,5 @@ public unsafe class DisabledRuntimeMarshallingNative
     public static extern void CallWith(Vector256<int> v);
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(Vector<int> v);
-
-    // Apply the UnmanagedFunctionPointer attributes with the default calling conventions so that Mono's AOT compiler
-    // recognizes that these delegate types are used in interop and should have managed->native thunks generated for them.
-    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
-    public delegate bool CheckStructWithShortAndBoolCallback(StructWithShortAndBool str, short s, bool b);
-    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
-    public delegate bool CheckStructWithShortAndBoolWithVariantBoolCallback(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
-
-    [UnmanagedCallersOnly]
-    public static bool CheckStructWithShortAndBoolManaged(StructWithShortAndBool str, short s, bool b)
-    {
-        return str.s == s && str.b == b;
-    }
+#endif
 }

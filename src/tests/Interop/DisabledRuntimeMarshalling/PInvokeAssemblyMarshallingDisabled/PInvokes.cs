@@ -121,7 +121,7 @@ public class PInvokes
         char c = '\u2705';
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShort(s, c), s, c));
 
-        Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool_FailureExpected(new StructWithShortAndBool(s, b), s, b));
+        Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool(new StructWithShortAndBool(s, b), s, b));
     }
 
     [Fact]
