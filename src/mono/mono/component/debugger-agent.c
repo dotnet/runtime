@@ -1636,6 +1636,10 @@ mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 
 	agent_config.enabled = TRUE;
 
+	start_debugger_thread_func = start_debugger_thread;
+	suspend_vm_func = suspend_vm;
+	suspend_current_func = suspend_current;
+
 	mono_init_debugger_agent_common (prof);
 }
 
