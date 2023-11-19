@@ -1143,121 +1143,15 @@ FCIMPL2(Object*, MarshalNative::GetObjectsForNativeVariantsNative, VARIANT* aSrc
 }
 FCIMPLEND
 
-FCIMPL1(int, MarshalNative::GetStartComSlot, ReflectClassBaseObject* tUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    int retVal = 0;
-    REFLECTCLASSBASEREF t = (REFLECTCLASSBASEREF) tUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(t);
-
-    if (!(t))
-        COMPlusThrow(kArgumentNullException);
-
-    MethodTable *pTMT = t->GetMethodTable();
-    if (pTMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-    MethodTable *pMT = t->GetType().GetMethodTable();
-    if (NULL == pMT)
-        COMPlusThrow(kArgumentNullException);
-
-    // The service does not make any sense to be called for non COM visible types.
-    if (!::IsTypeVisibleFromCom(TypeHandle(pMT)))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
-
-    retVal = GetComSlotInfo(pMT, &pMT);
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
-
-
-FCIMPL1(int, MarshalNative::GetEndComSlot, ReflectClassBaseObject* tUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    int retVal = 0;
-    REFLECTCLASSBASEREF t = (REFLECTCLASSBASEREF) tUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(t);
-
-    int StartSlot = -1;
-
-    if (!(t))
-        COMPlusThrow(kArgumentNullException);
-
-    MethodTable *pTMT = t->GetMethodTable();
-    if (pTMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-    TypeHandle classTH = t->GetType();
-    MethodTable *pMT = classTH.GetMethodTable();
-    if (NULL == pMT)
-        COMPlusThrow(kArgumentNullException);
-
-    // The service does not make any sense to be called for non COM visible types.
-    if (!::IsTypeVisibleFromCom(classTH))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
-
-    // Retrieve the start slot and the default interface class.
-    StartSlot = GetComSlotInfo(pMT, &pMT);
-    if (StartSlot == -1)
-    {
-        retVal = StartSlot;
-    }
-    else
-    {
-        // Retrieve the map of members.
-        ComMTMemberInfoMap MemberMap(pMT);
-        MemberMap.Init(sizeof(void*));
-
-        // The end slot is the start slot plus the number of user defined methods.
-        retVal = int(StartSlot + MemberMap.GetMethods().Size() - 1);
-    }
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
-
-extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    if (!otp.Get()->GetMethodTable()->IsComImport())
-    {
-        OBJECTREF oref = otp.Get();
-        GCPROTECT_BEGIN(oref);
-
-        CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);
-
-        if (fIsWeak)
-            pWrap->MarkHandleWeak();
-        else
-            pWrap->ResetHandleStrength();
-
-        GCPROTECT_END();
-    }
-
-    END_QCALL;
-}
-
 //====================================================================
 // Helper function used in the COM slot to method info mapping.
 //====================================================================
 
-int MarshalNative::GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
+static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(ppDefItfMT));
     }
@@ -1296,6 +1190,94 @@ int MarshalNative::GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
         // We are dealing with an IClassX which are always IDispatch based.
         return ComMethodTable::GetNumExtraSlots(ifDispatch);
     }
+}
+
+extern "C" INT32 QCALLTYPE MarshalNative_GetStartComSlot(QCall::TypeHandle t)
+{
+    QCALL_CONTRACT;
+
+    int retVal = 0;
+
+    BEGIN_QCALL;
+
+    MethodTable *pMT = t.AsTypeHandle().GetMethodTable();
+    if (NULL == pMT)
+        COMPlusThrow(kArgumentNullException);
+
+    // The service does not make any sense to be called for non COM visible types.
+    if (!::IsTypeVisibleFromCom(TypeHandle(pMT)))
+        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
+
+    retVal = GetComSlotInfo(pMT, &pMT);
+
+    END_QCALL;
+
+    return retVal;
+}
+
+extern "C" INT32 QCALLTYPE MarshalNative_GetEndComSlot(QCall::TypeHandle t)
+{
+    QCALL_CONTRACT;
+
+    int retVal = 0;
+
+    BEGIN_QCALL;
+
+    int StartSlot = -1;
+
+    MethodTable *pMT = t.AsTypeHandle().GetMethodTable();
+    if (NULL == pMT)
+        COMPlusThrow(kArgumentNullException);
+
+    // The service does not make any sense to be called for non COM visible types.
+    if (!::IsTypeVisibleFromCom(TypeHandle(pMT)))
+        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
+
+    // Retrieve the start slot and the default interface class.
+    StartSlot = GetComSlotInfo(pMT, &pMT);
+    if (StartSlot == -1)
+    {
+        retVal = StartSlot;
+    }
+    else
+    {
+        // Retrieve the map of members.
+        ComMTMemberInfoMap MemberMap(pMT);
+        MemberMap.Init(sizeof(void*));
+
+        // The end slot is the start slot plus the number of user defined methods.
+        retVal = int(StartSlot + MemberMap.GetMethods().Size() - 1);
+    }
+
+    END_QCALL;
+
+    return retVal;
+}
+
+extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    if (!otp.Get()->GetMethodTable()->IsComImport())
+    {
+        OBJECTREF oref = otp.Get();
+        GCPROTECT_BEGIN(oref);
+
+        CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);
+
+        if (fIsWeak)
+            pWrap->MarkHandleWeak();
+        else
+            pWrap->ResetHandleStrength();
+
+        GCPROTECT_END();
+    }
+
+    END_QCALL;
 }
 
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)

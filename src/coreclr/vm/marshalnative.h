@@ -120,15 +120,6 @@ public:
     static FCDECL2(void, GetNativeVariantForObjectNative, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
     static FCDECL1(Object*, GetObjectForNativeVariantNative, LPVOID pSrcNativeVariant);
     static FCDECL2(Object*, GetObjectsForNativeVariantsNative, VARIANT* aSrcNativeVariant, int cVars);
-
-    //====================================================================
-    // These methods are used to map COM slots to method info's.
-    //====================================================================
-    static FCDECL1(int, GetStartComSlot, ReflectClassBaseObject* tUNSAFE);
-    static FCDECL1(int, GetEndComSlot, ReflectClassBaseObject* tUNSAFE);
-
-private:
-    static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -145,6 +136,8 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+extern "C" INT32 QCALLTYPE MarshalNative_GetStartComSlot(QCall::TypeHandle t);
+extern "C" INT32 QCALLTYPE MarshalNative_GetEndComSlot(QCall::TypeHandle t);
 extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak);
 #endif
 

@@ -745,15 +745,35 @@ namespace System.Runtime.InteropServices
         /// This will be 3 for IUnknown based interfaces and 7 for IDispatch based interfaces. </para>
         /// </summary>
         [SupportedOSPlatform("windows")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetStartComSlot(Type t);
+        public static int GetStartComSlot(Type t)
+        {
+            ArgumentNullException.ThrowIfNull(t);
+
+            if (t is not RuntimeType rt)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
+
+            return GetStartComSlot(new QCallTypeHandle(ref rt));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetStartComSlot")]
+        private static partial int GetStartComSlot(QCallTypeHandle rt);
 
         /// <summary>
         /// <para>Returns the last valid COM slot that GetMethodInfoForSlot will work on. </para>
         /// </summary>
         [SupportedOSPlatform("windows")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetEndComSlot(Type t);
+        public static int GetEndComSlot(Type t)
+        {
+            ArgumentNullException.ThrowIfNull(t);
+
+            if (t is not RuntimeType rt)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
+
+            return GetEndComSlot(new QCallTypeHandle(ref rt));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetEndComSlot")]
+        private static partial int GetEndComSlot(QCallTypeHandle rt);
 
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [SupportedOSPlatform("windows")]
