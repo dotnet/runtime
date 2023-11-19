@@ -646,10 +646,12 @@ namespace Microsoft.Extensions.Options.Generators
             OutCloseBrace();
         }
 
-        private void GenModelSelfValidationIfNecessary(ValidatedModel modelToValidate)
+        private void GenModelSelfValidationIfNecessary(ValidatedModel modelToValidate, string modelName)
         {
             if (modelToValidate.SelfValidates)
             {
+                OutLn($"context.MemberName = \"Validate\";");
+                OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.Validate\" : $\"{{name}}.Validate\";");
                 OutLn($"(builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
                 OutLn();
             }
@@ -682,7 +684,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
             OutLn($"var context = new {StaticValidationContextType}(options);");
 
-            int capacity = modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
+            int capacity = modelToValidate.MembersToValidate.Count == 0 ? 0 : modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
             if (capacity > 0)
             {
                 OutLn($"var validationResults = new {StaticListType}<{StaticValidationResultType}>();");
@@ -713,7 +715,7 @@ namespace Microsoft.Extensions.Options.Generators
                 }
             }
 
-            GenModelSelfValidationIfNecessary(modelToValidate);
+            GenModelSelfValidationIfNecessary(modelToValidate, modelToValidate.SimpleName);
             OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
             OutCloseBrace();
         }
