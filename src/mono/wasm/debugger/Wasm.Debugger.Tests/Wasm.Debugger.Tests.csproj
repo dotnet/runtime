@@ -73,6 +73,7 @@
       <RunScriptCommand Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(RunScriptCommand) /e:WASM_TESTS_USING_VARIANT=multithreaded</RunScriptCommand>
       <RunScriptCommand>$(RunScriptCommand) &quot;-l:trx%3BLogFileName=testResults.trx&quot;</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) &quot;-l:console%3BVerbosity=normal&quot;</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) --blame</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;$TEST_LOG_PATH&quot;</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;%TEST_LOG_PATH%&quot;</RunScriptCommand>
