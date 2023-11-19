@@ -3,9 +3,14 @@
 
 #include <xplatform.h>
 
+// MSVC versions before 19.38 generate incorrect code for this file when compiling with /O2 
+#if defined(_MSC_VER) && (_MSC_VER < 1938)
+#pragma optimize("", off)
+#endif
+
 struct StructWithShortAndBool
 {
-    BYTE b; // Size of managed bool type
+    bool b;
     short s;
     // Make sure we don't have any cases where the native code could return a value of this type one way,
     // but an invalid managed declaration would expect it differently. This ensures that test failures won't be
@@ -19,24 +24,24 @@ struct StructWithWCharAndShort
     WCHAR c;
 };
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE CheckStructWithShortAndBool(StructWithShortAndBool str, short s, BYTE b)
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE CheckStructWithShortAndBool(StructWithShortAndBool str, short s, bool b)
 {
-    return (str.s == s && str.b == b) ? TRUE : FALSE;
+    return str.s == s && str.b == b;
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE CheckStructWithWCharAndShort(StructWithWCharAndShort str, short s, WCHAR c)
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE CheckStructWithWCharAndShort(StructWithWCharAndShort str, short s, WCHAR c)
 {
-    return (str.s == s && str.c == c) ? TRUE : FALSE;
+    return str.s == s && str.c == c;
 }
 
-using CheckStructWithShortAndBoolCallback = BOOL (STDMETHODCALLTYPE*)(StructWithShortAndBool, short, BYTE);
+using CheckStructWithShortAndBoolCallback = bool (STDMETHODCALLTYPE*)(StructWithShortAndBool, short, bool);
 
 extern "C" DLL_EXPORT CheckStructWithShortAndBoolCallback STDMETHODCALLTYPE GetStructWithShortAndBoolCallback()
 {
     return &CheckStructWithShortAndBool;
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE CallCheckStructWithShortAndBoolCallback(CheckStructWithShortAndBoolCallback cb, StructWithShortAndBool str, short s, BYTE b)
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE CallCheckStructWithShortAndBoolCallback(CheckStructWithShortAndBoolCallback cb, StructWithShortAndBool str, short s, bool b)
 {
     return cb(str, s, b);
 }
@@ -49,14 +54,14 @@ extern "C" DLL_EXPORT BYTE PassThrough(BYTE b)
 extern "C" DLL_EXPORT void Invalid(...) {}
 
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE CheckStructWithShortAndBoolWithVariantBool(StructWithShortAndBool str, short s, VARIANT_BOOL b)
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE CheckStructWithShortAndBoolWithVariantBool(StructWithShortAndBool str, short s, VARIANT_BOOL b)
 {
-    // Specifically use VARIANT_TRUE here as invalid marshalling (in the "disabled runtime marshalling" case) will incorrectly marshal VARIANT_TRUE
+    // Specifically use VARIANT_TRUE here as invalid marshalling (in the "disabled runtime marshalling" case) will incorrectly marshal VARAINT_TRUE
     // but could accidentally marshal VARIANT_FALSE correctly since it is 0, which is the same representation as a zero or sign extension of the C# false value.
-    return (str.s == s && str.b == (BYTE)(b == VARIANT_TRUE)) ? TRUE : FALSE;
+    return str.s == s && str.b == (b == VARIANT_TRUE);
 }
 
-using CheckStructWithShortAndBoolWithVariantBoolCallback = BOOL (STDMETHODCALLTYPE*)(StructWithShortAndBool, short, VARIANT_BOOL);
+using CheckStructWithShortAndBoolWithVariantBoolCallback = bool (STDMETHODCALLTYPE*)(StructWithShortAndBool, short, VARIANT_BOOL);
 
 extern "C" DLL_EXPORT CheckStructWithShortAndBoolWithVariantBoolCallback STDMETHODCALLTYPE GetStructWithShortAndBoolWithVariantBoolCallback()
 {
