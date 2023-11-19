@@ -8,6 +8,6 @@ root = false
 # Use 4 spaces as indentation
 [*]
 insert_final_newline = true
-indent_style = tab
+indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true

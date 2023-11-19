@@ -283,8 +283,8 @@ public partial class GetChromeVersions : MBU.Task
             (DateTime.UtcNow - File.GetLastWriteTimeUtc(filePath)).TotalDays < s_versionCheckThresholdDays)
         {
             Log.LogMessage(MessageImportance.Low,
-                                $"{url} will not be downloaded again, as ${filePath} " +
-                                $"is less than {s_versionCheckThresholdDays} old.");
+                                $"{url} will not be downloaded again, as {filePath} " +
+                                $"is less than {s_versionCheckThresholdDays} days old.");
         }
         else
         {
