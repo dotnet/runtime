@@ -47,7 +47,7 @@ namespace System.IO.Compression.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
-        [OuterLoop]
+        [OuterLoop("It requires 5 GB of free disk space")]
         public static void CheckZIP64VersionIsSet_ForSmallFilesAfterBigFiles()
         {
             // issue #94899
