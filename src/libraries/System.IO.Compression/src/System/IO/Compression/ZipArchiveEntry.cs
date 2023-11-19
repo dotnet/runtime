@@ -964,7 +964,7 @@ namespace System.IO.Compression
             long finalPosition = _archive.ArchiveStream.Position;
             BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
 
-            bool zip64Needed = SizesTooLarge()
+            bool zip64Needed = SizesTooLarge() || (_offsetOfLocalHeader > uint.MaxValue)
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
