@@ -1151,8 +1151,6 @@ insOpts emitter::GetEmbRoundingMode(uint8_t mode) const
 {
     switch (mode)
     {
-        case 0:
-            return INS_OPTS_EVEX_er_rn;
         case 1:
             return INS_OPTS_EVEX_er_rd;
         case 2:
@@ -1345,31 +1343,31 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (id->idIsEvexbContext())
     {
-        code |= EVEX_B_BIT;
-    }
 
-    if (id->idIsEmbRounding()) // Evex.b context: embedded rounding, need to set Evex.L'L accordingly
-    {
-        unsigned roundingMode = id->idGetEvexRoundingControl();
-        if (roundingMode == 0)
+        code |= EVEX_B_BIT;
+
+        if(!id->idHasMem())
         {
-            code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
-            code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
-        }
-        else if (roundingMode == 1)
-        {
-            code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
-            code |= LBIT_IN_BYTE_EVEX_PREFIX;
-        }
-        else if (roundingMode == 2)
-        {
-            code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
-            code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
-        }
-        else
-        {
-            code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
-            code |= LBIT_IN_BYTE_EVEX_PREFIX;
+            // embedded rounding case. 
+            unsigned roundingMode = id->idGetEvexbContext();
+            if(roundingMode == 1)
+            {
+                // {rd-sae}
+                code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
+                code |= LBIT_IN_BYTE_EVEX_PREFIX;
+            }
+            else if(roundingMode == 2)
+            {
+                // {ru-sae}
+                code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+                code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);               
+            }
+            else
+            {
+                // {rz-sae}
+                code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+                code |= LBIT_IN_BYTE_EVEX_PREFIX;
+            }
         }
     }
 
@@ -6787,7 +6785,7 @@ void emitter::emitIns_R_R_A(
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
-        id->idSetEmbBroadcast();
+        id->idSetEvexbContext(instOptions);
     }
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
@@ -6916,7 +6914,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
-        id->idSetEmbBroadcast();
+        id->idSetEvexbContext(instOptions);
     }
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
@@ -6949,8 +6947,7 @@ void emitter::emitIns_R_R_R(
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
         assert(instOptions != INS_OPTS_EVEX_b);
         assert(UseEvexEncoding());
-        id->idSetEmbRounding();
-        id->idSetEvexRoundingControl(instOptions);
+        id->idSetEvexbContext(instOptions);
     }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
@@ -6977,7 +6974,7 @@ void emitter::emitIns_R_R_S(
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
-        id->idSetEmbBroadcast();
+        id->idSetEvexbContext(instOptions);
     }
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -10717,6 +10714,37 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id)
     printf(" {1to%d}", vectorSize / baseSize);
 }
 
+// emitDispEmbRounding: Display the tag where embedded rounding is activated
+//
+// Arguments:
+//   id - The instruction descriptor
+//
+void emitter::emitDispEmbRounding(instrDesc* id)
+{
+    if (!id->idIsEvexbContext())
+    {
+        return;
+    }
+    assert(!id->idHasMem());
+    unsigned roundingMode = id->idGetEvexbContext();
+    if(roundingMode == 1)
+    {
+        printf(" {rd-sae}");
+    }
+    else if(roundingMode == 2)
+    {
+        printf(" {ru-sae}");
+    }
+    else if(roundingMode == 3)
+    {
+        printf(" {rz-sae}");
+    }
+    else
+    {
+        unreached();
+    }
+}
+
 //--------------------------------------------------------------------
 // emitDispIns: Dump the given instruction to jitstdout.
 //
@@ -11585,6 +11613,7 @@ void emitter::emitDispIns(
             printf("%s, ", emitRegName(id->idReg1(), attr));
             printf("%s, ", emitRegName(reg2, attr));
             printf("%s", emitRegName(reg3, attr));
+            emitDispEmbRounding(id);
             break;
         }
 

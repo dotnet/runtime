@@ -774,9 +774,7 @@ protected:
         unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
-        unsigned _idIsEmbBroadcast : 1; // does EVEX.b need to be set for embedded broadcast.
-        unsigned _idIsEmbRounding : 1;  // does EVEX.b need to be set for embedded rounding.
-        unsigned _idEmbRoundingMode : 2 // indicate the rounding mode when embedded rounding is enabled.
+        unsigned _idEvexbContext : 2 // Does Evex.b need to be set for embedded broadcast/embedded rounding.
 #endif                                  //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -810,8 +808,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         50 bits
-        // amd64:       50 bits
+        // x86:         48 bits
+        // amd64:       48 bits
         // arm:         48 bits
         // arm64:       53 bits
         // loongarch64: 46 bits
@@ -830,7 +828,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (18)
+#define ID_EXTRA_BITFIELD_BITS (16)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -865,8 +863,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         56/52 bits
-        // amd64:       57/53 bits
+        // x86:         54/50 bits
+        // amd64:       55/51 bits
         // arm:         54/50 bits
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
@@ -1540,50 +1538,29 @@ protected:
         }
 
 #ifdef TARGET_XARCH
-        bool idIsEmbBroadcast() const
-        {
-            return _idIsEmbBroadcast != 0;
-        }
-
-        void idSetEmbBroadcast()
-        {
-            assert(_idIsEmbBroadcast == 0);
-            _idIsEmbBroadcast = 1;
-        }
-
-        bool idIsEmbRounding() const
-        {
-            return _idIsEmbRounding != 0;
-        }
-
-        void idSetEmbRounding()
-        {
-            assert(_idIsEmbBroadcast == 0);
-            _idIsEmbRounding = 1;
-        }
-
         bool idIsEvexbContext() const
         {
-            return idIsEmbBroadcast() || idIsEmbRounding();
+            return _idEvexbContext != 0;
         }
 
-        void idSetEvexRoundingControl(insOpts instOptions)
+        void idSetEvexbContext(insOpts instOptions)
         {
-            if (instOptions == INS_OPTS_EVEX_er_rn)
+            if (instOptions == INS_OPTS_EVEX_b)
             {
-                _idEmbRoundingMode = 0;
+                assert(idHasMem());
+                _idEvexbContext = 1;
             }
-            else if (instOptions == INS_OPTS_EVEX_er_rd)
+            else if(instOptions == INS_OPTS_EVEX_er_rd)
             {
-                _idEmbRoundingMode = 1;
+                _idEvexbContext = 1;
             }
-            else if (instOptions == INS_OPTS_EVEX_er_ru)
+            else if(instOptions == INS_OPTS_EVEX_er_ru)
             {
-                _idEmbRoundingMode = 2;
+                _idEvexbContext = 2;
             }
-            else if (instOptions == INS_OPTS_EVEX_er_rz)
+            else if(instOptions == INS_OPTS_EVEX_er_rz)
             {
-                _idEmbRoundingMode = 3;
+                _idEvexbContext = 3;
             }
             else
             {
@@ -1591,9 +1568,9 @@ protected:
             }
         }
 
-        unsigned idGetEvexRoundingControl() const
+        unsigned idGetEvexbContext() const
         {
-            return _idEmbRoundingMode;
+            return _idEvexbContext;
         }
 #endif
 
@@ -2173,6 +2150,7 @@ protected:
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
     void emitDispEmbBroadcastCount(instrDesc* id);
+    void emitDispEmbRounding(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,

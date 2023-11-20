@@ -1711,9 +1711,15 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             BlockRange().Remove(node);
             BlockRange().Remove(op3);
+            node = binaryNode;
+            if(mode == 0x08)
+            {
+                // if the rounding mode is ToEven, the default setting we can seek for contain opportunities.
+                break;
+            }
             // As embedded rounding can only work under register-to-register form, we can skip contain check at this
             // point.
-            return binaryNode->gtNext;
+            return node->gtNext;
         }
 
         case NI_FMA_MultiplyAddScalar:

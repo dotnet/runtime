@@ -44,5 +44,6 @@
     <Compile Include="StoreAlignedNonTemporal.cs" />
     <Compile Include="UnpackHigh.cs" />
     <Compile Include="UnpackLow.cs" />
+    <Compile Include="EmbeddedRounding.Double.cs" />
   </ItemGroup>
 </Project>
