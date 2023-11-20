@@ -704,52 +704,55 @@ FCIMPLEND
 //====================================================================
 // return an Object for IUnknown
 //====================================================================
-FCIMPL1(Object*, MarshalNative::GetObjectForIUnknownNative, IUnknown* pUnk)
+extern "C" void QCALLTYPE MarshalNative_GetObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
-    OBJECTREF oref = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
+    BEGIN_QCALL;
 
     // Ensure COM is started up.
     EnsureComStarted();
 
+    GCX_COOP();
+
+    OBJECTREF oref = NULL;
+    GCPROTECT_BEGIN(oref);
     GetObjectRefFromComIP(&oref, pUnk);
+    retObject.Set(oref);
+    GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(oref);
+    END_QCALL;
 }
-FCIMPLEND
 
-
-FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownNative, IUnknown* pUnk)
+extern "C" void QCALLTYPE MarshalNative_GetUniqueObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
-    OBJECTREF oref = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    HRESULT hr = S_OK;
+    BEGIN_QCALL;
 
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GetObjectRefFromComIP(&oref, pUnk, NULL, ObjFromComIP::UNIQUE_OBJECT);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(oref);
+    OBJECTREF oref = NULL;
+    GCPROTECT_BEGIN(oref);
+    GetObjectRefFromComIP(&oref, pUnk, NULL, ObjFromComIP::UNIQUE_OBJECT);
+    retObject.Set(oref);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 //====================================================================
 // return an Object for IUnknown, using the Type T,

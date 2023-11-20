@@ -406,18 +406,22 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(pUnk);
 
-            return GetObjectForIUnknownNative(pUnk);
+            object? retObject = null;
+            GetObjectForIUnknown(pUnk, ObjectHandleOnStack.Create(ref retObject));
+            return retObject!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object GetObjectForIUnknownNative(IntPtr /* IUnknown* */ pUnk);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetObjectForIUnknown")]
+        private static partial void GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, ObjectHandleOnStack retObject);
 
         [SupportedOSPlatform("windows")]
         public static object GetUniqueObjectForIUnknown(IntPtr unknown)
         {
             ArgumentNullException.ThrowIfNull(unknown);
 
-            return GetUniqueObjectForIUnknownNative(unknown);
+            object? retObject = null;
+            GetUniqueObjectForIUnknown(unknown, ObjectHandleOnStack.Create(ref retObject));
+            return retObject!;
         }
 
         /// <summary>
@@ -426,8 +430,8 @@ namespace System.Runtime.InteropServices
         /// existing object). This is useful in cases where you want to be able to call
         /// ReleaseComObject on a RCW and not worry about other active uses ofsaid RCW.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object GetUniqueObjectForIUnknownNative(IntPtr unknown);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetUniqueObjectForIUnknown")]
+        private static partial void GetUniqueObjectForIUnknown(IntPtr unknown, ObjectHandleOnStack retObject);
 
         /// <summary>
         /// Return an Object for IUnknown, using the Type T.

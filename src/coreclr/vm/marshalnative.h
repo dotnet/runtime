@@ -65,16 +65,6 @@ public:
     static FCDECL3(IUnknown*, GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL bEnableCustomizedQueryInterface);
 
     //====================================================================
-    // return an Object for IUnknown
-    //====================================================================
-    static FCDECL1(Object*, GetObjectForIUnknownNative, IUnknown* pUnk);
-
-    //====================================================================
-    // return a unique cacheless Object for IUnknown
-    //====================================================================
-    static FCDECL1(Object*, GetUniqueObjectForIUnknownNative, IUnknown* pUnk);
-
-    //====================================================================
     // Checks whether there are RCWs from any context available for cleanup.
     //====================================================================
     static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
@@ -94,6 +84,16 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// return an Object for IUnknown
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_GetObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject);
+
+//====================================================================
+// return a unique cacheless Object for IUnknown
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_GetUniqueObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject);
 
 //====================================================================
 // return an Object for IUnknown, using the Type T,
