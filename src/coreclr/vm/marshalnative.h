@@ -102,12 +102,6 @@ public:
     //====================================================================
     static FCDECL1(INT32, ReleaseComObject, Object* objUNSAFE);
     static FCDECL1(void, FinalReleaseComObject, Object* objUNSAFE);
-
-    //====================================================================
-    // This method takes the given COM object and wraps it in an object
-    // of the specified type. The type must be derived from __ComObject.
-    //====================================================================
-    static FCDECL2(Object*, InternalCreateWrapperOfType, Object* objUNSAFE, ReflectClassBaseObject* refClassUNSAFE);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -124,6 +118,12 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// This method takes the given COM object and wraps it in an object
+// of the specified type. The type must be derived from __ComObject.
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_InternalCreateWrapperOfType(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject);
 
 //====================================================================
 // check if the type is visible from COM.

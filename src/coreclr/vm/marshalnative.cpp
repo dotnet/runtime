@@ -940,59 +940,36 @@ FCIMPLEND
 // This method takes the given COM object and wraps it in an object
 // of the specified type. The type must be derived from __ComObject.
 //====================================================================
-FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, ReflectClassBaseObject* refClassUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_InternalCreateWrapperOfType(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(objUNSAFE != NULL);
-        PRECONDITION(refClassUNSAFE != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    struct _gc
-    {
-        OBJECTREF refRetVal;
-        OBJECTREF obj;
-        REFLECTCLASSBASEREF refClass;
-    } gc;
+    BEGIN_QCALL;
 
-    gc.refRetVal = NULL;
-    gc.obj = (OBJECTREF) objUNSAFE;
-    gc.refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    // Validate the arguments.
-    if (gc.refClass->GetMethodTable() != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
+    GCX_COOP();
 
     // Retrieve the class of the COM object.
-    MethodTable *pObjMT = gc.obj->GetMethodTable();
+    MethodTable *pObjMT = o.Get()->GetMethodTable();
 
     // Retrieve the method table for new wrapper type.
-    MethodTable *pNewWrapMT = gc.refClass->GetType().GetMethodTable();
+    MethodTable *pNewWrapMT = t.AsTypeHandle().GetMethodTable();
 
     // Validate that the destination type is a COM object.
     _ASSERTE(pNewWrapMT->IsComObjectType());
 
-    BOOL fSet = FALSE;
-
     // Start by checking if we can cast the obj to the wrapper type.
     if (TypeHandle(pObjMT).CanCastTo(TypeHandle(pNewWrapMT)))
     {
-        gc.refRetVal = gc.obj;
-        fSet = TRUE;
+        retObject.Set(o.Get());
     }
-
-    if (!fSet)
+    else
     {
         // Validate that the source object is a valid COM object.
         _ASSERTE(pObjMT->IsComObjectType());
 
         RCWHolder pRCW(GetThread());
 
-        RCWPROTECT_BEGIN(pRCW, gc.obj);
+        RCWPROTECT_BEGIN(pRCW, o.Get());
 
         // Make sure the COM object supports all the COM imported interfaces that the new
         // wrapper class implements.
@@ -1002,7 +979,7 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
             MethodTable *pItfMT = it.GetInterfaceApprox(); // ComImport interfaces cannot be generic
             if (pItfMT->IsComImport())
             {
-                if (!Object::SupportsInterface(gc.obj, pItfMT))
+                if (!Object::SupportsInterface(o.Get(), pItfMT))
                     COMPlusThrow(kInvalidCastException, IDS_EE_CANNOT_COERCE_COMOBJECT);
             }
         }
@@ -1012,16 +989,14 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
             RCWHolder pNewRCW(GetThread());
             pRCW->CreateDuplicateWrapper(pNewWrapMT, &pNewRCW);
 
-            gc.refRetVal = pNewRCW->GetExposedObject();
+            retObject.Set(pNewRCW->GetExposedObject());
         }
 
         RCWPROTECT_END(pRCW);
     }
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(gc.refRetVal);
+    END_QCALL;
 }
-FCIMPLEND
 
 
 //====================================================================

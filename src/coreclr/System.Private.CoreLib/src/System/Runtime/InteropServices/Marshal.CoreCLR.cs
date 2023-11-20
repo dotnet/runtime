@@ -626,7 +626,7 @@ namespace System.Runtime.InteropServices
                 // Attempt to cache the wrapper on the object.
                 if (!SetComObjectData(o, t, Wrapper))
                 {
-                    // Another thead already cached the wrapper so use that one instead.
+                    // Another thread already cached the wrapper so use that one instead.
                     Wrapper = GetComObjectData(o, t)!;
                 }
             }
@@ -645,8 +645,18 @@ namespace System.Runtime.InteropServices
             return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper))!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object InternalCreateWrapperOfType(object o, Type t);
+        private static object InternalCreateWrapperOfType(object o, Type t)
+        {
+            if (t is not RuntimeType rt)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
+
+            object? retObject = null;
+            InternalCreateWrapperOfType(ObjectHandleOnStack.Create(ref o), new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref retObject));
+            return retObject!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_InternalCreateWrapperOfType")]
+        private static partial void InternalCreateWrapperOfType(ObjectHandleOnStack o, QCallTypeHandle rt, ObjectHandleOnStack retObject);
 
         /// <summary>
         /// check if the type is visible from COM.
