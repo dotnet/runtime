@@ -509,7 +509,7 @@ BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
 //   1. On thrown exceptions, control may flow to handlers
 //   2. As part of two pass EH, control may flow from filters to enclosed handlers
 //
-template <bool skipJumpDest, typename TFunc>
+template <bool         skipJumpDest, typename TFunc>
 static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc func)
 {
     if (!block->HasPotentialEHSuccs(comp))
