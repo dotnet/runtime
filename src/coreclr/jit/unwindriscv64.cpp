@@ -1416,7 +1416,15 @@ void UnwindEpilogInfo::FinalizeOffset()
 #ifdef DEBUG
 void UnwindEpilogInfo::Dump(int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    printf("%*sUnwindEpilogInfo @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  epiNext: 0x%08p\n", indent, "", dspPtr(epiNext));
+    printf("%*s  epiEmitLocation: 0x%08p\n", indent, "", dspPtr(epiEmitLocation));
+    printf("%*s  epiStartOffset: 0x%x\n", indent, "", epiStartOffset);
+    printf("%*s  epiMatches: %s\n", indent, "", dspBool(epiMatches));
+    printf("%*s  epiStartIndex: %d\n", indent, "", epiStartIndex);
+
+    epiCodes.Dump(indent + 2);
 }
 #endif // DEBUG
 
