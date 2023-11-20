@@ -14,7 +14,7 @@
     <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
-    <_UseLibraryModeBundling Condition="'$(NativeLib)' != ''">true<_UseLibraryModeBundling>
+    <_UseLibraryModeBundling Condition="'$(NativeLib)' != ''">true</_UseLibraryModeBundling>
     <NativeLib Condition="'$(_UseLibraryModeBundling)' != 'true'">static</NativeLib>
     <CustomNativeMain Condition="'$(_UseLibraryModeBundling)' != 'true'">true</CustomNativeMain>
     <NativeCompilationDuringPublish Condition="'$(_UseLibraryModeBundling)' != 'true'">false</NativeCompilationDuringPublish>

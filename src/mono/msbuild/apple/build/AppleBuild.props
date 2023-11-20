@@ -19,7 +19,7 @@
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/87740 -->
     <!-- <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip> -->
 
-    <_IsLibraryMode Condition="('$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != '') or ('$(UseNativeAOTRuntime)' == 'true' and '$(NativeLib)' != 'Static' and '$(OutputType)' == 'Library' and '$(IlcMultiModule)' != 'true')">true</_IsLibraryMode>
+    <_IsLibraryMode Condition="('$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != '') or ('$(UseNativeAOTRuntime)' == 'true' and '$(NativeLib)' != 'Static' and '$(OutputType)' != 'Exe' and '$(IlcMultiModule)' != 'true')">true</_IsLibraryMode>
 
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile</_AotCompileTargetName>
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_AppleAotCompile</_AotCompileTargetName>
