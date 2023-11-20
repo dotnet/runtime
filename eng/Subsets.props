@@ -79,6 +79,9 @@
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.sfx+libs.oob+libs.pretest</DefaultLibrariesSubsets>
 
+    <!-- We need the prebuilt framework with R2R for TestReadyToRun. -->
+    <DefaultLibrariesSubsets Condition="'$(TestReadyToRun)' == 'true'">$(DefaultLibrariesSubsets)+packs</DefaultLibrariesSubsets>
+
     <DefaultToolsSubsets>tools.illink</DefaultToolsSubsets>
 
     <DefaultHostSubsets>host.native+host.tools+host.pkg</DefaultHostSubsets>

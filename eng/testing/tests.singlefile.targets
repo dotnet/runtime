@@ -107,6 +107,29 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="ExcludeExistingR2RBinaries"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <ArtifactsNetCoreAppBundlePath>$(ArtifactsObjDir)Microsoft.NETCore.App.Bundle/</ArtifactsNetCoreAppBundlePath>
+      <ArtifactsNetCoreAppBundlePath>$(ArtifactsNetCoreAppBundlePath)$(Configuration)/$(NetCoreAppCurrent)/$(OutputRID)/output/</ArtifactsNetCoreAppBundlePath>
+      <ArtifactsNetCoreAppBundlePath>$(ArtifactsNetCoreAppBundlePath)shared/$(MicrosoftNetCoreAppFrameworkName)/$(PackageVersion)/</ArtifactsNetCoreAppBundlePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_BundleAssembliesToCopy Include="$(ArtifactsNetCoreAppBundlePath)*.dll" />
+      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy)" MatchOnMetadata="Filename" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddExistingR2RBinariesReferencesForCrossgen2"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          AfterTargets="_PrepareForReadyToRunCompilation">
+    <ItemGroup>
+      <_ReadyToRunAssembliesToReference Include="@(_BundleAssembliesToCopy)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="RemoveDbgBinsFromTestR2ROutput"
           Condition="'$(TestReadyToRun)' == 'true'"
           BeforeTargets="_CopyFilesMarkedCopyLocal">
@@ -123,6 +146,20 @@
       <_ResolvedFileToPublishPreserveNewest
           Remove="@(_ResolvedFileToPublishPreserveNewest->WithMetadataValue('Extension', '.dbg'))" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="CopyExistingR2RBinaries"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          AfterTargets="_CopyResolvedFilesToPublishAlways">
+
+    <Copy SourceFiles="@(_BundleAssembliesToCopy)"
+          DestinationFolder="$(PublishDir)"
+          OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(CreateHardLinksForPublishFilesIfPossible)"
+          UseSymboliclinksIfPossible="$(CreateSymbolicLinksForPublishFilesIfPossible)" />
+
   </Target>
 
   <Target Name="__UpdateExcludedAssembliesFromSingleFile"
