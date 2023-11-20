@@ -235,6 +235,8 @@ static const Entry s_QCall[] =
 #endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(MarshalNative_GetTypeFromCLSID)
+    DllImportEntry(MarshalNative_GetIUnknownForObject)
+    DllImportEntry(MarshalNative_GetIDispatchForObject)
     DllImportEntry(MarshalNative_GetComInterfaceForObject)
     DllImportEntry(MarshalNative_GetObjectForIUnknown)
     DllImportEntry(MarshalNative_GetUniqueObjectForIUnknown)

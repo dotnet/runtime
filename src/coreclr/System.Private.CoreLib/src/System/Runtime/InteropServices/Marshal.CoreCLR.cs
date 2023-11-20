@@ -342,11 +342,11 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(o);
 
-            return GetIUnknownForObjectNative(o);
+            return GetIUnknownForObject(ObjectHandleOnStack.Create(ref o));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IUnknown* */ GetIUnknownForObjectNative(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownForObject")]
+        private static partial IntPtr /* IUnknown* */ GetIUnknownForObject(ObjectHandleOnStack o);
 
         /// <summary>
         /// Return the IDispatch* for an Object.
@@ -356,11 +356,11 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(o);
 
-            return GetIDispatchForObjectNative(o);
+            return GetIDispatchForObject(ObjectHandleOnStack.Create(ref o));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IDispatch* */ GetIDispatchForObjectNative(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIDispatchForObject")]
+        private static partial IntPtr /* IDispatch* */ GetIDispatchForObject(ObjectHandleOnStack o);
 
         /// <summary>
         /// Return the IUnknown* representing the interface for the Object.

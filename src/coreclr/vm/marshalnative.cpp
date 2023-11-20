@@ -614,46 +614,52 @@ FCIMPLEND
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
-FCIMPL1(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE)
+extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectHandleOnStack o)
 {
     FCALL_CONTRACT;
 
     IUnknown* retVal = NULL;
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
-    _ASSERTE(oref != NULL);
+    BEGIN_QCALL;
+
     // Ensure COM is started up.
     EnsureComStarted();
 
-    retVal = GetComIPFromObjectRef(&oref, ComIpType_OuterUnknown, NULL);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+    retVal = GetComIPFromObjectRef(&oref, ComIpType_OuterUnknown, NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
     return retVal;
 }
-FCIMPLEND
 
 //====================================================================
 // return the IDispatch* for an Object.
 //====================================================================
-FCIMPL1(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSAFE)
+extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::ObjectHandleOnStack o)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     IDispatch* retVal = NULL;
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
-    _ASSERTE(oref != NULL);
+    BEGIN_QCALL;
+
     // Ensure COM is started up.
     EnsureComStarted();
 
-    retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+    retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
     return retVal;
 }
-FCIMPLEND
 
 //====================================================================
 // return the IUnknown* representing the interface for the Object

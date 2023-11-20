@@ -49,16 +49,6 @@ public:
 
 #ifdef FEATURE_COMINTEROP
     //====================================================================
-    // return the IUnknown* for an Object
-    //====================================================================
-    static FCDECL1(IUnknown*, GetIUnknownForObjectNative, Object* orefUNSAFE);
-
-    //====================================================================
-    // return the IDispatch* for an Object
-    //====================================================================
-    static FCDECL1(IDispatch*, GetIDispatchForObjectNative, Object* orefUNSAFE);
-
-    //====================================================================
     // Checks whether there are RCWs from any context available for cleanup.
     //====================================================================
     static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
@@ -78,6 +68,16 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// return the IUnknown* for an Object
+//====================================================================
+extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectHandleOnStack o);
+
+//====================================================================
+// return the IDispatch* for an Object
+//====================================================================
+extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::ObjectHandleOnStack o);
 
 //====================================================================
 // return the IUnknown* representing the interface for the Object
