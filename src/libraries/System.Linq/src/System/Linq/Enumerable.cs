@@ -29,7 +29,7 @@ namespace System.Linq
             // is a reference type and generic implementations are shared.  So for now we're protecting ourselves
             // and forcing a conscious choice to remove this in the future, at which point it should be paired with
             // sufficient performance testing.
-            where TSource : struct
+            //where TSource : struct
         {
             if (source is null)
             {

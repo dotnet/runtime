@@ -32,9 +32,17 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (source is List<TSource> list)
+            if (TryGetSpan(source, out var span))
             {
-                return list.Exists(element => predicate(element));
+                foreach (TSource element in span)
+                {
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
             foreach (TSource element in source)
