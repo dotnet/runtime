@@ -486,7 +486,6 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("AreComObjectsAvailableForCleanup", MarshalNative::AreComObjectsAvailableForCleanup)
     FCFuncElement("GetIUnknownForObjectNative", MarshalNative::GetIUnknownForObjectNative)
     FCFuncElement("GetIDispatchForObjectNative", MarshalNative::GetIDispatchForObjectNative)
-    FCFuncElement("GetComInterfaceForObjectNative", MarshalNative::GetComInterfaceForObjectNative)
 #endif // FEATURE_COMINTEROP
 FCFuncEnd()
 

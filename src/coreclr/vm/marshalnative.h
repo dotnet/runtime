@@ -59,12 +59,6 @@ public:
     static FCDECL1(IDispatch*, GetIDispatchForObjectNative, Object* orefUNSAFE);
 
     //====================================================================
-    // return the IUnknown* representing the interface for the Object
-    // Object o should support Type T
-    //====================================================================
-    static FCDECL3(IUnknown*, GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL bEnableCustomizedQueryInterface);
-
-    //====================================================================
     // Checks whether there are RCWs from any context available for cleanup.
     //====================================================================
     static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
@@ -84,6 +78,12 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// return the IUnknown* representing the interface for the Object
+// Object o should support Type T
+//====================================================================
+extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, BOOL bEnableCustomizedQueryInterface);
 
 //====================================================================
 // return an Object for IUnknown

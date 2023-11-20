@@ -369,15 +369,11 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T)
-        {
-            ArgumentNullException.ThrowIfNull(o);
-            ArgumentNullException.ThrowIfNull(T);
-
-            return GetComInterfaceForObjectNative(o, T, true);
-        }
+            => GetComInterfaceForObject(o, T, CustomQueryInterfaceMode.Allow);
 
         [SupportedOSPlatform("windows")]
-        public static IntPtr GetComInterfaceForObject<T, TInterface>([DisallowNull] T o) => GetComInterfaceForObject(o!, typeof(TInterface));
+        public static IntPtr GetComInterfaceForObject<T, TInterface>([DisallowNull] T o)
+            => GetComInterfaceForObject(o!, typeof(TInterface), CustomQueryInterfaceMode.Allow);
 
         /// <summary>
         /// Return the IUnknown* representing the interface for the Object.
@@ -391,12 +387,14 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(o);
             ArgumentNullException.ThrowIfNull(T);
 
-            bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
-            return GetComInterfaceForObjectNative(o, T, bEnableCustomizedQueryInterface);
+            if (T is not RuntimeType rt)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(T));
+
+            return GetComInterfaceForObject(ObjectHandleOnStack.Create(ref o), new QCallTypeHandle(ref rt), fEnableCustomizedQueryInterface: mode == CustomQueryInterfaceMode.Allow);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IUnknown* */ GetComInterfaceForObjectNative(object o, Type t, bool fEnableCustomizedQueryInterface);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetComInterfaceForObject")]
+        private static partial IntPtr /* IUnknown* */ GetComInterfaceForObject(ObjectHandleOnStack o, QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] bool fEnableCustomizedQueryInterface);
 
         /// <summary>
         /// Return the managed object representing the IUnknown*

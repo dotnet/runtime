@@ -659,24 +659,23 @@ FCIMPLEND
 // return the IUnknown* representing the interface for the Object
 // Object o should support Type T
 //====================================================================
-FCIMPL3(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL bEnableCustomizedQueryInterface)
+extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, BOOL bEnableCustomizedQueryInterface)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     IUnknown* retVal  = NULL;
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(oref, refClass);
 
-    _ASSERTE(oref != NULL);
-    _ASSERTE(refClass != NULL);
+    BEGIN_QCALL;
+
     // Ensure COM is started up.
     EnsureComStarted();
 
-    if (refClass->GetMethodTable() != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
+    GCX_COOP();
 
-    TypeHandle th = refClass->GetType();
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+
+    TypeHandle th = t.AsTypeHandle();
 
     if (th.HasInstantiation())
         COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
@@ -696,10 +695,12 @@ FCIMPL3(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
 
     retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
+
     return retVal;
 }
-FCIMPLEND
 
 //====================================================================
 // return an Object for IUnknown
