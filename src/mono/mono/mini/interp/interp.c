@@ -1466,9 +1466,13 @@ retry:
 
 #ifdef HOST_WASM
 			{
+				MonoType *etype;
+
 				/* Scalar vtypes are passed by value */
-				if (mini_wasm_is_scalar_vtype (sig->params [i]))
+				// FIXME: r4/r8
+				if (mini_wasm_is_scalar_vtype (sig->params [i], &etype) && etype->type != MONO_TYPE_R4 && etype->type != MONO_TYPE_R8) {
 					margs->iargs [int_i] = *(gpointer*)margs->iargs [int_i];
+				}
 			}
 #endif
 			int_i++;
