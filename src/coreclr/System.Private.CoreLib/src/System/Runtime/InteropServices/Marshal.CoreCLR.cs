@@ -446,11 +446,14 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            return CreateAggregatedObjectNative(pOuter, o);
+            ArgumentNullException.ThrowIfNull(pOuter);
+            ArgumentNullException.ThrowIfNull(o);
+
+            return CreateAggregatedObject(pOuter, ObjectHandleOnStack.Create(ref o));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr CreateAggregatedObjectNative(IntPtr pOuter, object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_CreateAggregatedObject")]
+        private static partial IntPtr CreateAggregatedObject(IntPtr pOuter, ObjectHandleOnStack o);
 
         [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull

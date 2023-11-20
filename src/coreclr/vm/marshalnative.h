@@ -90,11 +90,6 @@ public:
     // Checks whether there are RCWs from any context available for cleanup.
     //====================================================================
     static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
-
-    //====================================================================
-    // Create an object and aggregate it, then return the inner unknown.
-    //====================================================================
-    static FCDECL2(IUnknown*, CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -111,6 +106,11 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// Create an object and aggregate it, then return the inner unknown.
+//====================================================================
+extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pOuter, QCall::ObjectHandleOnStack o);
 
 //====================================================================
 // free the COM component and zombie this object

@@ -802,30 +802,28 @@ FCIMPL2(Object*, MarshalNative::GetTypedObjectForIUnknown, IUnknown* pUnk, Refle
 }
 FCIMPLEND
 
-FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE)
+extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pOuter, QCall::ObjectHandleOnStack o)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pOuter, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pOuter));
     }
     CONTRACTL_END;
 
     IUnknown* pInner = NULL;
 
-    OBJECTREF oref =  (OBJECTREF)refObjUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
+    BEGIN_QCALL;
 
     HRESULT hr = S_OK;
 
-    if (!pOuter)
-        COMPlusThrowArgumentNull(W("pOuter"));
-
-    if (oref == NULL)
-        COMPlusThrowArgumentNull(W("o"));
-
     // Ensure COM is started up.
     EnsureComStarted();
+
+    GCX_COOP();
+
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
 
     if (NULL != ComCallWrapper::GetWrapperForObject(oref))
         COMPlusThrowArgumentException(W("o"), W("Argument_AlreadyACCW"));
@@ -837,10 +835,12 @@ FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObjectNative, IUnknown* pOuter
     pWrap->InitializeOuter(pOuter);
     IfFailThrow(pWrap->GetInnerUnknown((LPVOID*)&pInner));
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
+
     return pInner;
 }
-FCIMPLEND
 
 //====================================================================
 // Free unused RCWs in the current COM+ context.
