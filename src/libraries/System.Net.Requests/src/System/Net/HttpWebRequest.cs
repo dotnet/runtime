@@ -1679,10 +1679,8 @@ namespace System.Net
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, parameters.ServicePoint.KeepAlive.Value.Interval);
                             }
                         }
-                        else
-                        {
-                            socket.NoDelay = true;
-                        }
+
+                        socket.NoDelay = true;
 
                         if (parameters.Async)
                         {
