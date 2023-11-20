@@ -266,7 +266,7 @@
   </Target>
 
   <Target Name="_AppleNativeAotCompile"
-          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile" />
+          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile;$(_IlcLibraryBuildDependsOn)" />
 
   <Target Name="_AppleGenerateAppBundle" 
           Condition="'$(AppleGenerateAppBundle)' == 'true'"

@@ -18,6 +18,8 @@
     <NativeLib Condition="'$(_UseLibraryModeBundling)' != 'true'">static</NativeLib>
     <CustomNativeMain Condition="'$(_UseLibraryModeBundling)' != 'true'">true</CustomNativeMain>
     <NativeCompilationDuringPublish Condition="'$(_UseLibraryModeBundling)' != 'true'">false</NativeCompilationDuringPublish>
+    <PublishDir Condition="'$(_UseLibraryModeBundling)' == 'true'">$(OriginalPublishDir)</PublishDir>
+    <_IlcLibraryBuildDependsOn Condition="'$(_UseLibraryModeBundling)' == 'true'">LinkNative;CopyNativeBinary</_IlcLibraryBuildDependsOn>
     <_IsApplePlatform>true</_IsApplePlatform>
     <TargetsAppleMobile>true</TargetsAppleMobile>
     <_targetOS>$(TargetOS)</_targetOS>
