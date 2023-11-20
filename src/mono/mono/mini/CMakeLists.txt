@@ -394,7 +394,7 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
   endif()
   target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
-  # musl-libc implements ucontext in a different library
+  # musl-libc implements ucontext in a different library on s390x
   if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(monosgen-shared PRIVATE ucontext)
   endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
@@ -580,7 +580,7 @@ if(NOT DISABLE_EXECUTABLES)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
   endif()
   target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
-  # musl-libc implements ucontext in a different library
+  # musl-libc implements ucontext in a different library on s390x
   if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)
   endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
