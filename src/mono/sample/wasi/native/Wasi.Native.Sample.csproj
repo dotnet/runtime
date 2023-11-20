@@ -7,6 +7,7 @@
     <WasmBuildNative>true</WasmBuildNative>
     <WasmNativeStrip>false</WasmNativeStrip>
     <IsBrowserWasmProject>false</IsBrowserWasmProject>
+    <WasmSingleFileBundle>true</WasmSingleFileBundle>
   </PropertyGroup>
 
   <ItemGroup>

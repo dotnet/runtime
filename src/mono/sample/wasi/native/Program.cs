@@ -17,24 +17,15 @@ public unsafe class Test
     [DllImport("*", EntryPoint = "UnmanagedFunc")]
     public static extern void MyImport(); // calls ManagedFunc aka MyExport
 
-    [DllImport("*")]
-    public static unsafe extern void ReferenceFuncPtr(delegate* unmanaged<int,int> funcPtr);
-
-    static bool AlwaysFalse(string [] args) => false;
-
     public unsafe static int Main(string[] args)
     {
         Console.WriteLine($"main: {args.Length}");
-        MyImport();
-
-        if (AlwaysFalse(args))
-        {
-            // never called (would an error on wasm) and doesn't actually do anything
-            // but required for wasm_native_to_interp_ftndesc initialization
-            // the lookup happens before main when this is here
-            ReferenceFuncPtr(&MyExport);
+        // workaround to force the interpreter to initialize wasm_native_to_interp_ftndesc for MyExport
+        if (args.Length > 10000) {
+            ((IntPtr)(delegate* unmanaged<int,int>)&MyExport).ToString();
         }
 
+        MyImport();
         return 0;
     }
 }
