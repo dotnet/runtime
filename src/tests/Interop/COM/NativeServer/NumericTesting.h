@@ -11,27 +11,27 @@ class NumericTesting : public UnknownImpl, public INumericTesting
 {
 public:
     DEF_FUNC(Add_Byte)(
-        /*[in]*/ unsigned char a,
-        /*[in]*/ unsigned char b,
-        /*[out,retval]*/ unsigned char * pRetVal)
+        /*[in]*/ uint8_t a,
+        /*[in]*/ uint8_t b,
+        /*[out,retval]*/ uint8_t * pRetVal)
     {
-        *pRetVal = static_cast<unsigned char>(a + b);
+        *pRetVal = static_cast<uint8_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_Short)(
-        /*[in]*/ short a,
-        /*[in]*/ short b,
-        /*[out,retval]*/ short * pRetVal)
+        /*[in]*/ int16_t a,
+        /*[in]*/ int16_t b,
+        /*[out,retval]*/ int16_t * pRetVal)
     {
-        *pRetVal = static_cast<short>(a + b);
+        *pRetVal = static_cast<int16_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_UShort)(
-        /*[in]*/ unsigned short a,
-        /*[in]*/ unsigned short b,
-        /*[out,retval]*/ unsigned short * pRetVal)
+        /*[in]*/ uint16_t a,
+        /*[in]*/ uint16_t b,
+        /*[out,retval]*/ uint16_t * pRetVal)
     {
-        *pRetVal = static_cast<unsigned short>(a + b);
+        *pRetVal = static_cast<uint16_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_Int)(
@@ -43,25 +43,25 @@ public:
         return S_OK;
     }
     DEF_FUNC(Add_UInt)(
-        /*[in]*/ unsigned int a,
-        /*[in]*/ unsigned int b,
-        /*[out,retval]*/ unsigned int * pRetVal)
+        /*[in]*/ uint32_t a,
+        /*[in]*/ uint32_t b,
+        /*[out,retval]*/ uint32_t * pRetVal)
     {
         *pRetVal = a + b;
         return S_OK;
     }
     DEF_FUNC(Add_Long)(
-        /*[in]*/ __int64 a,
-        /*[in]*/ __int64 b,
-        /*[out,retval]*/ __int64 * pRetVal)
+        /*[in]*/ int64_t a,
+        /*[in]*/ int64_t b,
+        /*[out,retval]*/ int64_t * pRetVal)
     {
         *pRetVal = a + b;
         return S_OK;
     }
     DEF_FUNC(Add_ULong)(
-        /*[in]*/ unsigned __int64 a,
-        /*[in]*/ unsigned __int64 b,
-        /*[out,retval]*/ unsigned __int64 * pRetVal)
+        /*[in]*/ uint64_t a,
+        /*[in]*/ uint64_t b,
+        /*[out,retval]*/ uint64_t * pRetVal)
     {
         *pRetVal = a + b;
         return S_OK;
@@ -83,33 +83,33 @@ public:
         return S_OK;
     }
     DEF_FUNC(Add_Byte_Ref)(
-        /*[in]*/ unsigned char a,
-        /*[in]*/ unsigned char b,
-        /*[in,out]*/ unsigned char * c)
+        /*[in]*/ uint8_t a,
+        /*[in]*/ uint8_t b,
+        /*[in,out]*/ uint8_t * c)
     {
         if (*c != std::numeric_limits<std::remove_reference<decltype(*c)>::type>::max())
             return E_UNEXPECTED;
-        *c = static_cast<unsigned char>(a + b);
+        *c = static_cast<uint8_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_Short_Ref)(
-        /*[in]*/ short a,
-        /*[in]*/ short b,
-        /*[in,out]*/ short * c)
+        /*[in]*/ int16_t a,
+        /*[in]*/ int16_t b,
+        /*[in,out]*/ int16_t * c)
     {
         if (*c != std::numeric_limits<std::remove_reference<decltype(*c)>::type>::max())
             return E_UNEXPECTED;
-        *c = static_cast<short>(a + b);
+        *c = static_cast<int16_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_UShort_Ref)(
-        /*[in]*/ unsigned short a,
-        /*[in]*/ unsigned short b,
-        /*[in,out]*/ unsigned short * c)
+        /*[in]*/ uint16_t a,
+        /*[in]*/ uint16_t b,
+        /*[in,out]*/ uint16_t * c)
     {
         if (*c != std::numeric_limits<std::remove_reference<decltype(*c)>::type>::max())
             return E_UNEXPECTED;
-        *c = static_cast<unsigned short>(a + b);
+        *c = static_cast<uint16_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_Int_Ref)(
@@ -123,9 +123,9 @@ public:
         return S_OK;
     }
     DEF_FUNC(Add_UInt_Ref)(
-        /*[in]*/ unsigned int a,
-        /*[in]*/ unsigned int b,
-        /*[in,out]*/ unsigned int * c)
+        /*[in]*/ uint32_t a,
+        /*[in]*/ uint32_t b,
+        /*[in,out]*/ uint32_t * c)
     {
         if (*c != std::numeric_limits<std::remove_reference<decltype(*c)>::type>::max())
             return E_UNEXPECTED;
@@ -133,9 +133,9 @@ public:
         return S_OK;
     }
     DEF_FUNC(Add_Long_Ref)(
-        /*[in]*/ __int64 a,
-        /*[in]*/ __int64 b,
-        /*[in,out]*/ __int64 * c)
+        /*[in]*/ int64_t a,
+        /*[in]*/ int64_t b,
+        /*[in,out]*/ int64_t * c)
     {
         if (*c != std::numeric_limits<std::remove_reference<decltype(*c)>::type>::max())
             return E_UNEXPECTED;
@@ -143,9 +143,9 @@ public:
         return S_OK;
     }
     DEF_FUNC(Add_ULong_Ref)(
-        /*[in]*/ unsigned __int64 a,
-        /*[in]*/ unsigned __int64 b,
-        /*[in,out]*/ unsigned __int64 * c)
+        /*[in]*/ uint64_t a,
+        /*[in]*/ uint64_t b,
+        /*[in,out]*/ uint64_t * c)
     {
         if (*c != std::numeric_limits<std::remove_reference<decltype(*c)>::type>::max())
             return E_UNEXPECTED;
@@ -173,27 +173,27 @@ public:
         return S_OK;
     }
     DEF_FUNC(Add_Byte_Out)(
-        /*[in]*/ unsigned char a,
-        /*[in]*/ unsigned char b,
-        /*[out]*/ unsigned char * c)
+        /*[in]*/ uint8_t a,
+        /*[in]*/ uint8_t b,
+        /*[out]*/ uint8_t * c)
     {
-        *c = static_cast<unsigned char>(a + b);
+        *c = static_cast<uint8_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_Short_Out)(
-        /*[in]*/ short a,
-        /*[in]*/ short b,
-        /*[out]*/ short * c)
+        /*[in]*/ int16_t a,
+        /*[in]*/ int16_t b,
+        /*[out]*/ int16_t * c)
     {
-        *c = static_cast<short>(a + b);
+        *c = static_cast<int16_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_UShort_Out)(
-        /*[in]*/ unsigned short a,
-        /*[in]*/ unsigned short b,
-        /*[out]*/ unsigned short * c)
+        /*[in]*/ uint16_t a,
+        /*[in]*/ uint16_t b,
+        /*[out]*/ uint16_t * c)
     {
-        *c = static_cast<unsigned short>(a + b);
+        *c = static_cast<uint16_t>(a + b);
         return S_OK;
     }
     DEF_FUNC(Add_Int_Out)(
@@ -205,25 +205,25 @@ public:
         return S_OK;
     }
     DEF_FUNC(Add_UInt_Out)(
-        /*[in]*/ unsigned int a,
-        /*[in]*/ unsigned int b,
-        /*[out]*/ unsigned int * c)
+        /*[in]*/ uint32_t a,
+        /*[in]*/ uint32_t b,
+        /*[out]*/ uint32_t * c)
     {
         *c = a + b;
         return S_OK;
     }
     DEF_FUNC(Add_Long_Out)(
-        /*[in]*/ __int64 a,
-        /*[in]*/ __int64 b,
-        /*[out]*/ __int64 * c)
+        /*[in]*/ int64_t a,
+        /*[in]*/ int64_t b,
+        /*[out]*/ int64_t * c)
     {
         *c = a + b;
         return S_OK;
     }
     DEF_FUNC(Add_ULong_Out)(
-        /*[in]*/ unsigned __int64 a,
-        /*[in]*/ unsigned __int64 b,
-        /*[out]*/ unsigned __int64 * c)
+        /*[in]*/ uint64_t a,
+        /*[in]*/ uint64_t b,
+        /*[out]*/ uint64_t * c)
     {
         *c = a + b;
         return S_OK;

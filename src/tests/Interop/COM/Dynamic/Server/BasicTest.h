@@ -30,149 +30,149 @@ public:
 
 public: // IBasicTest
     virtual HRESULT STDMETHODCALLTYPE Default(
-        /* [in] */ LONG val,
-        /* [retval][out] */ LONG *ret);
+        /* [in] */ int32_t val,
+        /* [retval][out] */ int32_t *ret);
 
-    virtual HRESULT STDMETHODCALLTYPE get_Boolean_Property( 
+    virtual HRESULT STDMETHODCALLTYPE get_Boolean_Property(
         /* [retval][out] */ VARIANT_BOOL *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_Boolean_Property( 
+
+    virtual HRESULT STDMETHODCALLTYPE put_Boolean_Property(
         /* [in] */ VARIANT_BOOL val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Boolean_Inverse_InOut( 
+
+    virtual HRESULT STDMETHODCALLTYPE Boolean_Inverse_InOut(
         /* [out][in] */ VARIANT_BOOL *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Boolean_Inverse_Ret( 
+
+    virtual HRESULT STDMETHODCALLTYPE Boolean_Inverse_Ret(
         /* [in] */ VARIANT_BOOL val,
         /* [retval][out] */ VARIANT_BOOL *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_SByte_Property( 
-        /* [retval][out] */ signed char *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_SByte_Property( 
-        /* [in] */ signed char val);
-    
-    virtual HRESULT STDMETHODCALLTYPE SByte_Doubled_InOut( 
-        /* [out][in] */ signed char *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE SByte_Doubled_Ret( 
-        /* [in] */ signed char val,
-        /* [retval][out] */ signed char *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_Byte_Property( 
-        /* [retval][out] */ unsigned char *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_Byte_Property( 
-        /* [in] */ unsigned char val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Byte_Doubled_InOut( 
-        /* [out][in] */ unsigned char *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Byte_Doubled_Ret( 
-        /* [in] */ unsigned char val,
-        /* [retval][out] */ unsigned char *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_Short_Property( 
-        /* [retval][out] */ short *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_Short_Property( 
-        /* [in] */ short val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Short_Doubled_InOut( 
-        /* [out][in] */ short *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Short_Doubled_Ret( 
-        /* [in] */ short val,
-        /* [retval][out] */ short *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_UShort_Property( 
-        /* [retval][out] */ unsigned short *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_UShort_Property( 
-        /* [in] */ unsigned short val);
-    
-    virtual HRESULT STDMETHODCALLTYPE UShort_Doubled_InOut( 
-        /* [out][in] */ unsigned short *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE UShort_Doubled_Ret( 
-        /* [in] */ unsigned short val,
-        /* [retval][out] */ unsigned short *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_Int_Property( 
+
+    virtual HRESULT STDMETHODCALLTYPE get_SByte_Property(
+        /* [retval][out] */ int8_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE put_SByte_Property(
+        /* [in] */ int8_t val);
+
+    virtual HRESULT STDMETHODCALLTYPE SByte_Doubled_InOut(
+        /* [out][in] */ int8_t *val);
+
+    virtual HRESULT STDMETHODCALLTYPE SByte_Doubled_Ret(
+        /* [in] */ int8_t val,
+        /* [retval][out] */ int8_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE get_Byte_Property(
+        /* [retval][out] */ uint8_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE put_Byte_Property(
+        /* [in] */ uint8_t val);
+
+    virtual HRESULT STDMETHODCALLTYPE Byte_Doubled_InOut(
+        /* [out][in] */ uint8_t *val);
+
+    virtual HRESULT STDMETHODCALLTYPE Byte_Doubled_Ret(
+        /* [in] */ uint8_t val,
+        /* [retval][out] */ uint8_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE get_Short_Property(
+        /* [retval][out] */ int16_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE put_Short_Property(
+        /* [in] */ int16_t val);
+
+    virtual HRESULT STDMETHODCALLTYPE Short_Doubled_InOut(
+        /* [out][in] */ int16_t *val);
+
+    virtual HRESULT STDMETHODCALLTYPE Short_Doubled_Ret(
+        /* [in] */ int16_t val,
+        /* [retval][out] */ int16_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE get_UShort_Property(
+        /* [retval][out] */ uint16_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE put_UShort_Property(
+        /* [in] */ uint16_t val);
+
+    virtual HRESULT STDMETHODCALLTYPE UShort_Doubled_InOut(
+        /* [out][in] */ uint16_t *val);
+
+    virtual HRESULT STDMETHODCALLTYPE UShort_Doubled_Ret(
+        /* [in] */ uint16_t val,
+        /* [retval][out] */ uint16_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE get_Int_Property(
         /* [retval][out] */ int *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_Int_Property( 
+
+    virtual HRESULT STDMETHODCALLTYPE put_Int_Property(
         /* [in] */ int val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Int_Doubled_InOut( 
+
+    virtual HRESULT STDMETHODCALLTYPE Int_Doubled_InOut(
         /* [out][in] */ int *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Int_Doubled_Ret( 
+
+    virtual HRESULT STDMETHODCALLTYPE Int_Doubled_Ret(
         /* [in] */ int val,
         /* [retval][out] */ int *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_UInt_Property( 
-        /* [retval][out] */ unsigned int *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_UInt_Property( 
-        /* [in] */ unsigned int val);
-    
-    virtual HRESULT STDMETHODCALLTYPE UInt_Doubled_InOut( 
-        /* [out][in] */ unsigned int *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE UInt_Doubled_Ret( 
-        /* [in] */ unsigned int val,
-        /* [retval][out] */ unsigned int *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_Int64_Property( 
-        /* [retval][out] */ __int64 *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_Int64_Property( 
-        /* [in] */ __int64 val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Int64_Doubled_InOut( 
-        /* [out][in] */ __int64 *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Int64_Doubled_Ret( 
-        /* [in] */ __int64 val,
-        /* [retval][out] */ __int64 *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_UInt64_Property( 
-        /* [retval][out] */ unsigned __int64 *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_UInt64_Property( 
-        /* [in] */ unsigned __int64 val);
-    
-    virtual HRESULT STDMETHODCALLTYPE UInt64_Doubled_InOut( 
-        /* [out][in] */ unsigned __int64 *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE UInt64_Doubled_Ret( 
-        /* [in] */ unsigned __int64 val,
-        /* [retval][out] */ unsigned __int64 *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_Float_Property( 
+
+    virtual HRESULT STDMETHODCALLTYPE get_UInt_Property(
+        /* [retval][out] */ uint32_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE put_UInt_Property(
+        /* [in] */ uint32_t val);
+
+    virtual HRESULT STDMETHODCALLTYPE UInt_Doubled_InOut(
+        /* [out][in] */ uint32_t *val);
+
+    virtual HRESULT STDMETHODCALLTYPE UInt_Doubled_Ret(
+        /* [in] */ uint32_t val,
+        /* [retval][out] */ uint32_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE get_Int64_Property(
+        /* [retval][out] */ int64_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE put_Int64_Property(
+        /* [in] */ int64_t val);
+
+    virtual HRESULT STDMETHODCALLTYPE Int64_Doubled_InOut(
+        /* [out][in] */ int64_t *val);
+
+    virtual HRESULT STDMETHODCALLTYPE Int64_Doubled_Ret(
+        /* [in] */ int64_t val,
+        /* [retval][out] */ int64_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE get_UInt64_Property(
+        /* [retval][out] */ uint64_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE put_UInt64_Property(
+        /* [in] */ uint64_t val);
+
+    virtual HRESULT STDMETHODCALLTYPE UInt64_Doubled_InOut(
+        /* [out][in] */ uint64_t *val);
+
+    virtual HRESULT STDMETHODCALLTYPE UInt64_Doubled_Ret(
+        /* [in] */ uint64_t val,
+        /* [retval][out] */ uint64_t *ret);
+
+    virtual HRESULT STDMETHODCALLTYPE get_Float_Property(
         /* [retval][out] */ float *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_Float_Property( 
+
+    virtual HRESULT STDMETHODCALLTYPE put_Float_Property(
         /* [in] */ float val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Float_Ceil_InOut( 
+
+    virtual HRESULT STDMETHODCALLTYPE Float_Ceil_InOut(
         /* [out][in] */ float *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Float_Ceil_Ret( 
+
+    virtual HRESULT STDMETHODCALLTYPE Float_Ceil_Ret(
         /* [in] */ float val,
         /* [retval][out] */ float *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE get_Double_Property( 
+
+    virtual HRESULT STDMETHODCALLTYPE get_Double_Property(
         /* [retval][out] */ double *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_Double_Property( 
+
+    virtual HRESULT STDMETHODCALLTYPE put_Double_Property(
         /* [in] */ double val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Double_Ceil_InOut( 
+
+    virtual HRESULT STDMETHODCALLTYPE Double_Ceil_InOut(
         /* [out][in] */ double *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Double_Ceil_Ret( 
+
+    virtual HRESULT STDMETHODCALLTYPE Double_Ceil_Ret(
         /* [in] */ double val,
         /* [retval][out] */ double *ret);
 
@@ -215,16 +215,16 @@ public: // IBasicTest
         /* [in] */ IDispatch *val,
         /* [retval][out] */ IDispatch **ret);
 
-    virtual HRESULT STDMETHODCALLTYPE get_Variant_Property( 
+    virtual HRESULT STDMETHODCALLTYPE get_Variant_Property(
         /* [retval][out] */ VARIANT *ret);
-    
-    virtual HRESULT STDMETHODCALLTYPE put_Variant_Property( 
+
+    virtual HRESULT STDMETHODCALLTYPE put_Variant_Property(
         /* [in] */ VARIANT val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Variant_InOut( 
+
+    virtual HRESULT STDMETHODCALLTYPE Variant_InOut(
         /* [out][in] */ VARIANT *val);
-    
-    virtual HRESULT STDMETHODCALLTYPE Variant_Ret( 
+
+    virtual HRESULT STDMETHODCALLTYPE Variant_Ret(
         /* [in] */ VARIANT val,
         /* [retval][out] */ VARIANT *ret);
 
@@ -236,7 +236,7 @@ public: // IBasicTest
 
 public: // IDispatch
     DEFINE_DISPATCH();
-    
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
@@ -251,14 +251,14 @@ public: // IUnknown
 
 private:
     VARIANT_BOOL _boolean;
-    signed char _sbyte;
-    unsigned char _byte;
-    short _short;
-    unsigned short _ushort;
+    int8_t _sbyte;
+    uint8_t _byte;
+    int16_t _short;
+    uint16_t _ushort;
     int _int;
-    unsigned int _uint;
-    __int64 _long;
-    unsigned __int64 _ulong;
+    uint32_t _uint;
+    int64_t _long;
+    uint64_t _ulong;
     float _float;
     double _double;
     BSTR _string;

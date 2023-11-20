@@ -33,7 +33,7 @@ public:
         return E_INVALIDARG;
     }
 
-    HRESULT STDMETHODCALLTYPE GetFieldNames(ULONG* pcNames, BSTR* rgBstrNames)
+    HRESULT STDMETHODCALLTYPE GetFieldNames(uint32_t* pcNames, BSTR* rgBstrNames)
     {
         if (pcNames == nullptr)
         {
@@ -51,12 +51,12 @@ public:
         }
 
         rgBstrNames[0] = TP_SysAllocString(W("a"));
-        
+
         for(size_t i = 1; i < *pcNames; i++)
         {
             rgBstrNames[i] = nullptr;
         }
-        
+
         return S_OK;
     }
 
@@ -81,7 +81,7 @@ public:
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE GetSize(ULONG* pcbSize)
+    HRESULT STDMETHODCALLTYPE GetSize(uint32_t* pcbSize)
     {
         *pcbSize = sizeof(BlittableRecord);
         return S_OK;
@@ -98,7 +98,7 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE PutField(
-        ULONG     wFlags,
+        uint32_t     wFlags,
         PVOID     pvData,
         LPCOLESTR szFieldName,
         VARIANT   *pvarField
@@ -108,7 +108,7 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE PutFieldNoCopy(
-        ULONG     wFlags,
+        uint32_t     wFlags,
         PVOID     pvData,
         LPCOLESTR szFieldName,
         VARIANT   *pvarField
@@ -154,12 +154,12 @@ public:
         return S_OK;
     }
 
-    ULONG STDMETHODCALLTYPE AddRef()
+    uint32_t STDMETHODCALLTYPE AddRef()
     {
         return ++refCount;
     }
 
-    ULONG STDMETHODCALLTYPE Release()
+    uint32_t STDMETHODCALLTYPE Release()
     {
         return --refCount;
     }
@@ -185,7 +185,7 @@ public:
     }
 
 private:
-    ULONG refCount;
+    uint32_t refCount;
 } s_BlittableRecordInfo;
 
 struct NonBlittableRecord
@@ -216,7 +216,7 @@ public:
         return E_INVALIDARG;
     }
 
-    HRESULT STDMETHODCALLTYPE GetFieldNames(ULONG* pcNames, BSTR* rgBstrNames)
+    HRESULT STDMETHODCALLTYPE GetFieldNames(uint32_t* pcNames, BSTR* rgBstrNames)
     {
         if (pcNames == nullptr)
         {
@@ -234,12 +234,12 @@ public:
         }
 
         rgBstrNames[0] = TP_SysAllocString(W("b"));
-        
+
         for(size_t i = 1; i < *pcNames; i++)
         {
             rgBstrNames[i] = nullptr;
         }
-        
+
         return S_OK;
     }
 
@@ -264,7 +264,7 @@ public:
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE GetSize(ULONG* pcbSize)
+    HRESULT STDMETHODCALLTYPE GetSize(uint32_t* pcbSize)
     {
         *pcbSize = sizeof(BlittableRecord);
         return S_OK;
@@ -281,7 +281,7 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE PutField(
-        ULONG     wFlags,
+        uint32_t     wFlags,
         PVOID     pvData,
         LPCOLESTR szFieldName,
         VARIANT   *pvarField
@@ -291,7 +291,7 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE PutFieldNoCopy(
-        ULONG     wFlags,
+        uint32_t     wFlags,
         PVOID     pvData,
         LPCOLESTR szFieldName,
         VARIANT   *pvarField
@@ -337,12 +337,12 @@ public:
         return S_OK;
     }
 
-    ULONG STDMETHODCALLTYPE AddRef()
+    uint32_t STDMETHODCALLTYPE AddRef()
     {
         return ++refCount;
     }
 
-    ULONG STDMETHODCALLTYPE Release()
+    uint32_t STDMETHODCALLTYPE Release()
     {
         return --refCount;
     }
@@ -368,7 +368,7 @@ public:
     }
 
 private:
-    ULONG refCount;
+    uint32_t refCount;
 } s_NonBlittableRecordInfo;
 
 extern "C" DLL_EXPORT SAFEARRAY* STDMETHODCALLTYPE CreateSafeArrayOfRecords(BlittableRecord records[], int numRecords)

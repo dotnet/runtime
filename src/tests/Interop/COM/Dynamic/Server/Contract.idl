@@ -9,8 +9,8 @@ interface IBasicTest : IDispatch
 {
     [id(DISPID_VALUE)]
     HRESULT Default(
-        [in] LONG val,
-        [out, retval] LONG *ret);
+        [in] int32_t val,
+        [out, retval] int32_t *ret);
 
     [propget] HRESULT Boolean_Property([out, retval] VARIANT_BOOL *ret);
     [propput] HRESULT Boolean_Property([in] VARIANT_BOOL val);
@@ -19,33 +19,33 @@ interface IBasicTest : IDispatch
         [in] VARIANT_BOOL val,
         [out, retval] VARIANT_BOOL *ret);
 
-    [propget] HRESULT SByte_Property([out, retval] signed char *ret);
-    [propput] HRESULT SByte_Property([in] signed char val);
-    HRESULT SByte_Doubled_InOut([in, out] signed char *val);
+    [propget] HRESULT SByte_Property([out, retval] int8_t *ret);
+    [propput] HRESULT SByte_Property([in] int8_t val);
+    HRESULT SByte_Doubled_InOut([in, out] int8_t *val);
     HRESULT SByte_Doubled_Ret(
-        [in] signed char val,
-        [out, retval] signed char *ret);
+        [in] int8_t val,
+        [out, retval] int8_t *ret);
 
-    [propget] HRESULT Byte_Property([out, retval] unsigned char *ret);
-    [propput] HRESULT Byte_Property([in] unsigned char val);
-    HRESULT Byte_Doubled_InOut([in, out] unsigned char *val);
+    [propget] HRESULT Byte_Property([out, retval] uint8_t *ret);
+    [propput] HRESULT Byte_Property([in] uint8_t val);
+    HRESULT Byte_Doubled_InOut([in, out] uint8_t *val);
     HRESULT Byte_Doubled_Ret(
-        [in] unsigned char val,
-        [out, retval] unsigned char *ret);
+        [in] uint8_t val,
+        [out, retval] uint8_t *ret);
 
-    [propget] HRESULT Short_Property([out, retval] short *ret);
-    [propput] HRESULT Short_Property([in] short val);
-    HRESULT Short_Doubled_InOut([in, out] short *val);
+    [propget] HRESULT Short_Property([out, retval] int16_t *ret);
+    [propput] HRESULT Short_Property([in] int16_t val);
+    HRESULT Short_Doubled_InOut([in, out] int16_t *val);
     HRESULT Short_Doubled_Ret(
-        [in] short val,
-        [out, retval] short *ret);
+        [in] int16_t val,
+        [out, retval] int16_t *ret);
 
-    [propget] HRESULT UShort_Property([out, retval] unsigned short *ret);
-    [propput] HRESULT UShort_Property([in] unsigned short val);
-    HRESULT UShort_Doubled_InOut([in, out] unsigned short *val);
+    [propget] HRESULT UShort_Property([out, retval] uint16_t *ret);
+    [propput] HRESULT UShort_Property([in] uint16_t val);
+    HRESULT UShort_Doubled_InOut([in, out] uint16_t *val);
     HRESULT UShort_Doubled_Ret(
-        [in] unsigned short val,
-        [out, retval] unsigned short *ret);
+        [in] uint16_t val,
+        [out, retval] uint16_t *ret);
 
     [propget] HRESULT Int_Property([out, retval] int *ret);
     [propput] HRESULT Int_Property([in] int val);
@@ -54,26 +54,26 @@ interface IBasicTest : IDispatch
         [in] int val,
         [out, retval] int *ret);
 
-    [propget] HRESULT UInt_Property([out, retval] unsigned int *ret);
-    [propput] HRESULT UInt_Property([in] unsigned int val);
-    HRESULT UInt_Doubled_InOut([in, out] unsigned int *val);
+    [propget] HRESULT UInt_Property([out, retval] uint32_t *ret);
+    [propput] HRESULT UInt_Property([in] uint32_t val);
+    HRESULT UInt_Doubled_InOut([in, out] uint32_t *val);
     HRESULT UInt_Doubled_Ret(
-        [in] unsigned int val,
-        [out, retval] unsigned int *ret);
+        [in] uint32_t val,
+        [out, retval] uint32_t *ret);
 
-    [propget] HRESULT Int64_Property([out, retval] __int64 *ret);
-    [propput] HRESULT Int64_Property([in] __int64 val);
-    HRESULT Int64_Doubled_InOut([in, out] __int64 *val);
+    [propget] HRESULT Int64_Property([out, retval] int64_t *ret);
+    [propput] HRESULT Int64_Property([in] int64_t val);
+    HRESULT Int64_Doubled_InOut([in, out] int64_t *val);
     HRESULT Int64_Doubled_Ret(
-        [in] __int64 val,
-        [out, retval] __int64 *ret);
+        [in] int64_t val,
+        [out, retval] int64_t *ret);
 
-    [propget] HRESULT UInt64_Property([out, retval] unsigned __int64 *ret);
-    [propput] HRESULT UInt64_Property([in] unsigned __int64 val);
-    HRESULT UInt64_Doubled_InOut([in, out] unsigned __int64 *val);
+    [propget] HRESULT UInt64_Property([out, retval] uint64_t *ret);
+    [propput] HRESULT UInt64_Property([in] uint64_t val);
+    HRESULT UInt64_Doubled_InOut([in, out] uint64_t *val);
     HRESULT UInt64_Doubled_Ret(
-        [in] unsigned __int64 val,
-        [out, retval] unsigned __int64 *ret);
+        [in] uint64_t val,
+        [out, retval] uint64_t *ret);
 
     [propget] HRESULT Float_Property([out, retval] float *ret);
     [propput] HRESULT Float_Property([in] float val);
@@ -131,21 +131,21 @@ interface IBasicTest : IDispatch
 interface IDispatchCollection : IDispatch
 {
     [propget]
-    HRESULT Count([out, retval] LONG *ret);
+    HRESULT Count([out, retval] int32_t *ret);
 
     [id(DISPID_VALUE), propget]
     HRESULT Item(
-        [in] ULONG index,
+        [in] uint32_t index,
         [out, retval] IDispatch **ret);
 
     [id(DISPID_VALUE), propput]
     HRESULT Item(
-        [in] ULONG index,
+        [in] uint32_t index,
         [in] IDispatch *val);
 
     HRESULT Add([in] IDispatch *val);
 
-    HRESULT Remove([in] ULONG index);
+    HRESULT Remove([in] uint32_t index);
 
     HRESULT Clear();
 };
@@ -157,23 +157,23 @@ interface IDispatchCollection : IDispatch
 interface ICollectionTest : IDispatch
 {
     [propget]
-    HRESULT Count([out, retval] LONG *ret);
+    HRESULT Count([out, retval] int32_t *ret);
 
     [id(DISPID_VALUE), propget]
     HRESULT Item(
-        [in] ULONG index,
+        [in] uint32_t index,
         [out, retval] BSTR *ret);
 
     [id(DISPID_VALUE), propput]
     HRESULT Item(
-        [in] ULONG index,
+        [in] uint32_t index,
         [in] BSTR val);
 
     [id(DISPID_NEWENUM), propget]
     HRESULT _NewEnum([out, retval] IUnknown** retval);
 
     HRESULT Add([in] BSTR val);
-    HRESULT Remove([in] ULONG index);
+    HRESULT Remove([in] uint32_t index);
     HRESULT Clear();
 
     HRESULT Array_PlusOne_InOut([in, out] SAFEARRAY(int) *ret);

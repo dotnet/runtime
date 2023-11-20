@@ -14,9 +14,9 @@ namespace
         { }
 
         HRESULT STDMETHODCALLTYPE Next(
-            ULONG celt,
+            uint32_t celt,
             VARIANT *rgVar,
-            ULONG *pCeltFetched)
+            uint32_t *pCeltFetched)
         {
             for (*pCeltFetched = 0; *pCeltFetched < celt && _index < _collection.size(); ++*pCeltFetched, ++_index)
             {
@@ -28,16 +28,16 @@ namespace
             return celt == *pCeltFetched ? S_OK : S_FALSE;
         }
 
-        HRESULT STDMETHODCALLTYPE Skip(ULONG celt)
+        HRESULT STDMETHODCALLTYPE Skip(uint32_t celt)
         {
-            ULONG indexMaybe = _index + celt;
+            uint32_t indexMaybe = _index + celt;
             if (indexMaybe < _collection.size())
             {
                 _index = indexMaybe;
                 return S_OK;
             }
 
-            _index = static_cast<ULONG>(_collection.size()) - 1;
+            _index = static_cast<uint32_t>(_collection.size()) - 1;
             return S_FALSE;
         }
 
@@ -68,7 +68,7 @@ namespace
 
     private:
         const std::vector<BSTR> &_collection;
-        ULONG _index;
+        uint32_t _index;
     };
 
     class DispatchCollection : public DispatchImpl, public IDispatchCollection
@@ -85,14 +85,14 @@ namespace
 
     public:
         HRESULT STDMETHODCALLTYPE get_Count(
-            /* [retval][out] */ LONG *ret)
+            /* [retval][out] */ int32_t *ret)
         {
-            *ret = static_cast<LONG>(_items.size());
+            *ret = static_cast<int32_t>(_items.size());
             return S_OK;
         }
 
         HRESULT STDMETHODCALLTYPE get_Item(
-            /* [in] */ ULONG index,
+            /* [in] */ uint32_t index,
             /* [retval][out] */ IDispatch **ret)
         {
             if (_items.empty() || index >= _items.size() || index < 0)
@@ -104,7 +104,7 @@ namespace
         }
 
         HRESULT STDMETHODCALLTYPE put_Item(
-            /* [in] */ ULONG index,
+            /* [in] */ uint32_t index,
             /* [in] */ IDispatch *val)
         {
             if (val == nullptr)
@@ -131,7 +131,7 @@ namespace
         }
 
         HRESULT STDMETHODCALLTYPE Remove(
-            /* [in] */ ULONG index)
+            /* [in] */ uint32_t index)
         {
             if (_items.empty() || index >= _items.size() || index < 0)
                 return E_INVALIDARG;
@@ -171,14 +171,14 @@ namespace
 }
 
 HRESULT STDMETHODCALLTYPE CollectionTest::get_Count(
-    /* [retval][out] */ LONG* ret)
+    /* [retval][out] */ int32_t* ret)
 {
-    *ret = static_cast<LONG>(_strings.size());
+    *ret = static_cast<int32_t>(_strings.size());
     return S_OK;
 };
 
 HRESULT STDMETHODCALLTYPE CollectionTest::get_Item(
-    /* [in] */ ULONG index,
+    /* [in] */ uint32_t index,
     /* [retval][out] */ BSTR* ret)
 {
     if (_strings.empty() || index >= _strings.size() || index < 0)
@@ -189,7 +189,7 @@ HRESULT STDMETHODCALLTYPE CollectionTest::get_Item(
 }
 
 HRESULT STDMETHODCALLTYPE CollectionTest::put_Item(
-    /* [in] */ ULONG index,
+    /* [in] */ uint32_t index,
     /* [in] */ BSTR val)
 {
     if (_strings.empty() || index >= _strings.size() || index < 0)
@@ -215,7 +215,7 @@ HRESULT STDMETHODCALLTYPE CollectionTest::Add(
 }
 
 HRESULT STDMETHODCALLTYPE CollectionTest::Remove(
-    /* [in] */ ULONG index)
+    /* [in] */ uint32_t index)
 {
     if (_strings.empty() || index >= _strings.size() || index < 0)
         return E_INVALIDARG;
@@ -244,7 +244,7 @@ namespace
         if (type != VARENUM::VT_I4)
             return E_INVALIDARG;
 
-        LONG upperIndex;
+        int32_t upperIndex;
         RETURN_IF_FAILED(::SafeArrayGetUBound(val, 1, &upperIndex));
 
         int *valArray = static_cast<int *>(val->pvData);

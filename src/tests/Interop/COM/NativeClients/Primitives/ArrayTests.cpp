@@ -58,7 +58,7 @@ namespace
         {
             SAFEARRAYBOUND saBound;
             saBound.lLbound = 0;
-            saBound.cElements = static_cast<ULONG>(in.size());
+            saBound.cElements = static_cast<uint32_t>(in.size());
 
             _safeArray = ::SafeArrayCreate(ToSafeArrayType<T>(), 1, &saBound);
             assert(_safeArray != nullptr);
