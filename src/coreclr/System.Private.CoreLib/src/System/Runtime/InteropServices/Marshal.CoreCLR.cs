@@ -501,11 +501,11 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
 
-            return co.ReleaseSelf();
+            return ReleaseComObject(ObjectHandleOnStack.Create(ref co));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int InternalReleaseComObject(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_ReleaseComObject")]
+        private static partial int ReleaseComObject(ObjectHandleOnStack o);
 
         /// <summary>
         /// Release the COM component and zombie this object.
@@ -525,12 +525,12 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
 
-            co.FinalReleaseSelf();
+            FinalReleaseComObject(ObjectHandleOnStack.Create(ref co));
             return 0;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void InternalFinalReleaseComObject(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_FinalReleaseComObject")]
+        private static partial void FinalReleaseComObject(ObjectHandleOnStack o);
 
         [SupportedOSPlatform("windows")]
         public static object? GetComObjectData(object obj, object key)

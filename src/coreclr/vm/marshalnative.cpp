@@ -885,16 +885,18 @@ FCIMPLEND
 // free the COM component and zombie this object if the ref count hits 0
 // further usage of this Object might throw an exception,
 //====================================================================
-FCIMPL1(INT32, MarshalNative::ReleaseComObject, Object* objUNSAFE)
+extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     INT32 retVal = 0;
-    OBJECTREF obj = (OBJECTREF) objUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
 
-    if(!obj)
-        COMPlusThrowArgumentNull(W("o"));
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF obj = objUNSAFE.Get();
+    GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);
@@ -904,24 +906,27 @@ FCIMPL1(INT32, MarshalNative::ReleaseComObject, Object* objUNSAFE)
     // remove the wrapper from the object
     retVal = RCW::ExternalRelease(&obj);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
+
     return retVal;
 }
-FCIMPLEND
 
 //====================================================================
 // free the COM component and zombie this object
 // further usage of this Object might throw an exception,
 //====================================================================
-FCIMPL1(void, MarshalNative::FinalReleaseComObject, Object* objUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF obj = (OBJECTREF) objUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(obj);
+    BEGIN_QCALL;
 
-    if(!obj)
-        COMPlusThrowArgumentNull(W("o"));
+    GCX_COOP();
+
+    OBJECTREF obj = objUNSAFE.Get();
+    GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);
@@ -931,10 +936,10 @@ FCIMPL1(void, MarshalNative::FinalReleaseComObject, Object* objUNSAFE)
     // remove the wrapper from the object
     RCW::FinalExternalRelease(&obj);
 
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
+    GCPROTECT_END();
 
+    END_QCALL;
+}
 
 //====================================================================
 // This method takes the given COM object and wraps it in an object

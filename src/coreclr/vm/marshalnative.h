@@ -95,13 +95,6 @@ public:
     // Create an object and aggregate it, then return the inner unknown.
     //====================================================================
     static FCDECL2(IUnknown*, CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE);
-
-    //====================================================================
-    // free the COM component and zombie this object
-    // further usage of this Object might throw an exception,
-    //====================================================================
-    static FCDECL1(INT32, ReleaseComObject, Object* objUNSAFE);
-    static FCDECL1(void, FinalReleaseComObject, Object* objUNSAFE);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -118,6 +111,13 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// free the COM component and zombie this object
+// further usage of this Object might throw an exception,
+//====================================================================
+extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE);
+extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE);
 
 //====================================================================
 // This method takes the given COM object and wraps it in an object
