@@ -489,7 +489,6 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetIUnknownForObjectNative", MarshalNative::GetIUnknownForObjectNative)
     FCFuncElement("GetIDispatchForObjectNative", MarshalNative::GetIDispatchForObjectNative)
     FCFuncElement("GetComInterfaceForObjectNative", MarshalNative::GetComInterfaceForObjectNative)
-    FCFuncElement("GetTypedObjectForIUnknown", MarshalNative::GetTypedObjectForIUnknown)
 #endif // FEATURE_COMINTEROP
 FCFuncEnd()
 

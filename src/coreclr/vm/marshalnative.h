@@ -75,13 +75,6 @@ public:
     static FCDECL1(Object*, GetUniqueObjectForIUnknownNative, IUnknown* pUnk);
 
     //====================================================================
-    // return an Object for IUnknown, using the Type T,
-    //	NOTE:
-    //	Type T should be either a COM imported Type or a sub-type of COM imported Type
-    //====================================================================
-    static FCDECL2(Object*, GetTypedObjectForIUnknown, IUnknown* pUnk, ReflectClassBaseObject* refClassUNSAFE);
-
-    //====================================================================
     // Checks whether there are RCWs from any context available for cleanup.
     //====================================================================
     static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
@@ -101,6 +94,13 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// return an Object for IUnknown, using the Type T,
+//	NOTE:
+//	Type T should be either a COM imported Type or a sub-type of COM imported Type
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_GetTypedObjectForIUnknown(IUnknown* pUnk, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject);
 
 //====================================================================
 // Create an object and aggregate it, then return the inner unknown.

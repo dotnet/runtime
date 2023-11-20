@@ -434,8 +434,21 @@ namespace System.Runtime.InteropServices
         /// Type T should be either a COM imported Type or a sub-type of COM imported Type
         /// </summary>
         [SupportedOSPlatform("windows")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, Type t);
+        public static object GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, Type t)
+        {
+            ArgumentNullException.ThrowIfNull(pUnk);
+            ArgumentNullException.ThrowIfNull(t);
+
+            if (t is not RuntimeType rt)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
+
+            object? retObject = null;
+            GetTypedObjectForIUnknown(pUnk, new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref retObject));
+            return retObject!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypedObjectForIUnknown")]
+        private static partial void GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, QCallTypeHandle t, ObjectHandleOnStack retObject);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]

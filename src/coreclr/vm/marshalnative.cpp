@@ -756,51 +756,37 @@ FCIMPLEND
 //  NOTE:
 //  Type T should be either a COM imported Type or a sub-type of COM imported Type
 //====================================================================
-FCIMPL2(Object*, MarshalNative::GetTypedObjectForIUnknown, IUnknown* pUnk, ReflectClassBaseObject* refClassUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_GetTypedObjectForIUnknown(IUnknown* pUnk, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
-    OBJECTREF oref = NULL;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refClass, oref);
+    BEGIN_QCALL;
 
-    HRESULT hr = S_OK;
+    TypeHandle th = t.AsTypeHandle();
 
-    MethodTable* pMTClass =  NULL;
+    if (th.HasInstantiation())
+        COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
 
-    if(!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    if(refClass != NULL)
-    {
-        if (refClass->GetMethodTable() != g_pRuntimeTypeClass)
-            COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-        TypeHandle th = refClass->GetType();
-
-        if (th.HasInstantiation())
-            COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
-
-        pMTClass = th.GetMethodTable();
-    }
-    else
-        COMPlusThrowArgumentNull(W("t"));
-
+    MethodTable* pMTClass = th.GetMethodTable();
 
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GetObjectRefFromComIP(&oref, pUnk, pMTClass);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(oref);
+    OBJECTREF oref = NULL;
+    GCPROTECT_BEGIN(oref);
+    GetObjectRefFromComIP(&oref, pUnk, pMTClass);
+    retObject.Set(oref);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pOuter, QCall::ObjectHandleOnStack o)
 {
