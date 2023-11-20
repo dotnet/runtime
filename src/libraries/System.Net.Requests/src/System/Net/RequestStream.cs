@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,9 +17,17 @@ namespace System.Net
     internal sealed class RequestStream : Stream
     {
         private readonly MemoryStream _buffer = new MemoryStream();
+        private readonly StreamBuffer _streamBuffer;
+        private readonly StrongBox<int> _refCount;
+        private readonly bool _isBuffered;
+        private bool _disposed;
 
-        public RequestStream()
+        public RequestStream(StrongBox<int> refCount, StreamBuffer streamBuffer, bool isBuffered)
         {
+            _refCount = refCount;
+            _buffer = new MemoryStream();
+            _streamBuffer = streamBuffer;
+            _isBuffered = isBuffered;
         }
 
         public override bool CanRead
@@ -45,17 +54,25 @@ namespace System.Net
             }
         }
 
+        // We're already sending data as StreamContent,
+        // so let's buffer data in memory and flush it in three cases:
+        // - When GetResponse called.
+        // - When RequestStream is getting disposed.
+        // - When user calls Flush.
         public override void Flush()
         {
-            // Nothing to do.
+            ThrowIfDisposed();
+
+            if (_isBuffered)
+            {
+                _streamBuffer.Write(_buffer.GetBuffer());
+            }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            // Nothing to do.
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled(cancellationToken) :
-                Task.CompletedTask;
+            ThrowIfDisposed();
+            return _isBuffered ? _streamBuffer.WriteAsync(_buffer.GetBuffer(), cancellationToken).AsTask() : Task.CompletedTask;
         }
 
         public override long Length
@@ -95,40 +112,80 @@ namespace System.Net
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            _buffer.Write(buffer, offset, count);
+            if (_isBuffered)
+            {
+                _buffer!.Write(buffer, offset, count);
+            }
+            else
+            {
+                _streamBuffer!.Write(new(buffer, offset, count));
+            }
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            return _buffer.WriteAsync(buffer, offset, count, cancellationToken);
+            return _isBuffered ? _buffer!.WriteAsync(buffer, offset, count, cancellationToken) :
+                _streamBuffer!.WriteAsync(new(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return _buffer.WriteAsync(buffer, cancellationToken);
+            ThrowIfDisposed();
+            return _isBuffered ? _buffer!.WriteAsync(buffer, cancellationToken) :
+                _streamBuffer!.WriteAsync(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
+            ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            return _buffer.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
+            return _isBuffered ? _buffer!.BeginWrite(buffer, offset, count, asyncCallback, asyncState) :
+                TaskToAsyncResult.Begin(_streamBuffer!.WriteAsync(new(buffer, offset, count)).AsTask(), asyncCallback, asyncState);
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            _buffer.EndWrite(asyncResult);
+            ThrowIfDisposed();
+            if (_isBuffered)
+            {
+                _buffer!.EndWrite(asyncResult);
+            }
+            else
+            {
+                TaskToAsyncResult.End(asyncResult);
+            }
         }
 
-        public ArraySegment<byte> GetBuffer()
+        protected override void Dispose(bool disposing)
         {
-            ArraySegment<byte> bytes;
+            ThrowIfDisposed();
+            Flush();
 
-            bool success = _buffer.TryGetBuffer(out bytes);
-            Debug.Assert(success); // Buffer should always be visible since default MemoryStream constructor was used.
+            if (disposing && !_disposed)
+            {
+                _disposed = true;
+                _streamBuffer.EndWrite();
 
-            return bytes;
+                if (Interlocked.Decrement(ref _refCount.Value) == 0)
+                {
+                    _streamBuffer.Dispose();
+                }
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+                ThrowDisposedException();
+
+            [StackTraceHidden]
+            static void ThrowDisposedException() => throw new ObjectDisposedException(nameof(RequestStream));
         }
     }
 }

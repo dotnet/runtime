@@ -1913,7 +1913,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [InlineData(HttpRequestCacheLevel.NoCacheNoStore, null, null, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache"})]
+        [InlineData(HttpRequestCacheLevel.NoCacheNoStore, null, null, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
         [InlineData(HttpRequestCacheLevel.Reload, null, null, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
         [InlineData(HttpRequestCacheLevel.CacheOrNextCacheOnly, null, null, new string[] { "Cache-Control: only-if-cached" })]
         [InlineData(HttpRequestCacheLevel.Default, HttpCacheAgeControl.MinFresh, 10, new string[] { "Cache-Control: min-fresh=10" })]
@@ -2073,6 +2073,84 @@ namespace System.Net.Tests
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
+            });
+        }
+
+        [Fact]
+        public async Task SendHttpPostRequest_ConnectionShouldStartWithRequestStream()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.Method = "POST";
+                var stream = request.BeginGetRequestStream(null, null);
+                Exception? exception = await Record.ExceptionAsync(() => server.AcceptConnectionAsync(_ =>
+                {
+                    return Task.CompletedTask;
+                }).WaitAsync(10_000));
+                Assert.Null(exception);
+            });
+        }
+
+        [Fact]
+        public async Task SendHttpPostRequest_AllowWriteBufferingFalse_ConnectionShouldStartWithRequestStream()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                const int size = 1048576 * 2;
+                const string text = "Hello World!!!!\n";
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ContentType = "application/text";
+                request.ContentLength = size;
+                request.Method = "POST";
+                request.AllowWriteStreamBuffering = false;
+                var stream = request.GetRequestStream();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    for (int i = 0; i < size / 16; i++)
+                    {
+                        await stream.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(text)));
+                    }
+                    stream.Dispose();
+
+                    var data = await connection.ReadRequestDataAsync();
+                    Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
+
+                }).WaitAsync(30_000);
+            });
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(2)]
+        public async Task SendHttpPost_WriteBufferingEnabled(int delaySec)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                const int size = 1048576 / 4;
+                const string text = "Hello World!!!!\n";
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.AllowWriteStreamBuffering = true;
+                request.ContentType = "application/text";
+                request.ContentLength = size;
+                request.Method = "POST";
+                var stream = request.GetRequestStream();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    for (int i = 0; i < size/16; i++)
+                    {
+                        await stream.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(text)));
+                        if (delaySec > 0)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(delaySec));
+                        }
+                    }
+                    stream.Dispose();
+
+                    var data = await connection.ReadRequestDataAsync();
+                    Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
+
+                }).WaitAsync(30_000);
             });
         }
 

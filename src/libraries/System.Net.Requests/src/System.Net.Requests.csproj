@@ -48,6 +48,7 @@
     <Compile Include="System\Net\NetRes.cs" />
     <Compile Include="System\Net\NetworkStreamWrapper.cs" />
     <Compile Include="System\Net\TimerThread.cs" />
+    <Compile Include="System\Net\HttpClientContentStream.cs" />
     <Compile Include="System\Net\Cache\HttpCacheAgeControl.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
@@ -84,6 +85,10 @@
              Link="Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)\System\Net\StreamBuffer.cs" 
+             Link="Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonPath)\System\Net\MultiArrayBuffer.cs" 
+             Link="Common\System\Net\MultiArrayBuffer.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
