@@ -188,7 +188,7 @@ namespace System.Net.Http
                     NetworkChange.NetworkAddressChanged += networkChangedDelegate;
                 }
             }
-            catch (Exception e)
+            catch (NetworkInformationException e)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception when subscribing to NetworkChange.NetworkAddressChanged: {e}");
 
@@ -196,7 +196,7 @@ namespace System.Net.Http
                 // about network state is not available" and we can just keep
                 // all Alt-Svc entries until their expiration time.
                 //
-                // keep the _networkChangeCleanup field null so we don't try again needlessly
+                // keep the _networkChangeCleanup field assigned so we don't try again needlessly
             }
         }
 
