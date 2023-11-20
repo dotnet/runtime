@@ -107,7 +107,6 @@ namespace System.Diagnostics.Tracing
         [NonEvent]
         private static extern void LogWaitHandleWaitStop(
             WaitHandleWaitSourceMap WaitSource,
-            IntPtr AssociatedObjectID,
             double DurationNs,
             ushort ClrInstanceID);
     }

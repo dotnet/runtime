@@ -2785,7 +2785,7 @@ ep_rt_write_event_contention_stop (
 		NULL) == 0 ? true : false;
 }
 
-static bool
+bool
 ep_rt_write_event_wait_handle_wait_start (
 	uint32_t wait_source,
 	intptr_t associated_object_id,
@@ -2793,13 +2793,13 @@ ep_rt_write_event_wait_handle_wait_start (
 {
 	return FireEtwWaitHandleWaitStart (
 		wait_source,
-		associated_object_id,
+		(const void *)associated_object_id,
 		clr_instance_id,
 		NULL,
 		NULL) == 0 ? true : false;
 }
 
-static bool
+bool
 ep_rt_write_event_wait_handle_wait_stop (
 	uint32_t wait_source,
 	double duration_ns,

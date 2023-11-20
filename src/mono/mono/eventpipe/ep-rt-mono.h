@@ -1884,13 +1884,13 @@ ep_rt_write_event_contention_stop (
 	uint16_t clr_instance_id,
 	double duration_ns);
 
-static bool
+bool
 ep_rt_write_event_wait_handle_wait_start (
 	uint32_t wait_source,
 	intptr_t associated_object_id,
 	uint16_t clr_instance_id);
 
-static bool
+bool
 ep_rt_write_event_wait_handle_wait_stop (
 	uint32_t wait_source,
 	double duration_ns,
