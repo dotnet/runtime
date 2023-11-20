@@ -236,5 +236,7 @@ DEFINE_DACVAR(SIZE_T, dac__g_clrNotificationArguments, ::g_clrNotificationArgume
 DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
 
+DEFINE_DACVAR(PTR_WSTR, dac__g_EntryAssemblyPath, ::g_EntryAssemblyPath)
+
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_NO_DUMP

@@ -1493,10 +1493,10 @@ public:
     }
     void EnumMem(void) const
     {
-        char* str = DacInstantiateStringW(m_addr, maxChars, false);
+        WCHAR* str = DacInstantiateStringW(m_addr, maxChars, false);
         if (str)
         {
-            DacEnumMemoryRegion(m_addr, strlen(str) + 1);
+            DacEnumMemoryRegion(m_addr, u16_strlen(str) + 1);
         }
     }
 };
