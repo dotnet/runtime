@@ -466,8 +466,11 @@ namespace System.Runtime.InteropServices
             return CreateAggregatedObject(pOuter, (object)o);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void CleanupUnusedObjectsInCurrentContext();
+        public static void CleanupUnusedObjectsInCurrentContext()
+            => InternalCleanupUnusedObjectsInCurrentContext();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_CleanupUnusedObjectsInCurrentContext")]
+        private static partial void InternalCleanupUnusedObjectsInCurrentContext();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool AreComObjectsAvailableForCleanup();

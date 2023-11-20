@@ -82,11 +82,6 @@ public:
     static FCDECL2(Object*, GetTypedObjectForIUnknown, IUnknown* pUnk, ReflectClassBaseObject* refClassUNSAFE);
 
     //====================================================================
-    // Free unused RCWs in the current COM+ context.
-    //====================================================================
-    static FCDECL0(void, CleanupUnusedObjectsInCurrentContext);
-
-    //====================================================================
     // Checks whether there are RCWs from any context available for cleanup.
     //====================================================================
     static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
@@ -111,6 +106,11 @@ extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR 
 // Create an object and aggregate it, then return the inner unknown.
 //====================================================================
 extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pOuter, QCall::ObjectHandleOnStack o);
+
+//====================================================================
+// Free unused RCWs in the current COM+ context.
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_CleanupUnusedObjectsInCurrentContext();
 
 //====================================================================
 // free the COM component and zombie this object

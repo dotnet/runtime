@@ -845,11 +845,11 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pO
 //====================================================================
 // Free unused RCWs in the current COM+ context.
 //====================================================================
-FCIMPL0(void, MarshalNative::CleanupUnusedObjectsInCurrentContext)
+extern "C" void QCALLTYPE MarshalNative_CleanupUnusedObjectsInCurrentContext()
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
 
     if (g_pRCWCleanupList)
     {
@@ -860,9 +860,8 @@ FCIMPL0(void, MarshalNative::CleanupUnusedObjectsInCurrentContext)
             );
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 //====================================================================
 // Checks whether there are RCWs from any context available for cleanup.
