@@ -1341,7 +1341,25 @@ void UnwindEpilogCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindEpilogCodes::Dump(int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    printf("%*sUnwindEpilogCodes @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  &uecMemLocal[0]: 0x%08p\n", indent, "", dspPtr(&uecMemLocal[0]));
+    printf("%*s  uecMem: 0x%08p\n", indent, "", dspPtr(uecMem));
+    printf("%*s  uecMemSize: %d\n", indent, "", uecMemSize);
+    printf("%*s  uecCodeSlot: %d\n", indent, "", uecCodeSlot);
+    printf("%*s  uecFinalized: %s\n", indent, "", dspBool(uecFinalized));
+
+    if (uecMemSize > 0)
+    {
+        printf("%*s  codes:", indent, "");
+        for (int i = 0; i < uecMemSize; i++)
+        {
+            printf(" %02x", uecMem[i]);
+            if (i == uecCodeSlot)
+                printf(" <-C"); // Indicate the current pointer
+        }
+        printf("\n");
+    }
 }
 #endif // DEBUG
 
