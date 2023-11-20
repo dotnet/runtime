@@ -2785,6 +2785,34 @@ ep_rt_write_event_contention_stop (
 		NULL) == 0 ? true : false;
 }
 
+static bool
+ep_rt_write_event_wait_handle_wait_start (
+	uint32_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	return FireEtwWaitHandleWaitStart (
+		wait_source,
+		associated_object_id,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+static bool
+ep_rt_write_event_wait_handle_wait_stop (
+	uint32_t wait_source,
+	double duration_ns,
+	uint16_t clr_instance_id)
+{
+	return FireEtwWaitHandleWaitStop (
+		wait_source,
+		duration_ns,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
 static
 void
 jit_begin_callback (

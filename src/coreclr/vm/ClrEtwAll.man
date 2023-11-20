@@ -1788,7 +1788,7 @@
                     </template>
 
                     <template tid="WaitHandleWaitStart">
-                        <data name="WaitSource" inType="win:UInt8" map="WaitHandleWaitSourceMap" />
+                        <data name="WaitSource" inType="win:UInt32" map="WaitHandleWaitSourceMap" />
                         <data name="AssociatedObjectID" inType="win:Pointer" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
@@ -1801,7 +1801,7 @@
                     </template>
 
                     <template tid="WaitHandleWaitStop">
-                        <data name="WaitSource" inType="win:UInt8" map="WaitHandleWaitSourceMap" />
+                        <data name="WaitSource" inType="win:UInt32" map="WaitHandleWaitSourceMap" />
                         <data name="DurationNs" inType="win:Double" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
