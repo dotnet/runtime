@@ -2036,7 +2036,18 @@ void UnwindInfo::InitUnwindInfo(Compiler* comp, emitLocation* startLoc, emitLoca
 
 void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 {
-    NYI_RISCV64("HotColdSplitCodes-----unimplemented on RISCV64 yet----");
+    // Ensure that there is exactly a single fragment in both the hot and the cold sections
+    assert(&uwiFragmentFirst == uwiFragmentLast);
+    assert(&puwi->uwiFragmentFirst == puwi->uwiFragmentLast);
+    assert(uwiFragmentLast->ufiNext == NULL);
+    assert(puwi->uwiFragmentLast->ufiNext == NULL);
+
+    // The real prolog is in the hot section, so this, cold, section has a phantom prolog
+    uwiFragmentLast->ufiHasPhantomProlog = true;
+    uwiFragmentLast->CopyPrologCodes(puwi->uwiFragmentLast);
+
+    // Now split the epilog codes
+    uwiFragmentLast->SplitEpilogCodes(uwiFragmentLast->ufiEmitLoc, puwi->uwiFragmentLast);
 }
 
 // Split the function or funclet into fragments that are no larger than 512K,
