@@ -13,12 +13,20 @@
     <!-- remove the existing item -->
     <HelixWorkItem Remove="@(HelixWorkItem)" Condition="'%(HelixWorkItem.Identity)' == 'Wasm.Debugger.Tests'" />
 
-    <ReadLinesFromFile File="$(TestArchiveTestsDir)DebuggerTestSuite.tests.list">
-      <Output TaskParameter="Lines" ItemName="_DebuggerTestsClassName" />
-    </ReadLinesFromFile>
+    <!--<ReadLinesFromFile File="$(TestArchiveTestsDir)DebuggerTestSuite.tests.list">-->
+      <!--<Output TaskParameter="Lines" ItemName="_DebuggerTestsClassName" />-->
+    <!--</ReadLinesFromFile>-->
+    <PropertyGroup>
+        <TestName>DebuggerTests.GetPropertiesTests</TestName>
+    </PropertyGroup>
+    <ItemGroup>
+        <Idx Include="0;1;2;3;4;5;6;7;8;9" />
+        <Idx Include="10;11;12;13;14;15;16;17;18;19" />
+    </ItemGroup>
 
     <ItemGroup>
-      <HelixWorkItem Include="@(_DebuggerTestsClassName -> '$(DebuggerHost)-%(Identity)')">
+      <!--<HelixWorkItem Include="@(_DebuggerTestsClassName -> '$(DebuggerHost)-%(Identity)')">-->
+      <HelixWorkItem Include="@(Idx -> '$(DebuggerHost)-$(TestName)-%(Identity)')">
         <PayloadArchive>$(TestArchiveTestsDir)Wasm.Debugger.Tests.zip</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_DebuggerTestsWorkItemTimeout)</Timeout>

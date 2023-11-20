@@ -308,6 +308,7 @@ public partial class GetChromeVersions : MBU.Task
     {
         string baseUrl = $"{s_snapshotBaseUrl}/{OSPrefix}";
 
+        string? foundUrl = null;
         int branchPosition = int.Parse(version.branch_base_position);
         for (int i = 0; i < MaxBranchPositionsToCheck; i++)
         {
@@ -321,11 +322,15 @@ public partial class GetChromeVersions : MBU.Task
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 Log.LogMessage(MessageImportance.Low, $"Found {url}");
-                return branchUrl;
+                //return branchUrl;
+                foundUrl = branchUrl;
             }
 
             branchPosition += 1;
         }
+
+        if (foundUrl is not null)
+            return foundUrl;
 
         string message = $"Could not find a chrome snapshot folder under {baseUrl}, " +
                             $"for branch positions {version.branch_base_position} to " +
