@@ -34,7 +34,7 @@ namespace ILVerify
             _command = command;
 
             _inputFilePaths = Get(command.InputFilePath);
-            _referenceFilePaths = Get(command.Reference);
+            _referenceFilePaths = Get(command.Reference) ?? new Dictionary<string, string>();
             _verbose = Get(_command.Verbose);
 
             string[] includePatterns = Get(command.Include);
