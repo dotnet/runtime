@@ -32,6 +32,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
+            if (source is List<TSource> list)
+            {
+                return list.Exists(element => predicate(element));
+            }
+
             foreach (TSource element in source)
             {
                 if (predicate(element))
