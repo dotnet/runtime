@@ -12,8 +12,8 @@
     <Nullable>disable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageId>Microsoft.NET.ILLink.Tasks</PackageId>
-    <!-- Don't generate a package in runtime til preview 2 -->
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <!-- Must always build it during servicing. -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- TODO: Enable when the package shipped stable with .NET 8. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- NU5128: This package doesn't contain any lib or ref assemblies because it's a tooling package.
