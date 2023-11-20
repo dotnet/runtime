@@ -2892,8 +2892,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
     bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
 
+    unsigned numBlocks = 0;
+
     for (BasicBlock* const block : Blocks())
     {
+        numBlocks++;
+
         if (checkBBNum)
         {
             // Check that bbNum is sequential
@@ -3101,6 +3105,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->bbWeight > BB_ZERO_WEIGHT);
         }
     }
+
+    assert(fgBBcount == numBlocks);
 
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)

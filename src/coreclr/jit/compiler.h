@@ -4491,7 +4491,7 @@ public:
                                     // created.
     BasicBlockList* fgReturnBlocks; // list of BBJ_RETURN blocks
     unsigned        fgEdgeCount;    // # of control flow edges between the BBs
-    unsigned        fgBBcount;      // # of BBs in the method
+    unsigned        fgBBcount;      // # of BBs in the method (in the linked list that starts with fgFirstBB)
 #ifdef DEBUG
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
@@ -4630,6 +4630,7 @@ public:
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
+    void fgUnlinkBlockForRemoval(BasicBlock* block);
 
 #ifdef FEATURE_JIT_METHOD_PERF
     unsigned fgMeasureIR();
