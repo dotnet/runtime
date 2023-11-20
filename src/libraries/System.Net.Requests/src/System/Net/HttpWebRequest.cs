@@ -114,7 +114,6 @@ namespace System.Net
             public readonly X509CertificateCollection? ClientCertificates;
             public readonly CookieContainer? CookieContainer;
             public readonly ServicePoint? ServicePoint;
-            public readonly bool ReusePort;
             public readonly TimeSpan ContinueTimeout;
 
             public HttpClientParameters(HttpWebRequest webRequest, bool async)
@@ -137,7 +136,6 @@ namespace System.Net
                 ClientCertificates = webRequest._clientCertificates;
                 CookieContainer = webRequest._cookieContainer;
                 ServicePoint = webRequest._servicePoint;
-                ReusePort = ServicePointManager.ReusePort;
                 ContinueTimeout = TimeSpan.FromMilliseconds(webRequest.ContinueTimeout);
             }
 
@@ -153,7 +151,6 @@ namespace System.Net
                     && Timeout == requestParameters.Timeout
                     && SslProtocols == requestParameters.SslProtocols
                     && CheckCertificateRevocationList == requestParameters.CheckCertificateRevocationList
-                    && ReusePort == requestParameters.ReusePort
                     && ContinueTimeout == requestParameters.ContinueTimeout
                     && ReferenceEquals(Credentials, requestParameters.Credentials)
                     && ReferenceEquals(Proxy, requestParameters.Proxy)
@@ -1670,8 +1667,10 @@ namespace System.Net
                     {
                         if (parameters.ServicePoint is not null)
                         {
-                            socket.NoDelay = !parameters.ServicePoint.UseNagleAlgorithm;
-                            socket.ReceiveBufferSize = parameters.ServicePoint.ReceiveBufferSize;
+                            if (parameters.ServicePoint.ReceiveBufferSize != -1)
+                            {
+                                socket.ReceiveBufferSize = parameters.ServicePoint.ReceiveBufferSize;
+                            }
 
                             if (parameters.ServicePoint.KeepAlive is not null)
                             {
@@ -1679,8 +1678,6 @@ namespace System.Net
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, parameters.ServicePoint.KeepAlive.Value.Time);
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, parameters.ServicePoint.KeepAlive.Value.Interval);
                             }
-
-                            // TODO (aaksoy): Implement support for ServicePoint.BindIPEndPointDelegate.
                         }
                         else
                         {
