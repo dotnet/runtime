@@ -1027,29 +1027,21 @@ FCIMPLEND
 //====================================================================
 // check if the type is visible from COM.
 //====================================================================
-FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject* refClassUNSAFE)
+extern "C" BOOL QCALLTYPE MarshalNative_IsTypeVisibleFromCom(QCall::TypeHandle t)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     BOOL retVal = FALSE;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClass);
 
-    // Validate the arguments.
-    if (refClass == NULL)
-        COMPlusThrowArgumentNull(W("t"));
-
-    MethodTable *pRefMT = refClass->GetMethodTable();
-    if (pRefMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
+    BEGIN_QCALL;
 
     // Call the internal version of IsTypeVisibleFromCom.
-    retVal = ::IsTypeVisibleFromCom(refClass->GetType());
+    retVal = ::IsTypeVisibleFromCom(t.AsTypeHandle());
 
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
+    END_QCALL;
+
+    return retVal;
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE MarshalNative_GetNativeVariantForObject(QCall::ObjectHandleOnStack ObjUNSAFE, LPVOID pDestNativeVariant)
 {

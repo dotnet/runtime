@@ -651,8 +651,19 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// check if the type is visible from COM.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool IsTypeVisibleFromCom(Type t);
+        public static bool IsTypeVisibleFromCom(Type t)
+        {
+            ArgumentNullException.ThrowIfNull(t);
+
+            if (t is not RuntimeType rt)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
+
+            return IsTypeVisibleFromCom(new QCallTypeHandle(ref rt));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsTypeVisibleFromCom")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsTypeVisibleFromCom(QCallTypeHandle rt);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]

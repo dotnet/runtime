@@ -108,11 +108,6 @@ public:
     // of the specified type. The type must be derived from __ComObject.
     //====================================================================
     static FCDECL2(Object*, InternalCreateWrapperOfType, Object* objUNSAFE, ReflectClassBaseObject* refClassUNSAFE);
-
-    //====================================================================
-    // check if the type is visible from COM.
-    //====================================================================
-    static FCDECL1(FC_BOOL_RET, IsTypeVisibleFromCom, ReflectClassBaseObject* refClassUNSAFE);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -129,6 +124,11 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// check if the type is visible from COM.
+//====================================================================
+extern "C" BOOL QCALLTYPE MarshalNative_IsTypeVisibleFromCom(QCall::TypeHandle t);
 
 //====================================================================
 // These methods convert OLE variants to and from objects.
