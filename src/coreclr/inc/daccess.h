@@ -574,6 +574,8 @@
 #include "crosscomp.h"
 #endif
 
+#include <dn-u16.h>
+
 // Information stored in the DAC table of interest to the DAC implementation
 // Note that this information is shared between all instantiations of ClrDataAccess, so initialize
 // it just once in code:ClrDataAccess.GetDacGlobals (rather than use fields in ClrDataAccess);
