@@ -1569,14 +1569,14 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="keyValuePair">The <see cref="KeyValuePair{TKey,TValue}"/>
         /// structure representing the key and value to add to the <see
-        /// cref="Dictionary{TKey,TValue}"/>.</param>
+        /// cref="ConcurrentDictionary{TKey,TValue}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="keyValuePair"/> of <paramref
         /// name="keyValuePair"/> is null.</exception>
         /// <exception cref="OverflowException">The <see
-        /// cref="Dictionary{TKey,TValue}"/>
+        /// cref="ConcurrentDictionary{TKey,TValue}"/>
         /// contains too many elements.</exception>
         /// <exception cref="ArgumentException">An element with the same key already exists in the
-        /// <see cref="Dictionary{TKey,TValue}"/></exception>
+        /// <see cref="ConcurrentDictionary{TKey,TValue}"/></exception>
         void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair) => ((IDictionary<TKey, TValue>)this).Add(keyValuePair.Key, keyValuePair.Value);
 
         /// <summary>
@@ -1597,7 +1597,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <value>true if the <see cref="ICollection{T}"/> is
         /// read-only; otherwise, false. For <see
-        /// cref="Dictionary{TKey,TValue}"/>, this property always returns
+        /// cref="ConcurrentDictionary{TKey,TValue}"/>, this property always returns
         /// false.</value>
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
@@ -1607,7 +1607,7 @@ namespace System.Collections.Concurrent
         /// <param name="keyValuePair">The <see
         /// cref="KeyValuePair{TKey,TValue}"/>
         /// structure representing the key and value to remove from the <see
-        /// cref="Dictionary{TKey,TValue}"/>.</param>
+        /// cref="ConcurrentDictionary{TKey,TValue}"/>.</param>
         /// <returns>true if the key and value represented by <paramref name="keyValuePair"/> is successfully
         /// found and removed; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">The Key property of <paramref
@@ -1645,11 +1645,11 @@ namespace System.Collections.Concurrent
         /// elements.</exception>
         /// <exception cref="ArgumentException">
         /// <paramref name="key"/> is of a type that is not assignable to the key type <typeparamref
-        /// name="TKey"/> of the <see cref="Dictionary{TKey,TValue}"/>. -or-
+        /// name="TKey"/> of the <see cref="ConcurrentDictionary{TKey,TValue}"/>. -or-
         /// <paramref name="value"/> is of a type that is not assignable to <typeparamref name="TValue"/>,
-        /// the type of values in the <see cref="Dictionary{TKey,TValue}"/>.
+        /// the type of values in the <see cref="ConcurrentDictionary{TKey,TValue}"/>.
         /// -or- A value with the same key already exists in the <see
-        /// cref="Dictionary{TKey,TValue}"/>.
+        /// cref="ConcurrentDictionary{TKey,TValue}"/>.
         /// </exception>
         void IDictionary.Add(object key, object? value)
         {
