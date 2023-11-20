@@ -152,8 +152,9 @@ public class PInvokes
 
     [Fact]
     [SkipOnMono("Blocking this on CoreCLR should be good enough.")]
-    public static void Int128_NotSupported()
+    public static void UInt128_Int128_NotSupported()
     {
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithInt128(default(Int128)));
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithUInt128(default(UInt128)));
     }
 }

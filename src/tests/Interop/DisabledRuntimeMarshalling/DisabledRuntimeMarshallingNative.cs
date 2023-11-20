@@ -125,6 +125,9 @@ public unsafe class DisabledRuntimeMarshallingNative
     {
         Value = 42
     }
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
+    public static extern byte GetEnumUnderlyingValue(ByteEnum b);
 #endif
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
@@ -135,7 +138,7 @@ public unsafe class DisabledRuntimeMarshallingNative
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
 #if DISABLE_RUNTIME_MARSHALLING
-    public static extern bool CheckStructWithShortAndBool(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.I4)] bool b);
+    public static extern bool CheckStructWithShortAndBool(StructWithShortAndBoolWithMarshalAs str, short s, bool b);
 #else
     [return:MarshalAs(UnmanagedType.U1)]
     public static extern bool CheckStructWithShortAndBool(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.Bool)] bool b);
@@ -148,12 +151,10 @@ public unsafe class DisabledRuntimeMarshallingNative
     public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShort str, short s, char c);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-#if DISABLE_RUNTIME_MARSHALLING
-    public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShortWithMarshalAs str, short s, char c);
-#else
+#if !DISABLE_RUNTIME_MARSHALLING
     [return:MarshalAs(UnmanagedType.U1)]
-    public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShortWithMarshalAs str, short s, [MarshalAs(UnmanagedType.U1)] char c);
 #endif
+    public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShortWithMarshalAs str, short s, char c);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
 #if !DISABLE_RUNTIME_MARSHALLING
@@ -167,23 +168,29 @@ public unsafe class DisabledRuntimeMarshallingNative
 #endif
     public static extern bool CheckStructWithWCharAndShort(StructWithShortAndGeneric<short> str, short s, short c);
 
+#if DISABLE_RUNTIME_MARSHALLING
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-    public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
-
-    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-#if !DISABLE_RUNTIME_MARSHALLING
-    [return:MarshalAs(UnmanagedType.U1)]
-#endif
     public static extern bool CallCheckStructWithShortAndBoolCallback(delegate* unmanaged<StructWithShortAndBool, short, bool, bool> cb, StructWithShortAndBool str, short s, bool b);
+#endif
+
+    public static IntPtr GetStructWithShortAndBoolCallback()
+    {
+#if DISABLE_RUNTIME_MARSHALLING
+        return GetStructWithShortAndBoolCallback(false);
+#else
+        return GetStructWithShortAndBoolCallback(true);
+#endif
+        [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+        static extern IntPtr GetStructWithShortAndBoolCallback([MarshalAs(UnmanagedType.U1)] bool marshalSupported);
+    }
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-    public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolWithVariantBoolCallback();
+    public static extern IntPtr GetStructWithShortAndBoolWithVariantBoolCallback();
 
+#if DISABLE_RUNTIME_MARSHALLING
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
-#if !DISABLE_RUNTIME_MARSHALLING
-    [return:MarshalAs(UnmanagedType.U1)]
-#endif
     public static extern bool GetByteAsBool(byte b);
+#endif
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWithAutoLayoutStruct(AutoLayoutStruct s);
@@ -226,19 +233,26 @@ public unsafe class DisabledRuntimeMarshallingNative
 #if DISABLE_RUNTIME_MARSHALLING
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", CharSet = CharSet.Ansi)]
     public static extern void CheckStringWithAnsiCharSet(string s);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", CharSet = CharSet.Unicode)]
     public static extern void CheckStringWithUnicodeCharSet(string s);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", CharSet = CharSet.Unicode)]
     public static extern string GetStringWithUnicodeCharSet();
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CheckStructWithStructWithString(StructWithString s);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CheckLayoutClass(LayoutClass c);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", SetLastError = true)]
     public static extern void CallWithSetLastError();
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     [LCIDConversion(0)]
     public static extern void CallWithLCID();
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", PreserveSig = false)]
     public static extern int CallWithHResultSwap();
 
@@ -251,21 +265,27 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWithInt128(Int128 i);
 
-    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
-    public static extern byte GetEnumUnderlyingValue(ByteEnum b);
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithUInt128(UInt128 i);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(Nullable<int> s);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(Span<int> s);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(ReadOnlySpan<int> ros);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(Vector64<int> v);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(Vector128<int> v);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(Vector256<int> v);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWith(Vector<int> v);
 #endif

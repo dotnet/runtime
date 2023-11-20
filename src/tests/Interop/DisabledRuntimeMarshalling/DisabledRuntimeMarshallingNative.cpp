@@ -24,17 +24,24 @@ extern "C" DLL_EXPORT BYTE STDMETHODCALLTYPE CheckStructWithShortAndBool(StructW
     return str.s == s && str.b == b;
 }
 
+static BOOL STDMETHODCALLTYPE CheckStructWithShortAndBoolMarshalSupport(StructWithShortAndBool str, short s, BYTE b)
+{
+    return (CheckStructWithShortAndBool(str, s, b) != 0) ? TRUE : FALSE;
+}
+
 extern "C" DLL_EXPORT BYTE STDMETHODCALLTYPE CheckStructWithWCharAndShort(StructWithWCharAndShort str, short s, WCHAR c)
 {
     return str.s == s && str.c == c;
 }
 
-using CheckStructWithShortAndBoolCallback = BYTE (STDMETHODCALLTYPE*)(StructWithShortAndBool, short, BYTE);
-
-extern "C" DLL_EXPORT CheckStructWithShortAndBoolCallback STDMETHODCALLTYPE GetStructWithShortAndBoolCallback()
+extern "C" DLL_EXPORT void* STDMETHODCALLTYPE GetStructWithShortAndBoolCallback(BYTE marshalSupported)
 {
-    return &CheckStructWithShortAndBool;
+    return (marshalSupported != 0)
+        ? (void*)&CheckStructWithShortAndBoolMarshalSupport
+        : (void*)&CheckStructWithShortAndBool;
 }
+
+using CheckStructWithShortAndBoolCallback = BYTE (STDMETHODCALLTYPE*)(StructWithShortAndBool, short, BYTE);
 
 extern "C" DLL_EXPORT BYTE STDMETHODCALLTYPE CallCheckStructWithShortAndBoolCallback(CheckStructWithShortAndBoolCallback cb, StructWithShortAndBool str, short s, BYTE b)
 {
