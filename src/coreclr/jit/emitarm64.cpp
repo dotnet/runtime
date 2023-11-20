@@ -1420,6 +1420,25 @@ const char* emitter::emitVectorRegName(regNumber reg)
     return vRegNames[index];
 }
 
+//------------------------------------------------------------------------
+// emitPredicateRegName: Returns a predicate register name.
+//
+// Arguments:
+//    reg - A predicate register.
+//
+// Return value:
+//    A string that represents a predicate register name.
+//
+const char* emitter::emitPredicateRegName(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert((reg >= REG_V0) && (reg <= REG_V31));
+
+    int index = (int)reg - (int)REG_V0;
+
+    return vRegNames[index];
+}
+
 /*****************************************************************************
  *
  *  Returns the base encoding of the given CPU instruction.
@@ -10573,6 +10592,48 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns an encoding for the specified register used in the 'Pd' position
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_Pd(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(emitter::isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg;
+}
+
+/*****************************************************************************
+ *
+ *  Returns an encoding for the specified register used in the 'Pn' position
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_Pn(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(emitter::isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 5;
+}
+
+/*****************************************************************************
+ *
+ *  Returns an encoding for the specified register used in the 'Pm' position
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_Pm(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(emitter::isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 16;
+}
+
+/*****************************************************************************
+ *
  *  Returns an encoding for the specified condition code.
  */
 
@@ -13847,6 +13908,20 @@ void emitter::emitDispVectorElemList(
     {
         emitDispComma();
     }
+}
+
+//------------------------------------------------------------------------
+// emitDispPredicateReg: Display a predicate register name with with an arrangement suffix
+//
+void emitter::emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    assert(isPredicateRegister(reg));
+    printf(emitVectorRegName(reg));
+    emitDispArrangement(opt);
+
+    if (addComma)
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------

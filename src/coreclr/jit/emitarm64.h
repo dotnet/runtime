@@ -20,6 +20,7 @@ static bool strictArmAsm;
 /************************************************************************/
 
 const char* emitVectorRegName(regNumber reg);
+const char* emitPredicateRegName(regNumber reg);
 
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
@@ -42,6 +43,7 @@ void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
+void emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -311,6 +313,15 @@ static code_t insEncodeReg_Vm(regNumber reg);
 
 // Returns an encoding for the specified register used in the 'Va' position
 static code_t insEncodeReg_Va(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Pd' position
+static code_t insEncodeReg_Pd(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Pn' position
+static code_t insEncodeReg_Pn(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Pm' position
+static code_t insEncodeReg_Pm(regNumber reg);
 
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
@@ -662,6 +673,12 @@ inline static bool isVectorRegister(regNumber reg)
 inline static bool isFloatReg(regNumber reg)
 {
     return isVectorRegister(reg);
+}
+
+inline static bool isPredicateRegister(regNumber reg)
+{
+    // TODO-SVE: Fix once we add predicate registers
+    return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
