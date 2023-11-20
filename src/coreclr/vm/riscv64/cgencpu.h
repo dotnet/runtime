@@ -355,6 +355,9 @@ public:
     static bool isValidSimm12(int value) {
         return -( ((int)1) << 11 ) <= value && value < ( ((int)1) << 11 );
     }
+    static bool isValidSimm13(int value) {
+        return -(((int)1) << 12) <= value && value < (((int)1) << 12);
+    }
     static bool isValidUimm20(int value) {
         return (0 == (value >> 20));
     }

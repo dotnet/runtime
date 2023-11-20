@@ -1256,6 +1256,21 @@ static unsigned UTypeInstr(unsigned opcode, unsigned rd, int imm20)
     return opcode | (rd << 7) | (imm20 << 12);
 }
 
+static unsigned BTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm13)
+{
+    _ASSERTE(!(opcode >> 7));
+    _ASSERTE(!(funct3 >> 3));
+    _ASSERTE(!(rs1 >> 5));
+    _ASSERTE(!(rs2 >> 5));
+    _ASSERTE(StubLinkerCPU::isValidSimm13(imm13));
+    _ASSERTE(IS_ALIGNED(imm13, 2));
+    int immLo1 = (imm13 >> 11) & 0x1;
+    int immLo4 = (imm13 >> 1) & 0xf;
+    int immHi6 = (imm13 >> 5) & 0x3f;
+    int immHi1 = (imm13 >> 12) & 0x1;
+    return opcode | (immLo4 << 8) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (immHi6 << 25) | (immLo1 << 7) | (immHi1 << 31);
+}
+
 void StubLinkerCPU::EmitLoad(IntReg dest, IntReg srcAddr, int offset)
 {
     Emit32(ITypeInstr(0x3, 0x3, dest, srcAddr, offset));  // ld
@@ -1515,62 +1530,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 //
 // Allocation of dynamic helpers
 //
-enum Riscv64_registers
-{
-    REG_ZERO,
-    REG_RA,
-    REG_SP,
-    REG_GP,
-    REG_TP,
-    REG_T0,
-    REG_T1,
-    REG_T2,
-    REG_FP,
-    REG_S1,
-    REG_A0,
-    REG_A1,
-    REG_A2,
-    REG_A3,
-    REG_A4,
-    REG_A5,
-    REG_A6,
-    REG_A7,
-    REG_S2,
-    REG_S3,
-    REG_S4,
-    REG_S5,
-    REG_S6,
-    REG_S7,
-    REG_S8,
-    REG_S9,
-    REG_S10,
-    REG_S11,
-    REG_T3,
-    REG_T4,
-    REG_T5,
-    REG_T6
-};
-
-enum Riscv64_asm_instructions
-{
-    INSTR_AUIPC = 0x17,
-    INSTR_LUI = 0x37,
-    INSTR_ADD = 0x33,
-    INSTR_ADDI = 0x13,
-    INSTR_LD = 0x3,
-    INSTR_LW = 0x3,
-    INSTR_JALR = 0x67,
-};
-
-enum Riscv64_funct3
-{
-    FUNCT3_ADD = 0,
-    FUNCT3_ADDI = 0,
-    FUNCT3_LD = 0x3,
-    FUNCT3_LW = 0x2,
-    FUNCT3_JALR = 0,
-};
-
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
@@ -1611,13 +1570,15 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 {
     STANDARD_VM_CONTRACT;
 
-    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
+    const IntReg RegR0 = 0, RegT0 = 5, RegA0 = 10;
+
+    *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 16);// ld a0, 16(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 16);// ld a0, 16(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 24);;// ld t0, 24(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);;// ld t0, 24(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr zero, 0(t0)
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr zero, 0(t0)
     p += 4;
 
     // label:
@@ -1646,18 +1607,20 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
 
     BEGIN_DYNAMIC_HELPER_EMIT(48);
 
-    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
+    const IntReg RegR0 = 0, RegT0 = 5, RegA0 = 10, RegA1 = 11;
+
+    *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 24);// ld a0, 24(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 24);// ld a0, 24(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A1, REG_T0, 32);// ld a1, 32(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA1, RegT0, 32);// ld a1, 32(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 40);// ld t0, 40(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 40);// ld t0, 40(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr x0, 0(t0)
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr x0, 0(t0)
     p += 4;
 
-    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
+    *(DWORD*)p = ITypeInstr(0x13, 0, RegR0, RegR0, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1680,18 +1643,20 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 
     BEGIN_DYNAMIC_HELPER_EMIT(40);
 
-    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
+    const IntReg RegR0 = 0, RegT0 = 5, RegA0 = 10, RegA1 = 11;
+
+    *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_A1, REG_A0, 0);// addi a1, a0, 0
+    *(DWORD*)p = ITypeInstr(0x13, 0, RegA1, RegA0, 0);// addi a1, a0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 24);// ld a0, 24(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 24);// ld a0, 24(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 32);// ld t0, 32(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 32);// ld t0, 32(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr x0, 0(t0)
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr x0, 0(t0)
     p += 4;
 
-    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
+    *(DWORD*)p = ITypeInstr(0x13, 0, RegR0, RegR0, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1711,7 +1676,9 @@ PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 
     BEGIN_DYNAMIC_HELPER_EMIT(4);
 
-    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
+    const IntReg RegR0 = 0, RegRa = 1;
+
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegRa, 0);// ret
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -1723,13 +1690,15 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
     BEGIN_DYNAMIC_HELPER_EMIT(24);
 
-    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
+    const IntReg RegR0 = 0, RegRa = 1, RegT0 = 5, RegA0 = 10;
+
+    *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 16);// ld a0, 16(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 16);// ld a0, 16(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegRa, 0);// ret
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
+    *(DWORD*)p = ITypeInstr(0x13, 0, RegR0, RegR0, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1746,17 +1715,19 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
 
-    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
+    const IntReg RegR0 = 0, RegRa = 1, RegT0 = 5, RegA0 = 10;
+
+    *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_T0, 24);// ld a0, 24(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 24);// ld a0, 24(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_A0, 0);// ld a0,0(a0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegA0, 0);// ld a0,0(a0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_A0, REG_A0, ((offset & 0xfff)<<20));// addi a0, a0, offset
+    *(DWORD*)p = ITypeInstr(0x13, 0, RegA0, RegA0, offset & 0xfff);// addi a0, a0, offset
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegRa, 0);// ret
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
+    *(DWORD*)p = ITypeInstr(0x13, 0, RegR0, RegR0, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1773,13 +1744,15 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
 
-    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
+    const IntReg RegR0 = 0, RegT0 = 5, RegA2 = 12;
+
+    *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A2, REG_T0, 16);// ld a2,16(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA2, RegT0, 16);// ld a2,16(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 24);// ld t0,24(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);// ld t0,24(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr x0, 0(t0)
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr x0, 0(t0)
     p += 4;
 
     // label:
@@ -1799,17 +1772,19 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     BEGIN_DYNAMIC_HELPER_EMIT(48);
 
-    *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T0, 0);// auipc t0, 0
+    const IntReg RegR0 = 0, RegT0 = 5, RegA2 = 12, RegA3 = 1;
+
+    *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A2, REG_T0, 24);// ld a2,24(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA2, RegT0, 24);// ld a2,24(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A3, REG_T0, 32);// ld a3,32(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA3, RegT0, 32);// ld a3,32(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T0, REG_T0, 40);;// ld t0,40(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 40);;// ld t0,40(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_T0, 0);// jalr x0, 0(t0)
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr x0, 0(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);// nop, padding to make 8 byte aligned
+    *(DWORD*)p = ITypeInstr(0x13, 0, RegR0, RegR0, 0);// nop, padding to make 8 byte aligned
     p += 4;
 
     // label:
@@ -1828,6 +1803,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
+    const IntReg RegR0 = 0, RegA0 = 10, RegT2 = 7, RegT4 = 29, RegT5 = 30;
 
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
@@ -1868,11 +1844,11 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->offsets[i] >= 0);
             if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
-                codeSize += (pLookup->sizeOffset > 2047 ? 28 : 16);
+                codeSize += (pLookup->sizeOffset > 2047 ? 24 : 16);
                 indirectionsDataSize += (pLookup->sizeOffset > 2047 ? 4 : 0);
             }
 
-            codeSize += (pLookup->offsets[i] > 2047 ? 16 : 4); // if( > 2047) (16 bytes) else 4 bytes for instructions.
+            codeSize += (pLookup->offsets[i] > 2047 ? 12 : 4); // if( > 2047) (12 bytes) else 4 bytes for instructions.
             indirectionsDataSize += (pLookup->offsets[i] > 2047 ? 4 : 0); // 4 bytes for storing indirection offset values
         }
 
@@ -1880,7 +1856,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         if (pLookup->testForNull)
         {
-            codeSize += 12; // beq-ret-ori
+            codeSize += 12; // beq-ret-addi
 
             //padding for 8-byte align (required by EmitHelperWithArg)
             codeSize += ALIGN_UP(codeSize, 8);
@@ -1906,13 +1882,13 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(codeSize < 2047);
 
             //auipc t4, 0
-            *(DWORD*)p = UTypeInstr(INSTR_AUIPC, REG_T4, 0);
+            *(DWORD*)p = UTypeInstr(0x17, RegT4, 0);
             p += 4;
         }
 
         if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
         {
-            *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_T2, REG_A0, 0);// addi t2, a0, 0
+            *(DWORD*)p = ITypeInstr(0x13, 0, RegT2, RegA0, 0);// addi t2, a0, 0
             p += 4;
         }
 
@@ -1926,11 +1902,11 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
                 if (pLookup->sizeOffset > 2047)
                 {
-                    *(DWORD*)p = ITypeInstr(INSTR_LW, FUNCT3_LW, REG_T4, REG_T4, (dataOffset << 20));// lw  t4, dataOffset(t4)
+                    *(DWORD*)p = ITypeInstr(0x3, 0x2, RegT4, RegT4, dataOffset);// lw  t4, dataOffset(t4)
                     p += 4;
-                    *(DWORD*)p = RTypeInstr(INSTR_ADD, FUNCT3_ADD, 0, REG_T5, REG_A0, REG_T4);// add  t5, a0, t4
+                    *(DWORD*)p = RTypeInstr(0x33, 0, 0, RegT5, RegA0, RegT4);// add  t5, a0, t4
                     p += 4;
-                    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T5, REG_T5, 0);// ld  t5, 0(t5)
+                    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT5, RegT5, 0);// ld  t5, 0(t5)
                     p += 4;
 
                     // move to next indirection offset data
@@ -1938,28 +1914,27 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 }
                 else
                 {
-                    *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_T5, REG_A0, ((UINT32)pLookup->sizeOffset << 20));// ld  t5, #(pLookup->sizeOffset)(a0)
+                    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT5, RegA0, (UINT32)pLookup->sizeOffset);// ld  t5, #(pLookup->sizeOffset)(a0)
                     p += 4;
                 }
                 // lui  t4, (slotOffset&0xfffff000)>>12
-                *(DWORD*)p = UTypeInstr(INSTR_LUI, REG_T4, ((((UINT32)slotOffset & 0xfffff000) >> 12) << 12));
+                *(DWORD*)p = UTypeInstr(0x37, RegT4, (((UINT32)slotOffset & 0xfffff000) >> 12));
                 p += 4;
-                *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_T4, REG_T4, ((slotOffset & 0xfff) << 20));// addi  t4, REG_T4, (slotOffset&0xfff)
+                *(DWORD*)p = ITypeInstr(0x13, 0, RegT4, RegT4, slotOffset & 0xfff);// addi  t4, t4, (slotOffset&0xfff)
                 p += 4;
                 // blt  t4, t5, CALL HELPER
                 pBLTCall = p;       // Offset filled later
-                *(DWORD*)p = 0x01eec063;
                 p += 4;
             }
 
             if(pLookup->offsets[i] > 2047)
             {
                 _ASSERTE(dataOffset < 2047);
-                *(DWORD*)p = ITypeInstr(INSTR_LW, FUNCT3_LW, REG_T4, REG_T4, ((dataOffset & 0xfff) << 20));// lw  t4, dataOffset(t4)
+                *(DWORD*)p = ITypeInstr(0x3, 0x2, RegT4, RegT4, dataOffset & 0xfff);// lw  t4, dataOffset(t4)
                 p += 4;
-                *(DWORD*)p = RTypeInstr(INSTR_ADD, FUNCT3_ADD, 0, REG_A0, REG_A0, REG_T4);// add  a0, a0, t4
+                *(DWORD*)p = RTypeInstr(0x33, 0, 0, RegA0, RegA0, RegT4);// add  a0, a0, t4
                 p += 4;
-                *(DWORD*)p = ITypeInstr(INSTR_LW, FUNCT3_LW, REG_A0, REG_A0, 0);// lw  a0, 0(a0)
+                *(DWORD*)p = ITypeInstr(0x3, 0x2, RegA0, RegA0, 0);// lw  a0, 0(a0)
                 p += 4;
                 // move to next indirection offset data
                 dataOffset += 4; // add 4 as next data is at 4 bytes from previous data
@@ -1968,7 +1943,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             {
                 // offset must be 8 byte aligned
                 _ASSERTE((pLookup->offsets[i] & 0x7) == 0);
-                *(DWORD*)p = ITypeInstr(INSTR_LD, FUNCT3_LD, REG_A0, REG_A0, ((UINT32)pLookup->offsets[i] << 20));// ld  a0, #(pLookup->offsets[i])(a0)
+                *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegA0, (UINT32)pLookup->offsets[i]);// ld  a0, #(pLookup->offsets[i])(a0)
                 p += 4;
             }
         }
@@ -1977,28 +1952,28 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         if (!pLookup->testForNull)
         {
             _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
-            *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
+            *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegRa, 0);// ret
             p += 4;
         }
         else
         {
             // beq  a0, x0, CALL HELPER:
-            *(DWORD*)p = 0x00050463;
+            *(DWORD*)p = BTypeInstr(0x63, 0, RegA0, RegR0, 8);
             p += 4;
 
-            *(DWORD*)p = ITypeInstr(INSTR_JALR, FUNCT3_JALR, REG_ZERO, REG_RA, 0);// ret
+            *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegRa, 0);// ret
             p += 4;
 
             // CALL HELPER:
             if(pBLTCall != NULL)
-                *(DWORD*)pBLTCall |= ((UINT32)(p - pBLTCall) << 7);
+                *(DWORD*)pBLTCall = BTypeInstr(0x63, 0x4, RegT4, RegT5, (UINT32)(p - pBLTCall));
 
-            *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_A0, REG_T2, 0);// addi  a0, t2, 0
+            *(DWORD*)p = ITypeInstr(0x13, 0, RegA0, RegT2, 0);// addi  a0, t2, 0
             p += 4;
             if ((uintptr_t)(p - old_p) & 0x7)
             {
                 // nop, padding for 8-byte align (required by EmitHelperWithArg)
-                *(DWORD*)p = ITypeInstr(INSTR_ADDI, FUNCT3_ADDI, REG_ZERO, REG_ZERO, 0);
+                *(DWORD*)p = ITypeInstr(0x13, 0, RegR0, RegR0, 0);
                 p += 4;
             }
 
