@@ -40,7 +40,7 @@ Note that Visual Studio and the development tools described below are required, 
 * To build for Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
   * For Arm64, check the box for _MSVC v143* VS 2022 C++ ARM64 build tools (Latest)_.
 * To build the tests, you will need some additional components:
-  * **C++/CLI support for v143 build tools (Latest)**. Note that this needs to be v14.38 or later in the project properties page
+  * **C++/CLI support for v143 build tools (Latest)**
 
 A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components.
 
