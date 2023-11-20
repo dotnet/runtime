@@ -3426,7 +3426,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                uint imm5 = ((code >> 15) & 0x1f);
+                unsigned imm5 = ((code >> 15) & 0x1f);
                 switch (opcode2)
                 {
                     case 0x5: // CSRRWI
