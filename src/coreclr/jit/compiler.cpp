@@ -1965,7 +1965,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
-    fgSsaChecksEnabled         = false;
+    fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -4960,10 +4960,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             //
             // So, disable the ssa checks.
             //
-            if (fgSsaChecksEnabled)
+            if (fgSsaValid)
             {
-                JITDUMP("Disabling SSA checking before assertion prop\n");
-                fgSsaChecksEnabled = false;
+                JITDUMP("Marking SSA as invalid before assertion prop\n");
+                fgSsaValid = false;
             }
 
             if (doAssertionProp)
@@ -5742,7 +5742,7 @@ void Compiler::ResetOptAnnotations()
     m_dominancePreds     = nullptr;
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
-    fgSsaChecksEnabled   = false;
+    fgSsaValid           = false;
 
     for (BasicBlock* const block : Blocks())
     {
