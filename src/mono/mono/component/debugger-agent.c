@@ -1629,6 +1629,11 @@ mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 
+	/* Needed for the mono_g_hash_table_new_type_internal () call below */
+	mono_gc_base_init ();
+
+	suspended_objs = mono_g_hash_table_new_type_internal ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Suspended Object Table");
+
 	log_level = log_level_parm;
 
 	vm_start_event_sent = TRUE;
