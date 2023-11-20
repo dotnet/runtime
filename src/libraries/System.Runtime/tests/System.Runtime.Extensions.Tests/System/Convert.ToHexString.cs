@@ -6,7 +6,7 @@ using System.Text;
 using System.Collections.Generic;
 
 namespace System.Tests
-{ 
+{
     public class ConvertToHexStringTests
     {
         [Fact]
@@ -14,6 +14,13 @@ namespace System.Tests
         {
             byte[] inputBytes = new byte[] { 0x00, 0x01, 0x02, 0xFD, 0xFE, 0xFF };
             Assert.Equal("000102FDFEFF", Convert.ToHexString(inputBytes));
+        }
+
+        [Fact]
+        public static void KnownByteSequenceLower()
+        {
+            byte[] inputBytes = new byte[] { 0x00, 0x01, 0x02, 0xFD, 0xFE, 0xFF };
+            Assert.Equal("000102fdfeff", Convert.ToHexStringLower(inputBytes));
         }
 
         [Fact]
@@ -31,10 +38,25 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CompleteValueRangeLower()
+        {
+            byte[] values = new byte[256];
+            StringBuilder sb = new StringBuilder(256);
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (byte)i;
+                sb.Append($"{i:x2}");
+            }
+
+            Assert.Equal(sb.ToString(), Convert.ToHexStringLower(values));
+        }
+
+        [Fact]
         public static void ZeroLength()
         {
             byte[] inputBytes = Convert.FromHexString("000102FDFEFF");
             Assert.Same(string.Empty, Convert.ToHexString(inputBytes, 0, 0));
+            Assert.Same(string.Empty, Convert.ToHexStringLower(inputBytes, 0, 0));
         }
 
         [Fact]
@@ -42,6 +64,8 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexString(null));
             AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexString(null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexStringLower(null));
+            AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexStringLower(null, 0, 0));
         }
 
         [Fact]
@@ -50,6 +74,8 @@ namespace System.Tests
             byte[] inputBytes = Convert.FromHexString("000102FDFEFF");
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexString(inputBytes, -1, inputBytes.Length));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexString(inputBytes, inputBytes.Length, inputBytes.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexStringLower(inputBytes, -1, inputBytes.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexStringLower(inputBytes, inputBytes.Length, inputBytes.Length));
         }
 
         [Fact]
@@ -59,12 +85,16 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Convert.ToHexString(inputBytes, 0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexString(inputBytes, 0, inputBytes.Length + 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexString(inputBytes, 1, inputBytes.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Convert.ToHexStringLower(inputBytes, 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexStringLower(inputBytes, 0, inputBytes.Length + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => Convert.ToHexStringLower(inputBytes, 1, inputBytes.Length));
         }
 
         [Fact]
         public static unsafe void InputTooLarge()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => Convert.ToHexString(new ReadOnlySpan<byte>((void*)0, Int32.MaxValue)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => Convert.ToHexStringLower(new ReadOnlySpan<byte>((void*)0, Int32.MaxValue)));
         }
 
         public static IEnumerable<object[]> ToHexStringTestData()
@@ -105,6 +135,14 @@ namespace System.Tests
         {
             string actual = Convert.ToHexString(input);
             Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(ToHexStringTestData))]
+        public static unsafe void ToHexStringLower(byte[] input, string expected)
+        {
+            string actual = Convert.ToHexStringLower(input);
+            Assert.Equal(expected.ToLower(), actual);
         }
     }
 }
