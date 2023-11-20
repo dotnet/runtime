@@ -113,13 +113,6 @@ public:
     // check if the type is visible from COM.
     //====================================================================
     static FCDECL1(FC_BOOL_RET, IsTypeVisibleFromCom, ReflectClassBaseObject* refClassUNSAFE);
-
-    //====================================================================
-    // These methods convert OLE variants to and from objects.
-    //====================================================================
-    static FCDECL2(void, GetNativeVariantForObjectNative, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
-    static FCDECL1(Object*, GetObjectForNativeVariantNative, LPVOID pSrcNativeVariant);
-    static FCDECL2(Object*, GetObjectsForNativeVariantsNative, VARIANT* aSrcNativeVariant, int cVars);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -136,8 +129,20 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 // Create type for given CLSID.
 //====================================================================
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
+//====================================================================
+// These methods convert OLE variants to and from objects.
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_GetNativeVariantForObject(QCall::ObjectHandleOnStack ObjUNSAFE, LPVOID pDestNativeVariant);
+extern "C" void QCALLTYPE MarshalNative_GetObjectForNativeVariant(LPVOID pSrcNativeVariant, QCall::ObjectHandleOnStack retObject);
+extern "C" void QCALLTYPE MarshalNative_GetObjectsForNativeVariants(VARIANT* aSrcNativeVariant, int cVars, QCall::ObjectHandleOnStack retArray);
+
+//====================================================================
+// These methods are used to map COM slots to method info's.
+//====================================================================
 extern "C" INT32 QCALLTYPE MarshalNative_GetStartComSlot(QCall::TypeHandle t);
 extern "C" INT32 QCALLTYPE MarshalNative_GetEndComSlot(QCall::TypeHandle t);
+
 extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak);
 #endif
 

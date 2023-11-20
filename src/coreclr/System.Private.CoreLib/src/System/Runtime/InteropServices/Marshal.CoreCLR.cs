@@ -663,11 +663,13 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            GetNativeVariantForObjectNative(obj, pDstNativeVariant);
+            ArgumentNullException.ThrowIfNull(pDstNativeVariant);
+
+            GetNativeVariantForObject(ObjectHandleOnStack.Create(ref obj), pDstNativeVariant);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void GetNativeVariantForObjectNative(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetNativeVariantForObject")]
+        private static partial void GetNativeVariantForObject(ObjectHandleOnStack obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -690,11 +692,15 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            return GetObjectForNativeVariantNative(pSrcNativeVariant);
+            ArgumentNullException.ThrowIfNull(pSrcNativeVariant);
+
+            object? retObject = null;
+            GetObjectForNativeVariant(pSrcNativeVariant, ObjectHandleOnStack.Create(ref retObject));
+            return retObject;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? GetObjectForNativeVariantNative(/* VARIANT * */ IntPtr pSrcNativeVariant);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetObjectForNativeVariant")]
+        private static partial void GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant, ObjectHandleOnStack retObject);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -717,11 +723,16 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            return GetObjectsForNativeVariantsNative(aSrcNativeVariant, cVars);
+            ArgumentNullException.ThrowIfNull(aSrcNativeVariant);
+            ArgumentOutOfRangeException.ThrowIfNegative(cVars);
+
+            object?[]? retArray = null;
+            GetObjectsForNativeVariants(aSrcNativeVariant, cVars, ObjectHandleOnStack.Create(ref retArray));
+            return retArray!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object?[] GetObjectsForNativeVariantsNative(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetObjectsForNativeVariants")]
+        private static partial void GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars, ObjectHandleOnStack retArray);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]

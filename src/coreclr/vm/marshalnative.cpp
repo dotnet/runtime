@@ -1051,20 +1051,21 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject
 }
 FCIMPLEND
 
-FCIMPL2(void, MarshalNative::GetNativeVariantForObjectNative, Object* ObjUNSAFE, LPVOID pDestNativeVariant)
+extern "C" void QCALLTYPE MarshalNative_GetNativeVariantForObject(QCall::ObjectHandleOnStack ObjUNSAFE, LPVOID pDestNativeVariant)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pDestNativeVariant, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pDestNativeVariant));
     }
     CONTRACTL_END;
 
-    OBJECTREF Obj = (OBJECTREF) ObjUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(Obj);
+    BEGIN_QCALL;
 
-    if (pDestNativeVariant == NULL)
-        COMPlusThrowArgumentNull(W("pDstNativeVariant"));
+    GCX_COOP();
+
+    OBJECTREF Obj = ObjUNSAFE.Get();
+    GCPROTECT_BEGIN(Obj);
 
     if (Obj == NULL)
     {
@@ -1079,74 +1080,76 @@ FCIMPL2(void, MarshalNative::GetNativeVariantForObjectNative, Object* ObjUNSAFE,
     SafeVariantInit((VARIANT*)pDestNativeVariant);
     OleVariant::MarshalOleVariantForObject(&Obj, (VARIANT*)pDestNativeVariant);
 
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL1(Object*, MarshalNative::GetObjectForNativeVariantNative, LPVOID pSrcNativeVariant)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pSrcNativeVariant, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF Obj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(Obj);
-
-    if (pSrcNativeVariant == NULL)
-        COMPlusThrowArgumentNull(W("pSrcNativeVariant"));
-
-    OleVariant::MarshalObjectForOleVariant((VARIANT*)pSrcNativeVariant, &Obj);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(Obj);
-}
-FCIMPLEND
-
-FCIMPL2(Object*, MarshalNative::GetObjectsForNativeVariantsNative, VARIANT* aSrcNativeVariant, int cVars)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-        PRECONDITION(CheckPointer(aSrcNativeVariant, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    PTRARRAYREF Array = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(Array);
-
-    if (aSrcNativeVariant == NULL)
-        COMPlusThrowArgumentNull(W("aSrcNativeVariant"));
-    if (cVars < 0)
-        COMPlusThrowArgumentOutOfRange(W("cVars"), W("ArgumentOutOfRange_NeedNonNegNum"));
-
-    OBJECTREF Obj = NULL;
-    GCPROTECT_BEGIN(Obj)
-    {
-        // Allocate the array of objects.
-        Array = (PTRARRAYREF)AllocateObjectArray(cVars, g_pObjectClass);
-
-        // Convert each VARIANT in the array into an object.
-        for (int i = 0; i < cVars; i++)
-        {
-            OleVariant::MarshalObjectForOleVariant(&aSrcNativeVariant[i], &Obj);
-            Array->SetAt(i, Obj);
-        }
-    }
     GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(Array);
+    END_QCALL;
 }
-FCIMPLEND
+
+extern "C" void QCALLTYPE MarshalNative_GetObjectForNativeVariant(LPVOID pSrcNativeVariant, QCall::ObjectHandleOnStack retObject)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pSrcNativeVariant));
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF Obj = NULL;
+    GCPROTECT_BEGIN(Obj);
+    OleVariant::MarshalObjectForOleVariant((VARIANT*)pSrcNativeVariant, &Obj);
+    retObject.Set(Obj);
+    GCPROTECT_END();
+
+    END_QCALL;
+
+}
+
+extern "C" void QCALLTYPE MarshalNative_GetObjectsForNativeVariants(VARIANT* aSrcNativeVariant, int cVars, QCall::ObjectHandleOnStack retArray)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(aSrcNativeVariant));
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct {
+        PTRARRAYREF Array;
+        OBJECTREF Obj;
+    } gc;
+    gc.Array = NULL;
+    gc.Obj = NULL;
+
+    GCPROTECT_BEGIN(gc)
+
+    // Allocate the array of objects.
+    gc.Array = (PTRARRAYREF)AllocateObjectArray(cVars, g_pObjectClass);
+
+    // Convert each VARIANT in the array into an object.
+    for (int i = 0; i < cVars; i++)
+    {
+        OleVariant::MarshalObjectForOleVariant(&aSrcNativeVariant[i], &gc.Obj);
+        gc.Array->SetAt(i, gc.Obj);
+    }
+
+    retArray.Set(gc.Array);
+
+    GCPROTECT_END();
+
+    END_QCALL;
+}
 
 //====================================================================
 // Helper function used in the COM slot to method info mapping.
 //====================================================================
-
 static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
 {
     CONTRACTL
