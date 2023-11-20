@@ -1675,8 +1675,8 @@ namespace System.Net
                             if (parameters.ServicePoint.KeepAlive is not null)
                             {
                                 socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, parameters.ServicePoint.KeepAlive.Value.Time);
-                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, parameters.ServicePoint.KeepAlive.Value.Interval);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, parameters.ServicePoint.KeepAlive.Time);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, parameters.ServicePoint.KeepAlive.Interval);
                             }
                         }
 
