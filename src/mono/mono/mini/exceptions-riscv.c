@@ -348,7 +348,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		if (*lmf && (*lmf)->gregs [MONO_ARCH_LMF_REG_SP] &&
 		    (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs [MONO_ARCH_LMF_REG_SP])) {
 			/* remove any unused lmf */
-			*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
+			*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
 		/* we subtract 1, so that the PC points into the call instruction */
@@ -367,6 +367,11 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		g_assert (MONO_ARCH_LMF_REGS == ((MONO_ARCH_CALLEE_SAVED_REGS) | (1 << RISCV_SP)));
 
 		memcpy (&new_ctx->gregs [0], &(*lmf)->gregs [0], sizeof (host_mgreg_t) * RISCV_N_GREGS);
+		for (int i = 0; i < RISCV_N_GREGS; i++){
+			if (!(MONO_ARCH_LMF_REGS & (1 << i))){
+				new_ctx->gregs [i] =  ctx->gregs [i];
+			}
+		}
 		// new_ctx->gregs [RISCV_FP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_FP];
 		// new_ctx->gregs [RISCV_SP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_SP];
 		new_ctx->gregs [0] = (*lmf)->pc; // use [0] as pc reg since x0 is hard-wired zero
@@ -374,7 +379,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		/* we subtract 1, so that the PC points into the call instruction */
 		new_ctx->gregs [0]--;
 
-		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
+		*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
 
 		return TRUE;
 	}
