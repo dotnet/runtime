@@ -1961,7 +1961,39 @@ void UnwindFragmentInfo::Allocate(
 #ifdef DEBUG
 void UnwindFragmentInfo::Dump(int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    unsigned          count;
+    UnwindEpilogInfo* pEpi;
+
+    count = 0;
+    for (pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+    {
+        ++count;
+    }
+
+    printf("%*sUnwindFragmentInfo #%d, @0x%08p, size:%d:\n", indent, "", ufiNum, dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  ufiNext: 0x%08p\n", indent, "", dspPtr(ufiNext));
+    printf("%*s  ufiEmitLoc: 0x%08p\n", indent, "", dspPtr(ufiEmitLoc));
+    printf("%*s  ufiHasPhantomProlog: %s\n", indent, "", dspBool(ufiHasPhantomProlog));
+    printf("%*s  %d epilog%s\n", indent, "", count, (count != 1) ? "s" : "");
+    printf("%*s  ufiEpilogList: 0x%08p\n", indent, "", dspPtr(ufiEpilogList));
+    printf("%*s  ufiEpilogLast: 0x%08p\n", indent, "", dspPtr(ufiEpilogLast));
+    printf("%*s  ufiCurCodes: 0x%08p\n", indent, "", dspPtr(ufiCurCodes));
+    printf("%*s  ufiSize: %u\n", indent, "", ufiSize);
+    printf("%*s  ufiSetEBit: %s\n", indent, "", dspBool(ufiSetEBit));
+    printf("%*s  ufiNeedExtendedCodeWordsEpilogCount: %s\n", indent, "", dspBool(ufiNeedExtendedCodeWordsEpilogCount));
+    printf("%*s  ufiCodeWords: %u\n", indent, "", ufiCodeWords);
+    printf("%*s  ufiEpilogScopes: %u\n", indent, "", ufiEpilogScopes);
+    printf("%*s  ufiStartOffset: 0x%x\n", indent, "", ufiStartOffset);
+    printf("%*s  ufiInProlog: %s\n", indent, "", dspBool(ufiInProlog));
+    printf("%*s  ufiInitialized: 0x%08x\n", indent, "", ufiInitialized);
+
+    ufiPrologCodes.Dump(indent + 2);
+
+    for (pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+    {
+        pEpi->Dump(indent + 2);
+    }
 }
 #endif // DEBUG
 
