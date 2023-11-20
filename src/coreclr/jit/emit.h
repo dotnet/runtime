@@ -1547,7 +1547,6 @@ protected:
         {
             if (instOptions == INS_OPTS_EVEX_b)
             {
-                assert(idHasMem());
                 _idEvexbContext = 1;
             }
             else if(instOptions == INS_OPTS_EVEX_er_rd)
