@@ -77,6 +77,11 @@ namespace Microsoft.Extensions.Caching.Memory
         public int Count => _coherentState.Count;
 
         /// <summary>
+        /// Gets a snapshot containing all the keys in the <see cref="MemoryCache"/>.
+        /// </summary>
+        public ICollection<object> Keys => _coherentState._entries.Keys;
+
+        /// <summary>
         /// Internal accessor for Size for testing only.
         ///
         /// Note that this is only eventually consistent with the contents of the collection.
