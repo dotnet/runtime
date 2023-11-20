@@ -1543,36 +1543,21 @@ namespace System.Collections.Concurrent
         bool IDictionary<TKey, TValue>.Remove(TKey key) => TryRemove(key, out _);
 
         /// <summary>
-        /// Gets a collection containing the keys in the <see
-        /// cref="Dictionary{TKey,TValue}"/>.
+        /// Gets a snapshot containing all the keys in the <see cref="ConcurrentDictionary{TKey,TValue}"/>.
         /// </summary>
-        /// <value>An <see cref="ICollection{TKey}"/> containing the keys in the
-        /// <see cref="Dictionary{TKey,TValue}"/>.</value>
+        /// <remarks>It's a standalone copy of all the keys. It's not kept in sync with <see cref="ConcurrentDictionary{TKey,TValue}"/>.</remarks>
         public ICollection<TKey> Keys => GetKeys();
 
-        /// <summary>
-        /// Gets an <see cref="IEnumerable{TKey}"/> containing the keys of
-        /// the <see cref="IReadOnlyDictionary{TKey,TValue}"/>.
-        /// </summary>
-        /// <value>An <see cref="IEnumerable{TKey}"/> containing the keys of
-        /// the <see cref="IReadOnlyDictionary{TKey,TValue}"/>.</value>
+        /// <inheritdoc cref="Keys"/>
         IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => GetKeys();
 
         /// <summary>
-        /// Gets a collection containing the values in the <see
-        /// cref="Dictionary{TKey,TValue}"/>.
+        /// Gets a snapshot containing all the values in the <see cref="ConcurrentDictionary{TKey,TValue}"/>.
         /// </summary>
-        /// <value>An <see cref="ICollection{TValue}"/> containing the values in
-        /// the
-        /// <see cref="Dictionary{TKey,TValue}"/>.</value>
+        /// <remarks>It's a standalone copy of all the values. It's not kept in sync with <see cref="ConcurrentDictionary{TKey,TValue}"/>.</remarks>
         public ICollection<TValue> Values => GetValues();
 
-        /// <summary>
-        /// Gets an <see cref="IEnumerable{TValue}"/> containing the values
-        /// in the <see cref="IReadOnlyDictionary{TKey,TValue}"/>.
-        /// </summary>
-        /// <value>An <see cref="IEnumerable{TValue}"/> containing the
-        /// values in the <see cref="IReadOnlyDictionary{TKey,TValue}"/>.</value>
+        /// <inheritdoc cref="Values"/>
         IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => GetValues();
         #endregion
 
