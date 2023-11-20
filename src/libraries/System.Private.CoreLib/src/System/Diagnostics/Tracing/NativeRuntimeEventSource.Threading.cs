@@ -516,7 +516,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event(301, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStart, Task = Tasks.WaitHandle, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
-        public void WaitHandleWaitStart(
+        public unsafe void WaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             nint AssociatedObjectID,
             ushort ClrInstanceID = DefaultClrInstanceId)
@@ -537,7 +537,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandle, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
-        public void WaitHandleWaitStop(
+        public unsafe void WaitHandleWaitStop(
             WaitHandleWaitSourceMap WaitSource,
             double DurationNs,
             ushort ClrInstanceID = DefaultClrInstanceId)
