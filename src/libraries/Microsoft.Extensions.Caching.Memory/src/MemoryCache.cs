@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -19,7 +18,7 @@ namespace Microsoft.Extensions.Caching.Memory
     /// An implementation of <see cref="IMemoryCache"/> using a dictionary to
     /// store its entries.
     /// </summary>
-    public class MemoryCache : IMemoryCache, IEnumerable<KeyValuePair<object, ICacheEntry>>
+    public class MemoryCache : IMemoryCache
     {
         internal readonly ILogger _logger;
 
@@ -626,28 +625,6 @@ namespace Microsoft.Extensions.Caching.Memory
         private static void ValidateCacheKey(object key)
         {
             ThrowHelper.ThrowIfNull(key);
-        }
-
-        public IEnumerator<KeyValuePair<object, ICacheEntry>> GetEnumerator() => new Enumerator(_coherentState._entries.GetEnumerator());
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        // CacheEntry is internal, we need to return the public abstraction instead
-        private sealed class Enumerator(IEnumerator<KeyValuePair<object, CacheEntry>> internalTypeEnumerator) : IEnumerator<KeyValuePair<object, ICacheEntry>>
-        {
-            public KeyValuePair<object, ICacheEntry> Current
-            {
-                get
-                {
-                    KeyValuePair<object, CacheEntry> current = internalTypeEnumerator.Current;
-                    return new(current.Key, current.Value);
-                }
-            }
-
-            object IEnumerator.Current => Current;
-            public void Dispose() => internalTypeEnumerator.Dispose();
-            public bool MoveNext() => internalTypeEnumerator.MoveNext();
-            public void Reset() => internalTypeEnumerator.Reset();
         }
 
         /// <summary>
