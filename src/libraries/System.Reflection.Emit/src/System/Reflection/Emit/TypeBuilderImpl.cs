@@ -146,6 +146,8 @@ namespace System.Reflection.Emit
             return DefineDefaultConstructorInternal(attributes);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "GetConstructor is only called on a TypeBuilderInstantiation which is not subject to trimming")]
         private ConstructorBuilderImpl DefineDefaultConstructorInternal(MethodAttributes attributes)
         {
             // Get the parent class's default constructor and add it to the IL
