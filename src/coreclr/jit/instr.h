@@ -49,6 +49,19 @@ enum instruction : uint32_t
     #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) INS_##id,
     #include "instrs.h"
 
+    #define INST1(id, nm, info, fmt, e1                                                     ) INS_sve_##id,
+    #define INST2(id, nm, info, fmt, e1, e2                                                 ) INS_sve_##id,
+    #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) INS_sve_##id,
+    #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) INS_sve_##id,
+    #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) INS_sve_##id,
+    #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) INS_sve_##id,
+    #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) INS_sve_##id,
+    #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) INS_sve_##id,
+    #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) INS_sve_##id,
+    #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) INS_sve_##id,
+    #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) INS_sve_##id,
+    #include "instrsarm64sve.h"
+
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
 #elif defined(TARGET_LOONGARCH64)

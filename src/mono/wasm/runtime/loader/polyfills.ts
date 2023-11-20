@@ -32,14 +32,14 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        const process = await import(/* webpackIgnore: true */"process");
+        const process = await import(/*! webpackIgnore: true */"process");
         const minNodeVersion = 14;
         if (process.versions.node.split(".")[0] < minNodeVersion) {
             throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}', please use at least ${minNodeVersion}. See also https://aka.ms/dotnet-wasm-features`);
         }
     }
 
-    const scriptUrlQuery =/* webpackIgnore: true */import.meta.url;
+    const scriptUrlQuery =/*! webpackIgnore: true */import.meta.url;
     const queryIndex = scriptUrlQuery.indexOf("?");
     if (queryIndex > 0) {
         loaderHelpers.modulesUniqueQuery = scriptUrlQuery.substring(queryIndex);
@@ -54,13 +54,12 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
         if (isPathAbsolute(path)) return path;
         return loaderHelpers.scriptDirectory + path;
     };
-    loaderHelpers.downloadResource = module.downloadResource;
     loaderHelpers.fetch_like = fetch_like;
     // eslint-disable-next-line no-console
     loaderHelpers.out = console.log;
     // eslint-disable-next-line no-console
     loaderHelpers.err = console.error;
-    loaderHelpers.getApplicationEnvironment = module.getApplicationEnvironment;
+    loaderHelpers.onDownloadResourceProgress = module.onDownloadResourceProgress;
 
     if (ENVIRONMENT_IS_WEB && globalThis.navigator) {
         const navigator: any = globalThis.navigator;
@@ -77,7 +76,7 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        INTERNAL.require = await import(/* webpackIgnore: true */"module").then(mod => mod.createRequire(/* webpackIgnore: true */import.meta.url));
+        INTERNAL.require = await import(/*! webpackIgnore: true */"module").then(mod => mod.createRequire(/*! webpackIgnore: true */import.meta.url));
     } else {
         INTERNAL.require = Promise.resolve(() => { throw new Error("require not supported"); });
     }
@@ -156,6 +155,18 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
         };
     }
     throw new Error("No fetch implementation available");
+}
+
+// context: the loadBootResource extension point can return URL/string which is unqualified. 
+// For example `xxx/a.js` and we have to make it absolute
+// For compatibility reasons, it's based of document.baseURI even for JS modules like `./xxx/a.js`, which normally use script directory of a caller of `import`
+// Script directory in general doesn't match document.baseURI
+export function makeURLAbsoluteWithApplicationBase(url: string) {
+    mono_assert(typeof url === "string", "url must be a string");
+    if (!isPathAbsolute(url) && url.indexOf("./") !== 0 && url.indexOf("../") !== 0 && globalThis.URL && globalThis.document && globalThis.document.baseURI) {
+        url = (new URL(url, globalThis.document.baseURI)).toString();
+    }
+    return url;
 }
 
 function normalizeFileUrl(filename: string) {

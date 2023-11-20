@@ -10,10 +10,9 @@ namespace Test
     public class AA
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool[] ab = new bool[2];
-            return 100;
         }
     }
 }

@@ -125,7 +125,7 @@ namespace System.Reflection
 
         internal virtual Type[] GetParameterTypes()
         {
-            ParameterInfo[] paramInfo = GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> paramInfo = GetParametersAsSpan();
             if (paramInfo.Length == 0)
             {
                 return Type.EmptyTypes;
@@ -234,7 +234,12 @@ namespace System.Reflection
         [InlineArray(MaxStackAllocArgCount)]
         internal ref struct StackAllocatedByRefs
         {
+            // We're intentionally taking advantage of the runtime functionality, even if the language functionality won't work
+            // CS9184: 'Inline arrays' language feature is not supported for inline array types with element field which is either a 'ref' field, or has type that is not valid as a type argument.
+
+#pragma warning disable CS9184
             internal ref byte _arg0;
+#pragma warning restore CS9184
         }
 #endif
     }

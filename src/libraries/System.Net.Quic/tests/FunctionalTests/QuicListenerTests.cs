@@ -124,14 +124,14 @@ namespace System.Net.Quic.Tests
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
 
-            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync());
-            Assert.True(exception.InnerException is ObjectDisposedException);
-            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask());
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout));
+            Assert.IsType<ObjectDisposedException>(exception.InnerException);
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(PassingTestTimeout));
 
             // Throwing ODE in callback should keep Listener running
             connectTask = CreateQuicConnection(listener.LocalEndPoint);
-            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await using QuicConnection clientConnection = await connectTask;
+            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout);
+            await using QuicConnection clientConnection = await connectTask.AsTask().WaitAsync(PassingTestTimeout);
         }
 
         [Theory]
@@ -196,10 +196,8 @@ namespace System.Net.Quic.Tests
             await listener.DisposeAsync();
             serverDisposed.SetResult();
 
-            var accept1Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask1);
-            var accept2Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask2);
-
-            Assert.Equal(accept1Exception, accept2Exception);
+            var accept1Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask1);
+            var accept2Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask2);
 
             // Connect attempt should be stopped with "UserCanceled".
             var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
@@ -473,7 +471,6 @@ namespace System.Net.Quic.Tests
             Assert.Equal(new SslApplicationProtocol("test"), clientConnection2.NegotiatedApplicationProtocol);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86701")]
         [Theory]
         [InlineData("foo")]
         [InlineData("not_existing")]
@@ -503,15 +500,18 @@ namespace System.Net.Quic.Tests
                     return ValueTask.FromResult(options);
                 }
             };
+            bool isAlpnPresentOnInitialAlpnList = listenerOptions.ApplicationProtocols.Contains(new SslApplicationProtocol(alpn)); // If the ALPN is not present on initial list, AcceptConnectionAsync will not throw AuthenticationException.
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
-
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.ApplicationProtocols = new()
             {
                 new SslApplicationProtocol(alpn),
             };
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
-            await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken));
+            if (isAlpnPresentOnInitialAlpnList)
+            {
+                await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken));
+            }
             await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(timeoutToken));
         }
     }

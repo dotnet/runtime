@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Authentication;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
 using System.Net.Sockets;
-using static Microsoft.Quic.MsQuic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Security.Authentication;
+using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
 
@@ -79,6 +79,7 @@ internal static class ThrowHelper
             if (status == QUIC_STATUS_INVALID_ADDRESS) return new SocketException((int)SocketError.AddressNotAvailable);
             if (status == QUIC_STATUS_ADDRESS_IN_USE) return new SocketException((int)SocketError.AddressAlreadyInUse);
             if (status == QUIC_STATUS_UNREACHABLE) return new SocketException((int)SocketError.HostUnreachable);
+            if (status == QUIC_STATUS_ADDRESS_NOT_AVAILABLE) return new SocketException((int)SocketError.AddressFamilyNotSupported);
 
             //
             // TLS and certificate errors throw AuthenticationException to match SslStream

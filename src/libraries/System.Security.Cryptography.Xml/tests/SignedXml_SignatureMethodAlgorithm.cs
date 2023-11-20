@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             public DummyClass()
             {
-                Assert.False(true);
+                Assert.Fail();
             }
         }
     }

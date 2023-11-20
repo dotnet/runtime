@@ -120,7 +120,7 @@ AllocHeap::~AllocHeap()
     {
         BlockListElem *pCur = m_blockList.PopHead();
         if (pCur->GetStart() != m_pbInitialMem || m_fShouldFreeInitialMem)
-            PalVirtualFree(pCur->GetStart(), pCur->GetLength(), MEM_RELEASE);
+            PalVirtualFree(pCur->GetStart(), pCur->GetLength());
         delete pCur;
     }
 }
@@ -279,7 +279,7 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
     cbMem = ALIGN_UP(cbMem, OS_PAGE_SIZE);
 
     uint8_t * pbMem = reinterpret_cast<uint8_t*>
-        (PalVirtualAlloc(NULL, cbMem, MEM_COMMIT, m_roProtectType));
+        (PalVirtualAlloc(cbMem, m_roProtectType));
 
     if (pbMem == NULL)
         return false;
@@ -287,7 +287,7 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
     BlockListElem *pBlockListElem = new (nothrow) BlockListElem(pbMem, cbMem);
     if (pBlockListElem == NULL)
     {
-        PalVirtualFree(pbMem, 0, MEM_RELEASE);
+        PalVirtualFree(pbMem, cbMem);
         return false;
     }
 

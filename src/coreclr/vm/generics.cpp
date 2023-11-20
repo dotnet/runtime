@@ -216,15 +216,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     BOOL fHasDynamicInterfaceMap = FALSE;
 #endif // FEATURE_COMINTEROP
 
-    // Collectible types have some special restrictions
-    if (pAllocator->IsCollectible())
-    {
-        if (pOldMT->HasFixedAddressVTStatics())
-        {
-            ClassLoader::ThrowTypeLoadException(pTypeKey, IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR);
-        }
-    }
-
     // The number of bytes used for GC info
     size_t cbGC = pOldMT->ContainsPointers() ? ((CGCDesc*) pOldMT)->GetSize() : 0;
 

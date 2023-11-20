@@ -137,8 +137,6 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     Assembly *pLoadedAssembly = NULL;
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
 
-    DWORD dwMessageID = IDS_EE_FILELOAD_ERROR_GENERIC;
-
     // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
 
@@ -155,15 +153,22 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     if (hr != S_OK)
     {
-        // Give a more specific message for the case when we found the assembly with the same name already loaded.
-        if (hr == COR_E_FILELOAD)
-        {
-            dwMessageID = IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT;
-        }
-
         StackSString name;
         spec.GetDisplayName(0, name);
-        COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
+        if (hr == COR_E_FILELOAD)
+        {
+            // Give a more specific message for the case when we found the assembly with the same name already loaded.
+            // Show the assembly name, since we know the error is about the assembly name.
+            StackSString errorString;
+            errorString.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
+        }
+        else
+        {
+            // Propagate the actual HResult to the FileLoadException
+            // Use the path if this load request was for a file path, display name otherwise
+            EEFileLoadException::Throw(pImage->GetPath().IsEmpty() ? name : pImage->GetPath(), hr);
+        }
     }
 
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
@@ -1393,7 +1398,7 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
     _ASSERTE(ilDelta != nullptr);
     _ASSERTE(ilDeltaLength > 0);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     GCX_COOP();
     {
         if (CORDebuggerAttached())
@@ -1428,7 +1433,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
 
     BEGIN_QCALL;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     result = CORDebuggerAttached() || g_pConfig->ForceEnc() || g_pConfig->DebugAssembliesModifiable();
 #endif
 

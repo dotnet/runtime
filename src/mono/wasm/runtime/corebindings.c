@@ -22,11 +22,9 @@ extern void mono_wasm_bind_js_function(MonoString **function_name, MonoString **
 extern void mono_wasm_invoke_bound_function(int function_js_handle, void *data);
 extern void mono_wasm_invoke_import(int fn_handle, void *data);
 extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int signature_hash, void* signatures, int *is_exception, MonoObject **result);
-extern void mono_wasm_marshal_promise(void *data);
+extern void mono_wasm_resolve_or_reject_promise(void *data);
 
 typedef void (*background_job_cb)(void);
-void mono_main_thread_schedule_background_job (background_job_cb cb);
-void mono_current_thread_schedule_background_job (background_job_cb cb);
 
 #ifndef DISABLE_LEGACY_JS_INTEROP
 extern void mono_wasm_invoke_js_with_args_ref (int js_handle, MonoString **method, MonoArray **args, int *is_exception, MonoObject **result);
@@ -55,6 +53,10 @@ extern int mono_wasm_compare_string(MonoString **culture, const uint16_t* str1, 
 extern mono_bool mono_wasm_starts_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
 extern mono_bool mono_wasm_ends_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_index_of(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_calendar_info(MonoString **culture, int32_t calendarId, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_culture_info(MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_first_day_of_week(MonoString **culture, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_first_week_of_year(MonoString **culture, int *is_exception, MonoObject** ex_result);
 
 void bindings_initialize_internals (void)
 {
@@ -63,7 +65,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function);
 	mono_add_internal_call ("Interop/Runtime::InvokeImport", mono_wasm_invoke_import);
 	mono_add_internal_call ("Interop/Runtime::BindCSFunction", mono_wasm_bind_cs_function);
-	mono_add_internal_call ("Interop/Runtime::MarshalPromise", mono_wasm_marshal_promise);
+	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromise", mono_wasm_resolve_or_reject_promise);
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);
 	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", mono_wasm_deregister_root);
 
@@ -93,4 +95,8 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);
 	mono_add_internal_call ("Interop/JsGlobalization::EndsWith", mono_wasm_ends_with);
 	mono_add_internal_call ("Interop/JsGlobalization::IndexOf", mono_wasm_index_of);
+	mono_add_internal_call ("Interop/JsGlobalization::GetCalendarInfo", mono_wasm_get_calendar_info);
+	mono_add_internal_call ("Interop/JsGlobalization::GetCultureInfo", mono_wasm_get_culture_info);
+	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
+	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);
 }

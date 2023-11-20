@@ -31,6 +31,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly ILogger logger;
         private bool localsFetched;
         private int linqTypeId;
+        public ExecutionContext GetContext() => context;
 
         public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId sessionId, int scopeId, ILogger logger)
         {
@@ -365,7 +366,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, List<string> variableDefinitions, CancellationToken token)
+        public async Task<JObject> Resolve(
+            ElementAccessExpressionSyntax elementAccess,
+            Dictionary<string, JObject> memberAccessValues,
+            List<JObject> nestedIndexObject,
+            List<VariableDefinition> variableDefinitions,
+            CancellationToken token)
         {
             try
             {
@@ -375,12 +381,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (rootObject == null)
                 {
-                    // it might be a jagged array where indexObject should be treated as a new rootObject
-                    rootObject = indexObject;
-                    indexObject = null;
+                    // it might be a jagged array where the previously added nestedIndexObject should be treated as a new rootObject
+                    rootObject = nestedIndexObject.LastOrDefault();
+                    if (rootObject != null)
+                        nestedIndexObject.RemoveAt(nestedIndexObject.Count - 1);
                 }
 
-                ElementIndexInfo elementIdxInfo = await GetElementIndexInfo();
+                ElementIndexInfo elementIdxInfo = await GetElementIndexInfo(nestedIndexObject);
                 if (elementIdxInfo is null)
                     return null;
 
@@ -393,11 +400,27 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (!DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     throw new InvalidOperationException($"Cannot apply indexing with [] to a primitive object of type '{type}'");
 
+                bool isMultidimensional = elementIdxInfo.DimensionsCount != 1;
                 switch (objectId.Scheme)
                 {
+                    case "valuetype": //can be an inlined array
+                    {
+                        if (!context.SdbAgent.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass valueType))
+                            throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
+                        var typeInfo = await context.SdbAgent.GetTypeInfo(valueType.TypeId, token);
+                        if (valueType.InlineArray == null)
+                        {
+                            JObject vtResult = await InvokeGetItemOnJObject(rootObject, valueType.TypeId, objectId, elementIdxInfo, token);
+                            if (vtResult != null)
+                                return vtResult;
+                        }
+                        if (int.TryParse(elementIdxInfo.ElementIdxStr, out elementIdx) && elementIdx >= 0 && elementIdx < valueType.InlineArray.Count)
+                            return (JObject)valueType.InlineArray[elementIdx]["value"];
+                        throw new InvalidOperationException($"Index is outside the bounds of the inline array");
+                    }
                     case "array":
                         rootObject["value"] = await context.SdbAgent.GetArrayValues(objectId.Value, token);
-                        if (!elementIdxInfo.IsMultidimensional)
+                        if (!isMultidimensional)
                         {
                             int.TryParse(elementIdxInfo.ElementIdxStr, out elementIdx);
                             return (JObject)rootObject["value"][elementIdx]["value"];
@@ -407,49 +430,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return (JObject)(((JArray)rootObject["value"]).FirstOrDefault(x => x["name"].Value<string>() == elementIdxInfo.ElementIdxStr)["value"]);
                         }
                     case "object":
-                        if (elementIdxInfo.IsMultidimensional)
-                            throw new InvalidOperationException($"Cannot apply indexing with [,] to an object of type '{type}'");
                         // ToDo: try to use the get_Item for string as well
-                        if (type == "string")
+                        if (!isMultidimensional && type == "string")
                         {
                             var eaExpressionFormatted = elementAccessStrExpression.Replace('.', '_'); // instance_str
-                            variableDefinitions.Add(ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject));
+                            variableDefinitions.Add(new (eaExpressionFormatted, rootObject, ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject)));
                             var eaFormatted = elementAccessStr.Replace('.', '_'); // instance_str[1]
-                            return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDefinitions, logger, token);
+                            var variableDef = await ExpressionEvaluator.GetVariableDefinitions(this, variableDefinitions, invokeToStringInObject: false, token);
+                            return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDef, logger, token);
                         }
-                        if (indexObject is null && elementIdxInfo.IndexingExpression is null)
+                        if (elementIdxInfo.Indexers is null || elementIdxInfo.Indexers.Count == 0)
                             throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
 
-                        var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
-                        int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "get_Item", BindingFlags.Default, token);
-                        if (methodIds == null || methodIds.Length == 0)
-                            throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
-
-                        // ToDo: optimize the loop by choosing the right method at once without trying out them all
-                        for (int i = 0; i < methodIds.Length; i++)
-                        {
-                            MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
-                            ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
-
-                            // get_Item should not have an overload, but if user defined it, take the default one: with one param (key)
-                            if (paramInfo.Length == 1)
-                            {
-                                try
-                                {
-                                    ArraySegment<byte> buffer = indexObject is null ?
-                                        await WriteLiteralExpressionAsIndex(objectId,  elementIdxInfo.IndexingExpression, elementIdxInfo.ElementIdxStr) :
-                                        await WriteJObjectAsIndex(objectId, indexObject, elementIdxInfo.ElementIdxStr);
-                                    JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
-                                    return (JObject)getItemRetObj["value"];
-                                }
-                                catch (Exception ex)
-                                {
-                                    logger.LogDebug($"Attempt number {i + 1} out of {methodIds.Length} of invoking method {methodInfo.Name} with parameter named {paramInfo[0].Name} on type {type} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
-                                    continue;
-                                }
-                            }
-                        }
-                        throw new InvalidOperationException($"Cannot apply indexing with [] to an object of type '{rootObject?["className"]?.Value<string>()}'");
+                        List<int> typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
+                        JObject objResult = await InvokeGetItemOnJObject(rootObject, typeIds[0], objectId, elementIdxInfo, token);
+                        if (objResult == null)
+                            throw new InvalidOperationException($"Cannot apply indexing with [] to an object of type '{rootObject?["className"]?.Value<string>()}'");
+                        return objResult;
                     default:
                         throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                 }
@@ -459,31 +456,32 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new ReturnAsErrorException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex.GetType().Name);
             }
 
-            async Task<ElementIndexInfo> GetElementIndexInfo()
+            async Task<ElementIndexInfo> GetElementIndexInfo(List<JObject> nestedIndexers)
             {
-                // e.g. x[a[0]], x[a[b[1]]] etc.
-                if (indexObject is not null)
-                    return new ElementIndexInfo(ElementIdxStr: indexObject["value"].ToString() );
-
                 if (elementAccess.ArgumentList is null)
                     return null;
 
-                StringBuilder elementIdxStr = new StringBuilder();
-                var multiDimensionalArray = false;
+                int dimCnt = elementAccess.ArgumentList.Arguments.Count;
                 LiteralExpressionSyntax indexingExpression = null;
-                for (int i = 0; i < elementAccess.ArgumentList.Arguments.Count; i++)
+                StringBuilder elementIdxStr = new StringBuilder();
+                List<object> indexers = new();
+                // nesting should be resolved in reverse order
+                int nestedIndexersCnt = nestedIndexers.Count - 1;
+                for (int i = 0; i < dimCnt; i++)
                 {
+                    JObject indexObject;
                     var arg = elementAccess.ArgumentList.Arguments[i];
                     if (i != 0)
                     {
                         elementIdxStr.Append(", ");
-                        multiDimensionalArray = true;
                     }
                     // e.g. x[1]
                     if (arg.Expression is LiteralExpressionSyntax)
                     {
                         indexingExpression = arg.Expression as LiteralExpressionSyntax;
-                        elementIdxStr.Append(indexingExpression.ToString());
+                        string expression = indexingExpression.ToString();
+                        elementIdxStr.Append(expression);
+                        indexers.Add(indexingExpression);
                     }
 
                     // e.g. x[a] or x[a.b]
@@ -497,43 +495,193 @@ namespace Microsoft.WebAssembly.Diagnostics
                         // x[a]
                         indexObject ??= await Resolve(argParm.Identifier.Text, token);
                         elementIdxStr.Append(indexObject["value"].ToString());
+                        indexers.Add(indexObject);
+                    }
+                    // nested indexing, e.g. x[a[0]], x[a[b[1]]], x[a[0], b[1]]
+                    else if (arg.Expression is ElementAccessExpressionSyntax)
+                    {
+                        if (nestedIndexers == null || nestedIndexersCnt < 0)
+                            throw new InvalidOperationException($"Cannot resolve nested indexing");
+                        JObject nestedIndexObject = nestedIndexers[nestedIndexersCnt];
+                        nestedIndexers.RemoveAt(nestedIndexersCnt);
+                        elementIdxStr.Append(nestedIndexObject["value"].ToString());
+                        indexers.Add(nestedIndexObject);
+                        nestedIndexersCnt--;
                     }
                     // indexing with expressions, e.g. x[a + 1]
                     else
                     {
                         string expression = arg.ToString();
-                        indexObject = await ExpressionEvaluator.EvaluateSimpleExpression(this, expression, expression, variableDefinitions, logger, token);
+                        var variableDef = await ExpressionEvaluator.GetVariableDefinitions(this, variableDefinitions, invokeToStringInObject: false, token);
+                        indexObject = await ExpressionEvaluator.EvaluateSimpleExpression(this, expression, expression, variableDef, logger, token);
                         string idxType = indexObject["type"].Value<string>();
                         if (idxType != "number")
                             throw new InvalidOperationException($"Cannot index with an object of type '{idxType}'");
                         elementIdxStr.Append(indexObject["value"].ToString());
+                        indexers.Add(indexObject);
                     }
                 }
                 return new ElementIndexInfo(
+                    DimensionsCount: dimCnt,
                     ElementIdxStr: elementIdxStr.ToString(),
-                    IsMultidimensional: multiDimensionalArray,
-                    IndexingExpression: indexingExpression);
+                    Indexers: indexers);
             }
+        }
 
-            async Task<ArraySegment<byte>> WriteJObjectAsIndex(DotnetObjectId rootObjId, JObject indexObject, string elementIdxStr)
+        private async Task<JObject> InvokeGetItemOnJObject(
+            JObject rootObject,
+            int typeId,
+            DotnetObjectId objectId,
+            ElementIndexInfo elementIdxInfo,
+            CancellationToken token)
+        {
+            int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeId, "get_Item", BindingFlags.Default, token);
+            if (methodIds == null || methodIds.Length == 0)
+                throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
+            var type = rootObject?["type"]?.Value<string>();
+
+            // ToDo: optimize the loop by choosing the right method at once without trying out them all
+            for (int i = 0; i < methodIds.Length; i++)
+            {
+                MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
+                ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
+                if (paramInfo.Length != elementIdxInfo.DimensionsCount)
+                    continue;
+                try
+                {
+                    if (!CheckParametersCompatibility(paramInfo, elementIdxInfo.Indexers))
+                        continue;
+                    ArraySegment<byte> buffer = await WriteIndexObjectAsIndices(objectId, elementIdxInfo.Indexers, paramInfo);
+                    JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
+                    return (JObject)getItemRetObj["value"];
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Attempt number {i + 1} out of {methodIds.Length} of invoking method {methodInfo.Name} with parameter named {paramInfo[0].Name} on type {type} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
+                    continue;
+                }
+            }
+            return null;
+
+            async Task<ArraySegment<byte>> WriteIndexObjectAsIndices(DotnetObjectId rootObjId, List<object> indexObjects, ParameterInfo[] paramInfo)
             {
                 using var writer = new MonoBinaryWriter();
                 writer.WriteObj(rootObjId, context.SdbAgent);
-                writer.Write(1); // number of method args
-                if (!await writer.WriteJsonValue(indexObject, context.SdbAgent, token))
-                    throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
+                writer.Write(indexObjects.Count); // number of method args
+                foreach ((ParameterInfo pi, object indexObject) in paramInfo.Zip(indexObjects))
+                {
+                    if (indexObject is JObject indexJObject)
+                    {
+                        // indexed by an identifier name syntax
+                        if (!await writer.WriteJsonValue(indexJObject, context.SdbAgent, pi.TypeCode, token))
+                            throw new InternalErrorException($"Parsing index of type {indexJObject["type"].Value<string>()} to write it into the buffer failed.");
+                    }
+                    else if (indexObject is LiteralExpressionSyntax expression)
+                    {
+                        // indexed by a literal expression syntax
+                        if (!await writer.WriteConst(expression, context.SdbAgent, token))
+                            throw new InternalErrorException($"Parsing literal expression index = {expression} to write it into the buffer failed.");
+                    }
+                    else
+                    {
+                        throw new InternalErrorException($"Unexpected index type.");
+                    }
+                }
                 return writer.GetParameterBuffer();
             }
+        }
 
-            async Task<ArraySegment<byte>> WriteLiteralExpressionAsIndex(DotnetObjectId rootObjId, LiteralExpressionSyntax indexingExpression, string elementIdxStr)
+        private static bool CheckParametersCompatibility(ParameterInfo[] paramInfos, List<object> indexObjects)
+        {
+            if (paramInfos.Length != indexObjects.Count)
+                return false;
+            foreach ((ParameterInfo paramInfo, object indexObj) in paramInfos.Zip(indexObjects))
             {
-                using var writer = new MonoBinaryWriter();
-                writer.WriteObj(rootObjId, context.SdbAgent);
-                writer.Write(1); // number of method args
-                if (!await writer.WriteConst(indexingExpression, context.SdbAgent, token))
-                    throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
-                return writer.GetParameterBuffer();
+                string argumentType = "", argumentClassName = "";
+                if (indexObj is JObject indexJObj)
+                {
+                    argumentType = indexJObj["type"]?.Value<string>();
+                    argumentClassName = indexJObj["className"]?.Value<string>();
+                }
+                else if (indexObj is LiteralExpressionSyntax literal)
+                {
+                    // any primitive literal is an object
+                    if (paramInfo.TypeCode.Value == ElementType.Object)
+                        continue;
+                    switch (literal.Kind())
+                    {
+                        case SyntaxKind.NumericLiteralExpression:
+                            argumentType = "number";
+                            break;
+                        case SyntaxKind.StringLiteralExpression:
+                            argumentType = "string";
+                            break;
+                        case SyntaxKind.TrueLiteralExpression:
+                        case SyntaxKind.FalseLiteralExpression:
+                            argumentType = "boolean";
+                            break;
+                        case SyntaxKind.CharacterLiteralExpression:
+                            argumentType = "symbol";
+                            break;
+                        case SyntaxKind.NullLiteralExpression:
+                            // do not check
+                            continue;
+                    }
+                }
+                if (!CheckParameterCompatibility(paramInfo.TypeCode, argumentType, argumentClassName))
+                    return false;
             }
+            return true;
+        }
+
+        private static bool CheckParameterCompatibility(ElementType? paramTypeCode, string argumentType, string argumentClassName="")
+        {
+            if (!paramTypeCode.HasValue)
+                return true;
+
+            switch (paramTypeCode.Value)
+            {
+                case ElementType.Object:
+                    if (argumentType != "object")
+                        return false;
+                    break;
+                case ElementType.I2:
+                case ElementType.I4:
+                case ElementType.I8:
+                case ElementType.R4:
+                case ElementType.R8:
+                case ElementType.U2:
+                case ElementType.U4:
+                case ElementType.U8:
+                    if (argumentType != "number")
+                        return false;
+                    if (argumentType == "object")
+                        return false;
+                    break;
+                case ElementType.Char:
+                    if (argumentType != "string" && argumentType != "symbol")
+                        return false;
+                    if (argumentType == "object")
+                        return false;
+                    break;
+                case ElementType.Boolean:
+                    if (argumentType == "boolean")
+                        return true;
+                    if (argumentType == "number" && (argumentClassName == "Single" || argumentClassName == "Double"))
+                        return false;
+                    if (argumentType == "object")
+                        return false;
+                    if (argumentType == "string" || argumentType == "symbol")
+                        return false;
+                    break;
+                case ElementType.String:
+                    if (argumentType != "string")
+                        return false;
+                    break;
+                default:
+                    return true;
+            }
+            return true;
         }
 
         public async Task<(JObject, string)> ResolveInvocationInfo(InvocationExpressionSyntax method, CancellationToken token)
@@ -653,9 +801,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (!await commandParamsObjWriter.WriteConst(literal, context.SdbAgent, token))
                                 throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write LiteralExpressionSyntax into binary writer.");
                         }
+                        else if (arg.Expression is PrefixUnaryExpressionSyntax negativeLiteral)
+                        {
+                            if (!commandParamsObjWriter.WriteConst(negativeLiteral))
+                                throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write PrefixUnaryExpressionSyntax into binary writer.");
+                        }
                         else if (arg.Expression is IdentifierNameSyntax identifierName)
                         {
-                            if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, token))
+                            if (!memberAccessValues.TryGetValue(identifierName.Identifier.Text, out JObject argValue))
+                                argValue = await Resolve(identifierName.Identifier.Text, token);
+                            if (!await commandParamsObjWriter.WriteJsonValue(argValue, context.SdbAgent, methodParamsInfo[argIndex].TypeCode, token))
+                                throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.");
+                        }
+                        else if (arg.Expression is MemberAccessExpressionSyntax memberAccess)
+                        {
+                            JObject argValue = await Resolve(memberAccess.ToString(), token);
+                            if (!await commandParamsObjWriter.WriteJsonValue(argValue, context.SdbAgent, methodParamsInfo[argIndex].TypeCode, token))
                                 throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.");
                         }
                         else
@@ -809,7 +970,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private sealed record ElementIndexInfo(
             string ElementIdxStr,
-            bool IsMultidimensional = false,
-            LiteralExpressionSyntax IndexingExpression = null);
+            // keeps JObjects and LiteralExpressionSyntaxes:
+            List<object> Indexers,
+            int DimensionsCount = 1);
     }
 }

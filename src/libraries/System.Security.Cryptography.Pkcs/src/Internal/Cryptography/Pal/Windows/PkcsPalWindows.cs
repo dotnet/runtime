@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Text;
 using Microsoft.Win32.SafeHandles;
-
 using static Interop.Crypt32;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Cryptography.Pal.Windows
 {

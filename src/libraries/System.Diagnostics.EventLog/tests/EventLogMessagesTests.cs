@@ -4,7 +4,6 @@
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -50,10 +49,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && Helpers.IsElevatedAndSupportsEventLogs;
-
-        [ConditionalFact(nameof(HasAssemblyFilesIsElevatedAndSupportsEventLogs))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88224", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version22000OrGreater))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.HasAssemblyFilesIsElevatedAndSupportsEventLogs))]
         public void CanReadAndWriteMessages()
         {
             string messageDllPath = Path.Combine(Path.GetDirectoryName(typeof(EventLog).Assembly.Location), "System.Diagnostics.EventLog.Messages.dll");

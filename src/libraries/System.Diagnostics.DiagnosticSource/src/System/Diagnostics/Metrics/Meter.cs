@@ -10,12 +10,18 @@ namespace System.Diagnostics.Metrics
     /// <summary>
     /// Meter is the class responsible for creating and tracking the Instruments.
     /// </summary>
+    [DebuggerDisplay("Name = {Name}, Instruments = {_instruments.Count}")]
     public class Meter : IDisposable
     {
         private static readonly List<Meter> s_allMeters = new List<Meter>();
         private List<Instrument> _instruments = new List<Instrument>();
         private Dictionary<string, List<Instrument>> _nonObservableInstrumentsCache = new();
         internal bool Disposed { get; private set; }
+
+        internal static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() =>
+            AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
 
         /// <summary>
         /// Initialize a new instance of the Meter using the <see cref="MeterOptions" />.
@@ -76,6 +82,11 @@ namespace System.Diagnostics.Metrics
                 Tags = tagList;
             }
             Scope = scope;
+
+            if (!IsSupported)
+            {
+                return;
+            }
 
             lock (Instrument.SyncObject)
             {

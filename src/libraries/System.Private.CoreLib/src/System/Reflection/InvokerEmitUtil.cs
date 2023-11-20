@@ -46,7 +46,7 @@ namespace System.Reflection
             }
 
             // Push the arguments.
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
@@ -67,7 +67,7 @@ namespace System.Reflection
                         break;
                 }
 
-                if (parameterType.IsPointer)
+                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
                 {
                     Unbox(il, typeof(IntPtr));
                 }
@@ -114,7 +114,7 @@ namespace System.Reflection
             }
 
             // Push the arguments.
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
@@ -124,7 +124,7 @@ namespace System.Reflection
                 il.Emit(OpCodes.Call, Methods.Span_get_Item());
                 il.Emit(OpCodes.Ldind_Ref);
 
-                if (parameterType.IsPointer)
+                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
                 {
                     Unbox(il, typeof(IntPtr));
                 }
@@ -171,7 +171,7 @@ namespace System.Reflection
             }
 
             // Push the arguments.
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
                 il.Emit(OpCodes.Ldarg_2);
@@ -186,7 +186,7 @@ namespace System.Reflection
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (!parameterType.IsByRef)
                 {
-                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer ? typeof(IntPtr) : parameterType);
+                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer || parameterType.IsFunctionPointer ? typeof(IntPtr) : parameterType);
                 }
             }
 
@@ -269,10 +269,14 @@ namespace System.Reflection
                     il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                     il.Emit(OpCodes.Call, Methods.Pointer_Box());
                 }
+                else if (returnType.IsFunctionPointer)
+                {
+                    il.Emit(OpCodes.Box, typeof(IntPtr));
+                }
                 else if (returnType.IsByRef)
                 {
                     // Check for null ref return.
-                    Type elementType = returnType.GetElementType()!;
+                    RuntimeType elementType = (RuntimeType)returnType.GetElementType()!;
                     Label retValueOk = il.DefineLabel();
                     il.Emit(OpCodes.Dup);
                     il.Emit(OpCodes.Brtrue_S, retValueOk);
@@ -292,6 +296,10 @@ namespace System.Reflection
                         il.Emit(OpCodes.Ldtoken, elementType);
                         il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                         il.Emit(OpCodes.Call, Methods.Pointer_Box());
+                    }
+                    else if (elementType.IsFunctionPointer)
+                    {
+                        il.Emit(OpCodes.Box, typeof(IntPtr));
                     }
                     else
                     {

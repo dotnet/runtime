@@ -38,7 +38,7 @@ PALTEST(loader_LoadLibraryW_test1_paltest_loadlibraryw_test1, "loader/LoadLibrar
     lpModuleName = convert(ModuleName);
 
     /* load a module */
-    ModuleHandle = LoadLibrary(lpModuleName);
+    ModuleHandle = LoadLibraryExW(lpModuleName, NULL, 0);
 
     /* free the memory */
     free(lpModuleName);

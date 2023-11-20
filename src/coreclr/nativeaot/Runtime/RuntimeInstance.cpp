@@ -37,7 +37,7 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 #include "shash.inl"
 
 #define MAX_CRASHINFOBUFFER_SIZE 8192
-uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE];
+uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
@@ -49,6 +49,14 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
     *pcbMaxSize = MAX_CRASHINFOBUFFER_SIZE;
     return g_CrashInfoBuffer;
 }
+
+#if TARGET_UNIX
+#include "PalCreateDump.h"
+COOP_PINVOKE_HELPER(void, RhCreateCrashDumpIfEnabled, (PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext))
+{
+    PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
+}
+#endif
 
 COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
 {

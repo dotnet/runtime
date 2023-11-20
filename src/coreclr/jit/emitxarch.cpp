@@ -5485,6 +5485,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     {
         assert(!src->isContained()); // there must be one non-contained src
 
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
+        {
+            GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+            emitIns_S_R(ins, attr, src->GetRegNum(), lclVar->GetLclNum(), lclVar->GetLclOffs());
+            return;
+        }
+
         // ind, reg
         id = emitNewInstrAmd(attr, offset);
         emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
@@ -6251,12 +6258,25 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         case INS_kmovb_msk:
         case INS_kmovw_msk:
         case INS_kmovd_msk:
+        {
+            // Zero-extends the source
+            hasSideEffect = true;
+            break;
+        }
+
         case INS_kmovq_msk:
+        {
+            // No side effect, register is 64-bits
+            hasSideEffect = false;
+            break;
+        }
+
         case INS_kmovb_gpr:
         case INS_kmovw_gpr:
         case INS_kmovd_gpr:
         case INS_kmovq_gpr:
         {
+            // Zero-extends the source
             hasSideEffect = true;
             break;
         }
@@ -6982,7 +7002,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
 void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2)
 {
     assert(IsAvx512OrPriorInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
 
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
@@ -7599,7 +7619,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 #ifdef DEBUG
     // Mark the catch return
-    if (emitComp->compCurBB->bbJumpKind == BBJ_EHCATCHRET)
+    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
     {
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
@@ -8594,9 +8614,14 @@ void emitter::emitIns_SIMD_R_R_R_R(
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-        // Ensure we aren't overwriting op2 or oop3 (which should be REG_XMM0)
+        // Ensure we aren't overwriting op2 or op3 (which should be REG_XMM0)
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
-        assert(targetReg != REG_XMM0);
+
+        // If targetReg == REG_XMM0, it means that op3 was last use and we decided to
+        // reuse REG_XMM0 for destination i.e. targetReg. In such case, make sure
+        // that XMM0 value after the (op3Reg -> XMM0) move done above is not
+        // overwritten by op1Reg.
+        assert((targetReg != REG_XMM0) || (op1Reg == op3Reg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_R(ins, attr, targetReg, op2Reg);
@@ -9201,7 +9226,7 @@ void emitter::emitIns_J(instruction ins,
 
 #ifdef DEBUG
     // Mark the finally call
-    if (ins == INS_call && emitComp->compCurBB->bbJumpKind == BBJ_CALLFINALLY)
+    if (ins == INS_call && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
     {
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
@@ -10352,11 +10377,11 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
             if (addr < 0)
             {
-                printf("-%02XH", -addr);
+                printf("-0x%02X", -addr);
             }
             else if (addr > 0)
             {
-                printf("+%02XH", addr);
+                printf("+0x%02X", addr);
             }
         }
         else
@@ -10367,17 +10392,17 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
             if (addr < 0)
             {
-                printf("-%02XH", -addr);
+                printf("-0x%02X", -addr);
             }
             else if (addr > 0)
             {
-                printf("+%02XH", addr);
+                printf("+0x%02X", addr);
             }
 
 #if !FEATURE_FIXED_OUT_ARGS
 
             if (emitCurStackLvl)
-                printf("+%02XH", emitCurStackLvl);
+                printf("+0x%02X", emitCurStackLvl);
 
 #endif // !FEATURE_FIXED_OUT_ARGS
         }
@@ -10530,7 +10555,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         nsep = true;
     }
 
-    if ((id->idIsDspReloc()) && (id->idIns() != INS_i_jmp))
+    if (id->idIsDspReloc() && (id->idIns() != INS_i_jmp))
     {
         if (nsep)
         {
@@ -10558,34 +10583,34 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             }
             if (frameRef)
             {
-                printf("%02XH", (unsigned)disp);
+                printf("0x%02X", (unsigned)disp);
             }
             else if (disp < 1000)
             {
-                printf("%02XH", (unsigned)disp);
+                printf("0x%02X", (unsigned)disp);
             }
             else if (disp <= 0xFFFF)
             {
-                printf("%04XH", (unsigned)disp);
+                printf("0x%04X", (unsigned)disp);
             }
             else
             {
-                printf("%08XH", (unsigned)disp);
+                printf("0x%08X", (unsigned)disp);
             }
         }
         else if (disp < 0)
         {
             if (frameRef)
             {
-                printf("-%02XH", (unsigned)-disp);
+                printf("-0x%02X", (unsigned)-disp);
             }
             else if (disp > -1000)
             {
-                printf("-%02XH", (unsigned)-disp);
+                printf("-0x%02X", (unsigned)-disp);
             }
             else if (disp >= -0xFFFF)
             {
-                printf("-%04XH", (unsigned)-disp);
+                printf("-0x%04X", (unsigned)-disp);
             }
             else if (disp < -0xFFFFFF)
             {
@@ -10593,16 +10618,16 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
                 {
                     printf("+");
                 }
-                printf("%08XH", (unsigned)disp);
+                printf("0x%08X", (unsigned)disp);
             }
             else
             {
-                printf("-%08XH", (unsigned)-disp);
+                printf("-0x%08X", (unsigned)-disp);
             }
         }
         else if (!nsep)
         {
-            printf("%04XH", (unsigned)disp);
+            printf("0x%04X", (unsigned)disp);
         }
     }
 
@@ -10712,6 +10737,23 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
             printf("%.*s", (int)(2 * (digits - sz)), "                         ");
         }
     }
+}
+
+// emitDispEmbBroadcastCount: Display the tag where embedded broadcast is activated to show how many elements are
+// broadcasted.
+//
+// Arguments:
+//   id - The instruction descriptor
+//
+void emitter::emitDispEmbBroadcastCount(instrDesc* id)
+{
+    if (!id->idIsEvexbContext())
+    {
+        return;
+    }
+    ssize_t baseSize   = GetInputSizeInBytes(id);
+    ssize_t vectorSize = (ssize_t)emitGetBaseMemOpSize(id);
+    printf(" {1to%d}", vectorSize / baseSize);
 }
 
 //--------------------------------------------------------------------
@@ -11115,6 +11157,7 @@ void emitter::emitDispIns(
         {
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
+            emitDispEmbBroadcastCount(id);
             break;
         }
 
@@ -11387,6 +11430,7 @@ void emitter::emitDispIns(
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbBroadcastCount(id);
             break;
         }
 
@@ -11562,7 +11606,7 @@ void emitter::emitDispIns(
         case IF_RWR_RWR_RRD:
         {
             assert(IsVexOrEvexEncodableInstruction(ins));
-            assert(IsThreeOperandAVXInstruction(ins));
+            assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
             if (ins == INS_bextr || ins == INS_bzhi
@@ -11891,6 +11935,7 @@ void emitter::emitDispIns(
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbBroadcastCount(id);
             break;
         }
 
@@ -14070,11 +14115,11 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         {
             if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
             {
-                assert((reinterpret_cast<size_t>(addr) & 3) == 0);
+                assert(IS_ALIGNED(addr, 4));
             }
             else
             {
-                assert((reinterpret_cast<size_t>(addr) & (byteSize - 1)) == 0);
+                assert(IS_ALIGNED(addr, byteSize));
             }
         }
 #endif // DEBUG
@@ -14961,7 +15006,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     instruction ins = id->idIns();
     assert(IsVexOrEvexEncodableInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins) || IsKInstruction(ins));
     regNumber targetReg = id->idReg1();
     regNumber src1      = id->idReg2();
     regNumber src2      = id->idReg3();
@@ -15667,7 +15712,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = id->idjShort ? ssz : lsz;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = %08XH\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
                emitComp->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs,
                distVal);
     }
@@ -15812,20 +15857,38 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         // For forward jumps, record the address of the distance value
         id->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : nullptr;
 
-        dst += emitOutputLong(dst, distVal);
+        bool crossJump = emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
-#ifndef TARGET_AMD64 // all REL32 on AMD have to go through recordRelocation
+        int32_t encodedDisplacement;
+        if (emitComp->opts.compReloc && (!relAddr || crossJump))
+        {
+            // Cross jumps may not be encodable in a 32-bit displacement as the
+            // hot/cold code buffers may be allocated arbitrarily far away from
+            // each other. Similarly, absolute addresses when cross compiling
+            // for 32-bit may also not be representable. We simply encode a 0
+            // under the assumption that the relocations will take care of it.
+            encodedDisplacement = 0;
+        }
+        else
+        {
+            // For all other cases the displacement should be encodable in 32
+            // bits.
+            assert((distVal >= INT32_MIN) && (distVal <= INT32_MAX));
+            encodedDisplacement = static_cast<int32_t>(distVal);
+        }
+
+        dst += emitOutputLong(dst, encodedDisplacement);
+
         if (emitComp->opts.compReloc)
-#endif
         {
             if (!relAddr)
             {
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
             }
-            else if (emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
+            else if (crossJump)
             {
                 assert(id->idjKeepLong);
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), dst + distVal, IMAGE_REL_BASED_REL32);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), dst + distVal, IMAGE_REL_BASED_REL32);
             }
         }
     }
@@ -19184,6 +19247,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_6C : PERFSCORE_LATENCY_4C;
             break;
+
+        case INS_vptestmb:
+        case INS_vptestmd:
+        case INS_vptestmq:
+        case INS_vptestmw:
+        case INS_vptestnmb:
+        case INS_vptestnmd:
+        case INS_vptestnmq:
+        case INS_vptestnmw:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+        }
 
         case INS_mpsadbw:
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;

@@ -86,6 +86,7 @@ int X509_set1_notBefore(X509* x509, const ASN1_TIME*);
 int32_t X509_up_ref(X509* x509);
 const char *SSL_SESSION_get0_hostname(const SSL_SESSION *s);
 int SSL_SESSION_set1_hostname(SSL_SESSION *s, const char *hostname);
+void SSL_CTX_set_keylog_callback(SSL_CTX *ctx, SSL_CTX_keylog_cb_func cb);
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
 int32_t X509_check_host(X509* x509, const char* name, size_t namelen, unsigned int flags, char** peername);

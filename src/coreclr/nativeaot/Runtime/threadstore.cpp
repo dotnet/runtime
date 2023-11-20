@@ -24,7 +24,6 @@
 #include "yieldprocessornormalized.h"
 
 #include "slist.inl"
-#include "GCMemoryHelpers.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;

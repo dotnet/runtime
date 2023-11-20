@@ -12,7 +12,7 @@ using Xunit;
 public class Runtime_39403
 { 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         if (Sse41.IsSupported)
         {
@@ -22,7 +22,6 @@ public class Runtime_39403
             Vector128<int> mask = Vector128.Create(3);
             Sse41.BlendVariable(left, rightRef, mask);
         }
-        return 100;
     }
 }
 

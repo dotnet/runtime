@@ -4,10 +4,12 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TestDisableParallelization>true</TestDisableParallelization>
   </PropertyGroup>
-  <PropertyGroup>
-    <RuntimeComponents Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">diagnostics_tracing;marshal-ilgen</RuntimeComponents>
-  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">
+    <RuntimeComponents Include="diagnostics_tracing" />
+    <RuntimeComponents Include="marshal-ilgen" />
+  </ItemGroup>
   <!-- Windows only files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />

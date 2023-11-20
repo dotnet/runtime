@@ -45,6 +45,15 @@ jobs:
 
       - name: _BuildConfig
         value: $(buildConfigUpper)
+        
+      - name: archType
+        value: ${{ parameters.archType }}
+
+      - name: osGroup
+        value: ${{ parameters.osGroup }}
+
+      - name: osSubgroup
+        value: ${{ parameters.osSubgroup }}
 
       - name: _runSmokeTestsOnlyArg
         value: '/p:RunSmokeTestsOnly=$(isRunSmokeTestsOnly)'
@@ -105,10 +114,10 @@ jobs:
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
 
-      - name: wasmDarcDependenciesChanged
-        ${{ if eq(parameters.archType, 'wasm') }}:
+      - ${{ if eq(parameters.archType, 'wasm') }}:
+        - name: wasmDarcDependenciesChanged
           value: $[ or(
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
@@ -117,6 +126,20 @@ jobs:
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_Analyzers'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_NetAnalyzers'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
+
+        - name: shouldRunWasmBuildTestsOnDefaultPipeline
+          value: $[
+            or(
+              eq(variables['wasmDarcDependenciesChanged'], true),
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
+            ]
+
+        # needed for Wasm.Build.Tests
+        - name: wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline
+          value: $[ variables['shouldRunWasmBuildTestsOnDefaultPipeline'] ]
+        - name: wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline
+          value: $[ variables['shouldRunWasmBuildTestsOnDefaultPipeline'] ]
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
@@ -140,29 +163,26 @@ jobs:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), eq(variables['System.TeamProject'], 'public')) }}:
           name:  $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
 
         # Official Build Linux Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals Build.Ubuntu.1804.Amd64
+          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64
 
-        # OSX Build Pool (we don't have on-prem OSX BuildPool). Use 11 on public, 12 on internal.
-        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macos-11'
-
-        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
+        # OSX Build Pool (we don't have on-prem OSX BuildPool).
+        ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           vmImage: 'macos-12'
 
         # Official Build Windows Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2022.amd64
+          demands: ImageOverride -equals windows.vs2022preview.amd64
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals windows.vs2022.amd64.open
+          demands: ImageOverride -equals windows.vs2022preview.amd64.open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:

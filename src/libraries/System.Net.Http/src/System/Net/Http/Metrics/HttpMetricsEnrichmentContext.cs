@@ -108,15 +108,12 @@ namespace System.Net.Http.Metrics
             return context;
         }
 
-        internal void RecordWithEnrichment(HttpRequestMessage request,
+        internal void RecordDurationWithEnrichment(HttpRequestMessage request,
             HttpResponseMessage? response,
             Exception? exception,
-            long startTimestamp,
+            TimeSpan durationTime,
             in TagList commonTags,
-            bool recordRequestDuration,
-            bool recordFailedRequests,
-            Histogram<double> requestDuration,
-            Counter<long> failedRequests)
+            Histogram<double> requestDuration)
         {
             _request = request;
             _response = response;
@@ -140,16 +137,7 @@ namespace System.Net.Http.Metrics
                     callback(this);
                 }
 
-                if (recordRequestDuration)
-                {
-                    TimeSpan duration = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
-                    requestDuration.Record(duration.TotalSeconds, CollectionsMarshal.AsSpan(_tags));
-                }
-
-                if (recordFailedRequests)
-                {
-                    failedRequests.Add(1, CollectionsMarshal.AsSpan(_tags));
-                }
+                requestDuration.Record(durationTime.TotalSeconds, CollectionsMarshal.AsSpan(_tags));
             }
             finally
             {

@@ -43,7 +43,7 @@ namespace DefaultNamespace
     public class jitBug
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             V3[] V3Array = new V3[5];
             for (int i = 0; i < V3Array.Length; i++)
@@ -61,8 +61,6 @@ namespace DefaultNamespace
             }
             Console.WriteLine("V3 array test worked");
             /* */
-
-            return 100;
         }
     }
 }

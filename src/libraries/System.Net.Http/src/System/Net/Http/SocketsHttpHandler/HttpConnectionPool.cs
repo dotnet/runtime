@@ -742,17 +742,8 @@ namespace System.Net.Http
 
             if (connection is not null)
             {
-                // Register for shutdown notification.
-                // Do this before we return the connection to the pool, because that may result in it being disposed.
-                ValueTask shutdownTask = connection.WaitForShutdownAsync();
-
                 // Add the new connection to the pool.
                 ReturnHttp2Connection(connection, isNewConnection: true, queueItem.Waiter);
-
-                // Wait for connection shutdown.
-                await shutdownTask.ConfigureAwait(false);
-
-                InvalidateHttp2Connection(connection);
             }
             else
             {
@@ -946,14 +937,12 @@ namespace System.Net.Http
                     throw;
                 }
 
-                //TODO: NegotiatedApplicationProtocol not yet implemented.
-#if false
                 if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
                 {
                     BlocklistAuthority(authority);
-                    throw new HttpRequestException("QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
                 }
-#endif
+
                 // if the authority was sent as an option through alt-svc then include alt-used header
                 http3Connection = new Http3Connection(this, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;
@@ -1084,7 +1073,7 @@ namespace System.Net.Http
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
                             {
-                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(this, async, cancellationToken).ConfigureAwait(false);
+                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(request, this, async, cancellationToken).ConfigureAwait(false);
                             }
 
                             Debug.Assert(connection is not null || !_http2Enabled);
@@ -1116,7 +1105,7 @@ namespace System.Net.Http
                             // Use HTTP/1.x.
                             if (!TryGetPooledHttp11Connection(request, async, out HttpConnection? connection, out http11ConnectionWaiter))
                             {
-                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(this, async, cancellationToken).ConfigureAwait(false);
+                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(request, this, async, cancellationToken).ConfigureAwait(false);
                             }
 
                             connection.Acquire(); // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
@@ -2620,14 +2609,14 @@ namespace System.Net.Http
             // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
             public bool CancelledByOriginatingRequestCompletion { get; set; }
 
-            public ValueTask<T> WaitForConnectionAsync(HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+            public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
             {
                 return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled
-                    ? WaitForConnectionWithTelemetryAsync(pool, async, requestCancellationToken)
+                    ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
                     : WaitWithCancellationAsync(async, requestCancellationToken);
             }
 
-            private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+            private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
             {
                 Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
@@ -2641,7 +2630,7 @@ namespace System.Net.Http
                     TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
                     int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
 
-                    pool.Settings._metrics!.RequestLeftQueue(pool, duration, versionMajor);
+                    pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
 
                     if (HttpTelemetry.Log.IsEnabled())
                     {

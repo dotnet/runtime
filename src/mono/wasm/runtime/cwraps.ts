@@ -32,7 +32,7 @@ const legacy_interop_cwraps: SigLine[] = WasmEnableLegacyJsInterop ? [
     [true, "mono_wasm_array_length_ref", "number", ["number"]],
 ] : [];
 
-const diagnostics_cwraps: SigLine[] = MonoWasmThreads ? [
+const threading_cwraps: SigLine[] = MonoWasmThreads ? [
     // MONO.diagnostics
     [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
     [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
@@ -118,7 +118,6 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_adjust_abort_count", "number", ["number", "number"]],
     [true, "mono_jiterp_register_jit_call_thunk", "void", ["number", "number"]],
     [true, "mono_jiterp_type_get_raw_value_size", "number", ["number"]],
-    [true, "mono_jiterp_update_jit_call_dispatcher", "void", ["number"]],
     [true, "mono_jiterp_get_signature_has_this", "number", ["number"]],
     [true, "mono_jiterp_get_signature_return_type", "number", ["number"]],
     [true, "mono_jiterp_get_signature_param_count", "number", ["number"]],
@@ -139,8 +138,21 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
     [true, "mono_wasm_is_zero_page_reserved", "number", []],
     [true, "mono_jiterp_is_special_interface", "number", ["number"]],
-    ...diagnostics_cwraps,
-    ...legacy_interop_cwraps
+    [true, "mono_jiterp_initialize_table", "void", ["number", "number", "number"]],
+    [true, "mono_jiterp_allocate_table_entry", "number", ["number"]],
+    [true, "mono_jiterp_get_interp_entry_func", "number", ["number"]],
+    [true, "mono_jiterp_get_counter", "number", ["number"]],
+    [true, "mono_jiterp_modify_counter", "number", ["number", "number"]],
+    [true, "mono_jiterp_tlqueue_next", "number", ["number"]],
+    [true, "mono_jiterp_tlqueue_add", "number", ["number", "number"]],
+    [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
+    [true, "mono_jiterp_begin_catch", "void", ["number"]],
+    [true, "mono_jiterp_end_catch", "void", []],
+    [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
+    [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
+
+    ...threading_cwraps,
+    ...legacy_interop_cwraps,
 ];
 
 export interface t_LegacyCwraps {
@@ -160,7 +172,7 @@ export interface t_LegacyCwraps {
     mono_wasm_array_length_ref(array: MonoObjectRef): number;
 }
 
-export interface t_DiagnosticsCwraps {
+export interface t_ThreadingCwraps {
     // MONO.diagnostics
     mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
     mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
@@ -250,7 +262,6 @@ export interface t_Cwraps {
     mono_jiterp_get_options_version(): number;
     mono_jiterp_adjust_abort_count(opcode: number, delta: number): number;
     mono_jiterp_register_jit_call_thunk(cinfo: number, func: number): void;
-    mono_jiterp_update_jit_call_dispatcher(fn: number): void;
     mono_jiterp_get_signature_has_this(sig: VoidPtr): number;
     mono_jiterp_get_signature_return_type(sig: VoidPtr): MonoType;
     mono_jiterp_get_signature_param_count(sig: VoidPtr): number;
@@ -272,13 +283,27 @@ export interface t_Cwraps {
     mono_jiterp_get_opcode_info(opcode: number, type: number): number;
     mono_wasm_is_zero_page_reserved(): number;
     mono_jiterp_is_special_interface(klass: number): number;
+    mono_jiterp_initialize_table(type: number, firstIndex: number, lastIndex: number): void;
+    mono_jiterp_allocate_table_entry(type: number): number;
+    mono_jiterp_get_interp_entry_func(type: number): number;
+    mono_jiterp_get_counter(counter: number): number;
+    mono_jiterp_modify_counter(counter: number, delta: number): number;
+    // returns value or, if queue is empty, VoidPtrNull
+    mono_jiterp_tlqueue_next(queue: number): VoidPtr;
+    // returns new size of queue after add
+    mono_jiterp_tlqueue_add(queue: number, value: VoidPtr): number;
+    mono_jiterp_tlqueue_clear(queue: number): void;
+    mono_jiterp_begin_catch(ptr: number): void;
+    mono_jiterp_end_catch(): void;
+    mono_interp_pgo_load_table(buffer: VoidPtr, bufferSize: number): number;
+    mono_interp_pgo_save_table(buffer: VoidPtr, bufferSize: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
 
 export default wrapped_c_functions;
 export const legacy_c_functions: t_LegacyCwraps & t_Cwraps = wrapped_c_functions as any;
-export const diagnostics_c_functions: t_DiagnosticsCwraps & t_Cwraps = wrapped_c_functions as any;
+export const threads_c_functions: t_ThreadingCwraps & t_Cwraps = wrapped_c_functions as any;
 export const profiler_c_functions: t_ProfilerCwraps & t_Cwraps = wrapped_c_functions as any;
 
 // see src/mono/wasm/driver.c I52_ERROR_xxx

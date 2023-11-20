@@ -421,12 +421,46 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 //
 // Return value:
 //    true if at least one GC ByRef, false otherwise.
+//
 bool ClassLayout::HasGCByRef() const
 {
     unsigned slots = GetSlotCount();
     for (unsigned i = 0; i < slots; i++)
     {
         if (IsGCByRef(i))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IntersectsGCPtr: check if the specified interval intersects with a GC
+// pointer.
+//
+// Parameters:
+//   offset - The start offset of the interval
+//   size   - The size of the interval
+//
+// Return value:
+//   True if it does.
+//
+bool ClassLayout::IntersectsGCPtr(unsigned offset, unsigned size) const
+{
+    if (!HasGCPtr())
+    {
+        return false;
+    }
+
+    unsigned startSlot = offset / TARGET_POINTER_SIZE;
+    unsigned endSlot   = (offset + size - 1) / TARGET_POINTER_SIZE;
+    assert((startSlot < GetSlotCount()) && (endSlot < GetSlotCount()));
+
+    for (unsigned i = startSlot; i <= endSlot; i++)
+    {
+        if (IsGCPtr(i))
         {
             return true;
         }

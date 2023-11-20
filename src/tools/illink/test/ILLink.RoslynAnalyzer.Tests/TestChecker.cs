@@ -66,8 +66,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 
 			if (message.Length > 0) {
-				Assert.True (false, message);
+				Assert.Fail(message);
 			}
+		}
+
+		public override void VisitCompilationUnit (CompilationUnitSyntax node)
+		{
+			base.VisitCompilationUnit (node);
+			ValidateDiagnostics (node, node.AttributeLists);
 		}
 
 		public override void VisitClassDeclaration (ClassDeclarationSyntax node)
@@ -97,6 +103,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public override void VisitPropertyDeclaration (PropertyDeclarationSyntax node)
 		{
 			base.VisitPropertyDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitEventDeclaration (EventDeclarationSyntax node)
+		{
+			base.VisitEventDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitEventFieldDeclaration (EventFieldDeclarationSyntax node)
+		{
+			base.VisitEventFieldDeclaration (node);
 			CheckMember (node);
 		}
 
@@ -300,7 +318,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			Assert.False (args.ContainsKey ("#1"));
 			_ = LinkerTestBase.GetStringFromExpression (arg, _semanticModel);
 			if (LogContains (attribute, diagnosticMessages, out var matchIndex, out var findText)) {
-				Assert.True (false, $"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
+				Assert.Fail($"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
 			}
 		}
 

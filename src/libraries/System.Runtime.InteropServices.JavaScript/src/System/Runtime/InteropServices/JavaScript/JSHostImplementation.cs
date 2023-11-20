@@ -20,9 +20,9 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
         [ThreadStatic]
 #endif
-        private static Dictionary<int, WeakReference<JSObject>>? s_csOwnedObjects;
+        private static Dictionary<nint, WeakReference<JSObject>>? s_csOwnedObjects;
 
-        public static Dictionary<int, WeakReference<JSObject>> ThreadCsOwnedObjects
+        public static Dictionary<nint, WeakReference<JSObject>> ThreadCsOwnedObjects
         {
             get
             {
@@ -35,15 +35,76 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
         [ThreadStatic]
 #endif
-        private static Dictionary<object, IntPtr>? s_jsOwnedObjects;
+        private static Dictionary<object, nint>? s_jsOwnedObjects;
 
-        public static Dictionary<object, IntPtr> ThreadJsOwnedObjects
+        public static Dictionary<object, nint> ThreadJsOwnedObjects
         {
             get
             {
-                s_jsOwnedObjects ??= new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
+                s_jsOwnedObjects ??= new Dictionary<object, nint>(ReferenceEqualityComparer.Instance);
                 return s_jsOwnedObjects;
             }
+        }
+
+        // this is similar to GCHandle, but the GCVHandle is allocated on JS side and this keeps the C# proxy alive
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static Dictionary<nint, PromiseHolder>? s_jsOwnedHolders;
+
+        public static Dictionary<nint, PromiseHolder> ThreadJsOwnedHolders
+        {
+            get
+            {
+                s_jsOwnedHolders ??= new Dictionary<nint, PromiseHolder>();
+                return s_jsOwnedHolders;
+            }
+        }
+
+        // JSVHandle is like JSHandle, but it's not tracked and allocated by the JS side
+        // It's used when we need to create JSHandle-like identity ahead of time, before calling JS.
+        // they have negative values, so that they don't collide with JSHandles.
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        public static nint NextJSVHandle;
+
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static List<nint>? s_JSVHandleFreeList;
+        public static List<nint> JSVHandleFreeList
+        {
+            get
+            {
+                s_JSVHandleFreeList ??= new();
+                return s_JSVHandleFreeList;
+            }
+        }
+
+        public static nint AllocJSVHandle()
+        {
+            if (JSVHandleFreeList.Count > 0)
+            {
+                var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count];
+                JSVHandleFreeList.RemoveAt(JSVHandleFreeList.Count - 1);
+                return jsvHandle;
+            }
+            if (NextJSVHandle == IntPtr.Zero)
+            {
+                NextJSVHandle = -2;
+            }
+            return NextJSVHandle--;
+        }
+
+        public static void FreeJSVHandle(nint jsvHandle)
+        {
+            JSVHandleFreeList.Add(jsvHandle);
+        }
+
+        public static bool IsGCVHandle(nint gcHandle)
+        {
+            return gcHandle < -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -54,17 +115,24 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
                 JSSynchronizationContext.AssertWebWorkerContext();
 #endif
-                ThreadCsOwnedObjects.Remove((int)jsHandle);
+                ThreadCsOwnedObjects.Remove(jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
         }
 
-        public static object? GetTaskResultDynamic(Task task)
+        public static bool GetTaskResultDynamic(Task task, out object? value)
         {
-            MethodInfo method = GetTaskResultMethodInfo(task.GetType());
+            var type = task.GetType();
+            if (type == typeof(Task))
+            {
+                value = null;
+                return false;
+            }
+            MethodInfo method = GetTaskResultMethodInfo(type);
             if (method != null)
             {
-                return method.Invoke(task, null);
+                value = method.Invoke(task, null);
+                return true;
             }
             throw new InvalidOperationException();
         }
@@ -159,10 +227,10 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return jsTask.Result;
             }
-            using (var receiveRegistration = cancellationToken.Register(() =>
+            using (var receiveRegistration = cancellationToken.Register(static s =>
             {
-                CancelablePromise.CancelPromise(jsTask);
-            }))
+                CancelablePromise.CancelPromise((Task<JSObject>)s!);
+            }, jsTask))
             {
                 return await jsTask.ConfigureAwait(true);
             }
@@ -182,7 +250,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Sigs = (JSFunctionBinding.JSBindingType*)(buffer + JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + (2 * sizeof(JSFunctionBinding.JSBindingType))),
             };
 
-            signature.Version = 1;
+            signature.Version = 2;
             signature.ArgumentCount = argsCount;
             signature.Exception = JSMarshalerType.Exception._signatureType;
             signature.Result = types[0]._signatureType;
@@ -208,12 +276,12 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
             JSObject? res;
 
-            if (!ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
+            if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
                 !reference.TryGetTarget(out res) ||
                 res.IsDisposed)
             {
                 res = new JSObject(jsHandle);
-                ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
+                ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             return res;
         }
@@ -275,25 +343,11 @@ namespace System.Runtime.InteropServices.JavaScript
                             jso.Dispose();
                         }
                     }
-                    foreach (var gch in ThreadJsOwnedObjects.Values)
-                    {
-                        GCHandle gcHandle = (GCHandle)gch;
-
-                        // if this is pending promise we reject it
-                        if (gcHandle.Target is TaskCallback holder)
-                        {
-                            unsafe
-                            {
-                                holder.Callback!.Invoke(null);
-                            }
-                        }
-                        gcHandle.Free();
-                    }
                     SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
                     JSSynchronizationContext.CurrentJSSynchronizationContext = null;
                     ctx.isDisposed = true;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
                 }
@@ -309,36 +363,52 @@ namespace System.Runtime.InteropServices.JavaScript
                     Environment.FailFast($"There should be no JS proxies of managed objects on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
                 }
             }
+
+            Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
+
+            if (uninstallJSSynchronizationContext)
+            {
+                try
+                {
+                    foreach (var gch in ThreadJsOwnedObjects.Values)
+                    {
+                        GCHandle gcHandle = (GCHandle)gch;
+                        gcHandle.Free();
+                    }
+                    foreach (var holder in ThreadJsOwnedHolders.Values)
+                    {
+                        unsafe
+                        {
+                            holder.Callback!.Invoke(null);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
+                }
+            }
+
             ThreadCsOwnedObjects.Clear();
             ThreadJsOwnedObjects.Clear();
-            Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
+            JSVHandleFreeList.Clear();
+            NextJSVHandle = IntPtr.Zero;
         }
 
-        private static FieldInfo? thread_id_Field;
-        private static FieldInfo? external_eventloop_Field;
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
+        private static extern ref bool GetThreadExternalEventloop(Thread @this);
 
-        // FIXME: after https://github.com/dotnet/runtime/issues/86040 replace with
-        // [UnsafeAccessor(UnsafeAccessorKind.Field, Name="external_eventloop")]
-        // static extern ref bool ThreadExternalEventloop(Thread @this);
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Threading.Thread", "System.Private.CoreLib")]
         public static void SetHasExternalEventLoop(Thread thread)
         {
-            if (external_eventloop_Field == null)
-            {
-                external_eventloop_Field = typeof(Thread).GetField("external_eventloop", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            }
-            external_eventloop_Field.SetValue(thread, true);
+            GetThreadExternalEventloop(thread) = true;
         }
 
-        // FIXME: after https://github.com/dotnet/runtime/issues/86040
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, "System.Threading.Thread", "System.Private.CoreLib")]
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
+        private static extern ref long GetThreadNativeThreadId(Thread @this);
+
         public static IntPtr GetNativeThreadId()
         {
-            if (thread_id_Field == null)
-            {
-                thread_id_Field = typeof(Thread).GetField("thread_id", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            }
-            return (int)(long)thread_id_Field.GetValue(Thread.CurrentThread)!;
+            return (int)GetThreadNativeThreadId(Thread.CurrentThread);
         }
 
 #endif

@@ -10,10 +10,10 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections;
 using System.Runtime.ExceptionServices;
 
 namespace System.Threading.Tasks.Dataflow.Internal
@@ -607,7 +607,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     }
 
     /// <summary>State used only when bounding.</summary>
-    [DebuggerDisplay("BoundedCapacity={BoundedCapacity}}")]
+    [DebuggerDisplay("BoundedCapacity = {BoundedCapacity}}")]
     internal class BoundingState
     {
         /// <summary>The maximum number of messages allowed to be buffered.</summary>
@@ -635,7 +635,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
     /// <summary>Stated used only when bounding and when postponed messages are stored.</summary>
     /// <typeparam name="TInput">Specifies the type of input messages.</typeparam>
-    [DebuggerDisplay("BoundedCapacity={BoundedCapacity}, PostponedMessages={PostponedMessagesCountForDebugger}")]
+    [DebuggerDisplay("BoundedCapacity = {BoundedCapacity}, PostponedMessages = {PostponedMessagesCountForDebugger}")]
     internal class BoundingStateWithPostponed<TInput> : BoundingState
     {
         /// <summary>Queue of postponed messages.</summary>

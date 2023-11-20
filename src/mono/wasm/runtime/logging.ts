@@ -149,3 +149,7 @@ export function parseSymbolMapFile(text: string) {
 
     mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
 }
+
+export function mono_wasm_get_func_id_to_name_mappings() {
+    return [...wasm_func_map.values()];
+}

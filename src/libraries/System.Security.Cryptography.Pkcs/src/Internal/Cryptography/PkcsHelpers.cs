@@ -364,7 +364,12 @@ namespace Internal.Cryptography
             return ToUpperHexString(serialBytes);
         }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET5_0_OR_GREATER
+        private static string ToUpperHexString(ReadOnlySpan<byte> ba)
+        {
+            return Convert.ToHexString(ba);
+        }
+#elif NETCOREAPP || NETSTANDARD2_1
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
             return HexConverter.ToString(ba, HexConverter.Casing.Upper);
@@ -661,7 +666,7 @@ namespace Internal.Cryptography
                     return false;
                 }
 
-                ReadOnlySpan<byte> pSpecifiedDefaultParameters = new byte[] { 0x04, 0x00 };
+                ReadOnlySpan<byte> pSpecifiedDefaultParameters = [0x04, 0x00];
 
                 if (oaepParameters.PSourceFunc.Parameters != null &&
                     !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(pSpecifiedDefaultParameters))

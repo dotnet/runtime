@@ -7,9 +7,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Security;
 using System.Text;
 using System.Threading;
-using System.Security;
 using Microsoft.Win32.SafeHandles;
 
 namespace System
@@ -231,6 +231,10 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return displayName;
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return displayName;
+#endif
             GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
 
             return displayName;
@@ -245,6 +249,10 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return standardDisplayName;
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return standardDisplayName;
+#endif
             GetStandardDisplayName(Id, ref standardDisplayName);
 
             return standardDisplayName;
@@ -259,6 +267,10 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return daylightDisplayName;
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return daylightDisplayName;
+#endif
             GetDaylightDisplayName(Id, ref daylightDisplayName);
 
             return daylightDisplayName;

@@ -12,42 +12,36 @@ namespace System.Net
     {
         private static readonly Meter s_meter = new("System.Net.NameResolution");
 
-        private static readonly Counter<long> s_lookupsRequestedCounter = s_meter.CreateCounter<long>(
-            name: "dns-lookups-requested",
-            description: "Number of DNS lookups requested.");
+        private static readonly Histogram<double> s_lookupDuration = s_meter.CreateHistogram<double>(
+            name: "dns.lookup.duration",
+            unit: "s",
+            description: "Measures the time taken to perform a DNS lookup.");
 
-        public static bool IsEnabled() => s_lookupsRequestedCounter.Enabled;
+        public static bool IsEnabled() => s_lookupDuration.Enabled;
 
-        public static void BeforeResolution(object hostNameOrAddress, out string? host)
+        public static void AfterResolution(TimeSpan duration, string hostName, Exception? exception)
         {
-            if (s_lookupsRequestedCounter.Enabled)
-            {
-                host = GetHostnameFromStateObject(hostNameOrAddress);
+            var hostNameTag = KeyValuePair.Create("dns.question.name", (object?)hostName);
 
-                s_lookupsRequestedCounter.Add(1, KeyValuePair.Create("hostname", (object?)host));
+            if (exception is null)
+            {
+                s_lookupDuration.Record(duration.TotalSeconds, hostNameTag);
             }
             else
             {
-                host = null;
+                var errorTypeTag = KeyValuePair.Create("error.type", (object?)GetErrorType(exception));
+                s_lookupDuration.Record(duration.TotalSeconds, hostNameTag, errorTypeTag);
             }
         }
 
-        public static string GetHostnameFromStateObject(object hostNameOrAddress)
+        private static string GetErrorType(Exception exception) => (exception as SocketException)?.SocketErrorCode switch
         {
-            Debug.Assert(hostNameOrAddress is not null);
+            SocketError.HostNotFound => "host_not_found",
+            SocketError.TryAgain => "try_again",
+            SocketError.AddressFamilyNotSupported => "address_family_not_supported",
+            SocketError.NoRecovery => "no_recovery",
 
-            string host = hostNameOrAddress switch
-            {
-                string h => h,
-                KeyValuePair<string, AddressFamily> t => t.Key,
-                IPAddress a => a.ToString(),
-                KeyValuePair<IPAddress, AddressFamily> t => t.Key.ToString(),
-                _ => null!
-            };
-
-            Debug.Assert(host is not null, $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
-
-            return host;
-        }
+            _ => exception.GetType().FullName!
+        };
     }
 }

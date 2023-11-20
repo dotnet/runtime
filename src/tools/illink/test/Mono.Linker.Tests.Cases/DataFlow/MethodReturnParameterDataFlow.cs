@@ -36,6 +36,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.ReturnWithRequirementsAlwaysThrows ();
 
 			UnsupportedReturnType ();
+			UnsupportedReturnTypeAndParameter (null);
 		}
 
 		static Type NoRequirements ()

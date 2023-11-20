@@ -10,6 +10,10 @@
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
   </PropertyGroup>
 
+  <ItemGroup>
+    <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+  </ItemGroup>
+
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AndroidAppBuilderTask" 
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
@@ -43,6 +47,11 @@
 
     <Message Importance="High" Text="Path: $(PublishDir)" />
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
+
+    <!-- Make sure marshal-ilgen is included in the components list. -->
+    <ItemGroup>
+      <RuntimeComponents Include="marshal-ilgen" KeepDuplicates="false"/>
+    </ItemGroup>
 
     <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' == 'true'">
       <_AotOutputType>Library</_AotOutputType>
@@ -106,7 +115,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\android-$(TargetArchitecture)\native\include\mono-2.0"
         OutputDir="$(ApkDir)"
         ProjectName="HelloAndroid"
-        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
         StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />

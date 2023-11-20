@@ -4,15 +4,14 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Runtime.General;
 using System.Runtime;
 
-using Internal.Runtime.CompilerServices;
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
-using Internal.Runtime.TypeLoader;
 using Internal.Runtime.Augments;
-
-using System.Reflection.Runtime.General;
+using Internal.Runtime.CompilerServices;
+using Internal.Runtime.TypeLoader;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -173,12 +172,23 @@ namespace Internal.Runtime.TypeLoader
 
         private bool CompareTypeSigWithType(ref NativeParser parser, TypeManagerHandle moduleHandle, Handle typeHandle)
         {
-            while (typeHandle.HandleType == HandleType.TypeSpecification)
+            while (typeHandle.HandleType == HandleType.TypeSpecification
+                || typeHandle.HandleType == HandleType.ModifiedType)
             {
-                typeHandle = typeHandle
-                    .ToTypeSpecificationHandle(_metadataReader)
-                    .GetTypeSpecification(_metadataReader)
-                    .Signature;
+                if (typeHandle.HandleType == HandleType.TypeSpecification)
+                {
+                    typeHandle = typeHandle
+                        .ToTypeSpecificationHandle(_metadataReader)
+                        .GetTypeSpecification(_metadataReader)
+                        .Signature;
+                }
+                else
+                {
+                    typeHandle = typeHandle
+                        .ToModifiedTypeHandle(_metadataReader)
+                        .GetModifiedType(_metadataReader)
+                        .Type;
+                }
             }
 
             // startOffset lets us backtrack to the TypeSignatureKind for external types since the TypeLoader

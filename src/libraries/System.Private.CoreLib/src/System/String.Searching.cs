@@ -32,7 +32,9 @@ namespace System
 
         public bool Contains(char value, StringComparison comparisonType)
         {
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
             return IndexOf(value, comparisonType) != -1;
+#pragma warning restore CA2249
         }
 
         // Returns the index of the first occurrence of a specified character in the current instance.

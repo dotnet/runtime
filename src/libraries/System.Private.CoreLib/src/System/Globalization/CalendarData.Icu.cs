@@ -33,6 +33,7 @@ namespace System.Globalization
     {
         private bool IcuLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
+            // ToDo: think if not to convert this function with multiple calls to JS into one call with multiple data requested at once
             Debug.Assert(!GlobalizationMode.UseNls);
 
             bool result = true;
@@ -88,7 +89,15 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
 
             // NOTE: there are no 'user overrides' on Linux
-            int count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+            int count;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+                count = Interop.Globalization.GetCalendarsNative(localeName, calendars, calendars.Length);
+            else
+                count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+#else
+            count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+#endif
 
             // ensure there is at least 1 calendar returned
             if (count == 0 && calendars.Length > 0)

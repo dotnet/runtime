@@ -23,7 +23,7 @@ namespace System.Threading.Tasks
     /// Provides concurrent and exclusive task schedulers that coordinate to execute
     /// tasks while ensuring that concurrent tasks may run concurrently and exclusive tasks never do.
     /// </summary>
-    [DebuggerDisplay("Concurrent={ConcurrentTaskCountForDebugger}, Exclusive={ExclusiveTaskCountForDebugger}, Mode={ModeForDebugger}")]
+    [DebuggerDisplay("Concurrent = {ConcurrentTaskCountForDebugger}, Exclusive = {ExclusiveTaskCountForDebugger}, Mode = {ModeForDebugger}")]
     [DebuggerTypeProxy(typeof(DebugView))]
     public class ConcurrentExclusiveSchedulerPair
     {
@@ -502,7 +502,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// A scheduler shim used to queue tasks to the pair and execute those tasks on request of the pair.
         /// </summary>
-        [DebuggerDisplay("Count={CountForDebugger}, MaxConcurrencyLevel={m_maxConcurrencyLevel}, Id={Id}")]
+        [DebuggerDisplay("Count = {CountForDebugger}, MaxConcurrencyLevel = {m_maxConcurrencyLevel}, Id = {Id}")]
         [DebuggerTypeProxy(typeof(DebugView))]
         private sealed class ConcurrentExclusiveTaskScheduler : TaskScheduler
         {

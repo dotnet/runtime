@@ -7,19 +7,22 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Principal;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Principal;
 using System.Text;
-using System.Net.Security;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
 {
     internal partial class NegotiateAuthenticationPal
     {
-        private static bool UseManagedNtlm { get; } = AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) && useManagedNtlm;
+        private static bool UseManagedNtlm { get; } =
+            AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
+            useManagedNtlm :
+            OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst();
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
@@ -28,7 +31,7 @@ namespace System.Net
                 switch (clientOptions.Package)
                 {
                     case NegotiationInfoClass.NTLM:
-                        return new ManagedNtlmNegotiateAuthenticationPal(clientOptions);
+                        return ManagedNtlmNegotiateAuthenticationPal.Create(clientOptions);
 
                     case NegotiationInfoClass.Negotiate:
                         return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions, supportKerberos: true);
@@ -39,13 +42,15 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(clientOptions);
             }
-            catch (Win32Exception)
+            catch (Interop.NetSecurityNative.GssApiException gex)
             {
-                return new UnsupportedNegotiateAuthenticationPal(clientOptions);
-            }
-            catch (PlatformNotSupportedException)
-            {
-                return new UnsupportedNegotiateAuthenticationPal(clientOptions);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
+                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                }
+                return new UnsupportedNegotiateAuthenticationPal(clientOptions, statusCode);
             }
             catch (EntryPointNotFoundException)
             {
@@ -60,13 +65,15 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(serverOptions);
             }
-            catch (Win32Exception)
+            catch (Interop.NetSecurityNative.GssApiException gex)
             {
-                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
-            }
-            catch (PlatformNotSupportedException)
-            {
-                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
+                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                }
+                return new UnsupportedNegotiateAuthenticationPal(serverOptions, statusCode);
             }
             catch (EntryPointNotFoundException)
             {
@@ -181,22 +188,25 @@ namespace System.Net
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Peer SPN-> '{_spn}'");
 
-                if (clientOptions.Credential == CredentialCache.DefaultCredentials ||
+                if (clientOptions.Credential == CredentialCache.DefaultNetworkCredentials ||
                     string.IsNullOrWhiteSpace(clientOptions.Credential.UserName) ||
                     string.IsNullOrWhiteSpace(clientOptions.Credential.Password))
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "using DefaultCredentials");
-                    _credentialsHandle = AcquireDefaultCredential();
 
                     if (_packageType == Interop.NetSecurityNative.PackageType.NTLM)
                     {
                         // NTLM authentication is not possible with default credentials which are no-op
-                        throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_ntlm_not_possible_default_cred);
+                        throw new Interop.NetSecurityNative.GssApiException(Interop.NetSecurityNative.Status.GSS_S_NO_CRED, 0, SR.net_ntlm_not_possible_default_cred);
                     }
                     if (string.IsNullOrEmpty(_spn))
                     {
-                        throw new PlatformNotSupportedException(SR.net_nego_not_supported_empty_target_with_defaultcreds);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_nego_not_supported_empty_target_with_defaultcreds);
+                        throw new Interop.NetSecurityNative.GssApiException(Interop.NetSecurityNative.Status.GSS_S_BAD_NAME, 0, SR.net_nego_not_supported_empty_target_with_defaultcreds);
                     }
+
+                    _credentialsHandle = SafeGssCredHandle.Create(string.Empty, string.Empty, _packageType);
                 }
                 else
                 {
@@ -226,7 +236,7 @@ namespace System.Net
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Peer SPN-> '{_spn}'");
 
-                if (serverOptions.Credential == CredentialCache.DefaultCredentials ||
+                if (serverOptions.Credential == CredentialCache.DefaultNetworkCredentials ||
                     string.IsNullOrWhiteSpace(serverOptions.Credential.UserName) ||
                     string.IsNullOrWhiteSpace(serverOptions.Credential.Password))
                 {
@@ -459,24 +469,7 @@ namespace System.Net
                 else
                 {
                     // Native shim currently supports only NTLM, Negotiate and Kerberos
-                    throw new PlatformNotSupportedException(SR.net_securitypackagesupport);
-                }
-            }
-
-            private SafeGssCredHandle AcquireDefaultCredential()
-            {
-                try
-                {
-                    return SafeGssCredHandle.Create(string.Empty, string.Empty, _packageType);
-                }
-                catch (Exception ex)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
-
-                    // NOTE: We throw PlatformNotSupportedException which is caught in
-                    // NegotiateAuthenticationPal.Create and transformed into instantiation of
-                    // UnsupportedNegotiateAuthenticationPal.
-                    throw new PlatformNotSupportedException(ex.Message, ex);
+                    throw new Interop.NetSecurityNative.GssApiException(Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE, 0);
                 }
             }
 
@@ -508,14 +501,10 @@ namespace System.Net
 
                     return SafeGssCredHandle.Create(username, password, _packageType);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not Interop.NetSecurityNative.GssApiException)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
-
-                    // NOTE: We throw PlatformNotSupportedException which is caught in
-                    // NegotiateAuthenticationPal.Create and transformed into instantiation of
-                    // UnsupportedNegotiateAuthenticationPal.
-                    throw new PlatformNotSupportedException(ex.Message, ex);
+                    throw new Interop.NetSecurityNative.GssApiException(Interop.NetSecurityNative.Status.GSS_S_BAD_NAME, 0);
                 }
             }
 
@@ -750,7 +739,7 @@ namespace System.Net
             }
 
             // https://www.gnu.org/software/gss/reference/gss.pdf (page 25)
-            private static NegotiateAuthenticationStatusCode GetErrorCode(Interop.NetSecurityNative.GssApiException exception)
+            internal static NegotiateAuthenticationStatusCode GetErrorCode(Interop.NetSecurityNative.GssApiException exception)
             {
                 switch (exception.MajorStatus)
                 {

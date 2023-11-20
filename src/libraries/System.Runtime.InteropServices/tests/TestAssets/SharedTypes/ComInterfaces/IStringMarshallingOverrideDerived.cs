@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface(StringMarshalling = StringMarshalling.Utf8)]
-    [Guid(_guid)]
+    [Guid(IID)]
     internal partial interface IStringMarshallingOverrideDerived : IStringMarshallingOverride
     {
-        public new const string _guid = "3AFFE3FD-D11E-4195-8250-0C73321977A0";
+        public new const string IID = "3AFFE3FD-D11E-4195-8250-0C73321977A0";
         string StringMarshallingUtf8_2(string input);
 
         [return: MarshalAs(UnmanagedType.LPWStr)]

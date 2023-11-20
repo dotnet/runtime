@@ -30,7 +30,7 @@ struct T
 public class Tester
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         T t1, t2;
 
@@ -39,8 +39,6 @@ public class Tester
 
         bar(t1);
         bar(t2);
-
-        return 100;
     }
 
     static void bar(T t)

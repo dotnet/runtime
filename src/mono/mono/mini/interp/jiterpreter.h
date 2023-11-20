@@ -5,12 +5,8 @@
 
 #ifdef DISABLE_THREADS
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 1
-// enables specialized mono_llvm_cpp_catch_exception replacement (see jiterpreter-jit-call.ts)
-// works even if the jiterpreter is otherwise disabled.
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 1
 #else
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 0
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 0
 #endif // DISABLE_THREADS
 
 // mono_interp_tier_prepare_jiterpreter will return these special values if it doesn't
@@ -20,12 +16,82 @@
 // NOT_JITTED indicates that the trace was not jitted and it should be turned into a NOP
 #define JITERPRETER_NOT_JITTED 1
 
+#define JITERPRETER_OPCODE_SIZE 4
+
 typedef struct {
 	gint32 backward_branch_taken;
 	gint32 bailout_opcode_count;
 } JiterpreterCallInfo;
 
-typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals, JiterpreterCallInfo *cinfo);
+#if defined(_MSC_VER)
+#pragma pack(push)
+#pragma pack(2)
+#endif
+
+typedef struct
+#if defined(__GNUC__)
+__attribute__ ((__packed__, __aligned__(2)))
+#endif
+{
+	guint16 opcode;
+	guint16 relative_fn_ptr;
+	guint32 trace_index;
+} JiterpreterOpcode;
+
+#if defined(_MSC_VER)
+#pragma pack(pop)
+#endif
+
+// Keep in sync with JiterpreterTable in jiterpreter-enums.ts
+enum {
+	JITERPRETER_TABLE_TRACE = 0,
+	JITERPRETER_TABLE_JIT_CALL = 1,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_0 = 2,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_1,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_2,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_3,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_4,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_5,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_6,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_7,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_8,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_0,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_1,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_2,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_3,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_4,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_5,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_6,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_7,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_8,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_0,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_1,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_2,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_3,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_4,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_5,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_6,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_7,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_8,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_0,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_1,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_2,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_3,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_4,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_5,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_6,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_7,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_8,
+	JITERPRETER_TABLE_LAST = JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_8,
+};
+
+typedef struct {
+	gint32 first_index, last_index, next_index;
+} JiterpreterTableInfo;
+
+extern int mono_jiterp_first_trace_fn_ptr;
+
+typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals, JiterpreterCallInfo *cinfo, const guint16 *ip);
 typedef void (*WasmJitCallThunk) (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 typedef void (*WasmDoJitCall) (gpointer cb, gpointer arg, gboolean *out_thrown);
 
@@ -68,7 +134,8 @@ mono_interp_tier_prepare_jiterpreter_fast (
 extern JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter (
 	void *frame, MonoMethod *method, const guint16 *ip, gint32 trace_index,
-	const guint16 *start_of_body, int size_of_body, int is_verbose
+	const guint16 *start_of_body, int size_of_body, int is_verbose,
+	int preset_function_pointer
 );
 
 // HACK: Pass void* so that this header can include safely in files without definition for InterpMethod,
@@ -93,12 +160,12 @@ mono_interp_invoke_wasm_jit_call_trampoline (
 	void *ftndesc, gboolean *thrown
 );
 
-extern void
-mono_jiterp_do_jit_call_indirect (
-	gpointer cb, gpointer arg, gboolean *out_thrown
-);
-
 #ifdef __MONO_MINI_INTERPRETER_INTERNALS_H__
+
+extern void
+mono_jiterp_free_method_data_js (
+	MonoMethod *method, InterpMethod *imethod, int trace_index
+);
 
 typedef struct {
 	InterpMethod *rmethod;
@@ -147,9 +214,28 @@ mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackva
 ptrdiff_t
 mono_jiterp_monitor_trace (const guint16 *ip, void *frame, void *locals);
 
-#endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
+int
+mono_jiterp_increment_counter (volatile int *counter);
 
-extern WasmDoJitCall jiterpreter_do_jit_call;
+gboolean
+mono_jiterp_patch_opcode (volatile JiterpreterOpcode *ip, guint16 old_opcode, guint16 new_opcode);
+
+int
+mono_jiterp_placeholder_trace (void *frame, void *pLocals, JiterpreterCallInfo *cinfo, const guint16 *ip);
+
+void
+mono_jiterp_placeholder_jit_call (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
+
+void
+mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod);
+
+void *
+mono_jiterp_get_interp_entry_func (int table);
+
+void
+mono_jiterp_tlqueue_purge_all (gpointer item);
+
+#endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 
 #endif // HOST_BROWSER
 

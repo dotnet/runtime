@@ -902,13 +902,11 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http11(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/89035", TestPlatforms.OSX)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_ParallelRequests_LogsNewConnectionIdForEachRequest()
         {
             RemoteExecutor.Invoke(async () =>
             {
-                TimeSpan timeout = TimeSpan.FromSeconds(60);
                 const int NumParallelRequests = 4;
 
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -926,29 +924,35 @@ namespace System.Net.Http.Functional.Tests
                         Task<HttpResponseMessage>[] responseTasks = Enumerable.Repeat(uri, NumParallelRequests)
                             .Select(_ => client.GetAsync(uri))
                             .ToArray();
-                        await Task.WhenAll(responseTasks).WaitAsync(timeout);
-                    }, async server =>
+
+                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTasks);
+                    },
+                    async server =>
                     {
-                        ManualResetEventSlim allConnectionsOpen = new(false);
+                        TaskCompletionSource allConnectionsOpen = new(TaskCreationOptions.RunContinuationsAsynchronously);
                         int connectionCounter = 0;
 
                         Task[] parallelConnectionTasks = Enumerable.Repeat(server, NumParallelRequests)
                             .Select(_ => server.AcceptConnectionAsync(HandleConnectionAsync))
                             .ToArray();
 
-                        await Task.WhenAll(parallelConnectionTasks);
+                        await TestHelper.WhenAllCompletedOrAnyFailed(parallelConnectionTasks);
 
                         async Task HandleConnectionAsync(GenericLoopbackConnection connection)
                         {
+                            await connection.ReadRequestDataAsync().WaitAsync(TestHelper.PassingTestTimeout);
+
                             if (Interlocked.Increment(ref connectionCounter) == NumParallelRequests)
                             {
-                                allConnectionsOpen.Set();
+                                allConnectionsOpen.SetResult();
                             }
-                            await connection.ReadRequestDataAsync().WaitAsync(timeout);
-                            allConnectionsOpen.Wait(timeout);
+
+                            await allConnectionsOpen.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
                             await connection.SendResponseAsync(HttpStatusCode.OK);
                         }
-                    });
+                    }, options: new GenericLoopbackOptions { ListenBacklog = NumParallelRequests });
+
                     await WaitForEventCountersAsync(events);
                 });
 

@@ -16,9 +16,6 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 	[RemovedAssembly ("TypeForwarderModifiersLibFwd.dll")]
 	[RemovedAssemblyReference ("TypeForwardersModifiersLib", "TypeForwarderModifiersLibFwd")]
-
-	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
-
 	class TypeForwardersModifiers
 	{
 		static void Main ()

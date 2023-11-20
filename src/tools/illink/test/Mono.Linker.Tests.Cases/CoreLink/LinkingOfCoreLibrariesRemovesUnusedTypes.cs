@@ -17,17 +17,6 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 	[KeptAssembly ("System.dll")]
 	[KeptTypeInAssembly ("System.dll", typeof (System.Collections.Generic.SortedList<,>))]
 	[RemovedTypeInAssembly ("System.dll", typeof (System.Collections.Generic.SortedDictionary<,>))]
-
-	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
-	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
-
-	//  All sorts of stuff is flagged as invalid even in the original System.dll and System.Configuration.dll for mono class libraries
-	[SkipPeVerify ("System.dll")]
-	[SkipPeVerify ("System.Configuration.dll")]
-	// System.Core.dll is referenced by System.dll in the .NET FW class libraries. Our GetType reflection marking code
-	// detects a GetType("SHA256CryptoServiceProvider") in System.dll, which then causes a type in System.Core.dll to be marked.
-	// PeVerify fails on the original GAC copy of System.Core.dll so it's expected that it will also fail on the stripped version we output
-	[SkipPeVerify ("System.Core.dll")]
 	class LinkingOfCoreLibrariesRemovesUnusedTypes
 	{
 		public static void Main ()

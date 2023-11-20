@@ -69,9 +69,7 @@ public:
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 
-    static FCDECL1(INT32,   GetManagedThreadId, ThreadBaseObject* th);
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
-    static FCDECL1(void,    SpinWait,                       int iterations);
     static FCDECL0(Object*, GetCurrentThread);
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
 #ifdef FEATURE_COMINTEROP
@@ -102,6 +100,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
+extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
 
 #endif // _COMSYNCHRONIZABLE_H
 

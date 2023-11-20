@@ -54,7 +54,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent<TValue> content = new(value, jsonTypeInfo);
+            JsonContent content = JsonContent.Create(value, jsonTypeInfo);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
@@ -65,7 +65,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent<TValue> content = new(value, jsonTypeInfo);
+            JsonContent content = JsonContent.Create(value, jsonTypeInfo);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
     }

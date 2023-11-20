@@ -180,23 +180,35 @@ namespace Microsoft.Extensions.Hosting.Tests
             public bool StopCalled = false;
             public bool StoppedCalled = false;
 
-            public bool ThrowOnStartup;
+            public bool ThrowOnStarting;
+            public bool ThrowOnStart;
+            public bool ThrowOnStarted;
             public bool ThrowOnShutdown;
 
             public ExceptionImpl(
                 bool throwAfterAsyncCall,
-                bool throwOnStartup,
                 bool throwOnShutdown)
             {
                 _throwAfterAsyncCall = throwAfterAsyncCall;
-                ThrowOnStartup = throwOnStartup;
                 ThrowOnShutdown = throwOnShutdown;
+            }
+
+            public ExceptionImpl(
+                bool throwAfterAsyncCall,
+                bool throwOnStarting,
+                bool throwOnStart,
+                bool throwOnStarted)
+            {
+                _throwAfterAsyncCall = throwAfterAsyncCall;
+                ThrowOnStarting = throwOnStarting;
+                ThrowOnStart = throwOnStart;
+                ThrowOnStarted = throwOnStarted;
             }
 
             public async Task StartingAsync(CancellationToken cancellationToken)
             {
                 StartingCalled = true;
-                if (ThrowOnStartup)
+                if (ThrowOnStarting)
                 {
                     if (_throwAfterAsyncCall)
                     {
@@ -210,7 +222,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             public async Task StartAsync(CancellationToken cancellationToken)
             {
                 StartCalled = true;
-                if (ThrowOnStartup)
+                if (ThrowOnStart)
                 {
                     if (_throwAfterAsyncCall)
                     {
@@ -224,7 +236,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             public async Task StartedAsync(CancellationToken cancellationToken)
             {
                 StartedCalled = true;
-                if (ThrowOnStartup)
+                if (ThrowOnStarted)
                 {
                     if (_throwAfterAsyncCall)
                     {

@@ -7,9 +7,10 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 
-class LPStrTest
+public class LPStrTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

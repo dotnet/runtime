@@ -1067,43 +1067,43 @@ OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
 }
 #endif // FEATURE_COMINTEROP
 
+bool IsValidForGenericMarshalling(MethodTable* pMT, bool isFieldScenario, bool builtInMarshallingEnabled)
+{
+    _ASSERTE(pMT != NULL);
+
+    // Not generic, so passes "generic" test
+    if (!pMT->HasInstantiation())
+        return true;
+
+    // We can't block generic types for field scenarios for back-compat reasons.
+    if (isFieldScenario)
+        return true;
+
+    // Built-in marshalling considers the blittability for a generic type.
+    if (builtInMarshallingEnabled && !pMT->IsBlittable())
+        return false;
+
+    // Generics (blittable when built-in is enabled) are allowed to be marshalled with the following exceptions:
+    // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
+    // * Span<T>: Not supported by built-in marshalling
+    // * ReadOnlySpan<T>: Not supported by built-in marshalling
+    // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
+    // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
+    // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
+    // * Vector512<T>: Represents the __m512 ABI primitive which requires currently unimplemented handling
+    // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
+    return !pMT->HasSameTypeDefAs(g_pNullableClass)
+        && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN))
+        && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN))
+        && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T))
+        && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T))
+        && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T))
+        && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T))
+        && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT));
+}
+
 namespace
 {
-    bool IsValidForGenericMarshalling(MethodTable* pMT, bool isFieldScenario, bool builtInMarshallingEnabled = true)
-    {
-        _ASSERTE(pMT != NULL);
-
-        // Not generic, so passes "generic" test
-        if (!pMT->HasInstantiation())
-            return true;
-
-        // We can't block generic types for field scenarios for back-compat reasons.
-        if (isFieldScenario)
-            return true;
-
-        // Built-in marshalling considers the blittability for a generic type.
-        if (builtInMarshallingEnabled && !pMT->IsBlittable())
-            return false;
-
-        // Generics (blittable when built-in is enabled) are allowed to be marshalled with the following exceptions:
-        // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
-        // * Span<T>: Not supported by built-in marshalling
-        // * ReadOnlySpan<T>: Not supported by built-in marshalling
-        // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
-        // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
-        // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
-        // * Vector512<T>: Represents the __m512 ABI primitive which requires currently unimplemented handling
-        // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
-        return !pMT->HasSameTypeDefAs(g_pNullableClass)
-            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN))
-            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN))
-            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T))
-            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T))
-            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T))
-            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T))
-            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT));
-    }
-
     MarshalInfo::MarshalType GetDisabledMarshallerType(
         Module* pModule,
         SigPointer sig,

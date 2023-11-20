@@ -57,6 +57,21 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         return res;
     }
 
+
+    public void AssertBundle(BuildArgs buildArgs, BuildProjectOptions buildProjectOptions)
+    {
+        AssertBundle(new(
+            Config: buildArgs.Config,
+            IsPublish: buildProjectOptions.Publish,
+            TargetFramework: buildProjectOptions.TargetFramework,
+            BinFrameworkDir: buildProjectOptions.BinFrameworkDir ?? FindBinFrameworkDir(buildArgs.Config, buildProjectOptions.Publish, buildProjectOptions.TargetFramework),
+            PredefinedIcudt: buildProjectOptions.PredefinedIcudt,
+            GlobalizationMode: buildProjectOptions.GlobalizationMode,
+            AssertSymbolsFile: false,
+            ExpectedFileType: buildProjectOptions.Publish && buildArgs.Config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack
+        ));
+    }
+
     public void AssertBundle(AssertWasmSdkBundleOptions assertOptions)
     {
         IReadOnlyDictionary<string, DotNetFileName> actualDotnetFiles = AssertBasicBundle(assertOptions);

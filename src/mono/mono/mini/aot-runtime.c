@@ -2269,17 +2269,15 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	if (make_unreadable) {
 #ifndef TARGET_WIN32
-		guint8 *addr;
 		guint8 *page_start, *page_end;
-		int err, len;
+		int err;
 
-		addr = amodule->mem_begin;
-		g_assert (addr);
-		len = amodule->mem_end - amodule->mem_begin;
+		g_assert (amodule->mem_begin);
+		g_assert (amodule->mem_end);
 
 		/* Round down in both directions to avoid modifying data which is not ours */
-		page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
-		page_end = (guint8 *) (((gssize) (addr + len)) & ~ (mono_pagesize () - 1));
+		page_start = (guint8 *) (((gssize) (amodule->mem_begin)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
+		page_end = (guint8 *) (((gssize) (amodule->mem_end)) & ~ (mono_pagesize () - 1));
 		if (page_end > page_start) {
 			err = mono_mprotect (page_start, (page_end - page_start), MONO_MMAP_NONE);
 			g_assert (err == 0);
@@ -3736,7 +3734,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		/* Unused */
 		int len = mono_jit_info_size (0, 0, 0);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
-		mono_jit_info_init (jinfo, method, code, code_len, 0, 0, 0);
+		mono_jit_info_init (jinfo, method, code, GPTRDIFF_TO_INT (code_len), 0, 0, 0);
 	} else {
 		jinfo = decode_exception_debug_info (amodule, method, ex_info, code, GPTRDIFF_TO_UINT32 (code_len));
 	}
@@ -6032,7 +6030,7 @@ mono_aot_get_unbox_arbitrary_trampoline (gpointer addr)
 static int
 i32_idx_comparer (const void *key, const void *member)
 {
-	gint32 idx1 = GPOINTER_TO_INT (key);
+	gint32 idx1 = GCONSTPOINTER_TO_INT (key);
 	gint32 idx2 = *(gint32*)member;
 	return idx1 - idx2;
 }
@@ -6040,7 +6038,7 @@ i32_idx_comparer (const void *key, const void *member)
 static int
 ui16_idx_comparer (const void *key, const void *member)
 {
-	int idx1 = GPOINTER_TO_INT (key);
+	int idx1 = GCONSTPOINTER_TO_INT (key);
 	int idx2 = *(guint16*)member;
 	return idx1 - idx2;
 }

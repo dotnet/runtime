@@ -13,7 +13,7 @@ public record AssertTestMainJsAppBundleOptions(
     string? PredefinedIcudt,
     string ProjectName,
     string MainJS,
-    GlobalizationMode GlobalizationMode = GlobalizationMode.Default,
+    GlobalizationMode GlobalizationMode = GlobalizationMode.Sharded,
     string BootJsonFileName = "blazor.boot.json",
     NativeFilesType ExpectedFileType = NativeFilesType.FromRuntimePack,
     RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded,

@@ -906,7 +906,7 @@ enum CORINFO_EH_CLAUSE_FLAGS
     CORINFO_EH_CLAUSE_FINALLY   = 0x0002, // This clause is a finally clause
     CORINFO_EH_CLAUSE_FAULT     = 0x0004, // This clause is a fault clause
     CORINFO_EH_CLAUSE_DUPLICATE = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-    CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
+    CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one
 };
 
 // This enumeration is passed to InternalThrow
@@ -2102,6 +2102,25 @@ public:
             CORINFO_CONTEXT_HANDLE  context = NULL  /* IN  */
             ) = 0;
 
+    //------------------------------------------------------------------------------
+    // haveSameMethodDefinition: Check if two method handles have the same
+    // method definition.
+    //
+    // Arguments:
+    //    meth1 - First method handle
+    //    meth2 - Second method handle
+    //
+    // Return Value:
+    //   True if the methods share definitions.
+    //
+    // Remarks:
+    //   For example, Foo<int> and Foo<uint> have different method handles but
+    //   share the same method definition.
+    //
+    virtual bool haveSameMethodDefinition(
+        CORINFO_METHOD_HANDLE meth1Hnd,
+        CORINFO_METHOD_HANDLE meth2Hnd) = 0;
+
     // Decides if you have any limitations for inlining. If everything's OK, it will return
     // INLINE_PASS.
     //
@@ -2507,11 +2526,21 @@ public:
             bool                        fOptional
             ) = 0;
 
-    // returns the "NEW" helper optimized for "newCls."
+    //------------------------------------------------------------------------------
+    // getNewHelper: Returns the allocation helper optimized for a specific class.
+    //
+    // Parameters:
+    //   classHandle     - Handle of the type.
+    //   pHasSideEffects - [out] Whether or not the allocation of the specified
+    //                     type can have user-visible side effects; for example,
+    //                     because a finalizer may run as a result.
+    //
+    // Returns:
+    //   Helper to call to allocate the specified type.
+    //
     virtual CorInfoHelpFunc getNewHelper(
-            CORINFO_RESOLVED_TOKEN *    pResolvedToken,
-            CORINFO_METHOD_HANDLE       callerHandle,
-            bool *                      pHasSideEffects
+            CORINFO_CLASS_HANDLE  classHandle,
+            bool*                 pHasSideEffects
             ) = 0;
 
     // returns the newArr (1-Dim array) helper optimized for "arrayCls."
@@ -3195,16 +3224,16 @@ public:
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
     virtual void getCallInfo(
-            // Token info
+            // Token info (in)
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
-            // Generics info
+            // Generics info (in)
             CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
 
-            // Security info
+            // Security info (in)
             CORINFO_METHOD_HANDLE   callerHandle,
 
-            // Jit info
+            // Jit info (in)
             CORINFO_CALLINFO_FLAGS  flags,
 
             // out params

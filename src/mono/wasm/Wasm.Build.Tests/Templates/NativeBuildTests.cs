@@ -22,7 +22,7 @@ namespace Wasm.Build.Templates.Tests
         [InlineData(false)]
         public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
         {
-            string id = $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}_{Path.GetRandomFileName()}";
+            string id = $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}_{GetRandomId()}";
 
             string code = @"
                 using System;
@@ -67,7 +67,7 @@ namespace Wasm.Build.Templates.Tests
         [InlineData("Release")]
         public void ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
         {
-            string id = $"dllimport_incompatible_{Path.GetRandomFileName()}";
+            string id = $"dllimport_incompatible_{GetRandomId()}";
             string projectPath = CreateWasmTemplateProject(id, template: "wasmconsole");
 
             string nativeSourceFilename = "incompatible_type.c";

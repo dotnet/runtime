@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Globalization;
-using System.Threading;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System
 {
@@ -47,94 +47,6 @@ namespace System
             CaseSensitive,
             CaseInsensitive,
             HandleToInfo
-        }
-
-        // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
-        private struct ListBuilder<T> where T : class?
-        {
-            private T[]? _items;
-            private T _item;
-            private int _count;
-            private int _capacity;
-
-            public ListBuilder(int capacity)
-            {
-                _items = null;
-                _item = null!;
-                _count = 0;
-                _capacity = capacity;
-            }
-
-            public T this[int index]
-            {
-                get
-                {
-                    Debug.Assert(index < Count);
-                    return (_items != null) ? _items[index] : _item;
-                }
-            }
-
-            public T[] ToArray()
-            {
-                if (_count == 0)
-                    return Array.Empty<T>();
-                if (_count == 1)
-                    return new T[1] { _item };
-
-                Array.Resize(ref _items, _count);
-                _capacity = _count;
-                return _items;
-            }
-
-            public void CopyTo(object?[] array, int index)
-            {
-                if (_count == 0)
-                    return;
-
-                if (_count == 1)
-                {
-                    array[index] = _item;
-                    return;
-                }
-
-                Array.Copy(_items!, 0, array, index, _count);
-            }
-
-            public int Count
-            {
-                get
-                {
-                    return _count;
-                }
-            }
-
-            public void Add(T item)
-            {
-                if (_count == 0)
-                {
-                    _item = item;
-                }
-                else
-                {
-                    if (_count == 1)
-                    {
-                        if (_capacity < 2)
-                            _capacity = 4;
-                        _items = new T[_capacity];
-                        _items[0] = _item;
-                    }
-                    else
-                    if (_capacity == _count)
-                    {
-                        int newCapacity = 2 * _capacity;
-                        Array.Resize(ref _items, newCapacity);
-                        _capacity = newCapacity;
-                    }
-
-                    _items![_count] = item;
-                }
-                _count++;
-            }
         }
 
         #endregion
@@ -419,7 +331,7 @@ namespace System
             #region If argumentTypes supplied
             if (argumentTypes != null)
             {
-                ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
 
                 if (argumentTypes.Length != parameterInfos.Length)
                 {
@@ -798,7 +710,7 @@ namespace System
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
-                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count) as MethodInfo;
+                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.AsSpan());
                 }
             }
 
@@ -820,16 +732,14 @@ namespace System
             if (types.Length == 0 && candidates.Count == 1)
             {
                 ConstructorInfo firstCandidate = candidates[0];
-
-                ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
-                if (parameters == null || parameters.Length == 0)
+                if (firstCandidate.GetParametersAsSpan().Length == 0)
                 {
                     return firstCandidate;
                 }
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.AsSpan(), types);
 
             binder ??= DefaultBinder;
 
@@ -1310,10 +1220,13 @@ namespace System
             return res;
         }
 
+        // Returns true for actual value types only, ignoring generic parameter constraints.
+        internal bool IsActualValueType => RuntimeTypeHandle.IsValueType(this);
+
         // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
 
-        // Returns true for actual enum types only.
+        // Returns true for actual enum types only, ignoring generic parameter constraints.
         internal bool IsActualEnum
         {
             get
@@ -1326,6 +1239,8 @@ namespace System
                 return res;
             }
         }
+
+        public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
 
         public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
 
@@ -1557,7 +1472,7 @@ namespace System
                             throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                         }
 
-                        if (invokeMethod.GetParametersNoCopy().Length == 0)
+                        if (invokeMethod.GetParametersAsSpan().Length == 0)
                         {
                             if (args.Length != 0)
                             {
@@ -1805,6 +1720,14 @@ namespace System
                     }
                 }
             }
+            else if (IsFunctionPointer)
+            {
+                if (value is IntPtr or UIntPtr)
+                    return CheckValueStatus.Success;
+
+                value = (IntPtr)value;
+                return CheckValueStatus.Success;
+            }
 
             return CheckValueStatus.ArgumentException;
         }
@@ -2039,6 +1962,16 @@ namespace System
 
                 if (HasElementType)
                     return GetElementType().ContainsGenericParameters;
+
+                if (IsFunctionPointer)
+                {
+                    if (GetFunctionPointerReturnType().ContainsGenericParameters)
+                        return true;
+
+                    foreach (Type arg in GetFunctionPointerParameterTypes())
+                        if (arg.ContainsGenericParameters)
+                            return true;
+                }
 
                 return false;
             }
@@ -2398,6 +2331,82 @@ namespace System
             {
                 return RuntimeTypeHandle.IsSzArray(this);
             }
+        }
+
+        public override bool IsFunctionPointer => RuntimeTypeHandle.IsFunctionPointer(this);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern bool IsUnmanagedFunctionPointerInternal(QCallTypeHandle type);
+        internal static bool IsUnmanagedFunctionPointerInternal(RuntimeType type)
+        {
+            return IsUnmanagedFunctionPointerInternal(new QCallTypeHandle(ref type));
+        }
+
+        public override bool IsUnmanagedFunctionPointer => IsUnmanagedFunctionPointerInternal(this);
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            Type[] parameters = FunctionPointerReturnAndParameterTypes(this, false);
+            return parameters.Length == 0 ? EmptyTypes : parameters;
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            return FunctionPointerReturnAndParameterTypes(this, true)[0];
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr FunctionPointerReturnAndParameterTypes(QCallTypeHandle type);
+        internal static Type[] FunctionPointerReturnAndParameterTypes(RuntimeType type, bool returnType)
+        {
+            if (!RuntimeTypeHandle.IsFunctionPointer(type))
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+            }
+
+            using (var arrayOfTypeHandles = new Mono.SafeGPtrArrayHandle(FunctionPointerReturnAndParameterTypes(new QCallTypeHandle(ref type))))
+            {
+                int typeNum = returnType ? 1 : arrayOfTypeHandles.Length - 1;
+                var fPtrReturnAndParameterTypes = new Type[typeNum];
+
+                if (returnType)
+                {
+                    var typeHandle = new RuntimeTypeHandle(arrayOfTypeHandles[0]);
+                    fPtrReturnAndParameterTypes[0] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
+                }
+                else
+                {
+                    for (int i = 1; i < typeNum + 1; i++)
+                    {
+                        var typeHandle = new RuntimeTypeHandle(arrayOfTypeHandles[i]);
+                        fPtrReturnAndParameterTypes[i-1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
+                    }
+                }
+                return fPtrReturnAndParameterTypes;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern Type[] GetFunctionPointerTypeModifiers(QCallTypeHandle type, int position, bool optional);
+
+        internal static Type[] GetFunctionPointerTypeModifiers(RuntimeType type, int position, bool optional) => GetFunctionPointerTypeModifiers(new QCallTypeHandle(ref type), position, optional) ?? Type.EmptyTypes;
+
+        public Type[] GetCustomModifiersFromFunctionPointer(int position, bool optional) => GetFunctionPointerTypeModifiers(this, position, optional);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern byte GetCallingConventionFromFunctionPointerInternal(QCallTypeHandle type);
+
+        internal static byte GetCallingConventionFromFunctionPointerInternal(RuntimeType type) => GetCallingConventionFromFunctionPointerInternal(new QCallTypeHandle(ref type));
+
+        public SignatureCallingConvention GetCallingConventionFromFunctionPointer() => (SignatureCallingConvention)GetCallingConventionFromFunctionPointerInternal(this);
+
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            if (!RuntimeTypeHandle.IsFunctionPointer(this))
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+
+            // Requires a modified type to return the modifiers.
+            return EmptyTypes;
         }
 
         internal override bool IsUserType

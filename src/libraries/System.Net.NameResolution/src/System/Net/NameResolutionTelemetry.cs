@@ -1,8 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace System.Net
@@ -60,10 +62,6 @@ namespace System.Net
         [NonEvent]
         public long BeforeResolution(object hostNameOrAddress)
         {
-            // System.Diagnostics.Metrics part
-            NameResolutionMetrics.BeforeResolution(hostNameOrAddress, out string? host);
-
-            // System.Diagnostics.Tracing part
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
@@ -71,7 +69,7 @@ namespace System.Net
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    host ??= NameResolutionMetrics.GetHostnameFromStateObject(hostNameOrAddress);
+                    string host = GetHostnameFromStateObject(hostNameOrAddress);
 
                     ResolutionStart(host);
                 }
@@ -79,23 +77,29 @@ namespace System.Net
                 return Stopwatch.GetTimestamp();
             }
 
-            return 0;
+            return NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
         }
 
         [NonEvent]
-        public void AfterResolution(long? startingTimestamp, bool successful)
+        public void AfterResolution(object hostNameOrAddress, long? startingTimestamp, Exception? exception = null)
         {
             Debug.Assert(startingTimestamp.HasValue);
+            if (startingTimestamp == 0)
+            {
+                return;
+            }
 
-            if (startingTimestamp != 0)
+            TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp.Value);
+
+            if (IsEnabled())
             {
                 Interlocked.Decrement(ref _currentLookups);
 
-                _lookupsDuration?.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp.Value).TotalMilliseconds);
+                _lookupsDuration?.WriteMetric(duration.TotalMilliseconds);
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    if (!successful)
+                    if (exception is not null)
                     {
                         ResolutionFailed();
                     }
@@ -103,6 +107,29 @@ namespace System.Net
                     ResolutionStop();
                 }
             }
+
+            if (NameResolutionMetrics.IsEnabled())
+            {
+                NameResolutionMetrics.AfterResolution(duration, GetHostnameFromStateObject(hostNameOrAddress), exception);
+            }
+        }
+
+        private static string GetHostnameFromStateObject(object hostNameOrAddress)
+        {
+            Debug.Assert(hostNameOrAddress is not null);
+
+            string host = hostNameOrAddress switch
+            {
+                string h => h,
+                KeyValuePair<string, AddressFamily> t => t.Key,
+                IPAddress a => a.ToString(),
+                KeyValuePair<IPAddress, AddressFamily> t => t.Key.ToString(),
+                _ => null!
+            };
+
+            Debug.Assert(host is not null, $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
+
+            return host;
         }
     }
 }

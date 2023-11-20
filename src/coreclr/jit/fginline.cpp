@@ -20,15 +20,11 @@
 //    candidates at depth 1, etc.
 //
 // Notes:
-//    We generally disallow recursive inlines by policy. However, they are
-//    supported by the underlying machinery.
-//
-//    Likewise the depth limit is a policy consideration, and serves mostly
-//    as a safeguard to prevent runaway inlining of small methods.
+//    The depth limit is a policy consideration, and serves mostly as a
+//    safeguard to prevent runaway inlining of small methods.
 //
 unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 {
-    BYTE*          candidateCode = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
     InlineContext* inlineContext = inlineInfo->inlineCandidateInfo->inlinersContext;
     InlineResult*  inlineResult  = inlineInfo->inlineResult;
 
@@ -39,17 +35,15 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
     {
-        assert(inlineContext->GetCode() != nullptr);
         depth++;
 
-        if ((inlineContext->GetCallee() == inlineInfo->fncHandle) &&
-            (inlineContext->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
+        if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
         {
             // This is a recursive inline
             //
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
 
-            // No need to note CALLSITE_DEPTH we're already rejecting this candidate
+            // No need to note CALLSITE_DEPTH since we're already rejecting this candidate
             //
             return depth;
         }
@@ -62,6 +56,150 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_DEPTH, depth);
     return depth;
+}
+
+//------------------------------------------------------------------------
+// IsDisallowedRecursiveInline: Check whether 'info' is a recursive inline (of
+// 'ancestor'), and whether it should be disallowed.
+//
+// Return Value:
+//    True if the inline is recursive and should be disallowed.
+//
+bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo)
+{
+    // We disallow inlining the exact same instantiation.
+    if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
+        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
+    {
+        JITDUMP("Call site is trivially recursive\n");
+        return true;
+    }
+
+    // None of the inline heuristics take into account that inlining will cause
+    // type/method loading for generic contexts. When polymorphic recursion is
+    // involved this can quickly consume a large amount of resources, so try to
+    // verify that we aren't inlining recursively with complex contexts.
+    if (info.compCompHnd->haveSameMethodDefinition(inlineInfo->fncHandle, ancestor->GetCallee()) &&
+        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHnd, 64))
+    {
+        JITDUMP("Call site is recursive with a complex generic context\n");
+        return true;
+    }
+
+    // Not recursive, or allowed recursive inline.
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ContextComplexityExceeds: Check whether the complexity of a generic context
+// exceeds a specified maximum.
+//
+// Arguments:
+//    handle - Handle for the generic context
+//    max    - Max complexity
+//
+// Return Value:
+//    True if the max was exceeded.
+//
+bool Compiler::ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max)
+{
+    if (handle == nullptr)
+    {
+        return false;
+    }
+
+    int cur = 0;
+
+    // We do not expect to try to inline with the sentinel context.
+    assert(handle != METHOD_BEING_COMPILED_CONTEXT());
+
+    if (((size_t)handle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    {
+        return MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE((size_t)handle & ~CORINFO_CONTEXTFLAGS_MASK),
+                                                    cur, max);
+    }
+
+    return TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE((size_t)handle & ~CORINFO_CONTEXTFLAGS_MASK), cur,
+                                              max);
+}
+
+//------------------------------------------------------------------------
+// MethodInstantiationComplexityExceeds: Check whether the complexity of a
+// method's instantiation exceeds a specified maximum.
+//
+// Arguments:
+//    handle - Handle for a method that may be generic
+//    cur    - [in, out] Current complexity (number of types seen in the instantiation)
+//    max    - Max complexity
+//
+// Return Value:
+//    True if the max was exceeded.
+//
+bool Compiler::MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max)
+{
+    CORINFO_SIG_INFO sig;
+    info.compCompHnd->getMethodSig(handle, &sig);
+
+    cur += sig.sigInst.classInstCount + sig.sigInst.methInstCount;
+    if (cur > max)
+    {
+        return true;
+    }
+
+    for (unsigned i = 0; i < sig.sigInst.classInstCount; i++)
+    {
+        if (TypeInstantiationComplexityExceeds(sig.sigInst.classInst[i], cur, max))
+        {
+            return true;
+        }
+    }
+
+    for (unsigned i = 0; i < sig.sigInst.methInstCount; i++)
+    {
+        if (TypeInstantiationComplexityExceeds(sig.sigInst.methInst[i], cur, max))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// TypeInstantiationComplexityExceeds: Check whether the complexity of a type's
+// instantiation exceeds a specified maximum.
+//
+// Arguments:
+//    handle - Handle for a class that may be generic
+//    cur    - [in, out] Current complexity (number of types seen in the instantiation)
+//    max    - Max complexity
+//
+// Return Value:
+//    True if the max was exceeded.
+//
+bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, int& cur, int max)
+{
+    for (int i = 0;; i++)
+    {
+        CORINFO_CLASS_HANDLE instArg = info.compCompHnd->getTypeInstantiationArgument(handle, i);
+
+        if (instArg == NO_CLASS_HANDLE)
+        {
+            break;
+        }
+
+        if (++cur > max)
+        {
+            return true;
+        }
+
+        if (TypeInstantiationComplexityExceeds(instArg, cur, max))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
@@ -475,7 +613,8 @@ private:
                     // info.
                 }
 
-                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr,
+                CORINFO_CONTEXT_HANDLE contextInput = context;
+                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
                 m_madeChanges = true;
             }
@@ -536,13 +675,13 @@ private:
 
                 if (!condTree->IsIntegralConst(0))
                 {
-                    block->bbJumpKind = BBJ_ALWAYS;
-                    m_compiler->fgRemoveRefPred(block->bbNext, block);
+                    block->SetJumpKind(BBJ_ALWAYS);
+                    m_compiler->fgRemoveRefPred(block->Next(), block);
                 }
                 else
                 {
-                    block->bbJumpKind = BBJ_NONE;
-                    m_compiler->fgRemoveRefPred(block->bbJumpDest, block);
+                    m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
+                    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(m_compiler));
                 }
             }
         }
@@ -608,7 +747,7 @@ PhaseStatus Compiler::fgInline()
         for (Statement* const stmt : block->Statements())
         {
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
             // candidate stage. So scan the tree looking for those early failures.
@@ -680,7 +819,7 @@ PhaseStatus Compiler::fgInline()
             }
         }
 
-        block = block->bbNext;
+        block = block->Next();
 
     } while (block);
 
@@ -701,7 +840,7 @@ PhaseStatus Compiler::fgInline()
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
         }
 
-        block = block->bbNext;
+        block = block->Next();
 
     } while (block);
 
@@ -923,7 +1062,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // fgFindNonInlineCandidate: tree walk helper to ensure that a tree node
@@ -1305,7 +1444,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // DDB 91389: Don't throw away the (only) inlinee block
         // when its return type is not BBJ_RETURN.
         // In other words, we need its BBJ_ to perform the right thing.
-        if (InlineeCompiler->fgFirstBB->bbJumpKind == BBJ_RETURN)
+        if (InlineeCompiler->fgFirstBB->KindIs(BBJ_RETURN))
         {
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
@@ -1356,7 +1495,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
         unsigned const baseBBNum = fgBBNumMax;
 
+        // The newly split block is not special so doesn't need to be kept.
         //
+        bottomBlock->bbFlags &= ~BBF_DONT_REMOVE;
+
         // Set the try and handler index and fix the jump types of inlinee's blocks.
         //
         for (BasicBlock* const block : InlineeCompiler->Blocks())
@@ -1384,20 +1526,19 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 block->bbFlags |= BBF_INTERNAL;
             }
 
-            if (block->bbJumpKind == BBJ_RETURN)
+            if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
-                if (block->bbNext)
+                if (block->IsLast())
                 {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
-                            block->bbNum, bottomBlock->bbNum);
-                    block->bbJumpKind = BBJ_ALWAYS;
-                    block->bbJumpDest = bottomBlock;
+                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
+                    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
                 }
                 else
                 {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                    block->bbJumpKind = BBJ_NONE;
+                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
+                            block->bbNum, bottomBlock->bbNum);
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock DEBUG_ARG(this));
                 }
 
                 fgAddRefPred(bottomBlock, block);
@@ -1409,10 +1550,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         InlineeCompiler->fgFirstBB->bbRefs--;
 
         // Insert inlinee's blocks into inliner's block list.
-        topBlock->setNext(InlineeCompiler->fgFirstBB);
+        topBlock->SetNext(InlineeCompiler->fgFirstBB);
         fgRemoveRefPred(bottomBlock, topBlock);
         fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
-        InlineeCompiler->fgLastBB->setNext(bottomBlock);
+        InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //
         // Add inlinee's block count to inliner's.
@@ -1806,7 +1947,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     unsigned lclCnt     = InlineeMethodInfo->locals.numArgs;
     bool     bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-    bool     bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+    bool     bbIsReturn = block->KindIs(BBJ_RETURN);
 
     // If the callee contains zero-init locals, we need to explicitly initialize them if we are
     // in a loop or if the caller doesn't have compInitMem set. Otherwise we can rely on the

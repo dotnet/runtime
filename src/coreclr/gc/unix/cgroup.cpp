@@ -49,6 +49,8 @@ Abstract:
 #define CGROUP_MEMORY_STAT_FILENAME "/memory.stat"
 #define CGROUP1_MEMORY_USAGE_FILENAME "/memory.usage_in_bytes"
 #define CGROUP2_MEMORY_USAGE_FILENAME "/memory.current"
+#define CGROUP1_MEMORY_USE_HIERARCHY_FILENAME "/memory.use_hierarchy"
+#define CGROUP1_MEMORY_STAT_HIERARCHICAL_MEMORY_LIMIT_FIELD "hierarchical_memory_limit "
 #define CGROUP1_MEMORY_STAT_INACTIVE_FIELD "total_inactive_file "
 #define CGROUP2_MEMORY_STAT_INACTIVE_FIELD "inactive_file "
 
@@ -62,16 +64,18 @@ class CGroup
     static int s_cgroup_version;
 
     static char *s_memory_cgroup_path;
+    static char *s_memory_cgroup_hierarchy_mount;
 public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
-        s_memory_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr);
+        FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr, &s_memory_cgroup_path, &s_memory_cgroup_hierarchy_mount);
     }
 
     static void Cleanup()
     {
         free(s_memory_cgroup_path);
+        free(s_memory_cgroup_hierarchy_mount);
     }
 
     static bool GetPhysicalMemoryLimit(uint64_t *val)
@@ -79,9 +83,9 @@ public:
         if (s_cgroup_version == 0)
             return false;
         else if (s_cgroup_version == 1)
-            return GetCGroupMemoryLimit(val, CGROUP1_MEMORY_LIMIT_FILENAME);
+            return GetCGroupMemoryLimitV1(val);
         else if (s_cgroup_version == 2)
-            return GetCGroupMemoryLimit(val, CGROUP2_MEMORY_LIMIT_FILENAME);
+            return GetCGroupMemoryLimitV2(val);
         else
         {
             assert(!"Unknown cgroup version.");
@@ -139,7 +143,8 @@ private:
         return strcmp("memory", strTok) == 0;
     }
 
-    static char* FindCGroupPath(bool (*is_subsystem)(const char *)){
+        static void FindCGroupPath(bool (*is_subsystem)(const char *), char** pcgroup_path, char ** pcgroup_hierarchy_mount = nullptr){
+
         char *cgroup_path = nullptr;
         char *hierarchy_mount = nullptr;
         char *hierarchy_root = nullptr;
@@ -186,10 +191,17 @@ private:
 
 
     done:
-        free(hierarchy_mount);
         free(hierarchy_root);
         free(cgroup_path_relative_to_mount);
-        return cgroup_path;
+        *pcgroup_path = cgroup_path;
+        if (pcgroup_hierarchy_mount != nullptr)
+        {
+            *pcgroup_hierarchy_mount = hierarchy_mount;
+        }
+        else
+        {
+            free(hierarchy_mount);
+        }
     }
 
     static void FindHierarchyMount(bool (*is_subsystem)(const char *), char** pmountpath, char** pmountroot)
@@ -367,52 +379,8 @@ private:
         return cgroup_path;
     }
 
-    static bool GetCGroupMemoryLimit(uint64_t *val, const char *filename)
+    static bool GetCGroupMemoryStatField(const char *fieldName, uint64_t *val)
     {
-        if (s_memory_cgroup_path == nullptr)
-            return false;
-
-        char* mem_limit_filename = nullptr;
-        if (asprintf(&mem_limit_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
-            return false;
-
-        bool result = ReadMemoryValueFromFile(mem_limit_filename, val);
-        free(mem_limit_filename);
-        return result;
-    }
-
-    static bool GetCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
-    {
-        // Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
-        // For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
-        // For cgroup v2: value of 'memory.current' minus 'inactive_file' value of 'memory.stat'
-
-        char* mem_usage_filename = nullptr;
-        if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
-            return false;
-
-        uint64_t temp = 0;
-
-        size_t usage = 0;
-
-        bool result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
-        if (result)
-        {
-            if (temp > std::numeric_limits<size_t>::max())
-            {
-                usage = std::numeric_limits<size_t>::max();
-            }
-            else
-            {
-                usage = (size_t)temp;
-            }
-        }
-
-        free(mem_usage_filename);
-
-        if (!result)
-            return result;
-
         if (s_memory_cgroup_path == nullptr)
             return false;
 
@@ -427,22 +395,22 @@ private:
 
         char *line = nullptr;
         size_t lineLen = 0;
-        bool foundInactiveFileValue = false;
+        bool foundFieldValue = false;
         char* endptr;
 
-        size_t inactiveFileFieldNameLength = strlen(inactiveFileFieldName);
+        size_t fieldNameLength = strlen(fieldName);
 
         while (getline(&line, &lineLen, stat_file) != -1)
         {
-            if (strncmp(line, inactiveFileFieldName, inactiveFileFieldNameLength) == 0)
+            if (strncmp(line, fieldName, fieldNameLength) == 0)
             {
                 errno = 0;
-                const char* startptr = line + inactiveFileFieldNameLength;
-                size_t inactiveFileValue = strtoll(startptr, &endptr, 10);
+                const char* startptr = line + fieldNameLength;
+                size_t fieldValue = strtoll(startptr, &endptr, 10);
                 if (endptr != startptr && errno == 0)
                 {
-                    foundInactiveFileValue = true;
-                    *val = usage - inactiveFileValue;
+                    foundFieldValue = true;
+                    *val = fieldValue;
                 }
 
                 break;
@@ -452,13 +420,137 @@ private:
         fclose(stat_file);
         free(line);
 
-        return foundInactiveFileValue;
+        return foundFieldValue;
+    }
+
+    static bool GetCGroupMemoryLimitV1(uint64_t *val)
+    {
+        if (s_memory_cgroup_path == nullptr)
+            return false;
+
+        char* mem_use_hierarchy_filename = nullptr;
+        if (asprintf(&mem_use_hierarchy_filename, "%s%s", s_memory_cgroup_path, CGROUP1_MEMORY_USE_HIERARCHY_FILENAME) < 0)
+            return false;
+
+        uint64_t useHierarchy = 0;
+        ReadMemoryValueFromFile(mem_use_hierarchy_filename, &useHierarchy);
+        free(mem_use_hierarchy_filename);
+
+        if (useHierarchy)
+        {
+            return GetCGroupMemoryStatField(CGROUP1_MEMORY_STAT_HIERARCHICAL_MEMORY_LIMIT_FIELD, val);
+        }
+
+        char* mem_limit_filename = nullptr;
+        if (asprintf(&mem_limit_filename, "%s%s", s_memory_cgroup_path, CGROUP1_MEMORY_LIMIT_FILENAME) < 0)
+            return false;
+
+        bool result = ReadMemoryValueFromFile(mem_limit_filename, val);
+        free(mem_limit_filename);
+        return result;
+    }
+    
+    static bool GetCGroupMemoryLimitV2(uint64_t *val)
+    {
+        if (s_memory_cgroup_path == nullptr)
+            return false;
+
+        // Process the whole CGroup hierarchy to find a level with the most limiting limit
+        size_t memory_cgroup_hierarchy_mount_length = strlen(s_memory_cgroup_hierarchy_mount);
+        uint64_t min_limit = std::numeric_limits<uint64_t>::max();
+        uint64_t limit;
+        bool found_any_limit = false;
+
+        char *mem_limit_filename = nullptr;
+        if (asprintf(&mem_limit_filename, "%s%s", s_memory_cgroup_path, CGROUP2_MEMORY_LIMIT_FILENAME) < 0)
+            return false;
+
+        size_t cgroupPathLength = strlen(s_memory_cgroup_path);
+
+        // Iterate over the directory hierarchy representing the cgroup hierarchy until reaching the 
+        // mount directory. The mount directory doesn't contain the memory.max.
+        do
+        {
+            if (ReadMemoryValueFromFile(mem_limit_filename, &limit))
+            {
+                found_any_limit = true;
+                if (limit < min_limit)
+                {
+                    min_limit = limit;
+                }
+            }
+
+            // Get the parent cgroup memory limit file path
+            char *parent_directory_end = mem_limit_filename + cgroupPathLength - 1;
+            while (*parent_directory_end != '/')
+            {
+                parent_directory_end--;
+            }
+
+            cgroupPathLength = parent_directory_end - mem_limit_filename;
+
+            strcpy(parent_directory_end, CGROUP2_MEMORY_LIMIT_FILENAME);
+        }
+        while (cgroupPathLength != memory_cgroup_hierarchy_mount_length);
+
+        free(mem_limit_filename);
+
+        if (found_any_limit)
+        {
+            *val = min_limit;
+        }
+        return found_any_limit;
+    }
+
+    static bool GetCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
+    {
+        // Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
+        // For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
+        // For cgroup v2: value of 'memory.current' minus 'inactive_file' value of 'memory.stat'
+
+        char* mem_usage_filename = nullptr;
+        if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
+            return false;
+
+        uint64_t usage = 0;
+
+        bool result = ReadMemoryValueFromFile(mem_usage_filename, &usage);
+        if (result)
+        {
+            if (usage > std::numeric_limits<size_t>::max())
+            {
+                usage = std::numeric_limits<size_t>::max();
+            }
+        }
+
+        free(mem_usage_filename);
+
+        if (!result)
+            return result;
+
+        if (s_memory_cgroup_path == nullptr)
+            return false;
+
+        uint64_t inactiveFileValue = 0;
+        if (GetCGroupMemoryStatField(inactiveFileFieldName, &inactiveFileValue))
+        {
+            if (inactiveFileValue > std::numeric_limits<size_t>::max())
+            {
+                inactiveFileValue = std::numeric_limits<size_t>::max();
+            }
+
+            *val = (size_t)usage - (size_t)inactiveFileValue;
+            return true;
+        }
+
+        return false;
     }
 };
 }
 
 int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;
+char *CGroup::s_memory_cgroup_hierarchy_mount = nullptr;
 
 void InitializeCGroup()
 {

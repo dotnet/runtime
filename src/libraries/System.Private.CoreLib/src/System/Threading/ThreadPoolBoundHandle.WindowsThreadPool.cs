@@ -1,12 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.IO;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -54,6 +55,9 @@ namespace System.Threading
                 Win32ThreadPoolNativeOverlapped* overlapped = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, preAllocated: null, flowExecutionContext);
                 overlapped->Data._boundHandle = this;
 
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                    NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(overlapped));
+
                 Interop.Kernel32.StartThreadpoolIo(_threadPoolHandle!);
 
                 return Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(overlapped);
@@ -81,6 +85,9 @@ namespace System.Threading
                     throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, nameof(preAllocated));
 
                 data._boundHandle = this;
+
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                    NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(preAllocated._overlappedWindowsThreadPool));
 
                 Interop.Kernel32.StartThreadpoolIo(_threadPoolHandle!);
 
@@ -153,6 +160,9 @@ namespace System.Threading
                 throw new InvalidOperationException(SR.Argument_NativeOverlappedAlreadyFree);
 
             boundHandle.Release();
+
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(overlapped));
 
             Win32ThreadPoolNativeOverlapped.CompleteWithCallback(ioResult, (uint)numberOfBytesTransferred, overlapped);
             ThreadPool.IncrementCompletedWorkItemCount();

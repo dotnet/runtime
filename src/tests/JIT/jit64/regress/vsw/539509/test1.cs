@@ -617,7 +617,7 @@ public struct BB
 public class App
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -702,7 +702,6 @@ public class App
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
     public static byte m_byFwd1;
     public static bool m_bFwd2;

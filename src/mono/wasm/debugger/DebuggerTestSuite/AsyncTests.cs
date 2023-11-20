@@ -154,5 +154,20 @@ namespace DebuggerTests
                 }
             );
         }
+
+        [ConditionalFact(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
+        public async Task StepOutOfAsyncMethod()
+        {
+            await SetJustMyCode(true);
+            string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+            await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
+                "DebuggerTests.AsyncStepClass.TestAsyncStepOut2");
+
+            await StepAndCheck(StepKind.Out, source_file, 16, 8, "DebuggerTests.AsyncStepClass.TestAsyncStepOut");
+        }
     }
 }

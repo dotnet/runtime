@@ -851,6 +851,39 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public unsafe void TestTotalProcessorTimeMacOs()
+        {
+            var rUsage = Interop.libproc.proc_pid_rusage(Environment.ProcessId);
+            var timeBase = new Interop.libSystem.mach_timebase_info_data_t();
+            Interop.libSystem.mach_timebase_info(&timeBase);
+
+            var nativeUserUs = rUsage.ri_user_time / 1000 * timeBase.numer / timeBase.denom;
+            var nativeSystemUs = rUsage.ri_system_time / 1000 * timeBase.numer / timeBase.denom;
+            var nativeTotalUs = nativeSystemUs + nativeUserUs;
+
+            var nativeUserTime = TimeSpan.FromMicroseconds(nativeUserUs);
+            var nativeSystemTime = TimeSpan.FromMicroseconds(nativeSystemUs);
+            var nativeTotalTime = TimeSpan.FromMicroseconds(nativeTotalUs);
+
+            var process = Process.GetCurrentProcess();
+            var managedUserTime = process.UserProcessorTime;
+            var managedSystemTime = process.PrivilegedProcessorTime;
+            var managedTotalTime = process.TotalProcessorTime;
+
+            AssertTime(managedUserTime, nativeUserTime, "user");
+            AssertTime(managedSystemTime, nativeSystemTime, "system");
+            AssertTime(managedTotalTime, nativeTotalTime, "total");
+
+            void AssertTime(TimeSpan managed, TimeSpan native, string label)
+            {
+                Assert.True(
+                    managed >= native,
+                    $"Time '{label}' returned by managed API ({managed}) should be greated or equal to the time returned by native API ({native}).");
+            }
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -881,7 +914,7 @@ namespace System.Diagnostics.Tests
                         Console.WriteLine("{0} Failed to kill process {1} started at {2}", now, nonChildProcess.Id, start);
                         Helpers.DumpAllProcesses();
 
-                        Assert.True(false, "test timed out");
+                        Assert.Fail("test timed out");
                     }
                 }
 

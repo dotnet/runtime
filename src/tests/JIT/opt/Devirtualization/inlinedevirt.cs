@@ -13,9 +13,8 @@ public class ImprovedType
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Print("hello, world!");
-        return 100;
     }
 }

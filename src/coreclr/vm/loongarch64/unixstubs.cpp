@@ -2,11 +2,3 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-
-extern "C"
-{
-    void RedirectForThrowControl()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-};

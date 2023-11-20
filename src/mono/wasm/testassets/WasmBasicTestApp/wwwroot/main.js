@@ -33,9 +33,16 @@ switch (testCase) {
                 Math.floor(Math.random() * 5) + 5,
                 Math.floor(Math.random() * 5) + 10
             ];
-            dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity) => {
-                if (type !== "assembly")
+            dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+                if (type === "dotnetjs") {
+                    // loadBootResource could return string with unqualified name of resource. 
+                    // It assumes that we resolve it with document.baseURI
+                    // we test it here
+                    return `_framework/${name}`;
+                }
+                if (type !== "assembly") {
                     return defaultUri;
+                }
 
                 assemblyCounter++;
                 if (!failAtAssemblyNumbers.includes(assemblyCounter))
@@ -61,6 +68,7 @@ switch (testCase) {
 const { getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
+const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
 
 // Run the test case
 try {
@@ -71,7 +79,7 @@ try {
             break;
         case "LazyLoadingTest":
             if (params.get("loadRequiredAssembly") !== "false") {
-                await INTERNAL.loadLazyAssembly("System.Text.Json.wasm");
+                await INTERNAL.loadLazyAssembly(`System.Text.Json${assemblyExtension}`);
             }
             exports.LazyLoadingTest.Run();
             exit(0);

@@ -709,6 +709,32 @@ namespace System.Net.Quic.Tests
             await serverConnection.DisposeAsync();
         }
 
+        [Fact]
+        public async Task OpenStreamAsync_BlocksUntilAvailable_PeerClosesWritingUnidirectional()
+        {
+            QuicListenerOptions listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.MaxInboundBidirectionalStreams = 1;
+                    serverOptions.MaxInboundUnidirectionalStreams = 1;
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
+
+            // Open one stream, second call should block
+            await using var stream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
+            await stream.WriteAsync(new byte[64*1024], completeWrites: true);
+            await Assert.ThrowsAsync<TimeoutException>(() => clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional).AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
+
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -747,11 +773,24 @@ namespace System.Net.Quic.Tests
 
             // Close the streams, the waitTask should finish as a result.
             await stream.DisposeAsync();
-            QuicStream newStream = await serverConnection.AcceptInboundStreamAsync();
-            await newStream.DisposeAsync();
+            // Drain all server streams.
+            while (true)
+            {
+                using var acceptCts = new CancellationTokenSource(TimeSpan.FromSeconds(0.5));
+                try
+                {
+                    QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync(acceptCts.Token);
+                    await serverStream.DisposeAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                    // Token expired, no more streams in the server queue, exit the loop.
+                    break;
+                }
+            }
 
             // next call should work as intended
-            newStream = await OpenStreamAsync(clientConnection).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            var newStream = await OpenStreamAsync(clientConnection).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
             await newStream.DisposeAsync();
 
             await clientConnection.DisposeAsync();
@@ -1359,7 +1398,7 @@ namespace System.Net.Quic.Tests
             await using (clientConnection)
             await using (serverConnection)
             {
-                Assert.Equal(expectedHostName, clientConnection.TargetHostName);
+                Assert.Equal(hostname, clientConnection.TargetHostName);
                 Assert.Equal(expectedHostName, serverConnection.TargetHostName);
             }
         }

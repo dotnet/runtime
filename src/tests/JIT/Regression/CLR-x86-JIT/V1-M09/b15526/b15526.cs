@@ -18,11 +18,10 @@ namespace DefaultNamespace
             Console.WriteLine(Math.Min(iVal1, iVal2));
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Bug oCbTest = new Bug();
             oCbTest.runTest();
-            return 100;
         }
     }
     ///// EOF}

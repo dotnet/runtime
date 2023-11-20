@@ -176,7 +176,7 @@ namespace System.Net.Http
                 method;
         }
 
-        private static HttpMethod? GetKnownMethod(ReadOnlySpan<char> method)
+        internal static HttpMethod? GetKnownMethod(ReadOnlySpan<char> method)
         {
             if (method.Length >= 3) // 3 == smallest known method
             {

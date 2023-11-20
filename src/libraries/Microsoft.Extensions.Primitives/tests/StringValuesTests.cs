@@ -177,7 +177,6 @@ namespace Microsoft.Extensions.Primitives
         [MemberData(nameof(EmptyStringValues))]
         public void DefaultNullOrEmpty_ExpectedValues(StringValues stringValues)
         {
-            Assert.Empty(stringValues);
             Assert.Null((string)stringValues);
             Assert.Equal((string)null, stringValues);
             Assert.Equal(string.Empty, stringValues.ToString());
@@ -193,7 +192,6 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(((ICollection<string>)stringValues).Contains(null));
             Assert.False(((ICollection<string>)stringValues).Contains(string.Empty));
             Assert.False(((ICollection<string>)stringValues).Contains("not there"));
-            Assert.Empty(stringValues);
         }
 
         [Theory]
@@ -208,7 +206,6 @@ namespace Microsoft.Extensions.Primitives
         {
             string nullString = null;
             StringValues stringValues = nullString;
-            Assert.Empty(stringValues);
             Assert.Null((string)stringValues);
             Assert.Null((string[])stringValues);
 
@@ -257,7 +254,6 @@ namespace Microsoft.Extensions.Primitives
         {
             string[] nullStringArray = null;
             StringValues stringValues = nullStringArray;
-            Assert.Empty(stringValues);
             Assert.Null((string)stringValues);
             Assert.Null((string[])stringValues);
 

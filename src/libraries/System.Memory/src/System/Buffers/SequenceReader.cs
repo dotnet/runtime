@@ -99,7 +99,7 @@ namespace System.Buffers
                 if (_length < 0)
                 {
                     // Cast-away readonly to initialize lazy field
-                    Unsafe.AsRef(_length) = Sequence.Length;
+                    Unsafe.AsRef(in _length) = Sequence.Length;
                 }
                 return _length;
             }

@@ -136,9 +136,12 @@ namespace System.Linq.Expressions.Tests
         [Theory, PerCompilationType(nameof(DecrementableValues), true)]
         public static void CustomOpDecrement(Decrementable? operand, Decrementable? expected, bool useInterpreter)
         {
-            Func<Decrementable?> func = Expression.Lambda<Func<Decrementable?>>(
-                Expression.Decrement(Expression.Constant(operand, typeof(Decrementable?)))).Compile(useInterpreter);
-            Assert.Equal(expected, func());
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
+            {
+                Func<Decrementable?> func = Expression.Lambda<Func<Decrementable?>>(
+                            Expression.Decrement(Expression.Constant(operand, typeof(Decrementable?)))).Compile(useInterpreter);
+                Assert.Equal(expected, func());
+            });
         }
 
         [Theory, PerCompilationType(nameof(DecrementableWhenNullableValues))]
@@ -153,10 +156,13 @@ namespace System.Linq.Expressions.Tests
         [Theory, PerCompilationType(nameof(DoublyDecrementedDecrementableValues), true)]
         public static void UserDefinedOpDecrement(Decrementable? operand, Decrementable? expected, bool useInterpreter)
         {
-            MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyDecrement));
-            Func<Decrementable?> func = Expression.Lambda<Func<Decrementable?>>(
-                Expression.Decrement(Expression.Constant(operand, typeof(Decrementable?)), method)).Compile(useInterpreter);
-            Assert.Equal(expected, func());
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
+            {
+                MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyDecrement));
+                Func<Decrementable?> func = Expression.Lambda<Func<Decrementable?>>(
+                                Expression.Decrement(Expression.Constant(operand, typeof(Decrementable?)), method)).Compile(useInterpreter);
+                Assert.Equal(expected, func());
+            });
         }
 
         [Theory, PerCompilationType(nameof(DoublyDecrementedInt32s), true)]

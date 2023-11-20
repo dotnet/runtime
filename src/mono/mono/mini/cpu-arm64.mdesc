@@ -553,8 +553,6 @@ arm64_xtn2: dest:x src1:x src2:x len:4 clob:1
 arm64_fcvtn: dest:x src1:x len:4
 arm64_fcvtn2: dest:x src1:x src2:x len:4 clob:1
 xunop: dest:x src1:x len:4
-arm64_ushl: dest:x src1:x src2:x len:4
-arm64_ext_imm: dest:x src1:x src2:x len:4
 xinsert_i8: dest:x src1:x src2:i src3:i len:20
 xinsert_r8: dest:x src1:x src2:f src3:i len:20
 arm64_broadcast_elem: dest:x src1:x len:16

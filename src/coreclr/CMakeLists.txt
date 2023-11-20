@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-cmake_policy(SET CMP0042 NEW) # MACOSX_RPATH is enabled by default.
-cmake_policy(SET CMP0066 NEW) # Honor per-config flags in try_compile() source-file signature.
-cmake_policy(SET CMP0067 NEW) # Honor language standard in try_compile() source-file signature
-cmake_policy(SET CMP0091 NEW) # MSVC runtime library flags are selected by an abstraction.
-
 # Set the project name
 project(CoreCLR)
 
@@ -12,6 +7,7 @@ include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
+include_directories("${CLR_SRC_NATIVE_DIR}/inc")
 
 if(MSVC)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
@@ -34,7 +30,7 @@ if(CORECLR_SET_RPATH)
 endif(CORECLR_SET_RPATH)
 
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS)
-  set(FEATURE_EVENT_TRACE 0)
+  set(FEATURE_STANDALONE_GC 0)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
@@ -72,8 +68,7 @@ endif()
 # Enable C++ EH with SEH
 #-------------------------
 if (MSVC)
-  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHa>) # enable C++ EH (w/ SEH exceptions)
+  set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHa) # enable C++ EH (w/ SEH exceptions)
 endif()
 
 #-------------------------------

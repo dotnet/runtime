@@ -129,7 +129,8 @@ public:
                                                  void * pfnEnumCallback,
                                                  void * pvCallbackData);
 
-    static GcSegmentHandle RegisterFrozenSegment(void * pSection, size_t SizeSection);
+    static GcSegmentHandle RegisterFrozenSegment(void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize);
+    static void UpdateFrozenSegment(GcSegmentHandle seg, uint8_t* allocated, uint8_t* committed);
     static void UnregisterFrozenSegment(GcSegmentHandle segment);
 
 #ifdef FEATURE_GC_STRESS
@@ -141,7 +142,6 @@ public:
     static void ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext);
     static void ScanStackRoots(Thread *pThread, GcScanRootFunction pfnScanCallback, void *pContext);
     static void ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext);
-    static void ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext);
 
     // Returns size GCDesc. Used by type cloning.
     static uint32_t GetGCDescSize(void * pType);

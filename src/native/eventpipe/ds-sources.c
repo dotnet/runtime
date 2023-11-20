@@ -2,6 +2,8 @@
 
 #ifdef ENABLE_PERFTRACING
 
+#include "ds-types.h"
+
 // Option to include all internal source files into ds-sources.c.
 #ifdef DS_INCLUDE_SOURCE_FILES
 #ifndef DS_FORCE_INCLUDE_SOURCE_FILES
@@ -28,7 +30,7 @@
 #define PORTABLE_RID_OS "linux-musl"
 #elif defined(TARGET_LINUX)
 #define PORTABLE_RID_OS "linux"
-#elif defined(TARGET_OSX)
+#elif defined(TARGET_OSX) && !defined(TARGET_MACCAT)
 #define PORTABLE_RID_OS "osx"
 #else
 #define PORTABLE_RID_OS "unix"

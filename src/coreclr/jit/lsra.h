@@ -73,14 +73,6 @@ inline bool useFloatReg(var_types type)
 }
 
 //------------------------------------------------------------------------
-// registerTypesEquivalent: Check to see if two RegisterTypes are equivalent
-//
-inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
-{
-    return varTypeIsIntegralOrI(a) == varTypeIsIntegralOrI(b);
-}
-
-//------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"
 //          during `buildIntervals` (i.e. a tree-node definition has been encountered,
 //          but not its use). This includes the RefPosition and its associated
@@ -1464,6 +1456,7 @@ private:
 
     static const int MAX_FORMAT_CHARS = 12;
     char             intervalNameFormat[MAX_FORMAT_CHARS];
+    char             smallLocalsIntervalNameFormat[MAX_FORMAT_CHARS]; // used for V01 to V09 (to match V%02u format)
     char             regNameFormat[MAX_FORMAT_CHARS];
     char             shortRefPositionFormat[MAX_FORMAT_CHARS];
     char             emptyRefPositionFormat[MAX_FORMAT_CHARS];
@@ -2018,6 +2011,7 @@ private:
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #ifdef TARGET_ARM64
     int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
+    void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2031,27 +2025,37 @@ private:
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
-#if defined(TARGET_XARCH)
-
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
 
-    regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
 
+#if defined(TARGET_XARCH)
+    regMaskTP rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
+
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    {
+        return this->rbmAllMask;
+    }
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    {
+        return this->rbmMskCalleeTrash;
+    }
 #endif // TARGET_XARCH
 
     unsigned availableRegCount;
 
-    unsigned get_AVAILABLE_REG_COUNT() const
+    FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
@@ -2062,17 +2066,40 @@ private:
     // NOTE: we currently don't need a LinearScan `this` pointer for this definition, and some callers
     // don't have one available, so make is static.
     //
-    static regMaskTP calleeSaveRegs(RegisterType rt)
+    static FORCEINLINE regMaskTP calleeSaveRegs(RegisterType rt)
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
+        static const regMaskTP varTypeCalleeSaveRegs[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
+#include "typelist.h"
+#undef DEF_TP
+        };
+
+        assert((unsigned)rt < ArrLen(varTypeCalleeSaveRegs));
+        return varTypeCalleeSaveRegs[rt];
     }
+
+#if defined(TARGET_XARCH)
+    // Not all of the callee trash values are constant, so don't declare this as a method local static
+    // doing so results in significantly more complex codegen and we'd rather just initialize this once
+    // as part of initializing LSRA instead
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+#endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
     // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
     //
-    regMaskTP callerSaveRegs(RegisterType rt) const
+    FORCEINLINE regMaskTP callerSaveRegs(RegisterType rt) const
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
+#if !defined(TARGET_XARCH)
+        static const regMaskTP varTypeCalleeTrashRegs[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
+#include "typelist.h"
+#undef DEF_TP
+        };
+#endif // !TARGET_XARCH
+
+        assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
+        return varTypeCalleeTrashRegs[rt];
     }
 };
 
@@ -2093,6 +2120,7 @@ class Interval : public Referenceable
 public:
     Interval(RegisterType registerType, regMaskTP registerPreferences)
         : registerPreferences(registerPreferences)
+        , registerAversion(RBM_NONE)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
         , varNum(0)
@@ -2136,12 +2164,15 @@ public:
     // Fixed registers for which this Interval has a preference
     regMaskTP registerPreferences;
 
+    // Registers that should be avoided for this interval
+    regMaskTP registerAversion;
+
     // The relatedInterval is:
     //  - for any other interval, it is the interval to which this interval
     //    is currently preferenced (e.g. because they are related by a copy)
     Interval* relatedInterval;
 
-    // The assignedReg is the RecRecord for the register to which this interval
+    // The assignedReg is the RegRecord for the register to which this interval
     // has been assigned at some point - if the interval is active, this is the
     // register it currently occupies.
     RegRecord* assignedReg;
@@ -2294,6 +2325,14 @@ public:
         assert(registerPreferences != RBM_NONE);
         // It is invalid to update with empty preferences
         assert(preferences != RBM_NONE);
+
+        preferences &= ~registerAversion;
+        if (preferences == RBM_NONE)
+        {
+            // Do not include the preferences if all they contain
+            // are the registers we recorded as want to avoid.
+            return;
+        }
 
         regMaskTP commonPreferences = (registerPreferences & preferences);
         if (commonPreferences != RBM_NONE)
@@ -2557,7 +2596,7 @@ public:
         return genRegNumFromMask(registerAssignment);
     }
 
-    // Returns true if it is a reference on a gentree node.
+    // Returns true if it is a reference on a GenTree node.
     bool IsActualRef()
     {
         switch (refType)

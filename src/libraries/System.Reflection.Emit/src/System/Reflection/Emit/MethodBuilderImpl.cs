@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
     internal sealed class MethodBuilderImpl : MethodBuilder
     {
         private Type _returnType;
-        private Type[]? _parameterTypes;
+        internal Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
@@ -20,10 +21,13 @@ namespace System.Reflection.Emit
         private MethodAttributes _attributes;
         private MethodImplAttributes _methodImplFlags;
         private GenericTypeParameterBuilderImpl[]? _typeParameters;
+        private ILGeneratorImpl? _ilGenerator;
+        private bool _initLocals;
 
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
-        internal ParameterBuilderImpl[]? _parameters;
+        internal ParameterBuilderImpl[]? _parameterBuilders;
+        internal MethodDefinitionHandle _handle;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
@@ -32,13 +36,24 @@ namespace System.Reflection.Emit
             _returnType = returnType ?? _module.GetTypeFromCoreAssembly(CoreTypeId.Void);
             _name = name;
             _attributes = attributes;
+
+            if ((attributes & MethodAttributes.Static) == 0)
+            {
+                // turn on the has this calling convention
+                callingConventions |= CallingConventions.HasThis;
+            }
+            else if ((attributes & (MethodAttributes.Virtual | MethodAttributes.Abstract)) == MethodAttributes.Virtual)
+            {
+                throw new ArgumentException(SR.Argument_NoStaticVirtual);
+            }
+
             _callingConventions = callingConventions;
             _declaringType = declaringType;
 
             if (parameterTypes != null)
             {
                 _parameterTypes = new Type[parameterTypes.Length];
-                _parameters = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
+                _parameterBuilders = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
                 for (int i = 0; i < parameterTypes.Length; i++)
                 {
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
@@ -46,7 +61,14 @@ namespace System.Reflection.Emit
             }
 
             _methodImplFlags = MethodImplAttributes.IL;
+            _initLocals = true;
         }
+
+        internal int ParameterCount => _parameterTypes == null ? 0 : _parameterTypes.Length;
+
+        internal Type[]? ParameterTypes => _parameterTypes;
+
+        internal ILGeneratorImpl? ILGeneratorImpl => _ilGenerator;
 
         internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
             _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions), GetGenericArguments().Length, !IsStatic);
@@ -68,7 +90,24 @@ namespace System.Reflection.Emit
 
             return convention;
         }
-        protected override bool InitLocalsCore { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        internal BindingFlags GetBindingFlags()
+        {
+            BindingFlags bindingFlags = (_attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public ?
+                BindingFlags.Public : BindingFlags.NonPublic;
+            bindingFlags |= (_attributes & MethodAttributes.Static) != 0 ? BindingFlags.Static : BindingFlags.Instance;
+
+            return bindingFlags;
+        }
+
+        protected override bool InitLocalsCore
+        {
+            get { ThrowIfGeneric(); return _initLocals; }
+            set { ThrowIfGeneric(); _initLocals = value; }
+        }
+
+        private void ThrowIfGeneric() { if (IsGenericMethod && !IsGenericMethodDefinition) throw new InvalidOperationException(); }
+
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
             if (_typeParameters != null)
@@ -87,18 +126,46 @@ namespace System.Reflection.Emit
 
         protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
         {
-            if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
+            _declaringType.ThrowIfCreated();
 
-            _parameters ??= new ParameterBuilderImpl[1];
+            if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
+            {
+                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
+            }
+
+            _parameterBuilders ??= new ParameterBuilderImpl[1];
 
             attributes &= ~ParameterAttributes.ReservedMask;
             ParameterBuilderImpl parameter = new ParameterBuilderImpl(this, position, attributes, strParamName);
-            _parameters[position] = parameter;
+            _parameterBuilders[position] = parameter;
             return parameter;
         }
 
-        protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
+        protected override ILGenerator GetILGeneratorCore(int size)
+        {
+            if (IsGenericMethod && !IsGenericMethodDefinition)
+            {
+                throw new InvalidOperationException();
+            }
+
+            if ((_methodImplFlags & MethodImplAttributes.CodeTypeMask) != MethodImplAttributes.IL ||
+                (_methodImplFlags & MethodImplAttributes.Unmanaged) != 0 ||
+                (_attributes & MethodAttributes.PinvokeImpl) != 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
+            }
+
+            if ((_attributes & MethodAttributes.Abstract) != 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
+            }
+
+            return _ilGenerator ??= new ILGeneratorImpl(this, size);
+        }
+
+        internal void SetCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute) =>
+            SetCustomAttributeCore(con, binaryAttribute);
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             // Handle pseudo custom attributes
@@ -135,8 +202,10 @@ namespace System.Reflection.Emit
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
+            _declaringType.ThrowIfCreated();
             _methodImplFlags = attributes;
         }
+
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
@@ -148,7 +217,7 @@ namespace System.Reflection.Emit
             if (parameterTypes != null)
             {
                 _parameterTypes = new Type[parameterTypes.Length];
-                _parameters = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
+                _parameterBuilders = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
                 for (int i = 0; i < parameterTypes.Length; i++)
                 {
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
@@ -156,6 +225,7 @@ namespace System.Reflection.Emit
             }
             // TODO: Add support for other parameters: returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypeRequiredCustomModifiers and parameterTypeOptionalCustomModifiers
         }
+
         public override string Name => _name;
         public override MethodAttributes Attributes => _attributes;
         public override CallingConventions CallingConvention => _callingConventions;
@@ -167,9 +237,9 @@ namespace System.Reflection.Emit
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;
         public override bool IsSecurityTransparent => false;
-        public override int MetadataToken { get => throw new NotImplementedException(); }
+        public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
-        public override Type? ReflectedType { get => throw new NotImplementedException(); }
+        public override Type? ReflectedType => _declaringType;
         public override ParameterInfo ReturnParameter { get => throw new NotImplementedException(); }
         public override Type ReturnType => _returnType;
         public override ICustomAttributeProvider ReturnTypeCustomAttributes { get => throw new NotImplementedException(); }
@@ -184,14 +254,37 @@ namespace System.Reflection.Emit
 
         public override MethodInfo GetGenericMethodDefinition() => !IsGenericMethod ? throw new InvalidOperationException() : this;
 
-        public override int GetHashCode()
-            => throw new NotImplementedException();
-
         public override MethodImplAttributes GetMethodImplementationFlags()
             => _methodImplFlags;
 
         public override ParameterInfo[] GetParameters()
-            => throw new NotImplementedException();
+        {
+            // This is called from ILGenerator when Emit(OpCode, ConstructorInfo) when the ctor is
+            // instance of 'ConstructorOnTypeBuilderInstantiation', so we could not throw here even
+            // the type was not baked. Runtime implementation throws when the type is not baked.
+
+            if (_parameterTypes == null)
+            {
+                return Array.Empty<ParameterInfo>();
+            }
+
+            _parameterBuilders ??= new ParameterBuilderImpl[_parameterTypes.Length + 1]; // parameter 0 reserved for return type
+            ParameterInfo[] parameters = new ParameterInfo[_parameterTypes.Length];
+
+            for (int i = 0; i < _parameterTypes.Length; i++)
+            {
+                if (_parameterBuilders[i + 1] == null)
+                {
+                    parameters[i] = new ParameterInfoWrapper(new ParameterBuilderImpl(this, i, ParameterAttributes.None, null), _parameterTypes[i]);
+                }
+                else
+                {
+                    parameters[i] = new ParameterInfoWrapper(_parameterBuilders[i + 1], _parameterTypes[i]);
+                }
+            }
+
+            return parameters;
+        }
 
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
              => throw new NotSupportedException(SR.NotSupported_DynamicModule);
@@ -199,8 +292,8 @@ namespace System.Reflection.Emit
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
-        [RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override MethodInfo MakeGenericMethod(params System.Type[] typeArguments)
-            => throw new NotImplementedException();
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        public override MethodInfo MakeGenericMethod(params Type[] typeArguments) =>
+            MethodBuilderInstantiation.MakeGenericMethod(this, typeArguments);
     }
 }

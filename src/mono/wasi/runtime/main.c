@@ -12,15 +12,16 @@ WASI_AFTER_RUNTIME_LOADED_DECLARATIONS
 
 int main(int argc, char * argv[]) {
 
-#ifdef WASI_AFTER_RUNTIME_LOADED_CALLS
-	// This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
-	WASI_AFTER_RUNTIME_LOADED_CALLS
-#endif
 #ifndef WASM_SINGLE_FILE
 	mono_set_assemblies_path("managed");
 #endif
 	mono_wasm_load_runtime("", 0);
 
+#ifdef WASI_AFTER_RUNTIME_LOADED_CALLS
+	// This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
+	WASI_AFTER_RUNTIME_LOADED_CALLS
+#endif
+    
 	int arg_ofs = 0;
 #ifdef WASM_SINGLE_FILE
 	/*

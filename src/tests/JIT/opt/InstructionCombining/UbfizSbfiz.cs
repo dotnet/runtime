@@ -20,7 +20,7 @@ public class Program
 
     // Tests for https://github.com/dotnet/runtime/pull/61045 optimization
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         unchecked
         {
@@ -112,7 +112,6 @@ public class Program
                 AssertTrue(Tests_long.Test_long_to_long(t));
             }
         }
-        return 100;
     }
 }
 

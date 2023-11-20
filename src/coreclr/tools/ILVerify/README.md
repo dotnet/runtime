@@ -2,7 +2,7 @@
 
 ## Intention of this project:
 
-The goal is to create a standalone, cross platform, open-source tool that is capable of verifying MSIL code based on [ECMA-335](https://www.ecma-international.org/publications/standards/Ecma-335.htm).
+The goal is to create a standalone, cross platform, open-source tool that is capable of verifying MSIL code based on [ECMA-335](https://www.ecma-international.org/publications-and-standards/standards/ecma-335).
 
 The main users of this tool are people working on software that emits MSIL code. These are typically compiler and profiler writers.
 
@@ -116,10 +116,10 @@ Additionally the method signature of the special test method must be equal to th
 The methods are automatically fed into appropriate XUnit theories based on the naming convention. Methods not following this naming conventions are ignored by the test scaffolding system.
 
 ## How to contribute
-All ILVerify issues are labeled with [area-ILVerification](https://github.com/search?utf8=%E2%9C%93&q=label%3Aarea-ILVerification&type=). You can also look and fix TODOs in the source code.
+All ILVerify issues are labeled with [area-Tools-ILVerification](https://github.com/search?utf8=%E2%9C%93&q=label%3Aarea-Tools-ILVerification&type=). You can also look and fix TODOs in the source code.
 
 Useful sources:
  - [PEVerify source code](https://github.com/lewischeng-ms/sscli/blob/master/clr/src/jit64/newverify.cpp)
  - [RyuJIT source code](https://github.com/dotnet/runtime/tree/main/src/coreclr/jit), specifically: [exception handling specific part](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/jiteh.cpp), [importer.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/importer.cpp) (look for `Compiler::ver`, `Verify`, `VerifyOrReturn`, and `VerifyOrReturnSpeculative`), [_typeinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/_typeinfo.h), [typeinfo.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/typeinfo.cpp)
- - [ECMA-335 standard](https://www.ecma-international.org/publications/standards/Ecma-335.htm)
+ - [ECMA-335 standard](https://www.ecma-international.org/publications-and-standards/standards/ecma-335)
  - [Expert .NET 2.0 IL Assembler book](http://www.apress.com/us/book/9781590596463) by Serge Lidin

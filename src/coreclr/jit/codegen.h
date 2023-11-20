@@ -34,6 +34,11 @@ public:
     virtual bool genCreateAddrMode(
         GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
 
+#ifdef LATE_DISASM
+    virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs);
+    virtual const char* siRegVarName(size_t offs, size_t size, unsigned reg);
+#endif // LATE_DISASM
+
 private:
 #if defined(TARGET_XARCH)
     // Bit masks used in negating a float or double number.
@@ -1051,11 +1056,11 @@ protected:
 #endif // !defined(TARGET_64BIT)
 
     //-------------------------------------------------------------------------
-    // genUpdateLifeStore: Do liveness udpate after tree store instructions
+    // genUpdateLifeStore: Do liveness update after tree store instructions
     // were emitted, update result var's home if it was stored on stack.
     //
     // Arguments:
-    //     tree        -  Gentree node
+    //     tree        -  GenTree node
     //     targetReg   -  of the tree
     //     varDsc      -  result value's variable
     //
@@ -1235,6 +1240,10 @@ protected:
 #else
     instruction genGetInsForOper(genTreeOps oper, var_types type);
 #endif
+    instruction genGetVolatileLdStIns(instruction   currentIns,
+                                      regNumber     targetReg,
+                                      GenTreeIndir* indir,
+                                      bool*         needsBarrier);
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
     GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
     regNumber getCallIndirectionCellReg(GenTreeCall* call);

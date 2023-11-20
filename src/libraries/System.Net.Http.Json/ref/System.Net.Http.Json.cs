@@ -156,6 +156,8 @@ namespace System.Net.Http.Json
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext.")]
         public static System.Net.Http.Json.JsonContent Create<T>(T inputValue, System.Net.Http.Headers.MediaTypeHeaderValue? mediaType = null, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static System.Net.Http.Json.JsonContent Create<T>(T? inputValue, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> jsonTypeInfo, System.Net.Http.Headers.MediaTypeHeaderValue? mediaType = null)  { throw null; }
+        public static System.Net.Http.Json.JsonContent Create(object? inputValue, System.Text.Json.Serialization.Metadata.JsonTypeInfo jsonTypeInfo, System.Net.Http.Headers.MediaTypeHeaderValue? mediaType = null)  { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
         protected override bool TryComputeLength(out long length) { throw null; }
     }

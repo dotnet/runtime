@@ -18,7 +18,6 @@ namespace Microsoft.Interop
         private static readonly Forwarder s_forwarder = new();
         private static readonly BlittableMarshaller s_blittable = new();
         private static readonly DelegateMarshaller s_delegate = new();
-        private static readonly SafeHandleMarshaller s_safeHandle = new();
         private InteropGenerationOptions Options { get; }
         private IMarshallingGeneratorFactory InnerFactory { get; }
 
@@ -45,8 +44,8 @@ namespace Microsoft.Interop
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U1, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I2, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U2, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Error, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4 or UnmanagedType.Error, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I8, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U8, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysInt, _) }
@@ -74,6 +73,7 @@ namespace Microsoft.Interop
                 case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer: true), MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
                     return ResolvedGenerator.Resolved(s_blittable);
 
+                // Bool with marshalling info
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U1, _) }:
                     return ResolvedGenerator.Resolved(s_byteBool);
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1, _) }:
@@ -85,23 +85,11 @@ namespace Microsoft.Interop
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
                     return ResolvedGenerator.Resolved(s_variantBool);
 
+                // Delegate types
                 case { ManagedType: DelegateTypeInfo, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
                     return ResolvedGenerator.Resolved(s_delegate);
 
-                case { MarshallingAttributeInfo: SafeHandleMarshallingInfo(_, bool isAbstract) }:
-                    if (!context.AdditionalTemporaryStateLivesAcrossStages || context.Direction != MarshalDirection.ManagedToUnmanaged)
-                    {
-                        return ResolvedGenerator.NotSupported(new(info, context));
-                    }
-                    if (info.IsByRef && isAbstract)
-                    {
-                        return ResolvedGenerator.NotSupported(new(info, context)
-                        {
-                            NotSupportedDetails = SR.SafeHandleByRefMustBeConcrete
-                        });
-                    }
-                    return ResolvedGenerator.Resolved(s_safeHandle);
-
+                // void
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Void } }:
                     return ResolvedGenerator.Resolved(s_forwarder);
 

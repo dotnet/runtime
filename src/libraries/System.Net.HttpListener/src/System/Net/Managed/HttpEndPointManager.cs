@@ -99,7 +99,7 @@ namespace System.Net
             if (lp.Path!.Contains('%'))
                 throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_invalid_path);
 
-            if (lp.Path.IndexOf("//", StringComparison.Ordinal) != -1)
+            if (lp.Path.Contains("//"))
                 throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_invalid_path);
 
             // listens on all the interfaces if host name cannot be parsed by IPAddress.
@@ -206,7 +206,7 @@ namespace System.Net
             if (lp.Path!.Contains('%'))
                 return;
 
-            if (lp.Path.IndexOf("//", StringComparison.Ordinal) != -1)
+            if (lp.Path.Contains("//"))
                 return;
 
             HttpEndPointListener epl = GetEPListener(lp.Host!, lp.Port, listener, lp.Secure);

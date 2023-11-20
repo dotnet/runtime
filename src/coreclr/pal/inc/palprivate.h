@@ -131,12 +131,6 @@ OpenMutexA(
 PALIMPORT
 HMODULE
 PALAPI
-LoadLibraryA(
-        IN LPCSTR lpLibFileName);
-
-PALIMPORT
-HMODULE
-PALAPI
 LoadLibraryExA(
         IN LPCSTR lpLibFileName,
         IN /*Reserved*/ HANDLE hFile,

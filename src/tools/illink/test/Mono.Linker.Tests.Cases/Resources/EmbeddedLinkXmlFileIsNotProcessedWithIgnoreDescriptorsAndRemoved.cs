@@ -7,7 +7,6 @@ namespace Mono.Linker.Tests.Cases.Resources
 	[StripDescriptors (true)]
 
 	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsNotProcessedWithIgnoreDescriptorsAndRemoved.xml", "ILLink.Descriptors.xml")]
-	[SkipPeVerify]
 	[RemovedResourceInAssembly ("test.exe", "ILLink.Descriptors.xml")]
 	public class EmbeddedLinkXmlFileIsNotProcessedWithIgnoreDescriptorsAndRemoved
 	{

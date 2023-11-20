@@ -4,12 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -94,7 +95,8 @@ namespace {TestNamespace}{suiteNamespacePart}
 		{
 			return $@"
 	}}
-}}";
+}}
+";
 		}
 	}
 
@@ -102,57 +104,6 @@ namespace {TestNamespace}{suiteNamespacePart}
 	public class TestCaseGenerator : IIncrementalGenerator
 	{
 		public const string TestCaseAssembly = "Mono.Linker.Tests.Cases";
-
-		public void Execute (GeneratorExecutionContext context)
-		{
-			IAssemblySymbol? assemblySymbol = null;
-
-			// Find testcase assembly
-			foreach (var reference in context.Compilation.References) {
-				ISymbol? assemblyOrModule = context.Compilation.GetAssemblyOrModuleSymbol (reference);
-				if (assemblyOrModule is IAssemblySymbol asmSym && asmSym.Name == TestCaseAssembly) {
-					assemblySymbol = asmSym;
-					break;
-				}
-			}
-			if (assemblySymbol is null || assemblySymbol.GetMetadata () is not AssemblyMetadata assemblyMetadata)
-				return;
-
-			ModuleMetadata moduleMetadata = assemblyMetadata.GetModules ().Single ();
-			MetadataReader metadataReader = moduleMetadata.GetMetadataReader ();
-			TestCases testCases = new ();
-			string suiteName;
-
-			// Find test classes to generate
-			foreach (var typeDefHandle in metadataReader.TypeDefinitions) {
-				TypeDefinition typeDef = metadataReader.GetTypeDefinition (typeDefHandle);
-				// Must not be a nested type
-				if (typeDef.IsNested)
-					continue;
-
-				string ns = metadataReader.GetString (typeDef.Namespace);
-				// Must be in the testcases namespace
-				if (!ns.StartsWith (TestCaseAssembly))
-					continue;
-
-				// Must have a Main method
-				bool hasMain = false;
-				foreach (var methodDefHandle in typeDef.GetMethods ()) {
-					MethodDefinition methodDef = metadataReader.GetMethodDefinition (methodDefHandle);
-					if (metadataReader.GetString (methodDef.Name) == "Main") {
-						hasMain = true;
-						break;
-					}
-				}
-				if (!hasMain)
-					continue;
-
-				string testName = metadataReader.GetString (typeDef.Name);
-				suiteName = ns.Substring (TestCaseAssembly.Length + 1);
-
-				testCases.Add (suiteName, testName);
-			}
-		}
 
 		static string GetFullName(ClassDeclarationSyntax classSyntax)
 		{
@@ -184,35 +135,60 @@ namespace {TestNamespace}{suiteNamespacePart}
 
 			IncrementalValueProvider<Compilation> compilation = context.CompilationProvider;
 
+			IncrementalValueProvider<AnalyzerConfigOptionsProvider> options = context.AnalyzerConfigOptionsProvider;
+
 			// For any steps below which can fail (for example, getting metadata might return null),
 			// we use SelectMany to return zero or one results.
-			IncrementalValuesProvider<IAssemblySymbol> assemblySymbol = metadataReferences
+			IncrementalValuesProvider<(IAssemblySymbol, string?)> assemblyAndSuite = metadataReferences
 				.Combine(compilation)
-				.SelectMany(static (combined, _) => {
-					var (reference, compilation) = combined;
-					return compilation.GetAssemblyOrModuleSymbol (reference) is IAssemblySymbol asmSym && asmSym.Name == TestCaseAssembly
-						? ImmutableArray.Create(asmSym)
-						: ImmutableArray<IAssemblySymbol>.Empty;
+				.Combine(options)
+				.SelectMany(static (referenceAndCompilationAndOptions, _) => {
+					var (referenceAndCompilation, options) = referenceAndCompilationAndOptions;
+					var (reference, compilation) = referenceAndCompilation;
+					if (compilation.GetAssemblyOrModuleSymbol(reference) is not IAssemblySymbol asmSym)
+						return ImmutableArray<(IAssemblySymbol, string?)>.Empty;
+					if (!options.GlobalOptions.TryGetValue("build_property.TestCaseBuildOutputRoot", out var testCaseBuildOutputRootValue))
+						throw new Exception("Missing build property TestCaseBuildOutputRoot");
+					var testCaseBuildOutputRoot = Path.GetFullPath(testCaseBuildOutputRootValue);
+					var referenceDirectory = Path.GetDirectoryName (reference.Display);
+					if (!referenceDirectory.StartsWith(testCaseBuildOutputRoot))
+						return ImmutableArray<(IAssemblySymbol, string?)>.Empty;
+					var suiteName = referenceDirectory.Length < testCaseBuildOutputRoot.Length + 1
+						? null
+						: Path.GetDirectoryName (referenceDirectory.Substring (testCaseBuildOutputRoot.Length + 1));
+					return ImmutableArray.Create((asmSym, suiteName));
 				});
 
-			IncrementalValuesProvider<AssemblyMetadata> assemblyMetadata = assemblySymbol
-				.SelectMany(static (symbol, _) =>
-					symbol.GetMetadata() is AssemblyMetadata metadata
-						? ImmutableArray.Create(metadata)
-						: ImmutableArray<AssemblyMetadata>.Empty);
+			IncrementalValuesProvider<(AssemblyMetadata, string?)> metadataAndSuite = assemblyAndSuite
+				.SelectMany (static (combined, _) => {
+					var (asmSym, suite) = combined;
+					return asmSym.GetMetadata() is AssemblyMetadata metadata
+						? ImmutableArray.Create ((metadata, suite))
+						: ImmutableArray<(AssemblyMetadata, string?)>.Empty;
+				});
 
-			IncrementalValuesProvider<ModuleMetadata> moduleMetadata = assemblyMetadata
-				.Select(static (metadata, _) =>
-					metadata.GetModules().Single());
+			IncrementalValuesProvider<TestCases> testCasesPerAssembly = metadataAndSuite
+				.Select (static (combined, cancellationToken) => {
+					var (asmMetadata, suite) = combined;
+					ModuleMetadata moduleMetadata = asmMetadata.GetModules().Single();
+					MetadataReader metadataReader = moduleMetadata.GetMetadataReader();
+					return FindTestCases (suite, metadataReader, cancellationToken);
+				});
 
-			IncrementalValuesProvider<MetadataReader> metadataReader = moduleMetadata
-				.Select(static (metadata, _) =>
-					metadata.GetMetadataReader());
-			
-			// Find all test cases (some of which may need generated facts)
-			IncrementalValuesProvider<TestCases> testCases = metadataReader
-				.Select(static (reader, cancellationToken) =>
-					FindTestCases(reader, cancellationToken));
+			IncrementalValueProvider<TestCases> testCases = testCasesPerAssembly
+				.Collect ()
+				.Select (static (testCasesPerAssembly, cancellationToken) => {
+					var testCases = new TestCases();
+					foreach (var assemblyTestCases in testCasesPerAssembly) {
+						foreach (var kvp in assemblyTestCases.Suites) {
+							var suiteName = kvp.Key;
+							var caseNames = kvp.Value;
+							foreach (var caseName in caseNames)
+								testCases.Add(suiteName, caseName);
+						}
+					}
+					return testCases;
+				});
 
 			// Find already-generated test types
 			IncrementalValuesProvider<INamedTypeSymbol?> existingTestTypes = context.SyntaxProvider.CreateSyntaxProvider(
@@ -244,7 +220,7 @@ namespace {TestNamespace}{suiteNamespacePart}
 					FindExistingTestCases(typeSymbol, cancellationToken))
 				.Collect()
 				.Select(static (existingTestCases, cancellationToken) => {
-					var testCases = new TestCases();
+					TestCases testCases = new ();
 					foreach (var (suiteName, testName) in existingTestCases) {
 						testCases.Add(suiteName, testName);
 					}
@@ -259,7 +235,6 @@ namespace {TestNamespace}{suiteNamespacePart}
 					return FindNewTestCases(testCases, existingTestCases, cancellationToken);
 				});
 
-
 			// Generate facts for all testcases that don't already exist
 			context.RegisterSourceOutput(newTestCases, static (sourceProductionContext, newTestCases) => {
 				StringBuilder sourceBuilder = new ();
@@ -273,6 +248,7 @@ namespace {TestNamespace}{suiteNamespacePart}
 
 				sourceProductionContext.AddSource ($"{suiteName}Tests.g.cs", sourceBuilder.ToString ());
 			});
+
 
 			static IEnumerable<(string SuiteName, IEnumerable<string> NewCases, bool newTestSuite)> FindNewTestCases (TestCases testCases, TestCases existingTestCases, CancellationToken cancellationToken) {
 				foreach (var kvp in testCases.Suites) {
@@ -312,9 +288,10 @@ namespace {TestNamespace}{suiteNamespacePart}
 				}
 			}
 
-			static TestCases FindTestCases (MetadataReader metadataReader, CancellationToken cancellationToken) {
+			static TestCases FindTestCases (string? explicitSuiteName, MetadataReader metadataReader, CancellationToken cancellationToken) {
 				TestCases testCases = new ();
-				string suiteName;
+
+				bool topLevelStatementsAssembly = false;
 
 				// Find test classes to generate
 				foreach (var typeDefHandle in metadataReader.TypeDefinitions) {
@@ -325,10 +302,30 @@ namespace {TestNamespace}{suiteNamespacePart}
 					if (typeDef.IsNested)
 						continue;
 
-					string ns = metadataReader.GetString (typeDef.Namespace);
-					// Must be in the testcases namespace
-					if (!ns.StartsWith (TestCaseAssembly))
-						continue;
+					string typeName = metadataReader.GetString (typeDef.Name);
+					
+					// Allow top-level statements with generated Program class
+					bool compilerGeneratedProgramType = false;
+					if (typeName == "Program")  {
+						// Look for CompilerGeneratedCodeAttribute
+						foreach (var caHandle in typeDef.GetCustomAttributes ()) {
+							var ca = metadataReader.GetCustomAttribute (caHandle);
+							if (ca.Constructor.Kind is not HandleKind.MemberReference)
+								continue;
+							var caCtor = metadataReader.GetMemberReference ((MemberReferenceHandle) ca.Constructor);
+							var caType = metadataReader.GetTypeReference ((TypeReferenceHandle) caCtor.Parent);
+							if (metadataReader.GetString (caType.Name) == "CompilerGeneratedAttribute")
+								compilerGeneratedProgramType = true;
+						}
+					}
+
+					string? ns = null;
+					if (!compilerGeneratedProgramType) {
+						ns = metadataReader.GetString (typeDef.Namespace);
+						// Must be in the testcases namespace
+						if (!ns.StartsWith (TestCaseAssembly))
+							continue;
+					}
 
 					// Must have a Main method
 					bool hasMain = false;
@@ -336,7 +333,7 @@ namespace {TestNamespace}{suiteNamespacePart}
 						cancellationToken.ThrowIfCancellationRequested ();
 
 						MethodDefinition methodDef = metadataReader.GetMethodDefinition (methodDefHandle);
-						if (metadataReader.GetString (methodDef.Name) == "Main") {
+						if (metadataReader.GetString (methodDef.Name) == (compilerGeneratedProgramType ? "<Main>$" : "Main")) {
 							hasMain = true;
 							break;
 						}
@@ -344,12 +341,27 @@ namespace {TestNamespace}{suiteNamespacePart}
 					if (!hasMain)
 						continue;
 
-					string testName = metadataReader.GetString (typeDef.Name);
-					suiteName = ns.Substring (TestCaseAssembly.Length + 1);
+					if (topLevelStatementsAssembly)
+						throw new NotImplementedException ("Multiple test cases in an assembly with top-level statements is not supported.");
+
+					string testName;
+					string suiteName;
+
+					if (compilerGeneratedProgramType) {
+						topLevelStatementsAssembly = true;
+						if (explicitSuiteName == null)
+							throw new InvalidOperationException ("No suite name supplied for compiler-generated Program type.");
+						testName = metadataReader.GetString (metadataReader.GetAssemblyDefinition ().Name);
+						suiteName = explicitSuiteName;
+					} else {
+						if (explicitSuiteName != null)
+							throw new InvalidOperationException ($"Suite name should be determined from namespace, but explicit suite '{explicitSuiteName}' was supplied.");
+						suiteName = ns!.Substring (TestCaseAssembly.Length + 1);						
+						testName = typeName;
+					}
 
 					testCases.Add (suiteName, testName);
 				}
-
 				return testCases;
 			}
 		}

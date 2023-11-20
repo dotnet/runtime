@@ -51,12 +51,11 @@ namespace BoxTest_instance_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Test test = new Test(20.0d);
             test.Print();
             Console.WriteLine("*** PASSED ***");
-            return 100;
         }
     }
 }

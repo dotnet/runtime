@@ -58,6 +58,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task MissingReferenceInUnusedCodePath ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task MissingReferenceInUsedCodePath ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task ReferencesAreRemovedWhenAllUsagesAreRemoved ()
 		{
 			return RunTest (allowMissingWarnings: true);

@@ -13,3 +13,5 @@ We have also cherry-picked into our local copy:
   This patch only affects memLevel 9 compression. .NET doesn't currently use this
   memLevel, but we'll take this patch out of an abundance of caution just in case
   we enable this functionality in a future release.
+
+We have also applied the custom patches under the patches/zlib folder.

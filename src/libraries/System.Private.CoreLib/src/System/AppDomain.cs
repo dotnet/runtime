@@ -129,7 +129,7 @@ namespace System
                 obj: null,
                 invokeAttr: BindingFlags.DoNotWrapExceptions,
                 binder: null,
-                parameters: entry.GetParameters().Length > 0 ? new object?[] { args } : null,
+                parameters: entry.GetParametersAsSpan().Length > 0 ? new object?[] { args } : null,
                 culture: null);
 
             return result != null ? (int)result : 0;

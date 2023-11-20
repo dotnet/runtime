@@ -67,7 +67,7 @@ namespace JitInliningTest
 
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             f1a(true);
             f2a('A');
@@ -128,8 +128,6 @@ namespace JitInliningTest
             f12c(ref d);
             f13c(ref o);
             f14c(ref s);
-
-            return 100;
         }
     }
 }

@@ -3,9 +3,11 @@
 
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
+/// <reference path="./types/sidecar.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
-import { mono_log_error } from "./logging";
+import gitHash from "consts:gitHash";
+
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
 
@@ -13,10 +15,14 @@ import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers,
 export let Module: DotnetModuleInternal;
 export let INTERNAL: any;
 
+// keep in sync with src\mono\wasm\runtime\loader\globals.ts and src\mono\wasm\test-main.js
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
-export const ENVIRONMENT_IS_WEB = typeof window == "object";
-export const ENVIRONMENT_IS_WORKER = typeof importScripts == "function";
-export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
+export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
+export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
+export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
+export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
+export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
+
 // these are imported and re-exported from emscripten internals
 export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
@@ -28,6 +34,7 @@ export let linkerWasmEnableSIMD = true;
 export let linkerWasmEnableEH = true;
 export let linkerEnableAotProfiler = false;
 export let linkerEnableBrowserProfiler = false;
+export let linkerRunAOTCompilation = false;
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
 export function passEmscriptenInternals(internals: EmscriptenInternals): void {
@@ -37,8 +44,10 @@ export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     linkerWasmEnableEH = internals.linkerWasmEnableEH;
     linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
     linkerEnableBrowserProfiler = internals.linkerEnableBrowserProfiler;
+    linkerRunAOTCompilation = internals.linkerRunAOTCompilation;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
+    runtimeHelpers.moduleGitHash = internals.gitHash;
 }
 
 // NOTE: this is called AFTER the config is loaded
@@ -54,9 +63,9 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     exportedRuntimeAPI = globalObjects.api;
 
     Object.assign(runtimeHelpers, {
+        gitHash,
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
-        memorySnapshotSkippedOrDone: createPromiseController<void>(),
         afterInstantiateWasm: createPromiseController<void>(),
         beforePreInit: createPromiseController<void>(),
         afterPreInit: createPromiseController<void>(),
@@ -64,6 +73,12 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         beforeOnRuntimeInitialized: createPromiseController<void>(),
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
+        mono_wasm_exit: () => {
+            throw new Error("Mono shutdown");
+        },
+        abort: (reason: any) => {
+            throw reason;
+        }
     });
 
     Object.assign(globalObjects.module.config!, {}) as any;
@@ -87,10 +102,6 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()
         : messageFactory);
-    const abort = runtimeHelpers.mono_wasm_abort;
-    if (abort) {
-        mono_log_error(message);
-        abort();
-    }
-    throw new Error(message);
+    const error = new Error(message);
+    runtimeHelpers.abort(error);
 }

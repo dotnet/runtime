@@ -73,7 +73,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type != null)
             {
-
                 if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
                 {
                     result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
@@ -89,6 +88,9 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         result.Add(new DependencyListEntry(factory.EagerCctorIndirection(type.GetStaticConstructor()), "Eager .cctor"));
                     }
+
+                    // inlined threadstatics do not need the index for execution, but may need it for debug visualization.
+                    result.Add(new DependencyListEntry(factory.TypeThreadStaticIndex(type), "ThreadStatic index for debug visualization"));
 
                     ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, type.Module);
                 }
@@ -143,5 +145,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return comparer.Compare(_type, ((ThreadStaticsNode)other)._type);
         }
+
+        internal int GetTypeStorageOffset(MetadataType type) => _inlined.GetOffsets()[type];
     }
 }

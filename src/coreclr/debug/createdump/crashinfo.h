@@ -55,6 +55,7 @@ private:
     bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
     pid_t m_crashThread;                            // crashing thread id or 0 if none
     uint32_t m_signal;                              // crash signal code or 0 if none
+    uint64_t m_exceptionRecord;                     // exception record address or 0 if none
     std::string m_name;                             // exe name
     siginfo_t m_siginfo;                            // signal info (if any)
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
@@ -115,6 +116,7 @@ public:
     inline const bool GatherFrames() const { return m_gatherFrames; }
     inline const pid_t CrashThread() const { return m_crashThread; }
     inline const uint32_t Signal() const { return m_signal; }
+    inline const uint64_t ExceptionRecord () const { return m_exceptionRecord; }
     inline const std::string& Name() const { return m_name; }
     inline const ModuleInfo* MainModule() const { return m_mainModule; }
     inline const uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }

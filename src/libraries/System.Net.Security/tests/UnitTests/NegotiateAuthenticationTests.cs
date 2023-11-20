@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
 using System.Net.Test.Common;
@@ -31,6 +32,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
         public void RemoteIdentity_ThrowsOnUnauthenticated()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -64,6 +66,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
         public void Package_Unsupported()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "INVALID", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -91,6 +94,19 @@ namespace System.Net.Security.Tests
             NegotiateAuthenticationStatusCode statusCode;
             negotiateAuthentication.GetOutgoingBlob((byte[]?)null, out statusCode);
             Assert.Equal(NegotiateAuthenticationStatusCode.Unsupported, statusCode);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "The test is specific to GSSAPI / Managed implementations of NegotiateAuthentication")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
+        public void DefaultNetworkCredentials_NTLM_DoesNotThrow()
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = CredentialCache.DefaultNetworkCredentials, TargetName = "HTTP/foo" };
+            // Assert.DoesNotThrow
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            NegotiateAuthenticationStatusCode statusCode;
+            negotiateAuthentication.GetOutgoingBlob((byte[]?)null, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.UnknownCredentials, statusCode);
         }
 
         [Fact]
@@ -148,15 +164,23 @@ namespace System.Net.Security.Tests
             Assert.False(fakeNtlmServer.IsMICPresent);
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
-        public void NtlmCorrectExchangeTest()
+        public static IEnumerable<object[]> TestCredentials()
         {
-            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            yield return new object[] { new NetworkCredential("rightusername", "rightpassword") };
+            yield return new object[] { new NetworkCredential("rightusername", "rightpassword", "rightdomain") };
+            yield return new object[] { new NetworkCredential("rightusername@rightdomain.com", "rightpassword") };
+        } 
+
+        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [MemberData(nameof(TestCredentials))]
+        public void NtlmCorrectExchangeTest(NetworkCredential credential)
+        {
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(credential);
             NegotiateAuthentication ntAuth = new NegotiateAuthentication(
                 new NegotiateAuthenticationClientOptions
                 {
                     Package = "NTLM",
-                    Credential = s_testCredentialRight,
+                    Credential = credential,
                     TargetName = "HTTP/foo",
                     RequiredProtectionLevel = ProtectionLevel.Sign
                 });
@@ -191,7 +215,6 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(IsNtlmAvailable))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
         public void NtlmSignatureTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);

@@ -789,7 +789,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             Assert.Equal(expectedLocation, callSite.Cache.Location);
             Assert.Equal(0, callSite.Cache.Key.Slot);
-            Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.ServiceIdentifier.Value.ServiceType);
+            Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.ServiceIdentifier.ServiceType);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

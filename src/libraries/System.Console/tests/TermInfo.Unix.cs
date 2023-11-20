@@ -105,16 +105,12 @@ public class TermInfoTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests TermInfo
-    public void TermInfoE3CanBeRead()
+    public void TermInfoClearIncludesE3WhenExpected()
     {
-        bool ScrollbackBufferIsSet(TerminalData data) => !string.IsNullOrEmpty(data.TerminalDb.ClearScrollbackBuffer);
-
         // XTerm defines E3 for clearing scrollback buffer and tmux does not.
         // This can't be added to TermInfoVerification because xterm-256color sometimes has E3 defined (e.g. on Ubuntu but not macOS)
-        XTermData xTermData = new();
-        Assert.True(ScrollbackBufferIsSet(xTermData));
-        TmuxData tmuxData = new();
-        Assert.False(ScrollbackBufferIsSet(tmuxData));
+        Assert.Equal("\u001B[H\u001B[2J\u001B[3J", new XTermData().TerminalDb.Clear);
+        Assert.Equal("\u001B[H\u001B[J", new TmuxData().TerminalDb.Clear);
     }
 
     [Fact]

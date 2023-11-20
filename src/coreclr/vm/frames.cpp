@@ -1020,6 +1020,50 @@ void GCFrame::Pop()
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
 }
+
+void GCFrame::Remove()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pCurThread != NULL);
+    }
+    CONTRACTL_END;
+
+    GCFrame *pPrevFrame = NULL;
+    GCFrame *pFrame = m_pCurThread->GetGCFrame();
+    while (pFrame != NULL)
+    {
+        if (pFrame == this)
+        {
+            if (pPrevFrame)
+            {
+                pPrevFrame->m_Next = m_Next;
+            }
+            else
+            {
+                m_pCurThread->SetGCFrame(m_Next);
+            }
+
+            m_Next = NULL;
+
+#ifdef _DEBUG
+            m_pCurThread->EnableStressHeap();
+            for(UINT i = 0; i < m_numObjRefs; i++)
+                Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
+#endif
+            break;
+        }
+
+        pPrevFrame = pFrame;
+        pFrame = pFrame->m_Next;
+    }
+
+    _ASSERTE_MSG(pFrame != NULL, "GCFrame not found in the current thread's stack");
+}
+
 #endif // !DACCESS_COMPILE
 
 //

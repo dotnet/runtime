@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -24,7 +25,7 @@ namespace System.Text.Json.SourceGeneration
     /// When adding new members to the type, please ensure that these properties
     /// are satisfied otherwise we risk breaking incremental caching in the source generator!
     /// </remarks>
-    [DebuggerDisplay("Type={TypeRef.Name}, ClassType={ClassType}")]
+    [DebuggerDisplay("Type = {TypeRef.Name}, ClassType = {ClassType}")]
     public sealed record TypeGenerationSpec
     {
         /// <summary>

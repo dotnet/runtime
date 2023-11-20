@@ -8,30 +8,11 @@ using Xunit;
 public class Runtime_75832
 {
     [Fact]
-    public static int TestEntryPoint()
-    {
-        try
-        {
-            Test(0);
-            Console.WriteLine("FAIL: No exception thrown");
-        }
-        catch (DivideByZeroException)
-        {
-            return 100;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("FAIL: Caught {0}", ex.GetType().Name);
-        }
-        
-        return 101;
-    }
+    public static void TestEntryPoint()
+        => Assert.Throws<DivideByZeroException>(() => Test(0));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Test(int i)
-    {
-        GetAction()(100 / i);
-    }
+    private static void Test(int i) => GetAction()(100 / i);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Action<int> GetAction() => null;

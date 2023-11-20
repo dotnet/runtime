@@ -71,11 +71,10 @@ int createdump_main(const int argc, const char* argv[])
     options.Signal = 0;
     options.CrashThread = 0;
     options.Pid = 0;
-#if defined(HOST_UNIX) && !defined(HOST_OSX)
     options.SignalCode = 0;
     options.SignalErrno = 0;
-    options.SignalAddress = nullptr;
-#endif
+    options.SignalAddress = 0;
+    options.ExceptionRecord = 0;
     bool help = false;
     int exitCode = 0;
 
@@ -141,7 +140,11 @@ int createdump_main(const int argc, const char* argv[])
             }
             else if (strcmp(*argv, "--address") == 0)
             {
-                options.SignalAddress = (void*)atoll(*++argv);
+                options.SignalAddress = atoll(*++argv);
+            }
+            else if (strcmp(*argv, "--exception-record") == 0)
+            {
+                options.ExceptionRecord = atoll(*++argv);
             }
 #endif
             else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))

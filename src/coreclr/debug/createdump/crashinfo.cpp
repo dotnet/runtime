@@ -22,6 +22,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_gatherFrames(options.CrashReport),
     m_crashThread(options.CrashThread),
     m_signal(options.Signal),
+    m_exceptionRecord(options.ExceptionRecord),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -39,7 +40,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_siginfo.si_signo = options.Signal;
     m_siginfo.si_code = options.SignalCode;
     m_siginfo.si_errno = options.SignalErrno;
-    m_siginfo.si_addr = options.SignalAddress;
+    m_siginfo.si_addr = (void*)options.SignalAddress;
 }
 
 CrashInfo::~CrashInfo()
@@ -193,6 +194,9 @@ CrashInfo::GatherCrashInfo(DumpType dumpType)
     {
         return false;
     }
+    // Add the special (fake) memory region for the special diagnostics info
+    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize);
+    m_memoryRegions.insert(special);
 #ifdef __APPLE__
     InitializeOtherMappings();
 #endif
@@ -795,7 +799,7 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         }
 
         uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-        uint64_t seekResult = lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
+        uint64_t seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET);
         if (seekResult != pagemapOffset)
         {
             int seekErrno = errno;

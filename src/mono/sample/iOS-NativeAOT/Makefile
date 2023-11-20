@@ -8,6 +8,8 @@ TARGET_OS?=iossimulator
 DEPLOY_AND_RUN?=false
 STRIP_DEBUG_SYMBOLS?=false
 USE_RUNTIME_PACKS?=false
+STATS?=false
+HYBRID_GLOBALIZATION?=false
 
 REPO_DIR=$(realpath $(TOP))
 TASKS_DIR=$(REPO_DIR)/src/tasks
@@ -58,6 +60,8 @@ hello-app: clean
 	-p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	-p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	-p:PublishAotUsingRuntimePack=$(USE_RUNTIME_PACKS) \
+	-p:GenerateStats=$(STATS) \
+	-p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
 	-bl
 
 clean:

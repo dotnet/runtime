@@ -63,7 +63,7 @@ internal sealed class PInvokeCollector {
         Log = log;
     }
 
-    public void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
+    public void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, HashSet<string> signatures, Type type)
     {
         foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
         {
@@ -90,9 +90,8 @@ internal sealed class PInvokeCollector {
                 if (signature == null)
                     throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
 
-
-                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
-                signatures.Add(signature);
+                if (signatures.Add(signature))
+                    Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
             }
         }
 
@@ -111,8 +110,8 @@ internal sealed class PInvokeCollector {
                     throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
                 }
 
-                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
-                signatures.Add(signature);
+                if (signatures.Add(signature))
+                    Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
             }
         }
 

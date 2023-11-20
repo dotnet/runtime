@@ -1,12 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
@@ -72,7 +72,7 @@ namespace System.Reflection
             Debug.Assert(_argCount == 1);
 
             object? arg = parameters[0];
-            ReadOnlySpan<object?> parametersSpan = new(arg);
+            var parametersSpan = new ReadOnlySpan<object?>(in arg);
 
             object? copyOfArg = null;
             Span<object?> copyOfArgs = new(ref copyOfArg);
@@ -300,7 +300,7 @@ namespace System.Reflection
             bool copyBack = false;
             Span<bool> shouldCopyBack = new(ref copyBack, 1); // Not used for setters
 
-            CheckArguments(new ReadOnlySpan<object?>(parameter), copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+            CheckArguments(new ReadOnlySpan<object?>(in parameter), copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
             if (_invokeFunc_ObjSpanArgs is not null) // Fast path check
             {
@@ -365,7 +365,7 @@ namespace System.Reflection
                 // Convert a Type.Missing to the default value.
                 if (ReferenceEquals(arg, Type.Missing))
                 {
-                    arg = HandleTypeMissing(_method.GetParametersNoCopy()[i], sigType);
+                    arg = HandleTypeMissing(_method.GetParametersAsSpan()[i], sigType);
                     shouldCopyBack[i] = true;
                 }
 

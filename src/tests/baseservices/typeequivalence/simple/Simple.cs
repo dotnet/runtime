@@ -11,6 +11,12 @@ using System.Runtime.InteropServices;
 using Xunit;
 using TypeEquivalenceTypes;
 
+[TypeIdentifier("MyScope", "MyTypeId")]
+public struct EquivalentValueType
+{
+    public int A;
+}
+
 public class Simple
 {
     private class EmptyType2 : IEmptyType
@@ -268,7 +274,19 @@ public class Simple
         Console.WriteLine($"-- {typeof(ValueTypeWithInstanceMethod).Name}");
     }
 
-    public static int Main()
+    private static void TestCastsOptimizations()
+    {
+        string otherTypeName = $"{typeof(EquivalentValueType).FullName},{typeof(EmptyType).Assembly.GetName().Name}";
+        Type otherEquivalentValueType = Type.GetType(otherTypeName);
+
+        // ensure that an instance of otherEquivalentValueType can cast to EquivalentValueType
+        object otherEquivalentValueTypeInstance = Activator.CreateInstance(otherEquivalentValueType);
+        Assert.True(otherEquivalentValueTypeInstance is EquivalentValueType);
+        EquivalentValueType inst = (EquivalentValueType)otherEquivalentValueTypeInstance;
+    }
+
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -286,6 +304,7 @@ public class Simple
             TestGenericInterfaceEquivalence();
             TestTypeEquivalenceWithTypePunning();
             TestLoadingValueTypesWithMethod();
+            TestCastsOptimizations();
         }
         catch (Exception e)
         {

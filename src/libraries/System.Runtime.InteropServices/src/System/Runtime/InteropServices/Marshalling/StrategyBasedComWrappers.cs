@@ -8,17 +8,41 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    /// <summary>
+    /// A <see cref="ComWrappers"/>-based type that uses customizable strategy objects to implement COM object wrappers and managed object wrappers exposed to COM.
+    /// </summary>
     [CLSCompliant(false)]
     public class StrategyBasedComWrappers : ComWrappers
     {
         internal static StrategyBasedComWrappers DefaultMarshallingInstance { get; } = new();
 
+        /// <summary>
+        /// The default strategy to discover interface details about COM interfaces.
+        /// </summary>
+        /// <remarks>
+        /// This strategy can discover interfaces and classes that use source-generated COM interop that use the <see cref="GeneratedComInterfaceAttribute"/> and <see cref="GeneratedComClassAttribute"/> attributes.
+        /// This strategy looks for an <see cref="IUnknownDerivedAttribute{T, TImpl}"/> or <see cref="ComExposedClassAttribute{T}"/> attribute on the type of the provided object to discover COM type information.
+        /// </remarks>
         public static IIUnknownInterfaceDetailsStrategy DefaultIUnknownInterfaceDetailsStrategy { get; } = Marshalling.DefaultIUnknownInterfaceDetailsStrategy.Instance;
 
+        /// <summary>
+        /// The default strategy to use for calling <c>IUnknown</c> methods.
+        /// </summary>
+        /// <remarks>
+        /// This strategy assumes that all provided COM objects are free threaded and that calls to <c>IUnknown</c> methods can be made from any thread.
+        /// </remarks>
         public static IIUnknownStrategy DefaultIUnknownStrategy { get; } = FreeThreadedStrategy.Instance;
 
+        /// <summary>
+        /// The default strategy to use for caching COM objects.
+        /// </summary>
+        /// <returns>The default strategy caches the interface pointers per interface no matter what thread they were initially retrieved on.</returns>
         protected static IIUnknownCacheStrategy CreateDefaultCacheStrategy() => new DefaultCaching();
 
+        /// <summary>
+        /// Get or create the interface details strategy for a new COM object wrapper.
+        /// </summary>
+        /// <returns>The interface details strategy to use for the new COM object.</returns>
         protected virtual IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy()
         {
             if (OperatingSystem.IsWindows() && RuntimeFeature.IsDynamicCodeSupported && ComObject.BuiltInComSupported && ComObject.ComImportInteropEnabled)
@@ -37,13 +61,22 @@ namespace System.Runtime.InteropServices.Marshalling
             }
         }
 
+        /// <summary>
+        /// Get or create the IUnknown strategy for a new COM object wrapper.
+        /// </summary>
+        /// <returns>The IUnknown strategy to use for the new COM object.</returns>
         protected virtual IIUnknownStrategy GetOrCreateIUnknownStrategy() => DefaultIUnknownStrategy;
 
+        /// <summary>
+        /// Create the caching strategy for a new COM object wrapper.
+        /// </summary>
+        /// <returns>The caching strategy to use for the new COM object.</returns>
         protected virtual IIUnknownCacheStrategy CreateCacheStrategy() => CreateDefaultCacheStrategy();
 
+        /// <inheritdoc cref="ComWrappers.ComputeVtables" />
         protected sealed override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
         {
-            if (obj.GetType().GetCustomAttribute(typeof(ComExposedClassAttribute<>)) is IComExposedDetails details)
+            if (GetOrCreateInterfaceDetailsStrategy().GetComExposedTypeDetails(obj.GetType().TypeHandle) is { } details)
             {
                 return details.GetComInterfaceEntries(out count);
             }
@@ -51,6 +84,7 @@ namespace System.Runtime.InteropServices.Marshalling
             return null;
         }
 
+        /// <inheritdoc cref="ComWrappers.CreateObject" />
         protected sealed override unsafe object CreateObject(nint externalComObject, CreateObjectFlags flags)
         {
             if (flags.HasFlag(CreateObjectFlags.TrackerObject)
@@ -67,6 +101,7 @@ namespace System.Runtime.InteropServices.Marshalling
             return rcw;
         }
 
+        /// <inheritdoc cref="ComWrappers.ReleaseObjects" />
         protected sealed override void ReleaseObjects(IEnumerable objects)
         {
             throw new NotImplementedException();

@@ -35,7 +35,6 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
@@ -91,9 +90,9 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
 
     // If a result array is passed then it should be an array type with pointer-sized components that are not
     // GC-references.
-    ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
-    ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultArray || pResultArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
+    ASSERT(!pResultArray || pResultArray->GetMethodTable()->IsArray());
+    ASSERT(!pResultArray || !pResultArray->GetMethodTable()->HasReferenceFields());
+    ASSERT(!pResultArray || pResultArray->GetMethodTable()->RawGetComponentSize() == sizeof(void*));
 
     uint32_t cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
     HANDLE * pResultElements = pResultArray ? (HANDLE*)(pResultArray + 1) : NULL;
@@ -341,18 +340,6 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
     return pCodeOrg;
 }
 
-extern CrstStatic g_ThunkPoolLock;
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
-{
-    g_ThunkPoolLock.Enter();
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
-{
-    g_ThunkPoolLock.Leave();
-}
-
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()
 {
     return PalGetTickCount64();
@@ -369,12 +356,17 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutp
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }
 
-COOP_PINVOKE_HELPER(void*, RhpRegisterFrozenSegment, (void* pSegmentStart, size_t length))
+EXTERN_C NATIVEAOT_API void* __cdecl RhRegisterFrozenSegment(void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
 {
-    return RedhawkGCInterface::RegisterFrozenSegment(pSegmentStart, length);
+    return RedhawkGCInterface::RegisterFrozenSegment(pSection, allocSize, commitSize, reservedSize);
 }
 
-COOP_PINVOKE_HELPER(void, RhpUnregisterFrozenSegment, (void* pSegmentHandle))
+EXTERN_C NATIVEAOT_API void __cdecl RhUpdateFrozenSegment(void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)
+{
+    RedhawkGCInterface::UpdateFrozenSegment((GcSegmentHandle)pSegmentHandle, allocated, committed);
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhUnregisterFrozenSegment(void* pSegmentHandle)
 {
     RedhawkGCInterface::UnregisterFrozenSegment((GcSegmentHandle)pSegmentHandle);
 }

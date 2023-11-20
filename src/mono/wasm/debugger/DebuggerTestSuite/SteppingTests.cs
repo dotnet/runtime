@@ -1045,6 +1045,8 @@ namespace DebuggerTests
         [InlineData(false)]
         public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServer(bool justMyCode)
         {
+            //The test behavior is expecting to start with JustMyCode disabled
+            await SetJustMyCode(false);
             string cachePath = _env.CreateTempDirectory("symbols-cache");
             _testOutput.WriteLine($"** Using cache path: {cachePath}");
             var searchPaths = new JArray
@@ -1220,7 +1222,6 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task SkipWasmFunctionsAccordinglyJustMyCode(bool justMyCode)
         {
             await SetJustMyCode(justMyCode);
@@ -1235,7 +1236,7 @@ namespace DebuggerTests
                 Assert.False(pause_location["callFrames"].Value<JArray>().Any(f => f?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true));
             else
                 Assert.True(pause_location["callFrames"].Value<JArray>().Any(f => f?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true));
-            if (justMyCode)
+            if (justMyCode && ReleaseRuntime)
                 await StepAndCheck(StepKind.Out, "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "Math.IntAdd", times: 4);
         }
     }

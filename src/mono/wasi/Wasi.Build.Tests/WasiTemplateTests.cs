@@ -25,7 +25,7 @@ public class WasiTemplateTests : BuildTestBase
     [InlineData("Release")]
     public void ConsoleBuildThenPublish(string config)
     {
-        string id = $"{config}_{Path.GetRandomFileName()}";
+        string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simpleMainWithArgs);
@@ -88,7 +88,7 @@ public class WasiTemplateTests : BuildTestBase
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
     public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking, bool invariantTimezone)
     {
-        string id = $"{config}_{Path.GetRandomFileName()}";
+        string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simpleMainWithArgs);
@@ -136,6 +136,47 @@ public class WasiTemplateTests : BuildTestBase
             Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", res.Output);
         }
 
+    }
+
+    [Theory]
+    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
+    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
+    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
+    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
+    public void ConsoleBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+    {
+        string extraPropertiesForDBP = "";
+        if (appendRID)
+            extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
+        if (useArtifacts)
+            extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
+
+        string id = $"{config}_{GetRandomId()}";
+        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectName = Path.GetFileNameWithoutExtension(projectFile);
+
+        if (!string.IsNullOrEmpty(extraPropertiesForDBP))
+            AddItemsPropertiesToProject(Path.Combine(Path.GetDirectoryName(projectFile)!, "Directory.Build.props"),
+                                        extraPropertiesForDBP);
+
+        var buildArgs = new BuildArgs(projectName, config, false, id, null);
+        buildArgs = ExpandBuildArgs(buildArgs);
+
+        BuildProject(buildArgs,
+                    id: id,
+                    new BuildProjectOptions(
+                        DotnetWasmFromRuntimePack: true,
+                        CreateProject: false,
+                        Publish: false,
+                        TargetFramework: BuildTestBase.DefaultTargetFramework,
+                        UseCache: false));
+
+        CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir!)
+                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                    .EnsureSuccessful();
+
+        Assert.Contains("Hello, Wasi Console!", res.Output);
     }
 
     private static readonly string s_simpleMainWithArgs = """

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -1539,6 +1540,17 @@ namespace System.ComponentModel
 
                 if (type.IsCOMObject)
                 {
+                    type = ComObjectType;
+                }
+                else if (OperatingSystem.IsWindows()
+                    && ComWrappers.TryGetComInstance(instance, out nint unknown))
+                {
+                    // ComObjectType uses the Windows Forms provided ComNativeDescriptor. It currently has hard Win32
+                    // API dependencies. Even though ComWrappers work with other platforms, restricting to Windows until
+                    // such time that the ComNativeDescriptor can handle basic COM types on other platforms.
+                    //
+                    // Tracked with https://github.com/dotnet/winforms/issues/9291
+                    Marshal.Release(unknown);
                     type = ComObjectType;
                 }
 

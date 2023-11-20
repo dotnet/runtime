@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI } from ".";
-import type { BootJsonData } from "./blazor";
+import type { AssetBehaviors, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI } from ".";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -69,6 +68,8 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 
 // when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
+    linkerEnabled?: boolean,
+    assets?: AssetEntryInternal[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
@@ -92,11 +93,14 @@ export type RunArguments = {
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    // this is almost the same as pendingDownload, but it could have multiple values in time, because of re-try download logic
+    // this could have multiple values in time, because of re-try download logic
     pendingDownloadInternal?: LoadingResource
+    noCache?: boolean
+    useCredentials?: boolean
 }
 
 export type LoaderHelpers = {
+    gitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 
@@ -105,6 +109,7 @@ export type LoaderHelpers = {
     assertAfterExit: boolean;
 
     exitCode: number | undefined;
+    exitReason: any;
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
@@ -122,8 +127,9 @@ export type LoaderHelpers = {
 
     afterConfigLoaded: PromiseAndController<MonoConfig>,
     allDownloadsQueued: PromiseAndController<void>,
-    wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
+    wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
+    memorySnapshotSkippedOrDone: PromiseAndController<void>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -133,16 +139,18 @@ export type LoaderHelpers = {
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
     assertIsControllablePromise: <T>(promise: Promise<T>) => asserts promise is ControllablePromise<T>,
     mono_download_assets: () => Promise<void>,
-    resolve_asset_path: (behavior: AssetBehaviours) => AssetEntryInternal,
+    resolve_single_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
-    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
     out(message: string): void;
     err(message: string): void;
-    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
-    hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
+    hasDebuggingEnabled(config: MonoConfig): boolean,
+    retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    logDownloadStatsToConsole: () => void;
+    purgeUnusedCacheEntriesAsync: () => Promise<void>;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
@@ -156,6 +164,8 @@ export type LoaderHelpers = {
     simd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
+    gitHash: string,
+    moduleGitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 
@@ -168,13 +178,13 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
-    loadedMemorySnapshot: boolean,
+    loadedMemorySnapshotSize?: number,
     enablePerfMeasure: boolean;
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
     mono_wasm_exit?: (code: number) => void,
-    mono_wasm_abort?: () => void,
+    abort: (reason: any) => void,
     javaScriptExports: JavaScriptExports,
     storeMemorySnapshotPending: boolean,
     memorySnapshotCacheKey: string,
@@ -184,11 +194,8 @@ export type RuntimeHelpers = {
     jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 
-    runtimeModuleUrl: string
-    nativeModuleUrl: string
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
-    memorySnapshotSkippedOrDone: PromiseAndController<void>,
     afterInstantiateWasm: PromiseAndController<void>,
     beforePreInit: PromiseAndController<void>,
     afterPreInit: PromiseAndController<void>,
@@ -196,6 +203,9 @@ export type RuntimeHelpers = {
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
+
+    featureWasmEh: boolean,
+    featureWasmSimd: boolean,
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,
@@ -274,8 +284,10 @@ export type EmscriptenInternals = {
     linkerWasmEnableEH: boolean,
     linkerEnableAotProfiler: boolean,
     linkerEnableBrowserProfiler: boolean,
+    linkerRunAOTCompilation: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
+    gitHash: string,
 };
 export type GlobalObjects = {
     mono: any,
@@ -292,7 +304,7 @@ export type EmscriptenReplacements = {
     updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
-    noExitRuntime?: boolean;
+    ENVIRONMENT_IS_WORKER: boolean;
 }
 export interface ExitStatusError {
     new(status: number): any;
@@ -326,11 +338,8 @@ export interface JavaScriptExports {
     // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
     release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
 
-    // the marshaled signature is: GCHandle CreateTaskCallback()
-    create_task_callback(): GCHandle;
-
     // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-    complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
+    complete_task(holder_gcv_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
 
     // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
     call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
@@ -388,6 +397,8 @@ export enum MarshalerType {
 
     // only on runtime
     JSException,
+    TaskResolved,
+    TaskRejected,
 }
 
 export interface JSMarshalerArguments extends NativePointer {
@@ -443,10 +454,11 @@ export declare interface EmscriptenModuleInternal {
     locateFile?: (path: string, prefix?: string) => string;
     mainScriptUrlOrBlob?: string;
     ENVIRONMENT_IS_PTHREAD?: boolean;
+    FS: any;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
-    asm: { memory?: WebAssembly.Memory };
-    wasmMemory?: WebAssembly.Memory;
+    asm: any;
+    getMemory(): WebAssembly.Memory;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
@@ -483,6 +495,7 @@ export type setGlobalObjectsType = (globalObjects: GlobalObjects) => void;
 export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI;
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
+export type configureRuntimeStartupType = () => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
 
@@ -490,6 +503,7 @@ export type RuntimeModuleExportsInternal = {
     setRuntimeGlobals: setGlobalObjectsType,
     initializeExports: initializeExportsType,
     initializeReplacements: initializeReplacementsType,
+    configureRuntimeStartup: configureRuntimeStartupType,
     configureEmscriptenStartup: configureEmscriptenStartupType,
     configureWorkerStartup: configureWorkerStartupType,
     passEmscriptenInternals: passEmscriptenInternalsType,
@@ -497,4 +511,8 @@ export type RuntimeModuleExportsInternal = {
 
 export type NativeModuleExportsInternal = {
     default: (unificator: Function) => EmscriptenModuleInternal
+}
+
+export type WeakRefInternal<T extends object> = WeakRef<T> & {
+    dispose?: () => void
 }

@@ -272,10 +272,9 @@ namespace System.PrivateUri.Tests
             Assert.False(parser.IsBaseOf(u, http), "http-4a");
             Assert.True(parser.IsBaseOf(http, u), "http-4b");
 
-            // docs says the UserInfo isn't evaluated, but...
             u = new Uri("http://username:password@www.mono-project.com/Main_Page");
-            Assert.False(parser.IsBaseOf(u, http), "http-5a");
-            Assert.False(parser.IsBaseOf(http, u), "http-5b");
+            Assert.True(parser.IsBaseOf(u, http), "http-5a");
+            Assert.True(parser.IsBaseOf(http, u), "http-5b");
 
             // scheme case sensitive ? no
             u = new Uri("HTTP://www.mono-project.com/Main_Page");

@@ -461,12 +461,6 @@ struct Agnostic_FindCallSiteSig
     DWORDLONG context;
 };
 
-struct Agnostic_GetNewHelper
-{
-    DWORDLONG hClass;
-    DWORDLONG callerHandle;
-};
-
 struct Agnostic_GetCastingHelper
 {
     DWORDLONG hClass;
@@ -589,6 +583,12 @@ struct Agnostic_GetArgType_Value
     DWORDLONG vcTypeRet;
     DWORD     result;
     DWORD     exceptionCode;
+};
+
+struct Agnostic_GetExactClassesResult
+{
+    int numClasses;
+    DWORD classes;
 };
 
 // Agnostic_ConfigIntInfo combines as a single key the name

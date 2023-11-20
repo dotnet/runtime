@@ -16,14 +16,13 @@ namespace Test
         public static double[] Static2(float param2) { return (new double[7]); }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Method2(
                 __arglist(
                     (int)Static2(Static1(ref Static1(ref BB.m_afField3[2])[2])[2])[2]
                 )
             );
-            return 100;
         }
     }
 }

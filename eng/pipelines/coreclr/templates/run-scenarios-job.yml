@@ -65,7 +65,7 @@ jobs:
       - HelixPreCommandLinux: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0;pip3 install --user azure.storage.queue==12.0.0;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsLinux: 'export PYTHONPATH=$ORIGPYPATH'
     - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), eq(parameters.osSubGroup, '_musl')) }}:
-      - HelixPreCommandMusl: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0;pip3 install --user azure.storage.queue==12.0.0;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - HelixPreCommandMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0;pip3 install --user azure.storage.queue==12.0.0;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsMusl: 'export PYTHONPATH=$ORIGPYPATH'
     - ${{ if eq(parameters.osGroup, 'osx') }}:
       - HelixPreCommandOSX: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0;pip3 install azure.storage.queue==12.0.0;pip3 install urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
@@ -153,28 +153,6 @@ jobs:
     - script: cp -r $(PerformanceDirectory)/scripts $(WorkItemDirectory)/scripts/ && cp -r $(PerformanceDirectory)/src/scenarios/shared $(WorkItemDirectory)/shared/ && cp -r $(PerformanceDirectory)/src/scenarios/staticdeps/ $(WorkItemDirectory)/staticdeps/
       displayName: Copy scenario support files (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    # Set DOTNET_ROOT
-    - script: |
-        echo "##vso[task.setvariable variable=DOTNET_ROOT;]$(PayloadDirectory)/dotnet"
-        echo "Set DOTNET_ROOT to $(PayloadDirectory)/dotnet"
-      displayName: Explicitly set DOTNET_ROOT (Non-Windows)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    - powershell: |
-        Write-Host "##vso[task.setvariable variable=DOTNET_ROOT;]$(PayloadDirectory)\dotnet"
-        Write-Host "Set DOTNET_ROOT to $(PayloadDirectory)\dotnet"
-      displayName: Explicitly set DOTNET_ROOT (Windows)
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    # Set PATH
-    - script: |
-        echo "##vso[task.setvariable variable=PATH;]$(DOTNET_ROOT):$(PATH)"
-        echo "Set PATH to $(DOTNET_ROOT):$(PATH)"
-      displayName: Explicitly set PATH (Non-Windows)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    - powershell: |
-        Write-Host "##vso[task.setvariable variable=PATH;]$(DOTNET_ROOT);$(PATH)"
-        Write-Host "Set PATH to $(DOTNET_ROOT);$(PATH)"
-      displayName: Explicitly set PATH (Windows)
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
     # build Startup
     - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\Startup -f net7.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
       displayName: Build Startup tool (Windows)
@@ -238,6 +216,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)_$(iOSStripSymbols)'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)_$(iOSStripSymbols)_$(hybridGlobalization)'
       continueOnError: true
       condition: always()

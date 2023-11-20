@@ -1,0 +1,68 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="AppDomainGetThreadGenericPrincipalTest.cs" />
+    <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" >
+      <EnabledProperties>DebuggerSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" >
+      <EnabledProperties>DebuggerSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
+    <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
+    <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
+    <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
+      <DisabledProperties>InvariantGlobalization</DisabledProperties>
+      <EnabledProperties>HybridGlobalization</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
+      <DisabledProperties>InvariantGlobalization</DisabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <DisabledProperties>HybridGlobalization</DisabledProperties>
+      <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
+      <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
+      causing the framework to not be able to get source line info any longer. This
+      specific test depends on being able to do that, so we use DebugType as Embedded
+      as a workaround while the linker bug is fixed. This bug has been logged in the
+      linker repo here: https://github.com/mono/linker/issues/1285 -->
+      <AdditionalArgs>/p:DebugType=Embedded</AdditionalArgs>
+      <!-- Justification: The implementation of StackFrame for Mono doesn't use
+       StackFrameHelper to get line information which is what is being annotated
+       and tested with this test. Issue https://github.com/dotnet/runtime/issues/48849 is
+       tracking investigation on why this test is failing if not skipped. -->
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
+      <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the trimmer
+      as this test will ensure exceptions are using Resource keys -->
+      <EnabledProperties>UseSystemResourceKeys</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
+      <DisabledProperties>BuiltInComInteropSupport</DisabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
+      <DisabledProperties>NullabilityInfoContextSupport</DisabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
+      <EnabledProperties>NullabilityInfoContextSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
+      <DisabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
+      <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

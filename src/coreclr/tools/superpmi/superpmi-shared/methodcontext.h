@@ -378,7 +378,7 @@ public:
                             int                   maxExactClasses,
                             CORINFO_CLASS_HANDLE* exactClsRet,
                             int                   result);
-    void dmpGetExactClasses(DLD key, DLD value);
+    void dmpGetExactClasses(DLD key, const Agnostic_GetExactClassesResult& value);
     int repGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
                            int                   maxExactClasses,
                            CORINFO_CLASS_HANDLE* exactClsRet);
@@ -406,12 +406,16 @@ public:
     void dmpGetMethodInfo(DLDL key, const Agnostic_GetMethodInfo& value);
     bool repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, DWORD* exceptionCode);
 
-    void recGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                         CORINFO_METHOD_HANDLE   callerHandle,
-                         bool* pHasSideEffects,
-                         CorInfoHelpFunc         result);
-    void dmpGetNewHelper(const Agnostic_GetNewHelper& key, DD value);
-    CorInfoHelpFunc repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects);
+    void recHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2, bool result);
+    void dmpHaveSameMethodDefinition(const DLDL& key, DWORD value);
+    bool repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2);
+
+    void recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
+                         bool                  hasSideEffects,
+                         CorInfoHelpFunc       result,
+                         DWORD                 exceptionCode);
+    void dmpGetNewHelper(DWORDLONG key, const DDD& value);
+    CorInfoHelpFunc repGetNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects, DWORD* exceptionCode);
 
     void recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                bool                          fEmbedParent,
@@ -1138,6 +1142,7 @@ enum mcPackets
     Packet_GetRISCV64PassStructInRegisterFlags = 210,
     Packet_GetObjectContent = 211,
     Packet_GetTypeLayout = 212,
+    Packet_HaveSameMethodDefinition = 213,
 };
 
 void SetDebugDumpVariables();

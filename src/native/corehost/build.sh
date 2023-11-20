@@ -32,26 +32,6 @@ __commit_hash=
 handle_arguments() {
 
     case "$1" in
-        hostver|-hostver)
-            __host_ver="$2"
-            __ShiftArgs=1
-            ;;
-
-        apphostver|-apphostver)
-            __apphost_ver="$2"
-            __ShiftArgs=1
-            ;;
-
-        fxrver|-fxrver)
-            __fxr_ver="$2"
-            __ShiftArgs=1
-            ;;
-
-        policyver|-policyver)
-            __policy_ver="$2"
-            __ShiftArgs=1
-            ;;
-
         commithash|-commithash)
             __commit_hash="$2"
             __ShiftArgs=1
@@ -79,8 +59,7 @@ __IntermediatesDir="$__RootBinDir/obj/$__OutputRid.$__BuildType"
 
 export __BinDir __IntermediatesDir __RuntimeFlavor
 
-__CMakeArgs="-DCLI_CMAKE_HOST_VER=\"$__host_ver\" -DCLI_CMAKE_COMMON_HOST_VER=\"$__apphost_ver\" -DCLI_CMAKE_HOST_FXR_VER=\"$__fxr_ver\" $__CMakeArgs"
-__CMakeArgs="-DCLI_CMAKE_HOST_POLICY_VER=\"$__policy_ver\" -DCLI_CMAKE_PKG_RID=\"$__OutputRid\" -DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
+__CMakeArgs="-DCLI_CMAKE_PKG_RID=\"$__OutputRid\" -DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
 __CMakeArgs="-DRUNTIME_FLAVOR=\"$__RuntimeFlavor\" $__CMakeArgs"
 __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
 

@@ -1,25 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_log_warn } from "./logging";
-import { MonoConfig } from "../types";
+import { mono_log_debug, mono_log_warn } from "./logging";
 import { appendUniqueQuery } from "./assets";
 import { loaderHelpers } from "./globals";
 import { mono_exit } from "./exit";
+import { ResourceList } from "../types";
 
-export type LibraryInitializerTypes =
-    "onRuntimeConfigLoaded"
-    | "onRuntimeReady";
-
-async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitializerTypes): Promise<void> {
-    if (!loaderHelpers.libraryInitializers) {
-        loaderHelpers.libraryInitializers = [];
-    }
-
-    const libraryInitializers = type == "onRuntimeConfigLoaded"
-        ? config.resources?.libraryStartupModules?.onRuntimeConfigLoaded
-        : config.resources?.libraryStartupModules?.onRuntimeReady;
-
+export async function importLibraryInitializers(libraryInitializers: ResourceList | undefined): Promise<void> {
     if (!libraryInitializers) {
         return;
     }
@@ -30,7 +18,8 @@ async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitial
     async function importInitializer(path: string): Promise<void> {
         try {
             const adjustedPath = appendUniqueQuery(loaderHelpers.locateFile(path), "js-module-library-initializer");
-            const initializer = await import(/* webpackIgnore: true */ adjustedPath);
+            mono_log_debug(`Attempting to import '${adjustedPath}' for ${path}`);
+            const initializer = await import(/*! webpackIgnore: true */ adjustedPath);
 
             loaderHelpers.libraryInitializers!.push({ scriptName: path, exports: initializer });
         } catch (error) {
@@ -39,11 +28,7 @@ async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitial
     }
 }
 
-export async function invokeLibraryInitializers(functionName: string, args: any[], type?: LibraryInitializerTypes) {
-    if (type) {
-        await fetchLibraryInitializers(loaderHelpers.config, type);
-    }
-
+export async function invokeLibraryInitializers(functionName: string, args: any[]) {
     if (!loaderHelpers.libraryInitializers) {
         return;
     }

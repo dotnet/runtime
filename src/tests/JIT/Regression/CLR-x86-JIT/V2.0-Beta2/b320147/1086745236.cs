@@ -32,7 +32,7 @@ public struct AA
 public class App
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -46,6 +46,5 @@ public class App
 
         // JIT Stress test... if jitted it passes
         Console.WriteLine("Passed.");
-        return 100;
     }
 }

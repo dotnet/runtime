@@ -820,7 +820,7 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<int> list = new[] { 1, 2, 3 }.ToImmutableList();
 
             ref readonly int safeRef = ref list.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, list.ItemRef(1));
 

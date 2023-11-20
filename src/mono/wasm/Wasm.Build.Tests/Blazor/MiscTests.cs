@@ -24,7 +24,7 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData("Release", false)]
     public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
     {
-        string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{Path.GetRandomFileName()}";
+        string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{GetRandomId()}";
         string projectFile = CreateProjectWithNativeReference(id);
         string extraProperties = config == "Debug"
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
@@ -57,7 +57,7 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData("Release")]
     public void DefaultTemplate_AOT_InProjectFile(string config)
     {
-        string id = $"blz_aot_prj_file_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_aot_prj_file_{config}_{GetRandomId()}";
         string projectFile = CreateBlazorWasmTemplateProject(id);
 
         string extraProperties = config == "Debug"

@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic.Utils
 {
@@ -20,6 +21,7 @@ namespace System.Dynamic.Utils
 
         public static Type GetNonNullableType(this Type type) => IsNullableType(type) ? type.GetGenericArguments()[0] : type;
 
+        [RequiresDynamicCode("Creating nullable types requires dynamic code.")]
         public static Type GetNullableType(this Type type)
         {
             Debug.Assert(type != null, "type cannot be null");
@@ -29,6 +31,66 @@ namespace System.Dynamic.Utils
             }
 
             return type;
+        }
+
+        /// <summary>
+        /// This is an alternative to <see cref="GetNullableType" /> that will throw
+        /// if dynamic code is required. Some common primitive types are special-cased.
+        /// </summary>
+        public static Type LiftPrimitiveOrThrow(this Type type)
+        {
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+#pragma warning disable IL3050
+                // Analyzer doesn't yet understand feature switches
+                return GetNullableType(type);
+#pragma warning restore IL3050
+            }
+            if (!type.IsValueType || IsNullableType(type))
+            {
+                return type;
+            }
+            switch (type.GetTypeCode())
+            {
+                case TypeCode.Boolean:
+                    return typeof(bool?);
+                case TypeCode.Int32:
+                    return typeof(int?);
+                case TypeCode.Int64:
+                    return typeof(long?);
+                case TypeCode.Single:
+                    return typeof(float?);
+                case TypeCode.Double:
+                    return typeof(double?);
+                case TypeCode.UInt32:
+                    return typeof(uint?);
+                case TypeCode.UInt64:
+                    return typeof(ulong?);
+                case TypeCode.Byte:
+                    return typeof(byte?);
+                case TypeCode.SByte:
+                    return typeof(sbyte?);
+                case TypeCode.Int16:
+                    return typeof(short?);
+                case TypeCode.UInt16:
+                    return typeof(ushort?);
+                case TypeCode.Char:
+                    return typeof(char?);
+                case TypeCode.Decimal:
+                    return typeof(decimal?);
+                case TypeCode.DateTime:
+                    return typeof(DateTime?);
+                default:
+                    if (type == typeof(DateTimeOffset))
+                    {
+                        return typeof(DateTimeOffset?);
+                    }
+                    else if (type == typeof(TimeSpan))
+                    {
+                        return typeof(TimeSpan?);
+                    }
+                    throw new NotSupportedException(Strings.LiftingInExpressionRequiresDynamicCode(type));
+            }
         }
 
         public static ConstructorInfo GetNullableConstructor(Type nullableType)

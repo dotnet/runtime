@@ -29,7 +29,7 @@ namespace System.Threading.Tasks
     /// and may be used from multiple threads concurrently.
     /// </para>
     /// </remarks>
-    [DebuggerDisplay("Id={Id}")]
+    [DebuggerDisplay("Id = {Id}")]
     [DebuggerTypeProxy(typeof(SystemThreadingTasks_TaskSchedulerDebugView))]
     public abstract class TaskScheduler
     {

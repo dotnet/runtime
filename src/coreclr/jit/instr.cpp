@@ -65,6 +65,19 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
         #include "instrs.h"
 
+        #define INST1(id, nm, info, fmt, e1                                                     ) nm,
+        #define INST2(id, nm, info, fmt, e1, e2                                                 ) nm,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) nm,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) nm,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) nm,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) nm,
+        #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) nm,
+        #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) nm,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) nm,
+        #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) nm,
+        #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) nm,
+        #include "instrsarm64sve.h"
+
 #elif defined(TARGET_LOONGARCH64)
         #define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"

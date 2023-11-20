@@ -241,3 +241,67 @@
         ret
     }
 }
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.MaybeBlittable`1<T>
+	extends [System.Runtime]System.ValueType
+{
+	// Fields
+	.field private !T Value
+}
+
+.class public auto ansi sealed beforefieldinit InvalidCSharp.NotBlittable`1<T>
+	extends [System.Runtime]System.Object
+{
+	// Fields
+	.field private !T Value
+    // Methods
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
+    {
+        .maxstack 8
+        IL_0000: ldarg.0
+        IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+        IL_0006: ret
+    }
+}
+
+.class public auto ansi beforefieldinit InvalidCSharp.InvalidGenericUnmanagedCallersOnlyParameters
+    extends [System.Runtime]System.Object
+{
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
+    {
+        .maxstack 8
+        ldarg.0
+        call instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public hidebysig static
+        int32 GenericClass (
+            class InvalidCSharp.NotBlittable`1<int32> param
+        ) cil managed
+    {
+        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .maxstack 8
+
+        IL_0000: ldc.i4.0
+        IL_0001: ret
+    }
+
+    .method public hidebysig static
+        int32 GenericStructWithObjectField (
+            valuetype InvalidCSharp.MaybeBlittable`1<object> param
+        ) cil managed
+    {
+        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .maxstack 8
+
+        IL_0000: ldc.i4.0
+        IL_0001: ret
+    }
+}

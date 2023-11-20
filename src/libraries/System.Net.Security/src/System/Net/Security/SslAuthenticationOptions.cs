@@ -49,11 +49,7 @@ namespace System.Net.Security
             IsServer = false;
             RemoteCertRequired = true;
             CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
-
-            // RFC 6066 forbids IP literals
-            TargetHost = TargetHostNameHelper.IsValidAddress(sslClientAuthenticationOptions.TargetHost)
-                ? string.Empty
-                : sslClientAuthenticationOptions.TargetHost ?? string.Empty;
+            TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;

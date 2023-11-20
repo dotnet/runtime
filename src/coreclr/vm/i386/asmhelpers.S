@@ -214,6 +214,8 @@ LOCAL_LABEL(donestack):
 
     CHECK_STACK_ALIGNMENT
     call    [ebx + CallDescrData__pTarget]
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
+
 #ifdef _DEBUG
     nop     // This is a tag that we use in an assert.  Fcalls expect to
             // be called from Jitted code or from certain blessed call sites like
@@ -252,6 +254,10 @@ LOCAL_LABEL(ReturnsFloat):
 LOCAL_LABEL(ReturnsDouble):
     fstp    QWORD PTR [ebx + CallDescrData__returnValue]  // Spill the Double return value
     jmp     LOCAL_LABEL(Epilog)
+
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+    .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
+
 NESTED_END CallDescrWorkerInternal, _TEXT
 
 #ifdef _DEBUG

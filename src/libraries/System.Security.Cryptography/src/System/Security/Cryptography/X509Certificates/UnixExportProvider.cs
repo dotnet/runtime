@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[] attrBytes = new byte[6];
                 attrBytes[0] = (byte)UniversalTagNumber.OctetString;
                 attrBytes[1] = sizeof(int);
-                MemoryMarshal.Write(attrBytes.AsSpan(2), ref keyIdx);
+                MemoryMarshal.Write(attrBytes.AsSpan(2), in keyIdx);
 
                 AttributeAsn attribute = new AttributeAsn
                 {

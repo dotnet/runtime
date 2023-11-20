@@ -52,7 +52,11 @@ namespace NativeExports.ComInterfaceGenerator
             private Point _point;
 
             public Point GetPoint() => _point;
-            public void SetPoint(Point point) => _point = point;
+            public SharedTypes.ComInterfaces.HResult SetPoint(Point point)
+            {
+                _point = point;
+                return new SharedTypes.ComInterfaces.HResult { Value = 0 };
+            }
 
             public static class ABI
             {

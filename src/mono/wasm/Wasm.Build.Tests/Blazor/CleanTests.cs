@@ -25,7 +25,7 @@ public class CleanTests : BlazorWasmTestBase
     [InlineData("Release")]
     public void Blazor_BuildThenClean_NativeRelinking(string config)
     {
-        string id = Path.GetRandomFileName();
+        string id = GetRandomId();
 
         InitBlazorWasmProjectDir(id);
         string projectFile = CreateBlazorWasmTemplateProject(id);
@@ -63,7 +63,7 @@ public class CleanTests : BlazorWasmTestBase
 
     private void Blazor_BuildNativeNonNative_ThenCleanTest(string config, bool firstBuildNative)
     {
-        string id = Path.GetRandomFileName();
+        string id = GetRandomId();
 
         InitBlazorWasmProjectDir(id);
         string projectFile = CreateBlazorWasmTemplateProject(id);

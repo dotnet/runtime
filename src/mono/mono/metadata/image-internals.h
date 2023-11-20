@@ -10,14 +10,14 @@
 #include <mono/metadata/loader-internals.h>
 
 typedef struct {
-	gboolean dont_care_about_cli : 1;
-	gboolean dont_care_about_pecoff : 1;
+	guint dont_care_about_cli : 1;
+	guint dont_care_about_pecoff : 1;
 } MonoImageLoadOptions;
 
 typedef struct {
 	MonoImageLoadOptions load_options;
-	int not_executable : 1;
-	int metadata_only : 1;
+	guint not_executable : 1;
+	guint metadata_only : 1;
 } MonoImageOpenOptions;
 
 MonoImage*

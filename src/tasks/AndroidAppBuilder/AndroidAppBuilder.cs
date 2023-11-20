@@ -66,7 +66,7 @@ public class AndroidAppBuilderTask : Task
     /// <summary>
     /// List of enabled runtime components
     /// </summary>
-    public string? RuntimeComponents { get; set; } = ""!;
+    public string[] RuntimeComponents { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// Diagnostic ports configuration string

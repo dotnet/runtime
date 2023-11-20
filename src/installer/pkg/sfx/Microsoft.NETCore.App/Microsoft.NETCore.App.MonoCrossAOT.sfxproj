@@ -6,7 +6,6 @@
     <PlatformPackageType>RuntimePack</PlatformPackageType>
     <SharedFrameworkName>Microsoft.NETCore.App.MonoCrossAOT</SharedFrameworkName>
     <OverridePackageId>Microsoft.NETCore.App.Runtime.AOT.$(RuntimeIdentifier).Cross.$(TargetCrossRid)</OverridePackageId>
-    <ArchiveName>dotnet-monocrossaot</ArchiveName>
     <SharedFrameworkHostFileNameOverride>monocrossaot</SharedFrameworkHostFileNameOverride>
     <RuntimeIdentifiers>linux-x64;linux-arm64;osx-x64;osx-arm64;win-x64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>

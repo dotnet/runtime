@@ -11,7 +11,8 @@ using Xunit;
 
 public class Tester
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

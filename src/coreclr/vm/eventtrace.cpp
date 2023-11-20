@@ -3454,22 +3454,22 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
             }
 
             ULONG ulMethodToken=0;
-            auto pModule = method->GetModule_NoLogging();
+            auto pModule = method->GetModule();
             bool bIsDynamicMethod = method->IsDynamicMethod();
             BOOL bIsGenericMethod = FALSE;
-            if(method->GetMethodTable_NoLogging())
-                bIsGenericMethod = method->HasClassOrMethodInstantiation_NoLogging();
+            if(method->GetMethodTable())
+                bIsGenericMethod = method->HasClassOrMethodInstantiation();
 
             // Use MethodDesc if Dynamic or Generic methods
             if( bIsDynamicMethod || bIsGenericMethod)
             {
                 if(bIsGenericMethod)
-                    ulMethodToken = (ULONG)method->GetMemberDef_NoLogging();
+                    ulMethodToken = (ULONG)method->GetMemberDef();
                 if(bIsDynamicMethod) // if its a generic and a dynamic method, we would set the methodtoken to 0
                     ulMethodToken = (ULONG)0;
             }
             else
-                ulMethodToken = (ULONG)method->GetMemberDef_NoLogging();
+                ulMethodToken = (ULONG)method->GetMemberDef();
 
             SString tNamespace, tMethodName, tMethodSignature;
             method->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
@@ -3555,7 +3555,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 /*************************************************/
 /* This is called by the runtime when method jitting started */
 /*************************************************/
-VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
+VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
 {
     CONTRACTL {
         NOTHROW;
@@ -3570,7 +3570,7 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOr
                                         CLR_JIT_KEYWORD))
         {
             pMethodDesc->GetMethodInfo(*namespaceOrClassName, *methodName, *methodSignature);
-            ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, namespaceOrClassName, methodName, methodSignature);
+            ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, methodDecoder, namespaceOrClassName, methodName, methodSignature);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -3684,7 +3684,7 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
                 for (; iter.IsValid(); iter.Next())
                 {
                     MethodDesc *pMD = (MethodDesc *)(iter.GetMethodDesc());
-                    if(pMD && pMD->GetMethodTable_NoLogging() == pMethodTable)
+                    if(pMD && pMD->GetMethodTable() == pMethodTable)
                         ETW::MethodLog::SendMethodEvent(pMD, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
                 }
             }
@@ -4359,7 +4359,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
 
     LPCWSTR pEmptyString = W("");
-    SString moduleName = SString::Empty();
+    SString moduleName{ SString::Empty() };
 
     if(!bIsDynamicAssembly)
     {
@@ -4463,7 +4463,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
             BulkTypeEventLogger typeLogger;
 
-            ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable_NoLogging();
+            ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable();
             ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, typeID, ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
             ULONGLONG loaderModuleID = (ULONGLONG)pMethodDesc->GetLoaderModule();
 
@@ -4498,7 +4498,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
             FireEtwMethodDetails((ULONGLONG)pMethodDesc, // MethodID
                                         typeID,  // MethodType
-                                        pMethodDesc->GetMemberDef_NoLogging(), // MethodToken
+                                        pMethodDesc->GetMemberDef(), // MethodToken
                                         cParams,
                                         loaderModuleID,
                                         rgTypeParameters.OpenRawBuffer());
@@ -4528,7 +4528,12 @@ VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc,
 /*****************************************************************/
 /* This routine is used to send an ETW event just before a method starts jitting*/
 /*****************************************************************/
-VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
+VOID ETW::MethodLog::SendMethodJitStartEvent(
+    MethodDesc *pMethodDesc,
+    COR_ILMETHOD_DECODER* methodDecoder,
+    SString *namespaceOrClassName,
+    SString *methodName,
+    SString *methodSignature)
 {
     CONTRACTL {
         THROWS;
@@ -4545,14 +4550,14 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W(""),szDtraceOutput3=W("");
 
     if(pMethodDesc) {
-        pModule = pMethodDesc->GetModule_NoLogging();
+        pModule = pMethodDesc->GetModule();
 
         SendMethodDetailsEvent(pMethodDesc);
 
         bool bIsDynamicMethod = pMethodDesc->IsDynamicMethod();
         BOOL bIsGenericMethod = FALSE;
-        if(pMethodDesc->GetMethodTable_NoLogging())
-            bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
+        if(pMethodDesc->GetMethodTable())
+            bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation();
 
         ullModuleID = (ULONGLONG)(TADDR) pModule;
         ullMethodIdentifier = (ULONGLONG)pMethodDesc;
@@ -4561,19 +4566,17 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
         if( bIsDynamicMethod || bIsGenericMethod)
         {
             if(bIsGenericMethod)
-                ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
+                ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
             if(bIsDynamicMethod) // if its a generic and a dynamic method, we would set the methodtoken to 0
                 ulMethodToken = (ULONG)0;
         }
         else
-            ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
-
-        if(pMethodDesc->IsIL())
         {
-            COR_ILMETHOD_DECODER::DecoderStatus decoderstatus = COR_ILMETHOD_DECODER::FORMAT_ERROR;
-            COR_ILMETHOD_DECODER ILHeader(pMethodDesc->GetILHeader(), pMethodDesc->GetMDImport(), &decoderstatus);
-            ulMethodILSize = (ULONG)ILHeader.GetCodeSize();
+            ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
         }
+
+        if (methodDecoder != NULL)
+            ulMethodILSize = methodDecoder->GetCodeSize();
 
         SString tNamespace, tMethodName, tMethodSignature;
         if(!namespaceOrClassName|| !methodName|| !methodSignature || (methodName->IsEmpty() && namespaceOrClassName->IsEmpty() && methodSignature->IsEmpty()))
@@ -4645,12 +4648,12 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
             KEYWORDZERO);
     }
 
-    pModule = pMethodDesc->GetModule_NoLogging();
+    pModule = pMethodDesc->GetModule();
     bIsDynamicMethod = (BOOL)pMethodDesc->IsDynamicMethod();
     bHasSharedGenericCode = pMethodDesc->IsSharedByGenericInstantiations();
 
-    if(pMethodDesc->GetMethodTable_NoLogging())
-        bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
+    if(pMethodDesc->GetMethodTable())
+        bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation();
 
     NativeCodeVersionId nativeCodeId = 0;
     ulMethodFlags = ulMethodFlags |
@@ -4711,12 +4714,12 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     {
         bShowVerboseOutput = TRUE;
         if(bIsGenericMethod)
-            ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
+            ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
         if(bIsDynamicMethod) // if its a generic and a dynamic method, we would set the methodtoken to 0
             ulMethodToken = (ULONG)0;
     }
     else
-        ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
+        ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
 
     SString tNamespace, tMethodName, tMethodSignature;
 

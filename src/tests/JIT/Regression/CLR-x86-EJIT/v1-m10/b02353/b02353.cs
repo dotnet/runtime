@@ -42,7 +42,6 @@ namespace DefaultNamespace
           Type.GetType("System.Object"),
           Type.GetType("Simple"),
           Type.GetType("System.Empty[]"),
-          Type.GetType("System.Void[]"),
           Type.GetType("System.Boolean[]"),
           Type.GetType("System.Char[]"),
           Type.GetType("System.SByte[]"),
@@ -66,7 +65,6 @@ namespace DefaultNamespace
           Type.GetType("System.Object[]"),
           Type.GetType("Simple[]"),
           Type.GetType("System.Empty[][]"),
-          Type.GetType("System.Void[][]"),
           Type.GetType("System.Boolean[][]"),
           Type.GetType("System.Char[][]"),
           Type.GetType("System.SByte[][]"),
@@ -90,7 +88,6 @@ namespace DefaultNamespace
           Type.GetType("System.Object[][]"),
           Type.GetType("Simple[][]"),
           Type.GetType("System.Empty[][][]"),
-          Type.GetType("System.Void[][][]"),
           Type.GetType("System.Boolean[][][]"),
           Type.GetType("System.Char[][][]"),
           Type.GetType("System.SByte[][][]"),
@@ -137,10 +134,9 @@ namespace DefaultNamespace
                                                                              {"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."}};
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new Bug();
-            return 100;
         }
     }
 

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -670,14 +671,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_RedirectWith307_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
-            if (remoteServer.HttpVersion == new Version(2, 0))
-            {
-                // This is occasionally timing out in CI with SocketsHttpHandler and HTTP2, particularly on Linux
-                // Likely this is just a very slow test and not a product issue, so just increasing the timeout may be the right fix.
-                // Disable until we can investigate further.
-                return;
-            }
-
             await PostAsync_Redirect_LargePayload_Helper(remoteServer, 307, true);
         }
 
@@ -721,7 +714,9 @@ namespace System.Net.Http.Functional.Tests
                     content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(contentBytes);
                 }
 
-                using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+                using HttpClient client = CreateHttpClientForRemoteServer(remoteServer);
+                client.Timeout = TimeSpan.FromMinutes(10);
+
                 using (HttpResponseMessage response = await client.PostAsync(redirectUri, content))
                 {
                     try
@@ -1289,7 +1284,22 @@ namespace System.Net.Http.Functional.Tests
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             using (HttpClient client = CreateHttpClient(handler))
             {
-                Assert.Contains(expectedContent, await client.GetStringAsync(uri));
+                try
+                {
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                    if (response.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway)
+                    {
+                        // Ignore the erroneous status code, the test depends on an external server that is out of our control.
+                        _output.WriteLine(response.ToString());
+                        return;
+                    }
+                    Assert.Contains(expectedContent, await response.Content.ReadAsStringAsync());
+                }
+                catch (HttpRequestException hre) when (hre.InnerException is SocketException se && (se.SocketErrorCode is SocketError.WouldBlock or SocketError.TryAgain))
+                {
+                    // Ignore the exception, the test depends on an external server that is out of our control.
+                    _output.WriteLine(hre.ToString());
+                }
             }
         }
 

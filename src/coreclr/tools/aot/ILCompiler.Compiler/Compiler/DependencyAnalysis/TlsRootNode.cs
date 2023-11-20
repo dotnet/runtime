@@ -26,10 +26,15 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
-            // root
+            // storage for InlinedThreadStaticRoot instances
+
+            // m_threadStaticsBase
             objData.EmitZeroPointer();
 
-            // next
+            // m_next
+            objData.EmitZeroPointer();
+
+            // m_typeManager
             objData.EmitZeroPointer();
 
             return objData.ToObjectData();

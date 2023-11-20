@@ -123,7 +123,8 @@ namespace Internal.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            if (cxt.InterfaceId != typeof(IClassFactory).GUID
+            if (cxt.InterfaceId != Marshal.IID_IUnknown
+                && cxt.InterfaceId != typeof(IClassFactory).GUID
                 && cxt.InterfaceId != typeof(IClassFactory2).GUID)
             {
                 throw new NotSupportedException();
@@ -200,7 +201,7 @@ namespace Internal.Runtime.InteropServices
                     }
 
                     // Finally validate signature
-                    ParameterInfo[] methParams = method.GetParameters();
+                    ReadOnlySpan<ParameterInfo> methParams = method.GetParametersAsSpan();
                     if (method.ReturnType != typeof(void)
                         || methParams == null
                         || methParams.Length != 1
