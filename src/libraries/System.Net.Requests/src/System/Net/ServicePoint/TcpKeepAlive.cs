@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal struct TcpKeepAlive
+    internal class TcpKeepAlive
     {
         internal int Time { get; set; }
         internal int Interval { get; set; }
