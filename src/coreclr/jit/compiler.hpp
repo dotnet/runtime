@@ -487,8 +487,13 @@ BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
 }
 
 //------------------------------------------------------------------------------
-// VisitEHSuccessors: Given a block inside a handler region, visit all handlers
+// VisitEHSuccs: Given a block inside a handler region, visit all handlers
 // that control may flow to as part of EH.
+//
+// Type arguments:
+//   skipJumpDest - Whether the jump destination has already been
+//   yielded, in which case it should be skipped here.
+//   TFunc - Functor type
 //
 // Arguments:
 //   comp  - Compiler instance
@@ -499,29 +504,28 @@ BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
 //   Whether or not the visiting should proceed.
 //
 // Remarks:
-//   This encapsulates the "exception handling" successors of a block. That is,
-//   if a basic block BB1 occurs in a try block, we consider the first basic
-//   block BB2 of the corresponding handler to be an "EH successor" of BB1.
+//   This encapsulates the "exception handling" successors of a block. These
+//   are the blocks that control may flow to as part of exception handling:
+//   1. On thrown exceptions, control may flow to handlers
+//   2. As part of two pass EH, control may flow from filters to enclosed handlers
 //
-template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
+template <bool skipJumpDest, typename TFunc>
+static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc func)
 {
-    if (!HasPotentialEHSuccs(comp))
+    if (!block->HasPotentialEHSuccs(comp))
     {
         return BasicBlockVisit::Continue;
     }
 
-    EHblkDsc* eh = comp->ehGetBlockExnFlowDsc(this);
+    EHblkDsc* eh = comp->ehGetBlockExnFlowDsc(block);
     if (eh != nullptr)
     {
         while (true)
         {
-            // If the original block whose EH successors we're iterating over
-            // is a BBJ_CALLFINALLY, that finally clause's first block
-            // will be yielded as a normal successor.  Don't also yield as
-            // an exceptional successor.
+            // For BBJ_CALLFINALLY the user may already have processed one of
+            // the EH successors as a regular successor; skip it if requested.
             BasicBlock* flowBlock = eh->ExFlowBlock();
-            if (!KindIs(BBJ_CALLFINALLY) || !HasJumpTo(flowBlock))
+            if (!skipJumpDest || !block->HasJumpTo(flowBlock))
             {
                 RETURN_ON_ABORT(func(flowBlock));
             }
@@ -535,7 +539,27 @@ BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
         }
     }
 
-    return VisitEHSecondPassSuccs(comp, func);
+    return block->VisitEHSecondPassSuccs(comp, func);
+}
+
+//------------------------------------------------------------------------------
+// VisitEHSuccs: Given a block inside a handler region, visit all handlers
+// that control may flow to as part of EH.
+//
+// Arguments:
+//   comp  - Compiler instance
+//   func  - Callback
+//
+// Returns:
+//   Whether or not the visiting should proceed.
+//
+// Remarks:
+//   For more documentation, see ::VisitEHSuccs.
+//
+template <typename TFunc>
+BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
+{
+    return ::VisitEHSuccs</* skipJumpDest */ false, TFunc>(comp, this, func);
 }
 
 //------------------------------------------------------------------------------
@@ -562,6 +586,9 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
+            RETURN_ON_ABORT(func(bbJumpDest));
+            return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
+
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
