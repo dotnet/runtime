@@ -245,7 +245,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
 
                     // Null out the rest of the buffer
                     for (size_t i = len; i < pathLen; ++i)
-                        path[i] = '\0';
+                        path[i] = W('\0');
 
                     DacUpdateMemoryRegion(entryAssemblyPath.GetAddr(), pathLen, (BYTE*)path);
                 }
