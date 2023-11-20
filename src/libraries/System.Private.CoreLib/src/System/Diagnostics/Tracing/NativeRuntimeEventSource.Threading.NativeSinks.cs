@@ -32,8 +32,8 @@ namespace System.Diagnostics.Tracing
             public const string IOEnqueue = "NativeOverlapped={0};\nOverlapped={1};\nMultiDequeues={2};\nClrInstanceID={3}";
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
             public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
-            public const string WaitHandleWaitStart = "ClrInstanceID={0};\nWaitSource={1};\nAssociatedObjectID={2}";
-            public const string WaitHandleWaitStop = "ClrInstanceID={0};\nWaitSource={1};\nDurationNs={2}";
+            public const string WaitHandleWaitStart = "WaitSource={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
+            public const string WaitHandleWaitStop = "WaitSource={0};\nDurationNs={1};\nClrInstanceID={2}";
         }
 
         // The task definitions for the ETW manifest
@@ -337,7 +337,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
-            LogWaitHandleWaitStart(ClrInstanceID, WaitSource, AssociatedObjectID);
+            LogWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID);
         }
 
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandle, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
@@ -347,7 +347,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
-            LogWaitHandleWaitStop(ClrInstanceID, WaitSource, DurationNs);
+            LogWaitHandleWaitStop(WaitSource, DurationNs, ClrInstanceID);
         }
     }
 }

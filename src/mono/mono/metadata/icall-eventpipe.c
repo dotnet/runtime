@@ -780,9 +780,9 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop 
 
 void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_WaitHandleWaitStart (
-	uint16_t clr_instance_id,
 	uint32_t wait_source,
-	intptr_t associated_object_id)
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.WaitHandleWaitStart");
@@ -791,9 +791,9 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_WaitHandleWaitStar
 
 void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_WaitHandleWaitStop (
-	uint16_t clr_instance_id,
 	uint32_t wait_source,
-	double duration_ns)
+	double duration_ns,
+	uint16_t clr_instance_id)
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.WaitHandleWaitStop");

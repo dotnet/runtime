@@ -136,20 +136,20 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         internal static void LogWaitHandleWaitStart(
-            ushort ClrInstanceID,
             WaitHandleWaitSourceMap WaitSource,
-            IntPtr AssociatedObjectID)
+            IntPtr AssociatedObjectID,
+            ushort ClrInstanceID)
         {
-            RuntimeImports.NativeRuntimeEventSource_LogWaitHandleWaitStart(ClrInstanceID, (uint)WaitSource, AssociatedObjectID);
+            RuntimeImports.NativeRuntimeEventSource_LogWaitHandleWaitStart((uint)WaitSource, AssociatedObjectID, ClrInstanceID);
         }
 
         [NonEvent]
         internal static void LogWaitHandleWaitStop(
-            ushort ClrInstanceID,
             WaitHandleWaitSourceMap WaitSource,
-            double DurationNs)
+            double DurationNs,
+            ushort ClrInstanceID)
         {
-            RuntimeImports.NativeRuntimeEventSource_LogWaitHandleWaitStop(ClrInstanceID, (uint)WaitSource, DurationNs);
+            RuntimeImports.NativeRuntimeEventSource_LogWaitHandleWaitStop((uint)WaitSource, DurationNs, ClrInstanceID);
         }
     }
 }

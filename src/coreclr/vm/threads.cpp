@@ -3185,9 +3185,9 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     {
         QueryPerformanceCounter(&startTicks);
         FireEtwWaitHandleWaitStart(
-            GetClrInstanceId(),
             ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
-            syncState ? syncState->m_Object : NULL);
+            syncState ? syncState->m_Object : NULL,
+            GetClrInstanceId());
     }
 
     EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
@@ -3215,9 +3215,9 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
 
         double elapsedTimeInNanosecond = ComputeTicksDeltaInNanosecond(startTicks, endTicks);
         FireEtwWaitHandleWaitStop(
-            GetClrInstanceId(),
             ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
-            elapsedTimeInNanosecond);
+            elapsedTimeInNanosecond,
+            GetClrInstanceId());
     }
 
     return(param.dwRet);

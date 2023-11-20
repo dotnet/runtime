@@ -101,15 +101,15 @@ namespace System.Diagnostics.Tracing
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void LogWaitHandleWaitStart(
-            ushort ClrInstanceID,
             WaitHandleWaitSourceMap WaitSource,
-            IntPtr AssociatedObjectID);
+            IntPtr AssociatedObjectID,
+            ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void LogWaitHandleWaitStop(
-            ushort ClrInstanceID,
             WaitHandleWaitSourceMap WaitSource,
-            double DurationNs);
+            double DurationNs,
+            ushort ClrInstanceID);
     }
 }

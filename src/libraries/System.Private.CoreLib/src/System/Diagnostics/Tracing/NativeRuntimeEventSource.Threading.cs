@@ -33,8 +33,8 @@ namespace System.Diagnostics.Tracing
             public const string IOEnqueue = "NativeOverlapped={0};\nOverlapped={1};\nMultiDequeues={2};\nClrInstanceID={3}";
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
             public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
-            public const string WaitHandleWaitStart = "ClrInstanceID={0};\nWaitSource={1};\nAssociatedObjectID={2}";
-            public const string WaitHandleWaitStop = "ClrInstanceID={0};\nWaitSource={1};\nDurationNs={2}";
+            public const string WaitHandleWaitStart = "WaitSource={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
+            public const string WaitHandleWaitStop = "WaitSource={0};\nDurationNs={1};\nClrInstanceID={2}";
         }
 
         // The task definitions for the ETW manifest
@@ -524,14 +524,14 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
 
             EventData* data = stackalloc EventData[3];
-            data[0].DataPointer = (nint)(&ClrInstanceID);
-            data[0].Size = sizeof(ushort);
+            data[0].DataPointer = (nint)(&WaitSource);
+            data[0].Size = sizeof(WaitHandleWaitSourceMap);
             data[0].Reserved = 0;
-            data[1].DataPointer = (nint)(&WaitSource);
-            data[1].Size = sizeof(WaitHandleWaitSourceMap);
-            data[1].Reserved = 0;
-            data[2].DataPointer = (nint)(&AssociatedObjectID);
+            data[1].DataPointer = (nint)(&AssociatedObjectID);
             data[2].Size = nint.Size;
+            data[1].Reserved = 0;
+            data[2].DataPointer = (nint)(&ClrInstanceID);
+            data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             WriteEventCore(301, 3, data);
         }
@@ -545,14 +545,14 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
 
             EventData* data = stackalloc EventData[3];
-            data[0].DataPointer = (nint)(&ClrInstanceID);
-            data[0].Size = sizeof(ushort);
+            data[0].DataPointer = (nint)(&WaitSource);
+            data[0].Size = sizeof(WaitHandleWaitSourceMap);
             data[0].Reserved = 0;
-            data[1].DataPointer = (nint)(&WaitSource);
-            data[1].Size = sizeof(WaitHandleWaitSourceMap);
+            data[1].DataPointer = (nint)(&DurationNs);
+            data[1].Size = sizeof(double);
             data[1].Reserved = 0;
-            data[2].DataPointer = (nint)(&DurationNs);
-            data[2].Size = sizeof(double);
+            data[2].DataPointer = (nint)(&ClrInstanceID);
+            data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             WriteEventCore(302, 3, data);
         }

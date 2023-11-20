@@ -189,22 +189,22 @@ extern "C" void QCALLTYPE LogContentionStop(uint8_t ContentionFlags, uint16_t Cl
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogWaitHandleWaitStart(uint16_t ClrInstanceID, uint32_t WaitSource, void* AssociatedObjectID)
+extern "C" void QCALLTYPE LogWaitHandleWaitStart(uint32_t WaitSource, void* AssociatedObjectID, uint16_t ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtwWaitHandleWaitStart(ClrInstanceID, WaitSource, AssociatedObjectID);
+    FireEtwWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID);
 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogWaitHandleWaitStop(uint16_t ClrInstanceID, uint32_t WaitSource, double DurationNs)
+extern "C" void QCALLTYPE LogWaitHandleWaitStop(uint32_t WaitSource, double DurationNs, uint16_t ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtwWaitHandleWaitStop(ClrInstanceID, WaitSource, DurationNs);
+    FireEtwWaitHandleWaitStop(WaitSource, DurationNs, ClrInstanceID);
 
     END_QCALL;
 }
