@@ -120,6 +120,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_T6:
             dwarfReg = 31;
             break;
+
         case REG_F0:
             dwarfReg = 32;
             break;
@@ -412,33 +413,28 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
 {
-    //  0x00 -> INVALID
-    //  0x1F -> 48b   -> +2B
-    //  0x3F -> 64b   -> +4B
-    //  0x7F -> >=80b -> +4B or more
-    //  0x7F : 0xFF -> unused right now
+    // replaced temporary by arm64 table
+    static BYTE s_UnwindSize[256] = {
+     // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 00-0F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 10-1F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 20-2F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 30-3F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 40-4F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 50-5F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 60-6F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 70-7F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 80-8F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 90-9F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A0-AF
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // B0-BF
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // C0-CF
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, // D0-DF
+        4, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // E0-EF
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1  // F0-FF
+    };
 
-    unsigned size = 1; // 32b
-
-    switch (b1)
-    {
-        case 0x00:
-            size = 0; // INVALID!
-            break;
-        case 0x1F: // 48b
-            size = 2;
-            break;
-        case 0x3F: // 64b
-            size = 4;
-            break;
-        case 0x5F: // 48b
-            size = 2;
-            break;
-        case 0x7F: // >=80b
-            size = 4;
-            break;
-    }
-
+    unsigned size = s_UnwindSize[b1];
     assert(1 <= size && size <= 4);
     return size;
 }
@@ -1280,7 +1276,33 @@ void UnwindPrologCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindPrologCodes::Dump(int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    printf("%*sUnwindPrologCodes @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  &upcMemLocal[0]: 0x%08p\n", indent, "", dspPtr(&upcMemLocal[0]));
+    printf("%*s  upcMem: 0x%08p\n", indent, "", dspPtr(upcMem));
+    printf("%*s  upcMemSize: %d\n", indent, "", upcMemSize);
+    printf("%*s  upcCodeSlot: %d\n", indent, "", upcCodeSlot);
+    printf("%*s  upcHeaderSlot: %d\n", indent, "", upcHeaderSlot);
+    printf("%*s  upcEpilogSlot: %d\n", indent, "", upcEpilogSlot);
+    printf("%*s  upcUnwindBlockSlot: %d\n", indent, "", upcUnwindBlockSlot);
+
+    if (upcMemSize > 0)
+    {
+        printf("%*s  codes:", indent, "");
+        for (int i = 0; i < upcMemSize; i++)
+        {
+            printf(" %02x", upcMem[i]);
+            if (i == upcCodeSlot)
+                printf(" <-C");
+            else if (i == upcHeaderSlot)
+                printf(" <-H");
+            else if (i == upcEpilogSlot)
+                printf(" <-E");
+            else if (i == upcUnwindBlockSlot)
+                printf(" <-U");
+        }
+        printf("\n");
+    }
 }
 #endif // DEBUG
 
