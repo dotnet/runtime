@@ -5433,7 +5433,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 // Uncomment "#define ALL_ARM64_EMITTER_UNIT_TESTS" to run all the unit tests here.
 // After adding a unit test, and verifying it works, put it under this #ifdef, so we don't see it run every time.
-//#define ALL_ARM64_EMITTER_UNIT_TESTS
+#define ALL_ARM64_EMITTER_UNIT_TESTS
 
 #if defined(DEBUG)
 void CodeGen::genArm64EmitterUnitTests()
@@ -7304,8 +7304,8 @@ void CodeGen::genArm64EmitterUnitTests()
 
     genDefineTempLabel(genCreateTempLabel());
 
-    theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 0);
-    theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 65535);
+    // theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 0);
+    // theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 65535);
 
     theEmitter->emitIns_BARR(INS_dsb, INS_BARRIER_OSHLD);
     theEmitter->emitIns_BARR(INS_dmb, INS_BARRIER_OSHST);
@@ -10103,6 +10103,30 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_R(INS_fnmsub, EA_8BYTE, REG_V7, REG_V15, REG_V23, REG_V31);
 
 #endif
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+    //
+    // R_R_R   SVE operations, one dest, two source
+    //
+
+    // TODO-SVE: Fix once we add Z and predicate registers
+
+    theEmitter->emitIns_R_R_R(INS_sve_and, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B);     // AND     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_bic, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H);     // BIC     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_eor, EA_SCALABLE, REG_V14, REG_V5, REG_V16, INS_OPTS_SCALABLE_S);   // EOR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, REG_V29, REG_V7, REG_V31, INS_OPTS_SCALABLE_D);   // ORR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+
+    theEmitter->emitIns_R_R_R(INS_sve_add, EA_SCALABLE, REG_V5, REG_V6, REG_V7, INS_OPTS_SCALABLE_B);     // ADD     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_sub, EA_SCALABLE, REG_V15, REG_V7, REG_V29, INS_OPTS_SCALABLE_H);  // SUB     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_subr, EA_SCALABLE, REG_V2, REG_V0, REG_V13, INS_OPTS_SCALABLE_S);   // SUBR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+
+    theEmitter->emitIns_R_R_R(INS_sve_sdiv, EA_SCALABLE, REG_V3, REG_V2, REG_V9, INS_OPTS_SCALABLE_S);     // SDIV     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_sdivr, EA_SCALABLE, REG_V31, REG_V3, REG_V29, INS_OPTS_SCALABLE_D); // SDIVR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_udiv, EA_SCALABLE, REG_V1, REG_V0, REG_V0, INS_OPTS_SCALABLE_S);     // UDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_udivr, EA_SCALABLE, REG_V13, REG_V7, REG_V15, INS_OPTS_SCALABLE_D); // UDIVR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+
+
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
 

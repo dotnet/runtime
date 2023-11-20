@@ -45,7 +45,7 @@ void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
-void emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma);
+void emitDispPredicateReg(regNumber reg, bool merge, bool addComma);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -452,6 +452,9 @@ static code_t insEncodeExtendScale(ssize_t imm);
 // Returns the encoding to have the Rm register be auto scaled by the ld/st size
 static code_t insEncodeReg3Scale(bool isScaled);
 
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
+static code_t insEncodeSveElemsize(insOpts opt);
+
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
 {
@@ -702,6 +705,11 @@ inline static bool isValidVectorElemsizeFloat(emitAttr size)
     return (size == EA_8BYTE) || (size == EA_4BYTE);
 }
 
+inline static bool isScalableVectorSize(emitAttr size)
+{
+    return (size == EA_SCALABLE);
+}
+
 inline static bool isGeneralRegister(regNumber reg)
 {
     return (reg >= REG_INT_FIRST) && (reg <= REG_LR);
@@ -727,9 +735,20 @@ inline static bool isFloatReg(regNumber reg)
     return isVectorRegister(reg);
 }
 
+inline static bool isSveRegister(regNumber reg)
+{
+    // TODO-SVE: Fix once we add Z registers
+    return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
+}
+
 inline static bool isPredicateRegister(regNumber reg)
 {
     return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
+}
+
+inline static bool isLowPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_LOW_FIRST && reg <= REG_PREDICATE_LOW_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -832,6 +851,12 @@ inline static bool insOptsScalable(insOpts opt)
 {
     return ((opt == INS_OPTS_SCALABLE_B || opt == INS_OPTS_SCALABLE_H || opt == INS_OPTS_SCALABLE_S ||
              opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableWords(insOpts opt)
+{
+    // TODO-SVE: Maybe this function needs a better name.
+    return ((opt == INS_OPTS_SCALABLE_S || opt == INS_OPTS_SCALABLE_D));
 }
 
 static bool isValidImmCond(ssize_t imm);

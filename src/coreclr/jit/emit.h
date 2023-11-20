@@ -505,6 +505,9 @@ protected:
         OPSZ32     = 5,
         OPSZ64     = 6,
         OPSZ_COUNT = 7,
+#elif defined(TARGET_ARM64)
+        OPSZ_SCALABLE = 5,
+        OPSZ_COUNT    = 6,
 #else
         OPSZ_COUNT = 5,
 #endif
