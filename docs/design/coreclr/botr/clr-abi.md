@@ -115,7 +115,7 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 ## Small primitive returns
 
-Primitive value types smaller than 32-bits are normalized to 32-bits: signed small types are sign extended and unsigned small types are zero extended. This can be different from the standard calling conventions that may leave the state of unused bits in the return register undefined.
+Primitive value types smaller than 32-bits are widened to 32-bits: signed small types are sign extended and unsigned small types are zero extended. This can be different from the standard calling conventions that may leave the state of unused bits in the return register undefined.
 
 # PInvokes
 
