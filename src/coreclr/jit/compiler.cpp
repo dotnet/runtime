@@ -6014,6 +6014,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
         }
+
+        if (JitConfig.EnableArm64Sve() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
+        }
 #elif defined(TARGET_XARCH)
         if (JitConfig.EnableHWIntrinsic() != 0)
         {
