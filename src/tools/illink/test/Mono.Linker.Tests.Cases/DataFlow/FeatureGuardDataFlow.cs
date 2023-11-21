@@ -380,7 +380,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		class InvalidFeatureGuards {
-			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
 			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			static int NonBooleanProperty => 0;
 
@@ -391,7 +391,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
-			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
 			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 			bool NonStaticProperty => true;
 

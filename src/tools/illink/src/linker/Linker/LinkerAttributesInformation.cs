@@ -62,8 +62,9 @@ namespace Mono.Linker
 					attributeValue = new RemoveAttributeInstancesAttribute (customAttribute.ConstructorArguments);
 					allowMultiple = true;
 					break;
-				case "FeatureGuardAttribute`1":
+				case "FeatureGuardAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
 					attributeValue = ProcessFeatureGuardAttribute (context, provider, customAttribute);
+					allowMultiple = true;
 					break;
 				default:
 					continue;
@@ -134,33 +135,31 @@ namespace Mono.Linker
 
 		static FeatureGuardAttribute? ProcessFeatureGuardAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
-			if (provider is not PropertyDefinition)
+			// TODO: where to handle static/non-static, etc?
+			if (provider is not PropertyDefinition property)
 				return null;
 
-			// First get the attribute type.
-			var attributeType = customAttribute.AttributeType;
-			if (attributeType.Namespace is not "System.Diagnostics.CodeAnalysis")
+			// property must be a static bool property
+			if (property.HasThis || property.PropertyType.MetadataType != MetadataType.Boolean) {
+				context.LogWarning ((IMemberDefinition) provider, DiagnosticId.InvalidFeatureGuard);
 				return null;
+			}
 
-			// TODO: remove this check. It was already done in the caller.
-			Console.WriteLine("Attribute type name: "  + attributeType);
-			if (attributeType.Name is not "FeatureGuardAttribute`1")
-				return null;
+			if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is TypeReference featureType) {
+				if (featureType.Namespace is not "System.Diagnostics.CodeAnalysis")
+					return null;
 
-			// If it's not a generic instantiation, we're done
-			if (attributeType is not GenericInstanceType genericInstance)
-				return null;
+				switch (featureType.Name) {
+				case "RequiresUnreferencedCodeAttribute":
+					return new FeatureGuardAttribute (typeof (RequiresUnreferencedCodeAttribute));
+				case "RequiresAssemblyFilesAttribute":
+					return new FeatureGuardAttribute (typeof (RequiresAssemblyFilesAttribute));
+				case "RequiresDynamicCodeAttribute":
+					return new FeatureGuardAttribute (typeof (RequiresDynamicCodeAttribute));
+				}
+			}
 
-			if (genericInstance.GenericArguments.Count != 1)
-				return null;
-
-			var requiresAttributeType = genericInstance.GenericArguments[0];
-			// For now, only support RequiresUnreferencedCode.
-			if (requiresAttributeType.Namespace is not "System.Diagnostics.CodeAnalysis")
-				return null;
-			if (requiresAttributeType.Name is "RequiresUnreferencedCodeAttribute")
-				return new FeatureGuardAttribute (typeof (RequiresUnreferencedCodeAttribute));
-
+			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (FeatureGuardAttribute).FullName ?? "");
 			return null;
 		}
 	}

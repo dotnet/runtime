@@ -44,9 +44,9 @@ namespace Mono.Linker
 					return action;
 			}
 
-			if (TryGetConstantFeatureCheckValue (method, out _)) {
+			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
+				&& IsGuardForDisabledFeature (method))
 				return MethodAction.ConvertToStub;
-			}
 
 			return MethodAction.Nothing;
 		}
@@ -60,39 +60,30 @@ namespace Mono.Linker
 				return embeddedXml.MethodStubValues.TryGetValue (method, out value);
 			}
 
-			if (TryGetConstantFeatureCheckValue (method, out var boolValue)) {
-				value = boolValue;
+			// If there are no substitutions for the method, look for FeatureGuardAttribute on the property,
+			// and substitute 'false' for guards for features that are known to be disabled.
+			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
+				&& IsGuardForDisabledFeature (method)) {
+				value = false;
 				return true;
 			}
 
 			return false;
 		}
 
-		internal bool TryGetConstantFeatureCheckValue (MethodDefinition method, [NotNullWhen (true)] out bool? value)
+		internal bool IsGuardForDisabledFeature (MethodDefinition method)
 		{
-			value = null;
-			if (!method.IsStatic || !method.IsGetter)
-				return false;
-
-			PropertyDefinition? foundProperty = null;
+			// Look for a property with a getter that matches the method.
 			foreach (var property in method.DeclaringType.Properties) {
-				if (property.GetMethod == method)
-					foundProperty = property;
-			}
+				if (property.GetMethod != method)
+					continue;
 
-			Debug.Assert (foundProperty != null);
-			if (foundProperty == null)
-				return false;
-
-			if (_context.Annotations.TryGetLinkerAttribute<FeatureGuardAttribute> (foundProperty, out _)) {
-				// When trimming, we assume that a feature check for RequiresUnreferencedCodeAttribute returns false.
-
-				if (!_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method))
-					return false;
-
-				value = false;
-				return true;
-
+				foreach (var featureGuardAttribute in _context.Annotations.GetLinkerAttributes<FeatureGuardAttribute> (property)) {
+					// When trimming, we assume that a feature check for RequiresUnreferencedCodeAttribute returns false.
+					var requiresAttributeType = featureGuardAttribute.RequiresAttributeType;
+					if (requiresAttributeType.Name == "RequiresUnreferencedCodeAttribute" && requiresAttributeType.Namespace == "System.Diagnostics.CodeAnalysis")
+						return true;
+				}
 			}
 
 			return false;
