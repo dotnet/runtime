@@ -3403,44 +3403,47 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0x73:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            int csrtype = (code >> 20);
-            if (opcode2 <= 0x3)
+            if (0x1 <= opcode2 && opcode2 <= 0x7)
             {
-                const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-                switch (opcode2)
+                const char* rd = RegNames[(code >> 7) & 0x1f];
+                int csrtype = (code >> 20);
+                if (opcode2 <= 0x3)
                 {
-                    case 0x1: // CSRRW
-                        printf("csrrw           %s, %d, %s\n", rd, csrtype, rs1);
-                        return;
-                    case 0x2: // CSRRS
-                        printf("csrrs           %s, %d, %s\n", rd, csrtype, rs1);
-                        return;
-                    case 0x3: // CSRRC
-                        printf("csrrc           %s, %d, %s\n", rd, csrtype, rs1);
-                        return;
-                    default:
-                        printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                        break;
+                    const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+                    switch (opcode2)
+                    {
+                        case 0x1: // CSRRW
+                            printf("csrrw           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        case 0x2: // CSRRS
+                            printf("csrrs           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        case 0x3: // CSRRC
+                            printf("csrrc           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        default:
+                            printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                            break;
+                    }
                 }
-            }
-            else
-            {
-                unsigned imm5 = ((code >> 15) & 0x1f);
-                switch (opcode2)
+                else
                 {
-                    case 0x5: // CSRRWI
-                        printf("csrrwi           %s, %d, %d\n", rd, csrtype, imm5);
-                        return;
-                    case 0x6: // CSRRSI
-                        printf("csrrsi           %s, %d, %d\n", rd, csrtype, imm5);
-                        return;
-                    case 0x7: // CSRRCI
-                        printf("csrrci           %s, %d, %d\n", rd, csrtype, imm5);
-                        return;
-                    default:
-                        printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                        break;
+                    unsigned imm5 = ((code >> 15) & 0x1f);
+                    switch (opcode2)
+                    {
+                        case 0x5: // CSRRWI
+                            printf("csrrwi           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        case 0x6: // CSRRSI
+                            printf("csrrsi           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        case 0x7: // CSRRCI
+                            printf("csrrci           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        default:
+                            printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                            break;
+                    }
                 }
             }
             
