@@ -3403,7 +3403,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0x73:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            if (0x1 <= opcode2 && opcode2 <= 0x7)
+            if (opcode2 != 0)
             {
                 const char* rd = RegNames[(code >> 7) & 0x1f];
                 int csrtype = (code >> 20);
