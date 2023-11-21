@@ -1365,6 +1365,14 @@ static const char * const  bRegNames[] =
     "b25", "b26", "b27", "b28", "b29",
     "b30", "b31"
 };
+
+static const char * const  pRegNames[] =
+{
+    "p0",  "p1",  "p2",  "p3",  "p4",
+    "p5",  "p6",  "p7",  "p8",  "p9",
+    "p10", "p11", "p12", "p13", "p14",
+    "p15"
+};
 // clang-format on
 
 //------------------------------------------------------------------------
@@ -1442,10 +1450,9 @@ const char* emitter::emitVectorRegName(regNumber reg)
 //
 const char* emitter::emitPredicateRegName(regNumber reg)
 {
-    // TODO-SVE: Fix once we add predicate registers
-    assert((reg >= REG_V0) && (reg <= REG_V31));
+    assert((reg >= REG_P0) && (reg <= REG_P15));
 
-    int index = (int)reg - (int)REG_V0;
+    int index = (int)reg - (int)REG_P0;
 
     return vRegNames[index];
 }
@@ -10608,9 +10615,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeReg_Pd(regNumber reg)
 {
-    // TODO-SVE: Fix once we add predicate registers
     assert(emitter::isPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
     assert((ureg >= 0) && (ureg <= 15));
     return ureg;
 }
@@ -10622,9 +10628,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeReg_Pn(regNumber reg)
 {
-    // TODO-SVE: Fix once we add predicate registers
     assert(emitter::isPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
     assert((ureg >= 0) && (ureg <= 15));
     return ureg << 5;
 }
@@ -10636,9 +10641,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeReg_Pm(regNumber reg)
 {
-    // TODO-SVE: Fix once we add predicate registers
     assert(emitter::isPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
     assert((ureg >= 0) && (ureg <= 15));
     return ureg << 16;
 }
@@ -13926,9 +13930,8 @@ void emitter::emitDispVectorElemList(
 //
 void emitter::emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma)
 {
-    // TODO-SVE: Fix once we add predicate registers
     assert(isPredicateRegister(reg));
-    printf(emitVectorRegName(reg));
+    printf(emitPredicateRegName(reg));
     emitDispArrangement(opt);
 
     if (addComma)
