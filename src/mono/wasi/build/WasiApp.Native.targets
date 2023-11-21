@@ -58,13 +58,6 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="_PrepareForWasiBuildNative">
-    <Error Condition="'$(_IsToolchainMissing)' == 'true'"
-           Text="$(_ToolchainMissingErrorMessage) SDK is required for building native files." />
-
-
-  </Target>
-
   <Target Name="_SetWasmBuildNativeDefaults">
     <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
     <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsToolchainMissing)' == 'true'"
