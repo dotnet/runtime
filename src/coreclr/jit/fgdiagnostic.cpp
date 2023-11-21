@@ -2521,11 +2521,11 @@ void Compiler::fgDumpBlockMemorySsaIn(BasicBlock* block)
     {
         if (byrefStatesMatchGcHeapStates)
         {
-            printf("%s, %s", memoryKindNames[ByrefExposed], memoryKindNames[GcHeap]);
+            printf("SSA MEM: %s, %s", memoryKindNames[ByrefExposed], memoryKindNames[GcHeap]);
         }
         else
         {
-            printf("%s", memoryKindNames[memoryKind]);
+            printf("SSA MEM: %s", memoryKindNames[memoryKind]);
         }
 
         if (block->bbMemorySsaPhiFunc[memoryKind] == nullptr)
@@ -2565,11 +2565,11 @@ void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
     {
         if (byrefStatesMatchGcHeapStates)
         {
-            printf("%s, %s", memoryKindNames[ByrefExposed], memoryKindNames[GcHeap]);
+            printf("SSA MEM: %s, %s", memoryKindNames[ByrefExposed], memoryKindNames[GcHeap]);
         }
         else
         {
-            printf("%s", memoryKindNames[memoryKind]);
+            printf("SSA MEM: %s", memoryKindNames[memoryKind]);
         }
 
         printf(" = m:%u\n", block->bbMemorySsaNumOut[memoryKind]);
