@@ -335,9 +335,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// Seems like this can't happen with a flow capture operation.
 				Debug.Assert (operation.Target is not IFlowCaptureReferenceOperation);
 				break;
-			case IInvalidOperation:
-				// This can happen for a field assignment in an attribute instance.
-				// TODO: validate against the field attributes.
 			case IInstanceReferenceOperation:
 				// Assignment to 'this' is not tracked currently.
 				// Not relevant for trimming dataflow.
@@ -358,16 +355,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// can show up in a flow capture reference (for example, where the right-hand side
 			// is a null-coalescing operator).
 			default:
-				// NoneOperation represents operations which are unimplemented by Roslyn
-				// (don't have specific I*Operation types), such as pointer dereferences.
-				if (targetOperation.Kind is OperationKind.None)
-					break;
-
-				// Assert on anything else as it means we need to implement support for it
-				// but do not throw here as it means new Roslyn version could cause the analyzer to crash
-				// which is not fixable by the user. The analyzer is not going to be 100% correct no matter what we do
-				// so effectively ignoring constructs it doesn't understand is OK.
-				Debug.Fail ($"{targetOperation.GetType ()}: {targetOperation.Syntax.GetLocation ().GetLineSpan ()}");
+				UnexpectedOperationHandler.Handle (targetOperation);
 				break;
 			}
 			return Visit (operation.Value, state);
@@ -584,9 +572,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					// No method symbol.
 					break;
 				default:
-					// Unimplemented case that might need special handling.
-					// Fail in debug mode only.
-					Debug.Fail ($"{operation.Target.GetType ()}: {operation.Target.Syntax.GetLocation ().GetLineSpan ()}");
+					UnexpectedOperationHandler.Handle (operation.Target);
 					break;
 			}
 
@@ -781,7 +767,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					argumentOperation = callOperation.Arguments[argumentIndex];
 					break;
 				default:
-					Debug.Fail ($"Unexpected operation {operation} for parameter {parameter.GetDisplayName ()}");
+					UnexpectedOperationHandler.Handle (operation);
 					continue;
 				};
 
