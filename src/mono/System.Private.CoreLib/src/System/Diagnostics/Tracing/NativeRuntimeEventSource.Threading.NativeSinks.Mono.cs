@@ -99,12 +99,14 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID);
 
         [NonEvent]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void LogWaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             IntPtr AssociatedObjectID,
             ushort ClrInstanceID);
 
         [NonEvent]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void LogWaitHandleWaitStop(
             WaitHandleWaitSourceMap WaitSource,
             double DurationNs,
