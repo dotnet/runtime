@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cstdint>
+#include <cinttypes>
 #include <minipal/utils.h>
 
 #ifndef _PLATFORMDEFINES__H
@@ -72,9 +73,11 @@ typedef WCHAR *LPWSTR, *PWSTR;
 typedef const WCHAR *LPCWSTR, *PCWSTR;
 
 typedef int HRESULT;
-#define LONGLONG long long
-#define ULONGLONG unsigned LONGLONG
-typedef unsigned int ULONG, *PULONG;
+
+typedef unsigned long long ULONGLONG;
+typedef int32_t LONG, *PLONG;
+typedef uint32_t ULONG, *PULONG;
+
 #define S_OK                    0x0
 #define SUCCEEDED(_hr)          ((HRESULT)(_hr) >= 0)
 #define FAILED(_hr)             ((HRESULT)(_hr) < 0)

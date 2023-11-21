@@ -303,15 +303,15 @@ bool ValidateS2LPArray(S2 * pREC, S2 * pRECCorrect, int numArrElement)
         else if(pREC[i].i64 != pRECCorrect[i].i64)
         {
             printf("\t The field of Int64 is not the expected!");
-            printf("\t\tpREC[%d].i64 = %lld\n", i, pREC[i].i64);
-            printf("\t\tpRECCorrect[%d].i64 = %lld\n", i, pRECCorrect[i].i64);
+            printf("\t\tpREC[%d].i64 = %" PRIi64 "\n", i, pREC[i].i64);
+            printf("\t\tpRECCorrect[%d].i64 = %" PRIi64 "\n", i, pRECCorrect[i].i64);
             return false;
         }
         else if(pREC[i].ui64 != pRECCorrect[i].ui64)
         {
             printf("\t The field of UInt64 is not the expected!");
-            printf("\t\tpREC[%d].ui64 = %llu\n", i, pREC[i].ui64);
-            printf("\t\tpRECCorrect[%d].ui64 = %llu\n", i, pRECCorrect[i].ui64);
+            printf("\t\tpREC[%d].ui64 = %" PRIi64 "\n", i, pREC[i].ui64);
+            printf("\t\tpRECCorrect[%d].ui64 = %" PRIi64 "\n", i, pRECCorrect[i].ui64);
             return false;
         }
         else if(pREC[i].sgl != pRECCorrect[i].sgl)

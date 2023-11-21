@@ -379,8 +379,8 @@ void PrintNumberSequential(NumberSequential* str, const char* name)
     printf("\t%s.sb = %d\n", name, str->sb);
     printf("\t%s.i16 = %d\n", name, str->i16);
     printf("\t%s.ui16 = %u\n", name, str->ui16);
-    printf("\t%s.i64 = %lld\n", name, str->i64);
-    printf("\t%s.ui64 = %llu\n", name, str->ui64);
+    printf("\t%s.i64 = %" PRIi64 "\n", name, str->i64);
+    printf("\t%s.ui64 = %" PRIu64 "\n", name, str->ui64);
     printf("\t%s.sgl = %f\n", name, str->sgl);
     printf("\t%s.d = %f\n",name, str->d);
 }
@@ -756,8 +756,8 @@ void PrintU(U* str, const char* name)
     printf("\t%s.us = %u\n", name, str->us);
     printf("\t%s.b = %u\n", name, str->b);
     printf("\t%s.sb = %d\n", name, str->sb);
-    printf("\t%s.l = %lld\n", name, str->l);
-    printf("\t%s.ul = %llu\n", name, str->ul);
+    printf("\t%s.l = %" PRIi64 "\n", name, str->l);
+    printf("\t%s.ul = %" PRIu64 "\n", name, str->ul);
     printf("\t%s.f = %f\n", name, str->f);
     printf("\t%s.d = %f\n", name, str->d);
 }
@@ -870,8 +870,8 @@ struct LongStructPack16Explicit // size = 16 bytes
 
 void PrintLongStructPack16Explicit(LongStructPack16Explicit* str, const char* name)
 {
-    printf("\t%s.l1 = %lld", name, str->l1);
-    printf("\t%s.l2 = %lld", name, str->l2);
+    printf("\t%s.l1 = %" PRIi64, name, str->l1);
+    printf("\t%s.l2 = %" PRIi64, name, str->l2);
 }
 
 void ChangeLongStructPack16Explicit(LongStructPack16Explicit* p)
