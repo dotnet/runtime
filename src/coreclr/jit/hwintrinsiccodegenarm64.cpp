@@ -493,50 +493,32 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 ins = varTypeIsUnsigned(intrin.baseType) ? INS_umsubl : INS_smsubl;
                 break;
 
-            case NI_AdvSimd_StoreSelectedScalar:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar:
+            case NI_AdvSimd_StoreSelectedScalarVector64x2:
+            case NI_AdvSimd_StoreSelectedScalarVector64x3:
+            case NI_AdvSimd_StoreSelectedScalarVector64x4:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
             {
                 unsigned regCount = 0;
-                if (intrin.op2->OperIsFieldList())
-                {
-                    GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
-                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
-                    op2Reg                       = firstField->GetRegNum();
+                assert(intrin.op2->OperIsFieldList());
+                GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op2Reg                       = firstField->GetRegNum();
 
-                    INDEBUG(regNumber argReg = op2Reg);
-                    for (GenTreeFieldList::Use& use : fieldList->Uses())
-                    {
-                        regCount++;
 #ifdef DEBUG
-                        GenTree* argNode = use.GetNode();
-                        assert(argReg == argNode->GetRegNum());
-                        argReg = REG_NEXT(argReg);
-#endif
-                    }
-                }
-                else
+                regNumber argReg = op2Reg;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
-                    regCount = 1;
-                }
+                    regCount++;
 
-                switch (regCount)
-                {
-                    case 1:
-                        ins = INS_st1;
-                        break;
-                    case 2:
-                        ins = INS_st2;
-                        break;
-                    case 3:
-                        ins = INS_st3;
-                        break;
-                    case 4:
-                        ins = INS_st4;
-                        break;
-                    default:
-                        unreached();
+                    GenTree* argNode = use.GetNode();
+                    assert(argReg == argNode->GetRegNum());
+                    argReg = REG_NEXT(argReg);
                 }
-                break;
+                assert((ins == INS_st2 && regCount == 2) || (ins == INS_st3 && regCount == 3) ||
+                       (ins == INS_st4 && regCount == 4));
+#endif
             }
 
             default:
@@ -830,7 +812,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_StoreSelectedScalarVector64x2:
+            case NI_AdvSimd_StoreSelectedScalarVector64x3:
+            case NI_AdvSimd_StoreSelectedScalarVector64x4:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
