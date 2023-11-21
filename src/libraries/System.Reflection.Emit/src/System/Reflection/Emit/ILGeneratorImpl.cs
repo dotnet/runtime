@@ -369,7 +369,14 @@ namespace System.Reflection.Emit
             // Push the return value
             stackChange++;
             // Pop the parameters.
-            stackChange -= con.GetParameters().Length;
+            if (con is ConstructorBuilderImpl builder)
+            {
+                stackChange -= builder._methodBuilder.ParameterCount;
+            }
+            else
+            {
+                stackChange -= con.GetParameters().Length;
+            }
             // Pop the this parameter if the constructor is non-static and the
             // instruction is not newobj.
             if (!con.IsStatic && !opcode.Equals(OpCodes.Newobj))

@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -24,8 +23,6 @@ namespace System.Reflection.Emit
         #region Constructor
         internal MethodOnTypeBuilderInstantiation(MethodInfo method, Type type)
         {
-            Debug.Assert(method is MethodBuilder || method is RuntimeMethodInfo);
-
             _method = method;
             _type = type;
         }

@@ -5051,7 +5051,7 @@ public:
     void fgResetForSsa();
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
-    bool     fgSsaChecksEnabled;   // True if SSA info can be cross-checked versus IR
+    bool     fgSsaValid;           // True if SSA info is valid and can be cross-checked versus IR
 
 #ifdef DEBUG
     void DumpSsaSummary();
@@ -5654,6 +5654,9 @@ public:
     void fgDumpStmtTree(Statement* stmt, unsigned bbNum);
     void fgDumpBlock(BasicBlock* block);
     void fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock);
+
+    void fgDumpBlockMemorySsaIn(BasicBlock* block);
+    void fgDumpBlockMemorySsaOut(BasicBlock* block);
 
     static fgWalkPreFn fgStress64RsltMulCB;
     void               fgStress64RsltMul();
@@ -9720,7 +9723,6 @@ public:
         bool dspDebugInfo;             // Display the Debug info reported to the VM
         bool dspInstrs;                // Display the IL instructions intermixed with the native code output
         bool dspLines;                 // Display source-code lines intermixed with native code output
-        bool dmpHex;                   // Display raw bytes in hex of native code output
         bool varNames;                 // Display variables names in native code output
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.

@@ -11,7 +11,6 @@ namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingDisabled;
 
 public unsafe class UnmanagedCallersOnly
 {
-
     [Fact]
     public static void UnmanagedCallersOnly_WithNonBlittableParameters_DoesNotMarshal()
     {

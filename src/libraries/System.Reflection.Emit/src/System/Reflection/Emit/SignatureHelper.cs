@@ -56,6 +56,27 @@ namespace System.Reflection.Emit
             return constructorSignature;
         }
 
+        internal static BlobBuilder GetTypeSpecificationSignature(Type type, ModuleBuilderImpl module)
+        {
+            BlobBuilder typeSpecSignature = new();
+            WriteSignatureForType(new BlobEncoder(typeSpecSignature).TypeSpecificationSignature(), type, module);
+
+            return typeSpecSignature;
+        }
+
+        internal static BlobBuilder GetMethodSpecificationSignature(Type[] genericArguments, ModuleBuilderImpl module)
+        {
+            BlobBuilder methodSpecSignature = new();
+            GenericTypeArgumentsEncoder encoder = new BlobEncoder(methodSpecSignature).MethodSpecificationSignature(genericArguments.Length);
+
+            foreach (Type argument in genericArguments)
+            {
+                WriteSignatureForType(encoder.AddArgument(), argument, module);
+            }
+
+            return methodSpecSignature;
+        }
+
         internal static BlobBuilder MethodSignatureEncoder(ModuleBuilderImpl module, Type[]? parameters,
             Type? returnType, SignatureCallingConvention convention, int genParamCount, bool isInstance)
         {

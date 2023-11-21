@@ -2437,6 +2437,11 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     printf("\n------------ ");
     block->dspBlockHeader(this);
 
+    if (fgSsaValid)
+    {
+        fgDumpBlockMemorySsaIn(block);
+    }
+
     if (!block->IsLIR())
     {
         for (Statement* const stmt : block->Statements())
@@ -2447,6 +2452,12 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     else
     {
         gtDispRange(LIR::AsRange(block));
+    }
+
+    if (fgSsaValid)
+    {
+        printf("\n");
+        fgDumpBlockMemorySsaOut(block);
     }
 }
 
@@ -2472,6 +2483,78 @@ void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
     }
     printf("\n---------------------------------------------------------------------------------------------------------"
            "----------\n");
+}
+
+//------------------------------------------------------------------------
+// fgDumpBlockMemorySsaIn: Dump memory state SSAs incoming to a block.
+//
+// Arguments:
+//    block - The block
+//
+void Compiler::fgDumpBlockMemorySsaIn(BasicBlock* block)
+{
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        if (byrefStatesMatchGcHeapStates)
+        {
+            printf("SSA MEM: %s, %s", memoryKindNames[ByrefExposed], memoryKindNames[GcHeap]);
+        }
+        else
+        {
+            printf("SSA MEM: %s", memoryKindNames[memoryKind]);
+        }
+
+        if (block->bbMemorySsaPhiFunc[memoryKind] == nullptr)
+        {
+            printf(" = m:%u\n", block->bbMemorySsaNumIn[memoryKind]);
+        }
+        else
+        {
+            printf(" = phi(");
+            BasicBlock::MemoryPhiArg* phiArgs = block->bbMemorySsaPhiFunc[memoryKind];
+            const char*               sep     = "";
+            for (BasicBlock::MemoryPhiArg* arg = block->bbMemorySsaPhiFunc[memoryKind]; arg != nullptr;
+                 arg                           = arg->m_nextArg)
+            {
+                printf("%sm:%u", sep, arg->GetSsaNum());
+                sep = ", ";
+            }
+            printf(")\n");
+        }
+
+        if (byrefStatesMatchGcHeapStates)
+        {
+            break;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// fgDumpBlockMemorySsaOut: Dump memory state SSAs outgoing from a block.
+//
+// Arguments:
+//    block - The block
+//
+void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
+{
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        if (byrefStatesMatchGcHeapStates)
+        {
+            printf("SSA MEM: %s, %s", memoryKindNames[ByrefExposed], memoryKindNames[GcHeap]);
+        }
+        else
+        {
+            printf("SSA MEM: %s", memoryKindNames[memoryKind]);
+        }
+
+        printf(" = m:%u\n", block->bbMemorySsaNumOut[memoryKind]);
+
+        if (byrefStatesMatchGcHeapStates)
+        {
+            break;
+        }
+    }
 }
 
 /*****************************************************************************
@@ -4497,7 +4580,7 @@ public:
 //
 void Compiler::fgDebugCheckSsa()
 {
-    if (!fgSsaChecksEnabled)
+    if (!fgSsaValid)
     {
         return;
     }

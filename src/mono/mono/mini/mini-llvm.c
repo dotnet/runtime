@@ -1609,7 +1609,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		break;
 	case LLVMArgWasmVtypeAsScalar:
 		g_assert (cinfo->ret.esize);
-		ret_type = LLVMIntType (cinfo->ret.esize * 8);
+		ret_type = type_to_llvm_type (ctx, cinfo->ret.etype);
 		break;
 	default:
 		break;
@@ -1741,7 +1741,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			break;
 		case LLVMArgWasmVtypeAsScalar:
 			g_assert (ainfo->esize);
-			param_types [pindex ++] = LLVMIntType (ainfo->esize * 8);
+			param_types [pindex ++] = type_to_llvm_type (ctx, ainfo->etype);
 			break;
 		case LLVMArgGsharedvtFixed:
 		case LLVMArgGsharedvtFixedVtype:
@@ -4021,7 +4021,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			/* The argument is received as a scalar */
 			ctx->addresses [reg] = build_alloca_address (ctx, t);
 
-			LLVMValueRef dest = convert (ctx, ctx->addresses [reg]->value, pointer_type (LLVMIntType (ainfo->esize * 8)));
+			LLVMValueRef dest = convert (ctx, ctx->addresses [reg]->value, pointer_type (LLVMTypeOf (arg)));
 			LLVMBuildStore (ctx->builder, arg, dest);
 			break;
 		}
@@ -4684,7 +4684,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			break;
 		case LLVMArgWasmVtypeAsScalar: {
 			g_assert (addresses [reg]);
-			LLVMTypeRef etype = LLVMIntType (ainfo->esize * 8);
+			LLVMTypeRef etype = type_to_llvm_type (ctx, ainfo->etype);
 			args [pindex] = LLVMBuildLoad2 (ctx->builder, etype, convert (ctx, addresses [reg]->value, pointer_type (etype)), "");
 			break;
 		}
