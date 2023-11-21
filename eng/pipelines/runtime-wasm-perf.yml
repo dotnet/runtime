@@ -39,7 +39,7 @@ extends:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
-          perfForkToUse: - dummy change
+          perfForkToUse:
             url: https://github.com/ilonatommy/performance
             branch: localized-benchmark
           #downloadSpecificBuild:
