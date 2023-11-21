@@ -14,8 +14,8 @@
 
 #ifdef HOST_WASM
 
-MonoType *
-mini_wasm_get_scalar_vtype (MonoType *type);
+gboolean
+mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype);
 
 static char
 type_to_c (MonoType *t)
@@ -61,8 +61,8 @@ handle_enum:
 		// Any struct or union that recursively (including through nested structs, unions, and arrays)
 		//  contains just a single scalar value and is not specified to have greater than natural alignment.
 		// FIXME: Handle the scenario where there are fields of struct types that contain no members
-		MonoType *scalar_vtype = mini_wasm_get_scalar_vtype (t);
-		if (scalar_vtype)
+		MonoType *scalar_vtype;
+		if (mini_wasm_is_scalar_vtype (t, &scalar_vtype))
 			return type_to_c (scalar_vtype);
 
 		return 'I';

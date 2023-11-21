@@ -1340,8 +1340,8 @@ filter_type_for_build_args_from_sig (MonoType *type)
 #ifdef HOST_WASM
 	// If the parameter type is scalarized according to WASM C ABI, treat it as the
 	//  scalarized type. Otherwise the MONO_TYPE_VALUETYPE case will treat it as int32.
-	MonoType *scalar = mini_wasm_get_scalar_vtype (type);
-	if (scalar)
+	MonoType *scalar;
+	if (mini_wasm_is_scalar_vtype (type, &scalar))
 		return scalar;
 #endif
 
