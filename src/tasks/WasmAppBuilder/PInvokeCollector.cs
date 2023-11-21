@@ -29,7 +29,6 @@ internal sealed class PInvoke : IEquatable<PInvoke>
     public bool Skip;
     public bool WasmLinkage;
 
-
     public bool Equals(PInvoke? other)
         => other != null &&
             string.Equals(EntryPoint, other.EntryPoint, StringComparison.Ordinal) &&
@@ -254,6 +253,7 @@ internal sealed class PInvokeCallback
                     if (arg.MemberName == "EntryPoint")
                     {
                         EntryPoint = arg.TypedValue.Value!.ToString();
+                        return;
                     }
                 }
             }

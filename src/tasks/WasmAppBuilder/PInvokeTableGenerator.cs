@@ -67,7 +67,8 @@ internal sealed class PInvokeTableGenerator
     private void EmitPInvokeTable(StreamWriter w, Dictionary<string, string> modules, List<PInvoke> pinvokes)
     {
 
-        foreach (var pinvoke in pinvokes) {
+        foreach (var pinvoke in pinvokes)
+        {
             if (modules.ContainsKey(pinvoke.Module))
                 continue;
             // Handle special modules, and add them to the list of modules
