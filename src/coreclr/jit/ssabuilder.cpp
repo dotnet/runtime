@@ -1260,76 +1260,12 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                     break;
                 }
 
-                // succ is the first block of this try.  Look at phi defs in the handler.
-                // For a filter, we consider the filter to be the "real" handler.
-                BasicBlock* handlerStart = succTry->ExFlowBlock();
-
-                for (Statement* const stmt : handlerStart->Statements())
+                if (succTry->HasFilter())
                 {
-                    GenTree* tree = stmt->GetRootNode();
-
-                    // Check if the first n of the statements are phi nodes. If not, exit.
-                    if (!tree->IsPhiDefn())
-                    {
-                        break;
-                    }
-
-                    // If the variable is live-out of "blk", and is therefore live on entry to the try-block-start
-                    // "succ", then we make sure the current SSA name for the var is one of the args of the phi node.
-                    // If not, go on.
-                    const unsigned   lclNum    = tree->AsLclVar()->GetLclNum();
-                    const LclVarDsc* lclVarDsc = m_pCompiler->lvaGetDesc(lclNum);
-                    if (!lclVarDsc->lvTracked ||
-                        !VarSetOps::IsMember(m_pCompiler, block->bbLiveOut, lclVarDsc->lvVarIndex))
-                    {
-                        continue;
-                    }
-
-                    GenTreePhi* phi    = tree->AsLclVar()->Data()->AsPhi();
-                    unsigned    ssaNum = m_renameStack.Top(lclNum);
-
-                    AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, succ);
+                    AddPhiArgsToNewlyEnteredHandler(block, succ, succTry->ebdFilter);
                 }
 
-                // Now handle memory.
-                for (MemoryKind memoryKind : allMemoryKinds())
-                {
-                    BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[memoryKind];
-                    if (handlerMemoryPhi != nullptr)
-                    {
-                        if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
-                        {
-                            // We've already added the arg to the phi shared with ByrefExposed if needed,
-                            // but still need to update bbMemorySsaPhiFunc to stay in sync.
-                            assert(memoryKind > ByrefExposed);
-                            assert(block->bbMemorySsaNumOut[memoryKind] == block->bbMemorySsaNumOut[ByrefExposed]);
-                            assert(handlerStart->bbMemorySsaPhiFunc[ByrefExposed]->m_ssaNum ==
-                                   block->bbMemorySsaNumOut[memoryKind]);
-                            handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[ByrefExposed];
-
-                            continue;
-                        }
-
-                        if (handlerMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
-                        {
-                            handlerMemoryPhi =
-                                new (m_pCompiler) BasicBlock::MemoryPhiArg(block->bbMemorySsaNumOut[memoryKind]);
-                        }
-                        else
-                        {
-                            // This path has a potential to introduce redundant phi args, due to multiple
-                            // preds of the same try-begin block having the same live-out memory def, and/or
-                            // due to nested try-begins each having preds with the same live-out memory def.
-                            // Avoid doing quadratic processing on handler phis, and instead live with the
-                            // occasional redundancy.
-                            handlerMemoryPhi = new (m_pCompiler)
-                                BasicBlock::MemoryPhiArg(block->bbMemorySsaNumOut[memoryKind], handlerMemoryPhi);
-                        }
-                        DBG_SSA_JITDUMP("  Added phi arg for %s u:%d from " FMT_BB " in " FMT_BB ".\n",
-                                        memoryKindNames[memoryKind], block->bbMemorySsaNumOut[memoryKind], block->bbNum,
-                                        handlerStart->bbNum);
-                    }
-                }
+                AddPhiArgsToNewlyEnteredHandler(block, succ, succTry->ebdHndBeg);
 
                 tryInd = succTry->ebdEnclosingTryIndex;
             }
@@ -1337,6 +1273,87 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
 
         return BasicBlockVisit::Continue;
     });
+}
+
+//------------------------------------------------------------------------
+// AddPhiArgsToNewlyEnteredHandler: As part of entering a new try-region, add
+// initial values of locals that are live into the handler.
+//
+// Arguments:
+//    predEnterBlock - Predecessor of block in the new try region
+//    enterBlock     - Block in the new try region
+//    handlerStart   - Handler block of the new try region
+//
+void SsaBuilder::AddPhiArgsToNewlyEnteredHandler(BasicBlock* predEnterBlock,
+                                                 BasicBlock* enterBlock,
+                                                 BasicBlock* handlerStart)
+{
+    for (Statement* const stmt : handlerStart->Statements())
+    {
+        GenTree* tree = stmt->GetRootNode();
+
+        // Check if the first n of the statements are phi nodes. If not, exit.
+        if (!tree->IsPhiDefn())
+        {
+            break;
+        }
+
+        // If the variable is live-out of "blk", and is therefore live on entry to the try-block-start
+        // "succ", then we make sure the current SSA name for the var is one of the args of the phi node.
+        // If not, go on.
+        const unsigned   lclNum    = tree->AsLclVar()->GetLclNum();
+        const LclVarDsc* lclVarDsc = m_pCompiler->lvaGetDesc(lclNum);
+        if (!lclVarDsc->lvTracked ||
+            !VarSetOps::IsMember(m_pCompiler, predEnterBlock->bbLiveOut, lclVarDsc->lvVarIndex))
+        {
+            continue;
+        }
+
+        GenTreePhi* phi    = tree->AsLclVar()->Data()->AsPhi();
+        unsigned    ssaNum = m_renameStack.Top(lclNum);
+
+        AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, enterBlock);
+    }
+
+    // Now handle memory.
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[memoryKind];
+        if (handlerMemoryPhi != nullptr)
+        {
+            if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
+            {
+                // We've already added the arg to the phi shared with ByrefExposed if needed,
+                // but still need to update bbMemorySsaPhiFunc to stay in sync.
+                assert(memoryKind > ByrefExposed);
+                assert(predEnterBlock->bbMemorySsaNumOut[memoryKind] ==
+                       predEnterBlock->bbMemorySsaNumOut[ByrefExposed]);
+                assert(handlerStart->bbMemorySsaPhiFunc[ByrefExposed]->m_ssaNum ==
+                       predEnterBlock->bbMemorySsaNumOut[memoryKind]);
+                handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[ByrefExposed];
+
+                continue;
+            }
+
+            if (handlerMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
+            {
+                handlerMemoryPhi =
+                    new (m_pCompiler) BasicBlock::MemoryPhiArg(predEnterBlock->bbMemorySsaNumOut[memoryKind]);
+            }
+            else
+            {
+                // This path has a potential to introduce redundant phi args, due to multiple
+                // preds of the same try-begin block having the same live-out memory def, and/or
+                // due to nested try-begins each having preds with the same live-out memory def.
+                // Avoid doing quadratic processing on handler phis, and instead live with the
+                // occasional redundancy.
+                handlerMemoryPhi = new (m_pCompiler)
+                    BasicBlock::MemoryPhiArg(predEnterBlock->bbMemorySsaNumOut[memoryKind], handlerMemoryPhi);
+            }
+            DBG_SSA_JITDUMP("  Added phi arg for %s u:%d from " FMT_BB " in " FMT_BB ".\n", memoryKindNames[memoryKind],
+                            predEnterBlock->bbMemorySsaNumOut[memoryKind], predEnterBlock->bbNum, handlerStart->bbNum);
+        }
+    }
 }
 
 //------------------------------------------------------------------------

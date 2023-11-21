@@ -98,7 +98,10 @@ private:
     // Add GT_PHI_ARG nodes to the GT_PHI nodes within block's successors.
     void AddPhiArgsToSuccessors(BasicBlock* block);
 
-private:
+    // Similar to Add[Memory]DefToEHSuccessorPhis, but adds initial values to
+    // the handlers of a newly entered block based on one entering block.
+    void AddPhiArgsToNewlyEnteredHandler(BasicBlock* predEnterBlock, BasicBlock* enterBlock, BasicBlock* handlerStart);
+
     Compiler*     m_pCompiler;
     CompAllocator m_allocator;
 

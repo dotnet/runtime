@@ -1410,7 +1410,7 @@ public:
     };
 
     template <typename TFunc>
-    BasicBlockVisit VisitEHSecondPassSuccs(Compiler* comp, TFunc func);
+    BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
     BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);

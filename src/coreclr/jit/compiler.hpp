@@ -399,9 +399,9 @@ inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
     }
 
 //------------------------------------------------------------------------------
-// VisitEHSecondPassSuccs: Given a block, if it is a filter (i.e. invoked in
-// first-pass EH), then visit all successors that control may flow to as part
-// of second-pass EH.
+// VisitEHEnclosedHandlerSecondPassSuccs: Given a block, if it is a filter
+// (i.e. invoked in first-pass EH), then visit all successors that control may
+// flow to as part of second-pass EH.
 //
 // Arguments:
 //   comp - Compiler instance
@@ -416,7 +416,7 @@ inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
 //   filter.
 //
 template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
+BasicBlockVisit BasicBlock::VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func)
 {
     if (!hasHndIndex())
     {
@@ -508,6 +508,8 @@ BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
 //   are the blocks that control may flow to as part of exception handling:
 //   1. On thrown exceptions, control may flow to handlers
 //   2. As part of two pass EH, control may flow from filters to enclosed handlers
+//   3. As part of two pass EH, control may bypass filters and flow directly to
+//   filter-handlers
 //
 template <bool         skipJumpDest, typename TFunc>
 static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc func)
@@ -522,12 +524,23 @@ static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc fun
     {
         while (true)
         {
-            // For BBJ_CALLFINALLY the user may already have processed one of
-            // the EH successors as a regular successor; skip it if requested.
-            BasicBlock* flowBlock = eh->ExFlowBlock();
-            if (!skipJumpDest || !block->HasJumpTo(flowBlock))
+            if (eh->HasFilter())
             {
-                RETURN_ON_ABORT(func(flowBlock));
+                RETURN_ON_ABORT(func(eh->ebdFilter));
+
+                // Control may bypass the filter and flow directly into a
+                // handler; this happens if this was an enclosed handler that
+                // was invoked as part of two pass EH.
+                RETURN_ON_ABORT(func(eh->ebdHndBeg));
+            }
+            else
+            {
+                // For BBJ_CALLFINALLY the user may already have processed one of
+                // the EH successors as a regular successor; skip it if requested.
+                if (!skipJumpDest || !block->HasJumpTo(eh->ebdHndBeg))
+                {
+                    RETURN_ON_ABORT(func(eh->ebdHndBeg));
+                }
             }
 
             if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
@@ -539,7 +552,7 @@ static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc fun
         }
     }
 
-    return block->VisitEHSecondPassSuccs(comp, func);
+    return block->VisitEHEnclosedHandlerSecondPassSuccs(comp, func);
 }
 
 //------------------------------------------------------------------------------
