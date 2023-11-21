@@ -39,9 +39,9 @@ extends:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
-          #perfForkToUse: - dummy change
-            #url: https://github.com/radical/performance
-            #branch: fix-build
+          perfForkToUse: - dummy change
+            url: https://github.com/ilonatommy/performance
+            branch: localized-benchmark
           #downloadSpecificBuild:
             #buildId: '1878694'
             #pipeline: 'perf-wasm'
