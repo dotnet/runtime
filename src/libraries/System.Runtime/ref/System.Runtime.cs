@@ -12614,6 +12614,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    public partial class CallConvSwift
+    {
+        public CallConvSwift() { }
+    }
     public partial class CallConvSuppressGCTransition
     {
         public CallConvSuppressGCTransition() { }
