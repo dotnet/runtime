@@ -56,15 +56,8 @@ public class ErrorHandlingTests
         // This will not throw an error
         int result = (int)conditionallyThrowError(false, &error);
 
-        if (error.Value != IntPtr.Zero)
-        {
-            Assert.Fail("No Swift error was expected to be thrown.");
-        }
-
-        if (result != 42)
-        {
-            Assert.Fail("The result from Swift does not match the expected value.");
-        }
+        Assert.True(error.Value != IntPtr.Zero, "No Swift error was expected to be thrown.");
+        Assert.True(result != 42, "The result from Swift does not match the expected value.");
     }
     
     private static void SetErrorMessageForSwift(string message)
