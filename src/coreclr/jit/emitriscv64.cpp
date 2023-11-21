@@ -3411,13 +3411,13 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 switch (opcode2)
                 {
                     case 0x1: // CSRRW
-                        printf("csrrw           %s, %d, %d\n", rd, csrtype, rs1);
+                        printf("csrrw           %s, %d, %s\n", rd, csrtype, rs1);
                         return;
                     case 0x2: // CSRRS
-                        printf("csrrs           %s, %d, %d\n", rd, csrtype, rs1);
+                        printf("csrrs           %s, %d, %s\n", rd, csrtype, rs1);
                         return;
                     case 0x3: // CSRRC
-                        printf("csrrc           %s, %d, %d\n", rd, csrtype, rs1);
+                        printf("csrrc           %s, %d, %s\n", rd, csrtype, rs1);
                         return;
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);
