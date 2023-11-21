@@ -64,7 +64,7 @@ PhaseStatus Compiler::fgSsaBuild()
     SsaBuilder builder(this);
     builder.Build();
     fgSsaPassesCompleted++;
-    fgSsaChecksEnabled = true;
+    fgSsaValid = true;
 #ifdef DEBUG
     JitTestCheckSSA();
 #endif // DEBUG
