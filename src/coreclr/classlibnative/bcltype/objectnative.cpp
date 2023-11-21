@@ -20,52 +20,6 @@
 #include "eeconfig.h"
 
 
-/********************************************************************/
-/* gets an object's 'value'.  For normal classes, with reference
-   based semantics, this means the object's pointer.  For boxed
-   primitive types, it also means just returning the pointer (because
-   they are immutable), for other value class, it means returning
-   a boxed copy.  */
-
-FCIMPL1(Object*, ObjectNative::GetObjectValue, Object* obj)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-    }
-    CONTRACTL_END;
-
-    VALIDATEOBJECT(obj);
-
-    if (obj == 0)
-        return(obj);
-
-    MethodTable* pMT = obj->GetMethodTable();
-    // optimize for primitive types since GetVerifierCorElementType is slow.
-    if (pMT->IsTruePrimitive() || TypeHandle(pMT).GetVerifierCorElementType() != ELEMENT_TYPE_VALUETYPE) {
-        return(obj);
-    }
-
-    Object* retVal = NULL;
-    OBJECTREF objRef(obj);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);    // Set up a frame
-
-    // Technically we could return boxed DateTimes and Decimals without
-    // copying them here, but VB realized that this would be a breaking change
-    // for their customers.  So copy them.
-    //
-    // MethodTable::Box is a cleaner way to copy value class, but it is slower than following code.
-    //
-    retVal = OBJECTREFToObject(AllocateObject(pMT));
-    CopyValueClass(retVal->GetData(), objRef->GetData(), pMT);
-    HELPER_METHOD_FRAME_END();
-
-    return(retVal);
-}
-FCIMPLEND
-
-
 NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
 {
     DWORD idx = 0;

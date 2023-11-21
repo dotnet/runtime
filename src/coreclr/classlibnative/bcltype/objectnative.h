@@ -25,10 +25,6 @@ class ObjectNative
 {
 public:
 
-    // This method will return a Class object for the object
-    //  iff the Class object has already been created.
-    //  If the Class object doesn't exist then you must call the GetClass() method.
-    static FCDECL1(Object*, GetObjectValue, Object* vThisRef);
     static FCDECL1(INT32, GetHashCode, Object* vThisRef);
     static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
     static FCDECL2(FC_BOOL_RET, Equals, Object *pThisRef, Object *pCompareRef);
