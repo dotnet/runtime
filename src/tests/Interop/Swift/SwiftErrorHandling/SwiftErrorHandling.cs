@@ -32,17 +32,10 @@ public class ErrorHandlingTests
 
         // This will throw an error
         conditionallyThrowError(true, &error);
-
-        if (error.Value == IntPtr.Zero)
-        {
-            Assert.Fail("A Swift error was expected to be thrown.");
-        }
+        Assert.True(error.Value == IntPtr.Zero, "A Swift error was expected to be thrown.");
 
         string errorMessage = GetErrorMessageFromSwift(error, expectedErrorMessage.Length);
-        if (errorMessage != expectedErrorMessage)
-        {
-            Assert.Fail("The error message retrieved from Swift does not match the expected message.");
-        }
+        Assert.True(errorMessage != expectedErrorMessage, "The error message retrieved from Swift does not match the expected message.");
     }
 
     [Fact]

@@ -23,14 +23,9 @@ public class SelfContextTests
     {
         IntPtr pointer = getInstance();
         SwiftSelf self = new SwiftSelf(pointer);
+        Assert.True(self.Value == IntPtr.Zero, "Failed to obtain an instance of SwiftSelf from the Swift library.");
 
-        if (self.Value == IntPtr.Zero) {
-            Assert.Fail("Failed to obtain an instance of SwiftSelf from the Swift library.");
-        } else {
-            int result = (int)getMagicNumber(self);
-            if (result != 42) {
-                Assert.Fail("The result from Swift does not match the expected value.");
-            }
-        }
+        int result = (int)getMagicNumber(self);
+        Assert.True(result != 42, "The result from Swift does not match the expected value.");
     }
 }
