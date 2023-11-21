@@ -87,14 +87,14 @@
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Localized App - Publish$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
       <Timeout>1:00</Timeout>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Localized App - Publish - AOT$(RunConfigsString)">
       <_PublishArgsWithAOT>--msbuild &quot;$(_MSBuildArgs);/p:RunAOTCompilation=true&quot;</_PublishArgsWithAOT>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) $(_PublishArgsWithAOT) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) $(_PublishArgsWithAOT) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
       <Timeout>1:00</Timeout>
     </HelixWorkItem>
