@@ -1788,7 +1788,7 @@
                     </template>
 
                     <template tid="WaitHandleWaitStart">
-                        <data name="WaitSource" inType="win:UInt32" map="WaitHandleWaitSourceMap" />
+                        <data name="WaitSource" inType="win:UInt8" map="WaitHandleWaitSourceMap" />
                         <data name="AssociatedObjectID" inType="win:Pointer" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
@@ -1801,14 +1801,12 @@
                     </template>
 
                     <template tid="WaitHandleWaitStop">
-                        <data name="WaitSource" inType="win:UInt32" map="WaitHandleWaitSourceMap" />
-                        <data name="DurationNs" inType="win:Double" />
+                        <data name="WaitSource" inType="win:UInt8" map="WaitHandleWaitSourceMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
                             <WaitHandle xmlns="myNs">
                                 <WaitSource> %1 </WaitSource>
-                                <DurationNs> %2 </DurationNs>
-                                <ClrInstanceID> %3 </ClrInstanceID>
+                                <ClrInstanceID> %2 </ClrInstanceID>
                             </WaitHandle>
                         </UserData>
                     </template>
@@ -8617,7 +8615,7 @@
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
                 <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
                 <string id="RuntimePublisher.WaitHandleWaitStartEventMessage" value="WaitSource=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
-                <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="WaitSource=%1;%nDurationNs=%2%nClrInstanceID=%3"/>
+                <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="WaitSource=%1;%nClrInstanceID=%2"/>
 
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />

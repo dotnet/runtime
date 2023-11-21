@@ -84,11 +84,11 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogExceptionThrown(
 {
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStart(uint32_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
 {
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStop(uint32_t WaitSource, double DurationNs, uint16_t ClrInstanceID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStop(uint8_t WaitSource, uint16_t ClrInstanceID)
 {
 }
 

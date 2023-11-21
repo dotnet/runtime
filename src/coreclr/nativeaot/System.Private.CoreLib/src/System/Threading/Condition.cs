@@ -110,10 +110,8 @@ namespace System.Threading
             bool isWaitHandleKeywordEnabled = NativeRuntimeEventSource.Log.IsEnabled(
                 EventLevel.Informational,
                 NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
-            long waitStartTimeTicks = 0;
             if (isWaitHandleKeywordEnabled)
             {
-                waitStartTimeTicks = Stopwatch.GetTimestamp();
                 NativeRuntimeEventSource.Log.WaitHandleWaitStart(
                     NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait,
                     0);
@@ -146,11 +144,7 @@ namespace System.Threading
 
                 if (isWaitHandleKeywordEnabled)
                 {
-                    long waitEndTimeTicks = Stopwatch.GetTimestamp();
-                    double waitDurationNs = (waitEndTimeTicks - waitStartTimeTicks) * 1_000_000_000.0 / Stopwatch.Frequency;
-                    NativeRuntimeEventSource.Log.WaitHandleWaitStop(
-                        NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait,
-                        waitDurationNs);
+                    NativeRuntimeEventSource.Log.WaitHandleWaitStop(NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait)
                 }
 
                 AssertIsNotInList(waiter);

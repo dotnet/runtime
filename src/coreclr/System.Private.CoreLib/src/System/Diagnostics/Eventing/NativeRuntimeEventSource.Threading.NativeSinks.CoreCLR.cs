@@ -109,7 +109,6 @@ namespace System.Diagnostics.Tracing
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void LogWaitHandleWaitStop(
             WaitHandleWaitSourceMap WaitSource,
-            double DurationNs,
             ushort ClrInstanceID);
     }
 }

@@ -2787,7 +2787,7 @@ ep_rt_write_event_contention_stop (
 
 bool
 ep_rt_write_event_wait_handle_wait_start (
-	uint32_t wait_source,
+	uint8_t wait_source,
 	intptr_t associated_object_id,
 	uint16_t clr_instance_id)
 {
@@ -2801,13 +2801,11 @@ ep_rt_write_event_wait_handle_wait_start (
 
 bool
 ep_rt_write_event_wait_handle_wait_stop (
-	uint32_t wait_source,
-	double duration_ns,
+	uint8_t wait_source,
 	uint16_t clr_instance_id)
 {
 	return FireEtwWaitHandleWaitStop (
 		wait_source,
-		duration_ns,
 		clr_instance_id,
 		NULL,
 		NULL) == 0 ? true : false;

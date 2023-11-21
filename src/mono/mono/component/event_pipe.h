@@ -244,14 +244,13 @@ typedef bool
 
 typedef bool
 (*event_pipe_component_write_event_wait_handle_wait_start_func)(
-	uint32_t wait_source,
+	uint8_t wait_source,
 	intptr_t associated_object_id,
 	uint16_t clr_instance_id);
 
 typedef bool
 (*event_pipe_component_write_event_wait_handle_wait_stop_func)(
-	uint32_t wait_source,
-	double duration_ns,
+	uint8_t wait_source,
 	uint16_t clr_instance_id);
 
 /*

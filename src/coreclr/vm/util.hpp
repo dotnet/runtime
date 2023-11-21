@@ -924,6 +924,4 @@ inline UINT32 FastMod(UINT32 value, UINT32 divisor, UINT64 multiplier)
 }
 #endif
 
-double ComputeTicksDeltaInNanosecond(LARGE_INTEGER startTicks, LARGE_INTEGER endTicks);
-
 #endif /* _H_UTIL */

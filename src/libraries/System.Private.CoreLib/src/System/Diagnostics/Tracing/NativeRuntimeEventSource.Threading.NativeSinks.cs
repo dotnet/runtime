@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tracing
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
             public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
             public const string WaitHandleWaitStart = "WaitSource={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
-            public const string WaitHandleWaitStop = "WaitSource={0};\nDurationNs={1};\nClrInstanceID={2}";
+            public const string WaitHandleWaitStop = "WaitSource={0};\nClrInstanceID={1}";
         }
 
         // The task definitions for the ETW manifest
@@ -79,7 +79,7 @@ namespace System.Diagnostics.Tracing
             CooperativeBlocking,
         }
 
-        public enum WaitHandleWaitSourceMap : uint
+        public enum WaitHandleWaitSourceMap : byte
         {
             Unknown,
             MonitorWait,
@@ -343,11 +343,10 @@ namespace System.Diagnostics.Tracing
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandle, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
         public void WaitHandleWaitStop(
             WaitHandleWaitSourceMap WaitSource,
-            double DurationNs,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
-            LogWaitHandleWaitStop(WaitSource, DurationNs, ClrInstanceID);
+            LogWaitHandleWaitStop(WaitSource, ClrInstanceID);
         }
     }
 }

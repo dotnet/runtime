@@ -471,7 +471,7 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop 
 
 void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStart (
-	uint32_t wait_source,
+	uint8_t wait_source,
 	intptr_t associated_object_id,
 	uint16_t clr_instance_id)
 {
@@ -483,13 +483,11 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitS
 
 void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (
-	uint32_t wait_source,
-	double duration_ns,
+	uint8_t wait_source,
 	uint16_t clr_instance_id)
 {
 	mono_component_event_pipe ()->write_event_wait_handle_wait_stop (
 		wait_source,
-		duration_ns,
 		clr_instance_id);
 }
 
@@ -804,7 +802,7 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop 
 
 void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStart (
-	uint32_t wait_source,
+	uint8_t wait_source,
 	intptr_t associated_object_id,
 	uint16_t clr_instance_id)
 {
@@ -815,8 +813,7 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitS
 
 void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (
-	uint32_t wait_source,
-	double duration_ns,
+	uint8_t wait_source,
 	uint16_t clr_instance_id)
 {
 	ERROR_DECL (error);

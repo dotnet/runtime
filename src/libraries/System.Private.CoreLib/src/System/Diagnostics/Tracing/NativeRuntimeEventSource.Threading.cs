@@ -34,7 +34,7 @@ namespace System.Diagnostics.Tracing
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
             public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
             public const string WaitHandleWaitStart = "WaitSource={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
-            public const string WaitHandleWaitStop = "WaitSource={0};\nDurationNs={1};\nClrInstanceID={2}";
+            public const string WaitHandleWaitStop = "WaitSource={0};\nClrInstanceID={1}";
         }
 
         // The task definitions for the ETW manifest
@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tracing
             CooperativeBlocking,
         }
 
-        public enum WaitHandleWaitSourceMap : uint
+        public enum WaitHandleWaitSourceMap : byte
         {
             Unknown,
             MonitorWait,
@@ -541,7 +541,6 @@ namespace System.Diagnostics.Tracing
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandle, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
         public unsafe void WaitHandleWaitStop(
             WaitHandleWaitSourceMap WaitSource,
-            double DurationNs,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
@@ -550,12 +549,9 @@ namespace System.Diagnostics.Tracing
             data[0].DataPointer = (nint)(&WaitSource);
             data[0].Size = sizeof(WaitHandleWaitSourceMap);
             data[0].Reserved = 0;
-            data[1].DataPointer = (nint)(&DurationNs);
-            data[1].Size = sizeof(double);
+            data[1].DataPointer = (nint)(&ClrInstanceID);
+            data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
-            data[2].DataPointer = (nint)(&ClrInstanceID);
-            data[2].Size = sizeof(ushort);
-            data[2].Reserved = 0;
             WriteEventCore(302, 3, data);
         }
     }

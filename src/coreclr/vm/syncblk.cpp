@@ -2506,6 +2506,17 @@ inline void LogContention()
 #define LogContention()
 #endif
 
+double ComputeElapsedTimeInNanosecond(LARGE_INTEGER startTicks, LARGE_INTEGER endTicks)
+{
+    static LARGE_INTEGER freq;
+    if (freq.QuadPart == 0)
+        QueryPerformanceFrequency(&freq);
+
+    const double NsPerSecond = 1000 * 1000 * 1000;
+    LONGLONG elapsedTicks = endTicks.QuadPart - startTicks.QuadPart;
+    return (elapsedTicks * NsPerSecond) / freq.QuadPart;
+}
+
 BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 {
     STATIC_CONTRACT_THROWS;
@@ -2681,7 +2692,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
         LARGE_INTEGER endTicks;
         QueryPerformanceCounter(&endTicks);
 
-        double elapsedTimeInNanosecond = ComputeTicksDeltaInNanosecond(startTicks, endTicks);
+        double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
 
         // Fire a contention end event for a managed contention
         FireEtwContentionStop_V1(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), elapsedTimeInNanosecond);
