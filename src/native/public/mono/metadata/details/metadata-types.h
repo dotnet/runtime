@@ -31,6 +31,7 @@ typedef enum {
 	MONO_CALL_VARARG = 0x05,
 	/* unused, */
 	/* unused, */
+	/* unused, */
 	MONO_CALL_UNMANAGED_MD = 0x09, /* default unmanaged calling convention, with additional attributed encoded in modopts */
 } MonoCallConvention;
 
