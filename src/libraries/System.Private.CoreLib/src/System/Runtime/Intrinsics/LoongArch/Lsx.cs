@@ -2507,196 +2507,610 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<double> Xor(Vector128<double> left, Vector128<double> right) => Xor(left, right);
 
         /// <summary>
-        /// int8x16_t vslli_b_s8 (int8x16_t a, const int n)
-        ///   LSX: VSLLI.B Vd.16B, Vj.16B, #n
+        /// int8x16_t vslli_b_s8 (int8x16_t a, const int n) //qiaoqiao.ok.
+        ///   LSX: VSLLI.B Vd.16B, Vj.16B, ui3
         /// </summary>
-        public static Vector128<sbyte> ShiftLeftLogical(Vector128<sbyte> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<sbyte> ShiftLeftLogical(Vector128<sbyte> value, const const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint8x16_t vslli_b_u8 (uint8x16_t a, const int n)
-        ///   LSX: VSLLI.B Vd.16B, Vj.16B, #n
+        ///   LSX: VSLLI.B Vd.16B, Vj.16B, ui3
         /// </summary>
-        public static Vector128<byte> ShiftLeftLogical(Vector128<byte> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<byte> ShiftLeftLogical(Vector128<byte> value, const const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// int16x8_t vslli_h_s16 (int16x8_t a, const int n)
-        ///   LSX: VSLLI.H Vd.8H, Vj.8H, #n
+        ///   LSX: VSLLI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, const const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint16x8_t vslli_h_u16 (uint16x8_t a, const int n)
-        ///   LSX: VSLLI.H Vd.8H, Vj.8H, #n
+        ///   LSX: VSLLI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, const const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint32x4_t vslli_w_s32 (uint32x4_t a, const int n)
-        ///   LSX: VSLLI.W Vd.4S, Vj.4S, #n
+        ///   LSX: VSLLI.W Vd.4S, Vj.4S, ui5
         /// </summary>
-        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, const const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint32x4_t vslli_w_u32 (uint32x4_t a, const int n)
-        ///   LSX: VSLLI.W Vd.4S, Vj.4S, #n
+        ///   LSX: VSLLI.W Vd.4S, Vj.4S, ui5
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, const const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// int64x2_t vslli_d_s64 (int64x2_t a, const int n)
-        ///   LSX: VSLLI.D Vd.2D, Vj.2D, #n
+        ///   LSX: VSLLI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, const const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint64x2_t vslli_d_u64 (uint64x2_t a, const int n)
-        ///   LSX: VSLLI.D Vd.2D, Vj.2D, #n
+        ///   LSX: VSLLI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, byte count) => ShiftLeftLogical(value, count);
+        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, const const byte shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// int8x16_t vsll_b_u8 (int8x16_t a, int8x16_t b)
+        ///   LSX: VSLL.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> ShiftLeftLogical(Vector128<sbyte> value, Vector128<sbyte> shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vsll_b_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VSLL.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> ShiftLeftLogical(Vector128<byte> value, Vector128<byte> shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// int16x8_t vsll_h_s16 (int16x8_t value, int16x8_t shift)
+        ///   LSX: VSLL.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, Vector128<short> shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vsll_h_s16 (uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSLL.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, Vector128<ushort> shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// int32x4_t vsll_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VSLL.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, Vector128<int> shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// uint32x4_t vsll_w_s32 (uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSLL.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, Vector128<uint> shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// int64x2_t vsll_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VSLL.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, Vector128<long> shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// uint64x2_t vsll_d_u64 (uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSLL.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, Vector128<ulong> shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vsrli_b_u8 (uint8x16_t a, const int n) //qiaoqiao.ok.
+        ///   LSX: VSRLI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogical(Vector128<sbyte> value, const byte shift) => ShiftRightLogical(value, shift);
 
         /// <summary>
         /// uint8x16_t vsrli_b_u8 (uint8x16_t a, const int n)
-        ///   LSX: VSRLI.B Vd.16B, Vj.16B, #n
+        ///   LSX: VSRLI.B Vd.16B, Vj.16B, ui3
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogical(Vector128<sbyte> value, byte count) => ShiftRightLogical(value, count);
-
-        /// <summary>
-        /// uint8x16_t vsrli_b_u8 (uint8x16_t a, const int n)
-        ///   LSX: VSRLI.B Vd.16B, Vj.16B, #n
-        /// </summary>
-        public static Vector128<byte> ShiftRightLogical(Vector128<byte> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<byte> ShiftRightLogical(Vector128<byte> value, const byte shift) => ShiftRightLogical(value, shift);
 
         /// <summary>
         /// uint16x8_t vsrli_h_u16 (uint16x8_t a, const int n)
-        ///   LSX: VSRLI.H Vd.8H, Vj.8H, #n
+        ///   LSX: VSRLI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<short> ShiftRightLogical(Vector128<short> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<short> ShiftRightLogical(Vector128<short> value, const byte shift) => ShiftRightLogical(value, shift);
 
         /// <summary>
         /// uint16x8_t vsrli_h_u16 (uint16x8_t a, const int n)
-        ///   LSX: VSRLI.H Vd.8H, Vj.8H, #n
+        ///   LSX: VSRLI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, const byte shift) => ShiftRightLogical(value, shift);
 
         /// <summary>
         /// uint32x4_t vsrli_w_u32 (uint32x4_t a, const int n)
-        ///   LSX: VSRLI.W Vd.4S, Vj.4S, #n
+        ///   LSX: VSRLI.W Vd.4S, Vj.4S, ui5
         /// </summary>
-        public static Vector128<int> ShiftRightLogical(Vector128<int> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<int> ShiftRightLogical(Vector128<int> value, const byte shift) => ShiftRightLogical(value, shift);
 
         /// <summary>
         /// uint32x4_t vsrli_w_u32 (uint32x4_t a, const int n)
-        ///   LSX: VSRLI.W Vd.4S, Vj.4S, #n
+        ///   LSX: VSRLI.W Vd.4S, Vj.4S, ui5
         /// </summary>
-        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, const byte shift) => ShiftRightLogical(value, shift);
 
         /// <summary>
         /// uint64x2_t vsrli_d_u64 (uint64x2_t a, const int n)
-        ///   LSX: VSRLI.D Vd.2D, Vj.2D, #n
+        ///   LSX: VSRLI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<long> ShiftRightLogical(Vector128<long> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<long> ShiftRightLogical(Vector128<long> value, const byte shift) => ShiftRightLogical(value, shift);
 
         /// <summary>
         /// uint64x2_t vsrli_d_u64 (uint64x2_t a, const int n)
-        ///   LSX: VSRLI.D Vd.2D, Vj.2D, #n
+        ///   LSX: VSRLI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, byte count) => ShiftRightLogical(value, count);
+        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, const byte shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// int8x16_t vsrl_b_u8 (int8x16_t a, int8x16_t b)
+        ///   LSX: VSRL.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogical(Vector128<sbyte> value, Vector128<sbyte> shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vsrl_b_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VSRL.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogical(Vector128<byte> value, Vector128<byte> shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// int16x8_t vsrl_h_s16 (int16x8_t value, int16x8_t shift)
+        ///   LSX: VSRL.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> ShiftRightLogical(Vector128<short> value, Vector128<short> shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vsrl_h_s16 (uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSRL.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, Vector128<ushort> shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// int32x4_t vsrl_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VSRL.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> ShiftRightLogical(Vector128<int> value, Vector128<int> shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// uint32x4_t vsrl_w_s32 (uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSRL.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, Vector128<uint> shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// int64x2_t vsrl_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VSRL.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> ShiftRightLogical(Vector128<long> value, Vector128<long> shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// uint64x2_t vsrl_d_u64 (uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSRL.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, Vector128<ulong> shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vsrlri_b_u8 (uint8x16_t a, const int n) //qiaoqiao.ok.
+        ///   LSX: VSRLRI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalRounded(Vector128<sbyte> value, const byte shift) => ShiftRightLogicalRounded(value, shift);
 
         /// <summary>
         /// uint8x16_t vsrlri_b_u8 (uint8x16_t a, const int n)
-        ///   LSX: VSRLRI.B Vd.16B, Vj.16B, #n
+        ///   LSX: VSRLRI.B Vd.16B, Vj.16B, ui3
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalRounded(Vector128<sbyte> value, byte count) => ShiftRightLogicalRounded(value, count);
-
-        /// <summary>
-        /// uint8x16_t vsrlri_b_u8 (uint8x16_t a, const int n)
-        ///   LSX: VSRLRI.B Vd.16B, Vj.16B, #n
-        /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRounded(Vector128<byte> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<byte> ShiftRightLogicalRounded(Vector128<byte> value, const byte shift) => ShiftRightLogicalRounded(value, shift);
 
         /// <summary>
         /// uint16x8_t vsrlri_h_u16 (uint16x8_t a, const int n)
-        ///   LSX: VSRLRI.H Vd.8H, Vj.8H, #n
+        ///   LSX: VSRLRI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalRounded(Vector128<short> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<short> ShiftRightLogicalRounded(Vector128<short> value, const byte shift) => ShiftRightLogicalRounded(value, shift);
 
         /// <summary>
         /// uint16x8_t vsrlri_h_u16 (uint16x8_t a, const int n)
-        ///   LSX: VSRLRI.H Vd.8H, Vj.8H, #n
+        ///   LSX: VSRLRI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRounded(Vector128<ushort> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<ushort> ShiftRightLogicalRounded(Vector128<ushort> value, const byte shift) => ShiftRightLogicalRounded(value, shift);
 
         /// <summary>
         /// uint32x4_t vsrlri_w_u32 (uint32x4_t a, const int n)
-        ///   LSX: VSRLRI.W Vd.4S, Vj.4S, #n
+        ///   LSX: VSRLRI.W Vd.4S, Vj.4S, ui5
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalRounded(Vector128<int> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<int> ShiftRightLogicalRounded(Vector128<int> value, const byte shift) => ShiftRightLogicalRounded(value, shift);
 
         /// <summary>
         /// uint32x4_t vsrlri_w_u32 (uint32x4_t a, const int n)
-        ///   LSX: VSRLRI.W Vd.4S, Vj.4S, #n
+        ///   LSX: VSRLRI.W Vd.4S, Vj.4S, ui5
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRounded(Vector128<uint> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<uint> ShiftRightLogicalRounded(Vector128<uint> value, const byte shift) => ShiftRightLogicalRounded(value, shift);
 
         /// <summary>
         /// uint64x2_t vsrlri_d_u64 (uint64x2_t a, const int n)
-        ///   LSX: VSRLRI.D Vd.2D, Vj.2D, #n
+        ///   LSX: VSRLRI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<long> ShiftRightLogicalRounded(Vector128<long> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<long> ShiftRightLogicalRounded(Vector128<long> value, const byte shift) => ShiftRightLogicalRounded(value, shift);
 
         /// <summary>
         /// uint64x2_t vsrlri_d_u64 (uint64x2_t a, const int n)
-        ///   LSX: VSRLRI.D Vd.2D, Vj.2D, #n
+        ///   LSX: VSRLRI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<ulong> ShiftRightLogicalRounded(Vector128<ulong> value, byte count) => ShiftRightLogicalRounded(value, count);
+        public static Vector128<ulong> ShiftRightLogicalRounded(Vector128<ulong> value, const byte shift) => ShiftRightLogicalRounded(value, shift);
 
         /// <summary>
-        /// int8x16_t vsrai_b_s8 (int8x16_t a, const int n)
-        ///   LSX: VSRAI.B Vd.16B, Vj.16B, #n
+        /// int8x16_t vsrlr_b_s8 (int8x16_t a, int8x16_t b)
+        ///   LSX: VSRLR.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector128<sbyte> ShiftRightLogicalRounded(Vector128<sbyte> value, Vector128<sbyte> shift) => ShiftRightLogicalRounded(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vsrlr_b_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VSRLR.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalRounded(Vector128<byte> value, Vector128<byte> shift) => ShiftRightLogicalRounded(value, shift);
+
+        /// <summary>
+        /// int16x8_t vsrlr_h_s16 (int16x8_t value, int16x8_t shift)
+        ///   LSX: VSRLR.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> ShiftRightLogicalRounded(Vector128<short> value, Vector128<short> shift) => ShiftRightLogicalRounded(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vsrlr_h_u16 (uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSRLR.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalRounded(Vector128<ushort> value, Vector128<ushort> shift) => ShiftRightLogicalRounded(value, shift);
+
+        /// <summary>
+        /// int32x4_t vsrlr_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VSRLR.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> ShiftRightLogicalRounded(Vector128<int> value, Vector128<int> shift) => ShiftRightLogicalRounded(value, shift);
+
+        /// <summary>
+        /// uint32x4_t vsrlr_w_u32 (uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSRLR.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalRounded(Vector128<uint> value, Vector128<uint> shift) => ShiftRightLogicalRounded(value, shift);
+
+        /// <summary>
+        /// int64x2_t vsrlr_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VSRLR.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> ShiftRightLogicalRounded(Vector128<long> value, Vector128<long> shift) => ShiftRightLogicalRounded(value, shift);
+
+        /// <summary>
+        /// uint64x2_t vsrlr_d_u64 (uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSRLR.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> ShiftRightLogicalRounded(Vector128<ulong> value, Vector128<ulong> shift) => ShiftRightLogicalRounded(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vsrlrni_b_h_u16 (uint16x8_t left, uint16x8_t right, const int n)  qiaoqiao.ok.
+        ///   LSX: VSRLRNI.B.H Vd, Vj, ui4    ///NOTE: The Vd is both input and output, so the left shoule be ref type!!!
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// int8x16_t vsrlrni_b_h_s16 (int16x8_t left, int16x8_t right, const int n)
+        ///   LSX: VSRLRNI.B.H Vd, Vj, ui4
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vsrlrni_h_w_s32 (int32x4_t left, int32x4_t right, const int n)
+        ///   LSX: VSRLRNI.H.W Vd, Vj, ui5
+        /// </summary>
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vsrlrni_h_w_u32 (uint32x4_t left, uint32x4_t right, const int n)
+        ///   LSX: VSRLRNI.H.W Vd, Vj, ui5
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vsrlrni_w_d_s64 (int64x2_t left, int64x2_t right, const int n)
+        ///   LSX: VSRLRNI.W.D Vd, Vj, ui6
+        /// </summary>
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vsrlrni_w_d_u64 (uint64x2_t left, uint64x2_t right, const int n)
+        ///   LSX: VSRLRNI.W.D Vd, Vj, ui6
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+
+        ///// <summary>
+        ///// int64x2_t vsrlrni_d_q_s128 (int128x1_t left, int128x1_t right, const int n)
+        /////   LSX: VSRLRNI.D.Q Vd, Vj, ui7
+        ///// </summary>
+        //public static Vector128<long> ShiftRightLogicalRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vsrlrn_b_h_s16 (int16x8_t value, int16x8_t shift)  qiaoqiao.ok.
+        ///   LSX: VSRLRN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingLower(Vector128<short> value, Vector128<short> shift) => ShiftRightLogicalRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// uint8x8_t vsrlrn_b_h_u16 (uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSRLRN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalRoundedNarrowingLower(Vector128<ushort> value, Vector128<ushort> shift) => ShiftRightLogicalRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// int16x4_t vsrlrn_h_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VSRLRN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<short> ShiftRightLogicalRoundedNarrowingLower(Vector128<int> value, Vector128<int> shift) => ShiftRightLogicalRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vsrlrn_h_w_u32 (uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSRLRN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingLower(Vector128<uint> value, Vector128<uint> shift) => ShiftRightLogicalRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// int32x2_t vsrlrn_w_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VSRLRN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<int> ShiftRightLogicalRoundedNarrowingLower(Vector128<long> value, Vector128<long> shift) => ShiftRightLogicalRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// uint32x2_t vsrlrn_w_d_s64 (uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSRLRN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> value, Vector128<ulong> shift) => ShiftRightLogicalRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// int8x16_t vsrai_b_s8 (int8x16_t a, const int n) //qiaoqiao.ok.
+        ///   LSX: VSRAI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> value, const byte shift) => ShiftRightArithmetic(value, shift);
 
         /// <summary>
         /// int16x8_t vsrai_h_s16 (int16x8_t a, const int n)
-        ///   LSX: VSRAI.H Vd.8H, Vj.8H, #n
+        ///   LSX: VSRAI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, const byte shift) => ShiftRightArithmetic(value, shift);
 
         /// <summary>
         /// int32x4_t vsrai_w_s32 (int32x4_t a, const int n)
-        ///   LSX: VSRAI.W Vd.4S, Vj.4S, #n
+        ///   LSX: VSRAI.W Vd.4S, Vj.4S, ui5
         /// </summary>
-        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, const byte shift) => ShiftRightArithmetic(value, shift);
 
         /// <summary>
         /// int64x2_t vsrai_d_s64 (int64x2_t a, const int n)
-        ///   LSX: VSRAI.D Vd.2D, Vj.2D, #n
+        ///   LSX: VSRAI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<long> ShiftRightArithmetic(Vector128<long> value, byte count) => ShiftRightArithmetic(value, count);
+        public static Vector128<long> ShiftRightArithmetic(Vector128<long> value, const byte shift) => ShiftRightArithmetic(value, shift);
 
         /// <summary>
-        /// int8x16_t vsrari_b_s8 (int8x16_t a, const int n)
-        ///   LSX: VSRARI.B Vd.16B, Vj.16B, #n
+        /// uint8x16_t vsra_b_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VSRA.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticRounded(Vector128<sbyte> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector128<byte> ShiftRightArithmetic(Vector128<byte> value, Vector128<byte> shift) => ShiftRightArithmetic(value, shift);
+
+        /// <summary>
+        /// int16x8_t vsra_h_s16 (int16x8_t value, int16x8_t shift)
+        ///   LSX: VSRA.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, Vector128<short> shift) => ShiftRightArithmetic(value, shift);
+
+        /// <summary>
+        /// int32x4_t vsra_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VSRA.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, Vector128<int> shift) => ShiftRightArithmetic(value, shift);
+
+        /// <summary>
+        /// int64x2_t vsra_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VSRA.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> ShiftRightArithmetic(Vector128<long> value, Vector128<long> shift) => ShiftRightArithmetic(value, shift);
+
+        /// <summary>
+        /// int8x16_t vsrari_b_s8 (int8x16_t a, const int n) //qiaoqiao.ok.
+        ///   LSX: VSRARI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmeticRounded(Vector128<sbyte> value, const byte shift) => ShiftRightArithmeticRounded(value, shift);
 
         /// <summary>
         /// int16x8_t vsrari_h_s16 (int16x8_t a, const int n)
-        ///   LSX: VSRARI.H Vd.8H, Vj.8H, #n
+        ///   LSX: VSRARI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticRounded(Vector128<short> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector128<short> ShiftRightArithmeticRounded(Vector128<short> value, const byte shift) => ShiftRightArithmeticRounded(value, shift);
 
         /// <summary>
         /// int32x4_t vsrari_w_s32 (int32x4_t a, const int n)
-        ///   LSX: VSRARI.W Vd.4S, Vj.4S, #n
+        ///   LSX: VSRARI.W Vd.4W, Vj.4W, ui5
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticRounded(Vector128<int> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector128<int> ShiftRightArithmeticRounded(Vector128<int> value, const byte shift) => ShiftRightArithmeticRounded(value, shift);
 
         /// <summary>
         /// int64x2_t vsrari_d_s64 (int64x2_t a, const int n)
-        ///   LSX: VSRARI.D Vd.2D, Vj.2D, #n
+        ///   LSX: VSRARI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<long> ShiftRightArithmeticRounded(Vector128<long> value, byte count) => ShiftRightArithmeticRounded(value, count);
+        public static Vector128<long> ShiftRightArithmeticRounded(Vector128<long> value, const byte shift) => ShiftRightArithmeticRounded(value, shift);
+
+        /// <summary>
+        /// int8x16_t vsrar_b_s8 (int8x16_t a, int8x16_t b)
+        ///   LSX: VSRAR.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmeticRounded(Vector128<sbyte> value, Vector128<sbyte> shift) => ShiftRightArithmeticRounded(value, shift);
+
+        /// <summary>
+        /// int16x8_t vsrar_h_s16 (int16x8_t value, int16x8_t shift)
+        ///   LSX: VSRAR.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmeticRounded(Vector128<short> value, Vector128<short> shift) => ShiftRightArithmeticRounded(value, shift);
+
+        /// <summary>
+        /// int32x4_t vsrar_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VSRAR.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmeticRounded(Vector128<int> value, Vector128<int> shift) => ShiftRightArithmeticRounded(value, shift);
+
+        /// <summary>
+        /// int64x2_t vsrar_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VSRAR.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> ShiftRightArithmeticRounded(Vector128<long> value, Vector128<long> shift) => ShiftRightArithmeticRounded(value, shift);
+
+        /// <summary>
+        /// int8x16_t vsrarni_b_h_s16 (int16x8_t left, int16x8_t right, const int n)
+        ///   LSX: VSRARNI.B.H Vd, Vj, ui4    ///NOTE: The Vd is both input and output, so the left shoule be ref type!!!
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] const byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vsrarni_h_w_s32 (int32x4_t left, int32x4_t right, const int n)
+        ///   LSX: VSRARNI.H.W Vd, Vj, ui5
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] const byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vsrarni_w_d_s64 (int64x2_t left, int64x2_t right, const int n)
+        ///   LSX: VSRARNI.W.D Vd, Vj, ui6
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] const byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
+
+        ///// <summary>
+        ///// int64x2_t vsrarni_d_q_s128 (int128x1_t left, int128x1_t right, const int n)
+        /////   LSX: VSRARNI.D.Q Vd, Vj, ui7
+        ///// </summary>
+        //public static Vector128<long> ShiftRightArithmeticRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] const byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vsrarn_b_h_s16 (int16x8_t value, int16x8_t shift)  qiaoqiao.ok.
+        ///   LSX: VSRARN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightArithmeticRoundedNarrowingLower(Vector128<short> value, Vector128<short> shift) => ShiftRightArithmeticRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// int16x4_t vsrarn_h_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VSRARN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<short> ShiftRightArithmeticRoundedNarrowingLower(Vector128<int> value, Vector128<int> shift) => ShiftRightArithmeticRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vsrarn_h_w_u32 (uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSRARN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightArithmeticRoundedNarrowingLower(Vector128<uint> value, Vector128<uint> shift) => ShiftRightArithmeticRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// int32x2_t vsrarn_w_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VSRARN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<int> ShiftRightArithmeticRoundedNarrowingLower(Vector128<long> value, Vector128<long> shift) => ShiftRightArithmeticRoundedNarrowingLower(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vrotri_b_u8 (uint8x16_t a, const int n) //qiaoqiao.ok.
+        ///   LSX: VROTRI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> RotateRight(Vector128<sbyte> value, const byte shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vrotri_b_u8 (uint8x16_t a, const int n)
+        ///   LSX: VROTRI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<byte> RotateRight(Vector128<byte> value, const byte shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vrotri_h_u16 (uint16x8_t a, const int n)
+        ///   LSX: VROTRI.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<short> RotateRight(Vector128<short> value, const byte shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vrotri_h_u16 (uint16x8_t a, const int n)
+        ///   LSX: VROTRI.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<ushort> RotateRight(Vector128<ushort> value, const byte shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint32x4_t vrotri_w_u32 (uint32x4_t a, const int n)
+        ///   LSX: VROTRI.W Vd.4S, Vj.4S, ui5
+        /// </summary>
+        public static Vector128<int> RotateRight(Vector128<int> value, const byte shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint32x4_t vrotri_w_u32 (uint32x4_t a, const int n)
+        ///   LSX: VROTRI.W Vd.4S, Vj.4S, ui5
+        /// </summary>
+        public static Vector128<uint> RotateRight(Vector128<uint> value, const byte shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint64x2_t vrotri_d_u64 (uint64x2_t a, const int n)
+        ///   LSX: VROTRI.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<long> RotateRight(Vector128<long> value, const byte shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint64x2_t vrotri_d_u64 (uint64x2_t a, const int n)
+        ///   LSX: VROTRI.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<ulong> RotateRight(Vector128<ulong> value, const byte shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// int8x16_t vrotr_b_s8 (int8x16_t a, int8x16_t b)
+        ///   LSX: VROTR.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> RotateRight(Vector128<sbyte> value, Vector128<sbyte> shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vrotr_b_u8 (uint8x16_t a, uint8x16_t b)
+        ///   LSX: VROTR.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> RotateRight(Vector128<byte> value, Vector128<byte> shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// int16x8_t vrotr_h_s16 (int16x8_t value, int16x8_t shift)
+        ///   LSX: VROTR.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> RotateRight(Vector128<short> value, Vector128<short> shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vrotr_h_u16 (uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VROTR.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> RotateRight(Vector128<ushort> value, Vector128<ushort> shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// int32x4_t vrotr_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VROTR.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> RotateRight(Vector128<int> value, Vector128<int> shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint32x4_t vrotr_w_u32 (uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VROTR.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> RotateRight(Vector128<uint> value, Vector128<uint> shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// int64x2_t vrotr_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VROTR.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> RotateRight(Vector128<long> value, Vector128<long> shift) => RotateRight(value, shift);
+
+        /// <summary>
+        /// uint64x2_t vrotr_d_u64 (uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VROTR.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> RotateRight(Vector128<ulong> value, Vector128<ulong> shift) => RotateRight(value, shift);
 
         /// <summary>
         /// int8x16_t vadda_b_s8 (int8x16_t a)
@@ -2892,13 +3306,13 @@ namespace System.Runtime.Intrinsics.LoongArch
 
         /// <summary>
         /// int32x4_t vreplgr2vr_w_s32 (int32_t value)
-        ///   LSX: VREPLGR2VR.W Vd.4S, Rj
+        ///   LSX: VREPLGR2VR.W Vd.4W, Rj
         /// </summary>
         public static Vector128<int> DuplicateToVector128(int value) => DuplicateToVector128(value);
 
         /// <summary>
         /// uint32x4_t vreplgr2vr_w_u32 (uint32_t value)
-        ///   LSX: VREPLGR2VR.W Vd.4S, Rj
+        ///   LSX: VREPLGR2VR.W Vd.4W, Rj
         /// </summary>
         public static Vector128<uint> DuplicateToVector128(uint value) => DuplicateToVector128(value);
 
@@ -2928,13 +3342,13 @@ namespace System.Runtime.Intrinsics.LoongArch
 
         /// <summary>
         /// float32x4_t vffint_s_w_f32_s32 (int32x4_t a)
-        ///   LSX: VFFINT.S.W Vd.4S, Vj.4S
+        ///   LSX: VFFINT.S.W Vd.4S, Vj.4W
         /// </summary>
         public static Vector128<float> ConvertToSingle(Vector128<int> value) => ConvertToSingle(value);
 
         /// <summary>
         /// float32x4_t vffint_s_wu_f32_u32 (uint32x4_t a)
-        ///   LSX: VFFINT.S.WU Vd.4S, Vj.4S
+        ///   LSX: VFFINT.S.WU Vd.4S, Vj.4W
         /// </summary>
         public static Vector128<float> ConvertToSingle(Vector128<uint> value) => ConvertToSingle(value);
 
@@ -3071,82 +3485,628 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static bool HasElementsIsZero(Vector128<ulong> value) => HasElementsIsZero(value);
 
         /// <summary>
-        /// ulong vsrlni_b_h_16 (int16x8_t value, shift)
-        ///   NOTE: this is implemented by multi instructions.
-        ///   LSX: VSRLNI.B.H Vd, Vj, ui4
-        ///   LSX: Vd Scalar to uint64.
-        /// </summary>
-        public static ulong ShiftRightLogicalNarrowingLowerScalar(Vector128<short> value, byte shift) => ShiftRightLogicalNarrowingLowerScalar(value, shift);
-
-        /// <summary>
-        /// ulong vsrlni_b_h_u16 (uint16x8_t value, shift)
-        ///   NOTE: this is implemented by multi instructions.
-        ///   LSX: VSRLNI.B.H Vd, Vj, ui4
-        ///   LSX: Vd Scalar to uint64.
-        /// </summary>
-        public static ulong ShiftRightLogicalNarrowingLowerScalar(Vector128<ushort> value, byte shift) => ShiftRightLogicalNarrowingLowerScalar(value, shift);
-
-        /// <summary>
-        /// ulong vsrlni_h_w_s32 (int32x4_t value, shift)
-        ///   NOTE: this is implemented by multi instructions.
-        ///   LSX: VSRLNI.H.W Vd, Vj, ui5
-        ///   LSX: Vd Scalar to uint64.
-        /// </summary>
-        public static ulong ShiftRightLogicalNarrowingLowerScalar(Vector128<int> value, byte shift) => ShiftRightLogicalNarrowingLowerScalar(value, shift);
-
-        /// <summary>
-        /// ulong vsrlni_h_w_u32 (uint32x4_t value, shift)
-        ///   NOTE: this is implemented by multi instructions.
-        ///   LSX: VSRLNI.H.W Vd, Vj, ui5
-        ///   LSX: Vd Scalar to uint64.
-        /// </summary>
-        public static ulong ShiftRightLogicalNarrowingLowerScalar(Vector128<uint> value, byte shift) => ShiftRightLogicalNarrowingLowerScalar(value, shift);
-
-        /// <summary>
-        /// ulong vsrlni_w_d_s64 (int64x2_t value, shift)
-        ///   NOTE: this is implemented by multi instructions.
-        ///   LSX: VSRLNI.W.D Vd, Vj, ui6
-        ///   LSX: Vd Scalar to uint64.
-        /// </summary>
-        public static ulong ShiftRightLogicalNarrowingLowerScalar(Vector128<long> value, byte shift) => ShiftRightLogicalNarrowingLowerScalar(value, shift);
-
-        /// <summary>
-        /// ulong vsrlni_w_d_u64 (uint64x2_t value, shift)
-        ///   NOTE: this is implemented by multi instructions.
-        ///   LSX: VSRLNI.W.D Vd, Vj, ui6
-        ///   LSX: Vd Scalar to uint64.
-        /// </summary>
-        public static ulong ShiftRightLogicalNarrowingLowerScalar(Vector128<ulong> value, byte shift) => ShiftRightLogicalNarrowingLowerScalar(value, shift);
-
-        /// <summary>
-        /// uint8x16 vsrlni_b_h_u16 (uint16x8_t left, uint16x8_t right, shift)
+        /// uint8x16_t vsrlni_b_h_u16 (uint16x8_t left, uint16x8_t right, shift)
         ///   LSX: VSRLNI.B.H Vd, Vj, ui4
         /// </summary>
         public static Vector128<byte> ShiftRightLogicalNarrowingLower(Vector128<ushort> left, Vector128<ushort> right, byte shift) => ShiftRightLogicalNarrowingLower(left, right, shift);
 
         /// <summary>
-        /// int16x8 vsrlni_h_w_s32 (int32x4_t left, int32x4_t right, shift)
+        /// int16x8_t vsrlni_h_w_s32 (int32x4_t left, int32x4_t right, shift)
         ///   LSX: VSRLNI.H.W Vd, Vj, ui5
         /// </summary>
         public static Vector128<short> ShiftRightLogicalNarrowingLower(Vector128<int> left, Vector128<int> right, byte shift) => ShiftRightLogicalNarrowingLower(left, right, shift);
 
         /// <summary>
-        /// uint16x8 vsrlni_h_w_u32 (uint32x4_t left, uint32x4_t right, shift)
+        /// uint16x8_t vsrlni_h_w_u32 (uint32x4_t left, uint32x4_t right, shift)
         ///   LSX: VSRLNI.H.W Vd, Vj, ui5
         /// </summary>
         public static Vector128<ushort> ShiftRightLogicalNarrowingLower(Vector128<uint> left, Vector128<uint> right, byte shift) => ShiftRightLogicalNarrowingLower(left, right, shift);
 
         /// <summary>
-        /// int32x4 vsrlni_w_d_s64 (int64x2_t left, int64x2_t right, shift)
+        /// int32x4_t vsrlni_w_d_s64 (int64x2_t left, int64x2_t right, shift)
         ///   LSX: VSRLNI.W.D Vd, Vj, ui6
         /// </summary>
         public static Vector128<int> ShiftRightLogicalNarrowingLower(Vector128<long> left, Vector128<long> right, byte shift) => ShiftRightLogicalNarrowingLower(left, right, shift);
 
         /// <summary>
-        /// uint32x4 vsrlni_w_d_u64 (uint64x2_t left, uint64x2_t right, shift)
+        /// uint32x4_t vsrlni_w_d_u64 (uint64x2_t left, uint64x2_t right, shift)
         ///   LSX: VSRLNI.W.D Vd, Vj, ui6
         /// </summary>
         public static Vector128<uint> ShiftRightLogicalNarrowingLower(Vector128<ulong> left, Vector128<ulong> right, byte shift) => ShiftRightLogicalNarrowingLower(left, right, shift);
+
+        ///// <summary>
+        ///// uint64x2_t vsrlni_d_q_u128 (uint128x1_t left, uint128x1_t right, shift)
+        /////   LSX: VSRLNI.D.Q Vd.Q, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<ulong> ShiftRightLogicalNarrowingLower(Vector128<ulonglong> left, Vector128<ulonglong> right, byte shift) => ShiftRightLogicalNarrowingLower(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vsrln_b_h_s16 (int16x8_t value, int16x8_t shift)
+        ///   LSX: VSRLN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogicalNarrowingLower(Vector128<short> value, Vector128<short> shift) => ShiftRightLogicalNarrowingLower(value, shift);
+
+        /// <summary>
+        /// uint8x8_t vsrln_b_h_u16 (uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSRLN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalNarrowingLower(Vector128<ushort> value, Vector128<ushort> shift) => ShiftRightLogicalNarrowingLower(value, shift);
+
+        /// <summary>
+        /// int16x4_t vsrln_h_w_s32 (int32x4_t value, int32x4_t shift)
+        ///   LSX: VSRLN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<short> ShiftRightLogicalNarrowingLower(Vector128<int> value, Vector128<int> shift) => ShiftRightLogicalNarrowingLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vsrln_h_w_u32 (uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSRLN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalNarrowingLower(Vector128<uint> value, Vector128<uint> shift) => ShiftRightLogicalNarrowingLower(value, shift);
+
+        /// <summary>
+        /// int32x2_t vsrln_w_d_s64 (int64x2_t value, int64x2_t shift)
+        ///   LSX: VSRLN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<int> ShiftRightLogicalNarrowingLower(Vector128<long> value, Vector128<long> shift) => ShiftRightLogicalNarrowingLower(value, shift);
+
+        /// <summary>
+        /// uint32x2_t vsrln_w_d_u64 (uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSRLN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalNarrowingLower(Vector128<ulong> value, Vector128<ulong> shift) => ShiftRightLogicalNarrowingLower(value, shift);
+
+        /// <summary>
+        /// int16x8_t vssrlni_b_h(int16x8_t left, int16x8_t right, const byte n)
+        ///   LSX: VSSRLNI.B.H Vd.16B, Vj.8H, ui4  ///NOTE: the Vd is both input and output.
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrlni_b_h(uint16x8_t left, uint16x8_t right, const byte n)
+        ///   LSX: VSSRLNI.B.H Vd.16B, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalNarrowingSaturateLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vssrlni_h_w(int32x4_t left, int32x4_t right, const byte n)
+        ///   LSX: VSSRLNI.H.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<short> ShiftRightLogicalNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrlni_h_w(uint32x4_t left, uint32x4_t right, const byte n)
+        ///   LSX: VSSRLNI.H.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalNarrowingSaturateLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vssrlni_w_d(int64x2_t left, int64x2_t right, const byte n)
+        ///   LSX: VSSRLNI.W.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<int> ShiftRightLogicalNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vssrlni_w_d(uint64x2_t left, uint64x2_t right, const byte n)
+        ///   LSX: VSSRLNI.W.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalNarrowingSaturateLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateLower(left, right, shift);
+
+        ///// <summary>
+        ///// int64x2_t vssrlni_d_q(int128x1_t left, int128x1_t right, const byte n)
+        /////   LSX: VSSRLNI.D.Q Vd.2D, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<long> ShiftRightLogicalNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vssrln_b_h(int16x8_t value, int16x8_t shift)
+        ///   LSX: VSSRLN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogicalNarrowingSaturateLower(Vector128<short> value, Vector128<short> shift) => ShiftRightLogicalNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint8x8_t vssrln_b_h(uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSSRLN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalNarrowingSaturateLower(Vector128<ushort> value, Vector128<ushort> shift) => ShiftRightLogicalNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// int16x4_t vssrln_h_w(int32x4_t value, int32x4_t shift)
+        ///   LSX: VSSRLN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<short> ShiftRightLogicalNarrowingSaturateLower(Vector128<int> value, Vector128<int> shift) => ShiftRightLogicalNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vssrln_h_w(uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSSRLN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalNarrowingSaturateLower(Vector128<uint> value, Vector128<uint> shift) => ShiftRightLogicalNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// int32x2_t vssrln_w_d(int64x2_t value, int64x2_t shift)
+        ///   LSX: VSSRLN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<int> ShiftRightLogicalNarrowingSaturateLower(Vector128<long> value, Vector128<long> shift) => ShiftRightLogicalNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint32x2_t vssrln_w_d(uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSSRLN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalNarrowingSaturateLower(Vector128<ulong> value, Vector128<ulong> shift) => ShiftRightLogicalNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrlni_bu_h(uint16x8_t left, uint16x8_t right, const byte n)
+        ///   LSX: VSSRLNI.BU.H Vd.16B, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrlni_hu_w(uint32x4_t left, uint32x4_t right, const byte n)
+        ///   LSX: VSSRLNI.HU.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vssrlni_wu_d(uint64x2_t left, uint64x2_t right, const byte n)
+        ///   LSX: VSSRLNI.WU.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLower(left, right, shift);
+
+        ///// <summary>
+        ///// uint64x2_t vssrlni_du_q(uint128x1_t left, uint128x1_t right, const byte n)
+        /////   LSX: VSSRLNI.DU.Q Vd.2D, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<ulong> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ulonglong> left, Vector128<ulonglong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint8x8_t vssrln_bu_h(uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSSRLN.BU.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ushort> value, Vector128<ushort> shift) => ShiftRightLogicalNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vssrln_hu_w(uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSSRLN.HU.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<uint> value, Vector128<uint> shift) => ShiftRightLogicalNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// uint32x2_t vssrln_wu_d(uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSSRLN.WU.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ulong> value, Vector128<ulong> shift) => ShiftRightLogicalNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// int16x8_t vssran_b_h(int16x8_t left, int16x8_t right, const byte n)
+        ///   LSX: VSSRANI.B.H Vd.16B, Vj.8H, ui4  ///NOTE: the Vd is both input and output.
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmeticNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vssran_h_w(int32x4_t left, int32x4_t right, const byte n)
+        ///   LSX: VSSRANI.H.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmeticNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vssran_w_d(int64x2_t left, int64x2_t right, const byte n)
+        ///   LSX: VSSRANI.W.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmeticNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticNarrowingSaturateLower(left, right, shift);
+
+        ///// <summary>
+        ///// int64x2_t vssran_d_q(int128x1_t left, int128x1_t right, const byte n)
+        /////   LSX: VSSRANI.D.Q Vd.2D, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<long> ShiftRightArithmeticNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vssran_b_h(int16x8_t value, int16x8_t shift)
+        ///   LSX: VSSRAN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightArithmeticNarrowingSaturateLower(Vector128<short> value, Vector128<short> shift) => ShiftRightArithmeticNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// int16x4_t vssran_h_w(int32x4_t value, int32x4_t shift)
+        ///   LSX: VSSRAN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<short> ShiftRightArithmeticNarrowingSaturateLower(Vector128<int> value, Vector128<int> shift) => ShiftRightArithmeticNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// int32x2_t vssran_w_d(int64x2_t value, int64x2_t shift)
+        ///   LSX: VSSRAN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<int> ShiftRightArithmeticNarrowingSaturateLower(Vector128<long> value, Vector128<long> shift) => ShiftRightArithmeticNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrani_bu_h(int16x8_t left, int16x8_t right, const byte n)
+        ///   LSX: VSSRANI.BU.H Vd.16B, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<byte> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrani_hu_w(int32x4_t left, int32x4_t right, const byte n)
+        ///   LSX: VSSRANI.HU.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vssrani_wu_d(int64x2_t left, int64x2_t right, const byte n)
+        ///   LSX: VSSRANI.WU.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<uint> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(left, right, shift);
+
+        ///// <summary>
+        ///// uint64x2_t vssrani_du_q(int128x1_t left, int128x1_t right, const byte n)
+        /////   LSX: VSSRANI.DU.Q Vd.2D, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<ulong> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint8x8_t vssran_bu_h(int16x8_t value, int16x8_t shift)
+        ///   LSX: VSSRAN.BU.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<byte> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<short> value, Vector128<short> shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vssran_hu_w(int32x4_t value, int32x4_t shift)
+        ///   LSX: VSSRAN.HU.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<int> value, Vector128<int> shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// uint32x2_t vssran_wu_d(int64x2_t value, int64x2_t shift)
+        ///   LSX: VSSRAN.WU.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<uint> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<long> value, Vector128<long> shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// int16x8_t vssrlrni_b_h(int16x8_t left, int16x8_t right, const byte n)
+        ///   LSX: VSSRLRNI.B.H Vd.16B, Vj.8H, ui4  ///NOTE: the Vd is both input and output.
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrlrni_b_h(uint16x8_t left, uint16x8_t right, const byte n)
+        ///   LSX: VSSRLRNI.B.H Vd.16B, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vssrlrni_h_w(int32x4_t left, int32x4_t right, const byte n)
+        ///   LSX: VSSRLRNI.H.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrlrni_h_w(uint32x4_t left, uint32x4_t right, const byte n)
+        ///   LSX: VSSRLRNI.H.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vssrlrni_w_d(int64x2_t left, int64x2_t right, const byte n)
+        ///   LSX: VSSRLRNI.W.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vssrlrni_w_d(uint64x2_t left, uint64x2_t right, const byte n)
+        ///   LSX: VSSRLRNI.W.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(left, right, shift);
+
+        ///// <summary>
+        ///// int64x2_t vssrlrni_d_q(int128x1_t left, int128x1_t right, const byte n)
+        /////   LSX: VSSRLRNI.D.Q Vd.2D, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<long> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vssrlrn_b_h(int16x8_t value, int16x8_t shift)
+        ///   LSX: VSSRLRN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<short> value, Vector128<short> shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint8x8_t vssrlrn_b_h(uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSSRLRN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ushort> value, Vector128<ushort> shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// int16x4_t vssrlrn_h_w(int32x4_t value, int32x4_t shift)
+        ///   LSX: VSSRLRN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<int> value, Vector128<int> shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vssrlrn_h_w(uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSSRLRN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<uint> value, Vector128<uint> shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// int32x2_t vssrlrn_w_d(int64x2_t value, int64x2_t shift)
+        ///   LSX: VSSRLRN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<long> value, Vector128<long> shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint32x2_t vssrlrn_w_d(uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSSRLRN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ulong> value, Vector128<ulong> shift) => ShiftRightLogicalRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrlrni_bu_h(uint16x8_t left, uint16x8_t right, const byte n)
+        ///   LSX: VSSRLRNI.BU.H Vd.16B, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrlrni_hu_w(uint32x4_t left, uint32x4_t right, const byte n)
+        ///   LSX: VSSRLRNI.HU.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vssrlrni_wu_d(uint64x2_t left, uint64x2_t right, const byte n)
+        ///   LSX: VSSRLRNI.WU.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(left, right, shift);
+
+        ///// <summary>
+        ///// uint64x2_t vssrlrni_du_q(uint128x1_t left, uint128x1_t right, const byte n)
+        /////   LSX: VSSRLRNI.DU.Q Vd.2D, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<ulong> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ulonglong> left, Vector128<ulonglong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint8x8_t vssrlrn_bu_h(uint16x8_t value, uint16x8_t shift)
+        ///   LSX: VSSRLRN.BU.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<byte> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ushort> value, Vector128<ushort> shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vssrlrn_hu_w(uint32x4_t value, uint32x4_t shift)
+        ///   LSX: VSSRLRN.HU.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<uint> value, Vector128<uint> shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// uint32x2_t vssrlrn_wu_d(uint64x2_t value, uint64x2_t shift)
+        ///   LSX: VSSRLRN.WU.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<uint> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ulong> value, Vector128<ulong> shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// int16x8_t vssrarn_b_h(int16x8_t left, int16x8_t right, const byte n)
+        ///   LSX: VSSRARNI.B.H Vd.16B, Vj.8H, ui4  ///NOTE: the Vd is both input and output.
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int16x8_t vssrarn_h_w(int32x4_t left, int32x4_t right, const byte n)
+        ///   LSX: VSSRARNI.H.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int32x4_t vssrarn_w_d(int64x2_t left, int64x2_t right, const byte n)
+        ///   LSX: VSSRARNI.W.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLower(left, right, shift);
+
+        ///// <summary>
+        ///// int64x2_t vssrarn_d_q(int128x1_t left, int128x1_t right, const byte n)
+        /////   LSX: VSSRARNI.D.Q Vd.2D, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<long> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLower(left, right, shift);
+
+        /// <summary>
+        /// int8x8_t vssrarn_b_h(int16x8_t value, int16x8_t shift)
+        ///   LSX: VSSRARN.B.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<short> value, Vector128<short> shift) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// int16x4_t vssrarn_h_w(int32x4_t value, int32x4_t shift)
+        ///   LSX: VSSRARN.H.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<short> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<int> value, Vector128<int> shift) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// int32x2_t vssrarn_w_d(int64x2_t value, int64x2_t shift)
+        ///   LSX: VSSRARN.W.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<int> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<long> value, Vector128<long> shift) => ShiftRightArithmeticRoundedNarrowingSaturateLower(value, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrarni_bu_h(int16x8_t left, int16x8_t right, const byte n)
+        ///   LSX: VSSRARNI.BU.H Vd.16B, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint16x8_t vssrarni_hu_w(int32x4_t left, int32x4_t right, const byte n)
+        ///   LSX: VSSRARNI.HU.W Vd.8H, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint32x4_t vssrarni_wu_d(int64x2_t left, int64x2_t right, const byte n)
+        ///   LSX: VSSRARNI.WU.D Vd.4W, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(left, right, shift);
+
+        ///// <summary>
+        ///// uint64x2_t vssrarni_du_q(int128x1_t left, int128x1_t right, const byte n)
+        /////   LSX: VSSRARNI.DU.Q Vd.2D, Vj.Q, ui7
+        ///// </summary>
+        //public static Vector128<ulong> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(left, right, shift);
+
+        /// <summary>
+        /// uint8x8_t vssrarn_bu_h(int16x8_t value, int16x8_t shift)
+        ///   LSX: VSSRARN.BU.H Vd.8B, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector64<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<short> value, Vector128<short> shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// uint16x4_t vssrarn_hu_w(int32x4_t value, int32x4_t shift)
+        ///   LSX: VSSRARN.HU.W Vd.4H, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector64<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<int> value, Vector128<int> shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// uint32x2_t vssrarn_wu_d(int64x2_t value, int64x2_t shift)
+        ///   LSX: VSSRARN.WU.D Vd.2W, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector64<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<long> value, Vector128<long> shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(value, shift);
+
+        /// <summary>
+        /// int8x8_t vclo_b(int8x8_t a)
+        ///   LSX: VCLO.B Vd.8B, Vj.8B
+        /// </summary>
+        public static Vector64<sbyte> LeadingSignCount(Vector64<sbyte> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int16x4_t vclo_h(int16x4_t a)
+        ///   LSX: VCLO.H Vd.4H, Vj.4H
+        /// </summary>
+        public static Vector64<short> LeadingSignCount(Vector64<short> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int32x2_t vclo_w(int32x2_t a)
+        ///   LSX: VCLO.W Vd.2W, Vj.2W
+        /// </summary>
+        public static Vector64<int> LeadingSignCount(Vector64<int> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int64x1_t vclo_d(int64x1_t a)
+        ///   LSX: VCLO.D Vd.D, Vj.D
+        /// </summary>
+        public static Vector64<long> LeadingSignCount(Vector64<long> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int8x16_t vclo_b(int8x16_t a)
+        ///   LSX: VCLO.B Vd.16B, Vj.16B
+        /// </summary>
+        public static Vector128<sbyte> LeadingSignCount(Vector128<sbyte> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int16x8_t vclo_h(int16x8_t a)
+        ///   LSX: VCLO.H Vd.8H, Vj.8H
+        /// </summary>
+        public static Vector128<short> LeadingSignCount(Vector128<short> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int32x4_t vclo_w(int32x4_t a)
+        ///   LSX: VCLO.W Vd.4W, Vj.4W
+        /// </summary>
+        public static Vector128<int> LeadingSignCount(Vector128<int> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int64x2_t vclo_d(int64x2_t a)
+        ///   LSX: VCLO.D Vd.2D, Vj.2D
+        /// </summary>
+        public static Vector128<long> LeadingSignCount(Vector128<long> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// uint8x8_t vclz_b(uint8x8_t a)
+        ///   LSX: VCLZ.B Vd.8B, Vj.8B
+        /// </summary>
+        public static Vector64<byte> LeadingZeroCount(Vector64<byte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int8x8_t vclz_b(int8x8_t a)
+        ///   LSX: VCLZ.B Vd.8B, Vj.8B
+        /// </summary>
+        public static Vector64<sbyte> LeadingZeroCount(Vector64<sbyte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int16x4_t vclz_h(int16x4_t a)
+        ///   LSX: VCLZ.H Vd.4H, Vj.4H
+        /// </summary>
+        public static Vector64<short> LeadingZeroCount(Vector64<short> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint16x4_t vclz_h(uint16x4_t a)
+        ///   LSX: VCLZ.H Vd.4H, Vj.4H
+        /// </summary>
+        public static Vector64<ushort> LeadingZeroCount(Vector64<ushort> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int32x2_t vclz_w(int32x2_t a)
+        ///   LSX: VCLZ.W Vd.2W, Vj.2W
+        /// </summary>
+        public static Vector64<int> LeadingZeroCount(Vector64<int> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint32x2_t vclz_w(uint32x2_t a)
+        ///   LSX: VCLZ.W Vd.2W, Vj.2W
+        /// </summary>
+        public static Vector64<uint> LeadingZeroCount(Vector64<uint> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int64x1_t vclz_d(int64x1_t a)
+        ///   LSX: VCLZ.D Vd.D, Vj.D
+        /// </summary>
+        public static Vector64<long> LeadingZeroCount(Vector64<long> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint64x1_t vclz_d(uint64x1_t a)
+        ///   LSX: VCLZ.D Vd.D, Vj.D
+        /// </summary>
+        public static Vector64<ulong> LeadingZeroCount(Vector64<ulong> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int8x16_t vclz_b(int8x16_t a)
+        ///   LSX: VCLZ.B Vd.16B, Vj.16B
+        /// </summary>
+        public static Vector128<sbyte> LeadingZeroCount(Vector128<sbyte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint8x16_t vclz_b(uint8x16_t a)
+        ///   LSX: VCLZ.B Vd.16B, Vj.16B
+        /// </summary>
+        public static Vector128<byte> LeadingZeroCount(Vector128<byte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int16x8_t vclz_h(int16x8_t a)
+        ///   LSX: VCLZ.H Vd.8H, Vj.8H
+        /// </summary>
+        public static Vector128<short> LeadingZeroCount(Vector128<short> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint16x8_t vclz_h(uint16x8_t a)
+        ///   LSX: VCLZ.H Vd.8H, Vj.8H
+        /// </summary>
+        public static Vector128<ushort> LeadingZeroCount(Vector128<ushort> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int32x4_t vclz_w(int32x4_t a)
+        ///   LSX: VCLZ.W Vd.4W, Vj.4W
+        /// </summary>
+        public static Vector128<int> LeadingZeroCount(Vector128<int> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint32x4_t vclz_w(uint32x4_t a)
+        ///   LSX: VCLZ.W Vd.4W, Vj.4W
+        /// </summary>
+        public static Vector128<uint> LeadingZeroCount(Vector128<uint> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int64x2_t vclz_d(int64x2_t a)
+        ///   LSX: VCLZ.D Vd.2D, Vj.2D
+        /// </summary>
+        public static Vector128<long> LeadingZeroCount(Vector128<long> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint64x2_t vclz_d(uint64x2_t a)
+        ///   LSX: VCLZ.D Vd.2D, Vj.2D
+        /// </summary>
+        public static Vector128<ulong> LeadingZeroCount(Vector128<ulong> value) => LeadingZeroCount(value);
 
         /// <summary>
         /// int8x16_t vpcnt_b_s8 (int8x16_t a)
@@ -3324,9 +4284,295 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// </summary>
         public static Vector128<ulong> VectorElementReplicate(Vector128<ulong> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
 
+        /// <summary>
+        /// int8x16_t vbitclri_b(int8x16_t a, const int n)
+        ///   LSX: VBITCLRI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> VectorElementBitClear(Vector128<sbyte> value, const byte index) => VectorElementBitClear(value, index);
 
+        /// <summary>
+        /// uint8x16_t vbitclri_b(uint8x16_t a, const int n)
+        ///   LSX: VBITCLRI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<byte> VectorElementBitClear(Vector128<byte> value, const byte index) => VectorElementBitClear(value, index);
 
-        // TODO: other liking vsrani .......
+        /// <summary>
+        /// int16x8_t vbitclri_h(int16x8_t a, const int n)
+        ///   LSX: VBITCLRI.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<short> VectorElementBitClear(Vector128<short> value, const byte index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// uint16x8_t vbitclri_h(uint16x8_t a, const int n)
+        ///   LSX: VBITCLRI.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<ushort> VectorElementBitClear(Vector128<ushort> value, const byte index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// uint32x4_t vbitclri_w(uint32x4_t a, const int n)
+        ///   LSX: VBITCLRI.W Vd.4S, Vj.4S, ui5
+        /// </summary>
+        public static Vector128<int> VectorElementBitClear(Vector128<int> value, const byte index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// uint32x4_t vbitclri_w(uint32x4_t a, const int n)
+        ///   LSX: VBITCLRI.W Vd.4S, Vj.4S, ui5
+        /// </summary>
+        public static Vector128<uint> VectorElementBitClear(Vector128<uint> value, const byte index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// int64x2_t vbitclri_d(int64x2_t a, const int n)
+        ///   LSX: VBITCLRI.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<long> VectorElementBitClear(Vector128<long> value, const byte index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// uint64x2_t vbitclri_d(uint64x2_t a, const int n)
+        ///   LSX: VBITCLRI.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<ulong> VectorElementBitClear(Vector128<ulong> value, const byte index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// int8x16_t vbitclr_b(int8x16_t a, int8x16_t b)
+        ///   LSX: VBITCLR.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> VectorElementBitClear(Vector128<sbyte> value, Vector128<sbyte> index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// uint8x16_t vbitclr_b(uint8x16_t a, uint8x16_t b)
+        ///   LSX: VBITCLR.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> VectorElementBitClear(Vector128<byte> value, Vector128<byte> index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// int16x8_t vbitclr_h(int16x8_t value, int16x8_t index)
+        ///   LSX: VBITCLR.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> VectorElementBitClear(Vector128<short> value, Vector128<short> index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// uint16x8_t vbitclr_h(uint16x8_t value, uint16x8_t index)
+        ///   LSX: VBITCLR.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> VectorElementBitClear(Vector128<ushort> value, Vector128<ushort> index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// int32x4_t vbitclr_w(int32x4_t value, int32x4_t index)
+        ///   LSX: VBITCLR.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> VectorElementBitClear(Vector128<int> value, Vector128<int> index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// uint32x4_t vbitclr_w(uint32x4_t value, uint32x4_t index)
+        ///   LSX: VBITCLR.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> VectorElementBitClear(Vector128<uint> value, Vector128<uint> index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// int64x2_t vbitclr_d(int64x2_t value, int64x2_t index)
+        ///   LSX: VBITCLR.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> VectorElementBitClear(Vector128<long> value, Vector128<long> index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// uint64x2_t vbitclr_d(uint64x2_t value, uint64x2_t index)
+        ///   LSX: VBITCLR.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> VectorElementBitClear(Vector128<ulong> value, Vector128<ulong> index) => VectorElementBitClear(value, index);
+
+        /// <summary>
+        /// int8x16_t vbitseti_b(int8x16_t a, const int n)
+        ///   LSX: VBITSETI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> VectorElementBitSet(Vector128<sbyte> value, const byte index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint8x16_t vbitseti_b(uint8x16_t a, const int n)
+        ///   LSX: VBITSETI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<byte> VectorElementBitSet(Vector128<byte> value, const byte index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// int16x8_t vbitseti_h(int16x8_t a, const int n)
+        ///   LSX: VBITSETI.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<short> VectorElementBitSet(Vector128<short> value, const byte index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint16x8_t vbitseti_h(uint16x8_t a, const int n)
+        ///   LSX: VBITSETI.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<ushort> VectorElementBitSet(Vector128<ushort> value, const byte index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint32x4_t vbitseti_w(uint32x4_t a, const int n)
+        ///   LSX: VBITSETI.W Vd.4S, Vj.4S, ui5
+        /// </summary>
+        public static Vector128<int> VectorElementBitSet(Vector128<int> value, const byte index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint32x4_t vbitseti_w(uint32x4_t a, const int n)
+        ///   LSX: VBITSETI.W Vd.4S, Vj.4S, ui5
+        /// </summary>
+        public static Vector128<uint> VectorElementBitSet(Vector128<uint> value, const byte index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// int64x2_t vbitseti_d(int64x2_t a, const int n)
+        ///   LSX: VBITSETI.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<long> VectorElementBitSet(Vector128<long> value, const byte index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint64x2_t vbitseti_d(uint64x2_t a, const int n)
+        ///   LSX: VBITSETI.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<ulong> VectorElementBitSet(Vector128<ulong> value, const byte index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// int8x16_t vbitset_b(int8x16_t a, int8x16_t b)
+        ///   LSX: VBITSET.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> VectorElementBitSet(Vector128<sbyte> value, Vector128<sbyte> index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint8x16_t vbitset_b(uint8x16_t a, uint8x16_t b)
+        ///   LSX: VBITSET.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> VectorElementBitSet(Vector128<byte> value, Vector128<byte> index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// int16x8_t vbitset_h(int16x8_t value, int16x8_t index)
+        ///   LSX: VBITSET.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> VectorElementBitSet(Vector128<short> value, Vector128<short> index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint16x8_t vbitset_h(uint16x8_t value, uint16x8_t index)
+        ///   LSX: VBITSET.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> VectorElementBitSet(Vector128<ushort> value, Vector128<ushort> index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// int32x4_t vbitset_w(int32x4_t value, int32x4_t index)
+        ///   LSX: VBITSET.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> VectorElementBitSet(Vector128<int> value, Vector128<int> index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint32x4_t vbitset_w(uint32x4_t value, uint32x4_t index)
+        ///   LSX: VBITSET.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> VectorElementBitSet(Vector128<uint> value, Vector128<uint> index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// int64x2_t vbitset_d(int64x2_t value, int64x2_t index)
+        ///   LSX: VBITSET.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> VectorElementBitSet(Vector128<long> value, Vector128<long> index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// uint64x2_t vbitset_d(uint64x2_t value, uint64x2_t index)
+        ///   LSX: VBITSET.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> VectorElementBitSet(Vector128<ulong> value, Vector128<ulong> index) => VectorElementBitSet(value, index);
+
+        /// <summary>
+        /// int8x16_t  vbitrevi_b(int8x16_t a, const int n)
+        ///   LSX: VBITREVI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> VectorElementBitRevert(Vector128<sbyte> value, const byte index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint8x16_t  vbitrevi_b(uint8x16_t a, const int n)
+        ///   LSX: VBITREVI.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<byte> VectorElementBitRevert(Vector128<byte> value, const byte index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// int16x8_t  vbitrevi_h(int16x8_t a, const int n)
+        ///   LSX: VBITREVI.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<short> VectorElementBitRevert(Vector128<short> value, const byte index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint16x8_t  vbitrevi_h(uint16x8_t a, const int n)
+        ///   LSX: VBITREVI.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<ushort> VectorElementBitRevert(Vector128<ushort> value, const byte index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint32x4_t  vbitrevi_w(uint32x4_t a, const int n)
+        ///   LSX: VBITREVI.W Vd.4S, Vj.4S, ui5
+        /// </summary>
+        public static Vector128<int> VectorElementBitRevert(Vector128<int> value, const byte index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint32x4_t  vbitrevi_w(uint32x4_t a, const int n)
+        ///   LSX: VBITREVI.W Vd.4S, Vj.4S, ui5
+        /// </summary>
+        public static Vector128<uint> VectorElementBitRevert(Vector128<uint> value, const byte index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// int64x2_t  vbitrevi_d(int64x2_t a, const int n)
+        ///   LSX: VBITREVI.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<long> VectorElementBitRevert(Vector128<long> value, const byte index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint64x2_t  vbitrevi_d(uint64x2_t a, const int n)
+        ///   LSX: VBITREVI.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<ulong> VectorElementBitRevert(Vector128<ulong> value, const byte index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// int8x16_t  vbitrev_b(int8x16_t a, int8x16_t b)
+        ///   LSX: VBITREV.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> VectorElementBitRevert(Vector128<sbyte> value, Vector128<sbyte> index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint8x16_t  vbitrev_b(uint8x16_t a, uint8x16_t b)
+        ///   LSX: VBITREV.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> VectorElementBitRevert(Vector128<byte> value, Vector128<byte> index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// int16x8_t  vbitrev_h(int16x8_t value, int16x8_t index)
+        ///   LSX: VBITREV.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> VectorElementBitRevert(Vector128<short> value, Vector128<short> index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint16x8_t  vbitrev_h(uint16x8_t value, uint16x8_t index)
+        ///   LSX: VBITREV.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> VectorElementBitRevert(Vector128<ushort> value, Vector128<ushort> index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// int32x4_t  vbitrev_w(int32x4_t value, int32x4_t index)
+        ///   LSX: VBITREV.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> VectorElementBitRevert(Vector128<int> value, Vector128<int> index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint32x4_t  vbitrev_w(uint32x4_t value, uint32x4_t index)
+        ///   LSX: VBITREV.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> VectorElementBitRevert(Vector128<uint> value, Vector128<uint> index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// int64x2_t  vbitrev_d(int64x2_t value, int64x2_t index)
+        ///   LSX: VBITREV.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> VectorElementBitRevert(Vector128<long> value, Vector128<long> index) => VectorElementBitRevert(value, index);
+
+        /// <summary>
+        /// uint64x2_t  vbitrev_d(uint64x2_t value, uint64x2_t index)
+        ///   LSX: VBITREV.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> VectorElementBitRevert(Vector128<ulong> value, Vector128<ulong> index) => VectorElementBitRevert(value, index);
+
+        // TODO: other liking .......
         // TODO:----------------------------------
 
     }
