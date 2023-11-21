@@ -244,7 +244,7 @@ internal sealed class PInvokeTableGenerator
         return
             $$"""
             {{(pinvoke.WasmLinkage ? $"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"),import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))" : "")}}
-            {{(pinvoke.WasmLinkage ? "extern " : "")}} {{MapType(method.ReturnType)}} {{CEntryPoint(pinvoke)}} ({{
+            {{(pinvoke.WasmLinkage ? "extern " : "")}}{{MapType(method.ReturnType)}} {{CEntryPoint(pinvoke)}} ({{
                 string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))
             }});
             """;
@@ -265,15 +265,15 @@ internal sealed class PInvokeTableGenerator
     {
         // FIXME: this is a hack, we need to encode this better
         // and allow reflection in the interp case but either way
-        // it needs to match the key passed to get_native_to_interp
+        // it needs to match the key generated in get_native_to_interp
         var method = export.Method;
         string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
         return $"\"{module_symbol}_{method.DeclaringType.Name}_{method.Name}\"".Replace('.', '_');
     }
 
-    #pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
+#pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
     private static string EscapeLiteral(string s) => Regex.Replace(s, @"(\\|\"")", @"\$1");
-    #pragma warning restore SYSLIB1045
+#pragma warning restore SYSLIB1045
 
     private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
@@ -365,7 +365,7 @@ internal sealed class PInvokeTableGenerator
                 {{string.Join(", ", callbacks.Select(cb => cb.EntryName))}}
             };
 
-            // need to match the key passed to get_native_to_interp
+            // these strings need to match the keys generated in get_native_to_interp
             static const char *wasm_native_to_interp_map[] = {
                 {{string.Join(", ", callbacks.Select(DelegateKey))}}
             };
