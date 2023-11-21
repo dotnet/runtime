@@ -175,7 +175,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 // keep always and have the sole finally block as a pred.
                 // Remove `leaveBlock` as a successor of the finally `lastBlock`, which also removes the predecessor
                 // edge in `leaveBlock` from the finally return.
-                assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
+                assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
                 nextBlock = leaveBlock->Next();
                 fgRemoveEhfSuccessor(lastBlock, leaveBlock);
                 leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
@@ -462,7 +462,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const continuation = leave->GetJumpDest();
 
         // (2) Cleanup the leave so it can be deleted by subsequent opts
-        assert((leave->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
+        assert(leave->HasFlag(BBF_KEEP_BBJ_ALWAYS));
         leave->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
 
         // (3) Cleanup the continuation
@@ -1160,7 +1160,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     // Delete the leave block, which should be marked as
                     // keep always.
-                    assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
+                    assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
                     nextBlock = leaveBlock->Next();
 
                     // All preds should be BBJ_EHFINALLYRETs from the finally.
@@ -1417,7 +1417,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
 
                 bool isJumpToClonedFinally = false;
 
-                if (succBlock->bbFlags & BBF_CLONED_FINALLY_BEGIN)
+                if (succBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
                 {
                     // case (b)
                     isJumpToClonedFinally = true;
@@ -1429,7 +1429,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                         // case (c)
                         BasicBlock* const succSuccBlock = succBlock->GetJumpDest();
 
-                        if (succSuccBlock->bbFlags & BBF_CLONED_FINALLY_BEGIN)
+                        if (succSuccBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
                         {
                             isJumpToClonedFinally = true;
                         }
@@ -1442,7 +1442,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                         BasicBlock* const succSuccBlock = succBlock->Next();
 
                         // case (d)
-                        if (succSuccBlock->bbFlags & BBF_CLONED_FINALLY_BEGIN)
+                        if (succSuccBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
                         {
                             isJumpToClonedFinally = true;
                         }
@@ -1456,13 +1456,13 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 // to the right finally -- but there are odd cases
                 // like orphaned second halves of callfinally pairs
                 // that we need to tolerate.
-                if (block->bbFlags & BBF_KEEP_BBJ_ALWAYS)
+                if (block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
                 {
                     isReturnFromFinally = true;
                 }
 
                 // Case (f)
-                if (block->bbFlags & BBF_CLONED_FINALLY_END)
+                if (block->HasFlag(BBF_CLONED_FINALLY_END))
                 {
                     isReturnFromFinally = true;
                 }
@@ -1593,7 +1593,7 @@ void Compiler::fgAddFinallyTargetFlags()
             BasicBlock* const leave        = block->Next();
             BasicBlock* const continuation = leave->GetJumpDest();
 
-            if ((continuation->bbFlags & BBF_FINALLY_TARGET) == 0)
+            if (!continuation->HasFlag(BBF_FINALLY_TARGET))
             {
                 JITDUMP("Found callfinally " FMT_BB "; setting finally target bit on " FMT_BB "\n", block->bbNum,
                         continuation->bbNum);
@@ -1616,7 +1616,7 @@ void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, Basic
 {
     if (pred->isBBCallAlwaysPairTail())
     {
-        assert(succ->bbFlags & BBF_FINALLY_TARGET);
+        assert(succ->HasFlag(BBF_FINALLY_TARGET));
         newSucc->bbFlags |= BBF_FINALLY_TARGET;
         succ->bbFlags &= ~BBF_FINALLY_TARGET;
 
