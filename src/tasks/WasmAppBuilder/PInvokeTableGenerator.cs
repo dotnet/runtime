@@ -252,7 +252,7 @@ internal sealed class PInvokeTableGenerator
         }
 
         if (pinvoke.WasmLinkage) {
-            sb.Append($"__attribute__((weak,import_module(\"{EscapeLiteral(pinvoke.Module)}\"), import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))\nextern ");
+            sb.Append($"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"), import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))\nextern ");
         }
 
         sb.Append($"{MapType(method.ReturnType)} {TransformEntryPoint(pinvoke)} ({string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))});");
