@@ -3787,7 +3787,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	default:
 		g_assert_not_reached ();
 	}
-#ifdef HOST_WASI	
+	#ifdef HOST_WASI	
 	resumed_from_wasi = FALSE;
 	while (suspend_policy != SUSPEND_POLICY_NONE && !resumed_from_wasi)
 	{
@@ -7100,6 +7100,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		minor_version = decode_int (p, &p, end);
 		if (p < end)
 			using_icordbg = decode_byte (p, &p, end);
+		if (using_icordbg)
+			mono_de_set_using_icordbg ();
 		protocol_version_set = TRUE;
 		PRINT_DEBUG_MSG (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
 		break;
@@ -7123,7 +7125,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		wait_for_suspend ();
 		break;
 	case CMD_VM_RESUME:
-#ifndef HOST_WASI	
+		#ifndef HOST_WASI	
 		if (suspend_count == 0) {
 			if (agent_config.defer && !agent_config.suspend)
 				// Workaround for issue in debugger-libs when running in defer attach mode.
@@ -7711,7 +7713,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		if (req->event_kind == EVENT_KIND_BREAKPOINT) {
 			g_assert (method);
-
+			
 			req->info = mono_de_set_breakpoint (method, location, req, error);
 			if (!is_ok (error)) {
 				g_free (req);
@@ -7956,9 +7958,34 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		int rank = decode_int (p, &p, end);
 		if (type == MONO_TYPE_SZARRAY || type == MONO_TYPE_ARRAY)
 			klass = mono_class_create_array (klass, rank);
+		else
+			return ERR_INVALID_ARGUMENT;
 		buffer_add_typeid (buf, domain, klass);
 		break;
 	}
+
+	case MDBGPROT_CMD_APPDOMAIN_CREATE_ARRAY: {
+		ERROR_DECL (error);
+		MonoClass *klass;
+		MonoArray *arr;
+		domain = decode_domainid (p, &p, end, NULL, &err);
+		klass = decode_typeid (p, &p, end, NULL, &err);
+		int rank = decode_int (p, &p, end);
+		uintptr_t *lengths = g_newa (uintptr_t, rank);
+		intptr_t *lower_bounds = g_newa (intptr_t, rank);		
+		for (int i = 0 ; i < rank; i++)
+		{
+			lengths [i] = decode_int (p, &p, end);
+		}
+		for (int i = 0 ; i < rank; i++)
+		{
+			lower_bounds [i] = decode_int (p, &p, end);
+		}
+		arr = mono_array_new_full_checked (klass, lengths, lower_bounds, error);
+		buffer_add_objid (buf, (MonoObject*) arr);
+		break;
+	}
+
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -8493,6 +8520,19 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 				for (int k = 0; k < count; k++) {
 					pklass = mono_class_create_generic_parameter (mono_generic_container_get_param (container, k));
 					buffer_add_typeid (buf, domain, pklass);
+				}
+			} else {
+				buffer_add_int (buf, 0);
+			}
+		}
+		if (CHECK_ICORDBG (TRUE))
+		{
+			if (type->type == MONO_TYPE_FNPTR)
+			{
+				buffer_add_int (buf, 1 + type->data.method->param_count);
+				buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (type->data.method->ret));
+				for (int j = 0; j < type->data.method->param_count; ++j) {
+					buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (type->data.method->params[j]));
 				}
 			} else {
 				buffer_add_int (buf, 0);
@@ -10200,7 +10240,7 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			MonoTypeEnum type = m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type;
 			buffer_add_byte(buf, type);
 			buffer_add_int (buf, m_class_get_rank (arr->obj.vtable->klass));
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_GENERICINST || type == MONO_TYPE_OBJECT || (CHECK_ICORDBG (TRUE) && type == MONO_TYPE_VALUETYPE))
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_GENERICINST || type == MONO_TYPE_OBJECT || (CHECK_ICORDBG (TRUE) && (type == MONO_TYPE_VALUETYPE || type == MONO_TYPE_PTR)))
 			{
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 				if (CHECK_ICORDBG (TRUE))
