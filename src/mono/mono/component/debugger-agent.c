@@ -8330,6 +8330,13 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case MDBGPROT_CMD_FIELD_GET_TOKEN_AND_TYPE: {
 		MonoClassField *f = decode_fieldid (p, &p, end, &domain, &err);
+		if (G_UNLIKELY (!f->type)) {
+			ERROR_DECL(field_error);
+			mono_field_resolve_type (f, field_error);
+			mono_error_cleanup (field_error);
+			if (!f->type)
+				/* ERROR */;
+		}
 		buffer_add_int (buf, mono_class_get_field_token (f));
 		buffer_add_byte(buf, GINT_TO_UINT8(m_class_is_valuetype (mono_class_from_mono_type_internal (f->type))));
 		buffer_add_int (buf, f->type->type);
@@ -9041,17 +9048,17 @@ set_value:
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
 			if (mono_class_get_field_token (f) == field_token)
 			{
+				if (G_UNLIKELY (!f->type)) {
+					ERROR_DECL(field_error);
+					mono_field_resolve_type (f, field_error);
+					mono_error_cleanup (field_error);
+					if (!f->type)
+						continue;
+				}
 				if (f->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)
 				{
-					int swizzle = 1;
-					int align;
-				#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-					swizzle = mono_type_size (type, &align);
-				#endif
-
-					int dummy;
-					int count = mono_type_size (f->type, &dummy)/mono_type_size (f->type, &align);
-					const char* arr = mono_field_get_rva (f, swizzle);
+					gint32 count = 0;
+					const char* arr = mono_get_span_data_from_field (f, f->type, f->type, &count);
 					m_dbgprot_buffer_add_byte_array (buf, (uint8_t *)arr, count);
 					err = ERR_NONE;
 					goto exit;
