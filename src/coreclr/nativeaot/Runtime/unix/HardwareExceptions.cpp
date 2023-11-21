@@ -11,6 +11,9 @@
 #include "HardwareExceptions.h"
 #include "UnixSignals.h"
 #include "PalCreateDump.h"
+#include "thread.h"
+#include "threadstore.h"
+#include <sys/mman.h>
 
 #if defined(HOST_APPLE)
 #include <mach/mach.h>
@@ -545,6 +548,17 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
 // Handler for the SIGSEGV signal
 void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
 {
+    // First check if we have a stack overflow
+    size_t sp = ((UNIX_CONTEXT *)context)->GetSp();
+    size_t failureAddress = (size_t)siginfo->si_addr;
+
+    // If the failure address is at most one page above or below the stack pointer,
+    // we have a stack overflow.
+    if ((failureAddress - (sp - PalOsPageSize())) < (size_t)PalOsPageSize() * 2)
+    {
+        PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
+        RhFailFast();
+    }
     bool isHandled = HardwareExceptionHandler(code, siginfo, context, siginfo->si_addr);
     if (isHandled)
     {
@@ -589,7 +603,8 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
 // Initialize hardware exception handling
 bool InitializeHardwareExceptionHandling()
 {
-    if (!AddSignalHandler(SIGSEGV, SIGSEGVHandler, &g_previousSIGSEGV))
+    // Run SIGSEGV handler on separate stack so we can handle stack overflow. Otherwise, the current (invalid) stack is used and another segfault is raised.
+    if (!AddSignalHandler(SIGSEGV, SIGSEGVHandler, &g_previousSIGSEGV, SA_ONSTACK))
     {
         return false;
     }
@@ -601,23 +616,23 @@ bool InitializeHardwareExceptionHandling()
 
 #if defined(HOST_APPLE)
 #ifndef HOST_TVOS // task_set_exception_ports is not supported on tvOS
-	// LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
-	// exceptions first to any registered "activation" handler and then to
-	// any registered task handler before dispatching the exception to a
-	// host-wide Mach exception handler that does translation to POSIX
-	// signals. This makes it impossible to use LLDB with implicit null
+    // LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
+    // exceptions first to any registered "activation" handler and then to
+    // any registered task handler before dispatching the exception to a
+    // host-wide Mach exception handler that does translation to POSIX
+    // signals. This makes it impossible to use LLDB with implicit null
     // checks in NativeAOT; continuing execution after LLDB traps an
     // EXC_BAD_ACCESS will result in LLDB's EXC_BAD_ACCESS handler being
     // invoked again. This also interferes with the translation of SIGFPEs
     // to .NET-level ArithmeticExceptions. Work around this here by
-	// installing a no-op task-wide Mach exception handler for
-	// EXC_BAD_ACCESS and EXC_ARITHMETIC.
-	kern_return_t kr = task_set_exception_ports(
-		mach_task_self(),
-		EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC, /* SIGSEGV, SIGFPE */
-		MACH_PORT_NULL,
-		EXCEPTION_STATE_IDENTITY,
-		MACHINE_THREAD_STATE);
+    // installing a no-op task-wide Mach exception handler for
+    // EXC_BAD_ACCESS and EXC_ARITHMETIC.
+    kern_return_t kr = task_set_exception_ports(
+        mach_task_self(),
+        EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC, /* SIGSEGV, SIGFPE */
+        MACH_PORT_NULL,
+        EXCEPTION_STATE_IDENTITY,
+        MACHINE_THREAD_STATE);
     ASSERT(kr == KERN_SUCCESS);
 #endif
 #endif

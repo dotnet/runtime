@@ -153,7 +153,7 @@ async function flush_node_streams() {
     try {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        const process = await import(/* webpackIgnore: true */"process");
+        const process = await import(/*! webpackIgnore: true */"process");
         const flushStream = (stream: any) => {
             return new Promise<void>((resolve, reject) => {
                 stream.on("error", reject);

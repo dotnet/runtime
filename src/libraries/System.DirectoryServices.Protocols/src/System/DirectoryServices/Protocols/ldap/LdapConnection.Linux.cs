@@ -3,8 +3,8 @@
 
 using System.Diagnostics;
 using System.Net;
-using System.Text;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {

@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.Security;
 using System.IO;
+using System.Net.Security;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices.JavaScript;
-using System.Collections.Concurrent;
 
 namespace System.Net.Http
 {

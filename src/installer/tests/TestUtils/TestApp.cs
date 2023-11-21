@@ -50,11 +50,20 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
-        public static TestApp CreateFromBuiltAssets(string appName)
+        /// <summary>
+        /// Create a test app from pre-built output of <paramref name="appName"/>.
+        /// </summary>
+        /// <param name="appName">Name of pre-built app</param>
+        /// <param name="assetRelativePath">Path to asset - relative to the directory containing all pre-built assets</param>
+        /// <returns>
+        /// If <paramref name="assetRelativePath"/> is <c>null</c>, <paramref name="appName"/> is used as the relative path.
+        /// </returns>
+        public static TestApp CreateFromBuiltAssets(string appName, string assetRelativePath = null)
         {
+            assetRelativePath = assetRelativePath ?? appName;
             TestApp app = CreateEmpty(appName);
             TestArtifact.CopyRecursive(
-                Path.Combine(RepoDirectoriesProvider.Default.TestAssetsOutput, appName),
+                Path.Combine(RepoDirectoriesProvider.Default.TestAssetsOutput, assetRelativePath),
                 app.Location);
             return app;
         }

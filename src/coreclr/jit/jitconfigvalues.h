@@ -460,6 +460,7 @@ CONFIG_STRING(JitEnableEarlyLivenessRange, W("JitEnableEarlyLivenessRange"))
 CONFIG_STRING(JitOnlyOptimizeRange,
               W("JitOnlyOptimizeRange")) // If set, all methods that do _not_ match are forced into MinOpts
 CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
+CONFIG_STRING(JitEnableCrossBlockLocalAssertionPropRange, W("JitEnableCrossBlockLocalAssertionPropRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -653,6 +654,9 @@ CONFIG_INTEGER(JitEnableHeadTailMerge, W("JitEnableHeadTailMerge"), 1)
 // Enable physical promotion
 CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
+// Enable cross-block local assertion prop
+CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 0)
+
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
@@ -671,6 +675,11 @@ CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 // If this is unset, then the JIT config values have their normal behavior.
 //
 CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
+#endif // DEBUG
+
+#if defined(DEBUG)
+CONFIG_METHODSET(JitRawHexCode, W("JitRawHexCode"))
+CONFIG_STRING(JitRawHexCodeFile, W("JitRawHexCodeFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)

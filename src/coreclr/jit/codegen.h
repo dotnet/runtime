@@ -34,6 +34,11 @@ public:
     virtual bool genCreateAddrMode(
         GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
 
+#ifdef LATE_DISASM
+    virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs);
+    virtual const char* siRegVarName(size_t offs, size_t size, unsigned reg);
+#endif // LATE_DISASM
+
 private:
 #if defined(TARGET_XARCH)
     // Bit masks used in negating a float or double number.

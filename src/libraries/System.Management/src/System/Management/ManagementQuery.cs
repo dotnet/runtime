@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using System.Reflection;
-using System.ComponentModel.Design.Serialization;
-using System.ComponentModel;
 
 namespace System.Management
 {

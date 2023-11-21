@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Cache;
 using System.Net.Sockets;
-using System.Security;
 using System.Runtime.ExceptionServices;
+using System.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net
 {

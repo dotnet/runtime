@@ -25,8 +25,6 @@ extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int si
 extern void mono_wasm_resolve_or_reject_promise(void *data);
 
 typedef void (*background_job_cb)(void);
-void mono_main_thread_schedule_background_job (background_job_cb cb);
-void mono_current_thread_schedule_background_job (background_job_cb cb);
 
 #ifndef DISABLE_LEGACY_JS_INTEROP
 extern void mono_wasm_invoke_js_with_args_ref (int js_handle, MonoString **method, MonoArray **args, int *is_exception, MonoObject **result);

@@ -789,28 +789,32 @@ fixup_newbb_stack_locals (TransformData *td, InterpBasicBlock *newbb)
 	}
 }
 
+static void
+merge_stack_type_information (StackInfo *state1, StackInfo *state2, int len)
+{
+	// Discard type information if we have type conflicts for stack contents
+	for (int i = 0; i < len; i++) {
+		if (state1 [i].klass != state2 [i].klass) {
+			state1 [i].klass = NULL;
+			state2 [i].klass = NULL;
+		}
+	}
+}
+
 // Initializes stack state at entry to bb, based on the current stack state
 static void
 init_bb_stack_state (TransformData *td, InterpBasicBlock *bb)
 {
-	// FIXME If already initialized, then we need to generate mov to the registers in the state.
 	// Check if already initialized
 	if (bb->stack_height >= 0) {
-		// Discard type information if we have type conflicts for stack contents
-		for (int i = 0; i < bb->stack_height; i++) {
-			if (bb->stack_state [i].klass != td->stack [i].klass) {
-				bb->stack_state [i].klass = NULL;
-				td->stack [i].klass = NULL;
-			}
+		merge_stack_type_information (td->stack, bb->stack_state, bb->stack_height);
+	} else {
+		bb->stack_height = GPTRDIFF_TO_INT (td->sp - td->stack);
+		if (bb->stack_height > 0) {
+			int size = bb->stack_height * sizeof (td->stack [0]);
+			bb->stack_state = (StackInfo*)mono_mempool_alloc (td->mempool, size);
+			memcpy (bb->stack_state, td->stack, size);
 		}
-		return;
-	}
-
-	bb->stack_height = GPTRDIFF_TO_INT (td->sp - td->stack);
-	if (bb->stack_height > 0) {
-		int size = bb->stack_height * sizeof (td->stack [0]);
-		bb->stack_state = (StackInfo*)mono_mempool_alloc (td->mempool, size);
-		memcpy (bb->stack_state, td->stack, size);
 	}
 }
 
@@ -1214,7 +1218,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
-	if (!interp_jit_call_can_be_supported (method, sig, mono_llvm_only))
+	if (!mono_jit_call_can_be_supported_by_interp (method, sig, mono_llvm_only))
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
@@ -3550,10 +3554,20 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	CHECK_STACK_RET (td, csignature->param_count + csignature->hasthis, FALSE);
+
+	gboolean skip_tailcall = FALSE;
+	if (tailcall && !is_virtual && target_method != NULL) {
+		MonoMethodHeader *mh = interp_method_get_header (target_method, error);
+		if (mh != NULL && mh->code_size == 0)
+			skip_tailcall = TRUE;
+		mono_metadata_free_mh (mh);
+	}
+
 	if (tailcall && !td->gen_sdb_seq_points && !calli && op == -1 &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
-		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
+		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) &&
+		!skip_tailcall) {
 		(void)mono_class_vtable_checked (target_method->klass, error);
 		return_val_if_nok (error, FALSE);
 
@@ -5038,8 +5052,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->cbb = new_bb;
 
 			if (new_bb->stack_height >= 0) {
-				if (new_bb->stack_height > 0)
+				if (new_bb->stack_height > 0) {
+					if (link_bblocks)
+						merge_stack_type_information (td->stack, new_bb->stack_state, new_bb->stack_height);
+					// This is relevant only for copying the vars associated with the values on the stack
 					memcpy (td->stack, new_bb->stack_state, new_bb->stack_height * sizeof(td->stack [0]));
+				}
 				td->sp = td->stack + new_bb->stack_height;
 			} else if (link_bblocks) {
 				/* This bblock is not branched to. Initialize its stack state */
@@ -7581,6 +7599,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					td->sp = td->stack;
 					++td->ip;
+					link_bblocks = FALSE;
 					break;
 
 				case CEE_MONO_LD_DELEGATE_METHOD_PTR:

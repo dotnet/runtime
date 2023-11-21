@@ -69,6 +69,8 @@ PhaseStatus Compiler::fgSsaBuild()
     JitTestCheckSSA();
 #endif // DEBUG
 
+    fgSSAPostOrder = builder.GetPostOrder(&fgSSAPostOrderCount);
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -144,7 +146,7 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
 //  Return Value:
 //     The number of nodes visited while performing DFS on the graph.
 //
-int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
+unsigned SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
 {
     Compiler* comp = m_pCompiler;
 
@@ -179,7 +181,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
     };
 
     // Compute order.
-    int         postIndex = 0;
+    unsigned    postIndex = 0;
     BasicBlock* block     = comp->fgFirstBB;
     BitVecOps::AddElemD(&m_visitedTraits, m_visited, block->bbNum);
 
@@ -206,15 +208,12 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
             // all successors have been visited
             blocks.Pop();
 
-            DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%d] = " FMT_BB "\n", postIndex, block->bbNum);
+            DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%u] = " FMT_BB "\n", postIndex, block->bbNum);
             postOrder[postIndex]  = block;
             block->bbPostorderNum = postIndex;
             postIndex++;
         }
     }
-
-    // In the absence of EH (because catch/finally have no preds), this should be valid.
-    // assert(postIndex == (count - 1));
 
     return postIndex;
 }
@@ -232,12 +231,10 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
     JITDUMP("[SsaBuilder::ComputeImmediateDom]\n");
 
     // Add entry point to visited as its IDom is NULL.
-    BitVecOps::ClearD(&m_visitedTraits, m_visited);
-    BitVecOps::AddElemD(&m_visitedTraits, m_visited, m_pCompiler->fgFirstBB->bbNum);
-
     assert(postOrder[count - 1] == m_pCompiler->fgFirstBB);
 
-    bool changed = true;
+    unsigned numIters = 0;
+    bool     changed  = true;
     while (changed)
     {
         changed = false;
@@ -249,40 +246,28 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
 
             DBG_SSA_JITDUMP("Visiting in reverse post order: " FMT_BB ".\n", block->bbNum);
 
-            // Find the first processed predecessor block.
-            BasicBlock* predBlock = nullptr;
-            for (FlowEdge* pred = m_pCompiler->BlockPredsWithEH(block); pred; pred = pred->getNextPredEdge())
-            {
-                if (BitVecOps::IsMember(&m_visitedTraits, m_visited, pred->getSourceBlock()->bbNum))
-                {
-                    predBlock = pred->getSourceBlock();
-                    break;
-                }
-            }
-
-            // There could just be a single basic block, so just check if there were any preds.
-            if (predBlock != nullptr)
-            {
-                DBG_SSA_JITDUMP("Pred block is " FMT_BB ".\n", predBlock->bbNum);
-            }
-
             // Intersect DOM, if computed, for all predecessors.
-            BasicBlock* bbIDom = predBlock;
-            for (FlowEdge* pred = m_pCompiler->BlockPredsWithEH(block); pred; pred = pred->getNextPredEdge())
+            BasicBlock* bbIDom = nullptr;
+            for (FlowEdge* pred = m_pCompiler->BlockDominancePreds(block); pred; pred = pred->getNextPredEdge())
             {
-                if (predBlock != pred->getSourceBlock())
+                BasicBlock* domPred = pred->getSourceBlock();
+                if ((domPred->bbPostorderNum >= (unsigned)count) || (postOrder[domPred->bbPostorderNum] != domPred))
                 {
-                    BasicBlock* domAncestor = IntersectDom(pred->getSourceBlock(), bbIDom);
-                    // The result may be NULL if "block" and "pred->getBlock()" are part of a
-                    // cycle -- neither is guaranteed ordered wrt the other in reverse postorder,
-                    // so we may be computing the IDom of "block" before the IDom of "pred->getBlock()" has
-                    // been computed.  But that's OK -- if they're in a cycle, they share the same immediate
-                    // dominator, so the contribution of "pred->getBlock()" is not necessary to compute
-                    // the result.
-                    if (domAncestor != nullptr)
-                    {
-                        bbIDom = domAncestor;
-                    }
+                    continue; // Unreachable pred
+                }
+
+                if ((numIters <= 0) && (domPred->bbPostorderNum <= (unsigned)i))
+                {
+                    continue; // Pred not yet visited
+                }
+
+                if (bbIDom == nullptr)
+                {
+                    bbIDom = domPred;
+                }
+                else
+                {
+                    bbIDom = IntersectDom(bbIDom, domPred);
                 }
             }
 
@@ -296,11 +281,10 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
                 block->bbIDom = bbIDom;
             }
 
-            // Mark the current block as visited.
-            BitVecOps::AddElemD(&m_visitedTraits, m_visited, block->bbNum);
-
             DBG_SSA_JITDUMP("Marking block " FMT_BB " as processed.\n", block->bbNum);
         }
+
+        numIters++;
     }
 }
 
@@ -342,8 +326,10 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
 
         FlowEdge* blockPreds = m_pCompiler->BlockPredsWithEH(block);
 
-        // If block has 0/1 predecessor, skip.
-        if ((blockPreds == nullptr) || (blockPreds->getNextPredEdge() == nullptr))
+        // If block has 0/1 predecessor, skip, apart from handler entry blocks
+        // that are always in the dominance frontier of its enclosed blocks.
+        if (!m_pCompiler->bbIsHandlerBeg(block) &&
+            ((blockPreds == nullptr) || (blockPreds->getNextPredEdge() == nullptr)))
         {
             DBG_SSA_JITDUMP("   Has %d preds; skipping.\n", blockPreds == nullptr ? 0 : 1);
             continue;
@@ -1311,7 +1297,7 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                     GenTreePhi* phi    = tree->AsLclVar()->Data()->AsPhi();
                     unsigned    ssaNum = m_renameStack.Top(lclNum);
 
-                    AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, block);
+                    AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, succ);
                 }
 
                 // Now handle memory.
@@ -1500,16 +1486,7 @@ void SsaBuilder::Build()
 
     // Allocate the postOrder array for the graph.
 
-    BasicBlock** postOrder;
-
-    if (blockCount > DEFAULT_MIN_OPTS_BB_COUNT)
-    {
-        postOrder = new (m_allocator) BasicBlock*[blockCount];
-    }
-    else
-    {
-        postOrder = (BasicBlock**)_alloca(blockCount * sizeof(BasicBlock*));
-    }
+    m_postOrder = new (m_allocator) BasicBlock*[blockCount];
 
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
@@ -1527,12 +1504,12 @@ void SsaBuilder::Build()
     }
 
     // Topologically sort the graph.
-    int count = TopologicalSort(postOrder, blockCount);
+    m_postOrderCount = TopologicalSort(m_postOrder, blockCount);
     JITDUMP("[SsaBuilder] Topologically sorted the graph.\n");
     EndPhase(PHASE_BUILD_SSA_TOPOSORT);
 
     // Compute IDom(b).
-    ComputeImmediateDom(postOrder, count);
+    ComputeImmediateDom(m_postOrder, m_postOrderCount);
 
     m_pCompiler->fgSsaDomTree = m_pCompiler->fgBuildDomTree();
     EndPhase(PHASE_BUILD_SSA_DOMS);
@@ -1551,7 +1528,7 @@ void SsaBuilder::Build()
     }
 
     // Insert phi functions.
-    InsertPhiFunctions(postOrder, count);
+    InsertPhiFunctions(m_postOrder, m_postOrderCount);
 
     // Rename local variables and collect UD information for each ssa var.
     RenameVariables();

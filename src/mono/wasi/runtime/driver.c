@@ -84,8 +84,20 @@ void load_icu_data (void);
 
 int mono_wasm_enable_gc = 1;
 
+/* Not part of public headers */
+#define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
+
+typedef struct {
+	int version;
+	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *flags);
+	const char* (*lookup_icall_symbol) (void* func);
+} MonoIcallTableCallbacks;
+
 int
 mono_string_instance_is_interned (MonoString *str_raw);
+
+void
+mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 
 void mono_trace_init (void);
 

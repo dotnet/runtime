@@ -9669,6 +9669,8 @@ void Interval::dump(Compiler* compiler)
     printf(" Preferences=");
     compiler->dumpRegMask(this->registerPreferences);
 
+    printf(" Aversions=");
+    compiler->dumpRegMask(this->registerAversion);
     if (relatedInterval)
     {
         printf(" RelatedInterval ");
@@ -11545,7 +11547,11 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 
     regType     = linearScan->getRegisterType(currentInterval, refPosition);
     candidates  = refPosition->registerAssignment;
-    preferences = currentInterval->registerPreferences;
+    preferences = currentInterval->registerPreferences & ~currentInterval->registerAversion;
+    if (preferences == RBM_NONE)
+    {
+        preferences = linearScan->allRegs(regType) & ~currentInterval->registerAversion;
+    }
 
     // This is not actually a preference, it's merely to track the lclVar that this
     // "specialPutArg" is using.

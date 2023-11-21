@@ -87,8 +87,8 @@
                                               - AppBundle directly contains user files
                                               - AppBundle/_framework contains generated files (dlls, runtime scripts, icu)
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
-      - $(WasmStripILAfterAOT)                      - Set to true to enable trimming away AOT compiled methods body (IL code)
-                                              Defaults to false.
+      - $(WasmStripILAfterAOT)              - Set to true to enable trimming away AOT compiled methods body (IL code)
+                                              Defaults to true.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -150,8 +150,7 @@
     <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' == 'true'">.wasm</WasmAssemblyExtension>
     <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' != 'true'">.dll</WasmAssemblyExtension>
 
-    <!-- by default, method body IL code trimming is disabled -->
-    <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">false</WasmStripILAfterAOT>
+    <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">true</WasmStripILAfterAOT>
 
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
   </PropertyGroup>
@@ -456,6 +455,7 @@
       WasmIcuDataFileName="$(WasmIcuDataFileName)"
       RuntimeAssetsLocation="$(WasmRuntimeAssetsLocation)"
       CacheBootResources="$(BlazorCacheBootResources)"
+      RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
       >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
@@ -509,6 +509,7 @@
   <Target Name="_AfterWasmBuildApp">
     <ItemGroup>
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
+      <WasmAssembliesFinal Include="@(_WasmSatelliteAssemblies)" />
     </ItemGroup>
   </Target>
 </Project>

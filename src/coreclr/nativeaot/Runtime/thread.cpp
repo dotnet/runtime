@@ -5,6 +5,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
+#include "CommonMacros.inl"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "rhassert.h"
@@ -26,6 +27,11 @@
 #include "stressLog.h"
 #include "RhConfig.h"
 #include "RhVolatile.h"
+
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
+#include <signal.h>
+#include <sys/mman.h>
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 
 #ifndef DACCESS_COMPILE
 
@@ -281,6 +287,9 @@ void Thread::Construct()
     if (StressLog::StressLogOn(~0u, 0))
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
 #endif // STRESS_LOG
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
+    EnsureSignalAlternateStack();
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
@@ -296,6 +305,89 @@ void Thread::Construct()
 #endif //FEATURE_SUSPEND_REDIRECTION
     ASSERT(m_interruptedContext == NULL);
 }
+
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
+void Thread::FreeSignalAlternateStack()
+{
+    void *altstack = m_alternateStack;
+    m_alternateStack = nullptr;
+
+    if (altstack != nullptr)
+    {
+        stack_t ss, oss;
+        // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
+        // all other ss fields are ignored. However, MUSL implementation checks that the
+        // ss_size is >= MINSIGSTKSZ even in this case.
+        ss.ss_size = MINSIGSTKSZ;
+        ss.ss_flags = SS_DISABLE;
+        ss.ss_sp = NULL;
+        int st = sigaltstack(&ss, &oss);
+        if ((st == 0) && (oss.ss_flags != SS_DISABLE))
+        {
+            // Make sure this altstack is this PAL's before freeing.
+            if (oss.ss_sp == altstack)
+            {
+                int st = munmap(oss.ss_sp, oss.ss_size);
+                _ASSERTE(st == 0);
+            }
+        }
+    }
+}
+
+bool Thread::EnsureSignalAlternateStack()
+{
+    int st = 0;
+
+    stack_t oss;
+
+    // Query the current alternate signal stack
+    st = sigaltstack(NULL, &oss);
+    if ((st == 0) && (oss.ss_flags == SS_DISABLE))
+    {
+        // There is no alternate stack for SIGSEGV handling installed yet so allocate one
+
+        // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the
+        // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
+        int altStackSize = SIGSTKSZ;
+#ifdef HAS_ADDRESS_SANITIZER
+        // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
+        // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
+        altStackSize += SIGSTKSZ * 4;
+#endif
+        altStackSize = ALIGN_UP(altStackSize, PalOsPageSize());
+        int flags = MAP_ANONYMOUS | MAP_PRIVATE;
+#ifdef MAP_STACK
+        flags |= MAP_STACK;
+#endif
+        void* altStack = mmap(NULL, altStackSize, PROT_READ | PROT_WRITE, flags, -1, 0);
+        if (altStack != MAP_FAILED)
+        {
+            // create a guard page for the alternate stack
+            st = mprotect(altStack, PalOsPageSize(), PROT_NONE);
+            if (st == 0)
+            {
+                stack_t ss;
+                ss.ss_sp = (char*)altStack;
+                ss.ss_size = altStackSize;
+                ss.ss_flags = 0;
+                st = sigaltstack(&ss, NULL);
+            }
+
+            if (st == 0)
+            {
+                m_alternateStack = altStack;
+            }
+            else
+            {
+                int st2 = munmap(altStack, altStackSize);
+                _ASSERTE(st2 == 0);
+            }
+        }
+    }
+
+    return (st == 0);
+}
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 
 bool Thread::IsInitialized()
 {
@@ -360,6 +452,10 @@ void Thread::Destroy()
         delete[] m_redirectionContextBuffer;
     }
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
+    FreeSignalAlternateStack();
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 }
@@ -866,19 +962,19 @@ void Thread::Unhijack()
 }
 
 // This unhijack routine is called to undo a hijack, that is potentially on a different thread.
-// 
+//
 // Although there are many code sequences (here and in asm) to
 // perform an unhijack operation, they will never execute concurrently:
-// 
+//
 // - A thread may unhijack itself at any time so long as it does that from unmanaged code while in coop mode.
 //   This ensures that coop thread can access its stack synchronously.
 //   Unhijacking from unmanaged code ensures that another thread will not attempt to hijack it,
 //   since we only hijack threads that are executing managed code.
-// 
+//
 // - A GC thread may access a thread asynchronously, including unhijacking it.
 //   Asynchronously accessed thread must be in preemptive mode and should not
 //   access the managed portion of its stack.
-// 
+//
 // - A thread that owns the suspension can access another thread as long as the other thread is
 //   in preemptive mode or suspended in managed code.
 //   Either way the other thread cannot be accessing its hijack.

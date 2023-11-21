@@ -564,6 +564,11 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wimplicit-fallthrough)
   endif()
 
+  # VLAs are non standard in C++, aren't available on Windows and
+  # are a warning by default since clang 18.
+  # For consistency, enable warnings for all compiler versions.
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wvla>)
+
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 
