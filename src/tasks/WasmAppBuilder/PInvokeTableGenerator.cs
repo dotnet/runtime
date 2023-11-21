@@ -87,11 +87,16 @@ internal sealed class PInvokeTableGenerator
             }
         }
 
+        w.WriteLine(
+            $"""
+            // GENERATED FILE, DO NOT MODIFY");
+
+            """);
+
         var pinvokesGroupedByEntryPoint = pinvokes
                                             .Where(l => modules.ContainsKey(l.Module))
                                             .OrderBy(l => l.EntryPoint)
                                             .GroupBy(CEntryPoint);
-
         var comparer = new PInvokeComparer();
         foreach (IGrouping<string, PInvoke> group in pinvokesGroupedByEntryPoint)
         {
@@ -124,31 +129,37 @@ internal sealed class PInvokeTableGenerator
             }
         }
 
-        w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
-        w.WriteLine();
-
         foreach (var module in modules.Keys)
         {
-            w.WriteLine($"static PinvokeImport {_fixupSymbolName(module)}_imports [] = {{");
+            var assemblies_pinvokes = pinvokes
+                .Where(l => l.Module == module && !l.Skip)
+                .OrderBy(l => l.EntryPoint)
+                .GroupBy(d => d.EntryPoint)
+                .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, "
+                    + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)))
+                .Append("{NULL, NULL}");
 
-            var assemblies_pinvokes = pinvokes.
-                Where(l => l.Module == module && !l.Skip).
-                OrderBy(l => l.EntryPoint).
-                GroupBy(d => d.EntryPoint).
-                Select(l => "{\"" + EscapeLiteral(l.Key) + "\", " + CEntryPoint(l.First()) + "}, " +
-                                "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)));
+            w.Write(
+                $$"""
+                static PinvokeImport {{_fixupSymbolName(module)}}_imports [] = {
+                    {{string.Join("\n    ", assemblies_pinvokes)}}
+                };
 
-            foreach (var pinvoke in assemblies_pinvokes)
-            {
-                w.WriteLine(pinvoke);
-            }
-
-            w.WriteLine("{NULL, NULL}");
-            w.WriteLine("};");
+                """);
         }
-        w.WriteLine($"static void *pinvoke_tables[] = {{ {string.Join(", ", modules.Keys.Select(m => $"(void*){_fixupSymbolName(m)}_imports"))} }};");
 
-        w.WriteLine($"static char *pinvoke_names[] = {{ {string.Join(", ", modules.Keys.Select(m => $"\"{EscapeLiteral(m)}\""))} }};");
+        w.Write(
+            $$"""
+
+            static void *pinvoke_tables[] = {
+                {{string.Join(", ", modules.Keys.Select(m => $"(void*){_fixupSymbolName(m)}_imports"))}}
+            };
+
+            static char *pinvoke_names[] =  {
+                {{string.Join(", ", modules.Keys.Select(m => $"\"{EscapeLiteral(m)}\""))}}
+            };
+
+            """);
 
         static bool ShouldTreatAsVariadic(PInvoke[] candidates)
         {
@@ -211,14 +222,12 @@ internal sealed class PInvokeTableGenerator
 
     private string? GenPInvokeDecl(PInvoke pinvoke)
     {
-        var sb = new StringBuilder();
         var method = pinvoke.Method;
         if (method.Name == "EnumCalendarInfo")
         {
             // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
             // https://github.com/dotnet/runtime/issues/43791
-            sb.Append($"int {_fixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);");
-            return sb.ToString();
+            return $"int {_fixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);";
         }
 
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
@@ -232,13 +241,13 @@ internal sealed class PInvokeTableGenerator
             return null;
         }
 
-        if (pinvoke.WasmLinkage) {
-            sb.Append($"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"),import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))\nextern ");
-        }
-
-        sb.Append($"{MapType(method.ReturnType)} {CEntryPoint(pinvoke)} ({string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))});");
-
-        return sb.ToString();
+        return
+            $$"""
+            {{(pinvoke.WasmLinkage ? $"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"),import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))" : "")}}
+            {{(pinvoke.WasmLinkage ? "extern " : "")}} {{MapType(method.ReturnType)}} {{CEntryPoint(pinvoke)}} ({{
+                string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))
+            }});
+            """;
     }
 
     private string CEntryPoint(PInvokeCallback export)
@@ -279,7 +288,7 @@ internal sealed class PInvokeTableGenerator
         int cb_index = 0;
 
         // Arguments to interp entry functions in the runtime
-        w.WriteLine($"InterpFtnDesc wasm_native_to_interp_ftndescs[{callbacks.Count}];");
+        w.WriteLine($"InterpFtnDesc wasm_native_to_interp_ftndescs[{callbacks.Count}] = {{}};");
 
         var callbackNames = new HashSet<string>();
         foreach (var cb in callbacks)
@@ -349,13 +358,19 @@ internal sealed class PInvokeTableGenerator
             cb_index++;
         }
 
-        // Array of function pointers
-        w.WriteLine($"static void *wasm_native_to_interp_funcs[] = {{ {string.Join(", ", callbacks.Select(cb => cb.EntryName))} }};");
+        w.Write(
+            $$"""
 
-        // Lookup table from method->interp entry
-        // The key is a string of the form <assembly name>_<method token>
-        // FIXME: Use a better encoding
-        w.WriteLine($"static const char *wasm_native_to_interp_map[] = {{ {string.Join(", ", callbacks.Select(DelegateKey))} }};");
+            static void *wasm_native_to_interp_funcs[] = {
+                {{string.Join(", ", callbacks.Select(cb => cb.EntryName))}}
+            };
+
+            // need to match the key passed to get_native_to_interp
+            static const char *wasm_native_to_interp_map[] = {
+                {{string.Join(", ", callbacks.Select(DelegateKey))}}
+            };
+
+            """);
     }
 
     private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
