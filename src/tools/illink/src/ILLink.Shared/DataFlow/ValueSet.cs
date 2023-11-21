@@ -128,7 +128,7 @@ namespace ILLink.Shared.DataFlow
 			}
 		}
 
-		private readonly struct Enumerable : IEnumerable<TValue>
+		public readonly struct Enumerable : IEnumerable<TValue>
 		{
 			private readonly object? _values;
 
@@ -209,7 +209,7 @@ namespace ILLink.Shared.DataFlow
 			return _values.GetHashCode ();
 		}
 
-		public IEnumerable<TValue> GetKnownValues () => new Enumerable (_values == UnknownSentinel ? null : _values);
+		public Enumerable GetKnownValues () => new Enumerable (_values == UnknownSentinel ? null : _values);
 
 		// Note: returns false for Unknown
 		public bool Contains (TValue value)
