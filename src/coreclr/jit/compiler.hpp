@@ -853,7 +853,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
     assert(fgFuncletsCreated);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
     unsigned int funcIdx = eh->ebdFuncIndex;
@@ -3074,7 +3074,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    if (!(block->bbFlags & BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
+    if (!block->hasFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
     {
         return false;
     }
