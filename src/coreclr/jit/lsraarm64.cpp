@@ -1418,7 +1418,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_Arm64_StoreSelectedScalar:
                     case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
                     case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:                    
+                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 

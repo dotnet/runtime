@@ -1829,7 +1829,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     case 2:
                         intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalarVector64x2
-                                                   : NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2;
+                                                  : NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2;
                         break;
                     case 3:
                         intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalarVector64x3
