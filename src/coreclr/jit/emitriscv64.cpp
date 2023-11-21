@@ -3405,11 +3405,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             unsigned int opcode2 = (code >> 12) & 0x7;
             if (opcode2 != 0)
             {
-                const char* rd = RegNames[(code >> 7) & 0x1f];
-                int csrtype = (code >> 20);
+                const char* rd      = RegNames[(code >> 7) & 0x1f];
+                int         csrtype = (code >> 20);
                 if (opcode2 <= 0x3)
                 {
-                    const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+                    const char* rs1 = RegNames[(code >> 15) & 0x1f];
                     switch (opcode2)
                     {
                         case 0x1: // CSRRW
@@ -3446,7 +3446,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                 }
             }
-            
+
             if (code == emitInsCode(INS_ebreak))
             {
                 printf("ebreak\n");
