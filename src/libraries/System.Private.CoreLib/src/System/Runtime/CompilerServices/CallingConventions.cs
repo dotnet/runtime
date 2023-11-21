@@ -15,6 +15,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    public class CallConvSwift
+    {
+        public CallConvSwift() { }
+    }
 
     /// <summary>
     /// Indicates that a method should suppress the GC transition as part of the calling convention.
