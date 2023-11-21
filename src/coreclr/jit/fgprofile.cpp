@@ -467,7 +467,7 @@ void BlockCountInstrumentor::RelocateProbes()
             continue;
         }
 
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -642,7 +642,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 
     GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
 
-    if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
+    if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
     {
         // This block probe needs to be relocated; instrument each predecessor.
         //
@@ -1649,7 +1649,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
         // Nothing to do unless the block is a tail call successor.
         //
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -2261,7 +2261,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
 //
 void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -2290,7 +2290,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
 //
 void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -4577,7 +4577,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        while (firstILBlock->bbFlags & BBF_INTERNAL)
+        while (firstILBlock->HasFlag(BBF_INTERNAL))
         {
             firstILBlock = firstILBlock->Next();
         }

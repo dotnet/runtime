@@ -6284,7 +6284,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // fgSetBlockOrder() is going to mark the method as fully interruptible
         // if the block containing this tail call is reachable without executing
         // any call.
-        if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT))
+        if (canFastTailCall || fgFirstBB->HasFlag(BBF_GC_SAFE_POINT) || compCurBB->HasFlag(BBF_GC_SAFE_POINT))
         {
             // No gc poll needed
         }
@@ -13506,7 +13506,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
         //
         // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_NONE.
         // We should not convert it to a ThrowBB.
-        if ((block != fgFirstBB) || ((fgFirstBB->bbFlags & BBF_INTERNAL) == 0))
+        if ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL))
         {
             // Convert block to a throw bb
             fgConvertBBToThrowBB(block);
@@ -13650,7 +13650,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             //   case there will not be any tailcall and the block will be ending
             //   with BBJ_RETURN (as normal control flow)
             noway_assert((call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) &&
-                          ((compCurBB->bbFlags & BBF_HAS_JMP)) != 0) ||
+                          compCurBB->HasFlag(BBF_HAS_JMP)) ||
                          (call->IsTailCallViaJitHelper() && compCurBB->KindIs(BBJ_THROW)) ||
                          (!call->IsTailCall() && compCurBB->KindIs(BBJ_RETURN)));
         }
@@ -13796,7 +13796,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
             //
             // Some blocks are ineligible.
             //
-            bool canUsePredAssertions = ((block->bbFlags & BBF_CAN_ADD_PRED) == 0) && !bbIsHandlerBeg(block);
+            bool canUsePredAssertions = !block->HasFlag(BBF_CAN_ADD_PRED) && !bbIsHandlerBeg(block);
 
             // Validate all preds have valid info
             //
@@ -13871,7 +13871,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
     fgMorphStmts(block);
 
     // Do we need to merge the result of this block into a single return block?
-    if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+    if (block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP))
     {
         if ((genReturnBB != nullptr) && (genReturnBB != block))
         {
@@ -14055,7 +14055,7 @@ PhaseStatus Compiler::fgMorphBlocks()
 //
 void Compiler::fgMergeBlockReturn(BasicBlock* block)
 {
-    assert(block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
+    assert(block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP));
     assert((genReturnBB != nullptr) && (genReturnBB != block));
 
     // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
@@ -14561,7 +14561,7 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
-    if ((block->bbFlags & BBF_INTERNAL) == 0)
+    if (!block->HasFlag(BBF_INTERNAL))
     {
         helperBlock->bbFlags &= ~BBF_INTERNAL;
         cond2Block->bbFlags &= ~BBF_INTERNAL;
@@ -14758,7 +14758,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
-    if ((block->bbFlags & BBF_INTERNAL) == 0)
+    if (!block->HasFlag(BBF_INTERNAL))
     {
         condBlock->bbFlags &= ~BBF_INTERNAL;
         elseBlock->bbFlags &= ~BBF_INTERNAL;
@@ -14794,7 +14794,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->bbFlags |= propagateFlagsToAll;
-        if ((block->bbFlags & BBF_INTERNAL) == 0)
+        if (!block->HasFlag(BBF_INTERNAL))
         {
             thenBlock->bbFlags &= ~BBF_INTERNAL;
             thenBlock->bbFlags |= BBF_IMPORTED;
@@ -16024,7 +16024,7 @@ PhaseStatus Compiler::fgMorphArrayOps()
 
     for (BasicBlock* const block : Blocks())
     {
-        if ((block->bbFlags & BBF_HAS_MDARRAYREF) == 0)
+        if (!block->HasFlag(BBF_HAS_MDARRAYREF))
         {
             // No MD array references in this block
             continue;

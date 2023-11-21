@@ -24,7 +24,7 @@
 //
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
-    bool blockMayNeedGCPoll = (block->bbFlags & BBF_NEEDS_GCPOLL) != 0;
+    bool blockMayNeedGCPoll = block->HasFlag(BBF_NEEDS_GCPOLL);
     for (Statement* const stmt : block->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
@@ -88,7 +88,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
         if (opts.OptimizationDisabled())
         {
-            if ((block->bbFlags & (BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL)) == 0)
+            if (!block->HasFlag(BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL))
             {
                 continue;
             }
@@ -137,7 +137,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if ((block->bbFlags & BBF_COLD) != 0)
+        else if (block->HasFlag(BBF_COLD))
         {
             // We don't want to split a cold block.
             //
@@ -200,7 +200,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         Statement* newStmt = nullptr;
 
-        if ((block->bbFlags & BBF_NEEDS_GCPOLL) != 0)
+        if (block->HasFlag(BBF_NEEDS_GCPOLL))
         {
             // This is a block that ends in a tail call; gc probe early.
             //
@@ -592,7 +592,7 @@ PhaseStatus Compiler::fgImport()
     unsigned importedILSize = 0;
     for (BasicBlock* const block : Blocks())
     {
-        if ((block->bbFlags & BBF_IMPORTED) != 0)
+        if (block->HasFlag(BBF_IMPORTED))
         {
             // Assume if we generate any IR for the block we generate IR for the entire block.
             if (block->firstStmt() != nullptr)
@@ -666,7 +666,7 @@ bool Compiler::fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2)
     }
 
     // If one block is Hot and the other is Cold then we are in different regions
-    return ((blk1->bbFlags & BBF_COLD) != (blk2->bbFlags & BBF_COLD));
+    return (blk1->HasFlag(BBF_COLD) != blk2->HasFlag(BBF_COLD));
 }
 
 bool Compiler::fgIsBlockCold(BasicBlock* blk)
@@ -678,7 +678,7 @@ bool Compiler::fgIsBlockCold(BasicBlock* blk)
         return false;
     }
 
-    return ((blk->bbFlags & BBF_COLD) != 0);
+    return blk->HasFlag(BBF_COLD);
 }
 
 /*****************************************************************************
@@ -1259,7 +1259,7 @@ void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 
     /* Unless we already know that there is a loop without a call here ... */
 
-    if (!(dstBB->bbFlags & BBF_LOOP_CALL0))
+    if (!dstBB->HasFlag(BBF_LOOP_CALL0))
     {
         /* Check whether there is a loop path that doesn't call */
 
@@ -1350,7 +1350,7 @@ void Compiler::fgMarkLoopHead(BasicBlock* block)
 
     /* Is the loop head block known to execute a method call? */
 
-    if (block->bbFlags & BBF_GC_SAFE_POINT)
+    if (block->HasFlag(BBF_GC_SAFE_POINT))
     {
 #ifdef DEBUG
         if (verbose)
@@ -1374,7 +1374,7 @@ void Compiler::fgMarkLoopHead(BasicBlock* block)
 
         /* Will every trip through our loop execute a call? */
 
-        if (block->bbFlags & BBF_LOOP_CALL1)
+        if (block->HasFlag(BBF_LOOP_CALL1))
         {
 #ifdef DEBUG
             if (verbose)
@@ -1834,7 +1834,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(genReturnBB != block);
     assert(fgReturnCount <= 1); // We have a single return for synchronized methods
     assert(block->KindIs(BBJ_RETURN));
-    assert((block->bbFlags & BBF_HAS_JMP) == 0);
+    assert(!block->HasFlag(BBF_HAS_JMP));
     assert(block->hasTryIndex());
     assert(!block->hasHndIndex());
     assert(compHndBBtabCount >= 1);
@@ -2606,7 +2606,7 @@ PhaseStatus Compiler::fgAddInternal()
 
     for (BasicBlock* block = fgFirstBB; !lastBlockBeforeGenReturns->NextIs(block); block = block->Next())
     {
-        if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+        if (block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP))
         {
             merger.Record(block);
         }

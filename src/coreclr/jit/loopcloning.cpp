@@ -2031,7 +2031,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // X
 
     BasicBlock* h = loop.lpHead;
-    assert((h->bbFlags & BBF_LOOP_PREHEADER) != 0);
+    assert(h->HasFlag(BBF_LOOP_PREHEADER));
 
     // Make a new pre-header block 'h2' for the loop. 'h' will fall through to 'h2'.
     JITDUMP("Create new header block for loop\n");
@@ -2146,7 +2146,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // any nested loop pre-header blocks, since they will no longer be loop pre-headers. (This is because
         // we don't add the slow loop or its child loops to the loop table. It would be simplest to
         // just re-build the loop table if we want to enable loop optimization of the slow path loops.)
-        if ((newBlk->bbFlags & BBF_LOOP_PREHEADER) != 0)
+        if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
         {
             JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
             newBlk->bbFlags &= ~BBF_LOOP_PREHEADER;
