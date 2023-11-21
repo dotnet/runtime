@@ -5,8 +5,8 @@
 #include <cmath>
 
 HRESULT STDMETHODCALLTYPE BasicTest::Default(
-    /* [in] */ int32_t val,
-    /* [retval][out] */ int32_t *ret)
+    /* [in] */ LONG val,
+    /* [retval][out] */ LONG *ret)
 {
     *ret = val * 2;
     return S_OK;
@@ -42,116 +42,116 @@ HRESULT STDMETHODCALLTYPE BasicTest::Boolean_Inverse_Ret(
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::get_SByte_Property(
-    /* [retval][out] */ int8_t *ret)
+    /* [retval][out] */ signed char *ret)
 {
     *ret = _sbyte;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::put_SByte_Property(
-    /* [in] */ int8_t val)
+    /* [in] */ signed char val)
 {
     _sbyte = val;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::SByte_Doubled_InOut(
-    /* [out][in] */ int8_t *val)
+    /* [out][in] */ signed char *val)
 {
     *val = *val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::SByte_Doubled_Ret(
-    /* [in] */ int8_t val,
-    /* [retval][out] */ int8_t *ret)
+    /* [in] */ signed char val,
+    /* [retval][out] */ signed char *ret)
 {
     *ret = val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::get_Byte_Property(
-    /* [retval][out] */ uint8_t *ret)
+    /* [retval][out] */ unsigned char *ret)
 {
     *ret = _byte;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::put_Byte_Property(
-    /* [in] */ uint8_t val)
+    /* [in] */ unsigned char val)
 {
     _byte = val;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::Byte_Doubled_InOut(
-    /* [out][in] */ uint8_t *val)
+    /* [out][in] */ unsigned char *val)
 {
     *val = *val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::Byte_Doubled_Ret(
-    /* [in] */ uint8_t val,
-    /* [retval][out] */ uint8_t *ret)
+    /* [in] */ unsigned char val,
+    /* [retval][out] */ unsigned char *ret)
 {
     *ret = val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::get_Short_Property(
-    /* [retval][out] */ int16_t *ret)
+    /* [retval][out] */ short *ret)
 {
     *ret = _short;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::put_Short_Property(
-    /* [in] */ int16_t val)
+    /* [in] */ short val)
 {
     _short = val;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::Short_Doubled_InOut(
-    /* [out][in] */ int16_t *val)
+    /* [out][in] */ short *val)
 {
     *val = *val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::Short_Doubled_Ret(
-    /* [in] */ int16_t val,
-    /* [retval][out] */ int16_t *ret)
+    /* [in] */ short val,
+    /* [retval][out] */ short *ret)
 {
     *ret = val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::get_UShort_Property(
-    /* [retval][out] */ uint16_t *ret)
+    /* [retval][out] */ unsigned short *ret)
 {
     *ret = _ushort;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::put_UShort_Property(
-    /* [in] */ uint16_t val)
+    /* [in] */ unsigned short val)
 {
     _ushort = val;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::UShort_Doubled_InOut(
-    /* [out][in] */ uint16_t *val)
+    /* [out][in] */ unsigned short *val)
 {
     *val = *val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::UShort_Doubled_Ret(
-    /* [in] */ uint16_t val,
-    /* [retval][out] */ uint16_t *ret)
+    /* [in] */ unsigned short val,
+    /* [retval][out] */ unsigned short *ret)
 {
     *ret = val * 2;
     return S_OK;
@@ -187,87 +187,87 @@ HRESULT STDMETHODCALLTYPE BasicTest::Int_Doubled_Ret(
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::get_UInt_Property(
-    /* [retval][out] */ uint32_t *ret)
+    /* [retval][out] */ unsigned int *ret)
 {
     *ret = _uint;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::put_UInt_Property(
-    /* [in] */ uint32_t val)
+    /* [in] */ unsigned int val)
 {
     _uint = val;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::UInt_Doubled_InOut(
-    /* [out][in] */ uint32_t *val)
+    /* [out][in] */ unsigned int *val)
 {
     *val = *val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::UInt_Doubled_Ret(
-    /* [in] */ uint32_t val,
-    /* [retval][out] */ uint32_t *ret)
+    /* [in] */ unsigned int val,
+    /* [retval][out] */ unsigned int *ret)
 {
     *ret = val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::get_Int64_Property(
-    /* [retval][out] */ int64_t *ret)
+    /* [retval][out] */ __int64 *ret)
 {
     *ret = _long;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::put_Int64_Property(
-    /* [in] */ int64_t val)
+    /* [in] */ __int64 val)
 {
     _long = val;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::Int64_Doubled_InOut(
-    /* [out][in] */ int64_t *val)
+    /* [out][in] */ __int64 *val)
 {
     *val = *val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::Int64_Doubled_Ret(
-    /* [in] */ int64_t val,
-    /* [retval][out] */ int64_t *ret)
+    /* [in] */ __int64 val,
+    /* [retval][out] */ __int64 *ret)
 {
     *ret = val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::get_UInt64_Property(
-    /* [retval][out] */ uint64_t *ret)
+    /* [retval][out] */ unsigned __int64 *ret)
 {
     *ret = _ulong;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::put_UInt64_Property(
-    /* [in] */ uint64_t val)
+    /* [in] */ unsigned __int64 val)
 {
     _ulong = val;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::UInt64_Doubled_InOut(
-    /* [out][in] */ uint64_t *val)
+    /* [out][in] */ unsigned __int64 *val)
 {
     *val = *val * 2;
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE BasicTest::UInt64_Doubled_Ret(
-    /* [in] */ uint64_t val,
-    /* [retval][out] */ uint64_t *ret)
+    /* [in] */ unsigned __int64 val,
+    /* [retval][out] */ unsigned __int64 *ret)
 {
     *ret = val * 2;
     return S_OK;
@@ -367,7 +367,7 @@ HRESULT STDMETHODCALLTYPE BasicTest::String_Reverse_Ret(
     /* [in] */ BSTR val,
     /* [retval][out] */ BSTR *ret)
 {
-    uint32_t len = ::SysStringLen(val);
+    UINT len = ::SysStringLen(val);
     *ret = ::SysAllocStringLen(val, len);
     ReverseInPlace(*ret);
     return S_OK;

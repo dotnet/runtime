@@ -24,14 +24,14 @@ public:
 
 public: // ICollectionTest
     HRESULT STDMETHODCALLTYPE get_Count(
-        /* [retval][out] */ int32_t *ret);
+        /* [retval][out] */ LONG *ret);
 
     HRESULT STDMETHODCALLTYPE get_Item(
-        /* [in] */ uint32_t index,
+        /* [in] */ ULONG index,
         /* [retval][out] */ BSTR *ret);
 
     HRESULT STDMETHODCALLTYPE put_Item(
-        /* [in] */ uint32_t index,
+        /* [in] */ ULONG index,
         /* [in] */ BSTR val);
 
     HRESULT STDMETHODCALLTYPE get__NewEnum(
@@ -41,7 +41,7 @@ public: // ICollectionTest
         /* [in] */ BSTR val);
 
     HRESULT STDMETHODCALLTYPE Remove(
-        /* [in] */ uint32_t index);
+        /* [in] */ ULONG index);
 
     HRESULT STDMETHODCALLTYPE Clear();
 

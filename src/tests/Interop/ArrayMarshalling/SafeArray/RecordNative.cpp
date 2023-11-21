@@ -33,7 +33,7 @@ public:
         return E_INVALIDARG;
     }
 
-    HRESULT STDMETHODCALLTYPE GetFieldNames(uint32_t* pcNames, BSTR* rgBstrNames)
+    HRESULT STDMETHODCALLTYPE GetFieldNames(ULONG* pcNames, BSTR* rgBstrNames)
     {
         if (pcNames == nullptr)
         {
@@ -81,7 +81,7 @@ public:
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE GetSize(uint32_t* pcbSize)
+    HRESULT STDMETHODCALLTYPE GetSize(ULONG* pcbSize)
     {
         *pcbSize = sizeof(BlittableRecord);
         return S_OK;
@@ -98,7 +98,7 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE PutField(
-        uint32_t     wFlags,
+        ULONG     wFlags,
         PVOID     pvData,
         LPCOLESTR szFieldName,
         VARIANT   *pvarField
@@ -108,7 +108,7 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE PutFieldNoCopy(
-        uint32_t     wFlags,
+        ULONG     wFlags,
         PVOID     pvData,
         LPCOLESTR szFieldName,
         VARIANT   *pvarField
@@ -154,12 +154,12 @@ public:
         return S_OK;
     }
 
-    uint32_t STDMETHODCALLTYPE AddRef()
+    ULONG STDMETHODCALLTYPE AddRef()
     {
         return ++refCount;
     }
 
-    uint32_t STDMETHODCALLTYPE Release()
+    ULONG STDMETHODCALLTYPE Release()
     {
         return --refCount;
     }
@@ -185,7 +185,7 @@ public:
     }
 
 private:
-    uint32_t refCount;
+    ULONG refCount;
 } s_BlittableRecordInfo;
 
 struct NonBlittableRecord
@@ -216,7 +216,7 @@ public:
         return E_INVALIDARG;
     }
 
-    HRESULT STDMETHODCALLTYPE GetFieldNames(uint32_t* pcNames, BSTR* rgBstrNames)
+    HRESULT STDMETHODCALLTYPE GetFieldNames(ULONG* pcNames, BSTR* rgBstrNames)
     {
         if (pcNames == nullptr)
         {
@@ -264,7 +264,7 @@ public:
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE GetSize(uint32_t* pcbSize)
+    HRESULT STDMETHODCALLTYPE GetSize(ULONG* pcbSize)
     {
         *pcbSize = sizeof(BlittableRecord);
         return S_OK;
@@ -281,7 +281,7 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE PutField(
-        uint32_t     wFlags,
+        ULONG     wFlags,
         PVOID     pvData,
         LPCOLESTR szFieldName,
         VARIANT   *pvarField
@@ -291,7 +291,7 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE PutFieldNoCopy(
-        uint32_t     wFlags,
+        ULONG     wFlags,
         PVOID     pvData,
         LPCOLESTR szFieldName,
         VARIANT   *pvarField
@@ -337,12 +337,12 @@ public:
         return S_OK;
     }
 
-    uint32_t STDMETHODCALLTYPE AddRef()
+    ULONG STDMETHODCALLTYPE AddRef()
     {
         return ++refCount;
     }
 
-    uint32_t STDMETHODCALLTYPE Release()
+    ULONG STDMETHODCALLTYPE Release()
     {
         return --refCount;
     }

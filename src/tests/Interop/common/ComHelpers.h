@@ -125,8 +125,8 @@ private:
 
 // Macro to use for defining ref counting impls
 #define DEFINE_REF_COUNTING() \
-    STDMETHOD_(uint32_t, AddRef)(void) { return UnknownImpl::DoAddRef(); } \
-    STDMETHOD_(uint32_t, Release)(void) { return UnknownImpl::DoRelease(); }
+    STDMETHOD_(ULONG, AddRef)(void) { return UnknownImpl::DoAddRef(); } \
+    STDMETHOD_(ULONG, Release)(void) { return UnknownImpl::DoRelease(); }
 
 #ifdef WINDOWS
 // Templated class factory

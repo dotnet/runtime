@@ -253,7 +253,7 @@ namespace
         THROW_IF_FAILED(cpc->EnumConnectionPoints(&ecp));
 
         bool foundEventInterface = false;
-        uint32_t fetched;
+        ULONG fetched;
         LPCONNECTIONPOINT ptRaw = nullptr;
         while ((hr = ecp->Next(1, &ptRaw, &fetched)) == S_OK)
         {

@@ -29,7 +29,7 @@ private:
         if (E != type)
             return E_UNEXPECTED;
 
-        int32_t upperBoundIndex;
+        LONG upperBoundIndex;
         RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBoundIndex));
 
         // Upper bound is index so add '1'
@@ -74,7 +74,7 @@ private:
 public: // IArrayTesting
     DEF_FUNC(Mean_Byte_LP_PreLen)(
         /*[in]*/ int len,
-        /*[in]*/ uint8_t * d,
+        /*[in]*/ unsigned char * d,
         /*[out,retval]*/ double * pRetVal)
     {
         if (pRetVal == nullptr)
@@ -84,7 +84,7 @@ public: // IArrayTesting
     }
     DEF_FUNC(Mean_Short_LP_PreLen)(
         /*[in]*/ int len,
-        /*[in]*/ int16_t * d,
+        /*[in]*/ short * d,
         /*[out,retval]*/ double * pRetVal)
     {
         if (pRetVal == nullptr)
@@ -94,7 +94,7 @@ public: // IArrayTesting
     }
     DEF_FUNC(Mean_UShort_LP_PreLen)(
         /*[in]*/ int len,
-        /*[in]*/ uint16_t * d,
+        /*[in]*/ unsigned short * d,
         /*[out,retval]*/ double * pRetVal)
     {
         if (pRetVal == nullptr)
@@ -114,7 +114,7 @@ public: // IArrayTesting
     }
     DEF_FUNC(Mean_UInt_LP_PreLen)(
         /*[in]*/ int len,
-        /*[in]*/ uint32_t * d,
+        /*[in]*/ unsigned int * d,
         /*[out,retval]*/ double * pRetVal)
     {
         if (pRetVal == nullptr)
@@ -124,7 +124,7 @@ public: // IArrayTesting
     }
     DEF_FUNC(Mean_Long_LP_PreLen)(
         /*[in]*/ int len,
-        /*[in]*/ int64_t * d,
+        /*[in]*/ __int64 * d,
         /*[out,retval]*/ double * pRetVal)
     {
         if (pRetVal == nullptr)
@@ -134,7 +134,7 @@ public: // IArrayTesting
     }
     DEF_FUNC(Mean_ULong_LP_PreLen)(
         /*[in]*/ int len,
-        /*[in]*/ uint64_t * d,
+        /*[in]*/ unsigned __int64 * d,
         /*[out,retval]*/ double * pRetVal)
     {
         if (pRetVal == nullptr)
@@ -163,7 +163,7 @@ public: // IArrayTesting
         return S_OK;
     }
     DEF_FUNC(Mean_Byte_LP_PostLen)(
-        /*[in]*/ uint8_t * d,
+        /*[in]*/ unsigned char * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal)
     {
@@ -173,7 +173,7 @@ public: // IArrayTesting
         return S_OK;
     }
     DEF_FUNC(Mean_Short_LP_PostLen)(
-        /*[in]*/ int16_t * d,
+        /*[in]*/ short * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal)
     {
@@ -183,7 +183,7 @@ public: // IArrayTesting
         return S_OK;
     }
     DEF_FUNC(Mean_UShort_LP_PostLen)(
-        /*[in]*/ uint16_t * d,
+        /*[in]*/ unsigned short * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal)
     {
@@ -203,7 +203,7 @@ public: // IArrayTesting
         return S_OK;
     }
     DEF_FUNC(Mean_UInt_LP_PostLen)(
-        /*[in]*/ uint32_t * d,
+        /*[in]*/ unsigned int * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal)
     {
@@ -213,7 +213,7 @@ public: // IArrayTesting
         return S_OK;
     }
     DEF_FUNC(Mean_Long_LP_PostLen)(
-        /*[in]*/ int64_t * d,
+        /*[in]*/ __int64 * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal)
     {
@@ -223,7 +223,7 @@ public: // IArrayTesting
         return S_OK;
     }
     DEF_FUNC(Mean_ULong_LP_PostLen)(
-        /*[in]*/ uint64_t * d,
+        /*[in]*/ unsigned __int64 * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal)
     {

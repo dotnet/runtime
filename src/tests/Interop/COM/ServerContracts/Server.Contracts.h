@@ -18,33 +18,33 @@ struct __declspec(uuid("05655a94-a915-4926-815d-a9ea648baad9"))
 INumericTesting : IUnknown
 {
       virtual HRESULT STDMETHODCALLTYPE Add_Byte (
-        /*[in]*/ uint8_t a,
-        /*[in]*/ uint8_t b,
-        /*[out,retval]*/ uint8_t * pRetVal ) = 0;
+        /*[in]*/ unsigned char a,
+        /*[in]*/ unsigned char b,
+        /*[out,retval]*/ unsigned char * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Short (
-        /*[in]*/ int16_t a,
-        /*[in]*/ int16_t b,
-        /*[out,retval]*/ int16_t * pRetVal ) = 0;
+        /*[in]*/ short a,
+        /*[in]*/ short b,
+        /*[out,retval]*/ short * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_UShort (
-        /*[in]*/ uint16_t a,
-        /*[in]*/ uint16_t b,
-        /*[out,retval]*/ uint16_t * pRetVal ) = 0;
+        /*[in]*/ unsigned short a,
+        /*[in]*/ unsigned short b,
+        /*[out,retval]*/ unsigned short * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Int (
         /*[in]*/ int a,
         /*[in]*/ int b,
         /*[out,retval]*/ int * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_UInt (
-        /*[in]*/ uint32_t a,
-        /*[in]*/ uint32_t b,
-        /*[out,retval]*/ uint32_t * pRetVal ) = 0;
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[out,retval]*/ unsigned int * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Long (
-        /*[in]*/ int64_t a,
-        /*[in]*/ int64_t b,
-        /*[out,retval]*/ int64_t * pRetVal ) = 0;
+        /*[in]*/ __int64 a,
+        /*[in]*/ __int64 b,
+        /*[out,retval]*/ __int64 * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_ULong (
-        /*[in]*/ uint64_t a,
-        /*[in]*/ uint64_t b,
-        /*[out,retval]*/ uint64_t * pRetVal ) = 0;
+        /*[in]*/ unsigned __int64 a,
+        /*[in]*/ unsigned __int64 b,
+        /*[out,retval]*/ unsigned __int64 * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Float (
         /*[in]*/ float a,
         /*[in]*/ float b,
@@ -54,33 +54,33 @@ INumericTesting : IUnknown
         /*[in]*/ double b,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Byte_Ref (
-        /*[in]*/ uint8_t a,
-        /*[in]*/ uint8_t b,
-        /*[in,out]*/ uint8_t * c ) = 0;
+        /*[in]*/ unsigned char a,
+        /*[in]*/ unsigned char b,
+        /*[in,out]*/ unsigned char * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Short_Ref (
-        /*[in]*/ int16_t a,
-        /*[in]*/ int16_t b,
-        /*[in,out]*/ int16_t * c ) = 0;
+        /*[in]*/ short a,
+        /*[in]*/ short b,
+        /*[in,out]*/ short * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_UShort_Ref (
-        /*[in]*/ uint16_t a,
-        /*[in]*/ uint16_t b,
-        /*[in,out]*/ uint16_t * c ) = 0;
+        /*[in]*/ unsigned short a,
+        /*[in]*/ unsigned short b,
+        /*[in,out]*/ unsigned short * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Int_Ref (
         /*[in]*/ int a,
         /*[in]*/ int b,
         /*[in,out]*/ int * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_UInt_Ref (
-        /*[in]*/ uint32_t a,
-        /*[in]*/ uint32_t b,
-        /*[in,out]*/ uint32_t * c ) = 0;
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[in,out]*/ unsigned int * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Long_Ref (
-        /*[in]*/ int64_t a,
-        /*[in]*/ int64_t b,
-        /*[in,out]*/ int64_t * c ) = 0;
+        /*[in]*/ __int64 a,
+        /*[in]*/ __int64 b,
+        /*[in,out]*/ __int64 * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_ULong_Ref (
-        /*[in]*/ uint64_t a,
-        /*[in]*/ uint64_t b,
-        /*[in,out]*/ uint64_t * c ) = 0;
+        /*[in]*/ unsigned __int64 a,
+        /*[in]*/ unsigned __int64 b,
+        /*[in,out]*/ unsigned __int64 * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Float_Ref (
         /*[in]*/ float a,
         /*[in]*/ float b,
@@ -90,33 +90,33 @@ INumericTesting : IUnknown
         /*[in]*/ double b,
         /*[in,out]*/ double * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Byte_Out (
-        /*[in]*/ uint8_t a,
-        /*[in]*/ uint8_t b,
-        /*[out]*/ uint8_t * c ) = 0;
+        /*[in]*/ unsigned char a,
+        /*[in]*/ unsigned char b,
+        /*[out]*/ unsigned char * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Short_Out (
-        /*[in]*/ int16_t a,
-        /*[in]*/ int16_t b,
-        /*[out]*/ int16_t * c ) = 0;
+        /*[in]*/ short a,
+        /*[in]*/ short b,
+        /*[out]*/ short * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_UShort_Out (
-        /*[in]*/ uint16_t a,
-        /*[in]*/ uint16_t b,
-        /*[out]*/ uint16_t * c ) = 0;
+        /*[in]*/ unsigned short a,
+        /*[in]*/ unsigned short b,
+        /*[out]*/ unsigned short * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Int_Out (
         /*[in]*/ int a,
         /*[in]*/ int b,
         /*[out]*/ int * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_UInt_Out (
-        /*[in]*/ uint32_t a,
-        /*[in]*/ uint32_t b,
-        /*[out]*/ uint32_t * c ) = 0;
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[out]*/ unsigned int * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Long_Out (
-        /*[in]*/ int64_t a,
-        /*[in]*/ int64_t b,
-        /*[out]*/ int64_t * c ) = 0;
+        /*[in]*/ __int64 a,
+        /*[in]*/ __int64 b,
+        /*[out]*/ __int64 * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_ULong_Out (
-        /*[in]*/ uint64_t a,
-        /*[in]*/ uint64_t b,
-        /*[out]*/ uint64_t * c ) = 0;
+        /*[in]*/ unsigned __int64 a,
+        /*[in]*/ unsigned __int64 b,
+        /*[out]*/ unsigned __int64 * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Add_Float_Out (
         /*[in]*/ float a,
         /*[in]*/ float b,
@@ -159,15 +159,15 @@ IArrayTesting : IUnknown
 {
       virtual HRESULT STDMETHODCALLTYPE Mean_Byte_LP_PreLen (
         /*[in]*/ int len,
-        /*[in]*/ uint8_t * d,
+        /*[in]*/ unsigned char * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Short_LP_PreLen (
         /*[in]*/ int len,
-        /*[in]*/ int16_t * d,
+        /*[in]*/ short * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_UShort_LP_PreLen (
         /*[in]*/ int len,
-        /*[in]*/ uint16_t * d,
+        /*[in]*/ unsigned short * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Int_LP_PreLen (
         /*[in]*/ int len,
@@ -175,15 +175,15 @@ IArrayTesting : IUnknown
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_UInt_LP_PreLen (
         /*[in]*/ int len,
-        /*[in]*/ uint32_t * d,
+        /*[in]*/ unsigned int * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Long_LP_PreLen (
         /*[in]*/ int len,
-        /*[in]*/ int64_t * d,
+        /*[in]*/ __int64 * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_ULong_LP_PreLen (
         /*[in]*/ int len,
-        /*[in]*/ uint64_t * d,
+        /*[in]*/ unsigned __int64 * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Float_LP_PreLen (
         /*[in]*/ int len,
@@ -194,15 +194,15 @@ IArrayTesting : IUnknown
         /*[in]*/ double * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Byte_LP_PostLen (
-        /*[in]*/ uint8_t * d,
+        /*[in]*/ unsigned char * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Short_LP_PostLen (
-        /*[in]*/ int16_t * d,
+        /*[in]*/ short * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_UShort_LP_PostLen (
-        /*[in]*/ uint16_t * d,
+        /*[in]*/ unsigned short * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Int_LP_PostLen (
@@ -210,15 +210,15 @@ IArrayTesting : IUnknown
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_UInt_LP_PostLen (
-        /*[in]*/ uint32_t * d,
+        /*[in]*/ unsigned int * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Long_LP_PostLen (
-        /*[in]*/ int64_t * d,
+        /*[in]*/ __int64 * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_ULong_LP_PostLen (
-        /*[in]*/ uint64_t * d,
+        /*[in]*/ unsigned __int64 * d,
         /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Mean_Float_LP_PostLen (
@@ -392,20 +392,20 @@ struct __declspec(uuid("a5e04c1c-474e-46d2-bbc0-769d04e12b54"))
 IDispatchTesting : IDispatch
 {
     virtual HRESULT STDMETHODCALLTYPE DoubleNumeric_ReturnByRef (
-        /*[in]*/ uint8_t b1,
-        /*[in,out]*/ uint8_t *b2,
-        /*[in]*/ int16_t s1,
-        /*[in,out]*/ int16_t *s2,
-        /*[in]*/ uint16_t us1,
-        /*[in,out]*/ uint16_t *us2,
+        /*[in]*/ unsigned char b1,
+        /*[in,out]*/ unsigned char *b2,
+        /*[in]*/ short s1,
+        /*[in,out]*/ short *s2,
+        /*[in]*/ unsigned short us1,
+        /*[in,out]*/ unsigned short *us2,
         /*[in]*/ int i1,
         /*[in,out]*/ int *i2,
-        /*[in]*/ uint32_t ui1,
-        /*[in,out]*/ uint32_t *ui2,
-        /*[in]*/ int64_t l1,
-        /*[in,out]*/ int64_t *l2,
-        /*[in]*/ uint64_t ul1,
-        /*[in,out]*/ uint64_t *ul2 ) = 0;
+        /*[in]*/ unsigned int ui1,
+        /*[in,out]*/ unsigned int *ui2,
+        /*[in]*/ __int64 l1,
+        /*[in,out]*/ __int64 *l2,
+        /*[in]*/ unsigned __int64 ul1,
+        /*[in,out]*/ unsigned __int64 *ul2 ) = 0;
     virtual HRESULT STDMETHODCALLTYPE Add_Float_ReturnAndUpdateByRef (
         /*[in]*/ float a,
         /*[in,out]*/ float *b,

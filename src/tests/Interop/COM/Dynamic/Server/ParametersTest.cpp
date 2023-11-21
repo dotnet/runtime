@@ -86,7 +86,7 @@ HRESULT STDMETHODCALLTYPE ParametersTest::VarArgs(
 {
     HRESULT hr;
 
-    int32_t upperIndex;
+    LONG upperIndex;
     RETURN_IF_FAILED(::SafeArrayGetUBound(args, 1, &upperIndex));
 
     SAFEARRAYBOUND saBound { /*cElements*/ upperIndex + 1, /*lLbound*/ 0 };

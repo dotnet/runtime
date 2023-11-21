@@ -19,16 +19,16 @@ VARIANTARG *NextArg(_In_ VARIANTARG *args, _Inout_ size_t &currIndex)
 class Enumerator : public UnknownImpl, public IEnumVARIANT
 {
 public:
-    Enumerator(uint32_t count)
+    Enumerator(ULONG count)
         : _count { count }
         , _current { 0 }
     { }
 
 public: // IEnumVARIANT
     HRESULT STDMETHODCALLTYPE Next(
-        uint32_t celt,
+        ULONG celt,
         VARIANT *rgVar,
-        uint32_t *pCeltFetched)
+        ULONG *pCeltFetched)
     {
         for(*pCeltFetched = 0; *pCeltFetched < celt && _current < _count; ++*pCeltFetched, ++_current)
         {
@@ -40,9 +40,9 @@ public: // IEnumVARIANT
         return celt == *pCeltFetched ? S_OK : S_FALSE;
     }
 
-    HRESULT STDMETHODCALLTYPE Skip(uint32_t celt)
+    HRESULT STDMETHODCALLTYPE Skip(ULONG celt)
     {
-        uint32_t indexMaybe = _current + celt;
+        ULONG indexMaybe = _current + celt;
         if (indexMaybe >= _count)
         {
             _current = _count - 1;
@@ -78,8 +78,8 @@ public: // IUnknown
     DEFINE_REF_COUNTING();
 
 private:
-    uint32_t _count;
-    uint32_t _current;
+    ULONG _count;
+    ULONG _current;
 };
 
 class DispatchTesting : public UnknownImpl, public IDispatchTesting
@@ -191,24 +191,24 @@ public: // IDispatch
 
 public: // IDispatchTesting
     virtual HRESULT STDMETHODCALLTYPE DoubleNumeric_ReturnByRef (
-        /*[in]*/ uint8_t b1,
-        /*[in,out]*/ uint8_t *b2,
-        /*[in]*/ int16_t s1,
-        /*[in,out]*/ int16_t *s2,
-        /*[in]*/ uint16_t us1,
-        /*[in,out]*/ uint16_t *us2,
+        /*[in]*/ unsigned char b1,
+        /*[in,out]*/ unsigned char *b2,
+        /*[in]*/ short s1,
+        /*[in,out]*/ short *s2,
+        /*[in]*/ unsigned short us1,
+        /*[in,out]*/ unsigned short *us2,
         /*[in]*/ int i1,
         /*[in,out]*/ int *i2,
-        /*[in]*/ uint32_t ui1,
-        /*[in,out]*/ uint32_t *ui2,
-        /*[in]*/ int64_t l1,
-        /*[in,out]*/ int64_t *l2,
-        /*[in]*/ uint64_t ul1,
-        /*[in,out]*/ uint64_t *ul2 )
+        /*[in]*/ unsigned int ui1,
+        /*[in,out]*/ unsigned int *ui2,
+        /*[in]*/ __int64 l1,
+        /*[in,out]*/ __int64 *l2,
+        /*[in]*/ unsigned __int64 ul1,
+        /*[in,out]*/ unsigned __int64 *ul2 )
     {
-        *b2 = static_cast<uint8_t>(b1 * 2);
-        *s2 = static_cast<int16_t>(s1 * 2);
-        *us2 = static_cast<uint16_t>(us1 * 2);
+        *b2 = static_cast<unsigned char>(b1 * 2);
+        *s2 = static_cast<short>(s1 * 2);
+        *us2 = static_cast<unsigned short>(us1 * 2);
         *i2 = i1 * 2;
         *ui2 = ui1 * 2u;
         *l2 = l1 * 2ll;
@@ -272,13 +272,13 @@ private:
     {
         HRESULT hr;
 
-        uint8_t *b_args[2];
-        int16_t *s_args[2];
-        uint16_t *us_args[2];
+        unsigned char *b_args[2];
+        short *s_args[2];
+        unsigned short *us_args[2];
         int *i_args[2];
-        uint32_t *ui_args[2];
-        int64_t *l_args[2];
-        uint64_t *ul_args[2];
+        unsigned int *ui_args[2];
+        __int64 *l_args[2];
+        unsigned __int64 *ul_args[2];
         size_t expectedArgCount =
             ARRAY_SIZE(b_args)
             + ARRAY_SIZE(s_args)
@@ -301,7 +301,7 @@ private:
             b_args[0] = &currArg->bVal;
             currArg = NextArg(pDispParams->rgvarg, argIdx);
             RETURN_IF_FAILED(VerifyValues(VARENUM(VT_BYREF | currType), VARENUM(currArg->vt)));
-            b_args[1] = (uint8_t*)currArg->byref;
+            b_args[1] = (unsigned char*)currArg->byref;
         }
         {
             currType = VT_I2;
@@ -310,7 +310,7 @@ private:
             s_args[0] = &currArg->iVal;
             currArg = NextArg(pDispParams->rgvarg, argIdx);
             RETURN_IF_FAILED(VerifyValues(VARENUM(VT_BYREF | currType), VARENUM(currArg->vt)));
-            s_args[1] = (int16_t*)currArg->byref;
+            s_args[1] = (short*)currArg->byref;
         }
         {
             currType = VT_UI2;
@@ -319,7 +319,7 @@ private:
             us_args[0] = &currArg->uiVal;
             currArg = NextArg(pDispParams->rgvarg, argIdx);
             RETURN_IF_FAILED(VerifyValues(VARENUM(VT_BYREF | currType), VARENUM(currArg->vt)));
-            us_args[1] = (uint16_t*)currArg->byref;
+            us_args[1] = (unsigned short*)currArg->byref;
         }
         {
             currType = VT_I4;
@@ -337,7 +337,7 @@ private:
             ui_args[0] = &currArg->uintVal;
             currArg = NextArg(pDispParams->rgvarg, argIdx);
             RETURN_IF_FAILED(VerifyValues(VARENUM(VT_BYREF | currType), VARENUM(currArg->vt)));
-            ui_args[1] = (uint32_t*)currArg->byref;
+            ui_args[1] = (unsigned int*)currArg->byref;
         }
         {
             currType = VT_I8;
@@ -346,7 +346,7 @@ private:
             l_args[0] = &currArg->llVal;
             currArg = NextArg(pDispParams->rgvarg, argIdx);
             RETURN_IF_FAILED(VerifyValues(VARENUM(VT_BYREF | currType), VARENUM(currArg->vt)));
-            l_args[1] = (int64_t*)currArg->byref;
+            l_args[1] = (__int64*)currArg->byref;
         }
         {
             currType = VT_UI8;
@@ -355,7 +355,7 @@ private:
             ul_args[0] = &currArg->ullVal;
             currArg = NextArg(pDispParams->rgvarg, argIdx);
             RETURN_IF_FAILED(VerifyValues(VARENUM(VT_BYREF | currType), VARENUM(currArg->vt)));
-            ul_args[1] = (uint64_t*)currArg->byref;
+            ul_args[1] = (unsigned __int64*)currArg->byref;
         }
 
         return DoubleNumeric_ReturnByRef(

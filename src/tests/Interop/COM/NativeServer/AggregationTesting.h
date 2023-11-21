@@ -98,12 +98,12 @@ private:
             return _implOuter->QueryInterface(riid, ppvObject);
         }
 
-        STDMETHODIMP_(uint32_t) AddRef(void)
+        STDMETHODIMP_(ULONG) AddRef(void) 
         {
             return _implOuter->AddRef();
         }
 
-        STDMETHODIMP_(uint32_t) Release(void)
+        STDMETHODIMP_(ULONG) Release(void) 
         {
             return _implOuter->Release();
         }

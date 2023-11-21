@@ -22,9 +22,9 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE Next(
-        uint32_t celt,
+        ULONG celt,
         VARIANT *rgVar,
-        uint32_t *pCeltFetched) override
+        ULONG *pCeltFetched) override
     {
         for(*pCeltFetched = 0; *pCeltFetched < celt && current < start + count; ++*pCeltFetched, ++current)
         {
@@ -36,7 +36,7 @@ public:
         return celt == *pCeltFetched ? S_OK : S_FALSE;
     }
 
-    HRESULT STDMETHODCALLTYPE Skip(uint32_t celt) override
+    HRESULT STDMETHODCALLTYPE Skip(ULONG celt) override
     {
         int original = current;
         current = std::min(current + (int)celt, start + count);

@@ -23,8 +23,8 @@ namespace API
     class DECLSPEC_UUID("64bd43f8-bfee-4ec4-b7eb-2935158dae21") IReferenceTrackerTarget : public IUnknown
     {
     public:
-        STDMETHOD_(uint32_t, AddRefFromReferenceTracker)() = 0;
-        STDMETHOD_(uint32_t, ReleaseFromReferenceTracker)() = 0;
+        STDMETHOD_(ULONG, AddRefFromReferenceTracker)() = 0;
+        STDMETHOD_(ULONG, ReleaseFromReferenceTracker)() = 0;
         STDMETHOD(Peg)() = 0;
         STDMETHOD(Unpeg)() = 0;
     };
@@ -283,11 +283,11 @@ namespace
             {
                 return _implOuter->QueryInterface(riid, ppvObject);
             }
-            STDMETHOD_(uint32_t, AddRef)(void)
+            STDMETHOD_(ULONG, AddRef)(void)
             {
                 return _implOuter->AddRef();
             }
-            STDMETHOD_(uint32_t, Release)(void)
+            STDMETHOD_(ULONG, Release)(void)
             {
                 return _implOuter->Release();
             }
@@ -427,8 +427,8 @@ namespace
         }
 
         // Lifetime maintained by stack - we don't care about ref counts
-        STDMETHOD_(uint32_t, AddRef)() { return 1; }
-        STDMETHOD_(uint32_t, Release)() { return 1; }
+        STDMETHOD_(ULONG, AddRef)() { return 1; }
+        STDMETHOD_(ULONG, Release)() { return 1; }
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
@@ -576,10 +576,10 @@ extern "C" DLL_EXPORT void* STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceT
     return nullptr;
 }
 
-extern "C" DLL_EXPORT int32_t STDMETHODCALLTYPE TrackerTarget_ReleaseFromReferenceTracker(API::IReferenceTrackerTarget *target)
+extern "C" DLL_EXPORT LONG STDMETHODCALLTYPE TrackerTarget_ReleaseFromReferenceTracker(API::IReferenceTrackerTarget *target)
 {
     assert(target != nullptr);
-    return (int32_t)target->ReleaseFromReferenceTracker();
+    return (LONG)target->ReleaseFromReferenceTracker();
 }
 
 namespace

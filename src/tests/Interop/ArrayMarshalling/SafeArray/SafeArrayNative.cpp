@@ -19,9 +19,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE XorBoolArray(SAFEARRAY* d, BOOL*
         return E_INVALIDARG;
     }
 
-    int32_t lowerBoundIndex;
+    LONG lowerBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBoundIndex));
-    int32_t upperBoundIndex;
+    LONG upperBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBoundIndex));
 
     VARIANT_BOOL* values;
@@ -51,9 +51,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanDecimalArray(SAFEARRAY* d, D
         return E_INVALIDARG;
     }
 
-    int32_t lowerBoundIndex;
+    LONG lowerBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBoundIndex));
-    int32_t upperBoundIndex;
+    LONG upperBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBoundIndex));
 
     DECIMAL* values;
@@ -87,9 +87,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE SumCurrencyArray(SAFEARRAY* d, C
         return E_INVALIDARG;
     }
 
-    int32_t lowerBoundIndex;
+    LONG lowerBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBoundIndex));
-    int32_t upperBoundIndex;
+    LONG upperBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBoundIndex));
 
     CY* values;
@@ -158,9 +158,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE ReverseStrings(SAFEARRAY* d)
         return E_INVALIDARG;
     }
 
-    int32_t lowerBoundIndex;
+    LONG lowerBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBoundIndex));
-    int32_t upperBoundIndex;
+    LONG upperBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBoundIndex));
 
     void** values;
@@ -204,9 +204,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArray(SAFEARRAY* 
         return E_INVALIDARG;
     }
 
-    int32_t lowerBoundIndex;
+    LONG lowerBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBoundIndex));
-    int32_t upperBoundIndex;
+    LONG upperBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBoundIndex));
 
     IUnknown** values;
@@ -235,9 +235,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanVariantIntArray(SAFEARRAY* d
         return E_INVALIDARG;
     }
 
-    int32_t lowerBoundIndex;
+    LONG lowerBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBoundIndex));
-    int32_t upperBoundIndex;
+    LONG upperBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBoundIndex));
 
     VARIANT* values;
@@ -273,9 +273,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE DistanceBetweenDates(SAFEARRAY* 
         return E_INVALIDARG;
     }
 
-    int32_t lowerBoundIndex;
+    LONG lowerBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBoundIndex));
-    int32_t upperBoundIndex;
+    LONG upperBoundIndex;
     RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBoundIndex));
 
     DATE* values;

@@ -18,21 +18,21 @@ public: // IInspectableTesting2
     }
 
 public: // IInspectable
-    STDMETHOD(GetIids)(
-        /* [out] */ uint32_t *iidCount,
+    STDMETHOD(GetIids)( 
+        /* [out] */ ULONG *iidCount,
         /* [size_is][size_is][out] */ IID **iids)
     {
         return E_NOTIMPL;
     }
-
-    STDMETHOD(GetRuntimeClassName)(
+        
+    STDMETHOD(GetRuntimeClassName)( 
         /* [out] */ HSTRING *className)
     {
         className = nullptr;
         return S_OK;
     }
-
-    STDMETHOD(GetTrustLevel)(
+    
+    STDMETHOD(GetTrustLevel)( 
         /* [out] */ TrustLevel *trustLevel)
     {
         *trustLevel = TrustLevel::FullTrust;

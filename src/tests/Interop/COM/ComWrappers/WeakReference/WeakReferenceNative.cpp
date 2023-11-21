@@ -13,20 +13,20 @@ namespace
     struct WeakReference : public IWeakReference, public UnknownImpl
     {
         IInspectable* _reference;
-        std::atomic<uint32_t> _strongRefCount;
+        std::atomic<ULONG> _strongRefCount;
 
-        WeakReference(IInspectable* reference, uint32_t strongRefCount)
+        WeakReference(IInspectable* reference, ULONG strongRefCount)
             : _reference(reference),
             _strongRefCount(strongRefCount)
         {}
 
-        uint32_t AddStrongRef()
+        ULONG AddStrongRef()
         {
             assert(_strongRefCount > 0);
             return (++_strongRefCount);
         }
 
-        uint32_t ReleaseStrongRef()
+        ULONG ReleaseStrongRef()
         {
             assert(_strongRefCount > 0);
             return --_strongRefCount;
@@ -86,7 +86,7 @@ namespace
         {
             if (!_weakReference)
             {
-                uint32_t refCount = UnknownImpl::GetRefCount();
+                ULONG refCount = UnknownImpl::GetRefCount();
                 _weakReference = new WeakReference(this, refCount);
             }
             _weakReference->AddRef();
@@ -100,7 +100,7 @@ namespace
         }
 
         STDMETHOD(GetIids)(
-            uint32_t *iidCount,
+            ULONG *iidCount,
             IID   **iids)
         {
             return E_NOTIMPL;
@@ -147,7 +147,7 @@ namespace
             }
             return hr;
         }
-        STDMETHOD_(uint32_t, AddRef)(void)
+        STDMETHOD_(ULONG, AddRef)(void)
         {
             if (_weakReference)
             {
@@ -155,11 +155,11 @@ namespace
             }
             return UnknownImpl::DoAddRef();
         }
-        STDMETHOD_(uint32_t, Release)(void)
+        STDMETHOD_(ULONG, Release)(void)
         {
             if (_weakReference)
             {
-                uint32_t c = _weakReference->ReleaseStrongRef();
+                ULONG c = _weakReference->ReleaseStrongRef();
                 if (c == 0)
                     delete this;
                 return c;
@@ -199,11 +199,11 @@ namespace
             }
             return _outerUnknown->QueryInterface(riid, ppvObject);
         }
-        STDMETHOD_(uint32_t, AddRef)(void)
+        STDMETHOD_(ULONG, AddRef)(void)
         {
             return _weakReference->AddStrongRef();
         }
-        STDMETHOD_(uint32_t, Release)(void)
+        STDMETHOD_(ULONG, Release)(void)
         {
             return _weakReference->ReleaseStrongRef();
         }
@@ -214,7 +214,7 @@ namespace
         }
 
         STDMETHOD(GetIids)(
-            uint32_t *iidCount,
+            ULONG *iidCount,
             IID   **iids)
         {
             return E_NOTIMPL;
@@ -245,7 +245,7 @@ namespace
         }
 
         STDMETHOD(GetIids)(
-            uint32_t *iidCount,
+            ULONG *iidCount,
             IID   **iids)
         {
             return E_NOTIMPL;
@@ -267,11 +267,11 @@ namespace
             }
             return _outerUnknown->QueryInterface(riid, ppvObject);
         }
-        STDMETHOD_(uint32_t, AddRef)(void)
+        STDMETHOD_(ULONG, AddRef)(void)
         {
             return _outerUnknown->AddRef();
         }
-        STDMETHOD_(uint32_t, Release)(void)
+        STDMETHOD_(ULONG, Release)(void)
         {
             return _outerUnknown->Release();
         }

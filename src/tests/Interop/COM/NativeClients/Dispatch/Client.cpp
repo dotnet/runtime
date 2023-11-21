@@ -85,10 +85,10 @@ void Validate_Numeric_In_ReturnByRef()
     int16_t s2;
     uint16_t us1 = 74;
     uint16_t us2;
-    int32_t i1 = 34;
-    int32_t i2;
-    uint32_t ui1 = 854;
-    uint32_t ui2;
+    LONG i1 = 34;
+    LONG i2;
+    ULONG ui1 = 854;
+    ULONG ui2;
     int64_t l1 = 894;
     int64_t l2;
     uint64_t ul1 = 4168;
@@ -373,7 +373,7 @@ namespace
     {
         HRESULT hr;
         VARIANT element;
-        uint32_t numFetched;
+        ULONG numFetched;
         for(int i = expectedStart; i < expectedStart + expectedCount; ++i)
         {
             THROW_IF_FAILED(enumVariant->Next(1, &element, &numFetched));
