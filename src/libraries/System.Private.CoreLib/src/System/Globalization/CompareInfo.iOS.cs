@@ -84,5 +84,143 @@ namespace System.Globalization
 
         private static string GetPNSE(CompareOptions options) =>
             SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);
+
+        private unsafe SortKey CreateSortKeyNative(string source, CompareOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+
+            if ((options & ValidCompareMaskOffFlags) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
+            }
+
+            byte[] keyData;
+            fixed (char* pSource = source)
+            {
+                int sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, null, 0, options);
+                keyData = new byte[sortKeyLength];
+
+                fixed (byte* pSortKey = keyData)
+                {
+                    if (Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                    {
+                        throw new ArgumentException(SR.Arg_ExternalException);
+                    }
+                }
+            }
+
+            return new SortKey(this, source, options, keyData);
+        }
+
+        private unsafe int GetSortKeyNative(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
+
+            int actualSortKeyLength;
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+            {
+                actualSortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pDest, destination.Length, options);
+            }
+
+            // The check below also handles errors due to negative values / overflow being returned.
+
+            if ((uint)actualSortKeyLength > (uint)destination.Length)
+            {
+                if (actualSortKeyLength > destination.Length)
+                {
+                    ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
+            }
+
+            return actualSortKeyLength;
+        }
+
+        private unsafe int GetSortKeyLengthNative(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            {
+                return Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, null, 0, options);
+            }
+        }
+
+        private unsafe int GetHashCodeOfStringNative(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            // according to ICU User Guide the performance of ucol_getSortKey is worse when it is called with null output buffer
+            // the solution is to try to fill the sort key in a temporary buffer of size equal 4 x string length
+            // (The ArrayPool used to have a limit on the length of buffers it would cache; this code was avoiding
+            // exceeding that limit to avoid a per-operation allocation, and the performance implications here
+            // were not re-evaluated when the limit was lifted.)
+            int sortKeyLength = (source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length;
+
+            byte[]? borrowedArray = null;
+            Span<byte> sortKey = sortKeyLength <= 1024
+                ? stackalloc byte[1024]
+                : (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
+
+            fixed (char* pSource = &MemoryMarshal.GetNonNullPinnableReference(source))
+            {
+                fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
+                {
+                    System.Diagnostics.Debug.Write("Interop.Globalization.GetSortKeyNative before sortKeyLength is " + sortKeyLength + " for string length " + source.Length + " and sortKey.Length " + sortKey.Length + " and options " + options);
+                    sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKey.Length, options);
+                    System.Diagnostics.Debug.Write("Interop.Globalization.GetSortKeyNative after sortKeyLength is " + sortKeyLength + " for string length " + source.Length + " and sortKey.Length " + sortKey.Length + " and options " + options);
+
+                }
+
+                if (sortKeyLength > sortKey.Length) // slow path for big strings
+                {
+                    if (borrowedArray != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(borrowedArray);
+                    }
+
+                    sortKey = (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
+
+                    fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
+                    {
+                        sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKey.Length, options);
+                        System.Diagnostics.Debug.Write("Interop.Globalization.GetSortKeyNative sortKeyLength is " + sortKeyLength + " for string length " + source.Length);
+                    }
+                }
+            }
+
+            if (sortKeyLength == 0 || sortKeyLength > sortKey.Length) // internal error (0) or a bug (2nd call failed) in ucol_getSortKey
+            {
+                System.Diagnostics.Debug.Write("Interop.Globalization.GetSortKeyNative returned an invalid value.");
+                throw new ArgumentException(SR.Arg_ExternalException);
+            }
+
+            int hash = Marvin.ComputeHash32(sortKey.Slice(0, sortKeyLength), Marvin.DefaultSeed);
+
+            if (borrowedArray != null)
+            {
+                ArrayPool<byte>.Shared.Return(borrowedArray);
+            }
+
+            return hash;
+        }
     }
 }

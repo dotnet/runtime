@@ -99,4 +99,12 @@ PALEXPORT int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName,
                                                      const uint16_t* lpSource,
                                                      int32_t cwSourceLength,
                                                      int32_t options);
+
+PALEXPORT int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName,
+                                                       int32_t lNameLength,
+                                                       const UChar* lpStr,
+                                                       int32_t cwStrLength,
+                                                       uint8_t* sortKey,
+                                                       int32_t cbSortKeyLength,
+                                                       int32_t options);
 #endif

@@ -293,4 +293,39 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
         return result == NSOrderedSame ? 1 : 0;
     }
 }
+
+int32_t GlobalizationNative_GetSortKeyNative(
+                        const uint16_t* localeName,
+                        int32_t lNameLength,
+                        const uint16_t* lpStr,
+                        int32_t cwStrLength,
+                        uint8_t* sortKey,
+                        int32_t cbSortKeyLength,
+                        int32_t options)
+{
+    @autoreleasepool {
+        NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
+        //NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
+        NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
+
+        // Performing string transformation using the specified locale
+        NSString *transformedString = [sourceString uppercaseStringWithLocale:locale];
+        // Convert the NSString to UTF-8 encoded NSData
+        NSData *utf8Data = [transformedString dataUsingEncoding:NSUTF8StringEncoding];
+
+        // Get a pointer to the data bytes
+        const uint8_t *utf8Bytes = (const uint8_t *)[utf8Data bytes];
+
+        // Determine the length of the data in bytes
+        NSUInteger length = [utf8Data length];
+
+        // Create a uint8_t buffer to hold the UTF-8 bytes
+        sortKey = (uint8_t *)malloc(length * sizeof(uint8_t));
+
+        // Copy the bytes from utf8Bytes to buffer
+        memcpy(sortKey, utf8Bytes, length * sizeof(uint8_t));
+
+        return length;
+    }
+}
 #endif
