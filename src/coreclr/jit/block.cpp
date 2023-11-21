@@ -103,10 +103,20 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
     }
 }
 
+//------------------------------------------------------------------------
+// BlockPredsWithEH:
+//   Return list of predecessors, including due to EH flow. This is logically
+//   the opposite of BasicBlock::VisitAllSuccs.
+//
+// Arguments:
+//    blk - Block to get predecessors for.
+//
+// Returns:
+//    List of edges.
+//
 FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
 {
-    unsigned tryIndex;
-    if (!bbIsExFlowBlock(blk, &tryIndex))
+    if (!bbIsHandlerBeg(blk))
     {
         return blk->bbPreds;
     }
@@ -118,7 +128,8 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
         return res;
     }
 
-    res = blk->bbPreds;
+    res               = blk->bbPreds;
+    unsigned tryIndex = blk->getHndIndex();
     // Add all blocks handled by this handler (except for second blocks of BBJ_CALLFINALLY/BBJ_ALWAYS pairs;
     // these cannot cause transfer to the handler...)
     // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
@@ -155,7 +166,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 {
                     res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
 
-                    assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                    assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
                         return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
                     }) == BasicBlockVisit::Abort);
                 }
@@ -195,13 +206,12 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
 //
 FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
 {
-    unsigned tryIndex;
-    if (!bbIsExFlowBlock(blk, &tryIndex))
+    if (!bbIsHandlerBeg(blk))
     {
         return blk->bbPreds;
     }
 
-    EHblkDsc* ehblk = ehGetDsc(tryIndex);
+    EHblkDsc* ehblk = ehGetBlockHndDsc(blk);
     if (!ehblk->HasFinallyOrFaultHandler() || (ehblk->ebdHndBeg != blk))
     {
         return ehblk->ebdTryBeg->bbPreds;
@@ -231,7 +241,7 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
                 {
                     res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
 
-                    assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                    assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
                         return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
                     }) == BasicBlockVisit::Abort);
                 }
