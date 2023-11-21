@@ -84,7 +84,7 @@ namespace Mono.Linker
 			if (foundProperty == null)
 				return false;
 
-			if (_context.Annotations.TryGetLinkerAttribute<FeatureGuardAttribute<RequiresUnreferencedCodeAttribute>> (foundProperty, out _)) {
+			if (_context.Annotations.TryGetLinkerAttribute<FeatureGuardAttribute> (foundProperty, out _)) {
 				// When trimming, we assume that a feature check for RequiresUnreferencedCodeAttribute returns false.
 
 				if (!_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method))

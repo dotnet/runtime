@@ -132,7 +132,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		static FeatureGuardAttribute<RequiresUnreferencedCodeAttribute>? ProcessFeatureGuardAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
+		static FeatureGuardAttribute? ProcessFeatureGuardAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
 			if (provider is not PropertyDefinition)
 				return null;
@@ -159,7 +159,7 @@ namespace Mono.Linker
 			if (requiresAttributeType.Namespace is not "System.Diagnostics.CodeAnalysis")
 				return null;
 			if (requiresAttributeType.Name is "RequiresUnreferencedCodeAttribute")
-				return new FeatureGuardAttribute<RequiresUnreferencedCodeAttribute> ();
+				return new FeatureGuardAttribute (typeof (RequiresUnreferencedCodeAttribute));
 
 			return null;
 		}

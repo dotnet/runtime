@@ -26,6 +26,9 @@ namespace System.Linq.Expressions
         private readonly Expression _body;
 
         // This can be flipped to false using feature switches at publishing time
+        // Relies on IsDynamicCodeSupported substitution.
+        [FeatureGuard(typeof(RequiresDynamicCode))]
+        // TODO: this doesn't respect the feature if set in appcontext!!! :(
         public static bool CanCompileToIL => RuntimeFeature.IsDynamicCodeSupported;
 
         // This could be flipped to false using feature switches at publishing time
