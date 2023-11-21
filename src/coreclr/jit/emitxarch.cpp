@@ -1346,21 +1346,21 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         code |= EVEX_B_BIT;
 
-        if(!id->idHasMem())
+        if (!id->idHasMem())
         {
-            // embedded rounding case. 
+            // embedded rounding case.
             unsigned roundingMode = id->idGetEvexbContext();
-            if(roundingMode == 1)
+            if (roundingMode == 1)
             {
                 // {rd-sae}
                 code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
                 code |= LBIT_IN_BYTE_EVEX_PREFIX;
             }
-            else if(roundingMode == 2)
+            else if (roundingMode == 2)
             {
                 // {ru-sae}
                 code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
-                code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);               
+                code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
             }
             else
             {
@@ -10727,15 +10727,15 @@ void emitter::emitDispEmbRounding(instrDesc* id)
     }
     assert(!id->idHasMem());
     unsigned roundingMode = id->idGetEvexbContext();
-    if(roundingMode == 1)
+    if (roundingMode == 1)
     {
         printf(" {rd-sae}");
     }
-    else if(roundingMode == 2)
+    else if (roundingMode == 2)
     {
         printf(" {ru-sae}");
     }
-    else if(roundingMode == 3)
+    else if (roundingMode == 3)
     {
         printf(" {rz-sae}");
     }

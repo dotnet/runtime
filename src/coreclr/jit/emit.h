@@ -775,12 +775,12 @@ protected:
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
         unsigned _idEvexbContext : 2 // Does Evex.b need to be set for embedded broadcast/embedded rounding.
-#endif                                  //  TARGET_XARCH
+#endif                               //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
 
-        unsigned _idLclVar : 1;    // access a local on stack
-        unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
+            unsigned _idLclVar : 1;    // access a local on stack
+        unsigned     _idLclVarPair : 1 // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
@@ -1549,15 +1549,15 @@ protected:
             {
                 _idEvexbContext = 1;
             }
-            else if(instOptions == INS_OPTS_EVEX_er_rd)
+            else if (instOptions == INS_OPTS_EVEX_er_rd)
             {
                 _idEvexbContext = 1;
             }
-            else if(instOptions == INS_OPTS_EVEX_er_ru)
+            else if (instOptions == INS_OPTS_EVEX_er_ru)
             {
                 _idEvexbContext = 2;
             }
-            else if(instOptions == INS_OPTS_EVEX_er_rz)
+            else if (instOptions == INS_OPTS_EVEX_er_rz)
             {
                 _idEvexbContext = 3;
             }
