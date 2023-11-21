@@ -356,7 +356,7 @@ void CodeGen::genMarkLabelsForCodegen()
     // No label flags should be set before this.
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert((block->bbFlags & BBF_HAS_LABEL) == 0);
+        assert(!block->HasFlag(BBF_HAS_LABEL));
     }
 #endif // DEBUG
 
@@ -960,7 +960,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 
     if (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
     {
-        noway_assert(block->bbFlags & BBF_HAS_LABEL);
+        noway_assert(block->HasFlag(BBF_HAS_LABEL));
 
         SetStackLevel(compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int));
 
@@ -1441,7 +1441,7 @@ void CodeGen::genExitCode(BasicBlock* block)
     // For non-optimized debuggable code, there is only one epilog.
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
         genEmitGSCookieCheck(jmpEpilog);
@@ -1621,7 +1621,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
 void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 {
-    if (block->bbFlags & BBF_FUNCLET_BEG)
+    if (block->HasFlag(BBF_FUNCLET_BEG))
     {
         compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
         if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
@@ -5186,7 +5186,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     /* The return value is special-cased: make sure it goes live for the epilog */
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     if (IsFullPtrRegMapRequired() && !jmpEpilog)
     {

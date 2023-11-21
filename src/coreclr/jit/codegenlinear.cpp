@@ -308,7 +308,7 @@ void CodeGen::genCodeForBBlist()
 
         // If this block is a jump target or it requires a label then set 'needLabel' to true,
         //
-        bool needLabel = (block->bbFlags & BBF_HAS_LABEL) != 0;
+        bool needLabel = block->HasFlag(BBF_HAS_LABEL);
 
         if (block->IsFirstColdBlock(compiler))
         {
@@ -370,7 +370,7 @@ void CodeGen::genCodeForBBlist()
         siBeginBlock(block);
 
         // BBF_INTERNAL blocks don't correspond to any single IL instruction.
-        if (compiler->opts.compDbgInfo && (block->bbFlags & BBF_INTERNAL) &&
+        if (compiler->opts.compDbgInfo && block->HasFlag(BBF_INTERNAL) &&
             !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
                                              // emit a NO_MAPPING entry, immediately after the prolog.
         {
@@ -380,7 +380,7 @@ void CodeGen::genCodeForBBlist()
         bool firstMapping = true;
 
 #if defined(FEATURE_EH_FUNCLETS)
-        if (block->bbFlags & BBF_FUNCLET_BEG)
+        if (block->HasFlag(BBF_FUNCLET_BEG))
         {
             genReserveFuncletProlog(block);
         }
@@ -682,7 +682,7 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || (block->Next()->bbFlags & BBF_FUNCLET_BEG) ||
+                if (block->IsLast() || block->Next()->HasFlag(BBF_FUNCLET_BEG) ||
                     !BasicBlock::sameEHRegion(block, block->Next()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
                     block->IsLastHotBlock(compiler))

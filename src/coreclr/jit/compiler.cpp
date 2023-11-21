@@ -5307,7 +5307,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         if (!block->IsLast() && block->Next()->isLoopAlign())
         {
             // Loop alignment is disabled for cold blocks
-            assert((block->bbFlags & BBF_COLD) == 0);
+            assert(!block->HasFlag(BBF_COLD));
             BasicBlock* const loopTop              = block->Next();
             bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
             bool              unmarkedLoopAlign    = false;

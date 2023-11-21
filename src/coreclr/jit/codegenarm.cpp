@@ -126,7 +126,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     assert(!block->IsLast());
     assert(block->Next()->KindIs(BBJ_ALWAYS));
     assert(block->Next()->HasJump());
-    assert(block->Next()->GetJumpDest()->bbFlags & BBF_FINALLY_TARGET);
+    assert(block->Next()->GetJumpDest()->HasFlag(BBF_FINALLY_TARGET));
 
     bbFinallyRet = block->Next()->GetJumpDest();
 
@@ -141,7 +141,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // jump target using bbJumpDest - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
-    assert(!(block->bbFlags & BBF_RETLESS_CALL));
+    assert(!block->HasFlag(BBF_RETLESS_CALL));
     assert(block->isBBCallAlwaysPair());
     return block->Next();
 }
@@ -644,7 +644,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_HAS_LABEL);
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -2300,7 +2300,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -2577,9 +2577,9 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
     // If this block is the target of a finally return, we need to add a preceding NOP, in the same EH region,
     // so the unwinder doesn't get confused by our "movw lr, xxx; movt lr, xxx; b Lyyy" calling convention that
     // calls the funclet during non-exceptional control flow.
-    if (block->bbFlags & BBF_FINALLY_TARGET)
+    if (block->HasFlag(BBF_FINALLY_TARGET))
     {
-        assert(block->bbFlags & BBF_HAS_LABEL);
+        assert(block->HasFlag(BBF_HAS_LABEL));
 
 #ifdef DEBUG
         if (compiler->verbose)
