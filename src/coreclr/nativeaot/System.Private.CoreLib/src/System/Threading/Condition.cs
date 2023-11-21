@@ -144,7 +144,7 @@ namespace System.Threading
 
                 if (isWaitHandleKeywordEnabled)
                 {
-                    NativeRuntimeEventSource.Log.WaitHandleWaitStop(NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait)
+                    NativeRuntimeEventSource.Log.WaitHandleWaitStop(NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait);
                 }
 
                 AssertIsNotInList(waiter);

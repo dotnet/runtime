@@ -545,14 +545,14 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
 
-            EventData* data = stackalloc EventData[3];
+            EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (nint)(&WaitSource);
             data[0].Size = sizeof(WaitHandleWaitSourceMap);
             data[0].Reserved = 0;
             data[1].DataPointer = (nint)(&ClrInstanceID);
             data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
-            WriteEventCore(302, 3, data);
+            WriteEventCore(302, 2, data);
         }
     }
 }
