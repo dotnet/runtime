@@ -249,7 +249,6 @@ static const AMD64_XMM_Reg_No float_param_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD6
 						     AMD64_XMM6, AMD64_XMM7};
 
 static const AMD64_Reg_No return_regs [] = {AMD64_RAX, AMD64_RDX};
-
 #endif
 
 typedef struct {
@@ -491,7 +490,7 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#if defined(TARGET_LINUX) || defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
 #define MONO_ARCH_HAVE_SWIFTCALL 1
 #endif
 
