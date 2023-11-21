@@ -325,6 +325,7 @@ BEGIN
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
     IDS_CLASSLOAD_BYREFARRAY                "Could not create array type '%1' from assembly '%2' because the element type is ByRef."
     IDS_CLASSLOAD_BYREFLIKEARRAY            "Could not create array type '%1' from assembly '%2' because the element type is ByRef-like."
+    IDS_CLASSLOAD_VOIDARRAY                 "Could not create array type '%1' from assembly '%2' because the element type is System.Void."
     IDS_CLASSLOAD_FIELDTOOLARGE             "Size of field of type '%1' from assembly '%2' is too large."
     IDS_CLASSLOAD_CANTEXTEND                "Type '%1' from assembly '%2' cannot extend from any other type."
     IDS_CLASSLOAD_STATICVIRTUAL             "Method '%3' in type '%1' from assembly '%2' cannot be a static and a virtual."
