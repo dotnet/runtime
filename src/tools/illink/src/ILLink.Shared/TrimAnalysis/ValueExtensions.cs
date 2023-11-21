@@ -59,12 +59,14 @@ namespace ILLink.Shared.TrimAnalysis
 			return values.Single ();
 		}
 
+		private static IEnumerable<SingleValue> Unknown = ImmutableArray.Create (UnknownValue.Instance);
+
 		// ValueSet<TValue> is not enumerable. This helper translates ValueSet<SingleValue>.Unknown
 		// into a ValueSet<SingleValue> whose sole element is UnknownValue.Instance.
 		internal static IEnumerable<SingleValue> AsEnumerable (this MultiValue multiValue)
 		{
 			return multiValue.IsUnknown ()
-				? ImmutableArray.Create (UnknownValue.Instance)
+				? Unknown
 				: multiValue.GetKnownValues ();
 		}
 	}

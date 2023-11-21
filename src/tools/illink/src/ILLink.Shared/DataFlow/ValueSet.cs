@@ -18,9 +18,15 @@ namespace ILLink.Shared.DataFlow
 	{
 		const int MaxValuesInSet = 256;
 
-		public static ValueSet<TValue> Empty;
+		public static readonly ValueSet<TValue> Empty;
 
-		public static ValueSet<TValue> Unknown = new ValueSet<TValue> (ValueSetSentinel.Unknown);
+		private sealed class ValueSetSentinel
+		{
+		}
+
+		private static readonly ValueSetSentinel UnknownSentinel = new ();
+
+		public static readonly ValueSet<TValue> Unknown = new (UnknownSentinel);
 
 		// Since we're going to do lot of type checks for this class a lot, it is much more efficient
 		// if the class is sealed (as then the runtime can do a simple method table pointer comparison)
@@ -122,7 +128,7 @@ namespace ILLink.Shared.DataFlow
 			}
 		}
 
-		private struct Enumerable : IEnumerable<TValue>
+		private readonly struct Enumerable : IEnumerable<TValue>
 		{
 			private readonly object? _values;
 
@@ -149,11 +155,6 @@ namespace ILLink.Shared.DataFlow
 
 		private ValueSet (EnumerableValues values) => _values = values;
 
-		private enum ValueSetSentinel
-		{
-			Unknown
-		}
-
 		private ValueSet (ValueSetSentinel sentinel) => _values = sentinel;
 
 		public static implicit operator ValueSet<TValue> (TValue value) => new (value);
@@ -176,7 +177,7 @@ namespace ILLink.Shared.DataFlow
 				} else if (other._values is TValue otherValue) {
 					return enumerableValues.Equals (otherValue);
 				} else {
-					Debug.Assert (other._values is ValueSetSentinel.Unknown);
+					Debug.Assert (other._values == UnknownSentinel);
 					return false;
 				}
 			} else if (_values is TValue value) {
@@ -185,12 +186,12 @@ namespace ILLink.Shared.DataFlow
 				} else if (other._values is TValue otherValue) {
 					return EqualityComparer<TValue>.Default.Equals (value, otherValue);
 				} else {
-					Debug.Assert (other._values is ValueSetSentinel.Unknown);
+					Debug.Assert (other._values == UnknownSentinel);
 					return false;
 				}
 			} else {
-				Debug.Assert (_values is ValueSetSentinel.Unknown);
-				return other._values is ValueSetSentinel.Unknown;
+				Debug.Assert (_values == UnknownSentinel);
+				return other._values == UnknownSentinel;
 			}
 		}
 
@@ -208,7 +209,7 @@ namespace ILLink.Shared.DataFlow
 			return _values.GetHashCode ();
 		}
 
-		public IEnumerable<TValue> GetKnownValues () => new Enumerable (_values is ValueSetSentinel.Unknown ? null : _values);
+		public IEnumerable<TValue> GetKnownValues () => new Enumerable (_values == UnknownSentinel ? null : _values);
 
 		// Note: returns false for Unknown
 		public bool Contains (TValue value)
@@ -219,7 +220,7 @@ namespace ILLink.Shared.DataFlow
 				return valuesSet.Contains (value);
 			if (_values is TValue thisValue)
 				return EqualityComparer<TValue>.Default.Equals (value, thisValue);
-			Debug.Assert (_values is ValueSetSentinel.Unknown);
+			Debug.Assert (_values == UnknownSentinel);
 			return false;
 		}
 
@@ -230,7 +231,7 @@ namespace ILLink.Shared.DataFlow
 			if (right._values == null)
 				return left.DeepCopy ();
 
-			if (left._values is ValueSetSentinel.Unknown || right._values is ValueSetSentinel.Unknown)
+			if (left._values == UnknownSentinel || right._values == UnknownSentinel)
 				return Unknown;
 
 			if (left._values is not EnumerableValues && right.Contains ((TValue) left._values))
@@ -253,10 +254,10 @@ namespace ILLink.Shared.DataFlow
 			if (left._values == null || right._values == null)
 				return Empty;
 
-			if (left._values is ValueSetSentinel.Unknown)
+			if (left._values == UnknownSentinel)
 				return right.DeepCopy ();
 
-			if (right._values is ValueSetSentinel.Unknown)
+			if (right._values == UnknownSentinel)
 				return left.DeepCopy ();
 
 			if (left._values is not EnumerableValues)
@@ -272,7 +273,7 @@ namespace ILLink.Shared.DataFlow
 
 		public bool IsEmpty () => _values == null;
 
-		public bool IsUnknown () => _values is ValueSetSentinel.Unknown;
+		public bool IsUnknown () => _values == UnknownSentinel;
 
 		public override string ToString ()
 		{
@@ -292,7 +293,7 @@ namespace ILLink.Shared.DataFlow
 			if (_values is null)
 				return this;
 
-			if (_values is ValueSetSentinel.Unknown)
+			if (_values == UnknownSentinel)
 				return this;
 
 			// Optimize for the most common case with only a single value
