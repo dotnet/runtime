@@ -246,56 +246,54 @@ FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ObjectNative::WaitTimeout, INT32 Timeout, Object* pThisUNSAFE)
+extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     BOOL retVal = FALSE;
-    OBJECTREF pThis = (OBJECTREF) pThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
      // Arguments validated on managed side
-    _ASSERTE(pThis != NULL);
+    _ASSERTE(pThis.Get() != NULL);
     _ASSERTE(Timeout >= INFINITE_TIMEOUT);
 
-    retVal = pThis->Wait(Timeout);
+    retVal = pThis.Get()->Wait(Timeout);
 
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
+    END_QCALL;
+
+    return retVal;
 }
-FCIMPLEND
 
-FCIMPL1(void, ObjectNative::Pulse, Object* pThisUNSAFE)
+extern "C" void QCALLTYPE Monitor_Pulse(QCall::ObjectHandleOnStack pThis)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF pThis = (OBJECTREF) pThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(pThis);
+    BEGIN_QCALL;
 
-    if (pThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+    GCX_COOP();
 
-    pThis->Pulse();
+    _ASSERTE(pThis.Get() != NULL);
+    pThis.Get()->Pulse();
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(void, ObjectNative::PulseAll, Object* pThisUNSAFE)
+extern "C" void QCALLTYPE Monitor_PulseAll(QCall::ObjectHandleOnStack pThis)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF pThis = (OBJECTREF) pThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(pThis);
+    BEGIN_QCALL;
 
-    if (pThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+    GCX_COOP();
 
-    pThis->PulseAll();
+    _ASSERTE(pThis.Get() != NULL);
+    pThis.Get()->PulseAll();
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL1(FC_BOOL_RET, ObjectNative::IsLockHeld, Object* pThisUNSAFE)
 {
@@ -316,7 +314,7 @@ FCIMPL1(FC_BOOL_RET, ObjectNative::IsLockHeld, Object* pThisUNSAFE)
 }
 FCIMPLEND
 
-extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorLockContentionCount()
+extern "C" INT64 QCALLTYPE Monitor_GetLockContentionCount()
 {
     QCALL_CONTRACT;
 

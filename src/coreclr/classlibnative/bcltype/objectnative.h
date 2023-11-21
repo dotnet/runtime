@@ -30,11 +30,12 @@ public:
     static FCDECL2(FC_BOOL_RET, Equals, Object *pThisRef, Object *pCompareRef);
     static FCDECL1(Object*, AllocateUninitializedClone, Object* pObjUNSAFE);
     static FCDECL1(Object*, GetClass, Object* pThis);
-    static FCDECL2(FC_BOOL_RET, WaitTimeout, INT32 Timeout, Object* pThisUNSAFE);
-    static FCDECL1(void, Pulse, Object* pThisUNSAFE);
-    static FCDECL1(void, PulseAll, Object* pThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);
 };
 
-extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorLockContentionCount();
+extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout);
+extern "C" void QCALLTYPE Monitor_Pulse(QCall::ObjectHandleOnStack pThis);
+extern "C" void QCALLTYPE Monitor_PulseAll(QCall::ObjectHandleOnStack pThis);
+extern "C" INT64 QCALLTYPE Monitor_GetLockContentionCount();
+
 #endif // _OBJECTNATIVE_H_
