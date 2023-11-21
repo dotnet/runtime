@@ -2260,7 +2260,26 @@ void UnwindInfo::AddFragment(emitLocation* emitLoc)
 
 void UnwindInfo::Dump(bool isHotCode, int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    unsigned            count;
+    UnwindFragmentInfo* pFrag;
+
+    count = 0;
+    for (pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+    {
+        ++count;
+    }
+
+    printf("%*sUnwindInfo %s@0x%08p, size:%d:\n", indent, "", isHotCode ? "" : "COLD ", dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  %d fragment%s\n", indent, "", count, (count != 1) ? "s" : "");
+    printf("%*s  uwiFragmentLast: 0x%08p\n", indent, "", dspPtr(uwiFragmentLast));
+    printf("%*s  uwiEndLoc: 0x%08p\n", indent, "", dspPtr(uwiEndLoc));
+    printf("%*s  uwiInitialized: 0x%08x\n", indent, "", uwiInitialized);
+
+    for (pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+    {
+        pFrag->Dump(indent + 2);
+    }
 }
 
 #endif // DEBUG
