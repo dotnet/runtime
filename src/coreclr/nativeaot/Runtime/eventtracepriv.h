@@ -116,7 +116,7 @@ public:
     // (not directly), so they don't need to have the same layout as in the ETW manifest
     ULONG cTypeParameters;
 
-    // We only expect one type parameter
+    // We expect only one type parameter. See the explanation at BulkTypeEventLogger::LogSingleType on generic parameters for additional details.
     ULONGLONG ullSingleTypeParameter;
 };
 
