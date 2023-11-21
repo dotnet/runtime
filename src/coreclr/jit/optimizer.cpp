@@ -1756,7 +1756,7 @@ public:
         // block, and removed from the old 'top' block. This is 'hard', so it's easier to disallow
         // the loop than to update the flow graph to support this case.
 
-        if ((top->bbFlags & BBF_FINALLY_TARGET) != 0)
+        if (top->HasFlag(BBF_FINALLY_TARGET))
         {
             JITDUMP("Loop 'top' " FMT_BB " is a finally target. Rejecting loop.\n", top->bbNum);
             return false;
@@ -2379,7 +2379,7 @@ private:
 
         // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
         assert(!block->KindIs(BBJ_COND, BBJ_ALWAYS) || !block->HasJumpTo(newNext) ||
-               ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
+               block->HasFlag(BBF_KEEP_BBJ_ALWAYS));
         return newBlock;
     }
 
@@ -2957,7 +2957,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
     // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
     // head block. See FindEntry() for the logic that allows this.
-    if (h->KindIs(BBJ_ALWAYS) && h->HasJumpTo(t) && (h->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    if (h->KindIs(BBJ_ALWAYS) && h->HasJumpTo(t) && h->HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
         // Insert new head
 
@@ -3451,7 +3451,7 @@ bool Compiler::optLoopContains(unsigned l1, unsigned l2) const
 //
 BasicBlock* Compiler::optLoopEntry(BasicBlock* preHeader)
 {
-    assert((preHeader->bbFlags & BBF_LOOP_PREHEADER) != 0);
+    assert(preHeader->HasFlag(BBF_LOOP_PREHEADER));
 
     if (preHeader->KindIs(BBJ_NONE))
     {
@@ -4567,7 +4567,7 @@ PhaseStatus Compiler::optUnrollLoops()
             // The loop will be removed, so no need to fix up the pre-header.
             if (loop.lpFlags & LPFLG_HAS_PREHEAD)
             {
-                assert(head->bbFlags & BBF_LOOP_PREHEADER);
+                assert(head->HasFlag(BBF_LOOP_PREHEADER));
 
                 // For unrolled loops, all the unrolling preconditions require the pre-header block to fall
                 // through into TOP.
@@ -4726,7 +4726,7 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
 
             // Does this block contain a gc safe point?
 
-            if (curBB->bbFlags & BBF_GC_SAFE_POINT)
+            if (curBB->HasFlag(BBF_GC_SAFE_POINT))
             {
                 // Will this block always execute on the way to botBB ?
                 //
@@ -4863,7 +4863,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Does the BB end with an unconditional jump?
 
-    if (!block->KindIs(BBJ_ALWAYS) || (block->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    if (!block->KindIs(BBJ_ALWAYS) || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
         // It can't be one of the ones we use for our exception magic
         return false;
@@ -8145,7 +8145,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             {
                 JITDUMP("   converting existing header " FMT_BB " into pre-header\n", head->bbNum);
                 loop.lpFlags |= LPFLG_HAS_PREHEAD;
-                assert((head->bbFlags & BBF_LOOP_PREHEADER) == 0); // It isn't already a loop pre-header
+                assert(!head->HasFlag(BBF_LOOP_PREHEADER)); // It isn't already a loop pre-header
                 head->bbFlags |= BBF_LOOP_PREHEADER;
                 INDEBUG(loop.lpValidatePreHeader());
                 INDEBUG(fgDebugCheckLoopTable());
@@ -9072,7 +9072,7 @@ void Compiler::optRemoveRedundantZeroInits()
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) == 0);
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && !block->HasFlag(BBF_MARKED);
          block             = block->GetUniqueSucc())
     {
         block->bbFlags |= BBF_MARKED;
@@ -9196,7 +9196,7 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         if (tree->Data()->IsIntegralConst(0))
                         {
-                            bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                            bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
                             bool bbIsReturn = block->KindIs(BBJ_RETURN);
 
                             if (!bbInALoop || bbIsReturn)
@@ -9274,7 +9274,7 @@ void Compiler::optRemoveRedundantZeroInits()
         }
     }
 
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) != 0);
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && block->HasFlag(BBF_MARKED);
          block             = block->GetUniqueSucc())
     {
         block->bbFlags &= ~BBF_MARKED;

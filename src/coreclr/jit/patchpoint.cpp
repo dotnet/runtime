@@ -46,7 +46,7 @@ public:
     int Run()
     {
         // If the first block is a patchpoint, insert a scratch block.
-        if (compiler->fgFirstBB->bbFlags & BBF_PATCHPOINT)
+        if (compiler->fgFirstBB->HasFlag(BBF_PATCHPOINT))
         {
             compiler->fgEnsureFirstBBisScratch();
         }
@@ -54,7 +54,7 @@ public:
         int count = 0;
         for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->Next()))
         {
-            if (block->bbFlags & BBF_PATCHPOINT)
+            if (block->HasFlag(BBF_PATCHPOINT))
             {
                 // We can't OSR from funclets.
                 //
@@ -68,7 +68,7 @@ public:
                 TransformBlock(block);
                 count++;
             }
-            else if (block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT)
+            else if (block->HasFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT))
             {
                 // We can't OSR from funclets.
                 // Also, we don't import the IL for these blocks.
@@ -78,7 +78,7 @@ public:
                 // If we're instrumenting, we should not have decided to
                 // put class probes here, as that is driven by looking at IL.
                 //
-                assert((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0);
+                assert(!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE));
 
                 // Clear the partial comp flag.
                 //
@@ -190,7 +190,7 @@ private:
     //  ppCounter = <initial value>
     void TransformEntry(BasicBlock* block)
     {
-        assert((block->bbFlags & BBF_PATCHPOINT) == 0);
+        assert(!block->HasFlag(BBF_PATCHPOINT));
 
         int initialCounterValue = JitConfig.TC_OnStackReplacement_InitialCounter();
 

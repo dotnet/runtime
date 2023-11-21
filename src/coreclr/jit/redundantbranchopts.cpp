@@ -37,7 +37,7 @@ PhaseStatus Compiler::optRedundantBranches()
         {
             // Skip over any removed blocks.
             //
-            if ((block->bbFlags & BBF_REMOVED) != 0)
+            if (block->HasFlag(BBF_REMOVED))
             {
                 return;
             }

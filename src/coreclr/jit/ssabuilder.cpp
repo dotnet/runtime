@@ -998,7 +998,7 @@ void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* bl
     if (m_pCompiler->ehBlockHasExnFlowDsc(block))
     {
         // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
-        if ((block->bbFlags & BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
+        if (block->HasFlag(BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
         {
             return;
         }
