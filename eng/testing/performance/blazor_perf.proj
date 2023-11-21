@@ -8,7 +8,7 @@
 
     <Python>python3</Python>
     <HelixPreCommands Condition="'$(AGENT_OS)' != 'Windows_NT'">$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
-    
+
     <_MSBuildArgs>/p:_TrimmerDumpDependencies=true;/p:HybridGlobalization=$(hybridGlobalization);/warnaserror:NU1602,NU1604</_MSBuildArgs>
     <PublishArgs>--has-workload --readonly-dotnet --msbuild &quot;$(_MSBuildArgs)&quot; --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog $(LogDirectory)blazor_publish.binlog</PublishArgs>
     <PublishCommand>$(EnvVars) $(Python) pre.py publish $(PublishArgs)</PublishCommand>
@@ -38,6 +38,7 @@
     <BlazorPizzaDirectory>$(ScenarioDirectory)blazorpizza/</BlazorPizzaDirectory>
     <BlazorMinAOTDirectory>$(ScenarioDirectory)blazorminappaot/</BlazorMinAOTDirectory>
     <BlazorAOTDirectory>$(ScenarioDirectory)blazoraot/</BlazorAOTDirectory>
+    <BlazorPizzaAOTDirectory>$(ScenarioDirectory)blazorpizzaaot/</BlazorPizzaAOTDirectory>
     <BlazorLocalizedDirectory>$(ScenarioDirectory)blazorlocalized/</BlazorLocalizedDirectory>
     <PizzaAppPubLocation>pub/wwwroot</PizzaAppPubLocation>
     <PerflabTargetFrameworks>$PERFLAB_TARGET_FRAMEWORKS</PerflabTargetFrameworks>
