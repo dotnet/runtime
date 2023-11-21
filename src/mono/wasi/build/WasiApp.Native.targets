@@ -159,7 +159,16 @@
       <_WasmCommonIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
       <_WasmCommonIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
       <_WasmCommonIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
+    </ItemGroup>
 
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+      <!-- Fixup on windows -->
+      <_WasmCommonIncludePathsFixedUp Include="$([System.String]::new(%(_WasmCommonIncludePaths.Identity)).Replace('\', '/'))" />
+      <_WasmCommonIncludePaths Remove="@(_WasmCommonIncludePaths)" />
+      <_WasmCommonIncludePaths Include="@(_WasmCommonIncludePathsFixedUp)" />
+    </ItemGroup>
+
+    <ItemGroup>
       <_WasmLinkDependencies Remove="@(_WasmLinkDependencies)" />
 
       <_WasiClangCommonFlags Include="$(_DefaultWasiClangFlags)" />
@@ -190,13 +199,6 @@
 
       <_WasiClangLDFlags Include="$(WasiClangLinkOptimizationFlag)" />
       <_WasiClangLDFlags Include="@(_WasiClangCommonFlags)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <!-- Fixup on windows -->
-      <_WasmCommonIncludePathsFixedUp Include="$([System.String]::new(%(_WasmCommonIncludePaths.Identity)).Replace('\', '/'))" />
-      <_WasmCommonIncludePaths Remove="@(_WasmCommonIncludePaths)" />
-      <_WasmCommonIncludePaths Include="@(_WasmCommonIncludePathsFixedUp)" />
     </ItemGroup>
 
     <ItemGroup>
