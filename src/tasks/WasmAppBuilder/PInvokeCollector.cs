@@ -245,8 +245,22 @@ internal sealed class PInvokeCallback
     public PInvokeCallback(MethodInfo method)
     {
         Method = method;
+        foreach (var attr in method.CustomAttributes)
+        {
+            if (attr.AttributeType.Name == "UnmanagedCallersOnlyAttribute")
+            {
+                foreach(var arg in attr.NamedArguments)
+                {
+                    if (arg.MemberName == "EntryPoint")
+                    {
+                        EntryPoint = arg.TypedValue.Value!.ToString();
+                    }
+                }
+            }
+        }
     }
 
+    public string? EntryPoint;
     public MethodInfo Method;
     public string? EntryName;
 }

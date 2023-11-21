@@ -67,7 +67,6 @@ internal sealed class PInvokeTableGenerator
     private void EmitPInvokeTable(StreamWriter w, Dictionary<string, string> modules, List<PInvoke> pinvokes)
     {
 
-
         foreach (var pinvoke in pinvokes) {
             if (modules.ContainsKey(pinvoke.Module))
                 continue;
@@ -91,7 +90,7 @@ internal sealed class PInvokeTableGenerator
         var pinvokesGroupedByEntryPoint = pinvokes
                                             .Where(l => modules.ContainsKey(l.Module))
                                             .OrderBy(l => l.EntryPoint)
-                                            .GroupBy(TransformEntryPoint);
+                                            .GroupBy(CEntryPoint);
 
         var comparer = new PInvokeComparer();
         foreach (IGrouping<string, PInvoke> group in pinvokesGroupedByEntryPoint)
@@ -117,7 +116,7 @@ internal sealed class PInvokeTableGenerator
             foreach (var candidate in candidates)
             {
                 var decl = GenPInvokeDecl(candidate);
-                if (decl == null || decls.Contains(decl))
+                if (decl is null || decls.Contains(decl))
                     continue;
 
                 w.WriteLine(decl);
@@ -136,7 +135,7 @@ internal sealed class PInvokeTableGenerator
                 Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select(l => "{\"" + EscapeLiteral(l.Key) + "\", " + TransformEntryPoint(l.First()) + "}, " +
+                Select(l => "{\"" + EscapeLiteral(l.Key) + "\", " + CEntryPoint(l.First()) + "}, " +
                                 "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)));
 
             foreach (var pinvoke in assemblies_pinvokes)
@@ -168,7 +167,7 @@ internal sealed class PInvokeTableGenerator
         }
     }
 
-    private string TransformEntryPoint(PInvoke pinvoke)
+    private string CEntryPoint(PInvoke pinvoke)
     {
         if (pinvoke.WasmLinkage)
         {
@@ -176,24 +175,6 @@ internal sealed class PInvokeTableGenerator
             return _fixupSymbolName($"{pinvoke.Module}_{pinvoke.EntryPoint}");
         }
         return _fixupSymbolName(pinvoke.EntryPoint);
-    }
-
-    private string SymbolNameForMethod(MethodInfo method)
-    {
-        StringBuilder sb = new();
-        Type? type = method.DeclaringType;
-        sb.Append($"{type!.Module!.Assembly!.GetName()!.Name!}_");
-        sb.Append($"{(type!.IsNested ? type!.FullName : type!.Name)}_");
-        sb.Append(method.Name);
-
-        return _fixupSymbolName(sb.ToString());
-    }
-
-    private string CallbackSymbolName(PInvokeCallback export)
-    {
-        var method = export.Method;
-        string module_symbol = _fixupSymbolName(method.DeclaringType!.Module!.Assembly!.GetName()!.Name!);
-        return $"{module_symbol}_{method.DeclaringType.Name}_{method.Name}";
     }
 
     private static string MapType(Type t) => t.Name switch
@@ -252,35 +233,33 @@ internal sealed class PInvokeTableGenerator
         }
 
         if (pinvoke.WasmLinkage) {
-            sb.Append($"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"), import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))\nextern ");
+            sb.Append($"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"),import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))\nextern ");
         }
 
-        sb.Append($"{MapType(method.ReturnType)} {TransformEntryPoint(pinvoke)} ({string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))});");
+        sb.Append($"{MapType(method.ReturnType)} {CEntryPoint(pinvoke)} ({string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))});");
 
         return sb.ToString();
     }
 
-    private static string EntryPointSymbolName(PInvokeCallback export, out bool hasEntryPoint)
+    private string CEntryPoint(PInvokeCallback export)
     {
-        var method = export.Method;
-
-        hasEntryPoint = false;
-        foreach (var attr in method.CustomAttributes)
-        {
-            if (attr.AttributeType.Name == "UnmanagedCallersOnlyAttribute")
-            {
-                foreach(var arg in attr.NamedArguments)
-                {
-                    if (arg.MemberName == "EntryPoint")
-                    {
-                        hasEntryPoint = true;
-                        return arg.TypedValue.Value!.ToString() ?? throw new Exception("EntryPoint is null");
-                    }
-                }
-            }
+        if (export.EntryPoint is not null) {
+            return _fixupSymbolName(export.EntryPoint);
         }
 
-        return $"wasm_native_to_interp_{method.DeclaringType!.Module!.Assembly!.GetName()!.Name!}_{method.DeclaringType.Name}_{method.Name}";
+        var method = export.Method;
+        // EntryPoint wasn't specified generate a name for the entry point
+        return _fixupSymbolName($"wasm_native_to_interp_{method.DeclaringType!.Module!.Assembly!.GetName()!.Name!}_{method.DeclaringType.Name}_{method.Name}");
+    }
+
+    private string DelegateKey(PInvokeCallback export)
+    {
+        // FIXME: this is a hack, we need to encode this better
+        // and allow reflection in the interp case but either way
+        // it needs to match the key passed to get_native_to_interp
+        var method = export.Method;
+        string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
+        return $"\"{module_symbol}_{method.DeclaringType.Name}_{method.Name}\"".Replace('.', '_');
     }
 
     #pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
@@ -324,24 +303,22 @@ internal sealed class PInvokeTableGenerator
             // Extra arg
             sb.Append("int*);\n");
 
-            var entry_point = EntryPointSymbolName(cb, out var hasEntryPoint);
-            var entry_name = _fixupSymbolName(entry_point);
-            if (callbackNames.Contains(entry_name))
+            cb.EntryName = CEntryPoint(cb);
+            if (callbackNames.Contains(cb.EntryName))
             {
-                Error($"Two callbacks with the same name '{entry_point}' are not supported.");
+                Error($"Two callbacks with the same name '{cb.EntryName}' are not supported.");
             }
-            callbackNames.Add(entry_name);
-            cb.EntryName = entry_name;
-            if (hasEntryPoint)
+            callbackNames.Add(cb.EntryName);
+            if (cb.EntryPoint is not null)
             {
-                sb.Append($"__attribute__((export_name(\"{EscapeLiteral(entry_point)}\")))\n");
+                sb.Append($"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint)}\")))\n");
             }
-            sb.Append($"{MapType(method.ReturnType)} {entry_name} (");
+            sb.Append($"{MapType(method.ReturnType)} {cb.EntryName} (");
             int pindex = 0;
             foreach (var p in method.GetParameters())
             {
                 if (pindex > 0)
-                    sb.Append(',');
+                    sb.Append(", ");
                 sb.Append($"{MapType(p.ParameterType)} arg{pindex}");
                 pindex++;
             }
@@ -378,7 +355,7 @@ internal sealed class PInvokeTableGenerator
         // Lookup table from method->interp entry
         // The key is a string of the form <assembly name>_<method token>
         // FIXME: Use a better encoding
-        w.WriteLine($"static const char *wasm_native_to_interp_map[] = {{ {string.Join(", ", callbacks.Select(cb => $"\"{CallbackSymbolName(cb)}\""))} }};");
+        w.WriteLine($"static const char *wasm_native_to_interp_map[] = {{ {string.Join(", ", callbacks.Select(DelegateKey))} }};");
     }
 
     private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
