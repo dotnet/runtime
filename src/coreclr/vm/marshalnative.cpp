@@ -684,7 +684,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::Obj
     TypeHandle th = t.AsTypeHandle();
 
     if (th.HasInstantiation())
-        COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
+        COMPlusThrowArgumentException(W("T"), W("Argument_NeedNonGenericType"));
 
     if (oref->GetMethodTable()->HasInstantiation())
         COMPlusThrowArgumentException(W("o"), W("Argument_NeedNonGenericObject"));
@@ -692,12 +692,12 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::Obj
     // If the IID being asked for does not represent an interface then
     // throw an argument exception.
     if (!th.IsInterface())
-        COMPlusThrowArgumentException(W("t"), W("Arg_MustBeInterface"));
+        COMPlusThrowArgumentException(W("T"), W("Arg_MustBeInterface"));
 
     // If the interface being asked for is not visible from COM then
     // throw an argument exception.
     if (!::IsTypeVisibleFromCom(th))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
+        COMPlusThrowArgumentException(W("T"), W("Argument_TypeMustBeVisibleFromCom"));
 
     retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
 
