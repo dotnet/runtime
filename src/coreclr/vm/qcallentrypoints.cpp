@@ -341,6 +341,7 @@ static const Entry s_QCall[] =
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86BaseCpuId)
 #endif
+    DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(InterfaceMarshaler__ClearNative)
 #endif

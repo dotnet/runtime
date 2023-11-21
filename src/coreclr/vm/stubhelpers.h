@@ -65,8 +65,6 @@ public:
     static FCDECL3(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis);
 #endif // FEATURE_COMINTEROP
 
-    static FCDECL3(void*,           CreateCustomMarshalerHelper, MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
-
     static FCDECL3(void,            FmtClassUpdateNativeInternal, Object* pObjUNSAFE, BYTE* pbNative, OBJECTREF *ppCleanupWorkListOnStack);
     static FCDECL2(void,            FmtClassUpdateCLRInternal, Object* pObjUNSAFE, BYTE* pbNative);
     static FCDECL2(void,            LayoutDestroyNativeInternal, Object* pObjUNSAFE, BYTE* pbNative);
@@ -97,6 +95,8 @@ public:
 
     static FCDECL0(void*,           NextCallReturnAddress);
 };
+
+extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
 
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE InterfaceMarshaler__ClearNative(IUnknown * pUnk);

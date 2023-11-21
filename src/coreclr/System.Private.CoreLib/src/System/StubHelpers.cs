@@ -1111,7 +1111,7 @@ namespace System.StubHelpers
         }
     }  // class CleanupWorkListElement
 
-    internal static class StubHelpers
+    internal static partial class StubHelpers
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetDelegateTarget(Delegate pThis);
@@ -1190,8 +1190,8 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshalerHelper")]
+        internal static partial IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
 
         //-------------------------------------------------------
         // SafeHandle Helpers
