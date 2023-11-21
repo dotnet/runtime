@@ -54,17 +54,17 @@ namespace ILCompiler
                 if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
                     return result;
 
-                // HERE: get the feature switch value.
-                if (TryGetConstantFeatureCheckValue (ecmaMethod, out bool? value))
-                    return BodySubstitution.Create (value.Value ? 1 : 0);
+                // If there are no substitutions for the method, look for FeatureGuardAttribute on the property,
+                // and substitute 'false' for guards for features that are known to be disabled.
+                if (IsGuardForDisabledFeature (ecmaMethod))
+                    return BodySubstitution.Create (0);
             }
 
             return null;
         }
 
-        private static bool TryGetConstantFeatureCheckValue (EcmaMethod ecmaMethod, [NotNullWhen (true)] out bool? value)
+        private bool IsGuardForDisabledFeature (EcmaMethod ecmaMethod)
         {
-            value = null;
             if (!ecmaMethod.Signature.IsStatic)
                 return false;
 
@@ -76,118 +76,49 @@ namespace ILCompiler
 
             MetadataReader reader = declaringType.MetadataReader;
 
+            // Look for a property with a getter that matches the method.
             foreach (PropertyDefinitionHandle propertyHandle in reader.GetTypeDefinition(declaringType.Handle).GetProperties())
             {
-                // Check if the property matches the method.
                 PropertyDefinition property = reader.GetPropertyDefinition(propertyHandle);
                 var accessors = property.GetAccessors();
                 var getter = accessors.Getter;
                 if (getter.IsNil)
                     continue;
 
-                if (getter == ecmaMethod.Handle) {
-                    // found it!
-                    var featureCheckAttr = ProcessFeatureGuardAttribute (propertyHandle);
-                    if (featureCheckAttr is null)
-                        return false;
-                    
-                    // Hard-code the assumption that a RUC feature is disabled.
-                    value = false;
-                    return true;
-                }
-                // 
-            }
+                if (getter != ecmaMethod.Handle)
+                    continue;
 
-            return false;
-
-            FeatureGuardAttribute ProcessFeatureGuardAttribute (PropertyDefinitionHandle propertyHandle)
-            {
+                // Found the matching property. Look for FeatureGuardAttribute on the property.
                 PropertyPseudoDesc propertyDesc = new PropertyPseudoDesc(declaringType, propertyHandle);
                 foreach (var attr in propertyDesc.GetDecodedCustomAttributes ("System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute")) {
                     if (attr.FixedArguments.Length != 1)
                         continue; 
 
-                    Console.WriteLine("Here");
+                    if (attr.FixedArguments[0].Value is not MetadataType featureType)
+                        continue;
+
+
+                    if (featureType.Namespace is not "System.Diagnostics.CodeAnalysis")
+                        continue;
+
+                    switch (featureType.Name) {
+                    case "RequiresUnreferencedCodeAttribute":
+                        return true;
+                    case "RequiresDynamicCodeAttribute":
+                        if (_hashtable._switchValues.TryGetValue(
+                                "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
+                                out bool isDynamicCodeSupported)
+                            && !isDynamicCodeSupported)
+                            return true;
+                        break;
+                    case "RequiresAssemblyFilesAttribute":
+                        return true;
+                    }
                 }
-
-                var property = reader.GetPropertyDefinition(propertyHandle);
-                CustomAttributeHandleCollection customAttributeHandles = property.GetCustomAttributes();
-                CustomAttributeHandle caHandle = reader.GetCustomAttributeHandle(customAttributeHandles, "System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute");
-                if (caHandle.IsNil)
-                    return null;
-                var ca = reader.GetCustomAttribute(caHandle);
-
-                var ctor = reader.GetMemberReference((MemberReferenceHandle)ca.Constructor);
-                var ctorParent = ctor.Parent;
-                if (ctorParent.Kind is not HandleKind.TypeSpecification)
-                    return null;
-
-                // TODO: should we support the non-generic version?
-
-                // Check if it's a generic attribute type
-                var typeSpec = reader.GetTypeSpecification((TypeSpecificationHandle)ctorParent);
-                var typeSig = typeSpec.Signature;
-                var typeSigReader = reader.GetBlobReader(typeSig);
-                var typeSigKind = typeSigReader.ReadSignatureTypeCode();
-                if (typeSigKind is not SignatureTypeCode.GenericTypeInstance)
-                    return null;
-
-                // (CLASS | VALUETYPE)
-                int kind = typeSigReader.ReadCompressedInteger();
-                if (kind != (int)SignatureTypeKind.Class && kind != (int)SignatureTypeKind.ValueType)
-                    return null;
-
-                // Generic TypeDefOrRefOrSpecEncoded
-                // read the generic typedef that's instantiated handle.
-                var genType = typeSigReader.ReadTypeHandle();
-                // TODO: need to support TypeDefinition too.
-                // Skip for now...
-                if (genType.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeReference))
-                    throw new NotImplementedException();
-
-                // GenArgCount
-                int genArgCount = typeSigReader.ReadCompressedInteger();
-                if (genArgCount != 1)
-                    return null;
-
-                // Probably don't need to validate the type again.
-                // Maybe do it in debug mode.
-
-                var genArgTypeCode = typeSigReader.ReadSignatureTypeCode();
-                if (genArgTypeCode is not SignatureTypeCode.TypeHandle)
-                    return null;
-
-                var genArgTypeHandle = typeSigReader.ReadTypeHandle();
-                // TODO: need to handle TypeDef too, probably. not actually sure.
-                // seems to be a typeref in this test.
-                if (genArgTypeHandle.Kind is HandleKind.TypeDefinition)
-                    throw new NotImplementedException();
-                if (genArgTypeHandle.Kind is not HandleKind.TypeReference)
-                    return null;
-                var genArgTypeRef = reader.GetTypeReference((TypeReferenceHandle)genArgTypeHandle);
-                // TODO: use stringComparer same as attribute decoder.
-                var genArgTypeRefName = reader.GetString(genArgTypeRef.Name);
-                var genArgTypeRefNamespace = reader.GetString(genArgTypeRef.Namespace);
-                if (genArgTypeRefNamespace is not "System.Diagnostics.CodeAnalysis")
-                    return null;
-
-                switch (genArgTypeRefName) {
-                case "RequiresUnreferencedCodeAttribute":
-                    return new FeatureGuardAttribute (typeof (RequiresUnreferencedCodeAttribute));
-                case "RequiresDynamicCodeAttribute":
-                    return new FeatureGuardAttribute (typeof (RequiresDynamicCodeAttribute));
-                case "RequiresAssemblyFilesAttribute":
-                    return new FeatureGuardAttribute (typeof (RequiresAssemblyFilesAttribute));
-                }
-                return null;
-
-                // BlobReader blobReader = reader.GetBlobReader(reader.GetCustomAttribute(ca).Value);
-                // Get the attribute type.
-                // TODO: Read custom attributes using the approach in https://github.com/dotnet/runtime/pull/72561/files.
-
-                // OK. this isn't going to be the prettiest.
-
+                return false;
             }
+
+            return false;
         }
 
         private object GetSubstitution(FieldDesc field)

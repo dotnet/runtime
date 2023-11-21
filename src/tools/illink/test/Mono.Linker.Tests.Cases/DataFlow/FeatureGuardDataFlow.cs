@@ -19,9 +19,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Related: https://github.com/dotnet/runtime/issues/88647
 	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" },
 		resources: new object[] { new [] { "FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
-	// FeatureGuardAttribute is currently only supported by the analyzer.
-	// The same guard behavior is achieved for ILLink/ILCompiler using substitutions.
-	[SetupCompileResource ("FeatureGuardDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)]
 	public class FeatureGuardDataFlow
 	{
