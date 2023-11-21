@@ -9668,8 +9668,7 @@ public:
     //
     bool IsReachable(BasicBlock* bb)
     {
-        return (bb->bbPostorderNum < m_comp->fgSSAPostOrderCount) &&
-               (m_comp->fgSSAPostOrder[bb->bbPostorderNum] == bb) &&
+        return (bb->bbPostorderNum < m_comp->fgPostOrderCount) && (m_comp->fgPostOrder[bb->bbPostorderNum] == bb) &&
                !BitVecOps::IsMember(&m_blockTraits, m_provenUnreachableBlocks, bb->bbNum);
     }
 
@@ -9850,9 +9849,9 @@ PhaseStatus Compiler::fgValueNumber()
     // SSA has already computed a post-order taking EH successors into account.
     // Visiting that in reverse will ensure we visit a block's predecessors
     // before itself whenever possible.
-    for (unsigned i = fgSSAPostOrderCount; i != 0; i--)
+    for (unsigned i = fgPostOrderCount; i != 0; i--)
     {
-        BasicBlock* block = fgSSAPostOrder[i - 1];
+        BasicBlock* block = fgPostOrder[i - 1];
         JITDUMP("Visiting " FMT_BB "\n", block->bbNum);
 
         if (block != fgFirstBB)

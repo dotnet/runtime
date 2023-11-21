@@ -4696,6 +4696,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run an early flow graph simplification pass
         //
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+
+        // Build post-order
+        //
+        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocks);
     }
 
     // Promote struct locals
@@ -4776,6 +4780,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     if (fgBBcount > preMorphBBCount)
     {
         fgRenumberBlocks();
+    }
+
+    if (opts.OptimizationEnabled())
+    {
+        // Build post-order
+        //
+        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocks);
     }
 
     // GS security checks for unsafe buffers

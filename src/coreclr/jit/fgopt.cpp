@@ -544,6 +544,94 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
     return changed;
 }
 
+PhaseStatus Compiler::fgDfsBlocks()
+{
+    fgPostOrder = new (this, CMK_BasicBlock) BasicBlock*[fgBBcount];
+    BitVecTraits traits(fgBBNumMax + 1, this);
+
+    BitVec visited(BitVecOps::MakeEmpty(&traits));
+
+    unsigned preOrderIndex  = 0;
+    unsigned postOrderIndex = 0;
+
+    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_BasicBlock));
+
+    auto dfsFrom = [&](BasicBlock* firstBB) {
+
+        BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
+        blocks.Emplace(this, firstBB);
+        firstBB->bbPreorderNum = preOrderIndex++;
+
+        while (!blocks.Empty())
+        {
+            BasicBlock* block = blocks.TopRef().Block();
+            BasicBlock* succ  = blocks.TopRef().NextSuccessor();
+
+            if (succ != nullptr)
+            {
+                if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
+                {
+                    blocks.Emplace(this, succ);
+                    succ->bbPreorderNum = preOrderIndex++;
+                }
+            }
+            else
+            {
+                blocks.Pop();
+                fgPostOrder[postOrderIndex] = block;
+                block->bbPostorderNum       = postOrderIndex++;
+            }
+        }
+
+    };
+
+    dfsFrom(fgFirstBB);
+
+    if ((fgEntryBB != nullptr) && !BitVecOps::IsMember(&traits, visited, fgEntryBB->bbNum))
+    {
+        // OSR methods will early on create flow that looks like it goes to the
+        // patchpoint, but during morph we may transform to something that
+        // requires the original entry (fgEntryBB).
+        assert(opts.IsOSR());
+        assert((fgEntryBB->bbRefs == 1) && (fgEntryBB->bbPreds == nullptr));
+        dfsFrom(fgEntryBB);
+    }
+
+    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum) && !fgGlobalMorphDone)
+    {
+        // We introduce the merged return BB before morph and will redirect
+        // other returns to it as part of morph; keep it reachable.
+        dfsFrom(genReturnBB);
+    }
+
+    PhaseStatus status = PhaseStatus::MODIFIED_NOTHING;
+    if (postOrderIndex != fgBBcount)
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("%u/%u blocks are unreachable and will be removed\n", fgBBcount - postOrderIndex, fgBBcount);
+            for (BasicBlock* block : Blocks())
+            {
+                if (!BitVecOps::IsMember(&traits, visited, block->bbNum))
+                {
+                    printf("  " FMT_BB "\n", block->bbNum);
+                }
+            }
+        }
+#endif
+
+        fgRemoveUnreachableBlocks(
+            [=, &traits](BasicBlock* block) { return !BitVecOps::IsMember(&traits, visited, block->bbNum); });
+
+        status = PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    fgPostOrderCount = postOrderIndex;
+
+    return status;
+}
+
 //------------------------------------------------------------------------
 // fgComputeReachability: Compute the dominator and reachable sets.
 //

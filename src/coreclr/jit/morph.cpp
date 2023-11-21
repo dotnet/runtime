@@ -14124,8 +14124,9 @@ PhaseStatus Compiler::fgMorphBlocks()
 
     // We are done with the global morphing phase
     //
-    fgGlobalMorph = false;
-    compCurBB     = nullptr;
+    fgGlobalMorph     = false;
+    fgGlobalMorphDone = true;
+    compCurBB         = nullptr;
 
 #ifdef DEBUG
     if (optLocalAssertionProp)
