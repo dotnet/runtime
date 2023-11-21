@@ -246,14 +246,14 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
             WCHAR* path = entryAssemblyPath;
             if (path != NULL)
             {
-                size_t pathLen = u16_strlen(path) + 1;
+                size_t pathLen = wcslen(path) + 1;
 
                 // Get the file name based on the last directory separator
-                const WCHAR* name = u16_strrchr(path, DIRECTORY_SEPARATOR_CHAR_W);
+                const WCHAR* name = wcsrchr(path, DIRECTORY_SEPARATOR_CHAR_W);
                 if (name != NULL)
                 {
                     name += 1;
-                    size_t len = u16_strlen(name) + 1;
+                    size_t len = wcslen(name) + 1;
                     wcscpy_s(path, len, name);
 
                     // Null out the rest of the buffer
