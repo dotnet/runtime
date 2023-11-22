@@ -961,7 +961,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_HL_3A:   // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalable(id->idInsOpt()));
-            assert(isSveRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isLowPredicateRegister(id->idReg2())); // ggg
             assert(isVectorRegister(id->idReg3())); // mmmmm
             assert(isScalableVectorSize(elemsize)); // xx
@@ -970,7 +970,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_AC_3A:   // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableWords(id->idInsOpt()));
-            assert(isSveRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isLowPredicateRegister(id->idReg2())); // ggg
             assert(isVectorRegister(id->idReg3())); // mmmmm
             assert(isScalableVectorSize(elemsize)); // xx
@@ -14184,7 +14184,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 {
     assert(insOptsScalable(opt));
-    assert(isSveRegister(reg));
+    assert(isVectorRegister(reg));
     printf(emitSveRegName(reg));
     emitDispArrangement(opt);
 

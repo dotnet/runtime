@@ -735,12 +735,6 @@ inline static bool isFloatReg(regNumber reg)
     return isVectorRegister(reg);
 }
 
-inline static bool isSveRegister(regNumber reg)
-{
-    // TODO-SVE: Fix once we add Z registers
-    return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
-}
-
 inline static bool isPredicateRegister(regNumber reg)
 {
     return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
