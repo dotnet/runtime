@@ -453,14 +453,14 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
         // Make sure that the block was marked as removed */
         noway_assert(block->bbFlags & BBF_REMOVED);
 
-        // Some blocks mark the end of trys and catches
-        // and can't be removed. We convert these into
-        // empty blocks of type BBJ_THROW
+        // Some blocks mark the end of trys and catches and can't be removed. We convert these into
+        // empty blocks of type BBJ_THROW.
+
+        const bool  bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
+        BasicBlock* leaveBlk            = bIsBBCallAlwaysPair ? block->Next() : nullptr;
 
         if (block->bbFlags & BBF_DONT_REMOVE)
         {
-            const bool bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
-
             // Unmark the block as removed, clear BBF_INTERNAL, and set BBJ_IMPORTED
 
             JITDUMP("Converting BBF_DONT_REMOVE block " FMT_BB " to BBJ_THROW\n", block->bbNum);
@@ -472,36 +472,47 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             block->bbFlags |= BBF_IMPORTED;
             block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
             block->bbSetRunRarely();
-
-            // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, we just converted it to a BBJ_THROW.
-            // Get rid of the BBJ_ALWAYS block which is now dead.
-            if (bIsBBCallAlwaysPair)
-            {
-                BasicBlock* leaveBlk = block->Next();
-                noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
-
-                leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
-
-                for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
-                {
-                    fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
-                }
-                assert(leaveBlk->bbRefs == 0);
-                assert(leaveBlk->bbPreds == nullptr);
-
-                fgRemoveBlock(leaveBlk, /* unreachable */ true);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-                // We have to clear BBF_FINALLY_TARGET flag on the target node (of BBJ_ALWAYS).
-                fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            }
         }
         else
         {
             /* We have to call fgRemoveBlock next */
             hasUnreachableBlocks = true;
             changed              = true;
+        }
+
+        // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, get rid of the BBJ_ALWAYS block which is now dead.
+        if (bIsBBCallAlwaysPair)
+        {
+            assert(leaveBlk->KindIs(BBJ_ALWAYS));
+
+            if (!block->KindIs(BBJ_THROW))
+            {
+                // We didn't convert the BBJ_CALLFINALLY to a throw, above. Since we already marked it as removed,
+                // change the kind to something else. Otherwise, we can hit asserts below in fgRemoveBlock that
+                // the leaveBlk BBJ_ALWAYS is not allowed to be a CallAlwaysPairTail.
+                assert(block->KindIs(BBJ_CALLFINALLY));
+                block->SetJumpKind(BBJ_NONE);
+            }
+
+            leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+
+            for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
+            {
+                fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
+            }
+            assert(leaveBlk->bbRefs == 0);
+            assert(leaveBlk->bbPreds == nullptr);
+
+            fgRemoveBlock(leaveBlk, /* unreachable */ true);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+            // We have to clear BBF_FINALLY_TARGET flag on the target node (of BBJ_ALWAYS).
+            fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+            // Note: `changed` will already have been set to true by processing the BBJ_CALLFINALLY.
+            // `hasUnreachableBlocks` doesn't need to be set for the leaveBlk itself because we've already called
+            // `fgRemoveBlock` on it.
         }
     }
 
@@ -763,59 +774,96 @@ bool Compiler::fgRemoveDeadBlocks()
 
 //-------------------------------------------------------------
 // fgDfsReversePostorder: Depth first search to establish block
-//   preorder and reverse postorder numbers, plus a reverse postorder for blocks.
+//   preorder and reverse postorder numbers, plus a reverse postorder for blocks,
+//   using all entry blocks and EH handler blocks as start blocks.
 //
 // Notes:
-//   Assumes caller has computed the fgEnterBlks set.
-//
 //   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
-//
 //   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
 //
-//   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
+//   Unreachable blocks will have higher pre and post order numbers than reachable blocks.
+//   Hence they will appear at lower indices in the fgBBReversePostorder array.
 //
-void Compiler::fgDfsReversePostorder()
+unsigned Compiler::fgDfsReversePostorder()
 {
     assert(fgBBcount == fgBBNumMax);
     assert(BasicBlockBitSetTraits::GetSize(this) == fgBBNumMax + 1);
-
-    // Make sure fgEnterBlks are still there in startNodes, even if they participate in a loop (i.e., there is
-    // an incoming edge into the block).
-    assert(fgEnterBlksSetValid);
-
     fgBBReversePostorder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
-
-    // visited   :  Once we run the DFS post order sort recursive algorithm, we mark the nodes we visited to avoid
-    //              backtracking.
     BlockSet visited(BlockSetOps::MakeEmpty(this));
 
-    // We begin by figuring out which basic blocks don't have incoming edges and mark them as
-    // start nodes.  Later on we run the recursive algorithm for each node that we
-    // mark in this step.
-    BlockSet_ValRet_T startNodes = fgDomFindStartNodes();
-
-    BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
-    assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
-
-    // Call the flowgraph DFS traversal helper.
     unsigned preorderIndex  = 1;
     unsigned postorderIndex = 1;
-    for (BasicBlock* const block : Blocks())
+
+    // Walk from our primary root.
+    //
+    fgDfsReversePostorderHelper(fgFirstBB, visited, preorderIndex, postorderIndex);
+
+    // For OSR, walk from the original method entry too.
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr))
     {
-        // If the block has no predecessors, and we haven't already visited it (because it's in fgEnterBlks but also
-        // reachable from the first block), go ahead and traverse starting from this block.
-        if (BlockSetOps::IsMember(this, startNodes, block->bbNum) &&
-            !BlockSetOps::IsMember(this, visited, block->bbNum))
+        if (!BlockSetOps::IsMember(this, visited, fgEntryBB->bbNum))
         {
-            fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+            fgDfsReversePostorderHelper(fgEntryBB, visited, preorderIndex, postorderIndex);
         }
     }
 
-    // If there are still unvisited blocks (say isolated cycles), visit them too.
+    // If we didn't end up visiting everything, try the EH roots.
     //
     if (preorderIndex != fgBBcount + 1)
     {
-        JITDUMP("DFS: flow graph has some isolated cycles, doing extra traversals\n");
+        for (EHblkDsc* const HBtab : EHClauses(this))
+        {
+            if (HBtab->HasFilter())
+            {
+                BasicBlock* const filterBlock = HBtab->ebdFilter;
+                if (!BlockSetOps::IsMember(this, visited, filterBlock->bbNum))
+                {
+                    fgDfsReversePostorderHelper(filterBlock, visited, preorderIndex, postorderIndex);
+                }
+            }
+
+            BasicBlock* const handlerBlock = HBtab->ebdHndBeg;
+            if (!BlockSetOps::IsMember(this, visited, handlerBlock->bbNum))
+            {
+                fgDfsReversePostorderHelper(handlerBlock, visited, preorderIndex, postorderIndex);
+            }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+            // For ARM code, prevent creating retless calls by visiting the call finally successors
+            //
+            if (HBtab->HasFinallyHandler())
+            {
+                for (BasicBlock* const finallyPredBlock : handlerBlock->PredBlocks())
+                {
+                    // In some rare cases the finally is a loop entry.
+                    //
+                    if (!finallyPredBlock->KindIs(BBJ_CALLFINALLY))
+                    {
+                        continue;
+                    }
+                    assert(finallyPredBlock->isBBCallAlwaysPair());
+                    BasicBlock* const pairTailBlock = finallyPredBlock->Next();
+
+                    if (!BlockSetOps::IsMember(this, visited, pairTailBlock->bbNum))
+                    {
+                        fgDfsReversePostorderHelper(pairTailBlock, visited, preorderIndex, postorderIndex);
+                    }
+                }
+            }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        }
+    }
+
+    // That's everything reachable from the roots.
+    //
+    const unsigned highestReachablePostorderNumber = postorderIndex - 1;
+
+    // If we still didn't end up visiting everything, visit what remains.
+    //
+    if (highestReachablePostorderNumber != fgBBcount)
+    {
+        JITDUMP("DFS: there are %u unreachable blocks\n", fgBBcount - highestReachablePostorderNumber);
         for (BasicBlock* const block : Blocks())
         {
             if (!BlockSetOps::IsMember(this, visited, block->bbNum))
@@ -841,48 +889,12 @@ void Compiler::fgDfsReversePostorder()
         printf("\n");
     }
 #endif // DEBUG
-}
 
-//-------------------------------------------------------------
-// fgDomFindStartNodes: Helper for dominance computation to find the start nodes block set.
-//
-// The start nodes is a set that represents which basic blocks in the flow graph don't have incoming edges.
-// We begin assuming everything is a start block and remove any block that is a successor of another.
-//
-// Returns:
-//    Block set of start nodes.
-//
-BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
-{
-    BlockSet startNodes(BlockSetOps::MakeFull(this));
-
-    for (BasicBlock* const block : Blocks())
-    {
-        for (BasicBlock* const succ : block->Succs(this))
-        {
-            BlockSetOps::RemoveElemD(this, startNodes, succ->bbNum);
-        }
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nDominator computation start blocks (those blocks with no incoming edges):\n");
-        BlockSetOps::Iter iter(this, startNodes);
-        unsigned          bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            printf(FMT_BB " ", bbNum);
-        }
-        printf("\n");
-    }
-#endif // DEBUG
-
-    return startNodes;
+    return highestReachablePostorderNumber;
 }
 
 //------------------------------------------------------------------------
-// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks.
+// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks
 //
 // Arguments:
 //    block   - The starting entry block
@@ -1531,7 +1543,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 // We rely on the fact that this does not clear out
                 // cur->bbNext or cur->bbPrev in the code that
                 // follows.
-                fgUnlinkBlock(cur);
+                fgUnlinkBlockForRemoval(cur);
             }
             else
             {
@@ -2349,6 +2361,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     /* Unlink bNext and update all the marker pointers if necessary */
 
     fgUnlinkRange(bNext, bNext);
+
+    fgBBcount--;
 
     // If bNext was the last block of a try or handler, update the EH table.
 
@@ -6319,7 +6333,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         */
 
                         fgRemoveRefPred(bNext, block);
-                        fgUnlinkBlock(bNext);
+                        fgUnlinkBlockForRemoval(bNext);
 
                         /* Mark the block as removed */
                         bNext->bbFlags |= BBF_REMOVED;

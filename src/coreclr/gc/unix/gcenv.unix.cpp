@@ -631,9 +631,9 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
         if ((int)node <= g_highestNumaNode)
         {
             int usedNodeMaskBits = g_highestNumaNode + 1;
-            int nodeMaskLength = (usedNodeMaskBits + sizeof(unsigned long) - 1) / sizeof(unsigned long);
-            unsigned long nodeMask[nodeMaskLength];
-            memset(nodeMask, 0, sizeof(nodeMask));
+            int nodeMaskLength = usedNodeMaskBits + sizeof(unsigned long) - 1;
+            unsigned long* nodeMask = (unsigned long*)alloca(nodeMaskLength);
+            memset(nodeMask, 0, nodeMaskLength);
 
             int index = node / sizeof(unsigned long);
             nodeMask[index] = ((unsigned long)1) << (node & (sizeof(unsigned long) - 1));
@@ -1189,10 +1189,10 @@ uint64_t GetAvailablePhysicalMemory()
 #elif defined(__FreeBSD__)
     size_t inactive_count = 0, laundry_count = 0, free_count = 0;
     size_t sz = sizeof(inactive_count);
-    sysctlbyname("vm.stats.vm.v_inactive_count", &inactive_count, &sz, NULL, 0); 
+    sysctlbyname("vm.stats.vm.v_inactive_count", &inactive_count, &sz, NULL, 0);
 
     sz = sizeof(laundry_count);
-    sysctlbyname("vm.stats.vm.v_laundry_count", &laundry_count, &sz, NULL, 0); 
+    sysctlbyname("vm.stats.vm.v_laundry_count", &laundry_count, &sz, NULL, 0);
 
     sz = sizeof(free_count);
     sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);

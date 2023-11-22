@@ -4693,6 +4693,11 @@ contains_disable_reflection_attribute (MonoCustomAttrInfo *cattr)
 	return TRUE;
 }
 
+/*
+ * mono_aot_can_specialize:
+ *
+ *   Return whenever a method only has explicit callers in the same AOT compilation unit.
+ */
 gboolean
 mono_aot_can_specialize (MonoMethod *method)
 {
@@ -4703,48 +4708,53 @@ mono_aot_can_specialize (MonoMethod *method)
 		return FALSE;
 
 	// If it's not private, we can't specialize
-	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE)
+	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE && ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_ASSEM))
 		return FALSE;
 
-	// If it has the attribute disabling the specialization, we can't specialize
-	//
-	// Set by linker, indicates that the method can be found through reflection
-	// and that call-site specialization shouldn't be done.
-	//
-	// Important that this attribute is used for *nothing else*
-	//
-	// If future authors make use of it (to disable more optimizations),
-	// change this place to use a new attribute.
+	if (!strcmp (method->name, ".cctor"))
+		return FALSE;
+
+	if (m_method_is_virtual (method))
+		return FALSE;
+
+	if (method->is_inflated)
+		return FALSE;
+
+	gboolean has_cattr = FALSE;
+
+	/*
+	 * When the linker is ran with the --explicit-reflection option, it will mark types/methods
+	 * which have no indirect access with the DisablePrivateReflection attribute.
+	 */
 	ERROR_DECL (cattr_error);
-	MonoCustomAttrInfo *cattr = mono_custom_attrs_from_class_checked (method->klass, cattr_error);
+	MonoCustomAttrInfo *cattr;
 
-	if (!is_ok (cattr_error)) {
-		mono_error_cleanup (cattr_error);
-		goto cleanup_false;
-	} else if (cattr && contains_disable_reflection_attribute (cattr)) {
-		goto cleanup_true;
-	}
-
-	cattr = mono_custom_attrs_from_method_checked (method, cattr_error);
-
-	if (!is_ok (cattr_error)) {
-		mono_error_cleanup (cattr_error);
-		goto cleanup_false;
-	} else if (cattr && contains_disable_reflection_attribute (cattr)) {
-		goto cleanup_true;
-	} else {
-		goto cleanup_false;
-	}
-
-cleanup_false:
+	cattr = mono_custom_attrs_from_class_checked (method->klass, cattr_error);
+	if (is_ok (cattr_error) && cattr && contains_disable_reflection_attribute (cattr))
+		has_cattr = TRUE;
+	mono_error_cleanup (cattr_error);
 	if (cattr)
 		mono_custom_attrs_free (cattr);
+
+	if (!has_cattr) {
+		cattr = mono_custom_attrs_from_method_checked (method, cattr_error);
+		if (is_ok (cattr_error) && cattr && contains_disable_reflection_attribute (cattr))
+			has_cattr = TRUE;
+		mono_error_cleanup (cattr_error);
+		if (cattr)
+			mono_custom_attrs_free (cattr);
+	}
+
+	if (!has_cattr)
+		return FALSE;
+
+	/*
+	 * FIXME: Methods called from generic methods also need to be excluded, since
+	 * instances could be generated in other compilation units.
+	 */
 	return FALSE;
 
-cleanup_true:
-	if (cattr)
-		mono_custom_attrs_free (cattr);
-	return TRUE;
+	//return TRUE;
 }
 
 static gboolean
@@ -9885,10 +9895,15 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->trimming_eligible_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only && mini_get_interp_callbacks ()->jit_call_can_be_supported (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only)) {
-			// The call back to jit_call_can_be_supported is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
+		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only) {
+			// The call to mono_jit_call_can_be_supported_by_interp is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
 			// When that happens, interpreter needs to have the capability to call the AOT'ed version of that method, since the method body has already been trimmed.
-			fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
+			gboolean skip_trim = FALSE;
+			if (acfg->aot_opts.interp) {
+				skip_trim = (!mono_jit_call_can_be_supported_by_interp (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only) || (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED));
+			}
+			if (!skip_trim)
+				fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
 		}
 	}
 }
@@ -14917,7 +14932,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
-		acfg->trimming_eligible_methods_outfile = fopen (acfg->aot_opts.trimming_eligible_methods_outfile, "w+");
+		acfg->trimming_eligible_methods_outfile = g_fopen (acfg->aot_opts.trimming_eligible_methods_outfile, "w");
 		if (!acfg->trimming_eligible_methods_outfile)
 			aot_printerrf (acfg, "Unable to open trimming-eligible-methods-outfile specified file %s\n", acfg->aot_opts.trimming_eligible_methods_outfile);
 		else {

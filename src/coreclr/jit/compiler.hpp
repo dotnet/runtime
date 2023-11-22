@@ -399,9 +399,9 @@ inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
     }
 
 //------------------------------------------------------------------------------
-// VisitEHSecondPassSuccs: Given a block, if it is a filter (i.e. invoked in
-// first-pass EH), then visit all successors that control may flow to as part
-// of second-pass EH.
+// VisitEHEnclosedHandlerSecondPassSuccs: Given a block, if it is a filter
+// (i.e. invoked in first-pass EH), then visit all successors that control may
+// flow to as part of second-pass EH.
 //
 // Arguments:
 //   comp - Compiler instance
@@ -416,7 +416,7 @@ inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
 //   filter.
 //
 template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
+BasicBlockVisit BasicBlock::VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func)
 {
     if (!hasHndIndex())
     {
@@ -487,8 +487,13 @@ BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
 }
 
 //------------------------------------------------------------------------------
-// VisitEHSuccessors: Given a block inside a handler region, visit all handlers
+// VisitEHSuccs: Given a block inside a handler region, visit all handlers
 // that control may flow to as part of EH.
+//
+// Type arguments:
+//   skipJumpDest - Whether the jump destination has already been
+//   yielded, in which case it should be skipped here.
+//   TFunc - Functor type
 //
 // Arguments:
 //   comp  - Compiler instance
@@ -499,12 +504,15 @@ BasicBlockVisit BasicBlock::VisitEHSecondPassSuccs(Compiler* comp, TFunc func)
 //   Whether or not the visiting should proceed.
 //
 // Remarks:
-//   This encapsulates the "exception handling" successors of a block. That is,
-//   if a basic block BB1 occurs in a try block, we consider the first basic
-//   block BB2 of the corresponding handler to be an "EH successor" of BB1.
+//   This encapsulates the "exception handling" successors of a block. These
+//   are the blocks that control may flow to as part of exception handling:
+//   1. On thrown exceptions, control may flow to handlers
+//   2. As part of two pass EH, control may flow from filters to enclosed handlers
+//   3. As part of two pass EH, control may bypass filters and flow directly to
+//   filter-handlers
 //
-template <typename TFunc>
-static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFunc func)
+template <bool         skipJumpDest, typename TFunc>
+static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc func)
 {
     if (!block->HasPotentialEHSuccs(comp))
     {
@@ -516,14 +524,23 @@ static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFun
     {
         while (true)
         {
-            // If the original block whose EH successors we're iterating over
-            // is a BBJ_CALLFINALLY, that finally clause's first block
-            // will be yielded as a normal successor.  Don't also yield as
-            // an exceptional successor.
-            BasicBlock* flowBlock = eh->ExFlowBlock();
-            if (!block->KindIs(BBJ_CALLFINALLY) || !block->HasJumpTo(flowBlock))
+            if (eh->HasFilter())
             {
-                RETURN_ON_ABORT(func(flowBlock));
+                RETURN_ON_ABORT(func(eh->ebdFilter));
+
+                // Control may bypass the filter and flow directly into a
+                // handler; this happens if this was an enclosed handler that
+                // was invoked as part of two pass EH.
+                RETURN_ON_ABORT(func(eh->ebdHndBeg));
+            }
+            else
+            {
+                // For BBJ_CALLFINALLY the user may already have processed one of
+                // the EH successors as a regular successor; skip it if requested.
+                if (!skipJumpDest || !block->HasJumpTo(eh->ebdHndBeg))
+                {
+                    RETURN_ON_ABORT(func(eh->ebdHndBeg));
+                }
             }
 
             if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
@@ -535,70 +552,27 @@ static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFun
         }
     }
 
-    return block->VisitEHSecondPassSuccs(comp, func);
+    return block->VisitEHEnclosedHandlerSecondPassSuccs(comp, func);
 }
 
 //------------------------------------------------------------------------------
-// VisitSuccessorEHSuccessors: Given a block and one of its regular successors,
-// if that regular successor is the beginning of a try, then also visit its
-// handlers.
+// VisitEHSuccs: Given a block inside a handler region, visit all handlers
+// that control may flow to as part of EH.
 //
 // Arguments:
 //   comp  - Compiler instance
-//   block - The block
-//   succ  - A regular successor of block
 //   func  - Callback
 //
 // Returns:
 //   Whether or not the visiting should proceed.
 //
 // Remarks:
-//   Because we make the conservative assumption that control flow can jump
-//   from a try block to its handler at any time, the immediate (regular
-//   control flow) predecessor(s) of the first block of a try block are also
-//   considered to have the first block of the handler as an EH successor.
-//
-//   As an example: for liveness this makes variables that are "live-in" to the
-//   handler become "live-out" for these try-predecessor block, so that they
-//   become live-in to the try -- which we require.
-//
-//   TODO-Cleanup: Is the above comment true today or is this code unnecessary?
-//   For a block T with an EH successor E liveness takes care to consider the
-//   live-in set E as "volatile" variables that are fully live at all points
-//   within the block T, including being a part of T's live-in set. That means
-//   that if T is the beginning of a try, then any predecessor of T will
-//   naturally also have E's live-in set as part of its live-out set.
+//   For more documentation, see ::VisitEHSuccs.
 //
 template <typename TFunc>
-static BasicBlockVisit VisitSuccessorEHSuccessors(Compiler* comp, BasicBlock* block, BasicBlock* succ, TFunc func)
+BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 {
-    if (!comp->bbIsTryBeg(succ))
-    {
-        return BasicBlockVisit::Continue;
-    }
-
-    unsigned tryIndex = succ->getTryIndex();
-    if (comp->bbInExnFlowRegions(tryIndex, block))
-    {
-        // Already yielded as an EH successor of block itself
-        return BasicBlockVisit::Continue;
-    }
-
-    EHblkDsc* eh = comp->ehGetDsc(tryIndex);
-
-    do
-    {
-        RETURN_ON_ABORT(func(eh->ExFlowBlock()));
-
-        if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            break;
-        }
-
-        eh = comp->ehGetDsc(eh->ebdEnclosingTryIndex);
-    } while (eh->ebdTryBeg == succ);
-
-    return BasicBlockVisit::Continue;
+    return ::VisitEHSuccs</* skipJumpDest */ false, TFunc>(comp, this, func);
 }
 
 //------------------------------------------------------------------------------
@@ -622,23 +596,17 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
                 RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
             }
 
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-
-            for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
-            {
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpEhf->bbeSuccs[i], func));
-            }
-
-            break;
+            return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
+            RETURN_ON_ABORT(func(bbJumpDest));
+            return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
+
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             RETURN_ON_ABORT(func(bbJumpDest));
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
-            break;
+            return VisitEHSuccs(comp, func);
 
         case BBJ_ALWAYS:
             RETURN_ON_ABORT(func(bbJumpDest));
@@ -649,16 +617,14 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             // and we skip its normal EH successors.
             if (!isBBCallAlwaysPairTail())
             {
-                RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
+                RETURN_ON_ABORT(VisitEHSuccs(comp, func));
             }
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
-            break;
+
+            return BasicBlockVisit::Continue;
 
         case BBJ_NONE:
             RETURN_ON_ABORT(func(bbNext));
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbNext, func));
-            break;
+            return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
@@ -668,14 +634,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
                 RETURN_ON_ABORT(func(bbJumpDest));
             }
 
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbNext, func));
-
-            if (bbJumpDest != bbNext)
-            {
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
-            }
-            break;
+            return VisitEHSuccs(comp, func);
 
         case BBJ_SWITCH:
         {
@@ -685,27 +644,17 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
                 RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
             }
 
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-
-            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
-            {
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, sd.nonDuplicates[i], func));
-            }
-
-            break;
+            return VisitEHSuccs(comp, func);
         }
 
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFAULTRET:
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-            break;
+            return VisitEHSuccs(comp, func);
 
         default:
             unreached();
     }
-
-    return BasicBlockVisit::Continue;
 }
 
 //------------------------------------------------------------------------------
@@ -728,19 +677,18 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
             {
                 RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
             }
-            break;
+
+            return BasicBlockVisit::Continue;
 
         case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(bbJumpDest));
-            break;
+            return func(bbJumpDest);
 
         case BBJ_NONE:
-            RETURN_ON_ABORT(func(bbNext));
-            break;
+            return func(bbNext);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
@@ -750,7 +698,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
                 RETURN_ON_ABORT(func(bbJumpDest));
             }
 
-            break;
+            return BasicBlockVisit::Continue;
 
         case BBJ_SWITCH:
         {
@@ -760,19 +708,17 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
                 RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
             }
 
-            break;
+            return BasicBlockVisit::Continue;
         }
 
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFAULTRET:
-            break;
+            return BasicBlockVisit::Continue;
 
         default:
             unreached();
     }
-
-    return BasicBlockVisit::Continue;
 }
 
 #undef RETURN_ON_ABORT

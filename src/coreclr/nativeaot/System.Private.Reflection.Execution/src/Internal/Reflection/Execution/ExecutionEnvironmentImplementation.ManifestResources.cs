@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 
+using Internal.NativeFormat;
+using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
-
-using Internal.Reflection.Core.Execution;
-using Internal.NativeFormat;
 
 namespace Internal.Reflection.Execution
 {
