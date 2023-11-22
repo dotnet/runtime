@@ -1096,6 +1096,8 @@ namespace System.Net.Sockets
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint}");
 
+            System.Threading.Thread.Sleep(1); // (to revert) let's sloooow down
+
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffers, socketFlags, out bytesTransferred);
 
@@ -3035,6 +3037,8 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(e);
+
+            System.Threading.Thread.Sleep(1); // (to revert) let's sloooow down
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Send);
