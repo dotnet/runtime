@@ -1312,6 +1312,18 @@ static const char * const  wRegNames[] =
     #include "register.h"
 };
 
+
+static const char * const  zRegNames[] =
+{
+    "z0",  "z1",  "z2",  "z3",  "z4",
+    "z5",  "z6",  "z7",  "z8",  "z9",
+    "z10", "z11", "z12", "z13", "z14",
+    "z15", "z16", "z17", "z18", "z19",
+    "z20", "z21", "z22", "z23", "z24",
+    "z25", "z26", "z27", "z28", "z29",
+    "z30", "z31"
+};
+
 static const char * const  vRegNames[] =
 {
     "v0",  "v1",  "v2",  "v3",  "v4",
@@ -1332,17 +1344,6 @@ static const char * const  qRegNames[] =
     "q20", "q21", "q22", "q23", "q24",
     "q25", "q26", "q27", "q28", "q29",
     "q30", "q31"
-};
-
-static const char * const  zRegNames[] =
-{
-    "z0",  "z1",  "z2",  "z3",  "z4",
-    "z5",  "z6",  "z7",  "z8",  "z9",
-    "z10", "z11", "z12", "z13", "z14",
-    "z15", "z16", "z17", "z18", "z19",
-    "z20", "z21", "z22", "z23", "z24",
-    "z25", "z26", "z27", "z28", "z29",
-    "z30", "z31"
 };
 
 static const char * const  hRegNames[] =
@@ -1414,11 +1415,33 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
         {
             rn = bRegNames[reg - REG_V0];
         }
+        else if (size == EA_SCALABLE)
+        {
+            rn = zRegNames[reg - REG_V0];
+        }
     }
 
     assert(rn != nullptr);
 
     return rn;
+}
+
+//------------------------------------------------------------------------
+// emitSveRegName: Returns a scalable vector register name.
+//
+// Arguments:
+//    reg - A SIMD and floating-point register.
+//
+// Return value:
+//    A string that represents a scalable vector register name.
+//
+const char* emitter::emitSveRegName(regNumber reg)
+{
+    assert((reg >= REG_V0) && (reg <= REG_V31));
+
+    int index = (int)reg - (int)REG_V0;
+
+    return zRegNames[index];
 }
 
 //------------------------------------------------------------------------
@@ -13844,7 +13867,22 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 }
 
 //------------------------------------------------------------------------
-// emitDispVectorReg: Display a SIMD vector register name with with an arrangement suffix
+// emitDispSveReg: Display a scalable vector register name with an arrangement suffix
+//
+void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
+{
+    assert(opt == INS_OPTS_SCALABLE_B || opt == INS_OPTS_SCALABLE_H || opt == INS_OPTS_SCALABLE_S ||
+           opt == INS_OPTS_SCALABLE_D);
+    assert(isVectorRegister(reg));
+    printf(emitSveRegName(reg));
+    emitDispArrangement(opt);
+
+    if (addComma)
+        emitDispComma();
+}
+
+//------------------------------------------------------------------------
+// emitDispVectorReg: Display a SIMD vector register name with an arrangement suffix
 //
 void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
 {
@@ -13953,11 +13991,17 @@ void emitter::emitDispArrangement(insOpts opt)
         case INS_OPTS_16B:
             str = "16b";
             break;
+        case INS_OPTS_SCALABLE_B:
+            str = "b";
+            break;
         case INS_OPTS_4H:
             str = "4h";
             break;
         case INS_OPTS_8H:
             str = "8h";
+            break;
+        case INS_OPTS_SCALABLE_H:
+            str = "h";
             break;
         case INS_OPTS_2S:
             str = "2s";
@@ -13965,11 +14009,17 @@ void emitter::emitDispArrangement(insOpts opt)
         case INS_OPTS_4S:
             str = "4s";
             break;
+        case INS_OPTS_SCALABLE_S:
+            str = "s";
+            break;
         case INS_OPTS_1D:
             str = "1d";
             break;
         case INS_OPTS_2D:
             str = "2d";
+            break;
+        case INS_OPTS_SCALABLE_D:
+            str = "d";
             break;
 
         default:

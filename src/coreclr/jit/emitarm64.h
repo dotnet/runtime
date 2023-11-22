@@ -19,6 +19,7 @@ static bool strictArmAsm;
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
+const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
 const char* emitPredicateRegName(regNumber reg);
 
@@ -39,6 +40,7 @@ void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
+void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
