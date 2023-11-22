@@ -93,6 +93,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_MksTemps)
     DllImportEntry(SystemNative_MMap)
     DllImportEntry(SystemNative_MUnmap)
+    DllImportEntry(SystemNative_MProtect)
     DllImportEntry(SystemNative_MAdvise)
     DllImportEntry(SystemNative_MSync)
     DllImportEntry(SystemNative_SysConf)
@@ -275,6 +276,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetEnviron)
     DllImportEntry(SystemNative_FreeEnviron)
     DllImportEntry(SystemNative_GetGroupName)
+    DllImportEntry(SystemNative_GetUInt64OSThreadId)
+    DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

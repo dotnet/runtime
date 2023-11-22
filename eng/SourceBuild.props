@@ -15,7 +15,8 @@
     <AllowTestProjectUsage>true</AllowTestProjectUsage>
 
     <!-- TargetRid names what gets built. -->
-    <TargetRid Condition="'$(TargetRid)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
+    <HostRid>$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</HostRid>
+    <TargetRid Condition="'$(TargetRid)' == ''">$(HostRid)</TargetRid>
 
     <!-- Split e.g. 'fedora.33-x64' into 'fedora.33' and 'x64'. -->
     <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
@@ -37,6 +38,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --outputrid $(TargetRid)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(TargetRid)' != '$(HostRid)'">$(InnerBuildArgs) --cross</InnerBuildArgs>
       <!-- PackageOS and ToolsOS control the rids of prebuilts consumed by the build.
            They are set to RuntimeOS so they match with the build SDK rid. -->
       <InnerBuildArgs Condition="'$(RuntimeOS)' != ''">$(InnerBuildArgs) /p:PackageOS=$(RuntimeOS) /p:ToolsOS=$(RuntimeOS)</InnerBuildArgs>
@@ -48,6 +50,7 @@
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) --usemonoruntime</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
@@ -70,7 +73,7 @@
       <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
         Category="Crossgen2Pack" />
-        
+
         <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;"
         Category="Crossgen2Archive" />

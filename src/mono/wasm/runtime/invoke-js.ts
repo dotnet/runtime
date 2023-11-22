@@ -350,7 +350,7 @@ export function dynamic_import(module_name: string, module_url: string): Promise
     const newPromise = !promise;
     if (newPromise) {
         mono_log_debug(`importing ES6 module '${module_name}' from '${module_url}'`);
-        promise = import(/* webpackIgnore: true */module_url);
+        promise = import(/*! webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
 

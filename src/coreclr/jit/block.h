@@ -440,6 +440,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(40), // BB has pred that has potential tail call
     BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(41), // Block has recursive tailcall that may turn into a loop
     BBF_NO_CSE_IN                      = MAKE_BBFLAG(42), // Block should kill off any incoming CSE
+    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(43), // Ok to add pred edge to this block, even when "safe" edge creation disabled
 
     // The following are sets of flags.
 
@@ -1229,18 +1230,20 @@ public:
      */
 
     union {
-        EXPSET_TP bbCseGen;       // CSEs computed by block
-        ASSERT_TP bbAssertionGen; // assertions computed by block
+        EXPSET_TP bbCseGen;             // CSEs computed by block
+        ASSERT_TP bbAssertionGen;       // assertions created by block (global prop)
+        ASSERT_TP bbAssertionOutIfTrue; // assertions available on exit along true/jump edge (BBJ_COND, local prop)
     };
 
     union {
         EXPSET_TP bbCseIn;       // CSEs available on entry
-        ASSERT_TP bbAssertionIn; // assertions available on entry
+        ASSERT_TP bbAssertionIn; // assertions available on entry (global prop)
     };
 
     union {
-        EXPSET_TP bbCseOut;       // CSEs available on exit
-        ASSERT_TP bbAssertionOut; // assertions available on exit
+        EXPSET_TP bbCseOut;              // CSEs available on exit
+        ASSERT_TP bbAssertionOut;        // assertions available on exit (global prop, local prop & !BBJ_COND)
+        ASSERT_TP bbAssertionOutIfFalse; // assertions available on exit along false/next edge (BBJ_COND, local prop)
     };
 
     void* bbEmitCookie;
@@ -1407,10 +1410,13 @@ public:
     };
 
     template <typename TFunc>
-    BasicBlockVisit VisitEHSecondPassSuccs(Compiler* comp, TFunc func);
+    BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
     BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
+    BasicBlockVisit VisitEHSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
     BasicBlockVisit VisitRegularSuccs(Compiler* comp, TFunc func);

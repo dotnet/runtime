@@ -380,12 +380,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     _ASSERTE(pArrayMT->CheckInstanceActivated());
     _ASSERTE(pArrayMT->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 
-    CorElementType elemType = pArrayMT->GetArrayElementType();
-
-    // Disallow the creation of void[] (an array of System.Void)
-    if (elemType == ELEMENT_TYPE_VOID)
-        COMPlusThrow(kArgumentException);
-
     if (cElements < 0)
         COMPlusThrow(kOverflowException);
 
@@ -408,7 +402,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((elemType == ELEMENT_TYPE_R8) &&
+    if ((pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
         ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
@@ -431,7 +425,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     else
     {
 #ifndef FEATURE_64BIT_ALIGNMENT
-        if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8) &&
+        if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
             (totalSize < g_pConfig->GetGCLOHThreshold() - MIN_OBJECT_SIZE))
         {
             // Creation of an array of doubles, not in the large object heap.
@@ -508,17 +502,11 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // The initial validation is copied from AllocateSzArray impl
 
-    CorElementType elemType = pArrayMT->GetArrayElementType();
-
     if (pArrayMT->ContainsPointers() && cElements > 0)
     {
         // For arrays with GC pointers we can only work with empty arrays
         return NULL;
     }
-
-    // Disallow the creation of void[] (an array of System.Void)
-    if (elemType == ELEMENT_TYPE_VOID)
-        COMPlusThrow(kArgumentException);
 
     if (cElements < 0)
         COMPlusThrow(kOverflowException);
@@ -542,7 +530,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // FrozenObjectHeapManager doesn't yet support objects with a custom alignment,
     // so we give up on arrays of value types requiring 8 byte alignment on 32bit platforms.
-    if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8))
+    if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8))
     {
         return NULL;
     }
@@ -637,11 +625,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     CorElementType kind = pArrayMT->GetInternalCorElementType();
     _ASSERTE(kind == ELEMENT_TYPE_ARRAY || kind == ELEMENT_TYPE_SZARRAY);
 
-    CorElementType elemType = pArrayMT->GetArrayElementType();
-    // Disallow the creation of void[,] (a multi-dim  array of System.Void)
-    if (elemType == ELEMENT_TYPE_VOID)
-        COMPlusThrow(kArgumentException);
-
     // Calculate the total number of elements in the array
     UINT32 cElements;
     bool maxArrayDimensionLengthOverflow = false;
@@ -715,7 +698,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((elemType == ELEMENT_TYPE_R8) &&
+    if ((pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
         (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);

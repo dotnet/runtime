@@ -8764,8 +8764,6 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 {
     if (UsesDivideByConstOptimized(comp))
     {
-        gtFlags |= GTF_DIV_BY_CNS_OPT;
-
         // Now set DONT_CSE on the GT_CNS_INT divisor, note that
         // with ValueNumbering we can have a non GT_CNS_INT divisor
         GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
@@ -11138,18 +11136,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 if (tree->gtFlags & GTF_MUL_64RSLT)
                 {
                     printf("L");
-                    --msgLength;
-                    break;
-                }
-                goto DASH;
-
-            case GT_DIV:
-            case GT_MOD:
-            case GT_UDIV:
-            case GT_UMOD:
-                if (tree->gtFlags & GTF_DIV_BY_CNS_OPT)
-                {
-                    printf("M"); // We will use a Multiply by reciprical
                     --msgLength;
                     break;
                 }
@@ -25514,6 +25500,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
+                case NI_AVX2_BroadcastVector128ToVector256:
+                case NI_AVX512F_BroadcastVector128ToVector512:
+                case NI_AVX512F_BroadcastVector256ToVector512:
                     if (GetAuxiliaryJitType() == CORINFO_TYPE_PTR)
                     {
                         addr = Op(1);
@@ -25852,6 +25841,7 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
         case NI_AdvSimd_Arm64_LoadPairVector64:
         case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+        case NI_AdvSimd_LoadVector64x2AndUnzip:
         case NI_AdvSimd_LoadVector64x2:
         case NI_AdvSimd_LoadAndInsertScalarVector64x2:
         case NI_AdvSimd_LoadAndReplicateToVector64x2:
@@ -25859,24 +25849,29 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
 
         case NI_AdvSimd_Arm64_LoadPairVector128:
         case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+        case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
         case NI_AdvSimd_Arm64_LoadVector128x2:
         case NI_AdvSimd_LoadVector64x4:
+        case NI_AdvSimd_LoadVector64x4AndUnzip:
         case NI_AdvSimd_LoadAndReplicateToVector64x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
         case NI_AdvSimd_LoadAndInsertScalarVector64x4:
             return compiler->typGetBlkLayout(32);
 
+        case NI_AdvSimd_LoadVector64x3AndUnzip:
         case NI_AdvSimd_LoadVector64x3:
         case NI_AdvSimd_LoadAndInsertScalarVector64x3:
         case NI_AdvSimd_LoadAndReplicateToVector64x3:
             return compiler->typGetBlkLayout(24);
 
+        case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
         case NI_AdvSimd_Arm64_LoadVector128x3:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
             return compiler->typGetBlkLayout(48);
 
+        case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
         case NI_AdvSimd_Arm64_LoadVector128x4:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:

@@ -336,7 +336,8 @@
                              $(CoreClrProjectRoot)tools\r2rdump\R2RDump.csproj;
                              $(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;
                              $(CoreClrProjectRoot)tools\aot\ILCompiler\repro\repro.csproj;
-                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
+                             $(CoreClrProjectRoot)tools\AssemblyChecker\AssemblyChecker.csproj" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
@@ -488,8 +489,7 @@
 
   <!-- Host.pretest subset (consumes live built libraries assets so needs to come after libraries) -->
   <ItemGroup Condition="$(_subset.Contains('+host.pretest+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)tests\Assets\Projects\AppWithSubDirs\AppWithSubDirs.csproj" Category="host" />
-    <ProjectToBuild Include="$(InstallerProjectRoot)tests\Assets\Projects\HelloWorld\HelloWorld.csproj" Category="host" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)tests\Assets\Projects\**\*.csproj" Category="host" />
   </ItemGroup>
 
   <!-- Host.tests subset (consumes live built libraries assets so needs to come after libraries) -->

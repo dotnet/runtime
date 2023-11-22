@@ -9,7 +9,7 @@ using Xunit;
 public class RedundantBranchUnsigned2
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         int[] arr1 = new int[2];
         Test_Span1(arr1, -1);
@@ -37,7 +37,6 @@ public class RedundantBranchUnsigned2
 
         // Should not throw NRE
         Test_Array(arr3, -1);
-        return 100;
     }
 
     private static void Throws<T>(Action action) where T : Exception

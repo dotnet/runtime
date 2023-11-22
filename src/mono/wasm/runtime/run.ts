@@ -42,7 +42,7 @@ export async function mono_run_main(main_assembly_name: string, args?: string[])
         if (ENVIRONMENT_IS_NODE) {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore:
-            const process = await import(/* webpackIgnore: true */"process");
+            const process = await import(/*! webpackIgnore: true */"process");
             args = process.argv.slice(2) as string[];
         } else {
             args = [];
@@ -55,7 +55,13 @@ export async function mono_run_main(main_assembly_name: string, args?: string[])
         await mono_wasm_wait_for_debugger();
     }
     const method = find_entry_point(main_assembly_name);
-    return runtimeHelpers.javaScriptExports.call_entry_point(method, args);
+
+    const res = await runtimeHelpers.javaScriptExports.call_entry_point(method, args);
+
+    // one more timer loop before we return, so that any remaining queued calls could run
+    await new Promise(resolve => globalThis.setTimeout(resolve, 0));
+
+    return res;
 }
 
 export function find_entry_point(assembly: string) {

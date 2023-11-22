@@ -3,13 +3,13 @@
 
 using System;
 using System.Collections;
-using System.IO;
-using System.Xml;
 using System.Diagnostics;
-using System.Text;
-using System.Runtime.Serialization;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Xml;
 
 namespace System.Xml
 {

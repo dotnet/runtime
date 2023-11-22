@@ -19,12 +19,12 @@
 #include <pthread.h>
 #include <signal.h>
 
-int32_t SystemNative_GetWindowSize(WinSize* windowSize)
+int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 {
     assert(windowSize != NULL);
 
 #if HAVE_IOCTL && HAVE_TIOCGWINSZ
-    int error = ioctl(STDOUT_FILENO, TIOCGWINSZ, windowSize);
+    int error = ioctl(ToFileDescriptor(fd), TIOCGWINSZ, windowSize);
 
     if (error != 0)
     {
@@ -33,6 +33,7 @@ int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 
     return error;
 #else
+    (void)fd;
     memset(windowSize, 0, sizeof(WinSize)); // managed out param must be initialized
     errno = ENOTSUP;
     return -1;
@@ -61,6 +62,7 @@ int32_t SystemNative_IsATty(intptr_t fd)
 }
 
 static char* g_keypadXmit = NULL; // string used to enable application mode, from terminfo
+static int g_keypadXmitFd = -1;
 
 static void WriteKeypadXmit(void)
 {
@@ -69,12 +71,12 @@ static void WriteKeypadXmit(void)
     if (g_keypadXmit != NULL)
     {
         ssize_t ret;
-        while (CheckInterrupted(ret = write(STDOUT_FILENO, g_keypadXmit, (size_t)(sizeof(char) * strlen(g_keypadXmit)))));
-        assert(ret >= 0); // failure to change the mode should not prevent app from continuing
+        while (CheckInterrupted(ret = write(g_keypadXmitFd, g_keypadXmit, (size_t)(sizeof(char) * strlen(g_keypadXmit)))));
+        assert(ret >= 0 || (errno == EBADF && g_keypadXmitFd == 0)); // failure to change the mode should not prevent app from continuing
     }
 }
 
-void SystemNative_SetKeypadXmit(const char* terminfoString)
+void SystemNative_SetKeypadXmit(intptr_t fd, const char* terminfoString)
 {
     assert(terminfoString != NULL);
 
@@ -85,6 +87,7 @@ void SystemNative_SetKeypadXmit(const char* terminfoString)
     }
 
     // Store the string to use to enter application mode, then enter
+    g_keypadXmitFd = ToFileDescriptor(fd);
     g_keypadXmit = strdup(terminfoString);
     WriteKeypadXmit();
 }
@@ -108,7 +111,6 @@ static bool g_reading = false;                // tracks whether the application 
 static bool g_childUsesTerminal = false;      // tracks whether a child process is using the terminal
 static bool g_terminalUninitialized = false;  // tracks whether the application is terminating
 static bool g_terminalConfigured = false;     // tracks whether the application configured the terminal.
-
 static bool g_hasTty = false;                  // cache we are not a tty
 
 static volatile bool g_receivedSigTtou = false;

@@ -422,6 +422,15 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsDefType
+        {
+            get
+            {
+                EETypeKind kind = Kind;
+                return kind == EETypeKind.CanonicalEEType || kind == EETypeKind.GenericTypeDefEEType;
+            }
+        }
+
         internal bool IsCanonical
         {
             get

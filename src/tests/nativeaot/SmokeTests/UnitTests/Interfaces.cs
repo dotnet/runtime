@@ -689,6 +689,8 @@ public class Interfaces
         static IInterface<object> s_c3a = new C3<object>();
         static IInterface s_c3b = new C3<object>();
 
+        // Works around https://github.com/dotnet/runtime/issues/94399
+        [MethodImpl(MethodImplOptions.NoOptimization)]
         public static void Run()
         {
             if (s_c1.Method(null) != "Method(object)")

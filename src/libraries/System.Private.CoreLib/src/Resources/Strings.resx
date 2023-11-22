@@ -3434,7 +3434,13 @@
   <data name="SetterHasNoParams" xml:space="preserve">
     <value>Setter must have parameters.</value>
   </data>
-  <data name="SpinLock_Exit_SynchronizationLockException" xml:space="preserve">
+  <data name="Lock_Enter_LockRecursionException" xml:space="preserve">
+    <value>The lock has reached the limit of recursive enters.</value>
+  </data>
+  <data name="Lock_Enter_WaiterCountOverflow_OutOfMemoryException" xml:space="preserve">
+    <value>The lock has reached the limit of how many threads may wait for the lock.</value>
+  </data>
+  <data name="Lock_Exit_SynchronizationLockException" xml:space="preserve">
     <value>The calling thread does not hold the lock.</value>
   </data>
   <data name="SpinLock_IsHeldByCurrentThread" xml:space="preserve">
@@ -4273,5 +4279,8 @@
   </data>
   <data name="UnsupportedType" xml:space="preserve">
     <value>Unsupported type</value>
+  </data>
+  <data name="Reflection_Disabled" xml:space="preserve">
+    <value>This operation is not available because the reflection support was disabled at compile time.</value>
   </data>
 </root>
