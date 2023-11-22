@@ -1463,6 +1463,11 @@ prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, 
 	}
 }
 
+/*
+ * Returns TRUE if modifications or additions to the table imply that the execution engine should
+ * invalidate existing methods. It's better to be pessimistic (say TRUE more often) - most EnC
+ * deltas will lead to a change in behavior.
+ */
 static gboolean
 table_should_invalidate_transformed_code (int token_table)
 {
@@ -1829,7 +1834,12 @@ pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError
 
 }
 
-/* do actual enclog application */
+/*
+ * Apply the entries from the EnC log to the runtime type system (as opposed to just mutating the
+ * metadata table contents).  This is "pass2" because historically there was a "pass1" that just
+ * validated the EnC log to ensure that Mono didn't see any changes that it was not prepared to
+ * handle yet.  Pass1 was non-destructive, while Pass2 actually makes changes that are hard to undo.
+ */
 static gboolean
 apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, gboolean *should_invalidate_transformed_code, MonoError *error)
 {
