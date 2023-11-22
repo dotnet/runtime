@@ -8335,7 +8335,7 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			mono_field_resolve_type (f, field_error);
 			mono_error_cleanup (field_error);
 			if (!f->type)
-				/* ERROR */;
+				return ERR_INVALID_OBJECT;
 		}
 		buffer_add_int (buf, mono_class_get_field_token (f));
 		buffer_add_byte(buf, GINT_TO_UINT8(m_class_is_valuetype (mono_class_from_mono_type_internal (f->type))));
