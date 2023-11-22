@@ -588,7 +588,7 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
 
 // bbIsTryBeg() returns true if this block is the start of any try region.
 //              This is computed by examining the current values in the
-//              EH table rather than just looking at the block->bbFlags.
+//              EH table rather than just looking at the block's bbFlags.
 //
 // Note that a block is the beginning of any try region if it is the beginning of the
 // most nested try region it is a member of. Thus, we only need to check the EH

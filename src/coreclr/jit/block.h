@@ -712,8 +712,10 @@ public:
         bbJumpEhf  = jumpEhf;
     }
 
+private:
     BasicBlockFlags bbFlags;
 
+public:
     bool HasFlag(const BasicBlockFlags flag) const
     {
         return ((bbFlags & flag) != 0);
@@ -732,6 +734,16 @@ public:
     void RemoveFlags(const BasicBlockFlags flags)
     {
         bbFlags &= ~flags;
+    }
+
+    BasicBlockFlags GetFlagsRaw() const
+    {
+        return bbFlags;
+    }
+
+    void SetFlagsRaw(const BasicBlockFlags flags)
+    {
+        bbFlags = flags;
     }
 
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);

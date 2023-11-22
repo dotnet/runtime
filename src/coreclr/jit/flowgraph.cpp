@@ -283,14 +283,15 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         unsigned char lpIndex     = top->bbNatLoopNum;
 
         // Update block flags
-        const BasicBlockFlags originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
+        const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
         noway_assert((originalFlags & (BBF_SPLIT_NONEXIST &
                                        ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
                                          BBF_RETLESS_CALL))) == 0);
-        top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+        top->SetFlagsRaw(originalFlags &
+                         (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
         bottom->SetFlags(originalFlags &
                          (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
         bottom->inheritWeight(top);
@@ -3926,7 +3927,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
         {
 // true if the edge is forward, or if it is a back edge and either the source and dest are GC safe.
 #define EDGE_IS_GC_SAFE(src, dst)                                                                                      \
-    (((src)->bbNum < (dst)->bbNum) || (((src)->bbFlags | (dst)->bbFlags) & BBF_GC_SAFE_POINT))
+    (((src)->bbNum < (dst)->bbNum) || (((src)->GetFlagsRaw() | (dst)->GetFlagsRaw()) & BBF_GC_SAFE_POINT))
 
             bool partiallyInterruptible = true;
             switch (block->GetJumpKind())

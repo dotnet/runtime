@@ -4772,7 +4772,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->inheritWeight(curr);
 
     // Set the new block's flags. Note that the new block isn't BBF_INTERNAL unless the old block is.
-    newBlock->bbFlags = curr->bbFlags;
+    newBlock->SetFlagsRaw(curr->GetFlagsRaw());
 
     // Remove flags that the new block can't have.
     newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
@@ -4871,7 +4871,7 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
 {
     gtSplitTree(block, stmt, splitPoint, firstNewStmt, splitNodeUse);
 
-    BasicBlockFlags originalFlags = block->bbFlags;
+    BasicBlockFlags originalFlags = block->GetFlagsRaw();
     BasicBlock*     prevBb        = block;
 
     // We use fgSplitBlockAfterStatement() API here to split the block, however, we want to split
@@ -4889,7 +4889,8 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     }
 
     // We split a block, possibly, in the middle - we need to propagate some flags
-    prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+    prevBb->SetFlagsRaw(originalFlags &
+                        (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
     block->SetFlags(originalFlags &
                     (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
 
@@ -5042,7 +5043,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // The new block always jumps to 'succ'
         newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* jumpDest */ succ, /* isRunRarely */ curr->isRunRarely());
     }
-    newBlock->CopyFlags(curr, (succ->bbFlags & BBF_BACKWARD_JUMP));
+    newBlock->CopyFlags(curr, (succ->GetFlagsRaw() & BBF_BACKWARD_JUMP));
 
     JITDUMP("Splitting edge from " FMT_BB " to " FMT_BB "; adding " FMT_BB "\n", curr->bbNum, succ->bbNum,
             newBlock->bbNum);

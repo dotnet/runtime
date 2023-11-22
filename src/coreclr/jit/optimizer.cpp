@@ -4696,7 +4696,7 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
 
     // We can always check topBB and botBB for any gc safe points and early out
 
-    if ((topBB->bbFlags | botBB->bbFlags) & BBF_GC_SAFE_POINT)
+    if ((topBB->GetFlagsRaw() | botBB->GetFlagsRaw()) & BBF_GC_SAFE_POINT)
     {
         return false;
     }

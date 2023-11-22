@@ -5011,7 +5011,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     if (block->KindIs(BBJ_CALLFINALLY))
     {
         BasicBlock* dupBlock = BasicBlock::bbNewBasicBlock(this, block->GetJumpKind(), block->GetJumpDest());
-        dupBlock->bbFlags    = block->bbFlags;
+        dupBlock->SetFlagsRaw(block->GetFlagsRaw());
         fgAddRefPred(dupBlock->GetJumpDest(), dupBlock);
         dupBlock->copyEHRegion(block);
         dupBlock->bbCatchTyp = block->bbCatchTyp;

@@ -255,7 +255,7 @@ void Compiler::fgComputeReachabilitySets()
                 for (BasicBlock* const predBlock : block->PredBlocks())
                 {
                     change |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
-                    predGcFlags &= predBlock->bbFlags;
+                    predGcFlags &= predBlock->GetFlagsRaw();
                 }
                 block->SetFlags(predGcFlags);
             }
@@ -1032,7 +1032,7 @@ void Compiler::fgComputeDoms()
     bbRoot.bbNum          = 0;
     bbRoot.bbIDom         = &bbRoot;
     bbRoot.bbPostorderNum = fgBBNumMax + 1;
-    bbRoot.bbFlags        = BBF_EMPTY;
+    bbRoot.SetFlagsRaw(BBF_EMPTY);
 
     FlowEdge flRoot(&bbRoot, nullptr);
 
