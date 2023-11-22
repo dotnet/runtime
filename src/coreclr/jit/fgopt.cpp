@@ -468,7 +468,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             // The successors may be unreachable after this change.
             changed |= block->NumSucc() > 0;
 
-            block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL);
+            block->RemoveFlag(BBF_REMOVED | BBF_INTERNAL);
             block->SetFlag(BBF_IMPORTED);
             block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
             block->bbSetRunRarely();
@@ -494,7 +494,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
                 block->SetJumpKind(BBJ_NONE);
             }
 
-            leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+            leaveBlk->RemoveFlag(BBF_DONT_REMOVE);
 
             for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
             {
@@ -1821,7 +1821,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                     BasicBlock* const newBlock = fgSplitBlockAtBeginning(fromBlock);
                     fromBlock->SetFlag(BBF_INTERNAL);
-                    newBlock->bbFlags &= ~BBF_DONT_REMOVE;
+                    newBlock->RemoveFlag(BBF_DONT_REMOVE);
                     addedBlocks++;
 
                     GenTree* const entryStateLcl = gtNewLclvNode(entryStateVar, TYP_INT);
@@ -2104,7 +2104,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         // it no longer is.
         //
         assert(!optLoopsRequirePreHeaders || !block->HasFlag(BBF_LOOP_PREHEADER));
-        block->bbFlags &= ~BBF_LOOP_PREHEADER;
+        block->RemoveFlag(BBF_LOOP_PREHEADER);
 
         // Retarget all the other edges incident on bNext. Do this
         // in two passes as we can't both walk and modify the pred list.
@@ -2296,7 +2296,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             {
                 assert(newWeight != BB_ZERO_WEIGHT);
                 block->bbWeight = newWeight;
-                block->bbFlags &= ~BBF_RUN_RARELY;
+                block->RemoveFlag(BBF_RUN_RARELY);
             }
         }
         // otherwise if either block has a zero weight we select the zero weight
@@ -2346,8 +2346,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     if (block->HasFlag(BBF_INTERNAL) && !bNext->HasFlag(BBF_INTERNAL))
     {
         // If 'block' is an internal block and 'bNext' isn't, then adjust the flags set on 'block'.
-        block->bbFlags &= ~BBF_INTERNAL; // Clear the BBF_INTERNAL flag
-        block->SetFlag(BBF_IMPORTED);  // Set the BBF_IMPORTED flag
+        block->RemoveFlag(BBF_INTERNAL); // Clear the BBF_INTERNAL flag
+        block->SetFlag(BBF_IMPORTED);    // Set the BBF_IMPORTED flag
     }
 
     /* Update the flags for block with those found in bNext */
@@ -2824,7 +2824,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 //
                 //  Clear the profile weight flag
                 //
-                bDest->bbFlags &= ~BBF_PROF_WEIGHT;
+                bDest->RemoveFlag(BBF_PROF_WEIGHT);
             }
             else
             {
@@ -4098,8 +4098,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // Only rely upon the profile weight when all three of these blocks
         // have either good profile weights or are rarelyRun
         //
-        if (bJump->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            bDest->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
+        if (bJump->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) && bDest->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
             bJump->Next()->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
         {
             allProfileWeightsAreValid = true;

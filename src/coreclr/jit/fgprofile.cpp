@@ -661,7 +661,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
                 incCount = m_comp->gtCloneExpr(incCount);
             }
             m_comp->fgNewStmtAtBeg(pred, incCount);
-            pred->bbFlags &= ~BBF_MARKED;
+            pred->RemoveFlag(BBF_MARKED);
             first = false;
         }
     }
@@ -4504,7 +4504,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     }
                     else
                     {
-                        bDst->bbFlags &= ~BBF_RUN_RARELY;
+                        bDst->RemoveFlag(BBF_RUN_RARELY);
                     }
                 }
             }

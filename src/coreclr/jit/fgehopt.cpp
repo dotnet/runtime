@@ -178,7 +178,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
                 nextBlock = leaveBlock->Next();
                 fgRemoveEhfSuccessor(lastBlock, leaveBlock);
-                leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
+                leaveBlock->RemoveFlag(BBF_KEEP_BBJ_ALWAYS);
                 fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                 // Cleanup the postTryFinallyBlock
@@ -198,7 +198,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         firstBlock->bbRefs = 0;
 
         // Remove the handler block.
-        firstBlock->bbFlags &= ~BBF_DONT_REMOVE;
+        firstBlock->RemoveFlag(BBF_DONT_REMOVE);
         constexpr bool unreachable = true;
         fgRemoveBlock(firstBlock, unreachable);
 
@@ -463,7 +463,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         // (2) Cleanup the leave so it can be deleted by subsequent opts
         assert(leave->HasFlag(BBF_KEEP_BBJ_ALWAYS));
-        leave->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
+        leave->RemoveFlag(BBF_KEEP_BBJ_ALWAYS);
 
         // (3) Cleanup the continuation
         fgCleanupContinuation(continuation);
@@ -564,7 +564,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         firstHandlerBlock->bbRefs -= 1;
 
         // (8) The old try entry no longer needs special protection.
-        firstTryBlock->bbFlags &= ~BBF_DONT_REMOVE;
+        firstTryBlock->RemoveFlag(BBF_DONT_REMOVE);
 
         // Another one bites the dust...
         emptyCount++;
@@ -1172,7 +1172,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     assert(leaveBlock->bbRefs == 0);
                     assert(leaveBlock->bbPreds == nullptr);
-                    leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
+                    leaveBlock->RemoveFlag(BBF_KEEP_BBJ_ALWAYS);
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                     // Make sure iteration isn't going off the deep end.
@@ -1509,7 +1509,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // The continuation may be a finalStep block.
     // It is now a normal block, so clear the special keep
     // always flag.
-    continuation->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
+    continuation->RemoveFlag(BBF_KEEP_BBJ_ALWAYS);
 
 #if !defined(FEATURE_EH_FUNCLETS)
     // Remove the GT_END_LFIN from the continuation,
@@ -1569,7 +1569,7 @@ void Compiler::fgClearAllFinallyTargetBits()
     // Walk all blocks, and reset the target bits.
     for (BasicBlock* const block : Blocks())
     {
-        block->bbFlags &= ~BBF_FINALLY_TARGET;
+        block->RemoveFlag(BBF_FINALLY_TARGET);
     }
 }
 
@@ -1618,7 +1618,7 @@ void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, Basic
     {
         assert(succ->HasFlag(BBF_FINALLY_TARGET));
         newSucc->SetFlag(BBF_FINALLY_TARGET);
-        succ->bbFlags &= ~BBF_FINALLY_TARGET;
+        succ->RemoveFlag(BBF_FINALLY_TARGET);
 
         for (BasicBlock* const pred : succ->PredBlocks())
         {

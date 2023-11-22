@@ -3802,7 +3802,7 @@ void Compiler::optCleanupCSEs()
     for (BasicBlock* const block : Blocks())
     {
         // And clear the "marked" flag on the block.
-        block->bbFlags &= ~BBF_MARKED;
+        block->RemoveFlag(BBF_MARKED);
 
         // Walk the statement trees in this basic block.
         for (Statement* const stmt : block->NonPhiStatements())

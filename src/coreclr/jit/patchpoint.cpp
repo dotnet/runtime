@@ -62,7 +62,7 @@ public:
 
                 // Clear the patchpoint flag.
                 //
-                block->bbFlags &= ~BBF_PATCHPOINT;
+                block->RemoveFlag(BBF_PATCHPOINT);
 
                 JITDUMP("Patchpoint: regular patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformBlock(block);
@@ -82,7 +82,7 @@ public:
 
                 // Clear the partial comp flag.
                 //
-                block->bbFlags &= ~BBF_PARTIAL_COMPILATION_PATCHPOINT;
+                block->RemoveFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT);
 
                 JITDUMP("Patchpoint: partial compilation patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformPartialCompilation(block);

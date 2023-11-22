@@ -291,8 +291,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                                        ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
                                          BBF_RETLESS_CALL))) == 0);
         top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-        bottom->SetFlag(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
-                                            BBF_RETLESS_CALL));
+        bottom->SetFlag(originalFlags &
+                        (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
         bottom->inheritWeight(top);
         poll->SetFlag(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT));
 
@@ -1266,7 +1266,7 @@ void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
         if (optReachWithoutCall(dstBB, srcBB))
         {
             dstBB->SetFlag(BBF_LOOP_CALL0);
-            dstBB->bbFlags &= ~BBF_LOOP_CALL1;
+            dstBB->RemoveFlag(BBF_LOOP_CALL1);
         }
         else
         {

@@ -441,8 +441,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     {
 #ifdef DEBUG
         // Make sure the transformation happens in debug, check, and release build.
-        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) &&
-               compCurBB->HasFlag(BBF_HAS_NULLCHECK));
+        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) && compCurBB->HasFlag(BBF_HAS_NULLCHECK));
         if (verbose)
         {
             printf("optEarlyProp Marking a null check for removal\n");

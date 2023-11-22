@@ -380,7 +380,7 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
         BasicBlock* leaveBlk = block->Next();
         noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
-        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+        leaveBlk->RemoveFlag(BBF_DONT_REMOVE);
 
         // leaveBlk is now unreachable, so scrub the pred lists.
         for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
@@ -4775,8 +4775,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->bbFlags = curr->bbFlags;
 
     // Remove flags that the new block can't have.
-    newBlock->bbFlags &= ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
-                           BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+    newBlock->RemoveFlag(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
+                         BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -4785,10 +4785,10 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // be careful about updating this flag appropriately. So, removing the GC safe bit is simply
     // conservative: some functions might end up being fully interruptible that could be partially
     // interruptible if we exercised more care here.
-    newBlock->bbFlags &= ~BBF_GC_SAFE_POINT;
+    newBlock->RemoveFlag(BBF_GC_SAFE_POINT);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    newBlock->bbFlags &= ~(BBF_FINALLY_TARGET);
+    newBlock->RemoveFlag(BBF_FINALLY_TARGET);
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
     // The new block has no code, so we leave bbCodeOffs/bbCodeOffsEnd set to BAD_IL_OFFSET. If a caller
@@ -4799,7 +4799,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     fgExtendEHRegionAfter(curr); // The new block is in the same EH region as the old block.
 
     // Remove flags from the old block that are no longer possible.
-    curr->bbFlags &= ~(BBF_HAS_JMP | BBF_RETLESS_CALL);
+    curr->RemoveFlag(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
     // Default to fallthru, and add the arc for that.
     curr->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
@@ -4890,7 +4890,8 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
 
     // We split a block, possibly, in the middle - we need to propagate some flags
     prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-    block->SetFlag(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
+    block->SetFlag(originalFlags &
+                   (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
 
     if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
     {
@@ -5232,8 +5233,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
         else if (bPrev->KindIs(BBJ_ALWAYS) && block->NextIs(bPrev->GetJumpDest()) &&
-                 !bPrev->HasFlag(BBF_KEEP_BBJ_ALWAYS) && !block->IsFirstColdBlock(this) &&
-                 !block->IsLastHotBlock(this))
+                 !bPrev->HasFlag(BBF_KEEP_BBJ_ALWAYS) && !block->IsFirstColdBlock(this) && !block->IsLastHotBlock(this))
         {
             // previous block is a BBJ_ALWAYS to the next block: change to BBJ_NONE.
             // Note that we don't do it if bPrev follows a BBJ_CALLFINALLY block (BBF_KEEP_BBJ_ALWAYS),
@@ -5262,7 +5262,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             BasicBlock* leaveBlk = block->Next();
             noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
-            leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+            leaveBlk->RemoveFlag(BBF_DONT_REMOVE);
 
             // The BBJ_ALWAYS normally has a reference count of 1 and a single predecessor. However,
             // it might not have a predecessor on ARM, where we don't create BBF_RETLESS_CALL BBJ_CALLFINALLY.

@@ -1497,7 +1497,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         // The newly split block is not special so doesn't need to be kept.
         //
-        bottomBlock->bbFlags &= ~BBF_DONT_REMOVE;
+        bottomBlock->RemoveFlag(BBF_DONT_REMOVE);
 
         // Set the try and handler index and fix the jump types of inlinee's blocks.
         //

@@ -4056,7 +4056,7 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
 
     // Didn't find any BBJ_CALLFINALLY / BBJ_ALWAYS that still points here, so clear the bit
 
-    block->bbFlags &= ~BBF_FINALLY_TARGET;
+    block->RemoveFlag(BBF_FINALLY_TARGET);
 }
 
 #endif // defined(TARGET_ARM)
@@ -4096,7 +4096,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
         assert((xtab->ebdHndBeg == block) || // The normal case
                (xtab->ebdHndBeg->NextIs(block) &&
                 xtab->ebdHndBeg->HasFlag(BBF_INTERNAL))); // After we've already inserted a header block, and we're
-                                                             // trying to decide how to split up the predecessor edges.
+                                                          // trying to decide how to split up the predecessor edges.
         if (predBlock->KindIs(BBJ_CALLFINALLY))
         {
             assert(predBlock->HasJumpTo(block));
@@ -4384,7 +4384,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             {
                 assert(block->HasFlag(BBF_FUNCLET_BEG));
                 bPrev->SetFlag(BBF_FUNCLET_BEG);
-                block->bbFlags &= ~BBF_FUNCLET_BEG;
+                block->RemoveFlag(BBF_FUNCLET_BEG);
             }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -4433,7 +4433,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             {
                 assert(block->HasFlag(BBF_FUNCLET_BEG));
                 bPrev->SetFlag(BBF_FUNCLET_BEG);
-                block->bbFlags &= ~BBF_FUNCLET_BEG;
+                block->RemoveFlag(BBF_FUNCLET_BEG);
             }
 #endif // FEATURE_EH_FUNCLETS
 

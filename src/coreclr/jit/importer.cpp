@@ -2457,7 +2457,7 @@ void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGA
 {
     block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
     block->SetFlag(BBF_FAILED_VERIFICATION);
-    block->bbFlags &= ~BBF_IMPORTED;
+    block->RemoveFlag(BBF_IMPORTED);
 
     impCurStmtOffsSet(block->bbCodeOffs);
 
@@ -5722,7 +5722,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 bool Compiler::impBlockIsInALoop(BasicBlock* block)
 {
     return (compIsForInlining() && impInlineInfo->iciBlock->HasFlag(BBF_BACKWARD_JUMP) ||
-           block->HasFlag(BBF_BACKWARD_JUMP));
+            block->HasFlag(BBF_BACKWARD_JUMP));
 }
 
 #ifdef _PREFAST_
@@ -11063,7 +11063,7 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
     }
 #endif
 
-    block->bbFlags &= ~BBF_IMPORTED;
+    block->RemoveFlag(BBF_IMPORTED);
 }
 
 void Compiler::impVerifyEHBlock(BasicBlock* block)
@@ -11633,7 +11633,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 
     // Various assertions require us to now to consider the block as not imported (at least for
     // the final time...)
-    block->bbFlags &= ~BBF_IMPORTED;
+    block->RemoveFlag(BBF_IMPORTED);
 
 #ifdef DEBUG
     if (verbose && 0)
@@ -11698,7 +11698,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 
     // Various assertions require us to now to consider the block as not imported (at least for
     // the final time...)
-    block->bbFlags &= ~BBF_IMPORTED;
+    block->RemoveFlag(BBF_IMPORTED);
 
 #ifdef DEBUG
     if (verbose && 0)

@@ -2054,7 +2054,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
             h2->bbNum, loop.lpEntry->bbNum);
 
     // 'h' is no longer the loop head; 'h2' is!
-    h->bbFlags &= ~BBF_LOOP_PREHEADER;
+    h->RemoveFlag(BBF_LOOP_PREHEADER);
     optUpdateLoopHead(loopInd, h, h2);
 
     // Make 'h' fall through to 'h2' (if it didn't already).
@@ -2137,7 +2137,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // and adding compensation for over-estimated instructions.
         if (newBlk->isLoopAlign())
         {
-            newBlk->bbFlags &= ~BBF_LOOP_ALIGN;
+            newBlk->RemoveFlag(BBF_LOOP_ALIGN);
             JITDUMP("Removing LOOP_ALIGN flag from cloned loop in " FMT_BB "\n", newBlk->bbNum);
         }
 #endif
@@ -2149,7 +2149,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
         {
             JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
-            newBlk->bbFlags &= ~BBF_LOOP_PREHEADER;
+            newBlk->RemoveFlag(BBF_LOOP_PREHEADER);
         }
 
         // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert

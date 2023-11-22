@@ -7466,7 +7466,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // Finish hooking things up.
     fgAddRefPred(block->GetJumpDest(), block);
-    block->bbFlags &= ~BBF_HAS_JMP;
+    block->RemoveFlag(BBF_HAS_JMP);
 }
 
 //------------------------------------------------------------------------------
@@ -13649,8 +13649,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             //   - a tail call dispatched via runtime help (IL stubs), in which
             //   case there will not be any tailcall and the block will be ending
             //   with BBJ_RETURN (as normal control flow)
-            noway_assert((call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) &&
-                          compCurBB->HasFlag(BBF_HAS_JMP)) ||
+            noway_assert((call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) && compCurBB->HasFlag(BBF_HAS_JMP)) ||
                          (call->IsTailCallViaJitHelper() && compCurBB->KindIs(BBJ_THROW)) ||
                          (!call->IsTailCall() && compCurBB->KindIs(BBJ_RETURN)));
         }
@@ -13998,11 +13997,11 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         if (genReturnBB != nullptr)
         {
-            genReturnBB->bbFlags &= ~BBF_CAN_ADD_PRED;
+            genReturnBB->RemoveFlag(BBF_CAN_ADD_PRED);
         }
         if (fgFirstBBisScratch())
         {
-            fgFirstBB->Next()->bbFlags &= ~BBF_CAN_ADD_PRED;
+            fgFirstBB->Next()->RemoveFlag(BBF_CAN_ADD_PRED);
         }
     }
 
@@ -14556,17 +14555,17 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
     BasicBlock* asgBlock    = fgNewBBafter(BBJ_NONE, block, true);
 
-    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
+    block->RemoveFlag(BBF_NEEDS_GCPOLL);
     remainderBlock->SetFlag(propagateFlags);
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
     if (!block->HasFlag(BBF_INTERNAL))
     {
-        helperBlock->bbFlags &= ~BBF_INTERNAL;
-        cond2Block->bbFlags &= ~BBF_INTERNAL;
-        cond1Block->bbFlags &= ~BBF_INTERNAL;
-        asgBlock->bbFlags &= ~BBF_INTERNAL;
+        helperBlock->RemoveFlag(BBF_INTERNAL);
+        cond2Block->RemoveFlag(BBF_INTERNAL);
+        cond1Block->RemoveFlag(BBF_INTERNAL);
+        asgBlock->RemoveFlag(BBF_INTERNAL);
         helperBlock->SetFlag(BBF_IMPORTED);
         cond2Block->SetFlag(BBF_IMPORTED);
         cond1Block->SetFlag(BBF_IMPORTED);
@@ -14760,13 +14759,13 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
     if (!block->HasFlag(BBF_INTERNAL))
     {
-        condBlock->bbFlags &= ~BBF_INTERNAL;
-        elseBlock->bbFlags &= ~BBF_INTERNAL;
+        condBlock->RemoveFlag(BBF_INTERNAL);
+        elseBlock->RemoveFlag(BBF_INTERNAL);
         condBlock->SetFlag(BBF_IMPORTED);
         elseBlock->SetFlag(BBF_IMPORTED);
     }
 
-    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
+    block->RemoveFlag(BBF_NEEDS_GCPOLL);
     remainderBlock->SetFlag(propagateFlagsToRemainder | propagateFlagsToAll);
 
     condBlock->inheritWeight(block);
@@ -14796,7 +14795,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         thenBlock->SetFlag(propagateFlagsToAll);
         if (!block->HasFlag(BBF_INTERNAL))
         {
-            thenBlock->bbFlags &= ~BBF_INTERNAL;
+            thenBlock->RemoveFlag(BBF_INTERNAL);
             thenBlock->SetFlag(BBF_IMPORTED);
         }
 

@@ -4515,8 +4515,8 @@ PhaseStatus Compiler::optUnrollLoops()
                 block->bbNatLoopNum = newLoopNum;
 
                 // Remove a few unnecessary flags (this list is not comprehensive).
-                block->bbFlags &= ~(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
-                                    BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
+                block->RemoveFlag(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
+                                  BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
 
                 JITDUMP("Scrubbed old loop body block " FMT_BB "\n", block->bbNum);
             }
@@ -5498,10 +5498,10 @@ void Compiler::optResetLoopInfo()
         if (!block->hasProfileWeight())
         {
             block->bbWeight = BB_UNITY_WEIGHT;
-            block->bbFlags &= ~BBF_RUN_RARELY;
+            block->RemoveFlag(BBF_RUN_RARELY);
         }
 
-        block->bbFlags &= ~BBF_LOOP_FLAGS;
+        block->RemoveFlag(BBF_LOOP_FLAGS);
         block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
     }
 }
@@ -8190,7 +8190,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // we clear any BBF_PROF_WEIGHT flag that we may have picked up from head.
     //
     preHead->inheritWeight(head);
-    preHead->bbFlags &= ~BBF_PROF_WEIGHT;
+    preHead->RemoveFlag(BBF_PROF_WEIGHT);
 
     // Copy the bbReach set from head for the new preHead block
     preHead->bbReach = BlockSetOps::MakeEmpty(this);
@@ -9277,7 +9277,7 @@ void Compiler::optRemoveRedundantZeroInits()
     for (BasicBlock* block = fgFirstBB; (block != nullptr) && block->HasFlag(BBF_MARKED);
          block             = block->GetUniqueSucc())
     {
-        block->bbFlags &= ~BBF_MARKED;
+        block->RemoveFlag(BBF_MARKED);
     }
 }
 
@@ -9633,7 +9633,7 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
     //
     if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
     {
-        loop.lpHead->bbFlags &= ~BBF_LOOP_PREHEADER;
+        loop.lpHead->RemoveFlag(BBF_LOOP_PREHEADER);
     }
 
     loop.lpFlags |= LPFLG_REMOVED;

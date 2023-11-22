@@ -1174,8 +1174,7 @@ class LiveVarAnalysis
             }
         }
 
-        if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() &&
-            block->HasFlag(BBF_RECURSIVE_TAILCALL))
+        if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() && block->HasFlag(BBF_RECURSIVE_TAILCALL))
         {
             // Early liveness happens between import and morph where we may
             // have identified a tailcall-to-loop candidate but not yet
