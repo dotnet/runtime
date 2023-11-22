@@ -3768,6 +3768,7 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     }
 
     assert(encoding_found);
+    ins = (instruction)((unsigned)ins - INS_sve_invalid);
 
     switch (index)
     {
