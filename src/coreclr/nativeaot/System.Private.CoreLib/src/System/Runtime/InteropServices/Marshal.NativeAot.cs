@@ -15,12 +15,9 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
-        internal static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        internal static int SizeOfHelper(RuntimeType t, bool throwIfNotMarshalable)
         {
             Debug.Assert(throwIfNotMarshalable);
-
-            if (t is not RuntimeType)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             if (t.IsPointer /* or IsFunctionPointer */)
                 return IntPtr.Size;

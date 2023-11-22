@@ -255,26 +255,23 @@ FCIMPLEND
 /************************************************************************
  * PInvoke.SizeOf(Class)
  */
-FCIMPL2(UINT32, MarshalNative::SizeOfClass, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL throwIfNotMarshalable)
+extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refClassUNSAFE));
+        QCALL_CHECK;
     }
     CONTRACTL_END;
 
-    UINT32 rv = 0;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF)refClassUNSAFE;
+    INT32 rv = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClass);
+    BEGIN_QCALL;
 
     // refClass is validated to be non-NULL RuntimeType by callers
-    TypeHandle th = refClass->GetType();
+    TypeHandle th = t.AsTypeHandle();
 
     if (throwIfNotMarshalable && (!th.IsBlittable() || th.IsArray()))
     {
-        GCX_PREEMP();
         // Determine if the type is marshalable
         if (!IsStructMarshalable(th))
         {
@@ -287,10 +284,10 @@ FCIMPL2(UINT32, MarshalNative::SizeOfClass, ReflectClassBaseObject* refClassUNSA
 
     // The type is marshalable or we don't care so return its size.
     rv = th.GetMethodTable()->GetNativeSize();
-    HELPER_METHOD_FRAME_END();
+
+    END_QCALL;
     return rv;
 }
-FCIMPLEND
 
 
 /************************************************************************

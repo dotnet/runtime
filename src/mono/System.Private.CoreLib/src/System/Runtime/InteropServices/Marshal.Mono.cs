@@ -92,9 +92,8 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int SizeOfHelper(QCallTypeHandle t, bool throwIfNotMarshalable);
 
-        private static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        private static int SizeOfHelper(RuntimeType rttype, bool throwIfNotMarshalable)
         {
-            RuntimeType rttype = (RuntimeType)t;
             return SizeOfHelper(new QCallTypeHandle(ref rttype), throwIfNotMarshalable);
         }
 

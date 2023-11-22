@@ -870,7 +870,7 @@ namespace System.StubHelpers
             // of pManagedHome is not marshalable. That's intentional because we
             // want to maintain the original behavior where this was indicated
             // by TypeLoadException during the actual field marshaling.
-            int allocSize = Marshal.SizeOfHelper(pManagedHome.GetType(), false);
+            int allocSize = Marshal.SizeOfHelper((RuntimeType)pManagedHome.GetType(), false);
             IntPtr pNativeHome = Marshal.AllocCoTaskMem(allocSize);
 
             // marshal the object as class with layout (UnmanagedType.LPStruct)

@@ -24,8 +24,11 @@ namespace System.Runtime.InteropServices
         internal static Guid IID_IUnknown = new Guid(0, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 #endif //FEATURE_COMINTEROP
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
+        internal static int SizeOfHelper(RuntimeType t, [MarshalAs(UnmanagedType.Bool)] bool throwIfNotMarshalable)
+            => SizeOfHelper(new QCallTypeHandle(ref t), throwIfNotMarshalable);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_SizeOfHelper")]
+        private static partial int SizeOfHelper(QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] bool throwIfNotMarshalable);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]

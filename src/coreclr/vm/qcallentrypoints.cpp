@@ -233,6 +233,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GCHandle_InternalFreeWithGCTransition)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
+    DllImportEntry(MarshalNative_SizeOfHelper)
     DllImportEntry(MarshalNative_GetHINSTANCE)
 #ifdef _DEBUG
     DllImportEntry(MarshalNative_GetIsInCooperativeGCModeFunctionPointer)

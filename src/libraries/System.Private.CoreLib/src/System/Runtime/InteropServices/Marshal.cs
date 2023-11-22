@@ -91,14 +91,14 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(structure);
 
-            return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
+            return SizeOfHelper((RuntimeType)structure.GetType(), throwIfNotMarshalable: true);
         }
 
         public static int SizeOf<T>(T structure)
         {
             ArgumentNullException.ThrowIfNull(structure);
 
-            return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
+            return SizeOfHelper((RuntimeType)structure.GetType(), throwIfNotMarshalable: true);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
@@ -107,21 +107,21 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(t);
 
-            if (t is not RuntimeType)
+            if (t is not RuntimeType rt)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
             }
-            if (t.IsGenericType)
+            if (rt.IsGenericType)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
-            return SizeOfHelper(t, throwIfNotMarshalable: true);
+            return SizeOfHelper(rt, throwIfNotMarshalable: true);
         }
 
         public static int SizeOf<T>()
         {
-            Type t = typeof(T);
+            RuntimeType t = (RuntimeType)typeof(T);
             if (t.IsGenericType)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(T));
