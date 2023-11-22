@@ -8115,6 +8115,56 @@ void emitter::emitIns_R_R_R(
             fmt = IF_SVE_AC_3A;
             break;
 
+        case INS_sve_sabd:
+        case INS_sve_smax:
+        case INS_sve_smin:
+        case INS_sve_uabd:
+        case INS_sve_umax:
+        case INS_sve_umin:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalable(opt));
+            fmt = IF_SVE_AD_3A;
+            break;
+
+        case INS_sve_mul:
+        case INS_sve_smulh:
+        case INS_sve_umulh:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalable(opt));
+            fmt = IF_SVE_AE_3A;
+            break;
+
+        case INS_sve_asr:
+        case INS_sve_asrr:
+        case INS_sve_lsl:
+        case INS_sve_lslr:
+        case INS_sve_lsr:
+        case INS_sve_lsrr:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalable(opt));
+            fmt = IF_SVE_AN_3A;
+            break;
+
+        //TODO in this PR....
+        // case IF_SVE_AO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
+        // case IF_SVE_CM_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
+        // case IF_SVE_CN_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
+        // case IF_SVE_CO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
+        // case IF_SVE_EP_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 integer halving add/subtract (predicated)
+        // case IF_SVE_ER_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 integer pairwise arithmetic
+        // case IF_SVE_ET_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
+        // case IF_SVE_EU_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left (predicated)
+        // case IF_SVE_GR_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
+        // case IF_SVE_HJ_3A:   // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
+        // case IF_SVE_HL_3A:   // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
+
+
         default:
             unreached();
             break;
