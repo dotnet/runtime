@@ -534,8 +534,6 @@ dfs_visit (InterpBasicBlock *bb, int *pos, InterpBasicBlock **bb_array)
 
 	bb_array [dfs_index] = bb;
 	bb->dfs_index = dfs_index;
-	if (dfs_index != 0)
-		g_assert (bb->in_count);
 	*pos = dfs_index + 1;
 	for (int i = 0; i < bb->out_count; i++) {
 		InterpBasicBlock *out_bb = bb->out_bb [i];
@@ -554,12 +552,26 @@ interp_compute_dfs_indexes (TransformData *td)
 	dfs_visit (td->entry_bb, &dfs_index, td->bblocks);
 	td->bblocks_count = dfs_index;
 
+	// Visit also bblocks reachable from eh handlers. These bblocks are not linked
+	// to the main cfg (where we do dominator computation, ssa transformation etc)
+	for (int i = 0; i < td->header->num_clauses; i++) {
+		MonoExceptionClause *c = td->header->clauses + i;
+		InterpBasicBlock *bb = td->offset_to_bb [c->handler_offset];
+		dfs_visit (bb, &dfs_index, td->bblocks);
+
+		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			bb = td->offset_to_bb [c->data.filter_offset];
+			dfs_visit (bb, &dfs_index, td->bblocks);
+		}
+	}
+	td->bblocks_count_eh = dfs_index;
+
 	if (td->verbose_level) {
 		InterpBasicBlock *bb;
 		g_print ("\nBASIC BLOCK GRAPH:\n");
 		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 			GString* bb_info = interp_get_bb_links (bb);
-			g_print ("BB%d: DFS(%d), %s\n", bb->index, bb->dfs_index, bb_info->str);
+			g_print ("BB%d: DFS%s(%d), %s\n", bb->index, (bb->dfs_index >= td->bblocks_count) ? "_EH" : "" , bb->dfs_index, bb_info->str);
 			g_string_free (bb_info, TRUE);
 		}
 	}
@@ -575,6 +587,18 @@ dom_intersect (InterpBasicBlock **idoms, InterpBasicBlock *bb1, InterpBasicBlock
 			bb1 = idoms [bb1->dfs_index];
 	}
 	return bb1;
+}
+
+static gboolean
+is_bblock_ssa_cfg (TransformData *td, InterpBasicBlock *bb)
+{
+	// FIXME Don't mark leave target as eh_block
+	//  g_assert (bb->dfs_index != -1);
+	if (bb->dfs_index == -1)
+		return FALSE;
+	if (bb->dfs_index < td->bblocks_count)
+		return TRUE;
+	return FALSE;
 }
 
 static void
@@ -594,7 +618,7 @@ interp_compute_dominators (TransformData *td)
 			int j;
 			for (j = 0; j < bb->in_count; j++) {
                                 InterpBasicBlock *in_bb = bb->in_bb [j];
-                                if (idoms [in_bb->dfs_index]) {
+                                if (is_bblock_ssa_cfg (td, in_bb) && idoms [in_bb->dfs_index]) {
                                         new_idom = in_bb;
                                         break;
                                 }
@@ -603,7 +627,7 @@ interp_compute_dominators (TransformData *td)
 			// intersect new_idom with dominators from the other predecessors
 			for (; j < bb->in_count; j++) {
 				InterpBasicBlock *in_bb = bb->in_bb [j];
-				if (idoms [in_bb->dfs_index])
+				if (is_bblock_ssa_cfg (td, in_bb) && idoms [in_bb->dfs_index])
 					new_idom = dom_intersect (idoms, in_bb, new_idom);
 			}
 
@@ -629,14 +653,14 @@ interp_compute_dominators (TransformData *td)
 		InterpBasicBlock *bb;
 		g_print ("\nBASIC BLOCK IDOMS:\n");
 		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
-			if (bb->dfs_index == -1)
+			if (!is_bblock_ssa_cfg (td, bb))
 				continue;
 			g_print ("IDOM (BB%d) = BB%d\n", bb->index, td->idoms [bb->dfs_index]->index);
 		}
 
 		g_print ("\nBASIC BLOCK DOMINATED:\n");
 		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
-			if (bb->dfs_index == -1)
+			if (!is_bblock_ssa_cfg (td, bb))
 				continue;
 			if (bb->dominated) {
 				g_print ("DOMINATED (BB%d)  = {", bb->index);
@@ -669,10 +693,13 @@ interp_compute_dominance_frontier (TransformData *td)
 		if (bb->in_count > 1) {
 			for (int j = 0; j < bb->in_count; ++j) {
 				InterpBasicBlock *p = bb->in_bb [j];
+				if (!is_bblock_ssa_cfg (td, p))
+					continue;
 
 				g_assert (p->dfs_index || p == td->entry_bb);
 
 				while (p != td->idoms [bb->dfs_index]) {
+					g_assert (bb->dfs_index < td->bblocks_count);
 					mono_bitset_set_fast (p->dfrontier, bb->dfs_index);
 					p = td->idoms [p->dfs_index];
 				}
@@ -684,7 +711,7 @@ interp_compute_dominance_frontier (TransformData *td)
 		InterpBasicBlock *bb;
 		g_print ("\nBASIC BLOCK DFRONTIERS:\n");
 		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
-			if (bb->dfs_index == -1)
+			if (!is_bblock_ssa_cfg (td, bb))
 				continue;
 			g_print ("DFRONTIER (BB%d) = {", bb->index);
 			int i;
@@ -759,6 +786,8 @@ interp_compute_global_vars (TransformData *td)
 
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		if (!is_bblock_ssa_cfg (td, bb))
+			continue;
 		InterpInst *ins;
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			interp_foreach_ins_svar (td, ins, bb, compute_global_var_cb);
@@ -887,6 +916,8 @@ interp_compute_pruned_ssa_liveness (TransformData *td)
 		g_print ("\nBASIC BLOCK LIVENESS:\n");
 		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 			unsigned int i;
+			if (!is_bblock_ssa_cfg (td, bb))
+				continue;
 			g_print ("BB%d\n\tLIVE_IN = {", bb->index);
 			mono_bitset_foreach_bit (bb->live_in_set, i, td->renamable_vars_size) {
 				g_print (" %d", td->renamable_vars [i].var_index);
@@ -950,9 +981,11 @@ insert_phi_nodes (TransformData *td)
 			InterpBasicBlock *bb = (InterpBasicBlock*)workset->data;
 			workset = workset->next;
 			g_free (old_head);
+			g_assert (is_bblock_ssa_cfg (td, bb));
 			int j;
 			mono_bitset_foreach_bit (bb->dfrontier, j, td->bb_count) {
 				InterpBasicBlock *bd = td->bblocks [j];
+				g_assert (is_bblock_ssa_cfg (td, bb));
 				if (!bb_has_phi (bd, var) && mono_bitset_test_fast (bd->live_in_set, i)) {
 					td->renamable_vars [i].ssa_fixed = TRUE;
 					bb_insert_phi (td, bd, var);
@@ -2307,7 +2340,7 @@ interp_cprop (TransformData *td)
 	// Traverse in dfs order. This guarantees that we always reach the definition first before the
 	// use of the var. Exception is only for phi nodes, where we don't care about the definition
 	// anyway.
-	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count; bb_dfs_index++) {
+	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count_eh; bb_dfs_index++) {
 		InterpBasicBlock *bb = td->bblocks [bb_dfs_index];
 
 		if (td->verbose_level) {
@@ -2870,7 +2903,7 @@ interp_super_instructions (TransformData *td)
 	interp_compute_native_offset_estimates (td);
 
 	// Add some actual super instructions
-	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count; bb_dfs_index++) {
+	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count_eh; bb_dfs_index++) {
 		InterpBasicBlock *bb = td->bblocks [bb_dfs_index];
 
 		// Set cbb since we do some instruction inserting below
