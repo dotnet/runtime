@@ -79,7 +79,17 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets a snapshot containing all the keys in the <see cref="MemoryCache"/>.
         /// </summary>
-        public ICollection<object> Keys => _coherentState._entries.Keys;
+        public IEnumerable<object> Keys
+        {
+            get
+            {
+                CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
+                foreach (KeyValuePair<object, CacheEntry> pairs in coherentState._entries)
+                {
+                    yield return pairs.Key;
+                }
+            }
+        }
 
         /// <summary>
         /// Internal accessor for Size for testing only.

@@ -18,31 +18,10 @@ namespace Microsoft.Extensions.Caching.Memory.Tests
                 cache.Set(i.ToString(), i);
             }
 
-            var keys = cache.Keys;
-
-            Assert.Equal(KeyCount, keys.Count);
             for (int i = 0; i < KeyCount; i++)
             {
-                Assert.Contains(i.ToString(), keys);
+                Assert.Contains(i.ToString(), cache.Keys);
             }
-        }
-
-        [Fact]
-        public void KeysReturnSnapshot()
-        {
-            MemoryCache cache = new(new MemoryCacheOptions());
-            for (int i = 0; i < KeyCount; i++)
-            {
-                cache.Set(i.ToString(), i);
-            }
-            var keys = cache.Keys;
-
-            Assert.Equal(KeyCount, keys.Count);
-
-            cache.Clear();
-
-            Assert.Equal(0, cache.Count);
-            Assert.Equal(KeyCount, keys.Count); // the snapshot remains unaffected
         }
 
         [Fact]
@@ -53,9 +32,8 @@ namespace Microsoft.Extensions.Caching.Memory.Tests
             {
                 cache.Set(i.ToString(), i);
             }
-            var keys = cache.Keys;
 
-            foreach(var key in keys)
+            foreach (object key in cache.Keys)
             {
                 cache.Remove(key);
             }
