@@ -3326,6 +3326,9 @@ interp_optimize_code (TransformData *td)
 	if (td->header->num_clauses)
 		return;
 
+	if (td->disable_ssa)
+		return;
+
 	// Give up on huge methods. We can easily work around this if decide to care.
 	if (td->bb_count > ((1 << INTERP_LIVENESS_BB_INDEX_BITS) - 1))
 		return;
