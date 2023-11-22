@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Per-thread cache of pinning handles.</summary>
         /// <remarks>Every handle in the cache is a GCHandleType.Pinned handle with a null target.</remarks>
         [ThreadStatic]
-        private static FixedCapacityIntPtrStack? s_pooledPinningHandles;
+        private static PerThreadHandleCache? s_pooledPinningHandles;
 
         /// <summary>Allocates a pinning handle whose target is the specified object.</summary>
         /// <param name="value">The object to which the allocated handle should reference.</param>
@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
         private static IntPtr AllocPinnedWithPooling(object? value)
         {
             // If we have a cache and we can take a handle from it, do so.
-            if (s_pooledPinningHandles is FixedCapacityIntPtrStack handles && handles.TryPop(out IntPtr handle))
+            if (s_pooledPinningHandles is PerThreadHandleCache handles && handles.TryPop(out IntPtr handle))
             {
                 // We successfully got a handle from the cache.  Update it to point to the new target.
                 InternalSet(GetHandleValue(handle), value);
@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices
             Debug.Assert(IsPinned(handle));
 
             // Try to store the handle into the cache rather than actually freeing it.
-            FixedCapacityIntPtrStack handles = s_pooledPinningHandles ??= new();
+            PerThreadHandleCache handles = s_pooledPinningHandles ??= new();
             if (handles.TryPush(handle))
             {
                 // Clear the handle's target so that it doesn't keep the object pinned.
@@ -98,14 +98,23 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        /// <summary>Provides a simple stack of IntPtrs with a fixed capacity.</summary>
+        /// <summary>Provides a simple stack for caching handles on a particular thread.</summary>
         /// <param name="capacity">The maximum number of items the stack can hold.</param>
-        private sealed class FixedCapacityIntPtrStack(int capacity = 8) // 8 == arbitrary limit that can be tuned over time
+        private sealed class PerThreadHandleCache(int capacity = 8) // 8 == arbitrary limit that can be tuned over time
         {
             /// <summary>Array of values.</summary>
             private readonly IntPtr[] _values = new IntPtr[capacity];
             /// <summary>Number of valid cached handles in <see cref="_values"/>.</summary>
             private int _count;
+
+            /// <summary>Release all handles cached on the thread when the thread goes away.</summary>
+            ~PerThreadHandleCache()
+            {
+                for (int i = 0; i < _count; i++)
+                {
+                    InternalFree(GetHandleValue(_values[i]));
+                }
+            }
 
             /// <summary>Tries to push a value onto the stack.</summary>
             /// <returns>true if the value was stored; otherwise, false.</returns>
