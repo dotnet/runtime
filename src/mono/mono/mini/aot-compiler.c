@@ -7311,6 +7311,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_field_info (acfg, patch_info->data.field, p, &p);
 		break;
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG:
 		break;
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
@@ -14594,6 +14595,10 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_GC_SAFE_POINT_FLAG;
+	add_preinit_slot (acfg, ji);
+
+	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG;
 	add_preinit_slot (acfg, ji);
 
 	if (!acfg->aot_opts.llvm_only) {

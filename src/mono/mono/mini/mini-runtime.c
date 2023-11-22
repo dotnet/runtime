@@ -1263,6 +1263,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE:
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG:
 		return hash;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		return (guint)(hash | ji->data.uindex);
@@ -1745,6 +1746,10 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 	}
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT: {
 		target = (gpointer) &mono_profiler_state.exception_clause_count;
+		break;
+	}
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG: {
+		target = (gpointer) &mono_llvmonly_do_unwind_flag;
 		break;
 	}
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
@@ -2877,7 +2882,7 @@ jit_compile_method_with_opt (JitCompileMethodWithOptCallbackData *params)
 
 	gboolean thrown = FALSE;
 #if defined(ENABLE_LLVM_RUNTIME) || defined(ENABLE_LLVM)
-	mono_llvm_cpp_catch_exception (jit_compile_method_with_opt_cb, params, &thrown);
+	mono_llvm_catch_exception (jit_compile_method_with_opt_cb, params, &thrown);
 #else
 	jit_compile_method_with_opt_cb (params);
 #endif
@@ -3511,7 +3516,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (callee) {
 			compiled_method = mono_jit_compile_method_jit_only (callee, error);
 			if (!compiled_method) {
-				g_assert (!is_ok (error));
+				if (!mono_opt_llvm_emulate_unwind)
+					g_assert (!is_ok (error));
 
 				if (mono_use_interpreter)
 					use_interp = TRUE;
