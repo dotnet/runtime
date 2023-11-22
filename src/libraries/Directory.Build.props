@@ -32,6 +32,8 @@
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
     <EnableDefaultItems>false</EnableDefaultItems>
+    <!-- Libraries packages use the incremental servicing infrastructure. -->
+    <PackageUseIncrementalServicingVersion>true</PackageUseIncrementalServicingVersion>
   </PropertyGroup>
 
   <!-- Language configuration -->
