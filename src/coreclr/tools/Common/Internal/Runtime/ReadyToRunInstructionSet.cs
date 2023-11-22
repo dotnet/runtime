@@ -54,7 +54,6 @@ namespace Internal.ReadyToRunConstants
         VectorT256=40,
         VectorT512=41,
         Rcpc2=42,
-        Sve=43,
 
     }
 }
