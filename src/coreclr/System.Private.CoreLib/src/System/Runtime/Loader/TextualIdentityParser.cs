@@ -158,6 +158,7 @@ namespace System.Runtime.Loader
         {
             vsb.EnsureCapacity(vsb.Length + data.Length * 2);
             HexConverter.EncodeToUtf16(data, vsb.RawChars[vsb.Length..], HexConverter.Casing.Lower);
+            vsb.Length += data.Length * 2;
         }
     }
 }

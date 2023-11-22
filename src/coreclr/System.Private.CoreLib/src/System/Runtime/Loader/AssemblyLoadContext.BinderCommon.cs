@@ -220,12 +220,13 @@ namespace System.Runtime.Loader
             {
                 hr = BindByName(applicationContext, assemblyName, false, false, excludeAppPaths, ref bindResult);
 
-                if (hr < 0) return hr;
+                if (hr < 0) goto Exit;
 
                 // Remember the post-bind version
                 kContextVersion = applicationContext.Version;
             }
 
+        Exit:
             tracer.TraceBindResult(bindResult);
 
             if (bindResult.Assembly != null)
@@ -408,7 +409,7 @@ namespace System.Runtime.Loader
                 {
                     bool isCompatible = IsCompatibleAssemblyVersion(assemblyName, bindResult.Assembly.AssemblyName);
                     hr = isCompatible ? HResults.S_OK : FUSION_E_APP_DOMAIN_LOCKED;
-                    bindResult.SetAttemptResult(hr, assembly, isInContext: false);
+                    bindResult.SetAttemptResult(hr, bindResult.Assembly);
 
                     // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
                     if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided) // hr == FUSION_E_APP_DOMAIN_LOCKED
@@ -957,89 +958,98 @@ namespace System.Runtime.Loader
             // Tracing happens outside the binder lock to avoid calling into managed code within the lock
             using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, ref hr);
 
-        Retry:
             bool mvidMismatch = false;
 
-            // Lock the application context
-            lock (applicationContext.ContextCriticalSection)
+            try
             {
-                // Attempt uncached bind and register stream if possible
-                // We skip version compatibility check - so assemblies with same simple name will be reported
-                // as a successful bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
-                hr = BindByName(applicationContext, assemblyName, true, true, excludeAppPaths, ref bindResult);
+            Retry:
+                mvidMismatch = false;
 
-                if (hr == HResults.E_FILENOTFOUND)
+                // Lock the application context
+                lock (applicationContext.ContextCriticalSection)
                 {
-                    // IF_FAIL_GO(CreateImageAssembly(pPEImage, &bindResult));
-                    try
-                    {
-                        bindResult.SetResult(new BinderAssembly(pPEImage, false));
-                    }
-                    catch (Exception ex)
-                    {
-                        return ex.HResult;
-                    }
-                }
-                else if (hr == HResults.S_OK)
-                {
-                    if (bindResult.Assembly != null)
-                    {
-                        // Attempt was made to load an assembly that has the same name as a previously loaded one. Since same name
-                        // does not imply the same assembly, we will need to check the MVID to confirm it is the same assembly as being
-                        // requested.
+                    // Attempt uncached bind and register stream if possible
+                    // We skip version compatibility check - so assemblies with same simple name will be reported
+                    // as a successful bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
+                    hr = BindByName(applicationContext, assemblyName, true, true, excludeAppPaths, ref bindResult);
 
-                        Guid incomingMVID;
-                        Guid boundMVID;
-
+                    if (hr == HResults.E_FILENOTFOUND)
+                    {
+                        // IF_FAIL_GO(CreateImageAssembly(pPEImage, &bindResult));
                         try
                         {
-                            PEImage_GetMVID(pPEImage, out incomingMVID);
-                            PEImage_GetMVID(bindResult.Assembly.PEImage, out boundMVID);
+                            bindResult.SetResult(new BinderAssembly(pPEImage, false));
                         }
                         catch (Exception ex)
                         {
                             return ex.HResult;
                         }
-
-                        mvidMismatch = incomingMVID != boundMVID;
-                        if (mvidMismatch)
+                    }
+                    else if (hr == HResults.S_OK)
+                    {
+                        if (bindResult.Assembly != null)
                         {
-                            // MVIDs do not match, so fail the load.
-                            return HResults.COR_E_FILELOAD;
-                        }
+                            // Attempt was made to load an assembly that has the same name as a previously loaded one. Since same name
+                            // does not imply the same assembly, we will need to check the MVID to confirm it is the same assembly as being
+                            // requested.
 
-                        // MVIDs match - request came in for the same assembly that was previously loaded.
-                        // Let it through...
+                            Guid incomingMVID;
+                            Guid boundMVID;
+
+                            // GetMVID can throw exception
+                            try
+                            {
+                                PEImage_GetMVID(pPEImage, out incomingMVID);
+                                PEImage_GetMVID(bindResult.Assembly.PEImage, out boundMVID);
+                            }
+                            catch (Exception ex)
+                            {
+                                return ex.HResult;
+                            }
+
+                            mvidMismatch = incomingMVID != boundMVID;
+                            if (mvidMismatch)
+                            {
+                                // MVIDs do not match, so fail the load.
+                                return HResults.COR_E_FILELOAD;
+                            }
+
+                            // MVIDs match - request came in for the same assembly that was previously loaded.
+                            // Let it through...
+                        }
+                    }
+
+                    // Remember the post-bind version of the context
+                    kContextVersion = applicationContext.Version;
+                }
+
+                if (bindResult.Assembly != null)
+                {
+                    // This has to happen outside the binder lock as it can cause new binds
+                    hr = RegisterAndGetHostChosen(applicationContext, kContextVersion, bindResult, out BindResult hostBindResult);
+                    if (hr < 0) return hr;
+
+                    if (hr == HResults.S_FALSE)
+                    {
+                        // tracer.TraceBindResult(bindResult);
+
+                        // Another bind interfered. We need to retry entire bind.
+                        // This by design loops as long as needed because by construction we eventually
+                        // will succeed or fail the bind.
+                        bindResult = default;
+                        goto Retry;
+                    }
+                    else if (hr == HResults.S_OK)
+                    {
+                        assembly = hostBindResult.Assembly;
                     }
                 }
-
-                // Remember the post-bind version of the context
-                kContextVersion = applicationContext.Version;
             }
-
-            if (bindResult.Assembly != null)
+            finally
             {
-                // This has to happen outside the binder lock as it can cause new binds
-                hr = RegisterAndGetHostChosen(applicationContext, kContextVersion, bindResult, out BindResult hostBindResult);
-                if (hr < 0) return hr;
-
-                if (hr == HResults.S_FALSE)
-                {
-                    // tracer.TraceBindResult(bindResult);
-
-                    // Another bind interfered. We need to retry entire bind.
-                    // This by design loops as long as needed because by construction we eventually
-                    // will succeed or fail the bind.
-                    bindResult = default;
-                    goto Retry;
-                }
-                else if (hr == HResults.S_OK)
-                {
-                    assembly = hostBindResult.Assembly;
-                }
+                tracer.TraceBindResult(bindResult, mvidMismatch);
             }
 
-            tracer.TraceBindResult(bindResult, mvidMismatch);
             return hr;
         }
 

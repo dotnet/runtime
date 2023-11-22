@@ -4284,10 +4284,10 @@
     <value>This operation is not available because the reflection support was disabled at compile time.</value>
   </data>
   <data name="EE_FileLoad_Error_Generic" xml:space="preserve">
-    <value>Could not load file or assembly {0}. {1}</value>
+    <value>Could not load file or assembly '{0}'. {1}</value>
   </data>
   <data name="Host_AssemblyResolver_AssemblyAlreadyLoadedInContext" xml:space="preserve">
-    <value>Assembly with same name is already loaded.</value>
+    <value>Assembly with same name is already loaded</value>
   </data>
   <data name="Host_AssemblyResolver_DynamicallyEmittedAssemblies_Unsupported" xml:space="preserve">
     <value>Dynamically emitted assemblies are unsupported during host-based resolution.</value>

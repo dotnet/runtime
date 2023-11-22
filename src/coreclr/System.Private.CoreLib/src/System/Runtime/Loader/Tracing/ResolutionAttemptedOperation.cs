@@ -72,12 +72,12 @@ namespace System.Runtime.Loader.Tracing
             if (_assemblyNameObject != null)
                 _assemblyName = _assemblyNameObject.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_VERSION | AssemblyNameIncludeFlags.INCLUDE_PUBLIC_KEY_TOKEN);
 
-            _assemblyLoadContextName = binder.ToString();
+            _assemblyLoadContextName = (binder == AssemblyLoadContext.Default ? "Default" : binder.ToString());
         }
 
         public void TraceBindResult(in BindResult bindResult, bool mvidMismatch = false)
         {
-            if (_tracingEnabled)
+            if (!_tracingEnabled)
                 return;
 
             string? errorMsg = null;
@@ -85,7 +85,7 @@ namespace System.Runtime.Loader.Tracing
             // Use the error message that would be reported in the file load exception
             if (mvidMismatch)
             {
-                errorMsg = SR.Format(SR.Host_AssemblyResolver_AssemblyAlreadyLoadedInContext, _assemblyName, SR.Host_AssemblyResolver_AssemblyAlreadyLoadedInContext);
+                errorMsg = SR.Format(SR.EE_FileLoad_Error_Generic, _assemblyName, SR.Host_AssemblyResolver_AssemblyAlreadyLoadedInContext);
             }
 
             BindResult.AttemptResult? inContextAttempt = bindResult.GetAttemptResult(isInContext: true);
@@ -101,7 +101,7 @@ namespace System.Runtime.Loader.Tracing
                     mvidMismatch && isLastAttempt ? errorMsg : null);
             }
 
-            if (appAssembliesAttempt is { }  appAssembliesAttemptValue)
+            if (appAssembliesAttempt is { } appAssembliesAttemptValue)
             {
                 TraceStage(Stage.ApplicationAssemblies,
                     (_hr < 0) && (appAssembliesAttemptValue.HResult >= 0) ? _hr : appAssembliesAttemptValue.HResult,
