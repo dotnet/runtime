@@ -39,7 +39,7 @@ public:
     static FCDECL2(VOID, DestroyStructure, LPVOID ptr, ReflectClassBaseObject* refClassUNSAFE);
 
     static FCDECL2(LPVOID, GCHandleInternalAlloc, Object *obj, int type);
-    static FCDECL1(VOID, GCHandleInternalFree, OBJECTHANDLE handle);
+    static FCDECL1(FC_BOOL_RET, GCHandleInternalFree, OBJECTHANDLE handle);
     static FCDECL1(LPVOID, GCHandleInternalGet, OBJECTHANDLE handle);
     static FCDECL2(VOID, GCHandleInternalSet, OBJECTHANDLE handle, Object *obj);
     static FCDECL3(Object*, GCHandleInternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj);
@@ -57,6 +57,9 @@ public:
 
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
+
+extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type);
+extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle);
 
 #ifdef _DEBUG
 using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);

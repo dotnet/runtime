@@ -229,6 +229,8 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_RefreshMemoryLimit)
     DllImportEntry(GCInterface_EnableNoGCRegionCallback)
     DllImportEntry(GCInterface_GetGenerationBudget)
+    DllImportEntry(GCHandle_InternalAllocWithGCTransition)
+    DllImportEntry(GCHandle_InternalFreeWithGCTransition)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
     DllImportEntry(MarshalNative_GetHINSTANCE)

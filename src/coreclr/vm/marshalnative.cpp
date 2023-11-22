@@ -450,18 +450,18 @@ FCIMPLEND
  * Support for the GCHandle class.
  */
 
-NOINLINE static OBJECTHANDLE FCDiagCreateHandle(OBJECTREF objRef, int type)
+extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type)
 {
+    QCALL_CONTRACT;
+
     OBJECTHANDLE hnd = NULL;
 
-    FC_INNER_PROLOG(MarshalNative::GCHandleInternalAlloc);
+    BEGIN_QCALL;
 
-    // Make the stack walkable for the profiler
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXACT_DEPTH | Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-    hnd = GetAppDomain()->CreateTypedHandle(objRef, static_cast<HandleType>(type));
-    HELPER_METHOD_FRAME_END_POLL();
+    GCX_COOP();
+    hnd = GetAppDomain()->CreateTypedHandle(obj.Get(), static_cast<HandleType>(type));
 
-    FC_INNER_EPILOG();
+    END_QCALL;
 
     return hnd;
 }
@@ -470,47 +470,39 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 {
     FCALL_CONTRACT;
 
-    OBJECTREF objRef(obj);
-
     assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_SIZEDREF);
 
     if (CORProfilerTrackGC())
-    {
-        FC_INNER_RETURN(LPVOID, (LPVOID) FCDiagCreateHandle(objRef, type));
-    }
+        return NULL;
 
-    OBJECTHANDLE hnd = GetAppDomain()->GetHandleStore()->CreateHandleOfType(OBJECTREFToObject(objRef), static_cast<HandleType>(type));
-    if (!hnd)
-    {
-        FCThrow(kOutOfMemoryException);
-    }
-    return (LPVOID) hnd;
+    return GetAppDomain()->GetHandleStore()->CreateHandleOfType(obj, static_cast<HandleType>(type));
 }
 FCIMPLEND
 
-NOINLINE static void FCDiagDestroyHandle(OBJECTHANDLE handle)
+extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle)
 {
-    FC_INNER_PROLOG(MarshalNative::GCHandleInternalFree);
+    QCALL_CONTRACT;
 
-    // Make the stack walkable for the profiler
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH | Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
+    _ASSERTE(handle != NULL);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
     DestroyTypedHandle(handle);
-    HELPER_METHOD_FRAME_END();
 
-    FC_INNER_EPILOG();
+    END_QCALL;
 }
 
 // Free a GC handle.
-FCIMPL1(VOID, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
+FCIMPL1(FC_BOOL_RET, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
     if (CORProfilerTrackGC())
-    {
-        FC_INNER_RETURN_VOID(FCDiagDestroyHandle(handle));
-    }
+        FC_RETURN_BOOL(false);
 
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
+    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
 
