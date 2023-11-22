@@ -989,16 +989,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoCl
 		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return NULL;
 	}
-
-	int swizzle = 1;
-	int align;
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	swizzle = mono_type_size (type, &align);
-#endif
-
-	int dummy;
-	*count = mono_type_size (field_type, &dummy)/mono_type_size (type, &align);
-	return (gpointer)mono_field_get_rva (field_handle, swizzle);
+	return mono_get_span_data_from_field (field_handle, field_type, type, count);
 }
 
 void

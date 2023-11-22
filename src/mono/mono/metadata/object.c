@@ -8178,6 +8178,20 @@ mono_runtime_run_startup_hooks (void)
 	mono_error_raise_exception_deprecated (error);
 }
 
+gpointer
+mono_get_span_data_from_field (MonoClassField *field_handle, MonoType *field_type, MonoType *target_type, gint32 *count)
+{
+	int swizzle = 1;
+	int align;
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	swizzle = mono_type_size (target_type, &align);
+#endif
+
+	int dummy;
+	*count = mono_type_size (field_type, &dummy)/mono_type_size (target_type, &align);
+	return (gpointer)mono_field_get_rva (field_handle, swizzle);
+}
+
 #if NEVER_DEFINED
 /*
  * The following section is purely to declare prototypes and
