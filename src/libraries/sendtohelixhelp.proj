@@ -299,13 +299,19 @@
       </HelixWorkItem>
     </ItemGroup>
 
-    <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(HelixWorkItem->Count())" />
-    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'android' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst'" Importance="High" Text="Done building Helix work items. Work item count: @(HelixWorkItem->Count())" />
+    <ItemGroup>
+      <HelixWorkItemOrXHarnessTest Include="@(HelixWorkItem)" />
+      <HelixWorkItemOrXHarnessTest Include="@(XHarnessAppBundleToTest)" />
+      <HelixWorkItemOrXHarnessTest Include="@(XHarnessApkToTest)" />
+    </ItemGroup>
+
+    <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(HelixWorkItemOrXHarnessTest->Count())" />
+    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(HelixWorkItemOrXHarnessTest->Count())" />
 
     <Message Text="HelixCorrelationPayload: %(HelixCorrelationPayload.Identity)" Condition="'$(HelixDryRun)' == 'true'" Importance="High" />
     <Message Text="HelixWorkItem: %(HelixWorkItem.Identity), Command: %(HelixWorkItem.Command), PreCommands: %(HelixWorkItem.PreCommands) with PayloadArchive: %(HelixWorkItem.PayloadArchive)" Condition="'$(HelixDryRun)' == 'true'" Importance="High" />
 
-    <Error Condition="@(XHarnessApkToTest->Count()) == 0 and @(XHarnessAppBundleToTest->Count()) == 0 and @(HelixWorkItem->Count()) == 0"
+    <Error Condition="@(HelixWorkItemOrXHarnessTest->Count()) == 0"
            Text="No helix work items, or APKs, or AppBundles found to test" />
 
     <Error Condition="'%(HelixWorkItem.Identity)' != '' and ('%(HelixWorkItem.PayloadArchive)' == '' or !Exists(%(HelixWorkItem.PayloadArchive)))"
