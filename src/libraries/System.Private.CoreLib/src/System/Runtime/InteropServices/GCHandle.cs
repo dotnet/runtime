@@ -41,15 +41,108 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.ArgumentException_NotIsomorphic, nameof(value));
             }
 
-            IntPtr handle = InternalAlloc(value, type);
+            _handle = type == GCHandleType.Pinned ?
+                AllocPinnedWithPooling(value) :
+                InternalAlloc(value, type);
+        }
 
-            if (type == GCHandleType.Pinned)
+        /// <summary>Per-thread cache of pinning handles.</summary>
+        /// <remarks>Every handle in the cache is a GCHandleType.Pinned handle with a null target.</remarks>
+        [ThreadStatic]
+        private static FixedCapacityIntPtrStack? s_pooledPinningHandles;
+
+        /// <summary>Allocates a pinning handle whose target is the specified object.</summary>
+        /// <param name="value">The object to which the allocated handle should reference.</param>
+        /// <returns>The allocated handle.</returns>
+        private static IntPtr AllocPinnedWithPooling(object? value)
+        {
+            // If we have a cache and we can take a handle from it, do so.
+            if (s_pooledPinningHandles is FixedCapacityIntPtrStack handles && handles.TryPop(out IntPtr handle))
             {
-                // Record if the handle is pinned.
-                handle = (IntPtr)((nint)handle | 1);
+                // We successfully got a handle from the cache.  Update it to point to the new target.
+                InternalSet(GetHandleValue(handle), value);
+            }
+            else
+            {
+                // We could not get a handle from the cache.  Allocate a new one.
+                handle = MarkPinned(InternalAlloc(value, GCHandleType.Pinned));
             }
 
-            _handle = handle;
+            Debug.Assert(IsPinned(handle));
+            return handle;
+        }
+
+        /// <summary>"Frees" a pinning handle, which might mean actually freeing it but might also mean storing it into a cache.</summary>
+        /// <param name="handle">The handle.</param>
+        private static void FreePinnedWithPooling(IntPtr handle)
+        {
+            Debug.Assert(IsPinned(handle));
+
+            // Try to store the handle into the cache rather than actually freeing it.
+            FixedCapacityIntPtrStack handles = s_pooledPinningHandles ??= new();
+            if (handles.TryPush(handle))
+            {
+                // Clear the handle's target so that it doesn't keep the object pinned.
+                // If this were a cache accessible to multiple threads, this clearing would
+                // need to be done before calling TryAdd, as if TryAdd returns true, another
+                // thread could take ownership of the handle the moment it hits the cache.
+                // But, as the cache is only accessible to this thread, we can do it here
+                // after the TryAdd and thus avoid the additional overhead in the case where
+                // the cache is full and we have to free.
+                InternalSet(GetHandleValue(handle), null);
+            }
+            else
+            {
+                // The cache was full: actually free the handle.
+                InternalFree(GetHandleValue(handle));
+            }
+        }
+
+        /// <summary>Provides a simple stack of IntPtrs with a fixed capacity.</summary>
+        /// <param name="capacity">The maximum number of items the stack can hold.</param>
+        private sealed class FixedCapacityIntPtrStack(int capacity = 8) // 8 == arbitrary limit that can be tuned over time
+        {
+            /// <summary>Array of values.</summary>
+            private readonly IntPtr[] _values = new IntPtr[capacity];
+            /// <summary>Number of valid cached handles in <see cref="_values"/>.</summary>
+            private int _count;
+
+            /// <summary>Tries to push a value onto the stack.</summary>
+            /// <returns>true if the value was stored; otherwise, false.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool TryPush(IntPtr value)
+            {
+                bool pushed = false;
+                IntPtr[] array = _values;
+                int i = _count;
+                if ((uint)i < (uint)array.Length)
+                {
+                    array[i] = value;
+                    _count++;
+                    pushed = true;
+                }
+
+                return pushed;
+            }
+
+            /// <summary>Tries to pop a value from the stack.</summary>
+            /// <param name="value">The popped value.</param>
+            /// <returns>true if a value could be popped; otherwise, false.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool TryPop(out IntPtr value)
+            {
+                IntPtr[] array = _values;
+                int i = _count - 1;
+                if ((uint)i < (uint)array.Length)
+                {
+                    value = array[i];
+                    _count = i;
+                    return true;
+                }
+
+                value = default;
+                return false;
+            }
         }
 
         // Used in the conversion functions below.
@@ -72,7 +165,14 @@ namespace System.Runtime.InteropServices
             // Free the handle if it hasn't already been freed.
             IntPtr handle = Interlocked.Exchange(ref _handle, IntPtr.Zero);
             ThrowIfInvalid(handle);
-            InternalFree(GetHandleValue(handle));
+            if (IsPinned(handle))
+            {
+                FreePinnedWithPooling(handle);
+            }
+            else
+            {
+                InternalFree(GetHandleValue(handle));
+            }
         }
 
         // Target property - allows getting / updating of the handle's referent.
@@ -178,6 +278,9 @@ namespace System.Runtime.InteropServices
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsPinned(IntPtr handle) => ((nint)handle & 1) != 0; // Check Pin flag
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static IntPtr MarkPinned(IntPtr handle) => handle | 1;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ThrowIfInvalid(IntPtr handle)
