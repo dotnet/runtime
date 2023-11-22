@@ -729,7 +729,7 @@
       <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
       <MonoAOTCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
     </ItemGroup>
-    <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux' or '$(AotHostOS)' == 'linux-musl'">
       <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
@@ -855,6 +855,11 @@
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(AotHostArchitecture)' == 'arm64' and '$(AotHostOS)' == 'linux'">
       <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
+    <!-- ARM Linux cross build options on CI -->
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux-musl'">
+      <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
     </ItemGroup>
 
     <PropertyGroup>
