@@ -834,4 +834,7 @@
   <data name="Cryptography_X509_PfxWithoutPassword_ProblemFound" xml:space="preserve">
     <value>There was a problem with the PKCS12 (PFX) without a supplied password. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</value>
   </data>
+  <data name="Cryptography_X509_ChainBuildingFailed" xml:space="preserve">
+    <value>An unknown chain building error occurred.</value>
+  </data>
 </root>

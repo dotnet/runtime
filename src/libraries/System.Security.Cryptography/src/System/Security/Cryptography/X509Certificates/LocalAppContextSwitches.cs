@@ -11,6 +11,8 @@ namespace System
 
         internal static long Pkcs12UnspecifiedPasswordIterationLimit { get; } = InitializePkcs12UnspecifiedPasswordIterationLimit();
 
+        internal static bool X509ChainBuildThrowOnInternalError { get; } = InitializeX509ChainBuildThrowOnInternalError();
+
         private static long InitializePkcs12UnspecifiedPasswordIterationLimit()
         {
             object? data = AppContext.GetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit");
@@ -28,6 +30,13 @@ namespace System
             {
                 return DefaultPkcs12UnspecifiedPasswordIterationLimit;
             }
+        }
+
+        private static bool InitializeX509ChainBuildThrowOnInternalError()
+        {
+            // n.b. the switch defaults to TRUE if it has not been explicitly set.
+            return AppContext.TryGetSwitch("System.Security.Cryptography.ThrowOnX509ChainBuildInternalError", out bool isEnabled)
+                ? isEnabled : true;
         }
     }
 }
