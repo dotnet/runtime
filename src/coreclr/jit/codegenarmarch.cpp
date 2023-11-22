@@ -5435,7 +5435,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = (block->HasFlag(BBF_HAS_JMP);
+    bool jmpEpilog = (block->HasFlag(BBF_HAS_JMP));
 
     GenTree* lastNode = block->lastNode();
 
