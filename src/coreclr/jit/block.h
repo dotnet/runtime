@@ -729,14 +729,19 @@ public:
         return !CheckFlag(flag, BBF_EMPTY);
     }
 
-    void SetFlags(const BasicBlockFlags flag)
+    void CopyFlags(const BasicBlockFlags flags, const BasicBlockFlags mask)
     {
-        bbFlags |= flag;
+        bbFlags |= (flags & mask);
     }
 
-    void RemoveFlags(const BasicBlockFlags flag)
+    void SetFlags(const BasicBlockFlags flags)
     {
-        bbFlags &= ~flag;
+        bbFlags |= flags;
+    }
+
+    void RemoveFlags(const BasicBlockFlags flags)
+    {
+        bbFlags &= ~flags;
     }
 
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);

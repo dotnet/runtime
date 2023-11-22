@@ -2372,7 +2372,7 @@ private:
 
                     // Update newNext's block flags
                     //
-                    newNext->SetFlags(block->bbFlags & BBF_COMPACT_UPD);
+                    newNext->CopyFlags(block->bbFlags, BBF_COMPACT_UPD);
                 }
             }
         }
@@ -4516,7 +4516,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
                 // Remove a few unnecessary flags (this list is not comprehensive).
                 block->RemoveFlags(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
-                                  BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
+                                   BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
 
                 JITDUMP("Scrubbed old loop body block " FMT_BB "\n", block->bbNum);
             }
@@ -5142,7 +5142,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     assert(foundCondTree);
 
     // Flag the block that received the copy as potentially having various constructs.
-    bNewCond->SetFlags(bTest->bbFlags & BBF_COPY_PROPAGATE);
+    bNewCond->CopyFlags(bTest->bbFlags, BBF_COPY_PROPAGATE);
 
     // Fix flow and profile
     //
@@ -6515,7 +6515,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     //
     optRecordSsaUses(hoist, preHead);
 
-    preHead->SetFlags(exprBb->bbFlags & BBF_COPY_PROPAGATE);
+    preHead->CopyFlags(exprBb->bbFlags, BBF_COPY_PROPAGATE);
 
     Statement* hoistStmt = gtNewStmt(hoist);
 

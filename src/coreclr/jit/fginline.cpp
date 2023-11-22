@@ -384,7 +384,7 @@ private:
             {
                 // IR may potentially contain nodes that requires mandatory BB flags to be set.
                 // Propagate those flags from the containing BB.
-                m_compiler->compCurBB->SetFlags(inlineeBB->bbFlags & BBF_COPY_PROPAGATE);
+                m_compiler->compCurBB->CopyFlags(inlineeBB->bbFlags, BBF_COPY_PROPAGATE);
             }
 
 #ifdef DEBUG
@@ -1458,7 +1458,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
             // Todo: we may want to exclude other flags here.
-            iciBlock->SetFlags(inlineeBlockFlags & ~BBF_RUN_RARELY);
+            iciBlock->CopyFlags(inlineeBlockFlags, ~BBF_RUN_RARELY);
 
 #ifdef DEBUG
             if (verbose)
@@ -1506,7 +1506,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert(!block->hasTryIndex());
             noway_assert(!block->hasHndIndex());
             block->copyEHRegion(iciBlock);
-            block->SetFlags(iciBlock->bbFlags & BBF_BACKWARD_JUMP);
+            block->CopyFlags(iciBlock->bbFlags, BBF_BACKWARD_JUMP);
 
             // Update block nums appropriately
             //

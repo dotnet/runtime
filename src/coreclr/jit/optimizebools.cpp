@@ -1011,7 +1011,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_b1->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(m_comp));
 
     // Fixup flags.
-    m_b2->SetFlags(m_b1->bbFlags & BBF_COPY_PROPAGATE);
+    m_b2->CopyFlags(m_b1->bbFlags, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
     if (m_comp->fgCanCompactBlocks(m_b1, m_b2))

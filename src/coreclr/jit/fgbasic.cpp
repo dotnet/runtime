@@ -4776,7 +4776,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 
     // Remove flags that the new block can't have.
     newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
-                         BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+                          BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -4890,8 +4890,8 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
 
     // We split a block, possibly, in the middle - we need to propagate some flags
     prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-    block->SetFlags(originalFlags &
-                   (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
+    block->CopyFlags(originalFlags,
+                     BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
 
     if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
     {
@@ -5042,7 +5042,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // The new block always jumps to 'succ'
         newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* jumpDest */ succ, /* isRunRarely */ curr->isRunRarely());
     }
-    newBlock->SetFlags(curr->bbFlags & succ->bbFlags & (BBF_BACKWARD_JUMP));
+    newBlock->CopyFlags(curr->bbFlags, (succ->bbFlags & BBF_BACKWARD_JUMP));
 
     JITDUMP("Splitting edge from " FMT_BB " to " FMT_BB "; adding " FMT_BB "\n", curr->bbNum, succ->bbNum,
             newBlock->bbNum);
@@ -5617,12 +5617,12 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                         if (bSrc->bbWeight < bDst->bbWeight)
                         {
                             jmpBlk->bbWeight = bSrc->bbWeight;
-                            jmpBlk->SetFlags(bSrc->bbFlags & BBF_RUN_RARELY);
+                            jmpBlk->CopyFlags(bSrc->bbFlags, BBF_RUN_RARELY);
                         }
                         else
                         {
                             jmpBlk->bbWeight = bDst->bbWeight;
-                            jmpBlk->SetFlags(bDst->bbFlags & BBF_RUN_RARELY);
+                            jmpBlk->CopyFlags(bDst->bbFlags, BBF_RUN_RARELY);
                         }
                     }
 
@@ -6276,7 +6276,7 @@ BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind,
 
     // We assume that if the block we are inserting before is in the cold region, then this new
     // block will also be in the cold region.
-    newBlk->SetFlags(block->bbFlags & BBF_COLD);
+    newBlk->CopyFlags(block->bbFlags, BBF_COLD);
 
     return newBlk;
 }
@@ -6318,7 +6318,7 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind,
 
     // If the new block is in the cold region (because the block we are inserting after
     // is in the cold region), mark it as such.
-    newBlk->SetFlags(block->bbFlags & BBF_COLD);
+    newBlk->CopyFlags(block->bbFlags, BBF_COLD);
 
     return newBlk;
 }

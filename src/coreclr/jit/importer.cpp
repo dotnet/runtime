@@ -4730,7 +4730,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                     step->SetJumpDest(step2);
                     fgAddRefPred(step2, step);
                     step2->inheritWeight(block);
-                    step2->SetFlags((block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED);
+                    step2->CopyFlags(block->bbFlags, BBF_RUN_RARELY);
+                    step2->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
                     if (verbose)
