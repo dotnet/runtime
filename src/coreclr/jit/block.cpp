@@ -276,6 +276,25 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------
+// CanRemoveJumpToNext: determine if jump to the next block can be omitted
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if the peephole optimization is enabled,
+//    and block is a BBJ_ALWAYS to the next block that we can fall through into
+//
+bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler)
+{
+    assert(KindIs(BBJ_ALWAYS));
+    const bool tryJumpOpt = compiler->opts.OptimizationEnabled() || ((bbFlags & BBF_NONE_QUIRK) != 0);
+    const bool skipJump   = tryJumpOpt && JumpsToNext() && !hasAlign() && ((bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
+                          !compiler->fgInDifferentRegions(this, bbJumpDest);
+    return skipJump;
+}
+
+//------------------------------------------------------------------------
 // checkPredListOrder: see if pred list is properly ordered
 //
 // Returns:

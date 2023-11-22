@@ -443,7 +443,6 @@ enum BasicBlockFlags : unsigned __int64
                                                           // and should be treated as if it falls through.
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
-    BBF_SKIP_JMP                       = MAKE_BBFLAG(45), // Block is a BBJ_ALWAYS to the next block, and its jump can be safely omitted.
 
     // The following are sets of flags.
 
@@ -612,6 +611,8 @@ public:
     bool IsLastHotBlock(Compiler* compiler) const;
 
     bool IsFirstColdBlock(Compiler* compiler) const;
+
+    bool CanRemoveJumpToNext(Compiler* compiler);
 
     unsigned GetJumpOffs() const
     {
