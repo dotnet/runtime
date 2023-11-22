@@ -331,7 +331,10 @@ DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer)
 #define INTSAFE_E_ARITHMETIC_OVERFLOW       ((HRESULT)0x80070216L)  // 0x216 = 534 = ERROR_ARITHMETIC_OVERFLOW
 #define ULONG_ERROR     (0xffffffffUL)
 #define WIN32_ALLOC_ALIGN (16 - 1)
+
+#ifndef UInt32x32To64
 #define UInt32x32To64(a, b) ((uint64_t)((ULONG)(a)) * (uint64_t)((ULONG)(b)))
+#endif // UInt32x32To64
 
 //
 // uint64_t -> ULONG conversion
