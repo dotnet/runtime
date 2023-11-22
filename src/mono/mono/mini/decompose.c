@@ -1337,7 +1337,10 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				}
 				case OP_VCALL:
 				case OP_VCALL_REG:
-				case OP_VCALL_MEMBASE: {
+				case OP_VCALL_MEMBASE:
+				case OP_XCALL:
+				case OP_XCALL_REG:
+				case OP_XCALL_MEMBASE: {
 					MonoCallInst *call = (MonoCallInst*)ins;
 					int size;
 
@@ -1360,6 +1363,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 							break;
 						case OP_VCALL_MEMBASE:
 							call2->inst.opcode = call->vret_in_reg_fp ? OP_FCALL_MEMBASE : OP_CALL_MEMBASE;
+							break;
+						default:
+							g_assert_not_reached ();
 							break;
 						}
 						call2->inst.dreg = alloc_preg (cfg);
@@ -1436,6 +1442,18 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 							break;
 						case OP_VCALL_MEMBASE:
 							ins->opcode = OP_VCALL2_MEMBASE;
+							break;
+						case OP_XCALL:
+							ins->opcode = OP_VCALL2;
+							break;
+						case OP_XCALL_REG:
+							ins->opcode = OP_VCALL2_REG;
+							break;
+						case OP_XCALL_MEMBASE:
+							ins->opcode = OP_VCALL2_MEMBASE;
+							break;
+						default:
+							g_assert_not_reached ();
 							break;
 						}
 						ins->dreg = -1;

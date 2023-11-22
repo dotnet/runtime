@@ -289,6 +289,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalCreate(ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
+        private static unsafe Array InternalCreateFromArrayType(Type arrayType, int rank, int* pLengths, int* pLowerBounds)
+        {
+            return InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
+        }
+
         private unsafe nint GetFlattenedIndex(int rawIndex)
         {
             // Checked by the caller

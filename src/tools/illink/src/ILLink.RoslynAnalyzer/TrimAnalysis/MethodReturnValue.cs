@@ -12,15 +12,15 @@ namespace ILLink.Shared.TrimAnalysis
 	internal partial record MethodReturnValue
 	{
 		public MethodReturnValue (IMethodSymbol methodSymbol)
+			: this (methodSymbol, FlowAnnotations.GetMethodReturnValueAnnotation (methodSymbol))
 		{
-			MethodSymbol = methodSymbol;
-			DynamicallyAccessedMemberTypes = FlowAnnotations.GetMethodReturnValueAnnotation (methodSymbol);
 		}
 
 		public MethodReturnValue (IMethodSymbol methodSymbol, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			MethodSymbol = methodSymbol;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+			StaticType = new (methodSymbol.ReturnType);
 		}
 
 		public readonly IMethodSymbol MethodSymbol;

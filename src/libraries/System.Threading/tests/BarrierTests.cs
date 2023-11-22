@@ -292,7 +292,6 @@ namespace System.Threading.Tests
         /// </summary>
         /// <returns>True if the test succeeded, false otherwise</returns>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void RunBarrierTest8_PostPhaseException()
         {
             bool shouldThrow = true;

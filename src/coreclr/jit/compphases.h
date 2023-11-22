@@ -49,6 +49,7 @@ CompPhaseNameMacro(PHASE_IMPBYREF_COPY_OMISSION,     "Identify candidates for im
 CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,             "Morph - ByRefs",                 false, -1, false)
 CompPhaseNameMacro(PHASE_PROMOTE_STRUCTS,            "Morph - Promote Structs",        false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_GLOBAL,               "Morph - Global",                 false, -1, false)
+CompPhaseNameMacro(PHASE_POST_MORPH,                 "Post-Morph",                     false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_END,                  "Morph - Finish",                 false, -1, true)
 CompPhaseNameMacro(PHASE_GS_COOKIE,                  "GS Cookie",                      false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS,       "Compute edge weights (1, false)",false, -1, false)

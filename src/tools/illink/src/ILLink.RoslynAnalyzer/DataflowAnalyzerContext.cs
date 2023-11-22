@@ -21,14 +21,20 @@ namespace ILLink.RoslynAnalyzer
 			return members;
 		}
 
+		public Compilation Compilation { get; }
+
 		public readonly bool EnableTrimAnalyzer { get; }
 
 		public readonly bool AnyAnalyzersEnabled => EnableTrimAnalyzer || _enabledAnalyzers.Count > 0;
 
-		DataFlowAnalyzerContext (Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> enabledAnalyzers, bool enableTrimAnalyzer)
+		DataFlowAnalyzerContext (
+			Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> enabledAnalyzers,
+			bool enableTrimAnalyzer,
+			Compilation compilation)
 		{
 			_enabledAnalyzers = enabledAnalyzers;
 			EnableTrimAnalyzer = enableTrimAnalyzer;
+			Compilation = compilation;
 		}
 
 		public static DataFlowAnalyzerContext Create (AnalyzerOptions options, Compilation compilation, ImmutableArray<RequiresAnalyzerBase> requiresAnalyzers)
@@ -42,7 +48,8 @@ namespace ILLink.RoslynAnalyzer
 			}
 			return new DataFlowAnalyzerContext (
 				enabledAnalyzers,
-				options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
+				options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer),
+				compilation);
 		}
 	}
 }

@@ -10,8 +10,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -153,6 +153,19 @@ namespace System
         internal static void ThrowNegateTwosCompOverflow()
         {
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
+        }
+
+        internal static unsafe ulong BigMul(uint a, uint b)
+        {
+#if TARGET_32BIT
+            if (Bmi2.IsSupported)
+            {
+                uint low;
+                uint high = Bmi2.MultiplyNoFlags(a, b, &low);
+                return ((ulong)high << 32) | low;
+            }
+#endif
+            return ((ulong)a) * b;
         }
 
         public static long BigMul(int a, int b)

@@ -1609,7 +1609,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		break;
 	case LLVMArgWasmVtypeAsScalar:
 		g_assert (cinfo->ret.esize);
-		ret_type = LLVMIntType (cinfo->ret.esize * 8);
+		ret_type = type_to_llvm_type (ctx, cinfo->ret.etype);
 		break;
 	default:
 		break;
@@ -1741,7 +1741,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			break;
 		case LLVMArgWasmVtypeAsScalar:
 			g_assert (ainfo->esize);
-			param_types [pindex ++] = LLVMIntType (ainfo->esize * 8);
+			param_types [pindex ++] = type_to_llvm_type (ctx, ainfo->etype);
 			break;
 		case LLVMArgGsharedvtFixed:
 		case LLVMArgGsharedvtFixedVtype:
@@ -2984,6 +2984,8 @@ emit_get_method (MonoLLVMModule *module)
 		table_elems = g_new0 (LLVMValueRef, table_len);
 		for (guint i = 0; i < table_len; ++i) {
 			m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GUINT_TO_POINTER (i));
+			// FIXME: Emit a different value than NULL for specialized methods so we can assert if
+			// we attempt to load them at runtime
 			if (m && !g_hash_table_lookup (module->no_method_table_lmethods, m))
 				table_elems [i] = build_ptr_cast (builder, m, rtype);
 			else
@@ -4019,7 +4021,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			/* The argument is received as a scalar */
 			ctx->addresses [reg] = build_alloca_address (ctx, t);
 
-			LLVMValueRef dest = convert (ctx, ctx->addresses [reg]->value, pointer_type (LLVMIntType (ainfo->esize * 8)));
+			LLVMValueRef dest = convert (ctx, ctx->addresses [reg]->value, pointer_type (LLVMTypeOf (arg)));
 			LLVMBuildStore (ctx->builder, arg, dest);
 			break;
 		}
@@ -4383,7 +4385,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	gboolean vretaddr;
 	LLVMTypeRef llvm_sig;
 	gpointer target;
-	gboolean is_virtual, calli;
+	gboolean is_virtual, calli, is_simd;
 	LLVMBuilderRef builder = *builder_ref;
 
 	/* If both imt and rgctx arg are required, only pass the imt arg, the rgctx trampoline will pass the rgctx */
@@ -4423,10 +4425,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	is_virtual = opcode == OP_VOIDCALL_MEMBASE || opcode == OP_CALL_MEMBASE
 			|| opcode == OP_VCALL_MEMBASE || opcode == OP_LCALL_MEMBASE
 			|| opcode == OP_FCALL_MEMBASE || opcode == OP_RCALL_MEMBASE
-			|| opcode == OP_TAILCALL_MEMBASE;
+			|| opcode == OP_XCALL_MEMBASE || opcode == OP_TAILCALL_MEMBASE;
 	calli = !call->fptr_is_patch && (opcode == OP_VOIDCALL_REG || opcode == OP_CALL_REG
 		|| opcode == OP_VCALL_REG || opcode == OP_LCALL_REG || opcode == OP_FCALL_REG
-		|| opcode == OP_RCALL_REG || opcode == OP_TAILCALL_REG);
+		|| opcode == OP_RCALL_REG || opcode == OP_XCALL_REG || opcode == OP_TAILCALL_REG);
+	is_simd = opcode == OP_XCALL || opcode == OP_XCALL_REG || opcode == OP_XCALL_MEMBASE;
 
 	/* FIXME: Avoid creating duplicate methods */
 
@@ -4681,7 +4684,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			break;
 		case LLVMArgWasmVtypeAsScalar: {
 			g_assert (addresses [reg]);
-			LLVMTypeRef etype = LLVMIntType (ainfo->esize * 8);
+			LLVMTypeRef etype = type_to_llvm_type (ctx, ainfo->etype);
 			args [pindex] = LLVMBuildLoad2 (ctx->builder, etype, convert (ctx, addresses [reg]->value, pointer_type (etype)), "");
 			break;
 		}
@@ -4774,7 +4777,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	}
 
 	MonoClass *retclass = mono_class_from_mono_type_internal (sig->ret);
-	gboolean is_simd = mini_class_is_simd (ctx->cfg, retclass);
 	gboolean should_promote_to_value = FALSE;
 	const char *load_name = NULL;
 	/*
@@ -7029,18 +7031,21 @@ MONO_RESTORE_WARNING
 		case OP_FCALL:
 		case OP_RCALL:
 		case OP_VCALL:
+		case OP_XCALL:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
 		case OP_FCALL_MEMBASE:
 		case OP_RCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
+		case OP_XCALL_MEMBASE:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
 		case OP_LCALL_REG:
 		case OP_FCALL_REG:
 		case OP_RCALL_REG:
-		case OP_VCALL_REG: {
+		case OP_VCALL_REG:
+		case OP_XCALL_REG: {
 			process_call (ctx, bb, &builder, ins);
 			break;
 		}
@@ -14361,6 +14366,22 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 			} else {
 				// FIXME: How can this happen ?
 				LLVMSetInitializer (cfg->llvm_dummy_info_var, mono_llvm_create_constant_data_array (NULL, 0));
+			}
+		}
+	}
+
+	if (module->llvm_only) {
+		for (guint i = 0; i < module->cfgs->len; ++i) {
+			MonoCompile *cfg = (MonoCompile *)g_ptr_array_index (module->cfgs, i);
+
+			/*
+			 * If the method is specializable, avoid putting it in the method table, so llvm can
+			 * run more optimizations on it or remove it altogether if all the callers inline it etc.
+			 */
+			if (mono_aot_can_specialize (cfg->method)) {
+				LLVMValueRef lmethod = g_hash_table_lookup (module->method_to_lmethod, cfg->method);
+				g_assert (lmethod);
+				g_hash_table_insert (module->no_method_table_lmethods, lmethod, lmethod);
 			}
 		}
 	}

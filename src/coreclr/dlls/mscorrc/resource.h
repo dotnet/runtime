@@ -123,6 +123,7 @@
 #define IDS_CLASSLOAD_BADFORMAT                 0x1774
 #define IDS_CLASSLOAD_BYREFARRAY                0x1775
 #define IDS_CLASSLOAD_BYREFLIKEARRAY            0x1776
+#define IDS_CLASSLOAD_VOIDARRAY                 0x1777
 #define IDS_CLASSLOAD_STATICVIRTUAL             0x1778
 #define IDS_CLASSLOAD_REDUCEACCESS              0x1779
 #define IDS_CLASSLOAD_BADPINVOKE                0x177a

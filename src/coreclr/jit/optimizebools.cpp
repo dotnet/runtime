@@ -1323,7 +1323,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     // Get rid of the second block
 
-    m_comp->fgUnlinkBlock(m_b2);
+    m_comp->fgUnlinkBlockForRemoval(m_b2);
     m_b2->bbFlags |= BBF_REMOVED;
     // If m_b2 was the last block of a try or handler, update the EH table.
     m_comp->ehUpdateForDeletedBlock(m_b2);
@@ -1331,7 +1331,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     if (optReturnBlock)
     {
         // Get rid of the third block
-        m_comp->fgUnlinkBlock(m_b3);
+        m_comp->fgUnlinkBlockForRemoval(m_b3);
         m_b3->bbFlags |= BBF_REMOVED;
         // If m_b3 was the last block of a try or handler, update the EH table.
         m_comp->ehUpdateForDeletedBlock(m_b3);

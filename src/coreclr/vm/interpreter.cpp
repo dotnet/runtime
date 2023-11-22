@@ -73,7 +73,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
 #if defined(_DEBUG)
         m_methName = ::eeGetMethodFullName(comp, methInfo->ftn, &clsName);
 #else
-        m_methName = comp->getMethodName(methInfo->ftn, &clsName);
+        m_methName = comp->getMethodNameFromMetadata(methInfo->ftn, &clsName, NULL, NULL);
 #endif
         char* myClsName = new char[strlen(clsName) + 1];
         strcpy(myClsName, clsName);
@@ -752,7 +752,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     if (!jmpCall)
     {
         const char* clsName;
-        const char* methName = comp->getMethodName(info->ftn, &clsName);
+        const char* methName = comp->getMethodNameFromMetadata(info->ftn, &clsName, NULL, NULL);
         if (   !s_InterpretMeths.contains(methName, clsName, info->args.pSig)
             || s_InterpretMethsExclude.contains(methName, clsName, info->args.pSig))
         {
@@ -911,6 +911,9 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // x8 through x15 are scratch registers on ARM64.
         IntReg x8 = IntReg(8);
         IntReg x9 = IntReg(9);
+
+#elif defined(HOST_RISCV64)
+#else
 #error unsupported platform
 #endif
     }
@@ -1073,7 +1076,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 argState.AddArg(vaSigCookieIndex);
             }
 
-#if defined(HOST_ARM) || defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_ARM) || defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_RISCV64)
             // Generics context comes before args on ARM.  Would be better if I factored this out as a call,
             // to avoid large swatches of duplicate code.
             if (hasGenericsContextArg)
@@ -1081,7 +1084,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 argPerm[genericsContextArgIndex] = physArgIndex; physArgIndex++;
                 argState.AddArg(genericsContextArgIndex);
             }
-#endif // HOST_ARM || HOST_AMD64 || HOST_ARM64
+#endif // HOST_ARM || HOST_AMD64 || HOST_ARM64 || HOST_RISCV64
 
             CORINFO_ARG_LIST_HANDLE argPtr = info->args.args;
             // Some arguments are have been passed in registers, some in memory. We must generate code that
@@ -1432,7 +1435,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         sl.X86EmitPopReg(kEBP);
         sl.X86EmitReturn(static_cast<WORD>(argState.callerArgStackSlots * sizeof(void*)));
 #elif defined(UNIX_AMD64_ABI)
-        bool hasTowRetSlots = info->args.retType == CORINFO_TYPE_VALUECLASS &&
+        bool hasTwoRetSlots = info->args.retType == CORINFO_TYPE_VALUECLASS &&
             getClassSize(info->args.retTypeClass) == 16;
 
         int fixedTwoSlotSize = 16;
@@ -1484,7 +1487,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         sl.X86EmitRegLoad(ARGUMENT_kREG1, reinterpret_cast<UINT_PTR>(interpMethInfo));
 
         sl.X86EmitCall(sl.NewExternalCodeLabel(interpretMethodFunc), 0);
-        if (hasTowRetSlots) {
+        if (hasTwoRetSlots) {
             sl.X86EmitEspOffset(0x8b, kRAX, 0);
             sl.X86EmitEspOffset(0x8b, kRDX, 8);
         }
@@ -1635,7 +1638,40 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_LOONGARCH64)
         assert(!"unimplemented on LOONGARCH yet");
 #elif defined(HOST_RISCV64)
-        assert(!"unimplemented on RISCV64 yet");
+        bool hasTwoRetSlots = info->args.retType == CORINFO_TYPE_VALUECLASS &&
+            getClassSize(info->args.retTypeClass) == 16;
+
+        UINT stackFrameSize  = argState.numFPRegArgSlots;
+
+        sl.EmitProlog(argState.numRegArgs, argState.numFPRegArgSlots, hasTwoRetSlots ? 2 * sizeof(void*) : 0);
+
+#if INTERP_ILSTUBS
+        if (pMD->IsILStub())
+        {
+            // Third argument is stubcontext, in t2 (METHODDESC_REGISTER).
+            sl.EmitMovReg(IntReg(12), IntReg(7));
+        }
+        else
+#endif
+        {
+            // For a non-ILStub method, push NULL as the third StubContext argument.
+            sl.EmitMovConstant(IntReg(12), 0);
+        }
+        // Second arg is pointer to the base of the ILargs arr -- i.e., the current stack value.
+        sl.EmitAddImm(IntReg(11), RegSp, sl.GetSavedRegArgsOffset());
+
+        // First arg is the pointer to the interpMethodInfo structure
+        sl.EmitMovConstant(IntReg(10), reinterpret_cast<UINT64>(interpMethInfo));
+
+        sl.EmitCallLabel(sl.NewExternalCodeLabel((LPVOID)interpretMethodFunc), FALSE, FALSE);
+        if (hasTwoRetSlots)
+        {
+            // TODO: handle return registers to use int or float registers
+            sl.EmitLoad(IntReg(10), RegSp, 0);
+            sl.EmitLoad(IntReg(11), RegSp, sizeof(void*));
+        }
+
+        sl.EmitEpilog();
 #else
 #error unsupported platform
 #endif
@@ -1766,7 +1802,7 @@ inline ARG_SLOT Interpreter::InterpretMethodBody(struct InterpreterMethodInfo* i
             CORINFO_METHOD_INFO methInfo;
 
             GCX_PREEMP();
-            jitInfo->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo);
+            jitInfo->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo, NULL);
             GenerateInterpreterStub(jitInfo, &methInfo, NULL, 0, &interpMethInfo, true);
         }
     }
@@ -2429,6 +2465,14 @@ EvalLoop:
                 {
                     //The Fixed Two slot return buffer address
                     memcpy(m_ilArgs-16, OpStackGet<void*>(0), sz);
+                }
+#elif defined(TARGET_RISCV64)
+                // Is it an struct contained in two slots
+                else if (m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS
+                        && sz == 16)
+                {
+                    //The Fixed Two slot return buffer address
+                    memcpy(m_ilArgs-32, OpStackGet<void*>(0), sz);
                 }
 #endif
                 else if (CorInfoTypeIsFloatingPoint(m_methInfo->m_returnType) &&
@@ -5978,7 +6022,7 @@ void Interpreter::NewObj()
 
     {
         GCX_PREEMP();
-        clsName = m_interpCeeInfo.getClassName(methTok.hClass);
+        clsName = m_interpCeeInfo.getClassNameFromMetadata(methTok.hClass, NULL);
     }
 #endif // _DEBUG
 
@@ -6084,7 +6128,7 @@ void Interpreter::NewObj()
             {
                 GCX_PREEMP();
                 bool sideEffect;
-                newHelper = m_interpCeeInfo.getNewHelper(methTok.hClass, m_methInfo->m_method, &sideEffect);
+                newHelper = m_interpCeeInfo.getNewHelper(methTok.hClass, &sideEffect);
             }
 
             MethodTable * pNewObjMT = GetMethodTableFromClsHnd(methTok.hClass);
@@ -9448,7 +9492,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             HFAReturnArgSlots = (HFAReturnArgSlots + sizeof(ARG_SLOT) - 1) / sizeof(ARG_SLOT);
         }
     }
-#elif defined(UNIX_AMD64_ABI)
+#elif defined(UNIX_AMD64_ABI) || defined(TARGET_RISCV64)
     unsigned HasTwoSlotBuf = sigInfo.retType == CORINFO_TYPE_VALUECLASS &&
         getClassSize(sigInfo.retTypeClass) == 16;
 #endif
@@ -9603,7 +9647,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     const char* methToCallName = NULL;
     {
         GCX_PREEMP();
-        methToCallName = m_interpCeeInfo.getMethodName(CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName);
+        methToCallName = m_interpCeeInfo.getMethodNameFromMetadata(CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName, NULL, NULL);
     }
 #if INTERP_TRACING
     if (strncmp(methToCallName, "get_", 4) == 0)
@@ -9689,7 +9733,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // This is the argument slot that will be used to hold the return value.
     // In UNIX_AMD64_ABI, return type may have need tow ARG_SLOTs.
     ARG_SLOT retVals[2] = {0, 0};
-#if !defined(HOST_ARM) && !defined(UNIX_AMD64_ABI)
+#if !defined(HOST_ARM) && !defined(UNIX_AMD64_ABI) && !defined(TARGET_RISCV64)
     _ASSERTE (NUMBER_RETURNVALUE_SLOTS == 1);
 #endif
 
@@ -9968,7 +10012,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_RISCV64)
             mdcs.CallTargetWorker(args, retVals, HasTwoSlotBuf ? 16: 8);
 #else
             mdcs.CallTargetWorker(args, retVals, 8);
@@ -10114,7 +10158,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                     {
                         OpStackSet<INT64>(m_curStackHt, GetSmallStructValue(&smallStructRetVal, retTypeSz));
                     }
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_RISCV64)
                     else if (HasTwoSlotBuf)
                     {
                         void* dst = LargeStructOperandStackPush(16);
@@ -10583,7 +10627,7 @@ bool Interpreter::IsDeadSimpleGetter(CEEInfo* info, MethodDesc* pMD, size_t* off
     CORINFO_METHOD_INFO methInfo;
     {
         GCX_PREEMP();
-        bool b = info->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo);
+        bool b = info->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo, NULL);
         if (!b) return false;
     }
 
@@ -11636,7 +11680,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     const char* returnType = NULL;
 
     const char* className;
-    const char* methodName = info->getMethodName(hnd, &className);
+    const char* methodName = info->getMethodNameFromMetadata(hnd, &className, NULL, NULL);
     if (clsName != NULL)
     {
         *clsName = className;
@@ -11958,7 +12002,7 @@ void Interpreter::PrintValue(InterpreterType it, BYTE* valAddr)
     case CORINFO_TYPE_VALUECLASS:
         {
             GCX_PREEMP();
-            fprintf(GetLogFile(), "<%s>: [", m_interpCeeInfo.getClassName(it.ToClassHandle()));
+            fprintf(GetLogFile(), "<%s>: [", m_interpCeeInfo.getClassNameFromMetadata(it.ToClassHandle(), NULL));
             unsigned sz = getClassSize(it.ToClassHandle());
             for (unsigned i = 0; i < sz; i++)
             {
