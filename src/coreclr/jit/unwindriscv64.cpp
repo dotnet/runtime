@@ -219,7 +219,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
             break;
 
         default:
-            NYI("CFI codes");
+            NYI("CFI codes"); // e.g. V-extension
     }
 
     return dwarfReg;
@@ -413,7 +413,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
 {
-    // replaced temporary by arm64 table
     static BYTE s_UnwindSize[256] = {
      // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 00-0F
@@ -428,9 +427,9 @@ unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 90-9F
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A0-AF
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // B0-BF
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // C0-CF
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, // D0-DF
-        4, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // E0-EF
+        2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 3, 2, 2, 2, // C0-CF
+        3, 2, 2, 2, 2, 2, 3, 2, 3, 2, 3, 2, 3, 2, 2, 1, // D0-DF
+        4, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // E0-EF
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1  // F0-FF
     };
 
@@ -1087,13 +1086,11 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
 
 void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
 {
-#if 0 // TODO COMMENTED OUT BECAUSE s_UnwindSize is not set
 #ifdef DEBUG
     // We're done adding codes. Check that we didn't accidentally create a bigger prolog.
     unsigned codeSize = GetCodeSizeFromUnwindCodes(true);
     assert(codeSize <= MAX_PROLOG_SIZE_BYTES);
 #endif // DEBUG
-#endif
 
     int prologBytes = Size();
 
