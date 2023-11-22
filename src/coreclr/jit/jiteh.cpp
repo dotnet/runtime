@@ -2039,7 +2039,7 @@ bool Compiler::fgNormalizeEHCase1()
             newHndStart->bbCodeOffs    = handlerStart->bbCodeOffs;
             newHndStart->bbCodeOffsEnd = newHndStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
             newHndStart->inheritWeight(handlerStart);
-            newHndStart->SetFlag(BBF_DONT_REMOVE | BBF_INTERNAL);
+            newHndStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL);
             modified = true;
 
 #ifdef DEBUG
@@ -2201,11 +2201,11 @@ bool Compiler::fgNormalizeEHCase2()
 
                         // Note that we don't need to clear any flags on the old try start, since it is still a 'try'
                         // start.
-                        newTryStart->SetFlag(BBF_DONT_REMOVE | BBF_INTERNAL);
+                        newTryStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL);
 
                         if (insertBeforeBlk->HasFlag(BBF_BACKWARD_JUMP_TARGET))
                         {
-                            newTryStart->SetFlag(BBF_BACKWARD_JUMP_TARGET);
+                            newTryStart->SetFlags(BBF_BACKWARD_JUMP_TARGET);
                         }
 
                         // Now we need to split any flow edges targeting the old try begin block between the old
@@ -2398,7 +2398,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
             filterBb->bbSetRunRarely();
-            filterBb->SetFlag(BBF_INTERNAL | BBF_DONT_REMOVE);
+            filterBb->SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
 
             handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
             eh->ebdHandlerType    = EH_HANDLER_FILTER;
@@ -2695,7 +2695,7 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
-                    newLast->SetFlag(BBF_INTERNAL);
+                    newLast->SetFlags(BBF_INTERNAL);
                     fgAddRefPred(newLast, insertAfterBlk);
 
                     // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
@@ -4043,7 +4043,7 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
 
     // Didn't find any BBJ_CALLFINALLY / BBJ_ALWAYS that still points here, so clear the bit
 
-    block->RemoveFlag(BBF_FINALLY_TARGET);
+    block->RemoveFlags(BBF_FINALLY_TARGET);
 }
 
 #endif // defined(TARGET_ARM)
@@ -4346,7 +4346,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             }
 #endif // DEBUG
             HBtab->ebdTryBeg = bPrev;
-            bPrev->SetFlag(BBF_DONT_REMOVE);
+            bPrev->SetFlags(BBF_DONT_REMOVE);
         }
 
         if (HBtab->ebdHndBeg == block)
@@ -4359,7 +4359,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // DEBUG
 
             HBtab->ebdHndBeg = bPrev;
-            bPrev->SetFlag(BBF_DONT_REMOVE);
+            bPrev->SetFlags(BBF_DONT_REMOVE);
 
             // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
             noway_assert(block->countOfInEdges() > 0);
@@ -4370,8 +4370,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             if (fgFuncletsCreated)
             {
                 assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlag(BBF_FUNCLET_BEG);
-                block->RemoveFlag(BBF_FUNCLET_BEG);
+                bPrev->SetFlags(BBF_FUNCLET_BEG);
+                block->RemoveFlags(BBF_FUNCLET_BEG);
             }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -4413,14 +4413,14 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             block->bbRefs--;
 
             HBtab->ebdFilter = bPrev;
-            bPrev->SetFlag(BBF_DONT_REMOVE);
+            bPrev->SetFlags(BBF_DONT_REMOVE);
 
 #if defined(FEATURE_EH_FUNCLETS)
             if (fgFuncletsCreated)
             {
                 assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlag(BBF_FUNCLET_BEG);
-                block->RemoveFlag(BBF_FUNCLET_BEG);
+                bPrev->SetFlags(BBF_FUNCLET_BEG);
+                block->RemoveFlags(BBF_FUNCLET_BEG);
             }
 #endif // FEATURE_EH_FUNCLETS
 

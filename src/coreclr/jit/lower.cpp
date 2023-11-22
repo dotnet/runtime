@@ -1135,7 +1135,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->KindIs(BBJ_SWITCH));
             currentBlock->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(comp));
-            currentBlock->RemoveFlag(BBF_DONT_REMOVE);
+            currentBlock->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
     }

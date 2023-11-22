@@ -898,7 +898,7 @@ void BasicBlock::MakeLIR(GenTree* firstNode, GenTree* lastNode)
 
     m_firstNode = firstNode;
     m_lastNode  = lastNode;
-    SetFlag(BBF_IS_LIR);
+    SetFlags(BBF_IS_LIR);
 }
 
 bool BasicBlock::IsLIR() const
@@ -1553,7 +1553,7 @@ BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler)
 
     if (compiler->compRationalIRForm)
     {
-        block->SetFlag(BBF_IS_LIR);
+        block->SetFlags(BBF_IS_LIR);
     }
 
     block->bbRefs   = 1;
@@ -1819,7 +1819,7 @@ void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason
     if (isLoopAlign())
     {
         compiler->loopAlignCandidates--;
-        RemoveFlag(BBF_LOOP_ALIGN);
+        RemoveFlags(BBF_LOOP_ALIGN);
         JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
 }

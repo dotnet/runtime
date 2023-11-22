@@ -1414,7 +1414,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
     //
     BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true, block);
-    lengthCheckBb->SetFlag(BBF_INTERNAL);
+    lengthCheckBb->SetFlags(BBF_INTERNAL);
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
     GenTree* bytesWrittenDefaultVal = gtNewStoreLclVarNode(resultLclNum, gtNewIconNode(-1));
@@ -1436,7 +1436,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // but that would be a bit less efficient since we would have to load the data from memory.
     //
     BasicBlock* fastpathBb = fgNewBBafter(BBJ_NONE, lengthCheckBb, true);
-    fastpathBb->SetFlag(BBF_INTERNAL);
+    fastpathBb->SetFlags(BBF_INTERNAL);
 
     // The widest type we can use for loads
     const var_types maxLoadType = roundDownMaxType(srcLenU8);

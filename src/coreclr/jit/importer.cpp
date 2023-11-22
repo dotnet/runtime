@@ -289,7 +289,7 @@ void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement
     /* The block should not already be marked as imported */
     assert(!block->HasFlag(BBF_IMPORTED));
 
-    block->SetFlag(BBF_IMPORTED);
+    block->SetFlags(BBF_IMPORTED);
 }
 
 void Compiler::impEndTreeList(BasicBlock* block)
@@ -300,7 +300,7 @@ void Compiler::impEndTreeList(BasicBlock* block)
         assert(!block->HasFlag(BBF_IMPORTED));
 
         // Empty block. Just mark it as imported.
-        block->SetFlag(BBF_IMPORTED);
+        block->SetFlags(BBF_IMPORTED);
     }
     else
     {
@@ -1983,7 +1983,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         // Create extra basic block for the spill
         //
         BasicBlock* newBlk = fgNewBBbefore(BBJ_NONE, hndBlk, /* extendRegion */ true);
-        newBlk->SetFlag(BBF_IMPORTED | BBF_DONT_REMOVE);
+        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
@@ -2455,8 +2455,8 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg))
 {
     block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
-    block->SetFlag(BBF_FAILED_VERIFICATION);
-    block->RemoveFlag(BBF_IMPORTED);
+    block->SetFlags(BBF_FAILED_VERIFICATION);
+    block->RemoveFlags(BBF_IMPORTED);
 
     impCurStmtOffsSet(block->bbCodeOffs);
 
@@ -3187,7 +3187,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // Remember that this basic block contains 'new' of an object,
         // and so does this method
         //
-        compCurBB->SetFlag(BBF_HAS_NEWOBJ);
+        compCurBB->SetFlags(BBF_HAS_NEWOBJ);
         optMethodFlags |= OMF_HAS_NEWOBJ;
 
         // Assign the boxed object to the box temp.
@@ -4390,7 +4390,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             step = fgNewBBafter(BBJ_ALWAYS, callBlock, true);
             /* The new block will inherit this block's weight */
             step->inheritWeight(block);
-            step->SetFlag(BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS);
+            step->SetFlags(BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS);
 
 #ifdef DEBUG
             if (verbose)
@@ -4449,7 +4449,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         // the handler region indicated by leaveTarget->bbHndIndex,
         // depending on which is the inner region.
         BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step, leaveTarget);
-        finalStep->SetFlag(BBF_KEEP_BBJ_ALWAYS);
+        finalStep->SetFlags(BBF_KEEP_BBJ_ALWAYS);
 
         // step's jump target shouldn't be set yet
         assert(!step->HasJump());
@@ -4611,13 +4611,13 @@ void Compiler::impImportLeave(BasicBlock* block)
                 {
                     assert(step->KindIs(BBJ_ALWAYS));
                     // Mark the target of a finally return
-                    step->GetJumpDest()->SetFlag(BBF_FINALLY_TARGET);
+                    step->GetJumpDest()->SetFlags(BBF_FINALLY_TARGET);
                 }
 #endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
                 exitBlock->inheritWeight(block);
-                exitBlock->SetFlag(BBF_IMPORTED);
+                exitBlock->SetFlags(BBF_IMPORTED);
 
                 /* This exit block is the new step */
                 step     = exitBlock;
@@ -4661,7 +4661,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 /* The new block will inherit this block's weight */
                 callBlock->inheritWeight(block);
-                callBlock->SetFlag(BBF_IMPORTED);
+                callBlock->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4730,7 +4730,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     step->SetJumpDest(step2);
                     fgAddRefPred(step2, step);
                     step2->inheritWeight(block);
-                    step2->SetFlag((block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED);
+                    step2->SetFlags((block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED);
 
 #ifdef DEBUG
                     if (verbose)
@@ -4775,13 +4775,13 @@ void Compiler::impImportLeave(BasicBlock* block)
                 {
                     assert(step->KindIs(BBJ_ALWAYS));
                     // Mark the target of a finally return
-                    step->GetJumpDest()->SetFlag(BBF_FINALLY_TARGET);
+                    step->GetJumpDest()->SetFlags(BBF_FINALLY_TARGET);
                 }
 #endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
                 callBlock->inheritWeight(block);
-                callBlock->SetFlag(BBF_IMPORTED);
+                callBlock->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4799,7 +4799,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             /* The new block will inherit this block's weight */
             step->inheritWeight(block);
-            step->SetFlag(BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS);
+            step->SetFlags(BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS);
 
 #ifdef DEBUG
             if (verbose)
@@ -4885,13 +4885,13 @@ void Compiler::impImportLeave(BasicBlock* block)
                 if (stepType == ST_FinallyReturn)
                 {
                     // Mark the target of a finally return
-                    step->GetJumpDest()->SetFlag(BBF_FINALLY_TARGET);
+                    step->GetJumpDest()->SetFlags(BBF_FINALLY_TARGET);
                 }
 #endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
                 catchStep->inheritWeight(block);
-                catchStep->SetFlag(BBF_IMPORTED);
+                catchStep->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4948,7 +4948,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         {
             assert(step->KindIs(BBJ_ALWAYS));
             // Mark the target of a finally return
-            step->GetJumpDest()->SetFlag(BBF_FINALLY_TARGET);
+            step->GetJumpDest()->SetFlags(BBF_FINALLY_TARGET);
         }
 #endif // defined(TARGET_ARM)
 
@@ -5023,7 +5023,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         //  e) as rarely run
         dupBlock->bbRefs   = 0;
         dupBlock->bbWeight = BB_ZERO_WEIGHT;
-        dupBlock->SetFlag(BBF_IMPORTED | BBF_INTERNAL | BBF_RUN_RARELY);
+        dupBlock->SetFlags(BBF_IMPORTED | BBF_INTERNAL | BBF_RUN_RARELY);
 
         // Insert the block right after the block which is getting reset so that BBJ_CALLFINALLY and BBJ_ALWAYS
         // will be next to each other.
@@ -5553,7 +5553,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             pInfo->ilOffset                             = ilOffset;
             pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
             call->gtHandleHistogramProfileCandidateInfo = pInfo;
-            compCurBB->SetFlag(BBF_HAS_HISTOGRAM_PROFILE);
+            compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
         }
         return call;
     }
@@ -5904,7 +5904,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                 block->bbNum, succBlock->bbNum);
 
                                         assert(!succBlock->hasHndIndex());
-                                        succBlock->SetFlag(BBF_PATCHPOINT);
+                                        succBlock->SetFlags(BBF_PATCHPOINT);
                                     }
                                 }
                             }
@@ -5913,7 +5913,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     else
                     {
                         assert(!block->hasHndIndex());
-                        block->SetFlag(BBF_PATCHPOINT);
+                        block->SetFlags(BBF_PATCHPOINT);
                     }
 
                     setMethodHasPatchpoint();
@@ -5970,7 +5970,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             if (addPatchpoint)
             {
-                block->SetFlag(BBF_PATCHPOINT);
+                block->SetFlags(BBF_PATCHPOINT);
                 setMethodHasPatchpoint();
             }
 
@@ -6004,7 +6004,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
         {
             JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
-            block->SetFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT);
+            block->SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
             setMethodHasPartialCompilationPatchpoint();
 
             // Block will no longer flow to any of its successors.
@@ -6796,7 +6796,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Mark the basic block as being a JUMP instead of RETURN */
 
-                block->SetFlag(BBF_HAS_JMP);
+                block->SetFlags(BBF_HAS_JMP);
 
                 /* Set this flag to make sure register arguments have a location assigned
                  * even if we don't use them inside the method */
@@ -6917,7 +6917,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->SetFlag(BBF_HAS_IDX_LEN);
+                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -7023,7 +7023,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Mark the block as containing an index expression
                 if (op3->OperIs(GT_LCL_VAR) && op1->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->SetFlag(BBF_HAS_IDX_LEN);
+                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -8484,7 +8484,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     newObjThisPtr = nullptr;
 
                     /* Remember that this basic block contains 'new' of an object */
-                    block->SetFlag(BBF_HAS_NEWOBJ);
+                    block->SetFlags(BBF_HAS_NEWOBJ);
                     optMethodFlags |= OMF_HAS_NEWOBJ;
                 }
                 else
@@ -8604,7 +8604,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         // Remember that this basic block contains 'new' of an object
-                        block->SetFlag(BBF_HAS_NEWOBJ);
+                        block->SetFlags(BBF_HAS_NEWOBJ);
                         optMethodFlags |= OMF_HAS_NEWOBJ;
 
                         // Append the assignment to the temp/local. Dont need to spill
@@ -11062,7 +11062,7 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
     }
 #endif
 
-    block->RemoveFlag(BBF_IMPORTED);
+    block->RemoveFlags(BBF_IMPORTED);
 }
 
 void Compiler::impVerifyEHBlock(BasicBlock* block)
@@ -11179,7 +11179,7 @@ void Compiler::impImportBlock(BasicBlock* block)
     if (block->HasFlag(BBF_INTERNAL))
     {
         JITDUMP("Marking BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", block->bbNum);
-        block->SetFlag(BBF_IMPORTED);
+        block->SetFlags(BBF_IMPORTED);
 
         for (BasicBlock* const succBlock : block->Succs())
         {
@@ -11632,7 +11632,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 
     // Various assertions require us to now to consider the block as not imported (at least for
     // the final time...)
-    block->RemoveFlag(BBF_IMPORTED);
+    block->RemoveFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
     if (verbose && 0)
@@ -11697,7 +11697,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 
     // Various assertions require us to now to consider the block as not imported (at least for
     // the final time...)
-    block->RemoveFlag(BBF_IMPORTED);
+    block->RemoveFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
     if (verbose && 0)
@@ -12088,7 +12088,7 @@ void Compiler::impImport()
     while (entryBlock->HasFlag(BBF_INTERNAL))
     {
         JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", entryBlock->bbNum);
-        entryBlock->SetFlag(BBF_IMPORTED);
+        entryBlock->SetFlags(BBF_IMPORTED);
 
         if (entryBlock->KindIs(BBJ_NONE))
         {

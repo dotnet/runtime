@@ -2328,7 +2328,7 @@ private:
             {
                 // If optimizing away the goto-next failed for some reason, mark it KEEP_BBJ_ALWAYS to
                 // prevent assertions from complaining about it.
-                block->SetFlag(BBF_KEEP_BBJ_ALWAYS);
+                block->SetFlags(BBF_KEEP_BBJ_ALWAYS);
             }
 
             // If block is newNext's only predecessor, move the IR from block to newNext,
@@ -2372,7 +2372,7 @@ private:
 
                     // Update newNext's block flags
                     //
-                    newNext->SetFlag(block->bbFlags & BBF_COMPACT_UPD);
+                    newNext->SetFlags(block->bbFlags & BBF_COMPACT_UPD);
                 }
             }
         }
@@ -2695,7 +2695,7 @@ void Compiler::optIdentifyLoopsForAlignment()
                     if (!top->isLoopAlign())
                     {
                         loopAlignCandidates++;
-                        top->SetFlag(BBF_LOOP_ALIGN);
+                        top->SetFlags(BBF_LOOP_ALIGN);
                         JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
                                 top->bbNum, top->getBBWeight(this));
                     }
@@ -4515,7 +4515,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 block->bbNatLoopNum = newLoopNum;
 
                 // Remove a few unnecessary flags (this list is not comprehensive).
-                block->RemoveFlag(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
+                block->RemoveFlags(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
                                   BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
 
                 JITDUMP("Scrubbed old loop body block " FMT_BB "\n", block->bbNum);
@@ -5142,7 +5142,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     assert(foundCondTree);
 
     // Flag the block that received the copy as potentially having various constructs.
-    bNewCond->SetFlag(bTest->bbFlags & BBF_COPY_PROPAGATE);
+    bNewCond->SetFlags(bTest->bbFlags & BBF_COPY_PROPAGATE);
 
     // Fix flow and profile
     //
@@ -5456,7 +5456,7 @@ void Compiler::optMarkLoopHeads()
                 if (BlockSetOps::IsMember(this, predBlock->bbReach, blockNum))
                 {
                     hasLoops = true;
-                    block->SetFlag(BBF_LOOP_HEAD);
+                    block->SetFlags(BBF_LOOP_HEAD);
                     INDEBUG(++loopHeadsMarked);
                     break; // No need to look at more `block` predecessors
                 }
@@ -5498,10 +5498,10 @@ void Compiler::optResetLoopInfo()
         if (!block->hasProfileWeight())
         {
             block->bbWeight = BB_UNITY_WEIGHT;
-            block->RemoveFlag(BBF_RUN_RARELY);
+            block->RemoveFlags(BBF_RUN_RARELY);
         }
 
-        block->RemoveFlag(BBF_LOOP_FLAGS);
+        block->RemoveFlags(BBF_LOOP_FLAGS);
         block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
     }
 }
@@ -6515,7 +6515,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     //
     optRecordSsaUses(hoist, preHead);
 
-    preHead->SetFlag(exprBb->bbFlags & BBF_COPY_PROPAGATE);
+    preHead->SetFlags(exprBb->bbFlags & BBF_COPY_PROPAGATE);
 
     Statement* hoistStmt = gtNewStmt(hoist);
 
@@ -8146,7 +8146,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 JITDUMP("   converting existing header " FMT_BB " into pre-header\n", head->bbNum);
                 loop.lpFlags |= LPFLG_HAS_PREHEAD;
                 assert(!head->HasFlag(BBF_LOOP_PREHEADER)); // It isn't already a loop pre-header
-                head->SetFlag(BBF_LOOP_PREHEADER);
+                head->SetFlags(BBF_LOOP_PREHEADER);
                 INDEBUG(loop.lpValidatePreHeader());
                 INDEBUG(fgDebugCheckLoopTable());
                 return false;
@@ -8180,7 +8180,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         preHead = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, entry);
     }
 
-    preHead->SetFlag(BBF_INTERNAL | BBF_LOOP_PREHEADER);
+    preHead->SetFlags(BBF_INTERNAL | BBF_LOOP_PREHEADER);
 
     // Must set IL code offset
     preHead->bbCodeOffs = top->bbCodeOffs;
@@ -8190,7 +8190,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // we clear any BBF_PROF_WEIGHT flag that we may have picked up from head.
     //
     preHead->inheritWeight(head);
-    preHead->RemoveFlag(BBF_PROF_WEIGHT);
+    preHead->RemoveFlags(BBF_PROF_WEIGHT);
 
     // Copy the bbReach set from head for the new preHead block
     preHead->bbReach = BlockSetOps::MakeEmpty(this);
@@ -8219,7 +8219,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         if ((head->bbWeight == BB_ZERO_WEIGHT) || (entry->bbWeight == BB_ZERO_WEIGHT))
         {
             preHead->bbWeight = BB_ZERO_WEIGHT;
-            preHead->SetFlag(BBF_RUN_RARELY);
+            preHead->SetFlags(BBF_RUN_RARELY);
         }
         else
         {
@@ -9075,7 +9075,7 @@ void Compiler::optRemoveRedundantZeroInits()
     for (BasicBlock* block = fgFirstBB; (block != nullptr) && !block->HasFlag(BBF_MARKED);
          block             = block->GetUniqueSucc())
     {
-        block->SetFlag(BBF_MARKED);
+        block->SetFlags(BBF_MARKED);
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;
@@ -9277,7 +9277,7 @@ void Compiler::optRemoveRedundantZeroInits()
     for (BasicBlock* block = fgFirstBB; (block != nullptr) && block->HasFlag(BBF_MARKED);
          block             = block->GetUniqueSucc())
     {
-        block->RemoveFlag(BBF_MARKED);
+        block->RemoveFlags(BBF_MARKED);
     }
 }
 
@@ -9633,7 +9633,7 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
     //
     if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
     {
-        loop.lpHead->RemoveFlag(BBF_LOOP_PREHEADER);
+        loop.lpHead->RemoveFlags(BBF_LOOP_PREHEADER);
     }
 
     loop.lpFlags |= LPFLG_REMOVED;

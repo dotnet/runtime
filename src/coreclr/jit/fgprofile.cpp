@@ -514,7 +514,7 @@ void BlockCountInstrumentor::RelocateProbes()
         if (criticalPreds.Height() > 0)
         {
             BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->SetFlag(BBF_IMPORTED | BBF_MARKED);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             SetModifiedFlow();
@@ -661,7 +661,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
                 incCount = m_comp->gtCloneExpr(incCount);
             }
             m_comp->fgNewStmtAtBeg(pred, incCount);
-            pred->RemoveFlag(BBF_MARKED);
+            pred->RemoveFlags(BBF_MARKED);
             first = false;
         }
     }
@@ -1557,7 +1557,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         }
 
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
-                        instrumentedBlock->SetFlag(BBF_IMPORTED);
+                        instrumentedBlock->SetFlags(BBF_IMPORTED);
                         edgesSplit++;
 
                         // Add in the relocated probe
@@ -1707,7 +1707,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         if (criticalPreds.Height() > 0)
         {
             BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->SetFlag(BBF_IMPORTED);
+            intermediary->SetFlags(BBF_IMPORTED);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
@@ -4500,11 +4500,11 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bDst->bbWeight = newWeight;
                     if (newWeight == BB_ZERO_WEIGHT)
                     {
-                        bDst->SetFlag(BBF_RUN_RARELY);
+                        bDst->SetFlags(BBF_RUN_RARELY);
                     }
                     else
                     {
-                        bDst->RemoveFlag(BBF_RUN_RARELY);
+                        bDst->RemoveFlags(BBF_RUN_RARELY);
                     }
                 }
             }

@@ -1609,7 +1609,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
             {
                 JITDUMP(FMT_BB " has %s memory phi; marking as BBF_NO_CSE_IN\n", jti.m_block->bbNum,
                         memoryKindNames[memoryKind]);
-                jti.m_block->SetFlag(BBF_NO_CSE_IN);
+                jti.m_block->SetFlags(BBF_NO_CSE_IN);
                 break;
             }
         }

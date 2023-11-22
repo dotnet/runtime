@@ -248,7 +248,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             fgSetStmtSeq(newStmt);
         }
 
-        block->SetFlag(BBF_GC_SAFE_POINT);
+        block->SetFlags(BBF_GC_SAFE_POINT);
 #ifdef DEBUG
         if (verbose)
         {
@@ -291,10 +291,10 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                                        ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
                                          BBF_RETLESS_CALL))) == 0);
         top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-        bottom->SetFlag(originalFlags &
+        bottom->SetFlags(originalFlags &
                         (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
         bottom->inheritWeight(top);
-        poll->SetFlag(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT));
+        poll->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT));
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
@@ -1265,12 +1265,12 @@ void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 
         if (optReachWithoutCall(dstBB, srcBB))
         {
-            dstBB->SetFlag(BBF_LOOP_CALL0);
-            dstBB->RemoveFlag(BBF_LOOP_CALL1);
+            dstBB->SetFlags(BBF_LOOP_CALL0);
+            dstBB->RemoveFlags(BBF_LOOP_CALL1);
         }
         else
         {
-            dstBB->SetFlag(BBF_LOOP_CALL1);
+            dstBB->SetFlags(BBF_LOOP_CALL1);
         }
     }
 }
@@ -1630,9 +1630,9 @@ void Compiler::fgAddSyncMethodEnterExit()
         // EH regions in fgFindBasicBlocks(). Note that the try has no enclosing
         // handler, and the fault has no enclosing try.
 
-        tryBegBB->SetFlag(BBF_DONT_REMOVE | BBF_IMPORTED);
+        tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
 
-        faultBB->SetFlag(BBF_DONT_REMOVE | BBF_IMPORTED);
+        faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
         faultBB->bbCatchTyp = BBCT_FAULT;
 
         tryBegBB->setTryIndex(XTnew);
@@ -2369,7 +2369,7 @@ private:
                 comp->genReturnBB = mergedReturnBlock;
                 // Downstream code expects the `genReturnBB` to always remain
                 // once created, so that it can redirect flow edges to it.
-                mergedReturnBlock->SetFlag(BBF_DONT_REMOVE);
+                mergedReturnBlock->SetFlags(BBF_DONT_REMOVE);
             }
         }
 
@@ -2494,7 +2494,7 @@ PhaseStatus Compiler::fgAddInternal()
     if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
         madeChanges |= fgEnsureFirstBBisScratch();
-        fgFirstBB->SetFlag(BBF_DONT_REMOVE);
+        fgFirstBB->SetFlags(BBF_DONT_REMOVE);
     }
 
     /*
@@ -2986,7 +2986,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     /* Allocate a new basic block */
 
     BasicBlock* newHead = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
-    newHead->SetFlag(BBF_INTERNAL);
+    newHead->SetFlags(BBF_INTERNAL);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
@@ -3435,7 +3435,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
     for (block = firstColdBlock; block != nullptr; block = block->Next())
     {
-        block->SetFlag(BBF_COLD);
+        block->SetFlags(BBF_COLD);
         block->unmarkLoopAlign(this DEBUG_ARG("Loop alignment disabled for cold blocks"));
     }
 
@@ -3689,7 +3689,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         //  Mark the block as added by the compiler and not removable by future flow
         // graph optimizations. Note that no bbJumpDest points to these blocks.
         //
-        newBlk->SetFlag(BBF_IMPORTED | BBF_DONT_REMOVE);
+        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
 
         // Figure out what code to insert
         //

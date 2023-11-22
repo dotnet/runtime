@@ -5376,7 +5376,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 }
 
                 madeChanges = true;
-                bbHavingAlign->SetFlag(BBF_HAS_ALIGN);
+                bbHavingAlign->SetFlags(BBF_HAS_ALIGN);
             }
 
             minBlockSoFar         = BB_MAX_WEIGHT;
@@ -10549,7 +10549,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     tree->SetIndirExceptionFlags(this);
-    block->SetFlag(BBF_HAS_NULLCHECK);
+    block->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
 

@@ -178,7 +178,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
                 nextBlock = leaveBlock->Next();
                 fgRemoveEhfSuccessor(lastBlock, leaveBlock);
-                leaveBlock->RemoveFlag(BBF_KEEP_BBJ_ALWAYS);
+                leaveBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
                 fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                 // Cleanup the postTryFinallyBlock
@@ -198,7 +198,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         firstBlock->bbRefs = 0;
 
         // Remove the handler block.
-        firstBlock->RemoveFlag(BBF_DONT_REMOVE);
+        firstBlock->RemoveFlags(BBF_DONT_REMOVE);
         constexpr bool unreachable = true;
         fgRemoveBlock(firstBlock, unreachable);
 
@@ -463,7 +463,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         // (2) Cleanup the leave so it can be deleted by subsequent opts
         assert(leave->HasFlag(BBF_KEEP_BBJ_ALWAYS));
-        leave->RemoveFlag(BBF_KEEP_BBJ_ALWAYS);
+        leave->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
 
         // (3) Cleanup the continuation
         fgCleanupContinuation(continuation);
@@ -564,7 +564,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         firstHandlerBlock->bbRefs -= 1;
 
         // (8) The old try entry no longer needs special protection.
-        firstTryBlock->RemoveFlag(BBF_DONT_REMOVE);
+        firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         // Another one bites the dust...
         emptyCount++;
@@ -1065,13 +1065,13 @@ PhaseStatus Compiler::fgCloneFinally()
             if (block == firstBlock)
             {
                 // Mark the block as the start of the cloned finally.
-                newBlock->SetFlag(BBF_CLONED_FINALLY_BEGIN);
+                newBlock->SetFlags(BBF_CLONED_FINALLY_BEGIN);
             }
 
             if (block == lastBlock)
             {
                 // Mark the block as the end of the cloned finally.
-                newBlock->SetFlag(BBF_CLONED_FINALLY_END);
+                newBlock->SetFlags(BBF_CLONED_FINALLY_END);
             }
 
             // Make sure clone block state hasn't munged the try region.
@@ -1172,7 +1172,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     assert(leaveBlock->bbRefs == 0);
                     assert(leaveBlock->bbPreds == nullptr);
-                    leaveBlock->RemoveFlag(BBF_KEEP_BBJ_ALWAYS);
+                    leaveBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                     // Make sure iteration isn't going off the deep end.
@@ -1509,7 +1509,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // The continuation may be a finalStep block.
     // It is now a normal block, so clear the special keep
     // always flag.
-    continuation->RemoveFlag(BBF_KEEP_BBJ_ALWAYS);
+    continuation->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
 
 #if !defined(FEATURE_EH_FUNCLETS)
     // Remove the GT_END_LFIN from the continuation,
@@ -1569,7 +1569,7 @@ void Compiler::fgClearAllFinallyTargetBits()
     // Walk all blocks, and reset the target bits.
     for (BasicBlock* const block : Blocks())
     {
-        block->RemoveFlag(BBF_FINALLY_TARGET);
+        block->RemoveFlags(BBF_FINALLY_TARGET);
     }
 }
 
@@ -1598,7 +1598,7 @@ void Compiler::fgAddFinallyTargetFlags()
                 JITDUMP("Found callfinally " FMT_BB "; setting finally target bit on " FMT_BB "\n", block->bbNum,
                         continuation->bbNum);
 
-                continuation->SetFlag(BBF_FINALLY_TARGET);
+                continuation->SetFlags(BBF_FINALLY_TARGET);
             }
         }
     }
@@ -1617,14 +1617,14 @@ void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, Basic
     if (pred->isBBCallAlwaysPairTail())
     {
         assert(succ->HasFlag(BBF_FINALLY_TARGET));
-        newSucc->SetFlag(BBF_FINALLY_TARGET);
-        succ->RemoveFlag(BBF_FINALLY_TARGET);
+        newSucc->SetFlags(BBF_FINALLY_TARGET);
+        succ->RemoveFlags(BBF_FINALLY_TARGET);
 
         for (BasicBlock* const pred : succ->PredBlocks())
         {
             if (pred->isBBCallAlwaysPairTail())
             {
-                succ->SetFlag(BBF_FINALLY_TARGET);
+                succ->SetFlags(BBF_FINALLY_TARGET);
                 break;
             }
         }

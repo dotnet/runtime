@@ -729,12 +729,12 @@ public:
         return !CheckFlag(flag, BBF_EMPTY);
     }
 
-    void SetFlag(const BasicBlockFlags flag)
+    void SetFlags(const BasicBlockFlags flag)
     {
         bbFlags |= flag;
     }
 
-    void RemoveFlag(const BasicBlockFlags flag)
+    void RemoveFlags(const BasicBlockFlags flag)
     {
         bbFlags &= ~flag;
     }
@@ -805,16 +805,16 @@ public:
     // and update the run rarely flag as appropriate.
     void setBBProfileWeight(weight_t weight)
     {
-        this->SetFlag(BBF_PROF_WEIGHT);
+        this->SetFlags(BBF_PROF_WEIGHT);
         this->bbWeight = weight;
 
         if (weight == BB_ZERO_WEIGHT)
         {
-            this->SetFlag(BBF_RUN_RARELY);
+            this->SetFlags(BBF_RUN_RARELY);
         }
         else
         {
-            this->RemoveFlag(BBF_RUN_RARELY);
+            this->RemoveFlags(BBF_RUN_RARELY);
         }
     }
 
@@ -838,20 +838,20 @@ public:
 
         if (bSrc->hasProfileWeight())
         {
-            this->SetFlag(BBF_PROF_WEIGHT);
+            this->SetFlags(BBF_PROF_WEIGHT);
         }
         else
         {
-            this->RemoveFlag(BBF_PROF_WEIGHT);
+            this->RemoveFlags(BBF_PROF_WEIGHT);
         }
 
         if (this->bbWeight == BB_ZERO_WEIGHT)
         {
-            this->SetFlag(BBF_RUN_RARELY);
+            this->SetFlags(BBF_RUN_RARELY);
         }
         else
         {
-            this->RemoveFlag(BBF_RUN_RARELY);
+            this->RemoveFlags(BBF_RUN_RARELY);
         }
     }
 
@@ -863,11 +863,11 @@ public:
 
         if (this->bbWeight == BB_ZERO_WEIGHT)
         {
-            this->SetFlag(BBF_RUN_RARELY);
+            this->SetFlags(BBF_RUN_RARELY);
         }
         else
         {
-            this->RemoveFlag(BBF_RUN_RARELY);
+            this->RemoveFlags(BBF_RUN_RARELY);
         }
     }
 
@@ -894,7 +894,7 @@ public:
     {
         if (this->bbWeight == BB_ZERO_WEIGHT)
         {
-            this->RemoveFlag(BBF_RUN_RARELY | BBF_PROF_WEIGHT);
+            this->RemoveFlags(BBF_RUN_RARELY | BBF_PROF_WEIGHT);
             this->bbWeight = 1;
         }
     }
@@ -1555,7 +1555,7 @@ public:
 
     void SetDominatedByExceptionalEntryFlag()
     {
-        SetFlag(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
+        SetFlags(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
     }
 
     bool IsDominatedByExceptionalEntryFlag() const

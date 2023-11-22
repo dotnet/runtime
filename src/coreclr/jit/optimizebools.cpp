@@ -1011,7 +1011,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_b1->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(m_comp));
 
     // Fixup flags.
-    m_b2->SetFlag(m_b1->bbFlags & BBF_COPY_PROPAGATE);
+    m_b2->SetFlags(m_b1->bbFlags & BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
     if (m_comp->fgCanCompactBlocks(m_b1, m_b2))
@@ -1324,7 +1324,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     // Get rid of the second block
 
     m_comp->fgUnlinkBlockForRemoval(m_b2);
-    m_b2->SetFlag(BBF_REMOVED);
+    m_b2->SetFlags(BBF_REMOVED);
     // If m_b2 was the last block of a try or handler, update the EH table.
     m_comp->ehUpdateForDeletedBlock(m_b2);
 
@@ -1332,7 +1332,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Get rid of the third block
         m_comp->fgUnlinkBlockForRemoval(m_b3);
-        m_b3->SetFlag(BBF_REMOVED);
+        m_b3->SetFlags(BBF_REMOVED);
         // If m_b3 was the last block of a try or handler, update the EH table.
         m_comp->ehUpdateForDeletedBlock(m_b3);
     }

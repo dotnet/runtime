@@ -62,7 +62,7 @@ public:
 
                 // Clear the patchpoint flag.
                 //
-                block->RemoveFlag(BBF_PATCHPOINT);
+                block->RemoveFlags(BBF_PATCHPOINT);
 
                 JITDUMP("Patchpoint: regular patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformBlock(block);
@@ -82,7 +82,7 @@ public:
 
                 // Clear the partial comp flag.
                 //
-                block->RemoveFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT);
+                block->RemoveFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
 
                 JITDUMP("Patchpoint: partial compilation patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformPartialCompilation(block);
@@ -108,7 +108,7 @@ private:
     BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
     {
         BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
-        block->SetFlag(BBF_IMPORTED);
+        block->SetFlags(BBF_IMPORTED);
         return block;
     }
 
@@ -147,9 +147,9 @@ private:
 
         // Update flow and flags
         block->SetJumpKindAndTarget(BBJ_COND, remainderBlock DEBUG_ARG(compiler));
-        block->SetFlag(BBF_INTERNAL);
+        block->SetFlags(BBF_INTERNAL);
 
-        helperBlock->SetFlag(BBF_BACKWARD_JUMP);
+        helperBlock->SetFlags(BBF_BACKWARD_JUMP);
 
         compiler->fgAddRefPred(helperBlock, block);
         compiler->fgAddRefPred(remainderBlock, helperBlock);

@@ -384,7 +384,7 @@ private:
             {
                 // IR may potentially contain nodes that requires mandatory BB flags to be set.
                 // Propagate those flags from the containing BB.
-                m_compiler->compCurBB->SetFlag(inlineeBB->bbFlags & BBF_COPY_PROPAGATE);
+                m_compiler->compCurBB->SetFlags(inlineeBB->bbFlags & BBF_COPY_PROPAGATE);
             }
 
 #ifdef DEBUG
@@ -1458,7 +1458,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
             // Todo: we may want to exclude other flags here.
-            iciBlock->SetFlag(inlineeBlockFlags & ~BBF_RUN_RARELY);
+            iciBlock->SetFlags(inlineeBlockFlags & ~BBF_RUN_RARELY);
 
 #ifdef DEBUG
             if (verbose)
@@ -1497,7 +1497,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         // The newly split block is not special so doesn't need to be kept.
         //
-        bottomBlock->RemoveFlag(BBF_DONT_REMOVE);
+        bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         // Set the try and handler index and fix the jump types of inlinee's blocks.
         //
@@ -1506,7 +1506,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert(!block->hasTryIndex());
             noway_assert(!block->hasHndIndex());
             block->copyEHRegion(iciBlock);
-            block->SetFlag(iciBlock->bbFlags & BBF_BACKWARD_JUMP);
+            block->SetFlags(iciBlock->bbFlags & BBF_BACKWARD_JUMP);
 
             // Update block nums appropriately
             //
@@ -1523,7 +1523,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             {
                 block->bbCodeOffs    = 0; // TODO: why not BAD_IL_OFFSET?
                 block->bbCodeOffsEnd = 0;
-                block->SetFlag(BBF_INTERNAL);
+                block->SetFlags(BBF_INTERNAL);
             }
 
             if (block->KindIs(BBJ_RETURN))
