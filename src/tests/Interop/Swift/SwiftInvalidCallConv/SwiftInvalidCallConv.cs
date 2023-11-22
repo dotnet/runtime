@@ -32,12 +32,7 @@ public class InvalidCallingConvTests
     {
         SwiftSelf self = new SwiftSelf(IntPtr.Zero);
 
-        try
-        {
-            FuncWithTwoSelfParameters(self, self);
-            Assert.Fail("FuncWithTwoSelfParameters should have thrown InvalidProgramException. Invalid due to multiple SwiftSelf arguments.");
-        }
-        catch (InvalidProgramException e) { }
+        Assert.Throws<InvalidProgramException>(() => FuncWithTwoSelfParameters(self, self));
     }
 
     [Fact]
