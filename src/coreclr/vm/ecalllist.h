@@ -45,7 +45,7 @@
 //
 
 FCFuncStart(gDependentHandleFuncs)
-    FCFuncElement("InternalInitialize",            DependentHandle::InternalInitialize)
+    FCFuncElement("InternalAlloc",                 DependentHandle::InternalAlloc)
     FCFuncElement("InternalGetTarget",             DependentHandle::InternalGetTarget)
     FCFuncElement("InternalGetDependent",          DependentHandle::InternalGetDependent)
     FCFuncElement("InternalGetTargetAndDependent", DependentHandle::InternalGetTargetAndDependent)

@@ -212,6 +212,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ClrConfig_GetConfigBoolValue)
     DllImportEntry(Buffer_Clear)
     DllImportEntry(Buffer_MemMove)
+    DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
+    DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_StartNoGCRegion)
     DllImportEntry(GCInterface_EndNoGCRegion)
     DllImportEntry(GCInterface_GetTotalMemory)
