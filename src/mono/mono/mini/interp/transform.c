@@ -6525,6 +6525,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_THROW:
 			if (!td->aggressive_inlining)
 				INLINE_FAILURE;
+			if (!inlining) {
+				guint32 il_offset = GINT_TO_UINT32(td->current_il_offset);
+				for (unsigned int i = 0; i < td->header->num_clauses; i++) {
+					MonoExceptionClause *clause = &td->header->clauses [i];
+					// If we throw during try and then catch we don't have the bblocks
+					// properly linked, just disable ssa for now
+					if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE && (clause->try_offset <= il_offset) && (il_offset < (clause->try_offset + clause->try_len)))
+						td->disable_ssa = TRUE;
+				}
+			}
 			CHECK_STACK (td, 1);
 			interp_add_ins (td, MINT_THROW);
 			interp_ins_set_sreg (td->last_ins, td->sp [-1].var);
