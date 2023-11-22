@@ -68,9 +68,6 @@ namespace System.Runtime.Loader
 
         public BinderAssemblyName(IntPtr pPEImage)
         {
-            IdentityFlags |=
-                AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE | AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL;
-
             int* dwPAFlags = stackalloc int[2];
             IntPtr pIMetaDataAssemblyImport = AssemblyBinderCommon.BinderAcquireImport(pPEImage, dwPAFlags);
             var scope = new MetadataImport(pIMetaDataAssemblyImport, null);
@@ -200,7 +197,7 @@ namespace System.Runtime.Loader
 
             ProcessorArchitecture = data->ProcessorArchitecture;
             ContentType = data->ContentType;
-            IdentityFlags = flags;
+            IdentityFlags |= flags;
         }
 
         // TODO: Is this simple comparison enough?
@@ -208,7 +205,7 @@ namespace System.Runtime.Loader
 
         public bool IsNeutralCulture => string.IsNullOrEmpty(CultureOrLanguage) || string.EqualsOrdinalIgnoreCase(CultureOrLanguage, NeutralCulture);
 
-        public override int GetHashCode() => GetHashCode(AssemblyNameIncludeFlags.INCLUDE_ALL);
+        public override int GetHashCode() => GetHashCode(AssemblyNameIncludeFlags.INCLUDE_DEFAULT);
 
         public int GetHashCode(AssemblyNameIncludeFlags dwIncludeFlags)
         {
@@ -320,7 +317,7 @@ namespace System.Runtime.Loader
 
         public override bool Equals(object? obj) => obj is BinderAssemblyName other && Equals(other);
 
-        public bool Equals(BinderAssemblyName? other) => Equals(other, AssemblyNameIncludeFlags.INCLUDE_ALL);
+        public bool Equals(BinderAssemblyName? other) => Equals(other, AssemblyNameIncludeFlags.INCLUDE_DEFAULT);
 
         public bool Equals(AssemblyIdentity? other, AssemblyNameIncludeFlags dwIncludeFlags)
         {

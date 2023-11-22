@@ -40,7 +40,7 @@ namespace System.Runtime.Loader
         public byte[] PublicKeyOrTokenBLOB = Array.Empty<byte>();
         public PEKind ProcessorArchitecture;
         public AssemblyContentType ContentType;
-        public AssemblyIdentityFlags IdentityFlags;
+        public AssemblyIdentityFlags IdentityFlags = AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE | AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL;
 
         // See https://docs.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names#specifying-assembly-names
         public const string NeutralCulture = "neutral";
