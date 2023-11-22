@@ -514,7 +514,7 @@ void BlockCountInstrumentor::RelocateProbes()
         if (criticalPreds.Height() > 0)
         {
             BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->bbFlags |= BBF_IMPORTED | BBF_MARKED;
+            intermediary->SetFlag(BBF_IMPORTED | BBF_MARKED);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             SetModifiedFlow();
@@ -1557,7 +1557,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         }
 
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
-                        instrumentedBlock->bbFlags |= BBF_IMPORTED;
+                        instrumentedBlock->SetFlag(BBF_IMPORTED);
                         edgesSplit++;
 
                         // Add in the relocated probe
@@ -1707,7 +1707,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         if (criticalPreds.Height() > 0)
         {
             BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->bbFlags |= BBF_IMPORTED;
+            intermediary->SetFlag(BBF_IMPORTED);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
@@ -4500,7 +4500,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bDst->bbWeight = newWeight;
                     if (newWeight == BB_ZERO_WEIGHT)
                     {
-                        bDst->bbFlags |= BBF_RUN_RARELY;
+                        bDst->SetFlag(BBF_RUN_RARELY);
                     }
                     else
                     {

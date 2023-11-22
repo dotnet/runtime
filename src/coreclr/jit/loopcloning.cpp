@@ -2040,7 +2040,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", h2->bbNum, h->bbNum);
     h2->bbWeight     = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     h2->bbNatLoopNum = ambientLoop;
-    h2->bbFlags |= BBF_LOOP_PREHEADER;
+    h2->SetFlag(BBF_LOOP_PREHEADER);
 
     if (!h->KindIs(BBJ_NONE))
     {

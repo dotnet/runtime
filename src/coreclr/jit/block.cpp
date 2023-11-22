@@ -423,7 +423,7 @@ void BasicBlock::dspFlags()
     {
         printf("jmp ");
     }
-    if (bHasFlag(BBF_HAS_CALL))
+    if (HasFlag(BBF_HAS_CALL))
     {
         printf("hascall ");
     }
@@ -661,7 +661,7 @@ void BasicBlock::dspJumpKind()
             break;
 
         case BBJ_ALWAYS:
-            if (Hasflag(BBF_KEEP_BBJ_ALWAYS))
+            if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
                 printf(" -> " FMT_BB " (ALWAYS)", bbJumpDest->bbNum);
             }

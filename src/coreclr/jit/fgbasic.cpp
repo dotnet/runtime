@@ -254,7 +254,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
     noway_assert(fgLastBB != nullptr);
 
     // Set the expected flags
-    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
+    block->SetFlag(BBF_INTERNAL | BBF_IMPORTED);
 
     // This new first BB has an implicit ref, and no others.
     //
@@ -2890,13 +2890,13 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
     {
         if (!block->HasFlag(BBF_BACKWARD_JUMP) && !block->KindIs(BBJ_RETURN))
         {
-            block->bbFlags |= BBF_BACKWARD_JUMP;
+            block->SetFlag(BBF_BACKWARD_JUMP);
             compHasBackwardJump = true;
         }
     }
 
-    sourceBlock->bbFlags |= BBF_BACKWARD_JUMP_SOURCE;
-    targetBlock->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
+    sourceBlock->SetFlag(BBF_BACKWARD_JUMP_SOURCE);
+    targetBlock->SetFlag(BBF_BACKWARD_JUMP_TARGET);
 }
 
 //------------------------------------------------------------------------
@@ -3505,7 +3505,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 break;
         }
 
-        curBBdesc->bbFlags |= bbFlags;
+        curBBdesc->SetFlag(bbFlags);
         curBBdesc->bbRefs = 0;
 
         curBBdesc->bbCodeOffs    = curBBoffs;
@@ -3911,18 +3911,18 @@ void Compiler::fgFindBasicBlocks()
         /*  Prevent future optimizations of removing the first block   */
         /*  of a TRY block and the first block of an exception handler */
 
-        tryBegBB->bbFlags |= BBF_DONT_REMOVE;
-        hndBegBB->bbFlags |= BBF_DONT_REMOVE;
+        tryBegBB->SetFlag(BBF_DONT_REMOVE);
+        hndBegBB->SetFlag(BBF_DONT_REMOVE);
         hndBegBB->bbRefs++; // The first block of a handler gets an extra, "artificial" reference count.
 
         if (clause.Flags & CORINFO_EH_CLAUSE_FILTER)
         {
-            filtBB->bbFlags |= BBF_DONT_REMOVE;
+            filtBB->SetFlag(BBF_DONT_REMOVE);
             filtBB->bbRefs++; // The first block of a filter gets an extra, "artificial" reference count.
         }
 
-        tryBegBB->bbFlags |= BBF_DONT_REMOVE;
-        hndBegBB->bbFlags |= BBF_DONT_REMOVE;
+        tryBegBB->SetFlag(BBF_DONT_REMOVE);
+        hndBegBB->SetFlag(BBF_DONT_REMOVE);
 
         //
         // Store the info to the table of EH block handlers
@@ -4890,8 +4890,7 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
 
     // We split a block, possibly, in the middle - we need to propagate some flags
     prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-    block->bbFlags |=
-        originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
+    block->SetFlag(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
 
     if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
     {
@@ -5042,7 +5041,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // The new block always jumps to 'succ'
         newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* jumpDest */ succ, /* isRunRarely */ curr->isRunRarely());
     }
-    newBlock->bbFlags |= (curr->bbFlags & succ->bbFlags & (BBF_BACKWARD_JUMP));
+    newBlock->SetFlag(curr->bbFlags & succ->bbFlags & (BBF_BACKWARD_JUMP));
 
     JITDUMP("Splitting edge from " FMT_BB " to " FMT_BB "; adding " FMT_BB "\n", curr->bbNum, succ->bbNum,
             newBlock->bbNum);
@@ -5226,7 +5225,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         if (bPrev->KindIs(BBJ_CALLFINALLY))
         {
             // bPrev CALL becomes RETLESS as the BBJ_ALWAYS block is unreachable
-            bPrev->bbFlags |= BBF_RETLESS_CALL;
+            bPrev->SetFlag(BBF_RETLESS_CALL);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
             NO_WAY("No retless call finally blocks; need unwind target instead");
@@ -5481,7 +5480,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 
         fgUnlinkBlock(block);
-        block->bbFlags |= BBF_REMOVED;
+        block->SetFlag(BBF_REMOVED);
     }
 
     // If this was marked for alignment, remove it
@@ -5586,7 +5585,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                         if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
                         {
-                            jmpBlk->bbFlags |= BBF_RUN_RARELY;
+                            jmpBlk->SetFlag(BBF_RUN_RARELY);
                         }
 
                         weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
@@ -5597,7 +5596,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                         //
                         if (weightDiff <= slop)
                         {
-                            jmpBlk->bbFlags |= BBF_PROF_WEIGHT;
+                            jmpBlk->SetFlag(BBF_PROF_WEIGHT);
                         }
                     }
                     else
@@ -5606,12 +5605,12 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                         if (bSrc->bbWeight < bDst->bbWeight)
                         {
                             jmpBlk->bbWeight = bSrc->bbWeight;
-                            jmpBlk->bbFlags |= (bSrc->bbFlags & BBF_RUN_RARELY);
+                            jmpBlk->SetFlag(bSrc->bbFlags & BBF_RUN_RARELY);
                         }
                         else
                         {
                             jmpBlk->bbWeight = bDst->bbWeight;
-                            jmpBlk->bbFlags |= (bDst->bbFlags & BBF_RUN_RARELY);
+                            jmpBlk->SetFlag(bDst->bbFlags & BBF_RUN_RARELY);
                         }
                     }
 
@@ -5984,11 +5983,11 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-    bStart->bbFlags |= BBF_FUNCLET_BEG; // Mark the start block of the funclet
+    bStart->SetFlag(BBF_FUNCLET_BEG); // Mark the start block of the funclet
 
     if (bMiddle != nullptr)
     {
-        bMiddle->bbFlags |= BBF_FUNCLET_BEG; // Also mark the start block of a filter handler as a funclet
+        bMiddle->SetFlag(BBF_FUNCLET_BEG); // Also mark the start block of a filter handler as a funclet
     }
 
 #endif // FEATURE_EH_FUNCLETS
@@ -6242,7 +6241,7 @@ BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind,
     // Create a new BasicBlock and chain it in
 
     BasicBlock* newBlk = BasicBlock::bbNewBasicBlock(this, jumpKind, jumpDest);
-    newBlk->bbFlags |= BBF_INTERNAL;
+    newBlk->SetFlag(BBF_INTERNAL);
 
     fgInsertBBbefore(block, newBlk);
 
@@ -6266,7 +6265,7 @@ BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind,
 
     // We assume that if the block we are inserting before is in the cold region, then this new
     // block will also be in the cold region.
-    newBlk->bbFlags |= (block->bbFlags & BBF_COLD);
+    newBlk->SetFlag(block->bbFlags & BBF_COLD);
 
     return newBlk;
 }
@@ -6284,7 +6283,7 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind,
     // Create a new BasicBlock and chain it in
 
     BasicBlock* newBlk = BasicBlock::bbNewBasicBlock(this, jumpKind, jumpDest);
-    newBlk->bbFlags |= BBF_INTERNAL;
+    newBlk->SetFlag(BBF_INTERNAL);
 
     fgInsertBBafter(block, newBlk);
 
@@ -6308,7 +6307,7 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind,
 
     // If the new block is in the cold region (because the block we are inserting after
     // is in the cold region), mark it as such.
-    newBlk->bbFlags |= (block->bbFlags & BBF_COLD);
+    newBlk->SetFlag(block->bbFlags & BBF_COLD);
 
     return newBlk;
 }
@@ -6340,7 +6339,7 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(BBjumpKinds jumpKind,
                                            bool        updateSideEffects /* = false */)
 {
     BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true, jumpDest);
-    newBlock->bbFlags |= BBF_INTERNAL;
+    newBlock->SetFlag(BBF_INTERNAL);
     Statement* stmt = fgNewStmtFromTree(tree, debugInfo);
     fgInsertStmtAtEnd(newBlock, stmt);
     newBlock->bbCodeOffs    = block->bbCodeOffsEnd;

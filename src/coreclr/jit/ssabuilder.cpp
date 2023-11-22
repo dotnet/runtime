@@ -1566,7 +1566,7 @@ void SsaBuilder::SetupBBRoot()
     }
 
     BasicBlock* bbRoot = BasicBlock::bbNewBasicBlock(m_pCompiler, BBJ_NONE);
-    bbRoot->bbFlags |= BBF_INTERNAL;
+    bbRoot->SetFlag(BBF_INTERNAL);
 
     // May need to fix up preds list, so remember the old first block.
     BasicBlock* oldFirst = m_pCompiler->fgFirstBB;

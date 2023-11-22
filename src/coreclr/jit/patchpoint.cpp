@@ -108,7 +108,7 @@ private:
     BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
     {
         BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
-        block->bbFlags |= BBF_IMPORTED;
+        block->SetFlag(BBF_IMPORTED);
         return block;
     }
 
@@ -147,9 +147,9 @@ private:
 
         // Update flow and flags
         block->SetJumpKindAndTarget(BBJ_COND, remainderBlock DEBUG_ARG(compiler));
-        block->bbFlags |= BBF_INTERNAL;
+        block->SetFlag(BBF_INTERNAL);
 
-        helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
+        helperBlock->SetFlag(BBF_BACKWARD_JUMP);
 
         compiler->fgAddRefPred(helperBlock, block);
         compiler->fgAddRefPred(remainderBlock, helperBlock);

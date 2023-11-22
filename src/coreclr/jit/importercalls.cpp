@@ -1248,7 +1248,7 @@ DONE:
             fgMarkBackwardJump(loopHead, compCurBB);
 
             setMethodHasRecursiveTailcall();
-            compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+            compCurBB->SetFlag(BBF_RECURSIVE_TAILCALL);
         }
 
         // We only do these OSR checks in the root method because:
@@ -1267,7 +1267,7 @@ DONE:
             {
                 BasicBlock* const successor = compCurBB->GetUniqueSucc();
                 assert(successor->KindIs(BBJ_RETURN));
-                successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+                successor->SetFlag(BBF_TAILCALL_SUCCESSOR);
                 optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
             }
         }
@@ -7413,7 +7413,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
     {
         setMethodHasRecursiveTailcall();
-        compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+        compCurBB->SetFlag(BBF_RECURSIVE_TAILCALL);
     }
 
 #ifdef FEATURE_READYTORUN
@@ -7484,7 +7484,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 
     // Flag block as needing scrutiny
     //
-    compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
+    compCurBB->SetFlag(BBF_HAS_HISTOGRAM_PROFILE);
     return true;
 }
 
@@ -9795,7 +9795,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
     optMethodFlags |= OMF_HAS_MDARRAYREF;
-    compCurBB->bbFlags |= BBF_HAS_MDARRAYREF;
+    compCurBB->SetFlag(BBF_HAS_MDARRAYREF);
 
     noway_assert((unsigned char)GT_ARR_MAX_RANK == GT_ARR_MAX_RANK);
 

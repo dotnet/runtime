@@ -1065,13 +1065,13 @@ PhaseStatus Compiler::fgCloneFinally()
             if (block == firstBlock)
             {
                 // Mark the block as the start of the cloned finally.
-                newBlock->bbFlags |= BBF_CLONED_FINALLY_BEGIN;
+                newBlock->SetFlag(BBF_CLONED_FINALLY_BEGIN);
             }
 
             if (block == lastBlock)
             {
                 // Mark the block as the end of the cloned finally.
-                newBlock->bbFlags |= BBF_CLONED_FINALLY_END;
+                newBlock->SetFlag(BBF_CLONED_FINALLY_END);
             }
 
             // Make sure clone block state hasn't munged the try region.
@@ -1598,7 +1598,7 @@ void Compiler::fgAddFinallyTargetFlags()
                 JITDUMP("Found callfinally " FMT_BB "; setting finally target bit on " FMT_BB "\n", block->bbNum,
                         continuation->bbNum);
 
-                continuation->bbFlags |= BBF_FINALLY_TARGET;
+                continuation->SetFlag(BBF_FINALLY_TARGET);
             }
         }
     }
@@ -1617,14 +1617,14 @@ void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, Basic
     if (pred->isBBCallAlwaysPairTail())
     {
         assert(succ->HasFlag(BBF_FINALLY_TARGET));
-        newSucc->bbFlags |= BBF_FINALLY_TARGET;
+        newSucc->SetFlag(BBF_FINALLY_TARGET);
         succ->bbFlags &= ~BBF_FINALLY_TARGET;
 
         for (BasicBlock* const pred : succ->PredBlocks())
         {
             if (pred->isBBCallAlwaysPairTail())
             {
-                succ->bbFlags |= BBF_FINALLY_TARGET;
+                succ->SetFlag(BBF_FINALLY_TARGET);
                 break;
             }
         }

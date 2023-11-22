@@ -1569,7 +1569,7 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
     gtAnnotateNewArrLen(arrLen, block);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_IDX_LEN;
+        block->SetFlag(BBF_HAS_IDX_LEN);
     }
     optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
@@ -1593,7 +1593,7 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, uns
     gtAnnotateNewArrLen(arrLen, block);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+        block->SetFlag(BBF_HAS_MD_IDX_LEN);
     }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrLen;
@@ -1619,7 +1619,7 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
     arrOp->SetIndirExceptionFlags(this);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+        block->SetFlag(BBF_HAS_MD_IDX_LEN);
     }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -1640,7 +1640,7 @@ inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
     assert(fgAddrCouldBeNull(addr));
     GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
-    basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
+    basicBlock->SetFlag(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
     return nullCheck;
 }
@@ -3074,7 +3074,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    if (!block->hasFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
+    if (!block->HasFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
     {
         return false;
     }

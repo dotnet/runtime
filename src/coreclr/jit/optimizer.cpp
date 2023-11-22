@@ -2328,7 +2328,7 @@ private:
             {
                 // If optimizing away the goto-next failed for some reason, mark it KEEP_BBJ_ALWAYS to
                 // prevent assertions from complaining about it.
-                block->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
+                block->SetFlag(BBF_KEEP_BBJ_ALWAYS);
             }
 
             // If block is newNext's only predecessor, move the IR from block to newNext,
@@ -2372,7 +2372,7 @@ private:
 
                     // Update newNext's block flags
                     //
-                    newNext->bbFlags |= (block->bbFlags & BBF_COMPACT_UPD);
+                    newNext->SetFlag(block->bbFlags & BBF_COMPACT_UPD);
                 }
             }
         }
@@ -2695,7 +2695,7 @@ void Compiler::optIdentifyLoopsForAlignment()
                     if (!top->isLoopAlign())
                     {
                         loopAlignCandidates++;
-                        top->bbFlags |= BBF_LOOP_ALIGN;
+                        top->SetFlag(BBF_LOOP_ALIGN);
                         JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
                                 top->bbNum, top->getBBWeight(this));
                     }
@@ -5142,7 +5142,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     assert(foundCondTree);
 
     // Flag the block that received the copy as potentially having various constructs.
-    bNewCond->bbFlags |= bTest->bbFlags & BBF_COPY_PROPAGATE;
+    bNewCond->SetFlag(bTest->bbFlags & BBF_COPY_PROPAGATE);
 
     // Fix flow and profile
     //
@@ -5456,7 +5456,7 @@ void Compiler::optMarkLoopHeads()
                 if (BlockSetOps::IsMember(this, predBlock->bbReach, blockNum))
                 {
                     hasLoops = true;
-                    block->bbFlags |= BBF_LOOP_HEAD;
+                    block->SetFlag(BBF_LOOP_HEAD);
                     INDEBUG(++loopHeadsMarked);
                     break; // No need to look at more `block` predecessors
                 }
@@ -6515,7 +6515,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     //
     optRecordSsaUses(hoist, preHead);
 
-    preHead->bbFlags |= exprBb->bbFlags & BBF_COPY_PROPAGATE;
+    preHead->SetFlag(exprBb->bbFlags & BBF_COPY_PROPAGATE);
 
     Statement* hoistStmt = gtNewStmt(hoist);
 
@@ -8146,7 +8146,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 JITDUMP("   converting existing header " FMT_BB " into pre-header\n", head->bbNum);
                 loop.lpFlags |= LPFLG_HAS_PREHEAD;
                 assert(!head->HasFlag(BBF_LOOP_PREHEADER)); // It isn't already a loop pre-header
-                head->bbFlags |= BBF_LOOP_PREHEADER;
+                head->SetFlag(BBF_LOOP_PREHEADER);
                 INDEBUG(loop.lpValidatePreHeader());
                 INDEBUG(fgDebugCheckLoopTable());
                 return false;
@@ -8180,7 +8180,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         preHead = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, entry);
     }
 
-    preHead->bbFlags |= BBF_INTERNAL | BBF_LOOP_PREHEADER;
+    preHead->SetFlag(BBF_INTERNAL | BBF_LOOP_PREHEADER);
 
     // Must set IL code offset
     preHead->bbCodeOffs = top->bbCodeOffs;
@@ -8219,7 +8219,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         if ((head->bbWeight == BB_ZERO_WEIGHT) || (entry->bbWeight == BB_ZERO_WEIGHT))
         {
             preHead->bbWeight = BB_ZERO_WEIGHT;
-            preHead->bbFlags |= BBF_RUN_RARELY;
+            preHead->SetFlag(BBF_RUN_RARELY);
         }
         else
         {
@@ -9075,7 +9075,7 @@ void Compiler::optRemoveRedundantZeroInits()
     for (BasicBlock* block = fgFirstBB; (block != nullptr) && !block->HasFlag(BBF_MARKED);
          block             = block->GetUniqueSucc())
     {
-        block->bbFlags |= BBF_MARKED;
+        block->SetFlag(BBF_MARKED);
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;

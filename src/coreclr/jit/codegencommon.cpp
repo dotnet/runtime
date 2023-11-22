@@ -362,7 +362,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
     // The first block is special; it always needs a label. This is to properly set up GC info.
     JITDUMP("  " FMT_BB " : first block\n", compiler->fgFirstBB->bbNum);
-    compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+    compiler->fgFirstBB->SetFlag(BBF_HAS_LABEL);
 
     // The current implementation of switch tables requires the first block to have a label so it
     // can generate offsets to the switch label targets.
@@ -371,7 +371,7 @@ void CodeGen::genMarkLabelsForCodegen()
     if (compiler->fgHasSwitch)
     {
         JITDUMP("  " FMT_BB " : function has switch; mark first block\n", compiler->fgFirstBB->bbNum);
-        compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+        compiler->fgFirstBB->SetFlag(BBF_HAS_LABEL);
     }
 
     for (BasicBlock* const block : compiler->Blocks())
@@ -382,14 +382,14 @@ void CodeGen::genMarkLabelsForCodegen()
             case BBJ_COND:
             case BBJ_EHCATCHRET:
                 JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
-                block->GetJumpDest()->bbFlags |= BBF_HAS_LABEL;
+                block->GetJumpDest()->SetFlag(BBF_HAS_LABEL);
                 break;
 
             case BBJ_SWITCH:
                 for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
                     JITDUMP("  " FMT_BB " : branch target\n", bTarget->bbNum);
-                    bTarget->bbFlags |= BBF_HAS_LABEL;
+                    bTarget->SetFlag(BBF_HAS_LABEL);
                 }
                 break;
 
@@ -410,7 +410,7 @@ void CodeGen::genMarkLabelsForCodegen()
                     if (bbToLabel != nullptr)
                     {
                         JITDUMP("  " FMT_BB " : callfinally thunk region end\n", bbToLabel->bbNum);
-                        bbToLabel->bbFlags |= BBF_HAS_LABEL;
+                        bbToLabel->SetFlag(BBF_HAS_LABEL);
                     }
                 }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
@@ -435,32 +435,32 @@ void CodeGen::genMarkLabelsForCodegen()
     for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add; add = add->acdNext)
     {
         JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
-        add->acdDstBlk->bbFlags |= BBF_HAS_LABEL;
+        add->acdDstBlk->SetFlag(BBF_HAS_LABEL);
     }
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
-        HBtab->ebdTryBeg->bbFlags |= BBF_HAS_LABEL;
-        HBtab->ebdHndBeg->bbFlags |= BBF_HAS_LABEL;
+        HBtab->ebdTryBeg->SetFlag(BBF_HAS_LABEL);
+        HBtab->ebdHndBeg->SetFlag(BBF_HAS_LABEL);
 
         JITDUMP("  " FMT_BB " : try begin\n", HBtab->ebdTryBeg->bbNum);
         JITDUMP("  " FMT_BB " : hnd begin\n", HBtab->ebdHndBeg->bbNum);
 
         if (!HBtab->ebdTryLast->IsLast())
         {
-            HBtab->ebdTryLast->Next()->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdTryLast->Next()->SetFlag(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->Next()->bbNum);
         }
 
         if (!HBtab->ebdHndLast->IsLast())
         {
-            HBtab->ebdHndLast->Next()->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdHndLast->Next()->SetFlag(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->Next()->bbNum);
         }
 
         if (HBtab->HasFilter())
         {
-            HBtab->ebdFilter->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdFilter->SetFlag(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : filter begin\n", HBtab->ebdFilter->bbNum);
         }
     }
@@ -864,11 +864,11 @@ BasicBlock* CodeGen::genCreateTempLabel()
 #endif
 
     JITDUMP("Mark " FMT_BB " as label: codegen temp block\n", block->bbNum);
-    block->bbFlags |= BBF_HAS_LABEL;
+    block->SetFlag(BBF_HAS_LABEL);
 
     // Use coldness of current block, as this label will
     // be contained in it.
-    block->bbFlags |= (compiler->compCurBB->bbFlags & BBF_COLD);
+    block->SetFlag(compiler->compCurBB->bbFlags & BBF_COLD);
 
 #ifdef DEBUG
 #ifdef UNIX_X86_ABI

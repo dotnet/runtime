@@ -257,7 +257,7 @@ void Compiler::fgComputeReachabilitySets()
                     change |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
                     predGcFlags &= predBlock->bbFlags;
                 }
-                block->bbFlags |= predGcFlags;
+                block->SetFlag(predGcFlags);
             }
         }
 
@@ -469,7 +469,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             changed |= block->NumSucc() > 0;
 
             block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL);
-            block->bbFlags |= BBF_IMPORTED;
+            block->SetFlag(BBF_IMPORTED);
             block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
             block->bbSetRunRarely();
         }
@@ -1535,7 +1535,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     fgRemoveAllRefPreds(succ, cur);
                 }
 
-                cur->bbFlags |= BBF_REMOVED;
+                cur->SetFlag(BBF_REMOVED);
                 removedBlks++;
 
                 // Drop the block from the list.
@@ -1549,7 +1549,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 // We were prevented from deleting this block by EH
                 // normalization. Mark the block as imported.
-                cur->bbFlags |= BBF_IMPORTED;
+                cur->SetFlag(BBF_IMPORTED);
             }
         }
     }
@@ -1674,7 +1674,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // What follows is similar to fgNewBBInRegion, but we can't call that
                         // here as the oldTryEntry is no longer in the main bb list.
                         newTryEntry = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
-                        newTryEntry->bbFlags |= (BBF_IMPORTED | BBF_INTERNAL);
+                        newTryEntry->SetFlag(BBF_IMPORTED | BBF_INTERNAL);
                         newTryEntry->bbRefs = 0;
 
                         // Set the right EH region indices on this new block.
@@ -1714,7 +1714,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     fgSetTryBeg(HBtab, newTryEntry);
 
                     // Try entry blocks get specially marked and have special protection.
-                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE;
+                    HBtab->ebdTryBeg->SetFlag(BBF_DONT_REMOVE);
 
                     // We are keeping this try region
                     removeTryRegion = false;
@@ -1820,7 +1820,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     }
 
                     BasicBlock* const newBlock = fgSplitBlockAtBeginning(fromBlock);
-                    fromBlock->bbFlags |= BBF_INTERNAL;
+                    fromBlock->SetFlag(BBF_INTERNAL);
                     newBlock->bbFlags &= ~BBF_DONT_REMOVE;
                     addedBlocks++;
 
@@ -2347,16 +2347,16 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     {
         // If 'block' is an internal block and 'bNext' isn't, then adjust the flags set on 'block'.
         block->bbFlags &= ~BBF_INTERNAL; // Clear the BBF_INTERNAL flag
-        block->bbFlags |= BBF_IMPORTED;  // Set the BBF_IMPORTED flag
+        block->SetFlag(BBF_IMPORTED);  // Set the BBF_IMPORTED flag
     }
 
     /* Update the flags for block with those found in bNext */
 
-    block->bbFlags |= (bNext->bbFlags & BBF_COMPACT_UPD);
+    block->SetFlag(bNext->bbFlags & BBF_COMPACT_UPD);
 
     /* mark bNext as removed */
 
-    bNext->bbFlags |= BBF_REMOVED;
+    bNext->SetFlag(BBF_REMOVED);
 
     /* Unlink bNext and update all the marker pointers if necessary */
 
@@ -2372,7 +2372,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     {
         case BBJ_CALLFINALLY:
             // Propagate RETLESS property
-            block->bbFlags |= (bNext->bbFlags & BBF_RETLESS_CALL);
+            block->SetFlag(bNext->bbFlags & BBF_RETLESS_CALL);
 
             FALLTHROUGH;
 
@@ -2435,7 +2435,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     if (bNext->isLoopAlign())
     {
-        block->bbFlags |= BBF_LOOP_ALIGN;
+        block->SetFlag(BBF_LOOP_ALIGN);
         JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
                 block->bbNum);
     }
@@ -2630,7 +2630,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
     optUpdateLoopsBeforeRemoveBlock(block);
 
     // Mark the block as removed
-    block->bbFlags |= BBF_REMOVED;
+    block->SetFlag(BBF_REMOVED);
 
     // Update bbRefs and bbPreds for the blocks reached by this block
     fgRemoveBlockAsPred(block);
@@ -2844,7 +2844,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             else
             {
                 bDest->bbWeight = BB_ZERO_WEIGHT;
-                bDest->bbFlags |= BBF_RUN_RARELY; // Set the RarelyRun flag
+                bDest->SetFlag(BBF_RUN_RARELY); // Set the RarelyRun flag
             }
 
             FlowEdge* edge2 = fgGetPredForBlock(bDest->GetJumpDest(), bDest);
@@ -3198,7 +3198,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
                     else
                     {
                         bDest->bbWeight = BB_ZERO_WEIGHT;
-                        bDest->bbFlags |= BBF_RUN_RARELY;
+                        bDest->SetFlag(BBF_RUN_RARELY);
                     }
                 }
             }
@@ -4098,7 +4098,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // Only rely upon the profile weight when all three of these blocks
         // have either good profile weights or are rarelyRun
         //
-        if (bJump->HasFlag(BBF_PROF_WEIGHT ! BBF_RUN_RARELY) &&
+        if (bJump->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
             bDest->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
             bJump->Next()->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
         {
@@ -4244,7 +4244,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     gtReverseCond(condTree);
 
     // We need to update the following flags of the bJump block if they were set in the bDest block
-    bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
+    bJump->SetFlag(bDest->bbFlags & BBF_COPY_PROPAGATE);
 
     bJump->SetJumpKindAndTarget(BBJ_COND, bDest->Next() DEBUG_ARG(this));
 
@@ -4777,7 +4777,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
             {
                 bPrev->bbWeight =
                     block->bbWeight; // the BBJ_CALLFINALLY block now has the same weight as the BBJ_ALWAYS block
-                bPrev->bbFlags |= BBF_RUN_RARELY; // and is now rarely run
+                bPrev->SetFlag(BBF_RUN_RARELY); // and is now rarely run
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -4791,7 +4791,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
             {
                 block->bbWeight =
                     bPrev->bbWeight; // the BBJ_ALWAYS block now has the same weight as the BBJ_CALLFINALLY block
-                block->bbFlags |= BBF_RUN_RARELY; // and is now rarely run
+                block->SetFlag(BBF_RUN_RARELY); // and is now rarely run
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -6334,7 +6334,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         fgUnlinkBlock(bNext);
 
                         /* Mark the block as removed */
-                        bNext->bbFlags |= BBF_REMOVED;
+                        bNext->SetFlag(BBF_REMOVED);
 
                         // Update the loop table if we removed the bottom of a loop, for example.
                         fgUpdateLoopsAfterCompacting(block, bNext);
@@ -6811,7 +6811,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     if (j == 0)
                     {
                         fgInsertStmtAtBeg(commSucc, stmt);
-                        commSucc->bbFlags |= predBlock->bbFlags & BBF_COPY_PROPAGATE;
+                        commSucc->SetFlag(predBlock->bbFlags & BBF_COPY_PROPAGATE);
                     }
 
                     madeChanges = true;
@@ -7189,7 +7189,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     fgUnlinkStmt(block->Next(), nextFirstStmt);
     fgInsertStmtNearEnd(block, nextFirstStmt);
     fgUnlinkStmt(block->GetJumpDest(), destFirstStmt);
-    block->bbFlags |= block->Next()->bbFlags & BBF_COPY_PROPAGATE;
+    block->SetFlag(block->Next()->bbFlags & BBF_COPY_PROPAGATE);
 
     return true;
 }

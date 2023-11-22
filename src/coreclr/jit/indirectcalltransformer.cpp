@@ -206,7 +206,7 @@ private:
         void CreateRemainder()
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            remainderBlock->bbFlags |= BBF_INTERNAL;
+            remainderBlock->SetFlag(BBF_INTERNAL);
         }
 
         virtual void CreateCheck(uint8_t checkIdx) = 0;
@@ -227,7 +227,7 @@ private:
                                               BasicBlock* jumpDest = nullptr)
         {
             BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
-            block->bbFlags |= BBF_IMPORTED;
+            block->SetFlag(BBF_IMPORTED);
             return block;
         }
 
@@ -922,7 +922,7 @@ private:
             if (call->CanTailCall() && compiler->gtIsRecursiveCall(methodHnd))
             {
                 compiler->setMethodHasRecursiveTailcall();
-                block->bbFlags |= BBF_RECURSIVE_TAILCALL;
+                block->SetFlag(BBF_RECURSIVE_TAILCALL);
                 JITDUMP("[%06u] is a recursive call in tail position\n", compiler->dspTreeID(call));
             }
             else
@@ -1001,7 +1001,7 @@ private:
         {
             // thenBlock always jumps to remainderBlock
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
-            thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
+            thenBlock->SetFlag(currBlock->bbFlags & BBF_SPLIT_GAINED);
             thenBlock->inheritWeightPercentage(currBlock, origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
 
             // Also, thenBlock has a single pred - last checkBlock
@@ -1017,7 +1017,7 @@ private:
         virtual void CreateElse()
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
-            elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
+            elseBlock->SetFlag(currBlock->bbFlags & BBF_SPLIT_GAINED);
 
             // CheckBlock flows into elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)

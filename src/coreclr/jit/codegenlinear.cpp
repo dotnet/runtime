@@ -789,7 +789,7 @@ void CodeGen::genCodeForBBlist()
                     if (!block->IsLast())
                     {
                         JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
-                        block->Next()->bbFlags |= BBF_HAS_LABEL;
+                        block->Next()->SetFlag(BBF_HAS_LABEL);
                     }
                 }
 #endif // FEATURE_LOOP_ALIGN
