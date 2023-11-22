@@ -714,24 +714,14 @@ public:
 
     BasicBlockFlags bbFlags;
 
-    bool CheckFlag(const BasicBlockFlags flag, const BasicBlockFlags target) const
-    {
-        return ((bbFlags & flag) == target);
-    }
-
-    bool CheckFlag(const BasicBlockFlags flag) const
-    {
-        return CheckFlag(flag, flag);
-    }
-
     bool HasFlag(const BasicBlockFlags flag) const
     {
-        return !CheckFlag(flag, BBF_EMPTY);
+        return ((bbFlags & flag) != 0);
     }
 
-    void CopyFlags(const BasicBlockFlags flags, const BasicBlockFlags mask)
+    void CopyFlags(const BasicBlock* block, const BasicBlockFlags mask)
     {
-        bbFlags |= (flags & mask);
+        bbFlags |= (block->bbFlags & mask);
     }
 
     void SetFlags(const BasicBlockFlags flags)

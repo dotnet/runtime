@@ -1001,7 +1001,7 @@ private:
         {
             // thenBlock always jumps to remainderBlock
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
-            thenBlock->CopyFlags(currBlock->bbFlags, BBF_SPLIT_GAINED);
+            thenBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
             thenBlock->inheritWeightPercentage(currBlock, origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
 
             // Also, thenBlock has a single pred - last checkBlock
@@ -1017,7 +1017,7 @@ private:
         virtual void CreateElse()
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
-            elseBlock->CopyFlags(currBlock->bbFlags, BBF_SPLIT_GAINED);
+            elseBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
 
             // CheckBlock flows into elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)

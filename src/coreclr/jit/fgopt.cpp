@@ -2352,7 +2352,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     /* Update the flags for block with those found in bNext */
 
-    block->CopyFlags(bNext->bbFlags, BBF_COMPACT_UPD);
+    block->CopyFlags(bNext, BBF_COMPACT_UPD);
 
     /* mark bNext as removed */
 
@@ -2374,7 +2374,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     {
         case BBJ_CALLFINALLY:
             // Propagate RETLESS property
-            block->CopyFlags(bNext->bbFlags, BBF_RETLESS_CALL);
+            block->CopyFlags(bNext, BBF_RETLESS_CALL);
 
             FALLTHROUGH;
 
@@ -4245,7 +4245,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     gtReverseCond(condTree);
 
     // We need to update the following flags of the bJump block if they were set in the bDest block
-    bJump->CopyFlags(bDest->bbFlags, BBF_COPY_PROPAGATE);
+    bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
     bJump->SetJumpKindAndTarget(BBJ_COND, bDest->Next() DEBUG_ARG(this));
 
@@ -6812,7 +6812,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     if (j == 0)
                     {
                         fgInsertStmtAtBeg(commSucc, stmt);
-                        commSucc->CopyFlags(predBlock->bbFlags, BBF_COPY_PROPAGATE);
+                        commSucc->CopyFlags(predBlock, BBF_COPY_PROPAGATE);
                     }
 
                     madeChanges = true;
@@ -7190,7 +7190,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     fgUnlinkStmt(block->Next(), nextFirstStmt);
     fgInsertStmtNearEnd(block, nextFirstStmt);
     fgUnlinkStmt(block->GetJumpDest(), destFirstStmt);
-    block->CopyFlags(block->Next()->bbFlags, BBF_COPY_PROPAGATE);
+    block->CopyFlags(block->Next(), BBF_COPY_PROPAGATE);
 
     return true;
 }

@@ -868,7 +868,7 @@ BasicBlock* CodeGen::genCreateTempLabel()
 
     // Use coldness of current block, as this label will
     // be contained in it.
-    block->CopyFlags(compiler->compCurBB->bbFlags, BBF_COLD);
+    block->CopyFlags(compiler->compCurBB, BBF_COLD);
 
 #ifdef DEBUG
 #ifdef UNIX_X86_ABI

@@ -2372,7 +2372,7 @@ private:
 
                     // Update newNext's block flags
                     //
-                    newNext->CopyFlags(block->bbFlags, BBF_COMPACT_UPD);
+                    newNext->CopyFlags(block, BBF_COMPACT_UPD);
                 }
             }
         }
@@ -5142,7 +5142,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     assert(foundCondTree);
 
     // Flag the block that received the copy as potentially having various constructs.
-    bNewCond->CopyFlags(bTest->bbFlags, BBF_COPY_PROPAGATE);
+    bNewCond->CopyFlags(bTest, BBF_COPY_PROPAGATE);
 
     // Fix flow and profile
     //
@@ -6515,7 +6515,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     //
     optRecordSsaUses(hoist, preHead);
 
-    preHead->CopyFlags(exprBb->bbFlags, BBF_COPY_PROPAGATE);
+    preHead->CopyFlags(exprBb, BBF_COPY_PROPAGATE);
 
     Statement* hoistStmt = gtNewStmt(hoist);
 
