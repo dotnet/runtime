@@ -3660,7 +3660,7 @@ mono_llvm_catch_exception (MonoLLVMInvokeCallback cb, gpointer arg, gboolean *ou
 	*out_thrown = FALSE;
 
 	if (mono_opt_llvm_emulate_unwind) {
-#ifdef DISABLE_THREADS
+#ifndef DISABLE_THREADS
 		// FIXME: The flag needs to be thread local
 		g_assert_not_reached ();
 #endif
