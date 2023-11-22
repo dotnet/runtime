@@ -117,7 +117,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: long ==> LONGLONG    Array Size: 10 ==> 20
+    //Type: long ==> int64_t    Array Size: 10 ==> 20
     public static bool TestMethodForLongArray_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out long[] arrArg, out long arraySize)
     {
         arrArg = Helper.GetExpChangeArray<long>(20);
@@ -125,7 +125,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: ulong ==> ULONGLONG    Array Size: 10 ==> 20
+    //Type: ulong ==> uint64_t    Array Size: 10 ==> 20
     public static bool TestMethodForUlongArray_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out ulong[] arrArg, out ulong arraySize)
     {
         arrArg = Helper.GetExpChangeArray<ulong>(20);
@@ -176,11 +176,11 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         Assert.True(DoCallBack_MarshalUint32Array_AsParam_AsByOut(new DelUint32ArrByOutAsCdeclCaller(TestMethodForUint32Array_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUint32Array_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 8 : long ==> LONGLONG, Array_Size = 10, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 8 : long ==> int64_t, Array_Size = 10, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalLongArray_AsParam_AsByOut(new DelLongArrByOutAsCdeclCaller(TestMethodForLongArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalLongArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 9 : ulong ==> ULONGLONG, Array_Size = 10, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 9 : ulong ==> uint64_t, Array_Size = 10, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalUlongArray_AsParam_AsByOut(new DelUlongArrByOutAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUlongArray_AsReversePInvokeByOut_AsCdecl Passed!");
 

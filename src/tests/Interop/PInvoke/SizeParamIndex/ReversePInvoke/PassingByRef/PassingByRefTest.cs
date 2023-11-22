@@ -121,7 +121,7 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
         return false;
     }
 
-    //Type: long ==> LONGLONG    Array Size: 10 ==> 20
+    //Type: long ==> int64_t    Array Size: 10 ==> 20
     public static bool TestMethodForLongArray_AsReversePInvokeByRef_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref long[] arrArg, ref long arraySize)
     {
         if (arraySize == 10)
@@ -129,7 +129,7 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
         return false;
     }
 
-    //Type: ulong ==> ULONGLONG    Array Size: 10 ==> 20
+    //Type: ulong ==> uint64_t    Array Size: 10 ==> 20
     public static bool TestMethodForUlongArray_AsReversePInvokeByRef_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref ulong[] arrArg, ref ulong arraySize)
     {
         if (arraySize == 10)
@@ -191,11 +191,11 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
         Assert.True(DoCallBack_MarshalUint32Array_AsParam_AsByRef(new DelUint32ArrByRefAsCdeclCaller(TestMethodForUint32Array_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalUint32Array_AsReversePInvokeByRef_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 8 : long ==> LONGLONG, Array_Size = 10, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 8 : long ==> int64_t, Array_Size = 10, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalLongArray_AsParam_AsByRef(new DelLongArrByRefAsCdeclCaller(TestMethodForLongArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalLongArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 9 : ulong ==> ULONGLONG, Array_Size = 10, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 9 : ulong ==> uint64_t, Array_Size = 10, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalUlongArray_AsParam_AsByRef(new DelUlongArrByRefAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalUlongArray_AsReversePInvokeByRef_AsCdecl Passed!");
 

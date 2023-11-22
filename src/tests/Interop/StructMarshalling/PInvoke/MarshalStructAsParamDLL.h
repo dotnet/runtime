@@ -45,12 +45,6 @@ bool IsCorrectInnerSequential(InnerSequential* p)
 	return true;
 }
 
-#ifndef WINDOWS
-typedef char CHAR;
-typedef float FLOAT;
-typedef double DOUBLE;
-#endif
-
 struct INNER2
 {
     int32_t f1;

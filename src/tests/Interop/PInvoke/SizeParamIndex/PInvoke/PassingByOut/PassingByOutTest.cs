@@ -176,7 +176,7 @@ public class ClientMarshalArrayAsSizeParamIndexByOutTest
 
     static void SizeParamTypeIsLong()
     {
-        string strDescription = "Scenario(long ==> LONGLONG): Array_Size(N->M) = 20";
+        string strDescription = "Scenario(long ==> int64_t): Array_Size(N->M) = 20";
 
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
@@ -195,7 +195,7 @@ public class ClientMarshalArrayAsSizeParamIndexByOutTest
 
     static void SizeParamTypeIsULong()
     {
-        string strDescription = "Scenario(ulong ==> ULONGLONG): Array_Size(N->M) = 1000";
+        string strDescription = "Scenario(ulong ==> uint64_t): Array_Size(N->M) = 1000";
 
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
