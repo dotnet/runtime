@@ -483,13 +483,6 @@
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
 
-  <!-- For running tests with TestReadyToRun, we need the R2R-precompiled runtime prior to building the tests. -->
-  <ItemGroup Condition="$(_subset.Contains('+libs.pretest+')) and '$(TestReadyToRun)' == 'true'">
-    <R2RPrecompiledRuntimeProject Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj" />
-    <R2RPrecompiledRuntimeProject Include="$(InstallerProjectRoot)pkg/sfx/bundle/Microsoft.NETCore.App.Bundle.bundleproj" />
-    <ProjectToBuild Include="@(R2RPrecompiledRuntimeProject)" Category="packs" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
   </ItemGroup>
