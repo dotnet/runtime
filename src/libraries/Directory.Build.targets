@@ -7,6 +7,18 @@
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
+  <!-- Need to be defined before packaging.targets is imported. -->
+  <PropertyGroup>
+    <!-- The source of truth for these IsNETCoreApp* properties is NetCoreAppLibrary.props. -->
+    <IsNETCoreAppSrc Condition="'$(IsSourceProject)' == 'true' and
+                                $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppSrc>
+    <IsNETCoreAppRef Condition="('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
+                                $(NetCoreAppLibrary.Contains('$(AssemblyName);')) and
+                                '$(IsPrivateAssembly)' != 'true'">true</IsNETCoreAppRef>
+    <IsNETCoreAppAnalyzer Condition="'$(IsGeneratorProject)' == 'true' and
+                                     $(NetCoreAppLibraryGenerator.Contains('$(MSBuildProjectName);'))">true</IsNETCoreAppAnalyzer>
+  </PropertyGroup>
+
   <!-- resources.targets need to be imported before the Arcade SDK. -->
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />
@@ -47,14 +59,6 @@
     -->
     <WarningsAsErrors>$(WarningsAsErrors.Replace('NU1605', ''))</WarningsAsErrors>
 
-    <!-- The source of truth for these IsNETCoreApp* properties is NetCoreAppLibrary.props. -->
-    <IsNETCoreAppSrc Condition="'$(IsSourceProject)' == 'true' and
-                                $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppSrc>
-    <IsNETCoreAppRef Condition="('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
-                                $(NetCoreAppLibrary.Contains('$(AssemblyName);')) and
-                                '$(IsPrivateAssembly)' != 'true'">true</IsNETCoreAppRef>
-    <IsNETCoreAppAnalyzer Condition="'$(IsGeneratorProject)' == 'true' and
-                                     $(NetCoreAppLibraryGenerator.Contains('$(MSBuildProjectName);'))">true</IsNETCoreAppAnalyzer>
     <!-- Inbox analyzers shouldn't use the live targeting / runtime pack. They better depend on an LKG to avoid layering concerns. -->
     <UseLocalTargetingRuntimePack Condition="'$(IsNETCoreAppAnalyzer)' == 'true'">false</UseLocalTargetingRuntimePack>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
