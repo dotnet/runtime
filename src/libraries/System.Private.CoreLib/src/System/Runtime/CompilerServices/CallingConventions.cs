@@ -17,6 +17,9 @@ namespace System.Runtime.CompilerServices
     }
     public class CallConvSwift
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CallConvSwift" /> class.
+        /// </summary>
         public CallConvSwift() { }
     }
 
