@@ -13871,8 +13871,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 //
 void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 {
-    assert(opt == INS_OPTS_SCALABLE_B || opt == INS_OPTS_SCALABLE_H || opt == INS_OPTS_SCALABLE_S ||
-           opt == INS_OPTS_SCALABLE_D);
+    assert(insOptsScalable(opt));
     assert(isVectorRegister(reg));
     printf(emitSveRegName(reg));
     emitDispArrangement(opt);

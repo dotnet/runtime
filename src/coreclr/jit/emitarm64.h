@@ -617,6 +617,11 @@ inline static bool isValidScalarDatasize(emitAttr size)
     return (size == EA_8BYTE) || (size == EA_4BYTE);
 }
 
+inline static bool isValidScalableDatasize(emitAttr size)
+{
+    return ((size & EA_SCALABLE) == EA_SCALABLE);
+}
+
 inline static bool isValidVectorDatasize(emitAttr size)
 {
     return (size == EA_16BYTE) || (size == EA_8BYTE);
@@ -776,6 +781,12 @@ inline static bool insOptsConvertFloatToInt(insOpts opt)
 inline static bool insOptsConvertIntToFloat(insOpts opt)
 {
     return ((opt >= INS_OPTS_4BYTE_TO_S) && (opt <= INS_OPTS_8BYTE_TO_D));
+}
+
+inline static bool insOptsScalable(insOpts opt)
+{
+    return ((opt == INS_OPTS_SCALABLE_B || opt == INS_OPTS_SCALABLE_H || opt == INS_OPTS_SCALABLE_S ||
+             opt == INS_OPTS_SCALABLE_D));
 }
 
 static bool isValidImmCond(ssize_t imm);
