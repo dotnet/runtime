@@ -453,7 +453,7 @@
       <_WasiSdkClangArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
       <_WasiSdkClangArgs Include="-Wl,-s" Condition="'$(WasmNativeStrip)' == 'true'"/>
 
-      <_WasiSdkClangArgs Include="&quot;@$(_WasiClangDefaultLinkFlagsRsp)&quot;" />
+      <_WasiSdkClangArgs Include="&quot;@$(_WasiClangDefaultLinkFlagsRsp.Replace('\', '/'))&quot;" />
       <_WasiSdkClangArgs Include="@(_WasiClangXLinkerFlags -> '-Xlinker %(Identity)', ' ')" />
       <_WasiSdkClangArgs Include="@(_WasiClangLDFlags)" />
 
