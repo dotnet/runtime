@@ -7946,8 +7946,9 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
 #ifdef TARGET_ARM
     if (type == TYP_DOUBLE)
     {
-        // Exclude any doubles for which the odd half isn't in freeRegs.
-        freeRegs = freeRegs & ((freeRegs << 1) & RBM_ALLDOUBLE);
+        // Exclude any doubles for which the odd half isn't in freeRegs,
+        // and restrict down to just the even part of the even/odd pair.
+        freeRegs &= (freeRegs & RBM_ALLDOUBLE_HIGH) >> 1;
     }
 #endif
 
@@ -12462,13 +12463,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // is also available. Thus, for every busyReg that is an odd floating-point register, we need to
         // remove from candidates the corresponding even floating-point register. For example, if busyRegs
         // contains `f3`, we need to remove `f2` from the candidates for a double register interval. The
-        // `~(busyRegs >> 1)` clause below creates a mask to do this. Note one oddity: if busyRegs contained
-        // f0, we would mask off some general-purpose register. If it contains any general-purpose registers,
-        // the mask will also contain general-purpose registers. That's ok because candidates for a double
-        // type starts off as only the even floating-point registers, so masking off anything else is a no-op.
+        // clause below creates a mask to do this.
         if (currentInterval->registerType == TYP_DOUBLE)
         {
-            candidates &= ~(busyRegs >> 1);
+            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
         }
 #endif // TARGET_ARM
 
