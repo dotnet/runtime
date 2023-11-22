@@ -907,11 +907,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (displayBlockFlags)
             {
                 // Don't display the `[` `]` unless we're going to display something.
-                const bool            isTryEntryBlock = bbIsTryBeg(block);
-                const BasicBlockFlags allDisplayedBlockFlags =
-                    BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
+                const bool isTryEntryBlock = bbIsTryBeg(block);
 
-                if (isTryEntryBlock || block->HasFlag(allDisplayedBlockFlags))
+                if (isTryEntryBlock ||
+                    block->HasAnyFlags(BBF_FUNCLET_BEG, BBF_RUN_RARELY, BBF_LOOP_HEAD, BBF_LOOP_PREHEADER,
+                                       BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");

@@ -4100,8 +4100,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // Only rely upon the profile weight when all three of these blocks
         // have either good profile weights or are rarelyRun
         //
-        if (bJump->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) && bDest->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            bJump->Next()->HasFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
+        if (bJump->HasAnyFlags(BBF_PROF_WEIGHT, BBF_RUN_RARELY) &&
+            bDest->HasAnyFlags(BBF_PROF_WEIGHT, BBF_RUN_RARELY) &&
+            bJump->Next()->HasAnyFlags(BBF_PROF_WEIGHT, BBF_RUN_RARELY))
         {
             allProfileWeightsAreValid = true;
 

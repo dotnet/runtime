@@ -718,7 +718,26 @@ private:
 public:
     bool HasFlag(const BasicBlockFlags flag) const
     {
+        // Assert flag is not multiple BasicBlockFlags OR'd together
+        // by checking if it is a power of 2
+        // (HasFlag expects to check only one flag at a time)
+        assert((flag & (flag - 1)) == 0);
         return ((bbFlags & flag) != 0);
+    }
+
+private:
+    // Not a particularly useful wrapper for HasFlag.
+    // This is just to enable the templated definition below.
+    bool HasAnyFlags(const BasicBlockFlags flag) const
+    {
+        return HasFlag(flag);
+    }
+
+public:
+    template <typename... T>
+    bool HasAnyFlags(const BasicBlockFlags flag, T... rest) const
+    {
+        return HasAnyFlags(flag) || HasAnyFlags(rest...);
     }
 
     void CopyFlags(const BasicBlock* block, const BasicBlockFlags mask)
