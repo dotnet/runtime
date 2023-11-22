@@ -34,6 +34,8 @@ static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_Sha256_Arm64;
         case InstructionSet_Rdm:
             return InstructionSet_Rdm_Arm64;
+        case InstructionSet_Sve:
+            return InstructionSet_Sve_Arm64;
         default:
             return InstructionSet_NONE;
     }
@@ -96,6 +98,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Sha256") == 0)
         {
             return InstructionSet_Sha256;
+        }
+        if (strcmp(className, "Sve") == 0)
+        {
+            return InstructionSet_Sve;
         }
     }
     else if (className[0] == 'V')
@@ -166,6 +172,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_Sha1_Arm64:
         case InstructionSet_Sha256:
         case InstructionSet_Sha256_Arm64:
+        case InstructionSet_Sve:
+        case InstructionSet_Sve_Arm64:
         case InstructionSet_Vector64:
         case InstructionSet_Vector128:
             return true;
@@ -260,7 +268,13 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_StoreSelectedScalarVector64x2:
+            case NI_AdvSimd_StoreSelectedScalarVector64x3:
+            case NI_AdvSimd_StoreSelectedScalarVector64x4:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
@@ -1819,6 +1833,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (op2->TypeGet() == TYP_STRUCT)
             {
                 info.compNeedsConsecutiveRegisters = true;
+                switch (fieldCount)
+                {
+                    case 2:
+                        intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalarVector64x2
+                                                  : NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2;
+                        break;
+                    case 3:
+                        intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalarVector64x3
+                                                  : NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3;
+                        break;
+                    case 4:
+                        intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalarVector64x4
+                                                  : NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4;
+                        break;
+                    default:
+                        assert("unsupported");
+                }
 
                 if (!op2->OperIs(GT_LCL_VAR))
                 {

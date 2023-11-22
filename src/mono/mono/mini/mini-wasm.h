@@ -107,6 +107,6 @@ void mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTi
 void mono_wasm_print_stack_trace (void);
 
 gboolean
-mini_wasm_is_scalar_vtype (MonoType *type);
+mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype);
 
 #endif /* __MONO_MINI_WASM_H__ */

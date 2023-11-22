@@ -321,7 +321,7 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
                     ...);
 
 #ifdef DEBUG
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size);
+void hexDump(FILE* dmpf, BYTE* addr, size_t size);
 #endif // DEBUG
 
 /******************************************************************************

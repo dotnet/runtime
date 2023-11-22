@@ -559,6 +559,18 @@ void Compiler::optAssertionInit(bool isLocalProp)
             optCrossBlockLocalAssertionProp = false;
         }
 
+#ifdef DEBUG
+        // Disable per method via range
+        //
+        static ConfigMethodRange s_range;
+        s_range.EnsureInit(JitConfig.JitEnableCrossBlockLocalAssertionPropRange());
+        if (!s_range.Contains(info.compMethodHash()))
+        {
+            JITDUMP("Disabling cross-block assertion prop by config range\n");
+            optCrossBlockLocalAssertionProp = false;
+        }
+#endif
+
         // Disable if too many locals
         //
         // The typical number of local assertions is roughly proportional
@@ -2192,6 +2204,13 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     //
     GenTree* op1 = relop->AsOp()->gtOp1->gtCommaStoreVal();
     GenTree* op2 = relop->AsOp()->gtOp2->gtCommaStoreVal();
+
+    // Avoid creating local assertions for float types.
+    //
+    if (optLocalAssertionProp && varTypeIsFloating(op1))
+    {
+        return NO_ASSERTION_INDEX;
+    }
 
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
     if ((op1->gtOper != GT_LCL_VAR) && (op2->gtOper == GT_LCL_VAR))

@@ -2,14 +2,17 @@
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>DISABLE_RUNTIME_MARSHALLING;$(DefineConstants)</DefineConstants>
 
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/84402 -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />
-    <Compile Include="*.cs" />
-    <Compile Include="Native_DisabledMarshalling/DisabledRuntimeMarshallingNative.cs" />
+    <Compile Include="AutoLayout.cs" />
+    <Compile Include="FunctionPointers.cs" />
+    <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
+    <Compile Include="DisabledRuntimeMarshallingNative.cs" />
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

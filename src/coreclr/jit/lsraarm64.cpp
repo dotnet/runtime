@@ -1412,7 +1412,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_ExtractVector64:
                     case NI_AdvSimd_ExtractVector128:
                     case NI_AdvSimd_StoreSelectedScalar:
+                    case NI_AdvSimd_StoreSelectedScalarVector64x2:
+                    case NI_AdvSimd_StoreSelectedScalarVector64x3:
+                    case NI_AdvSimd_StoreSelectedScalarVector64x4:
                     case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1605,6 +1611,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                assert(intrin.op1 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildOperandUses(intrin.op2);
+                if (!intrin.op3->isContainedIntOrIImmed())
+                {
+                    srcCount += BuildOperandUses(intrin.op3);
+                }
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+
+            case NI_AdvSimd_StoreSelectedScalarVector64x2:
+            case NI_AdvSimd_StoreSelectedScalarVector64x3:
+            case NI_AdvSimd_StoreSelectedScalarVector64x4:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
             {
                 assert(intrin.op1 != nullptr);
                 assert(intrin.op3 != nullptr);

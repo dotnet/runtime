@@ -1543,7 +1543,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 // We rely on the fact that this does not clear out
                 // cur->bbNext or cur->bbPrev in the code that
                 // follows.
-                fgUnlinkBlock(cur);
+                fgUnlinkBlockForRemoval(cur);
             }
             else
             {
@@ -2361,6 +2361,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     /* Unlink bNext and update all the marker pointers if necessary */
 
     fgUnlinkRange(bNext, bNext);
+
+    fgBBcount--;
 
     // If bNext was the last block of a try or handler, update the EH table.
 
@@ -6331,7 +6333,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         */
 
                         fgRemoveRefPred(bNext, block);
-                        fgUnlinkBlock(bNext);
+                        fgUnlinkBlockForRemoval(bNext);
 
                         /* Mark the block as removed */
                         bNext->bbFlags |= BBF_REMOVED;

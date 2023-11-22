@@ -611,19 +611,6 @@ bool Compiler::bbIsHandlerBeg(BasicBlock* block)
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
 }
 
-bool Compiler::bbIsExFlowBlock(BasicBlock* block, unsigned* regionIndex)
-{
-    if (block->hasHndIndex())
-    {
-        *regionIndex = block->getHndIndex();
-        return block == ehGetDsc(*regionIndex)->ExFlowBlock();
-    }
-    else
-    {
-        return false;
-    }
-}
-
 bool Compiler::ehHasCallableHandlers()
 {
 #if defined(FEATURE_EH_FUNCLETS)
