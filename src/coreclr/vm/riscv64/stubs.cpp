@@ -1927,7 +1927,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 p += 4;
             }
 
-            if(pLookup->offsets[i] > 2047)
+            if (pLookup->offsets[i] > 2047)
             {
                 _ASSERTE(dataOffset < 2047);
                 *(DWORD*)p = ITypeInstr(0x3, 0x2, RegT4, RegT4, dataOffset & 0xfff);// lw  t4, dataOffset(t4)
@@ -1965,7 +1965,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 4;
 
             // CALL HELPER:
-            if(pBLTCall != NULL)
+            if (pBLTCall != NULL)
                 *(DWORD*)pBLTCall = BTypeInstr(0x63, 0x4, RegT4, RegT5, (UINT32)(p - pBLTCall));
 
             *(DWORD*)p = ITypeInstr(0x13, 0, RegA0, RegT2, 0);// addi  a0, t2, 0
@@ -1991,7 +1991,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 *(UINT32*)p = (UINT32)pLookup->sizeOffset;
                 p += 4;
             }
-            if(pLookup->offsets[i] > 2047)
+            if (pLookup->offsets[i] > 2047)
             {
                 *(UINT32*)p = (UINT32)pLookup->offsets[i];
                 p += 4;
