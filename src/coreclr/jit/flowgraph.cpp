@@ -3026,7 +3026,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     assert(nullptr == fgGetPredForBlock(block, newHead));
     fgAddRefPred(block, newHead);
 
-    assert((newHead->bbFlags & BBF_INTERNAL) == BBF_INTERNAL);
+    assert(newHead->CheckFlag(BBF_INTERNAL));
 }
 
 //------------------------------------------------------------------------

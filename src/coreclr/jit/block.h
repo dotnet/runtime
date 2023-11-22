@@ -714,9 +714,19 @@ public:
 
     BasicBlockFlags bbFlags;
 
+    bool CheckFlag(const BasicBlockFlags flag, const BasicBlockFlags target) const
+    {
+        return ((bbFlags & flag) == target);
+    }
+
+    bool CheckFlag(const BasicBlockFlags flag) const
+    {
+        return CheckFlag(flag, flag);
+    }
+
     bool HasFlag(const BasicBlockFlags flag) const
     {
-        return ((bbFlags & flag) != 0);
+        return !CheckFlag(flag, BBF_EMPTY);
     }
 
     void SetFlag(const BasicBlockFlags flag)

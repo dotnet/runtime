@@ -381,7 +381,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+        return block->CheckFlag((BBF_INTERNAL | BBF_IMPORTED), BBF_IMPORTED);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -649,7 +649,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
         bool first = true;
         for (BasicBlock* pred : block->PredBlocks())
         {
-            const bool isLivePred = ShouldProcess(pred) || ((pred->bbFlags & BBF_MARKED) == BBF_MARKED);
+            const bool isLivePred = ShouldProcess(pred) || pred->CheckFlag(BBF_MARKED);
             if (!isLivePred)
             {
                 continue;
@@ -1241,7 +1241,7 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
     // We'll use their bbNum in place of IL offset, and set
     // a high bit as a "flag"
     //
-    if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
+    if (block->CheckFlag(BBF_INTERNAL))
     {
         key = block->bbNum | IS_INTERNAL_BLOCK;
     }
@@ -1375,7 +1375,7 @@ public:
     void Prepare(bool isPreImport) override;
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & BBF_IMPORTED) == BBF_IMPORTED);
+        return block->CheckFlag(BBF_IMPORTED);
     }
     bool ShouldInstrument(BasicBlock* block) override
     {
@@ -2221,7 +2221,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+        return block->CheckFlag((BBF_INTERNAL | BBF_IMPORTED), BBF_IMPORTED);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
