@@ -5720,8 +5720,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 //
 bool Compiler::impBlockIsInALoop(BasicBlock* block)
 {
-    return (compIsForInlining() && impInlineInfo->iciBlock->HasFlag(BBF_BACKWARD_JUMP) ||
-            block->HasFlag(BBF_BACKWARD_JUMP));
+    return (compIsForInlining() && impInlineInfo->iciBlock->HasFlag(BBF_BACKWARD_JUMP)) ||
+           block->HasFlag(BBF_BACKWARD_JUMP);
 }
 
 #ifdef _PREFAST_
