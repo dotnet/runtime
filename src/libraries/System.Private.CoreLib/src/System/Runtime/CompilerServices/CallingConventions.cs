@@ -15,6 +15,9 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    /// <summary>
+    /// Indicates that a method should using the <see href="https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#calling-convention">Swift</see>calling convention.
+    /// </summary>
     public class CallConvSwift
     {
         /// <summary>
