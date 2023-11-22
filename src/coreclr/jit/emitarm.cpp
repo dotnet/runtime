@@ -4345,6 +4345,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     switch (ins)
     {
         case INS_b:
+        case INS_bl:
             fmt = IF_T2_J2; /* Assume the jump will be long */
             break;
 
@@ -4368,7 +4369,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
         default:
             unreached();
     }
-    assert((fmt == IF_LARGEJMP) || (fmt == IF_T2_J2));
 
     instrDescJmp* id  = emitNewInstrJmp();
     insSize       isz = emitInsSize(fmt);
@@ -4379,7 +4379,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
 #ifdef DEBUG
     // Mark the finally call
-    if (ins == INS_b && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
+    if ((ins == INS_bl) && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
     {
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
@@ -4391,7 +4391,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     if (dst != NULL)
     {
         id->idAddr()->iiaBBlabel = dst;
-        id->idjKeepLong          = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+        id->idjKeepLong          = (ins == INS_bl) || emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
 
 #ifdef DEBUG
         if (emitComp->opts.compLongAddress) // Force long branches

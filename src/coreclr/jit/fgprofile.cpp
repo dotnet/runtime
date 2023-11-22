@@ -533,10 +533,6 @@ void BlockCountInstrumentor::RelocateProbes()
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-                    m_comp->fgFixFinallyTargetFlags(pred, block, intermediary);
-#endif
                 }
             }
         }

@@ -510,12 +510,6 @@ void BasicBlock::dspFlags()
     {
         printf("nullcheck ");
     }
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (bbFlags & BBF_FINALLY_TARGET)
-    {
-        printf("ftarget ");
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_BACKWARD_JUMP)
     {
         printf("bwd ");
@@ -1661,16 +1655,8 @@ BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind
 //
 bool BasicBlock::isBBCallAlwaysPair() const
 {
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (this->KindIs(BBJ_CALLFINALLY))
-#else
     if (this->KindIs(BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
-#endif
     {
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        // On ARM, there are no retless BBJ_CALLFINALLY.
-        assert(!(this->bbFlags & BBF_RETLESS_CALL));
-#endif
         // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
         assert(!this->IsLast());
         assert(this->Next()->KindIs(BBJ_ALWAYS));
