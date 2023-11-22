@@ -309,6 +309,7 @@ namespace System.Collections.Generic
         // must be >= _size.
         private void SetCapacity(int capacity)
         {
+            Debug.Assert(capacity >= _size);
             T[] newarray = new T[capacity];
             if (_size > 0)
             {

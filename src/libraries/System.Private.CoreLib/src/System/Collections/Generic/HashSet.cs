@@ -1027,6 +1027,7 @@ namespace System.Collections.Generic
 
         private void SetCapacity(int capacity)
         {
+            Debug.Assert(capacity >= Count);
             int newSize = HashHelpers.GetPrime(capacity);
             Entry[]? oldEntries = _entries;
             int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;

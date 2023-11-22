@@ -21,9 +21,9 @@ namespace System.Collections.Tests
             return new Queue<T>();
         }
 
-        protected Queue<T> GenericQueueFactory(int count)
+        protected Queue<T> GenericQueueFactory(int count, int? capacity = null)
         {
-            Queue<T> queue = new Queue<T>(count);
+            Queue<T> queue = new Queue<T>(capacity ?? count);
             int seed = count * 34;
             for (int i = 0; i < count; i++)
                 queue.Enqueue(CreateT(seed++));
@@ -223,14 +223,21 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void Queue_TrimAccessCurrentCount_DoesNothing()
+        public void Queue_TrimAccessCurrentCount_ReducesToCount()
         {
-            var queue = GenericQueueFactory(100);
+            var queue = GenericQueueFactory(20, capacity: 30);
+            Assert.Equal(30, queue.Capacity);
+            Assert.Equal(20, queue.Count);
+
             queue.TrimExcess(queue.Count);
-            int capacity = queue.Capacity;
+
+            Assert.Equal(20, queue.Capacity);
+            Assert.Equal(20, queue.Count);
+
             queue.TrimExcess(queue.Count);
-            int capacityAgain = queue.Capacity;
-            Assert.Equal(capacity, capacityAgain);
+
+            Assert.Equal(20, queue.Capacity);
+            Assert.Equal(20, queue.Count);
         }
 
         [Theory]
