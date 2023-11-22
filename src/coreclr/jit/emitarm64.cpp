@@ -3768,61 +3768,61 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     }
 
     assert(encoding_found);
-    ins = (instruction)((unsigned)ins - INS_sve_invalid);
+    const unsigned sve_ins_offset = ((unsigned)ins - INS_sve_invalid);
 
     switch (index)
     {
         case 0:
-            assert(ins < ArrLen(insCodes1));
-            code = insCodes1[ins];
+            assert(sve_ins_offset < ArrLen(insCodes1));
+            code = insCodes1[sve_ins_offset];
             break;
         case 1:
-            assert(ins < ArrLen(insCodes2));
-            code = insCodes2[ins];
+            assert(sve_ins_offset < ArrLen(insCodes2));
+            code = insCodes2[sve_ins_offset];
             break;
         case 2:
-            assert(ins < ArrLen(insCodes3));
-            code = insCodes3[ins];
+            assert(sve_ins_offset < ArrLen(insCodes3));
+            code = insCodes3[sve_ins_offset];
             break;
         case 3:
-            assert(ins < ArrLen(insCodes4));
-            code = insCodes4[ins];
+            assert(sve_ins_offset < ArrLen(insCodes4));
+            code = insCodes4[sve_ins_offset];
             break;
         case 4:
-            assert(ins < ArrLen(insCodes5));
-            code = insCodes5[ins];
+            assert(sve_ins_offset < ArrLen(insCodes5));
+            code = insCodes5[sve_ins_offset];
             break;
         case 5:
-            assert(ins < ArrLen(insCodes6));
-            code = insCodes6[ins];
+            assert(sve_ins_offset < ArrLen(insCodes6));
+            code = insCodes6[sve_ins_offset];
             break;
         case 6:
-            assert(ins < ArrLen(insCodes7));
-            code = insCodes7[ins];
+            assert(sve_ins_offset < ArrLen(insCodes7));
+            code = insCodes7[sve_ins_offset];
             break;
         case 7:
-            assert(ins < ArrLen(insCodes8));
-            code = insCodes8[ins];
+            assert(sve_ins_offset < ArrLen(insCodes8));
+            code = insCodes8[sve_ins_offset];
             break;
         case 8:
-            assert(ins < ArrLen(insCodes9));
-            code = insCodes9[ins];
+            assert(sve_ins_offset < ArrLen(insCodes9));
+            code = insCodes9[sve_ins_offset];
             break;
         case 9:
-            assert(ins < ArrLen(insCodes10));
-            code = insCodes10[ins];
+            assert(sve_ins_offset < ArrLen(insCodes10));
+            code = insCodes10[sve_ins_offset];
             break;
         case 10:
-            assert(ins < ArrLen(insCodes11));
-            code = insCodes11[ins];
+            assert(sve_ins_offset < ArrLen(insCodes11));
+            code = insCodes11[sve_ins_offset];
             break;
         case 11:
-            assert(ins < ArrLen(insCodes12));
-            code = insCodes12[ins];
+            assert(sve_ins_offset < ArrLen(insCodes12));
+            code = insCodes12[sve_ins_offset];
             break;
         case 12:
-            assert(ins < ArrLen(insCodes13));
-            code = insCodes13[ins];
+            assert(sve_ins_offset < ArrLen(insCodes13));
+            code = insCodes13[sve_ins_offset];
             break;
     }
 
