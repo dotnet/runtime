@@ -13819,13 +13819,13 @@ namespace System.Runtime.InteropServices.Swift
 {
     public readonly struct SwiftSelf
     {
-        public SwiftSelf(IntPtr value) { }
-        public IntPtr Value { get; }
+        public SwiftSelf(System.IntPtr value) { }
+        public System.IntPtr Value { get; }
     }
     public readonly struct SwiftError
     {
-        public SwiftError(IntPtr value) { }
-        public IntPtr Value { get; }
+        public SwiftError(System.IntPtr value) { }
+        public System.IntPtr Value { get; }
     }
 }
 namespace System.Runtime.Remoting
