@@ -11,7 +11,6 @@
       _WasmAotCompileApp;
       _WasmStripAOTAssemblies;
       _PrepareForWasmBuildNative;
-      _GenerateDriverGenC;
       _GenerateManagedToNative;
       _WasmCompileNativeFiles;
       _WasmLinkDotNet;
@@ -547,9 +546,6 @@
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.js.symbols')" />
       <_WasmAssembliesInternal Remove="$(_WasmDedupAssembly)"/>
     </ItemGroup>
-  </Target>
-
-  <Target Name="_GenerateDriverGenC" Condition="'$(_WasmShouldAOT)' != 'true'">
   </Target>
 
   <Target Name="_ReadEmccProps" Condition="'$(_IsEMSDKMissing)' != 'true'">
