@@ -894,7 +894,7 @@ public:
     {
         if (this->bbWeight == BB_ZERO_WEIGHT)
         {
-            this->RemoveFlag((BBF_RUN_RARELY | BBF_PROF_WEIGHT));
+            this->RemoveFlag(BBF_RUN_RARELY | BBF_PROF_WEIGHT);
             this->bbWeight = 1;
         }
     }
