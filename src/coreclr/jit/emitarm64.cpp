@@ -1417,7 +1417,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
         }
         else if (size == EA_SCALABLE)
         {
-            rn = zRegNames[reg - REG_V0];
+            rn = zRegNames[reg - REG_Z0];
         }
     }
 
@@ -1437,9 +1437,9 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
 //
 const char* emitter::emitSveRegName(regNumber reg)
 {
-    assert((reg >= REG_V0) && (reg <= REG_V31));
+    assert((reg >= REG_Z0) && (reg <= REG_Z31));
 
-    int index = (int)reg - (int)REG_V0;
+    int index = (int)reg - (int)REG_Z0;
 
     return zRegNames[index];
 }
