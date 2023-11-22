@@ -36,7 +36,9 @@ public class WasiTemplateTests : BuildTestBase
         buildArgs = ExpandBuildArgs(buildArgs);
 
         if (aot)
-            AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
+        {
+            AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>");
+        }
 
         BuildProject(buildArgs,
                     id: id,
