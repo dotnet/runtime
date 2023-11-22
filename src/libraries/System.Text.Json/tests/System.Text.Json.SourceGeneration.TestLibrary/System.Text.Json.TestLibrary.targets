@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Text.Json.SourceGeneration" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\ref\System.Text.Json.csproj" />
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
