@@ -1254,18 +1254,20 @@ public:
      */
 
     union {
-        EXPSET_TP bbCseGen;       // CSEs computed by block
-        ASSERT_TP bbAssertionGen; // assertions computed by block
+        EXPSET_TP bbCseGen;             // CSEs computed by block
+        ASSERT_TP bbAssertionGen;       // assertions created by block (global prop)
+        ASSERT_TP bbAssertionOutIfTrue; // assertions available on exit along true/jump edge (BBJ_COND, local prop)
     };
 
     union {
         EXPSET_TP bbCseIn;       // CSEs available on entry
-        ASSERT_TP bbAssertionIn; // assertions available on entry
+        ASSERT_TP bbAssertionIn; // assertions available on entry (global prop)
     };
 
     union {
-        EXPSET_TP bbCseOut;       // CSEs available on exit
-        ASSERT_TP bbAssertionOut; // assertions available on exit
+        EXPSET_TP bbCseOut;              // CSEs available on exit
+        ASSERT_TP bbAssertionOut;        // assertions available on exit (global prop, local prop & !BBJ_COND)
+        ASSERT_TP bbAssertionOutIfFalse; // assertions available on exit along false/next edge (BBJ_COND, local prop)
     };
 
     void* bbEmitCookie;
@@ -1432,10 +1434,13 @@ public:
     };
 
     template <typename TFunc>
-    BasicBlockVisit VisitEHSecondPassSuccs(Compiler* comp, TFunc func);
+    BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
     BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
+    BasicBlockVisit VisitEHSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
     BasicBlockVisit VisitRegularSuccs(Compiler* comp, TFunc func);

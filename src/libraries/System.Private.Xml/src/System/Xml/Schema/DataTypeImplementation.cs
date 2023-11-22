@@ -1097,7 +1097,7 @@ namespace System.Xml.Schema
             if (exception != null) goto Error;
 
             ArrayList values = new ArrayList();
-            object array;
+            Type arrayType;
             if (_itemType.Variety == XmlSchemaDatatypeVariety.Union)
             {
                 object? unionTypedValue;
@@ -1113,7 +1113,7 @@ namespace System.Xml.Schema
                     XsdSimpleValue simpleValue = (XsdSimpleValue)unionTypedValue;
                     values.Add(new XmlAtomicValue(simpleValue.XmlType, simpleValue.TypedValue, nsmgr));
                 }
-                array = ToArray(values, typeof(XmlAtomicValue[]));
+                arrayType = typeof(XmlAtomicValue[]);
             }
             else
             { //Variety == List or Atomic
@@ -1126,12 +1126,16 @@ namespace System.Xml.Schema
                     values.Add(typedValue);
                 }
                 Debug.Assert(_itemType.ListValueType.GetElementType() == _itemType.ValueType);
-                array = ToArray(values, _itemType.ListValueType);
+                arrayType = _itemType.ListValueType;
             }
+
             if (values.Count < _minListSize)
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
+
+            Array array = Array.CreateInstanceFromArrayType(arrayType, values.Count);
+            values.CopyTo(array);
 
             exception = listFacetsChecker.CheckValueFacets(array, this);
             if (exception != null) goto Error;
@@ -1142,12 +1146,6 @@ namespace System.Xml.Schema
 
         Error:
             return exception;
-
-            // TODO: Replace with https://github.com/dotnet/runtime/issues/76478 once available
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
-                Justification = "Array type is always present as it is passed in as a parameter.")]
-            static Array ToArray(ArrayList values, Type arrayType)
-                => values.ToArray(arrayType.GetElementType()!);
         }
     }
 

@@ -77,7 +77,7 @@
   -->
 
   <PropertyGroup>
-    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
 

@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetEndComSlot_NullType_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => Marshal.GetEndComSlot(null));
+            AssertExtensions.Throws<ArgumentNullException>("t", () => Marshal.GetEndComSlot(null));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled), nameof(PlatformDetection.IsReflectionEmitSupported))]

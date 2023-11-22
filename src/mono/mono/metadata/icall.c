@@ -5966,9 +5966,9 @@ check_for_invalid_array_type (MonoType *type, MonoError *error)
 	gboolean allowed = TRUE;
 	char *name;
 
-	if (m_type_is_byref (type))
+	if (MONO_TYPE_IS_VOID (type))
 		allowed = FALSE;
-	else if (type->type == MONO_TYPE_TYPEDBYREF)
+	else if (m_type_is_byref (type))
 		allowed = FALSE;
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);

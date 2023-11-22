@@ -2097,78 +2097,41 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     getDisAssembler().disAsmCode((BYTE*)*codePtr, finalHotCodeSize, (BYTE*)coldCodePtr, finalColdCodeSize);
 #endif // LATE_DISASM
 
+#ifdef DEBUG
+    if (JitConfig.JitRawHexCode().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
+                                           &compiler->info.compMethodInfo->args))
+    {
+        BYTE* addr = (BYTE*)*codePtr + compiler->GetEmitter()->writeableOffset;
+
+        const WCHAR* rawHexCodeFilePath = JitConfig.JitRawHexCodeFile();
+        if (rawHexCodeFilePath)
+        {
+            FILE*   hexDmpf;
+            errno_t ec = _wfopen_s(&hexDmpf, rawHexCodeFilePath, W("at")); // NOTE: file append mode
+            if (ec == 0)
+            {
+                assert(hexDmpf);
+                hexDump(hexDmpf, addr, codeSize);
+                fclose(hexDmpf);
+            }
+        }
+        else
+        {
+            FILE* dmpf = jitstdout();
+
+            fprintf(dmpf, "Generated native code for %s:\n", compiler->info.compFullName);
+            hexDump(dmpf, addr, codeSize);
+            fprintf(dmpf, "\n\n");
+        }
+    }
+#endif // DEBUG
+
     /* Report any exception handlers to the VM */
 
     genReportEH();
 
-#ifdef JIT32_GCENCODER
-#ifdef DEBUG
-    void* infoPtr =
-#endif // DEBUG
-#endif
-        // Create and store the GC info for this method.
-        genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
-
-#ifdef DEBUG
-    FILE* dmpf = jitstdout();
-
-    compiler->opts.dmpHex = false;
-    if (!strcmp(compiler->info.compMethodName, "<name of method you want the hex dump for"))
-    {
-        FILE*   codf;
-        errno_t ec = fopen_s(&codf, "C:\\JIT.COD", "at"); // NOTE: file append mode
-        if (ec != 0)
-        {
-            assert(codf);
-            dmpf                  = codf;
-            compiler->opts.dmpHex = true;
-        }
-    }
-    if (compiler->opts.dmpHex)
-    {
-        size_t consSize = GetEmitter()->emitDataSize();
-
-        fprintf(dmpf, "Generated code for %s:\n", compiler->info.compFullName);
-        fprintf(dmpf, "\n");
-
-        if (codeSize)
-        {
-            fprintf(dmpf, "    Code  at %p [%04X bytes]\n", dspPtr(*codePtr), codeSize);
-        }
-        if (consSize)
-        {
-            fprintf(dmpf, "    Const at %p [%04X bytes]\n", dspPtr(consPtr), consSize);
-        }
-#ifdef JIT32_GCENCODER
-        size_t infoSize = compiler->compInfoBlkSize;
-        if (infoSize)
-            fprintf(dmpf, "    Info  at %p [%04X bytes]\n", dspPtr(infoPtr), infoSize);
-#endif // JIT32_GCENCODER
-
-        fprintf(dmpf, "\n");
-
-        if (codeSize)
-        {
-            hexDump(dmpf, "Code", (BYTE*)*codePtr, codeSize);
-        }
-        if (consSize)
-        {
-            hexDump(dmpf, "Const", (BYTE*)consPtr, consSize);
-        }
-#ifdef JIT32_GCENCODER
-        if (infoSize)
-            hexDump(dmpf, "Info", (BYTE*)infoPtr, infoSize);
-#endif // JIT32_GCENCODER
-
-        fflush(dmpf);
-    }
-
-    if (dmpf != jitstdout())
-    {
-        fclose(dmpf);
-    }
-
-#endif // DEBUG
+    // Create and store the GC info for this method.
+    genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
 
     /* Tell the emitter that we're done with this function */
 

@@ -86,19 +86,22 @@ private:
     void RenameLclUse(GenTreeLclVarCommon* lclNode, BasicBlock* block);
 
     // Assumes that "block" contains a definition for local var "lclNum", with SSA number "ssaNum".
-    // IF "block" is within one or more try blocks,
-    // and the local variable is live at the start of the corresponding handlers,
+    // IF "block" is within one or more blocks with EH successors,
+    // and the local variable is live at the start of the corresponding successors,
     // add this SSA number "ssaNum" to the argument list of the phi for the variable in the start
     // block of those handlers.
-    void AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigned ssaNum);
+    void AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, unsigned ssaNum);
 
     // Same as above, for memory.
-    void AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* block, unsigned ssaNum);
+    void AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock* block, unsigned ssaNum);
 
     // Add GT_PHI_ARG nodes to the GT_PHI nodes within block's successors.
     void AddPhiArgsToSuccessors(BasicBlock* block);
 
-private:
+    // Similar to Add[Memory]DefToEHSuccessorPhis, but adds initial values to
+    // the handlers of a newly entered block based on one entering block.
+    void AddPhiArgsToNewlyEnteredHandler(BasicBlock* predEnterBlock, BasicBlock* enterBlock, BasicBlock* handlerStart);
+
     Compiler*     m_pCompiler;
     CompAllocator m_allocator;
 

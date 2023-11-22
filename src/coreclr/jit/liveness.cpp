@@ -1048,86 +1048,15 @@ void Compiler::fgExtendDbgLifetimes()
 //                        function will add handler live vars into.
 //    memoryLiveness    - Set of memory liveness that will be added to.
 //
-// Notes:
-//    Assumes caller has screened candidate blocks to only those with
-//    exception flow, via `ehBlockHasExnFlowDsc`.
-//
-//    Exception flow can arise because of a newly raised exception (for
-//    blocks within try regions) or because of an actively propagating exception
-//    (for filter blocks). This flow effectively creates additional successor
-//    edges in the flow graph that the jit does not model. This method computes
-//    the net contribution from all the missing successor edges.
-//
-//    For example, with the following C# source, during EH processing of the throw,
-//    the outer filter will execute in pass1, before the inner handler executes
-//    in pass2, and so the filter blocks should show the inner handler's local is live.
-//
-//    try
-//    {
-//        using (AllocateObject())   // ==> try-finally; handler calls Dispose
-//        {
-//            throw new Exception();
-//        }
-//    }
-//    catch (Exception e1) when (IsExpectedException(e1))
-//    {
-//        Console.WriteLine("In catch 1");
-//    }
-//
 void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness)
 {
     assert(block->HasPotentialEHSuccs(this));
 
-    if (ehBlockHasExnFlowDsc(block))
-    {
-        EHblkDsc* HBtab = ehGetBlockExnFlowDsc(block);
-
-        do
-        {
-            /* Either we enter the filter first or the catch/finally */
-            if (HBtab->HasFilter())
-            {
-                VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdFilter->bbLiveIn);
-                memoryLiveness |= HBtab->ebdFilter->bbMemoryLiveIn;
-#if defined(FEATURE_EH_FUNCLETS)
-                // The EH subsystem can trigger a stack walk after the filter
-                // has returned, but before invoking the handler, and the only
-                // IP address reported from this method will be the original
-                // faulting instruction, thus everything in the try body
-                // must report as live any variables live-out of the filter
-                // (which is the same as those live-in to the handler)
-                VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdHndBeg->bbLiveIn);
-                memoryLiveness |= HBtab->ebdHndBeg->bbMemoryLiveIn;
-#endif // FEATURE_EH_FUNCLETS
-            }
-            else
-            {
-                VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdHndBeg->bbLiveIn);
-                memoryLiveness |= HBtab->ebdHndBeg->bbMemoryLiveIn;
-            }
-
-            /* If we have nested try's edbEnclosing will provide them */
-            noway_assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
-                         (HBtab->ebdEnclosingTryIndex > ehGetIndex(HBtab)));
-
-            unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
-            if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-            {
-                break;
-            }
-            HBtab = ehGetDsc(outerIndex);
-
-        } while (true);
-    }
-
-    if (bbInFilterBBRange(block))
-    {
-        block->VisitEHSecondPassSuccs(this, [this, &ehHandlerLiveVars, &memoryLiveness](BasicBlock* succ) {
-            VarSetOps::UnionD(this, ehHandlerLiveVars, succ->bbLiveIn);
-            memoryLiveness |= succ->bbMemoryLiveIn;
-            return BasicBlockVisit::Continue;
-        });
-    }
+    block->VisitEHSuccs(this, [&](BasicBlock* succ) {
+        VarSetOps::UnionD(this, ehHandlerLiveVars, succ->bbLiveIn);
+        memoryLiveness |= succ->bbMemoryLiveIn;
+        return BasicBlockVisit::Continue;
+    });
 }
 
 class LiveVarAnalysis

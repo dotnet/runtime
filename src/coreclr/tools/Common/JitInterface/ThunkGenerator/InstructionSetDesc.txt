@@ -168,6 +168,7 @@ instructionset     ,ARM64 ,                      ,        ,   ,Dczva            
 instructionset     ,ARM64 ,                      ,Rcpc    ,26 ,Rcpc                  ,rcpc
 instructionset     ,ARM64 ,VectorT128            ,        ,39 ,VectorT128            ,vectort128
 instructionset     ,ARM64 ,                      ,Rcpc2   ,42 ,Rcpc2                 ,rcpc2
+instructionset     ,ARM64 ,Sve                   ,        ,43 ,Sve                   ,sve
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd
@@ -177,6 +178,7 @@ instructionset64bit,ARM64 ,Dp
 instructionset64bit,ARM64 ,Rdm
 instructionset64bit,ARM64 ,Sha1
 instructionset64bit,ARM64 ,Sha256
+instructionset64bit,ARM64 ,Sve
 
 vectorinstructionset,ARM64,Vector64
 vectorinstructionset,ARM64,Vector128
@@ -191,6 +193,7 @@ implication        ,ARM64 ,Sha256     ,ArmBase
 implication        ,ARM64 ,Vector64   ,AdvSimd
 implication        ,ARM64 ,Vector128  ,AdvSimd
 implication        ,ARM64 ,VectorT128 ,AdvSimd
+implication        ,ARM64 ,Sve        ,AdvSimd
 
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
 ;

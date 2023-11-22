@@ -150,6 +150,26 @@
                 (builder ??= new()).AddResults(validationResults);
             }
 
+            context.MemberName = "P13";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P13" : $"{name}.P13";
+            validationResults.Clear();
+            validationAttributes.Clear();
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes_2C497155.A6);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P13, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "P14";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P14" : $"{name}.P14";
+            validationResults.Clear();
+            validationAttributes.Clear();
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes_2C497155.A7);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P14, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
         }
     }
@@ -175,6 +195,16 @@ namespace __OptionValidationStaticInstances
 
         internal static readonly __OptionValidationGeneratedAttributes.__SourceGen__2C497155_CompareAttribute A5 = new __OptionValidationGeneratedAttributes.__SourceGen__2C497155_CompareAttribute(
             "P5");
+
+        internal static readonly __OptionValidationGeneratedAttributes.__SourceGen__2C497155_RangeAttribute A6 = new __OptionValidationGeneratedAttributes.__SourceGen__2C497155_RangeAttribute(
+            typeof(global::System.TimeSpan),
+            "00:00:00",
+            "23:59:59");
+
+        internal static readonly __OptionValidationGeneratedAttributes.__SourceGen__2C497155_RangeAttribute A7 = new __OptionValidationGeneratedAttributes.__SourceGen__2C497155_RangeAttribute(
+            typeof(global::System.TimeSpan),
+            "01:00:00",
+            "23:59:59");
     }
 }
 namespace __OptionValidationStaticInstances
@@ -395,19 +425,34 @@ namespace __OptionValidationGeneratedAttributes
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
         private bool NeedToConvertMinMax { get; }
         private bool Initialized { get; set; }
+        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+
         public override bool IsValid(object? value)
         {
             if (!Initialized)
             {
                 if (Minimum is null || Maximum is null)
                 {
-                    throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
+                    throw new global::System.InvalidOperationException(c_minMaxError);
                 }
                 if (NeedToConvertMinMax)
                 {
                     System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
-                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
+                    if (OperandType == typeof(global::System.TimeSpan))
+                    {
+                        if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
+                            !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                        {
+                            throw new global::System.InvalidOperationException(c_minMaxError);
+                        }
+                        Minimum = timeSpanMinimum;
+                        Maximum = timeSpanMaximum;
+                    }
+                    else
+                    {
+                        Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                        Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                    }
                 }
                 int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
                 if (cmp > 0)
@@ -429,13 +474,35 @@ namespace __OptionValidationGeneratedAttributes
             System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
             object? convertedValue;
 
-            try
+            if (OperandType == typeof(global::System.TimeSpan))
             {
-                convertedValue = ConvertValue(value, formatProvider);
+                if (value is global::System.TimeSpan)
+                {
+                    convertedValue = value;
+                }
+                else if (value is string)
+                {
+                    if (!global::System.TimeSpan.TryParse((string)value, formatProvider, out global::System.TimeSpan timeSpanValue))
+                    {
+                        return false;
+                    }
+                    convertedValue = timeSpanValue;
+                }
+                else
+                {
+                    throw new global::System.InvalidOperationException($"A value type {value.GetType()} that is not a TimeSpan or a string has been given. This might indicate a problem with the source generator.");
+                }
             }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+            else
             {
-                return false;
+                try
+                {
+                    convertedValue = ConvertValue(value, formatProvider);
+                }
+                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                {
+                    return false;
+                }
             }
 
             var min = (global::System.IComparable)Minimum;
