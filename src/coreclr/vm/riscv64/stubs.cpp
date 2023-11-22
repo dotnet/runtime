@@ -1859,7 +1859,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             codeSize += 12; // beq-ret-addi
 
             //padding for 8-byte align (required by EmitHelperWithArg)
-            codeSize += ALIGN_UP(codeSize, 8);
+            codeSize = ALIGN_UP(codeSize, 8);
 
             codeSize += 32; // size of EmitHelperWithArg
         }
