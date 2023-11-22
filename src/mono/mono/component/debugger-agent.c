@@ -7950,7 +7950,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_objid (buf, o);
 		break;
 	}
-	case MDBGPROT_CMD_APPDOMAIN_GET_TYPE: {
+	case MDBGPROT_CMD_APPDOMAIN_GET_ARRAY_OR_POINTER_TYPE: {
 		MonoClass *klass;
 		domain = decode_domainid (p, &p, end, NULL, &err);
 		MonoTypeEnum type = decode_int (p, &p, end);
