@@ -30,48 +30,35 @@ public class InvalidCallingConvTests
     [Fact]
     public static void TestFuncWithTwoSelfParameters()
     {
-        SwiftSelf self = new SwiftSelf(IntPtr.Zero);
-
+        // Invalid due to multiple SwiftSelf arguments.
+        SwiftSelf self = new SwiftSelf();
         Assert.Throws<InvalidProgramException>(() => FuncWithTwoSelfParameters(self, self));
     }
 
     [Fact]
     public unsafe static void TestFuncWithTwoErrorParameters()
     {
-        SwiftError error = new SwiftError(IntPtr.Zero);
-
-        try
-        {
-            FuncWithTwoErrorParameters(&error, &error);
-            Assert.Fail("FuncWithTwoErrorParameters should have thrown InvalidProgramException. Invalid due to multiple SwiftError arguments.");
-        }
-        catch (InvalidProgramException e) { }
+        // Invalid due to multiple SwiftError arguments.
+        SwiftError error = new SwiftError();
+        SwiftError* errorPtr = &error;
+        Assert.Throws<InvalidProgramException>(() => FuncWithTwoErrorParameters(errorPtr, errorPtr));
     }
 
     [Fact]
     public unsafe static void TestFuncWithMixedParameters()
     {
-        SwiftSelf self = new SwiftSelf(IntPtr.Zero);
-        SwiftError error = new SwiftError(IntPtr.Zero);
-
-        try
-        {
-            FuncWithMixedParameters(self, self, &error, &error);
-            Assert.Fail("FuncWithMixedParameters should have thrown InvalidProgramException. Invalid due to multiple SwiftSelf/SwiftError arguments.");
-        }
-        catch (InvalidProgramException e) { }
+        // Invalid due to multiple SwiftSelf/SwiftError arguments.
+        SwiftSelf self = new SwiftSelf();
+        SwiftError error = new SwiftError();
+        SwiftError* errorPtr = &error;
+        Assert.Throws<InvalidProgramException>(() => FuncWithMixedParameters(self, self, errorPtr, errorPtr));
     }
 
     [Fact]
     public unsafe static void TestFuncWithSwiftErrorAsArg()
     {
-        SwiftError error = new SwiftError(IntPtr.Zero);
-
-        try
-        {
-            FuncWithSwiftErrorAsArg(error);
-            Assert.Fail("FuncWithSwiftErrorAsArg should have thrown InvalidProgramException. Invalid due to SwiftError not passed as a pointer.");
-        }
-        catch (InvalidProgramException e) { }
+        // Invalid due to SwiftError not passed as a pointer.
+        SwiftError error = new SwiftError();
+        Assert.Throws<InvalidProgramException>(() => FuncWithSwiftErrorAsArg(error));
     }
 }
