@@ -12252,6 +12252,7 @@ static int64_t TypeLoadTickCount = 0;
 
 struct TypeLoadTiming
 {
+    uint32_t Thread;
     int64_t Ticks;
     TypeHandle Type;
 };
@@ -12277,12 +12278,13 @@ void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks)
     long timingIndex = InterlockedIncrement(&TypeLoadRingBufferIndex) - 1;
     if (timingIndex >= 0 && timingIndex < RING_BUFFER_SIZE)
     {
+        TypeLoadTimingRingBuffer[timingIndex].Thread = GetCurrentThreadId();
         TypeLoadTimingRingBuffer[timingIndex].Ticks = ticks;
         TypeLoadTimingRingBuffer[timingIndex].Type = type;
     }
 }
 
-void DumpTimingInfo(const char *action, int64_t callCount, int64_t tickCount)
+void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount)
 {
 #if !defined(DACCESS_COMPILE)
     static Crst lock(CrstPEImage);
@@ -12290,13 +12292,25 @@ void DumpTimingInfo(const char *action, int64_t callCount, int64_t tickCount)
     CrstHolder holder(&lock);
 
     static long timingCallCount = 0;
-    static char buffer[1024];
+    static const int BufferSize = 1024;
+    static char buffer[BufferSize];
+    static const char *TimingInfoFileName =
+#ifdef TARGET_WINDOWS
+        "\\"
+#else
+        "/"
+#endif
+        "timing-info.txt";
     
     if (LogFileHandle == INVALID_HANDLE_VALUE)
     {
         QueryPerformanceFrequency((LARGE_INTEGER *)&TimerFrequency);
-        
-        LogFileHandle = CreateFileA("c:\\triage\\functions\\timing-info.txt",
+        GetCurrentDirectoryA(BufferSize, buffer);
+        strcat_s(buffer, BufferSize, TimingInfoFileName);
+        fputs("Output file: ", stdout);
+        puts(buffer);
+
+        LogFileHandle = CreateFileA(buffer,
             GENERIC_READ | GENERIC_WRITE,
             0,
             NULL,
@@ -12304,12 +12318,12 @@ void DumpTimingInfo(const char *action, int64_t callCount, int64_t tickCount)
             FILE_ATTRIBUTE_NORMAL,
             NULL);
 
-        const char *titleLine = "CALLS/INDEX |      TICKS |         SECS | ACTION\n";
+        const char *titleLine = "CALLS/INDEX |   THREAD |         SECS | ACTION\n";
         WriteFile(LogFileHandle, titleLine, (DWORD)strlen(titleLine), nullptr, nullptr);
         fputs(titleLine, stdout);
     }
     
-    snprintf(buffer, sizeof(buffer), "%11lld | %10lld | %12.9f | %s\n", callCount, tickCount, tickCount / (double)TimerFrequency, action);
+    snprintf(buffer, sizeof(buffer), "%11lld | %8x | %12.9f | %s\n", callCount, threadID, tickCount / (double)TimerFrequency, action);
     fputs(buffer, stdout);
     WriteFile(LogFileHandle, buffer, (DWORD)strlen(buffer), nullptr, nullptr);
 #endif
@@ -12364,10 +12378,12 @@ char *FormatTypeName(char *typeBuffer, TypeHandle type)
 
 void DumpTypeLoadTimingInfo()
 {
+    HashMap threadMap;
+    threadMap.Init(/*cbInitialSize*/ 32, /*fAsyncMode*/ false, /*pLock*/ nullptr);
 
     for (int32_t ringBufferIndex = 0; ringBufferIndex < TypeLoadRingBufferIndex; ringBufferIndex++)
     {
-        TypeLoadTiming& timing = TypeLoadTimingRingBuffer[ringBufferIndex];
+        const TypeLoadTiming& timing = TypeLoadTimingRingBuffer[ringBufferIndex];
         char *typeBuffer = FormatTypeName(TypeNameBuffer, timing.Type);
 
         if (typeBuffer >= TypeNameBuffer + TypeNameBufferSize)
@@ -12375,10 +12391,33 @@ void DumpTypeLoadTimingInfo()
             CrashDumpAndTerminateProcess(STATUS_STACK_BUFFER_OVERRUN);
         }
         
-        DumpTimingInfo(TypeNameBuffer, ringBufferIndex, timing.Ticks);
+        DumpTimingInfo(TypeNameBuffer, timing.Thread, ringBufferIndex, timing.Ticks);
+        if (threadMap.LookupValue(timing.Thread, timing.Thread) == INVALIDENTRY)
+        {
+            threadMap.InsertValue(timing.Thread, timing.Thread);
+        }
     }
 
-    DumpTimingInfo("LoadTypeHandleForTypeKey", TypeLoadCallCount, TypeLoadTickCount);
+    for (HashMap::Iterator it = threadMap.begin(); !it.end(); ++it)
+    {
+        uint32_t threadID = (uint32_t)it.GetKey();
+        int32_t sumCount = 0;
+        int64_t sumTicks = 0;
+        for (int32_t ringBufferIndex = 0; ringBufferIndex < TypeLoadRingBufferIndex; ringBufferIndex++)
+        {
+            const TypeLoadTiming& timing = TypeLoadTimingRingBuffer[ringBufferIndex];
+            if (timing.Thread == threadID)
+            {
+                sumTicks += timing.Ticks;
+                sumCount++;
+            }
+        }
+        char buffer[100];
+        sprintf(buffer, "LoadTypeHandleForTypeKey @ %08x", threadID);
+        DumpTimingInfo(buffer, threadID, sumCount, sumTicks);
+    }
+
+    DumpTimingInfo("LoadTypeHandleForTypeKey", GetCurrentThreadId(), TypeLoadCallCount, TypeLoadTickCount);
 }
 
 //---------------------------------------------------------------------------------------

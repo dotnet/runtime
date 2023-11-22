@@ -2563,12 +2563,12 @@ static int64_t AssemblyLoadCallCount = 0;
 static int64_t AssemblyLoadTickCount = 0;
 
 int64_t GetPreciseTickCount();
-void DumpTimingInfo(const char *action, int64_t callCount, int64_t tickCount);
+void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount);
 
 void DumpAssemblyLoadTimingInfo()
 {
 #ifndef DACCESS_COMPILE
-    DumpTimingInfo("AppDomain::LoadDomainAssembly", AssemblyLoadCallCount, AssemblyLoadTickCount);
+    DumpTimingInfo("AppDomain::LoadDomainAssembly", GetCurrentThreadId(), AssemblyLoadCallCount, AssemblyLoadTickCount);
 #endif
 }
 
