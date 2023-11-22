@@ -38,7 +38,7 @@ unsafe partial class GenericsNative
 
 public unsafe partial class GenericsTest
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsXArch))]
     public static void TestVector256L()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256L(1L, 2L, 3L, 4L));

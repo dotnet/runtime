@@ -106,6 +106,8 @@ public unsafe partial class Program
     const int Fail = 0;
 
     [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/181", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         bool succeeded = true;
