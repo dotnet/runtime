@@ -51,7 +51,7 @@
 #define L(t) L##t
 #define W(str)  L##str
 
-typedef unsigned error_t;
+typedef uint32_t error_t;
 typedef HANDLE THREAD_ID;
 
 #define DLL_EXPORT __declspec(dllexport)
@@ -60,21 +60,20 @@ typedef HANDLE THREAD_ID;
 #include <pthread.h>
 
 typedef char16_t WCHAR;
-typedef unsigned int DWORD;
+typedef uint32_t DWORD;
 
 #ifdef OBJC_TESTS
 // The Objective-C headers define the BOOL type to be unsigned char or bool.
 // As a result, we can't redefine it here. So instead, define WINBOOL to be int-sized.
-typedef int WINBOOL;
+typedef int32_t WINBOOL;
 #else
-typedef int BOOL;
+typedef int32_t BOOL;
 #endif
 typedef WCHAR *LPWSTR, *PWSTR;
 typedef const WCHAR *LPCWSTR, *PCWSTR;
 
-typedef int HRESULT;
+typedef int32_t HRESULT;
 
-typedef unsigned long long ULONGLONG;
 typedef int32_t LONG, *PLONG;
 typedef uint32_t ULONG, *PULONG;
 
@@ -82,23 +81,12 @@ typedef uint32_t ULONG, *PULONG;
 #define SUCCEEDED(_hr)          ((HRESULT)(_hr) >= 0)
 #define FAILED(_hr)             ((HRESULT)(_hr) < 0)
 
-#define CCH_BSTRMAX 0x7FFFFFFF  // 4 + (0x7ffffffb + 1 ) * 2 ==> 0xFFFFFFFC
-#define CB_BSTRMAX 0xFFFFFFFa   // 4 + (0xfffffff6 + 2) ==> 0xFFFFFFFC
-
 #ifdef RC_INVOKED
 #define _HRESULT_TYPEDEF_(_sc) _sc
 #else // RC_INVOKED
 #define _HRESULT_TYPEDEF_(_sc) ((HRESULT)_sc)
 #endif // RC_INVOKED
 #define E_INVALIDARG                     _HRESULT_TYPEDEF_(0x80070057L)
-
-#ifdef HOST_64BIT
-#define __int64     long
-#else // HOST_64BIT
-#define __int64     long long
-#endif // HOST_64BIT
-
-#define UInt32x32To64(a, b) ((unsigned __int64)((ULONG)(a)) * (unsigned __int64)((ULONG)(b)))
 
 #ifndef TRUE
 #define TRUE 1
