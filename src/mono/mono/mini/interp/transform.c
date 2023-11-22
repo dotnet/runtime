@@ -729,7 +729,9 @@ handle_branch (TransformData *td, int long_op, int offset)
 	if (offset > 0)
 		init_bb_stack_state (td, target_bb);
 
-	interp_link_bblocks (td, td->cbb, target_bb);
+	// We don't link finally blocks into the cfg (or other handler blocks for that matter)
+	if (long_op != MINT_CALL_HANDLER)
+		interp_link_bblocks (td, td->cbb, target_bb);
 
 	interp_add_ins (td, long_op);
 	td->last_ins->info.target_bb = target_bb;
