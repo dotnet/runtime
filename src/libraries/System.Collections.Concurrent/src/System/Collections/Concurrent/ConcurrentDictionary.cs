@@ -1545,7 +1545,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Gets a snapshot containing all the keys in the <see cref="ConcurrentDictionary{TKey,TValue}"/>.
         /// </summary>
-        /// <remarks>It's a standalone copy of all the keys. It's not kept in sync with <see cref="ConcurrentDictionary{TKey,TValue}"/>.</remarks>
+        /// <remarks>The property returns a copy of all the keys. It's not kept in sync with <see cref="ConcurrentDictionary{TKey,TValue}"/>.</remarks>
         public ICollection<TKey> Keys => GetKeys();
 
         /// <inheritdoc cref="Keys"/>
@@ -1554,7 +1554,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Gets a snapshot containing all the values in the <see cref="ConcurrentDictionary{TKey,TValue}"/>.
         /// </summary>
-        /// <remarks>It's a standalone copy of all the values. It's not kept in sync with <see cref="ConcurrentDictionary{TKey,TValue}"/>.</remarks>
+        /// <remarks>The property returns a copy of all the values. It's not kept in sync with <see cref="ConcurrentDictionary{TKey,TValue}"/>.</remarks>
         public ICollection<TValue> Values => GetValues();
 
         /// <inheritdoc cref="Values"/>
