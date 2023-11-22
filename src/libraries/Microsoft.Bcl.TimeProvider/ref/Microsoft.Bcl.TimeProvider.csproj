@@ -13,6 +13,6 @@
     <Compile Include="Microsoft.Bcl.TimeProvider.Common.cs" />
   </ItemGroup>
  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+   <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\ref\Microsoft.Bcl.AsyncInterfaces.csproj" />
  </ItemGroup>
 </Project>
