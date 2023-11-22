@@ -3,7 +3,6 @@
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
 #
-##
 # Title:               run.py
 #
 # Notes:
@@ -34,10 +33,8 @@
 ################################################################################
 
 import argparse
-import datetime
 import fnmatch
 import json
-import math
 import os
 import shutil
 import subprocess
@@ -57,9 +54,10 @@ from coreclr_arguments import *
 # Argument Parser
 ################################################################################
 
-description = ("""Universal script to setup and run the xunit console runner. The script relies
+description = """
+Script to run the xunit console runner. The script relies
 on build.proj and the bash and batch wrappers. All test excludes will also
-come from issues.targets. If there is a jit stress or gc stress exclude,
+come from issues.targets. If there is a JIT stress or GC stress exclude,
 please add GCStressIncompatible or JitOptimizationSensitive to the test's
 ilproj or csproj.
 
@@ -73,11 +71,17 @@ Note that for linux targets the native components to the tests are still built
 by the product build. This requires all native components to be either copied
 into the Core_Root directory or the test's managed directory. The latter is
 prone to failure; however, copying into the Core_Root directory may create
-naming conflicts.""")
+naming conflicts.
+"""
 
 parallel_help = """
 Specify the level of parallelism: none, collections, assemblies, all. Default: collections.
 `-parallel none` is a synonym for `--sequential`.
+"""
+
+logs_dir_help = """
+Specify the directory where log files are written. Default: a unique new directory inside
+the 'artifacts' directory in the sequence: 'log', 'log.1', 'log.2', 'log.3', etc.
 """
 
 parser = argparse.ArgumentParser(description=description)
@@ -90,6 +94,7 @@ parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
 parser.add_argument("-runtime_repo_location", dest="runtime_repo_location", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 parser.add_argument("-test_env", dest="test_env", default=None)
 parser.add_argument("-parallel", dest="parallel", default=None, help=parallel_help)
+parser.add_argument("-logs_dir", dest="logs_dir", default=None, help=logs_dir_help)
 
 # Optional arguments which change execution.
 
@@ -100,7 +105,6 @@ parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_tru
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
-parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
@@ -123,65 +127,38 @@ file_name_cache = defaultdict(lambda: None)
 # Classes
 ################################################################################
 
-class TempFile:
-    def __init__(self, extension):
-        self.file = None
-        self.file_name = None
-        self.extension = extension
-
-    def __enter__(self):
-        self.file = tempfile.NamedTemporaryFile(delete=False, suffix=self.extension)
-
-        self.file_name = self.file.name
-
-        return self.file_name
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            os.remove(self.file_name)
-        except:
-            print("Error failed to delete: {}.".format(self.file_name))
-
 class DebugEnv:
-    def __init__(self,
-                 args,
-                 env,
-                 test):
+    def __init__(self, args, env, test):
         """ Go through the failing tests and create repros for them
 
         Args:
             args
             env                     : env for the repro
             test ({})               : The test metadata
-
         """
-        self.unique_name = "%s_%s_%s_%s" % (test["test_path"],
-                                            args.host_os,
-                                            args.arch,
-                                            args.build_type)
+        self.test_path = test["test_path"]
+        assert self.test_path is not None
 
         self.args = args
         self.env = env
         self.test = test
-        self.test_location = test["test_path"]
 
         self.__create_repro_wrapper__()
 
-        self.path = None
+        test_script_basename = os.path.basename(self.test_path)
+        test_script_dirname  = os.path.dirname(self.test_path)
+        test_script_relpath = os.path.relpath(test_script_dirname, start=args.test_location)
+        repro_script_name = "repro_" + test_script_basename
 
-        if self.args.host_os == "windows":
-            self.path = self.unique_name + ".cmd"
-        else:
-            self.path = self.unique_name + ".sh"
+        repro_dir = os.path.join(args.repro_location, test_script_relpath)
+        if not os.path.isdir(repro_dir):
+            os.makedirs(repro_dir)
 
-        repro_location = os.path.join(self.args.artifacts_location, "repro", "%s.%s.%s" % (self.args.host_os, self.args.arch, self.args.build_type))
-        assert os.path.isdir(repro_location)
+        self.path = os.path.join(repro_dir, repro_script_name)
 
-        self.repro_location = repro_location
-
-        self.path = os.path.join(repro_location, self.path)
-
-        exe_location = os.path.splitext(self.test_location)[0] + ".exe"
+        # NOTE: the JSON launch config creation code appears to be unused (broken): we don't create .exe tests anymore.
+        # Maybe it could be resurrected based on .dll tests invoked by corerun.exe, if anyone cares?
+        exe_location = os.path.splitext(self.test_path)[0] + ".exe"
         if os.path.isfile(exe_location):
             self.exe_location = exe_location
             self.__add_configuration_to_launch_json__()
@@ -193,10 +170,9 @@ class DebugEnv:
             This will allow debugging using the cpp extension in vscode.
         """
 
-        repro_location = self.repro_location
-        assert os.path.isdir(repro_location)
+        assert os.path.isdir(self.args.repro_location)
 
-        vscode_dir = os.path.join(repro_location, ".vscode")
+        vscode_dir = os.path.join(self.args.repro_location, ".vscode")
         if not os.path.isdir(vscode_dir):
             os.mkdir(vscode_dir)
 
@@ -249,11 +225,13 @@ class DebugEnv:
 
             environment.append(env)
 
+        unique_name = "%s_%s_%s_%s" % (self.test_path, self.args.host_os, self.args.arch, self.args.build_type)
+        corerun_path = os.path.join(self.args.core_root, "corerun%s" % (".exe" if self.args.host_os == "windows" else ""))
         configuration = defaultdict(lambda: None, {
-            "name": self.unique_name,
+            "name": unique_name,
             "type": dbg_type,
             "request": "launch",
-            "program": self.args.corerun_path,
+            "program": corerun_path,
             "args": [self.exe_location],
             "stopAtEntry": False,
             "cwd": os.path.join("${workspaceFolder}", "..", ".."),
@@ -268,7 +246,7 @@ class DebugEnv:
         # Update configuration if it already exists.
         config_exists = False
         for index, config in enumerate(configurations):
-            if config["name"] == self.unique_name:
+            if config["name"] == unique_name:
                 configurations[index] = configuration
                 config_exists = True
 
@@ -296,21 +274,17 @@ class DebugEnv:
 
         wrapper = \
 """@echo off
+setlocal
 REM ============================================================================
 REM Repro environment for %s
 REM
-REM Notes:
-REM
-REM This wrapper is automatically generated by run.py. It includes the
-REM necessary environment to reproduce a failure that occurred during running
-REM the tests.
+REM This wrapper is automatically generated by run.py. It includes the necessary environment to
+REM reproduce a failure that occurred during running the tests.
 REM
 REM In order to change how this wrapper is generated, see
 REM run.py:__create_batch_wrapper__(). Please note that it is possible
-REM to recreate this file by running src/tests/run.py --analyze_results_only
-REM with the appropriate environment set and the correct arch and build_type
-REM passed.
-REM
+REM to recreate this file by running `src/tests/run.py --analyze_results_only`
+REM passing the correct arch and build_type.
 REM ============================================================================
 
 REM Set Core_Root if it has not been already set.
@@ -318,18 +292,16 @@ if "%%CORE_ROOT%%"=="" set CORE_ROOT=%s
 
 echo Core_Root is set to: "%%CORE_ROOT%%"
 
-""" % (self.unique_name, self.args.core_root)
-
-        line_sep = os.linesep
+""" % (self.test_path, self.args.core_root)
 
         if self.env is not None:
             for key, value in self.env.items():
-                wrapper += "echo set %s=%s%s" % (key, value, line_sep)
-                wrapper += "set %s=%s%s" % (key, value, line_sep)
+                wrapper += "echo set %s=%s%s" % (key, value, os.linesep)
+                wrapper += "set %s=%s%s" % (key, value, os.linesep)
 
-        wrapper += "%s" % line_sep
-        wrapper += "echo call %s%s" % (self.test_location, line_sep)
-        wrapper += "call %s%s" % (self.test_location, line_sep)
+        wrapper += "%s" % os.linesep
+        wrapper += "echo call %s%s" % (self.test_path, os.linesep)
+        wrapper += "call %s%s" % (self.test_path, os.linesep)
 
         self.wrapper = wrapper
 
@@ -342,18 +314,13 @@ echo Core_Root is set to: "%%CORE_ROOT%%"
 #============================================================================
 # Repro environment for %s
 #
-# Notes:
-#
-# This wrapper is automatically generated by run.py. It includes the
-# necessary environment to reproduce a failure that occurred during running
-# the tests.
+# This wrapper is automatically generated by run.py. It includes the necessary environment to
+# reproduce a failure that occurred during running the tests.
 #
 # In order to change how this wrapper is generated, see
 # run.py:__create_bash_wrapper__(). Please note that it is possible
-# to recreate this file by running src/tests/run.py --analyze_results_only
-# with the appropriate environment set and the correct arch and build_type
-# passed.
-#
+# to recreate this file by running `src/tests/run.py --analyze_results_only`
+# passing the correct arch and build_type.
 # ============================================================================
 
 # Set Core_Root if it has not been already set.
@@ -363,31 +330,24 @@ else
     echo \"CORE_ROOT set to ${CORE_ROOT}\"
 fi
 
-""" % (self.unique_name, self.args.core_root)
-
-        line_sep = os.linesep
+""" % (self.test_path, self.args.core_root)
 
         if self.env is not None:
             for key, value in self.env.items():
-                wrapper += "echo export %s=%s%s" % (key, value, line_sep)
-                wrapper += "export %s=%s%s" % (key, value, line_sep)
+                wrapper += "echo export %s=%s%s" % (key, value, os.linesep)
+                wrapper += "export %s=%s%s" % (key, value, os.linesep)
 
-        wrapper += "%s" % line_sep
-        wrapper += "echo bash %s%s" % (self.test_location, line_sep)
-        wrapper += "bash %s%s" % (self.test_location, line_sep)
+        wrapper += "%s" % os.linesep
+        wrapper += "echo bash %s%s" % (self.test_path, os.linesep)
+        wrapper += "bash %s%s" % (self.test_path, os.linesep)
 
         self.wrapper = wrapper
 
     def write_repro(self):
         """ Write out the wrapper
-
-        Notes:
-            This will check if the wrapper repros or not. If it does not repro
-            it will be put into an "unstable" folder under artifacts/repro.
-            Else it will just be written out.
-
         """
 
+        print("Writing repro: %s" % self.path)
         with open(self.path, 'w') as file_handle:
             file_handle.write(self.wrapper)
 
@@ -395,6 +355,30 @@ fi
 ################################################################################
 # Helper Functions
 ################################################################################
+
+def create_unique_directory_name(root_directory, base_name):
+    """ Create a unique directory name by joining `root_directory` and `base_name`.
+        If this name already exists, append ".1", ".2", ".3", etc., to the final
+        name component until the full directory name is not found.
+
+    Args:
+        root_directory (str)     : root directory in which a new directory will be created
+        base_name (str)          : the base name of the new directory name component to be added
+
+    Returns:
+        (str) The full absolute path of the new directory. The directory has been created.
+    """
+    root_directory = os.path.abspath(root_directory)
+    full_path = os.path.join(root_directory, base_name)
+
+    count = 1
+    while os.path.isdir(full_path):
+        new_full_path = os.path.join(root_directory, base_name + "." + str(count))
+        count += 1
+        full_path = new_full_path
+
+    os.makedirs(full_path)
+    return full_path
 
 def create_and_use_test_env(_os, env, func):
     """ Create a test env based on the env passed
@@ -579,9 +563,6 @@ def call_msbuild(args):
     if args.sequential:
         common_msbuild_arguments += ["/p:ParallelRun=none"]
 
-    if not os.path.isdir(args.logs_dir):
-        os.makedirs(args.logs_dir)
-
     # Set up the directory for MSBuild debug logs.
     msbuild_debug_logs_dir = os.path.join(args.logs_dir, "MsbuildDebugLogs")
     if not os.path.isdir(msbuild_debug_logs_dir):
@@ -591,26 +572,21 @@ def call_msbuild(args):
     command =   [args.dotnetcli_script_path,
                  "msbuild",
                  os.path.join(args.coreclr_tests_src_dir, "build.proj"),
-                 "/t:RunTests",
-                 "/clp:showcommandline"]
+                 "/t:RunTests"]
 
     command += common_msbuild_arguments
-
-    if args.il_link:
-        command += ["/p:RunTestsViaIllink=true"]
-
-    if args.limited_core_dumps:
-        command += ["/p:LimitedCoreDumps=true"]
 
     log_path = os.path.join(args.logs_dir, "TestRunResults_%s_%s_%s" % (args.host_os, args.arch, args.build_type))
     build_log = log_path + ".log"
     wrn_log = log_path + ".wrn"
     err_log = log_path + ".err"
+    bin_log = log_path + ".binlog"
 
-    command += ["/fileloggerparameters:\"Verbosity=normal;LogFile=%s\"" % build_log,
-                "/fileloggerparameters1:\"WarningsOnly;LogFile=%s\"" % wrn_log,
-                "/fileloggerparameters2:\"ErrorsOnly;LogFile=%s\"" % err_log,
-                "/consoleloggerparameters:Summary"]
+    command += ["/fileLoggerParameters:\"Verbosity=normal;LogFile=%s\"" % build_log,
+                "/fileLoggerParameters1:\"WarningsOnly;LogFile=%s\"" % wrn_log,
+                "/fileLoggerParameters2:\"ErrorsOnly;LogFile=%s\"" % err_log,
+                "/binaryLogger:%s" % bin_log,
+                "/consoleLoggerParameters:\"ShowCommandLine;Summary\""]
 
     if g_verbose:
         command += ["/verbosity:diag"]
@@ -620,7 +596,11 @@ def call_msbuild(args):
                 "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
-    command += ["/bl:%s.binlog" % (log_path)]
+    if args.il_link:
+        command += ["/p:RunTestsViaIllink=true"]
+
+    if args.limited_core_dumps:
+        command += ["/p:LimitedCoreDumps=true"]
 
     print(" ".join(command))
 
@@ -851,9 +831,6 @@ def run_tests(args,
         test_env_script_path  : Path to script to use to set the test environment, if any.
     """
 
-    if args.skip_test_run:
-        return
-
     # Set default per-test timeout to 30 minutes (in milliseconds).
     per_test_timeout = 30*60*1000
 
@@ -919,6 +896,7 @@ def run_tests(args,
     os.environ["CORE_ROOT"] = args.core_root
 
     # Set __TestDotNetCmd so tests which need to run dotnet can use the repo-local script on dev boxes
+    print("Setting __TestDotNetCmd=%s" % args.dotnetcli_script_path)
     os.environ["__TestDotNetCmd"] = args.dotnetcli_script_path
 
     # Set test env script path if it is set.
@@ -979,6 +957,11 @@ def setup_args(args):
                               "Parallel argument '{}' unknown".format)
 
     coreclr_setup_args.verify(args,
+                              "logs_dir",
+                              lambda arg: True,
+                              "Error setting logs_dir")
+
+    coreclr_setup_args.verify(args,
                               "analyze_results_only",
                               lambda arg: True,
                               "Error setting analyze_results_only")
@@ -1024,11 +1007,6 @@ def setup_args(args):
                               "Error setting synthesize_pgo")
 
     coreclr_setup_args.verify(args,
-                              "skip_test_run",
-                              lambda arg: True,
-                              "Error setting skip_test_run")
-
-    coreclr_setup_args.verify(args,
                               "sequential",
                               lambda arg: True,
                               "Error setting sequential")
@@ -1062,21 +1040,57 @@ def setup_args(args):
         print("Error: don't specify both --sequential and -parallel")
         sys.exit(1)
 
+    # Choose a logs directory
+    if coreclr_setup_args.logs_dir is not None:
+        coreclr_setup_args.logs_dir = os.path.abspath(coreclr_setup_args.logs_dir)
+        if args.analyze_results_only:
+            # Don't create the directory in this case, if missing.
+            if not os.path.isdir(coreclr_setup_args.logs_dir):
+                print("Error: specified logs_dir not found: %s" % coreclr_setup_args.logs_dir)
+                sys.exit(1)
+        else:
+            if not os.path.isdir(coreclr_setup_args.logs_dir):
+                os.makedirs(coreclr_setup_args.logs_dir)
+            if not os.path.isdir(coreclr_setup_args.logs_dir):
+                print("Error: specified logs_dir not found or could not be created: %s" % coreclr_setup_args.logs_dir)
+                sys.exit(1)
+    else:
+        if args.analyze_results_only:
+            # Find the last log file directory and use it: enumerate all the "log" / "log.1" / "log.2" / etc. directories and use the highest numbered one.
+            keep_searching = True
+            last_logs_dir = None
+            logs_dir_index = 0
+            while keep_searching:
+                logs_dir_name = "log" if logs_dir_index == 0 else "log." + str(logs_dir_index)
+                try_logs_dir = os.path.abspath(os.path.join(coreclr_setup_args.artifacts_location, logs_dir_name))
+                if os.path.isdir(try_logs_dir):
+                    last_logs_dir = try_logs_dir
+                else:
+                    keep_searching = False
+                logs_dir_index += 1
+
+            if last_logs_dir is None:
+                print("Error: --analyze_results_only specified, but no logs_dir found in sequence log, log.1, log.2, etc.")
+                sys.exit(1)
+
+            coreclr_setup_args.logs_dir = last_logs_dir
+        else:
+            coreclr_setup_args.logs_dir = create_unique_directory_name(coreclr_setup_args.artifacts_location, "log")
+
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
     print("build_type               : %s" % coreclr_setup_args.build_type)
     print("runtime_repo_location    : %s" % coreclr_setup_args.runtime_repo_location)
     print("core_root                : %s" % coreclr_setup_args.core_root)
     print("test_location            : %s" % coreclr_setup_args.test_location)
+    print("logs_dir                 : %s" % coreclr_setup_args.logs_dir)
 
-    coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
+    coreclr_setup_args.repro_location = os.path.join(coreclr_setup_args.logs_dir, "repro")
     coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
-    coreclr_setup_args.coreclr_tests_dir = os.path.join(coreclr_setup_args.coreclr_dir, "tests")
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
     coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
-    coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
     return coreclr_setup_args
 
@@ -1205,8 +1219,7 @@ def parse_test_results(args, tests, assemblies):
     Args:
         args                 : arguments
     """
-    log_path = os.path.join(args.logs_dir, "TestRunResults_%s_%s_%s" % (args.host_os, args.arch, args.build_type))
-    print("Parsing test results from (%s)" % log_path)
+    print("Parsing test results from (%s)" % args.logs_dir)
 
     found = False
 
@@ -1366,33 +1379,36 @@ def create_repro(args, env, tests):
     Args:
         args
         env
-        tests (defaultdict[String]: { }): The tests that were reported by
-                                        : xunit
+        tests (defaultdict[String]: { }): The tests that were reported by xunit
 
+    Returns:
+        Count of failed tests (the number of repro files written)
     """
     assert tests is not None
 
     failed_tests = [test for test in tests if test["result"] == "Fail" and test["test_path"] is not None]
     if len(failed_tests) == 0:
-        return
+        return 0
 
-    repro_location = os.path.join(args.artifacts_location, "repro", "%s.%s.%s" % (args.host_os, args.arch, args.build_type))
-    if os.path.isdir(repro_location):
-        shutil.rmtree(repro_location)
+    assert args.repro_location is not None
+    if os.path.isdir(args.repro_location):
+        shutil.rmtree(args.repro_location)
 
     print("")
-    print("Creating repro files at: %s" % repro_location)
+    print("Creating repro files at: %s" % args.repro_location)
 
-    os.makedirs(repro_location)
-    assert os.path.isdir(repro_location)
+    os.makedirs(args.repro_location)
+    assert os.path.isdir(args.repro_location)
 
-    # Now that the repro_location exists under <runtime>/artifacts/repro
+    # Now that the args.repro_location exists under <runtime>/artifacts
     # create wrappers which will simply run the test with the correct environment
     for test in failed_tests:
         debug_env = DebugEnv(args, env, test)
         debug_env.write_repro()
 
     print("Repro files written.")
+
+    return len(failed_tests)
 
 ################################################################################
 # Main
@@ -1415,12 +1431,16 @@ def main(args):
                                                lambda test_env_script_path: run_tests(args, test_env_script_path))
         print("Test run finished.")
 
-    if not args.skip_test_run:
-        assemblies = defaultdict(lambda: None)
-        tests = []
-        parse_test_results(args, tests, assemblies)
-        print_summary(tests, assemblies)
-        create_repro(args, env, tests)
+    assemblies = defaultdict(lambda: None)
+    tests = []
+    parse_test_results(args, tests, assemblies)
+    print_summary(tests, assemblies)
+    repro_count = create_repro(args, env, tests)
+
+    print("")
+    print("Log files at: %s" % args.logs_dir)
+    if repro_count > 0:
+        print("Repro files at: %s" % args.repro_location)
 
     return ret_code
 
