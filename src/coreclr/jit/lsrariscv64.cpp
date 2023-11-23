@@ -242,6 +242,8 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
+                if (!(tree->gtFlags & GTF_UNSIGNED))
+                    buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
             FALLTHROUGH;
@@ -275,6 +277,8 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
+                if (!(tree->gtFlags & GTF_UNSIGNED))
+                    buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
             FALLTHROUGH;
