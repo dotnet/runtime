@@ -13,35 +13,10 @@ variables:
 
 jobs:
 
-  #
-  # CoreCLR Build
-  #
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-      buildConfig: release
-      platforms:
-      - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-        - windows_x64
-        - windows_x86
-      - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
-        - Linux_x64
-        - Linux_musl_x64
-        - ${{ if eq(variables['isRollingBuild'], true) }}:
-          - Linux_arm
-          - Linux_arm64
-          - Linux_musl_arm64
-      - ${{ if eq(variables['includeOsxOuterloop'], true) }}:        
-        - OSX_arm64
-        - OSX_x64
-      jobParameters:
-        testGroup: innerloop
-  #
-  # Libraries Build
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       buildConfig: Release
       platforms:
       - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
@@ -58,18 +33,24 @@ jobs:
       - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isRollingBuild'], true)) }}:
         - OSX_arm64
         - OSX_x64
-      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       jobParameters:
-        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-        includeAllPlatforms: ${{ variables['isRollingBuild'] }}
-        runTests: true
         testScope: outerloop
-        liveRuntimeBuildConfig: release
-  
+        nameSuffix: CoreCLR_Release
+        buildArgs: -s clr+host.native+libs+libs.tests -c $(_BuildConfig) -rc Release -testscope outerloop /p:ArchiveTests=true
+        timeoutInMinutes: 180
+        includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+        # extra steps, run tests
+        extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+        extraStepsParameters:
+          testScope: outerloop
+          creator: dotnet-bot
+          testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+
   - ${{ if eq(variables['isRollingBuild'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: /eng/pipelines/libraries/build-job.yml
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         buildConfig: Debug
         platforms:
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
@@ -80,27 +61,39 @@ jobs:
         - ${{ if eq(variables['includeOsxOuterloop'], true) }}:
           - OSX_arm64
           - OSX_x64
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
-          isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-          includeAllPlatforms: ${{ variables['isRollingBuild'] }}
-          runTests: true
           testScope: outerloop
-          liveRuntimeBuildConfig: release
+          nameSuffix: CoreCLR_Release
+          buildArgs: -s clr+host.native+libs+libs.tests -c $(_BuildConfig) -rc Release -testscope outerloop /p:ArchiveTests=true
+          timeoutInMinutes: 180
+          includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+          # extra steps, run tests
+          extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+          extraStepsParameters:
+            testScope: outerloop
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
 
   - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: /eng/pipelines/libraries/build-job.yml
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         buildConfig: Release
         platforms:
         - windows_x86
         - ${{ if eq(variables['isRollingBuild'], true) }}:
           - windows_x64
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
-          isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-          includeAllPlatforms: ${{ variables['isRollingBuild'] }}
           framework: net48
-          runTests: true
           testScope: outerloop
+          nameSuffix: NET48
+          buildArgs: -s libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true -f net48
+          timeoutInMinutes: 180
+          includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+          # extra steps, run tests
+          extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+          extraStepsParameters:
+            testScope: outerloop
+            creator: dotnet-bot
+            extraHelixArguments: /p:BuildTargetFramework=net48
