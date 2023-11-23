@@ -73,11 +73,15 @@ namespace Mono.Linker
 
 		internal bool IsGuardForDisabledFeature (MethodDefinition method)
 		{
+			if (!method.IsGetter && !method.IsSetter)
+				return false;
+
 			// Look for a property with a getter that matches the method.
 			foreach (var property in method.DeclaringType.Properties) {
-				if (property.GetMethod != method)
+				if (property.GetMethod != method && property.SetMethod != method)
 					continue;
 
+				// Include non-static, non-bool properties with setters as those will get validated inside GetLinkerAttributes.
 				foreach (var featureGuardAttribute in _context.Annotations.GetLinkerAttributes<FeatureGuardAttribute> (property)) {
 					// When trimming, we assume that a feature check for RequiresUnreferencedCodeAttribute returns false.
 					var requiresAttributeType = featureGuardAttribute.RequiresAttributeType;

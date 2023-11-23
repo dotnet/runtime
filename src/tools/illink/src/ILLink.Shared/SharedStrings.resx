@@ -1204,7 +1204,7 @@
     <value>Return value does not match feature guards of the property.</value>
   </data>
   <data name="InvalidFeatureGuardMessage" xml:space="preserve">
-    <value>Invalid FeatureGuardAttribute. Ensure the attribute is plated on a static boolean property.</value>
+    <value>Invalid FeatureGuardAttribute. Ensure the attribute is plated on a static boolean property with a get accessor and no set accessor.</value>
   </data>
   <data name="InvalidFeatureGuardTitle" xml:space="preserve">
     <value>Invalid FeatureGuardAttribute.</value>

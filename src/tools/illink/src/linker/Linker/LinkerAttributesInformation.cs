@@ -135,12 +135,11 @@ namespace Mono.Linker
 
 		static FeatureGuardAttribute? ProcessFeatureGuardAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
-			// TODO: where to handle static/non-static, etc?
 			if (provider is not PropertyDefinition property)
 				return null;
 
-			// property must be a static bool property
-			if (property.HasThis || property.PropertyType.MetadataType != MetadataType.Boolean) {
+			// property must be a static bool get-only property
+			if (property.HasThis || property.PropertyType.MetadataType != MetadataType.Boolean || property.SetMethod != null) {
 				context.LogWarning ((IMemberDefinition) provider, DiagnosticId.InvalidFeatureGuard);
 				return null;
 			}
