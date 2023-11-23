@@ -3803,9 +3803,6 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     assert(encoding_found);
     const unsigned sve_ins_offset = ((unsigned)ins - INS_sve_invalid);
 
-    // The ins enum includes all the Arm64 instructions. But, the insCodes tables start from the first SVE instruction.
-    unsigned sve_ins_offset = ((unsigned)ins - INS_sve_invalid);
-
     switch (index)
     {
         case 0:
