@@ -280,7 +280,11 @@
 
     <PropertyGroup>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</WasmAppDir>
+
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
+      <!-- Ensure this is only the filename -->
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' != ''">$([System.IO.Path]::GetFileName($(WasmMainAssemblyFileName)))</WasmMainAssemblyFileName>
+
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_WasmOutputFileName>
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_WasmOutputFileName>
       <_WasmOutputFileName>$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>

@@ -541,6 +541,7 @@
     <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
+  <!-- wasi/interp smoke tests -->
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RunAOTCompilation)' != 'true'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
