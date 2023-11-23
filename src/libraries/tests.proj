@@ -558,22 +558,15 @@
   </ItemGroup>
 
   <!-- wasi/aot smoke tests -->
-  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' == 'true'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
   </ItemGroup>
 
   <!-- wasi/aot non-smoke tests -->
-  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.DataSetExtensions.Tests\System.Data.DataSetExtensions.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.Packaging\tests\System.IO.Packaging.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Private.Xml.Linq\tests\Schema\System.Xml.Schema.Extensions.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\System.Runtime.Serialization.Json.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\ReflectionOnly\System.Runtime.Serialization.Xml.ReflectionOnly.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\System.Runtime.Serialization.Xml.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Buffers.Tests\System.Buffers.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
