@@ -2046,7 +2046,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     {
         assert(h->KindIs(BBJ_ALWAYS));
         assert(h->HasJumpTo(loop.lpEntry));
-        h2->SetJumpKindAndTarget(BBJ_ALWAYS, loop.lpEntry DEBUG_ARG(this));
+        h2->SetJumpKindAndTarget(BBJ_ALWAYS, loop.lpEntry);
     }
 
     fgReplacePred(loop.lpEntry, h, h2);
@@ -2060,7 +2060,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // Make 'h' fall through to 'h2' (if it didn't already).
     // Don't add the h->h2 edge because we're going to insert the cloning conditions between 'h' and 'h2', and
     // optInsertLoopChoiceConditions() will add the edge.
-    h->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+    h->SetJumpKindAndTarget(BBJ_NONE);
 
     // Make X2 after B, if necessary.  (Not necessary if B is a BBJ_ALWAYS.)
     // "newPred" will be the predecessor of the blocks of the cloned loop.
@@ -2253,7 +2253,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     {
         // We can't just fall through to the slow path entry, so make it an unconditional branch.
         assert(slowHead->KindIs(BBJ_NONE)); // This is how we created it above.
-        slowHead->SetJumpKindAndTarget(BBJ_ALWAYS, e2 DEBUG_ARG(this));
+        slowHead->SetJumpKindAndTarget(BBJ_ALWAYS, e2);
     }
 
     fgAddRefPred(e2, slowHead);

@@ -539,10 +539,10 @@ private:
     };
 
 public:
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBswtDesc* jumpSwt);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
+    static BasicBlock* New(Compiler* compiler);
+    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    static BasicBlock* New(Compiler* compiler, BBswtDesc* jumpSwt);
+    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
 
     BBjumpKinds GetJumpKind() const
     {
@@ -637,27 +637,13 @@ public:
         assert(HasJump());
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest DEBUG_ARG(Compiler* compiler))
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
     {
-#ifdef DEBUG
-        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
-        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
-        //
-        // (right now, this assertion does the null check to avoid unused variable warnings)
-        assert((jumpKind != BBJ_NONE) || (compiler != nullptr));
-#endif // DEBUG
-
         bbJumpKind = jumpKind;
         bbJumpDest = jumpDest;
 
         // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
         assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
-    }
-
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind DEBUG_ARG(Compiler* compiler))
-    {
-        BasicBlock* jumpDest = nullptr;
-        SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(compiler));
     }
 
     bool HasJump() const

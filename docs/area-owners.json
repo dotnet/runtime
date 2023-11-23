@@ -780,14 +780,18 @@
     {
       "lead": "tommcdon",
       "owners": [
-        "tommcdon"
+        "ericstj",
+        "tommcdon",
+        "dotnet/area-system-diagnostics"
       ],
       "label": "area-System.Diagnostics"
     },
     {
       "lead": "tommcdon",
       "owners": [
-        "tommcdon"
+        "noahfalk",
+        "tommcdon",
+        "dotnet/area-system-diagnostics-coreclr"
       ],
       "label": "area-System.Diagnostics-coreclr"
     },
@@ -800,7 +804,7 @@
       "label": "area-System.Diagnostics-mono"
     },
     {
-      "lead": "tommcdon",
+      "lead": "ericstj",
       "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
@@ -826,9 +830,13 @@
       "label": "area-System.Diagnostics.EventLog"
     },
     {
-      "lead": "tommcdon",
+      "lead": "ericstj",
       "owners": [
-        "noahfalk"
+        "ericstj",
+        "noahfalk",
+        "tarekgh",
+        "tommcdon",
+        "dotnet/area-system-diagnostics-metric"
       ],
       "label": "area-System.Diagnostics.Metric"
     },
@@ -859,9 +867,13 @@
     {
       "lead": "tommcdon",
       "owners": [
+        "davmason",
+        "ericstj",
+        "jeffhandley",
         "noahfalk",
         "tarekgh",
-        "tommcdon"
+        "tommcdon",
+        "dotnet/area-system-diagnostics-tracing"
       ],
       "label": "area-System.Diagnostics.Tracing"
     },

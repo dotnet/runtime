@@ -1513,7 +1513,7 @@ bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tai
  *  Allocate a basic block but don't append it to the current BB list.
  */
 
-BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler)
+BasicBlock* BasicBlock::New(Compiler* compiler)
 {
     BasicBlock* block;
 
@@ -1614,9 +1614,9 @@ BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler)
     return block;
 }
 
-BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
 {
-    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
+    BasicBlock* block = BasicBlock::New(compiler);
 
     // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
     // yet.
@@ -1632,17 +1632,17 @@ BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind
     return block;
 }
 
-BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler, BBswtDesc* jumpSwt)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* jumpSwt)
 {
-    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
+    BasicBlock* block = BasicBlock::New(compiler);
     block->bbJumpKind = BBJ_SWITCH;
     block->bbJumpSwt  = jumpSwt;
     return block;
 }
 
-BasicBlock* BasicBlock::bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs)
 {
-    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
+    BasicBlock* block = BasicBlock::New(compiler);
     block->bbJumpKind = jumpKind;
     block->bbJumpOffs = jumpOffs;
     return block;
