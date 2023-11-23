@@ -865,8 +865,8 @@ inline static bool insOptsScalableWide(insOpts opt)
 
 inline static bool insOptsScalableToSimd(insOpts opt)
 {
-    return ((opt == INS_OPTS_SCALABLE_TO_SIMD_B || opt == INS_OPTS_SCALABLE_TO_SIMD_H || opt == INS_OPTS_SCALABLE_TO_SIMD_S ||
-             opt == INS_OPTS_SCALABLE_TO_SIMD_D));
+    return ((opt == INS_OPTS_SCALABLE_B_TO_SIMD || opt == INS_OPTS_SCALABLE_H_TO_SIMD || opt == INS_OPTS_SCALABLE_S_TO_SIMD ||
+             opt == INS_OPTS_SCALABLE_D_TO_SIMD));
 }
 
 inline static bool insOptsScalableToScalar(insOpts opt)

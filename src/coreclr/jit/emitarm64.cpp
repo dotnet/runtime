@@ -11831,24 +11831,24 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         case INS_OPTS_SCALABLE_B:
         case INS_OPTS_SCALABLE_WIDE_B:
-        case INS_OPTS_SCALABLE_TO_SIMD_B:
+        case INS_OPTS_SCALABLE_B_TO_SIMD:
         case INS_OPTS_SCALABLE_B_TO_SCALAR:
             return 0x00000000;
 
         case INS_OPTS_SCALABLE_H:
         case INS_OPTS_SCALABLE_WIDE_H:
-        case INS_OPTS_SCALABLE_TO_SIMD_H:
+        case INS_OPTS_SCALABLE_H_TO_SIMD:
         case INS_OPTS_SCALABLE_H_TO_SCALAR:
             return 0x00400000; // set the bit at location 22
 
         case INS_OPTS_SCALABLE_S:
         case INS_OPTS_SCALABLE_WIDE_S:
-        case INS_OPTS_SCALABLE_TO_SIMD_S:
+        case INS_OPTS_SCALABLE_S_TO_SIMD:
         case INS_OPTS_SCALABLE_S_TO_SCALAR:
             return 0x00800000; // set the bit at location 23
 
         case INS_OPTS_SCALABLE_D:
-        case INS_OPTS_SCALABLE_TO_SIMD_D:
+        case INS_OPTS_SCALABLE_D_TO_SIMD:
         case INS_OPTS_SCALABLE_D_TO_SCALAR:
             return 0x00C00000; // set the bit at location 23 and 22
 
@@ -14431,7 +14431,7 @@ void emitter::emitDispArrangement(insOpts opt)
             break;
         case INS_OPTS_SCALABLE_B:
         case INS_OPTS_SCALABLE_WIDE_B:
-        case INS_OPTS_SCALABLE_TO_SIMD_B:
+        case INS_OPTS_SCALABLE_B_TO_SIMD:
         case INS_OPTS_SCALABLE_B_TO_SCALAR:
             str = "b";
             break;
@@ -14443,7 +14443,7 @@ void emitter::emitDispArrangement(insOpts opt)
             break;
         case INS_OPTS_SCALABLE_H:
         case INS_OPTS_SCALABLE_WIDE_H:
-        case INS_OPTS_SCALABLE_TO_SIMD_H:
+        case INS_OPTS_SCALABLE_H_TO_SIMD:
         case INS_OPTS_SCALABLE_H_TO_SCALAR:
             str = "h";
             break;
@@ -14455,7 +14455,7 @@ void emitter::emitDispArrangement(insOpts opt)
             break;
         case INS_OPTS_SCALABLE_S:
         case INS_OPTS_SCALABLE_WIDE_S:
-        case INS_OPTS_SCALABLE_TO_SIMD_S:
+        case INS_OPTS_SCALABLE_S_TO_SIMD:
         case INS_OPTS_SCALABLE_S_TO_SCALAR:
             str = "s";
             break;
@@ -14466,7 +14466,7 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "2d";
             break;
         case INS_OPTS_SCALABLE_D:
-        case INS_OPTS_SCALABLE_TO_SIMD_D:
+        case INS_OPTS_SCALABLE_D_TO_SIMD:
         case INS_OPTS_SCALABLE_D_TO_SCALAR:
             str = "d";
             break;
