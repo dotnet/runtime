@@ -454,7 +454,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Time to optimize.
         //
         // (1) Convert the callfinally to a normal jump to the handler
-        assert(callFinally->HasJump());
+        assert(callFinally->HasInitializedJumpDest());
         callFinally->SetJumpKind(BBJ_ALWAYS);
 
         // Identify the leave block and the continuation
