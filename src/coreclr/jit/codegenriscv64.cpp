@@ -3374,7 +3374,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     }
 
     genConsumeOperands(treeNode->AsOp());
-    regNumber tmpReg = rsGetRsvdReg();
+    regNumber tmpReg = treeNode->ExtractTempReg(RBM_ALLINT);
 
     GetEmitter()->emitIns_R_R(ins, EA_8BYTE, treeNode->GetRegNum(), op1->GetRegNum());
 
@@ -3384,8 +3384,12 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     {
         feq_ins = INS_feq_d;
     }
+    // Compare op1 with itself to get 0 if op1 is NaN and 1 for any other value
     GetEmitter()->emitIns_R_R_R(feq_ins, EA_8BYTE, tmpReg, op1->GetRegNum(), op1->GetRegNum());
-    GetEmitter()->emitIns_R_R_R(INS_sub, EA_8BYTE, tmpReg, REG_R0, tmpReg);
+    // Get subtraction result of REG_ZERO (always 0) and feq result
+    // As a result we get 0 for NaN and -1 (all bits set) for any other value
+    GetEmitter()->emitIns_R_R_R(INS_sub, EA_8BYTE, tmpReg, REG_ZERO, tmpReg);
+    // and instruction with received mask produces 0 for NaN and preserves any other value
     GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, treeNode->GetRegNum(), treeNode->GetRegNum(), tmpReg);
 
     if (dstSize == EA_4BYTE)
