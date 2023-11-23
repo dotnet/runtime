@@ -165,7 +165,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
                 noway_assert(leaveBlock->KindIs(BBJ_ALWAYS));
 
-                currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, postTryFinallyBlock DEBUG_ARG(this));
+                currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, postTryFinallyBlock);
 
                 // Ref count updates.
                 fgAddRefPred(postTryFinallyBlock, currentBlock);
@@ -528,7 +528,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                     assert(finallyRetExpr->gtOper == GT_RETFILT);
                     fgRemoveStmt(block, finallyRet);
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, continuation DEBUG_ARG(this));
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, continuation);
                     fgAddRefPred(continuation, block);
                     fgRemoveRefPred(leave, block);
                 }
@@ -1112,7 +1112,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                 assert(finallyRetExpr->gtOper == GT_RETFILT);
                 fgRemoveStmt(newBlock, finallyRet);
-                newBlock->SetJumpKindAndTarget(BBJ_ALWAYS, normalCallFinallyReturn DEBUG_ARG(this));
+                newBlock->SetJumpKindAndTarget(BBJ_ALWAYS, normalCallFinallyReturn);
 
                 fgAddRefPred(normalCallFinallyReturn, newBlock);
             }
@@ -1152,7 +1152,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     // This call returns to the expected spot, so
                     // retarget it to branch to the clone.
-                    currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstCloneBlock DEBUG_ARG(this));
+                    currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstCloneBlock);
 
                     // Ref count updates.
                     fgAddRefPred(firstCloneBlock, currentBlock);
