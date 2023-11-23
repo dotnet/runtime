@@ -5098,7 +5098,6 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 // Removes the block from the bbPrev/bbNext chain
 // Updates fgFirstBB and fgLastBB if necessary
 // Does not update fgFirstFuncletBB or fgFirstColdBlock (fgUnlinkRange does)
-
 void Compiler::fgUnlinkBlock(BasicBlock* block)
 {
     if (block->IsFirst())
@@ -5130,6 +5129,19 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
             fgLastBB = block->Prev();
         }
     }
+}
+
+//------------------------------------------------------------------------
+// fgUnlinkBlockForRemoval: unlink a block from the linked list because it is
+// being removed, and adjust fgBBcount.
+//
+// Arguments:
+//   block - The block
+//
+void Compiler::fgUnlinkBlockForRemoval(BasicBlock* block)
+{
+    fgUnlinkBlock(block);
+    fgBBcount--;
 }
 
 /*****************************************************************************************************
@@ -5250,7 +5262,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 
         /* Unlink this block from the bbNext chain */
-        fgUnlinkBlock(block);
+        fgUnlinkBlockForRemoval(block);
 
         /* At this point the bbPreds and bbRefs had better be zero */
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
@@ -5480,7 +5492,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             }
         }
 
-        fgUnlinkBlock(block);
+        fgUnlinkBlockForRemoval(block);
         block->bbFlags |= BBF_REMOVED;
     }
 
@@ -5694,8 +5706,7 @@ bool Compiler::fgRenumberBlocks()
 
         if (block->IsLast())
         {
-            fgLastBB  = block;
-            fgBBcount = num;
+            fgLastBB = block;
             if (fgBBNumMax != num)
             {
                 fgBBNumMax  = num;

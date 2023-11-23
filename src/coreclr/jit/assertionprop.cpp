@@ -559,6 +559,18 @@ void Compiler::optAssertionInit(bool isLocalProp)
             optCrossBlockLocalAssertionProp = false;
         }
 
+#ifdef DEBUG
+        // Disable per method via range
+        //
+        static ConfigMethodRange s_range;
+        s_range.EnsureInit(JitConfig.JitEnableCrossBlockLocalAssertionPropRange());
+        if (!s_range.Contains(info.compMethodHash()))
+        {
+            JITDUMP("Disabling cross-block assertion prop by config range\n");
+            optCrossBlockLocalAssertionProp = false;
+        }
+#endif
+
         // Disable if too many locals
         //
         // The typical number of local assertions is roughly proportional
@@ -590,12 +602,19 @@ void Compiler::optAssertionInit(bool isLocalProp)
         //
         optAssertionDep =
             new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
+
+        if (optCrossBlockLocalAssertionProp)
+        {
+            optComplementaryAssertionMap = new (this, CMK_AssertionProp)
+                AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
+        }
     }
     else
     {
         // General assertion prop.
         //
-        optLocalAssertionProp = false;
+        optLocalAssertionProp           = false;
+        optCrossBlockLocalAssertionProp = false;
 
         // Use a function countFunc to determine a proper maximum assertion count for the
         // method being compiled. The function is linear to the IL size for small and
@@ -615,7 +634,6 @@ void Compiler::optAssertionInit(bool isLocalProp)
     }
 
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
-
     optAssertionTraitsInit(optMaxAssertionCount);
 
     optAssertionCount      = 0;
@@ -1641,7 +1659,8 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     //
     if (optLocalAssertionProp)
     {
-        assert(newAssertion->op1.kind == O1K_LCLVAR);
+        assert((newAssertion->op1.kind == O1K_LCLVAR) || (newAssertion->op1.kind == O1K_SUBTYPE) ||
+               (newAssertion->op1.kind == O1K_EXACT_TYPE));
 
         unsigned        lclNum = newAssertion->op1.lcl.lclNum;
         BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
@@ -1702,7 +1721,8 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     // Assertion mask bits are [index + 1].
     if (optLocalAssertionProp)
     {
-        assert(newAssertion->op1.kind == O1K_LCLVAR);
+        assert((newAssertion->op1.kind == O1K_LCLVAR) || (newAssertion->op1.kind == O1K_SUBTYPE) ||
+               (newAssertion->op1.kind == O1K_EXACT_TYPE));
 
         // Mark the variables this index depends on
         unsigned lclNum = newAssertion->op1.lcl.lclNum;
@@ -1971,6 +1991,13 @@ AssertionIndex Compiler::optCreateJtrueAssertions(GenTree*                   op1
 
 AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
 {
+    // These assertions are VN based, so not relevant for local prop
+    //
+    if (optLocalAssertionProp)
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
     GenTree* relop = tree->gtGetOp1();
     if (!relop->OperIsCompare())
     {
@@ -2138,13 +2165,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
  */
 AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 {
-    // Only create assertions for JTRUE when we are in the global phase
-    if (optLocalAssertionProp)
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    GenTree* relop = tree->AsOp()->gtOp1;
+    GenTree* const relop = tree->AsOp()->gtOp1;
     if (!relop->OperIsCompare())
     {
         return NO_ASSERTION_INDEX;
@@ -2156,6 +2177,11 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     if (info.HasAssertion())
     {
         return info;
+    }
+
+    if (optLocalAssertionProp && !optCrossBlockLocalAssertionProp)
+    {
+        return NO_ASSERTION_INDEX;
     }
 
     // Find assertion kind.
@@ -2179,59 +2205,70 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     GenTree* op1 = relop->AsOp()->gtOp1->gtCommaStoreVal();
     GenTree* op2 = relop->AsOp()->gtOp2->gtCommaStoreVal();
 
+    // Avoid creating local assertions for float types.
+    //
+    if (optLocalAssertionProp && varTypeIsFloating(op1))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
     if ((op1->gtOper != GT_LCL_VAR) && (op2->gtOper == GT_LCL_VAR))
     {
         std::swap(op1, op2);
     }
 
-    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) && (op2->OperIsConst() || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
-    else if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
+    else if (!optLocalAssertionProp)
     {
-        assert(relop->OperIs(GT_EQ, GT_NE));
+        ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+        ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
 
-        int con = vnStore->ConstantValue<int>(op2VN);
-        if (con >= 0)
+        if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
         {
-            AssertionDsc dsc;
+            assert(relop->OperIs(GT_EQ, GT_NE));
 
-            // For arr.Length != 0, we know that 0 is a valid index
-            // For arr.Length == con, we know that con - 1 is the greatest valid index
-            if (con == 0)
+            int con = vnStore->ConstantValue<int>(op2VN);
+            if (con >= 0)
             {
-                dsc.assertionKind = OAK_NOT_EQUAL;
-                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(0);
-            }
-            else
-            {
-                dsc.assertionKind = OAK_EQUAL;
-                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(con - 1);
-            }
+                AssertionDsc dsc;
 
-            dsc.op1.vn         = op1VN;
-            dsc.op1.kind       = O1K_ARR_BND;
-            dsc.op1.bnd.vnLen  = op1VN;
-            dsc.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-            dsc.op2.kind       = O2K_CONST_INT;
-            dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
+                // For arr.Length != 0, we know that 0 is a valid index
+                // For arr.Length == con, we know that con - 1 is the greatest valid index
+                if (con == 0)
+                {
+                    dsc.assertionKind = OAK_NOT_EQUAL;
+                    dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(0);
+                }
+                else
+                {
+                    dsc.assertionKind = OAK_EQUAL;
+                    dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(con - 1);
+                }
 
-            // when con is not zero, create an assertion on the arr.Length == con edge
-            // when con is zero, create an assertion on the arr.Length != 0 edge
-            AssertionIndex index = optAddAssertion(&dsc);
-            if (relop->OperIs(GT_NE) != (con == 0))
-            {
-                return AssertionInfo::ForNextEdge(index);
-            }
-            else
-            {
-                return index;
+                dsc.op1.vn         = op1VN;
+                dsc.op1.kind       = O1K_ARR_BND;
+                dsc.op1.bnd.vnLen  = op1VN;
+                dsc.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+                dsc.op2.kind       = O2K_CONST_INT;
+                dsc.op2.u1.iconVal = 0;
+                dsc.op2.SetIconFlag(GTF_EMPTY);
+
+                // when con is not zero, create an assertion on the arr.Length == con edge
+                // when con is zero, create an assertion on the arr.Length != 0 edge
+                AssertionIndex index = optAddAssertion(&dsc);
+                if (relop->OperIs(GT_NE) != (con == 0))
+                {
+                    return AssertionInfo::ForNextEdge(index);
+                }
+                else
+                {
+                    return index;
+                }
             }
         }
     }
@@ -2260,7 +2297,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    GenTreeCall* call = op1->AsCall();
+    GenTreeCall* const call = op1->AsCall();
 
     // Note CORINFO_HELP_READYTORUN_ISINSTANCEOF does not have the same argument pattern.
     // In particular, it is not possible to deduce what class is being tested from its args.
@@ -5488,8 +5525,14 @@ public:
     //   lastTryBlock  - the last block of the try for "block" handler;.
     //
     // Notes:
-    //   We can jump to the handler from any instruction in the try region.
-    //   It means we can propagate only assertions that are valid for the whole try region.
+    //   We can jump to the handler from any instruction in the try region. It
+    //   means we can propagate only assertions that are valid for the whole
+    //   try region.
+    //
+    //   It suffices to intersect with only the head 'try' block's assertions,
+    //   since that block dominates all other blocks in the try, and since
+    //   assertions are VN-based and can never become false.
+    //
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
         if (VerboseDataflow())
@@ -5498,11 +5541,8 @@ public:
             Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
             JITDUMP("firstTryBlock " FMT_BB " ", firstTryBlock->bbNum);
             Compiler::optDumpAssertionIndices("in -> ", firstTryBlock->bbAssertionIn, "; ");
-            JITDUMP("lastTryBlock " FMT_BB " ", lastTryBlock->bbNum);
-            Compiler::optDumpAssertionIndices("out -> ", lastTryBlock->bbAssertionOut, "\n");
         }
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, firstTryBlock->bbAssertionIn);
-        BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, lastTryBlock->bbAssertionOut);
     }
 
     // At the end of the merge store results of the dataflow equations, in a postmerge state.

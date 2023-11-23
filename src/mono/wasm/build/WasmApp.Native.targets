@@ -11,7 +11,6 @@
       _WasmAotCompileApp;
       _WasmStripAOTAssemblies;
       _PrepareForWasmBuildNative;
-      _GenerateDriverGenC;
       _GenerateManagedToNative;
       _WasmCompileNativeFiles;
       _WasmLinkDotNet;
@@ -286,7 +285,7 @@
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
-      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=True" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=True" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="DISABLE_LEGACY_JS_INTEROP=1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" />
       <EmscriptenEnvVars Include="DISABLE_LEGACY_JS_INTEROP=0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
@@ -547,9 +546,6 @@
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.js.symbols')" />
       <_WasmAssembliesInternal Remove="$(_WasmDedupAssembly)"/>
     </ItemGroup>
-  </Target>
-
-  <Target Name="_GenerateDriverGenC" Condition="'$(_WasmShouldAOT)' != 'true'">
   </Target>
 
   <Target Name="_ReadEmccProps" Condition="'$(_IsEMSDKMissing)' != 'true'">

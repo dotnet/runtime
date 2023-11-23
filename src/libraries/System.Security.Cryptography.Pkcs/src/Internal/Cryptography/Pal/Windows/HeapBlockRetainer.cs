@@ -3,11 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal.Windows

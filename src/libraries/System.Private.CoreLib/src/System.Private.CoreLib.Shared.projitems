@@ -668,13 +668,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorBuilder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\DynamicMethod.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EmptyCAHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldBuilder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ILGenerator.cs" />
@@ -682,7 +682,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilderInstantiation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />

@@ -86,6 +86,7 @@ namespace System.Tests
         {
             const int loopCount = 50;
             Span<char> buffer = stackalloc char[loopCount * 2];
+            Span<char> bufferLower = stackalloc char[loopCount * 2];
             for (int i = 1; i < loopCount; i++)
             {
                 byte[] data = Security.Cryptography.RandomNumberGenerator.GetBytes(i);
@@ -95,6 +96,12 @@ namespace System.Tests
                 bool tryHex = Convert.TryToHexString(data, currentBuffer, out int written);
                 Assert.True(tryHex);
                 AssertExtensions.SequenceEqual(hex.AsSpan(), currentBuffer);
+                Assert.Equal(hex.Length, written);
+
+                Span<char> currentBufferLower = bufferLower.Slice(0, i * 2);
+                tryHex = Convert.TryToHexStringLower(data, currentBufferLower, out written);
+                Assert.True(tryHex);
+                AssertExtensions.SequenceEqual(hex.ToLowerInvariant().AsSpan(), currentBufferLower);
                 Assert.Equal(hex.Length, written);
 
                 TestSequence(data, hex);
