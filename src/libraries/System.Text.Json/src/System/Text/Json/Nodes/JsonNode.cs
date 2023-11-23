@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Converters;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
 {
@@ -316,17 +318,16 @@ namespace System.Text.Json.Nodes
         [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void ReplaceWith<T>(T value)
         {
+            JsonNode? node;
             switch (_parent)
             {
-                case null:
-                    return;
                 case JsonObject jsonObject:
-                    JsonValue? jsonValue = JsonValue.Create(value);
-                    jsonObject.SetItem(GetPropertyName(), jsonValue);
+                    node = ConvertFromValue(value);
+                    jsonObject.SetItem(GetPropertyName(), node);
                     return;
                 case JsonArray jsonArray:
-                    JsonValue? jValue = JsonValue.Create(value);
-                    jsonArray.SetItem(GetElementIndex(), jValue);
+                    node = ConvertFromValue(value);
+                    jsonArray.SetItem(GetElementIndex(), node);
                     return;
             }
         }
@@ -350,6 +351,34 @@ namespace System.Text.Json.Nodes
             }
 
             Parent = parent;
+        }
+
+        /// <summary>
+        /// Adaptation of the equivalent JsonValue.Create factory method extended
+        /// to support arbitrary <see cref="JsonElement"/> and <see cref="JsonNode"/> values.
+        /// TODO consider making public cf. https://github.com/dotnet/runtime/issues/70427
+        /// </summary>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal static JsonNode? ConvertFromValue<T>(T? value, JsonNodeOptions? options = null)
+        {
+            if (value is null)
+            {
+                return null;
+            }
+
+            if (value is JsonNode node)
+            {
+                return node;
+            }
+
+            if (value is JsonElement element)
+            {
+                return JsonNodeConverter.Create(element, options);
+            }
+
+            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
         }
     }
 }

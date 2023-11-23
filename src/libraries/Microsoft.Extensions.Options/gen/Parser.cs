@@ -624,10 +624,21 @@ namespace Microsoft.Extensions.Options.Generators
         private void TrackRangeAttributeForSubstitution(AttributeData attribute, ITypeSymbol memberType, ref string attributeFullQualifiedName)
         {
             ImmutableArray<IParameterSymbol> constructorParameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
-            SpecialType argumentSpecialType = SpecialType.None;
+            ITypeSymbol? argumentType = null;
+            bool hasTimeSpanType = false;
+
+            ITypeSymbol typeSymbol = memberType;
+            if (typeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            {
+                typeSymbol = ((INamedTypeSymbol)typeSymbol).TypeArguments[0];
+            }
+
             if (constructorParameters.Length == 2)
             {
-                argumentSpecialType = constructorParameters[0].Type.SpecialType;
+                if (OptionsSourceGenContext.IsConvertibleBasicType(typeSymbol))
+                {
+                    argumentType = constructorParameters[0].Type;
+                }
             }
             else if (constructorParameters.Length == 3)
             {
@@ -641,23 +652,25 @@ namespace Microsoft.Extensions.Options.Generators
                     }
                 }
 
-                if (argumentValue is INamedTypeSymbol namedTypeSymbol && OptionsSourceGenContext.IsConvertibleBasicType(namedTypeSymbol))
+                if (argumentValue is INamedTypeSymbol namedTypeSymbol)
                 {
-                    argumentSpecialType = namedTypeSymbol.SpecialType;
+                    // When type is provided as a parameter, it has to match the property type.
+                    if (OptionsSourceGenContext.IsConvertibleBasicType(namedTypeSymbol) && typeSymbol.SpecialType == namedTypeSymbol.SpecialType)
+                    {
+                        argumentType = namedTypeSymbol;
+                    }
+                    else if (SymbolEqualityComparer.Default.Equals(namedTypeSymbol, _symbolHolder.TimeSpanSymbol) &&
+                             (SymbolEqualityComparer.Default.Equals(typeSymbol, _symbolHolder.TimeSpanSymbol) || typeSymbol.SpecialType == SpecialType.System_String))
+                    {
+                        hasTimeSpanType = true;
+                        argumentType = _symbolHolder.TimeSpanSymbol;
+                    }
                 }
             }
 
-            ITypeSymbol typeSymbol = memberType;
-            if (typeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            if (argumentType is not null)
             {
-                typeSymbol = ((INamedTypeSymbol)typeSymbol).TypeArguments[0];
-            }
-
-            if (argumentSpecialType != SpecialType.None &&
-                OptionsSourceGenContext.IsConvertibleBasicType(typeSymbol) &&
-                (constructorParameters.Length != 3 || typeSymbol.SpecialType == argumentSpecialType)) // When type is provided as a parameter, it has to match the property type.
-            {
-                _optionsSourceGenContext.EnsureTrackingAttribute(attribute.AttributeClass!.Name, createValue: false, out _);
+                _optionsSourceGenContext.EnsureTrackingAttribute(attribute.AttributeClass!.Name, createValue: hasTimeSpanType, out _);
                 attributeFullQualifiedName = $"{Emitter.StaticGeneratedValidationAttributesClassesNamespace}.{Emitter.StaticAttributeClassNamePrefix}{_optionsSourceGenContext.Suffix}_{attribute.AttributeClass!.Name}";
             }
         }
