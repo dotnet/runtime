@@ -178,56 +178,7 @@ namespace Internal.TypeSystem.Ecma
 
             if (attributeType.Kind == HandleKind.TypeReference)
             {
-                return GetTypeReferenceNamespaceAndName((TypeReferenceHandle)attributeType, out namespaceHandle, out nameHandle);
-            }
-            else if (attributeType.Kind == HandleKind.TypeDefinition)
-            {
-                return GetTypeDefinitionNamespaceAndName((TypeDefinitionHandle)attributeType, out namespaceHandle, out nameHandle);
-            }
-            else if (attributeType.Kind == HandleKind.TypeSpecification)
-            {
-                namespaceHandle = default(StringHandle);
-                nameHandle = default(StringHandle);
-
-                var spec = metadataReader.GetTypeSpecification((TypeSpecificationHandle)attributeType);
-                // Get the attribute type definition's name, not the instantiated name.
-                var specSignature = spec.Signature;
-                var specSignatureReader = metadataReader.GetBlobReader(specSignature);
-                var specSignatureTypeCode = specSignatureReader.ReadSignatureTypeCode();
-                if (specSignatureTypeCode is not SignatureTypeCode.GenericTypeInstance)
-                    return false;
-
-                int kind = specSignatureReader.ReadCompressedInteger();
-                if (kind != (int)SignatureTypeKind.Class && kind != (int)SignatureTypeKind.ValueType)
-                    return false;
-
-                var genericTypeHandle = specSignatureReader.ReadTypeHandle();
-                if (genericTypeHandle.Kind == HandleKind.TypeReference)
-                {
-                    return GetTypeReferenceNamespaceAndName((TypeReferenceHandle)genericTypeHandle, out namespaceHandle, out nameHandle);
-                }
-                else if (genericTypeHandle.Kind == HandleKind.TypeDefinition)
-                {
-                    return GetTypeDefinitionNamespaceAndName((TypeDefinitionHandle)genericTypeHandle, out namespaceHandle, out nameHandle);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                // unsupported metadata
-                // TODO: add typespec support!
-                return false;
-            }
-
-            bool GetTypeReferenceNamespaceAndName(TypeReferenceHandle typeRefHandle, out StringHandle namespaceHandle, out StringHandle nameHandle)
-            {
-                namespaceHandle = default(StringHandle);
-                nameHandle = default(StringHandle);
-
-                TypeReference typeRefRow = metadataReader.GetTypeReference(typeRefHandle);
+                TypeReference typeRefRow = metadataReader.GetTypeReference((TypeReferenceHandle)attributeType);
                 HandleKind handleType = typeRefRow.ResolutionScope.Kind;
 
                 // Nested type?
@@ -238,13 +189,9 @@ namespace Internal.TypeSystem.Ecma
                 namespaceHandle = typeRefRow.Namespace;
                 return true;
             }
-
-            bool GetTypeDefinitionNamespaceAndName(TypeDefinitionHandle typeDefHandle, out StringHandle namespaceHandle, out StringHandle nameHandle)
+            else if (attributeType.Kind == HandleKind.TypeDefinition)
             {
-                namespaceHandle = default(StringHandle);
-                nameHandle = default(StringHandle);
-
-                var def = metadataReader.GetTypeDefinition(typeDefHandle);
+                var def = metadataReader.GetTypeDefinition((TypeDefinitionHandle)attributeType);
 
                 // Nested type?
                 if (IsNested(def.Attributes))
@@ -253,6 +200,11 @@ namespace Internal.TypeSystem.Ecma
                 nameHandle = def.Name;
                 namespaceHandle = def.Namespace;
                 return true;
+            }
+            else
+            {
+                // unsupported metadata
+                return false;
             }
         }
 
