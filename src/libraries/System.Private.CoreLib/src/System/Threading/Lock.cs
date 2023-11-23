@@ -345,22 +345,22 @@ namespace System.Threading
 
         // we use this to de-synchronize threads if interlocked operations fail
         // we will pick a random number in exponentially expanding range and spin that many times
-        private unsafe void CollisionBackoff(int collisions)
+        private static unsafe void CollisionBackoff(int collisions)
         {
             Debug.Assert(collisions > 0);
 
-            // no need for much randomness here, we will just hash the stack address + _wakeWatchDog.
-            uint rand = ((uint)&collisions + (uint)_wakeWatchDog) * 2654435769u;
+            // no need for much randomness here, we will just hash the stack address + s_contentionCount.
+            uint rand = ((uint)&collisions + (uint)s_contentionCount) * 2654435769u;
             uint spins = rand >> (byte)(32 - Math.Min(collisions, MaxExponentialBackoffBits));
             Thread.SpinWait((int)spins);
         }
 
         // same idea as in CollisionBackoff, but with guaranteed minimum wait
-        private unsafe void IterationBackoff(int iteration)
+        private static unsafe void IterationBackoff(int iteration)
         {
             Debug.Assert(iteration > 0 && iteration < MaxExponentialBackoffBits);
 
-            uint rand = ((uint)&iteration + (uint)_wakeWatchDog) * 2654435769u;
+            uint rand = ((uint)&iteration + (uint)s_contentionCount) * 2654435769u;
             // set the highmost bit to ensure minimum number of spins is exponentialy increasing
             // it basically gurantees that we spin at least 1, 2, 4, 8, 16, times, and so on
             rand |= (1u << 31);
