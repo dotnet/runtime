@@ -10152,6 +10152,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_sve_lsl, EA_SCALABLE, REG_V19, REG_P7, REG_V3, INS_OPTS_SCALABLE_WIDE_H);  // IF_SVE_AO_3A /* LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D */
     theEmitter->emitIns_R_R_R(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_P0, REG_V0, INS_OPTS_SCALABLE_WIDE_S);  // IF_SVE_AO_3A /* LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D */
 
+    //TODO-SVE: Currently, these are all printed with /M on the predicate. There should be no predicate extension on these.
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_SCALABLE, REG_V31, REG_P7, REG_V31, INS_OPTS_SCALABLE_B);  // IF_SVE_CM_3A /* CLASTA  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_SCALABLE, REG_V30, REG_P6, REG_V30, INS_OPTS_SCALABLE_D);  // IF_SVE_CM_3A /* CLASTB  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
 
@@ -10165,16 +10166,21 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_8BYTE, REG_R3, REG_P6, REG_V9, INS_OPTS_SCALABLE_D_TO_SCALAR);  // IF_SVE_CO_3A /* CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
 
     theEmitter->emitIns_R_R_R(INS_sve_shadd, EA_SCALABLE, REG_V15, REG_P0, REG_V10, INS_OPTS_SCALABLE_B);  // IF_SVE_EP_3A /* SHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    theEmitter->emitIns_R_R_R(INS_sve_shsub, EA_SCALABLE, REG_V16, REG_P1, REG_V11, INS_OPTS_SCALABLE_B);  // IF_SVE_EP_3A /* SHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    theEmitter->emitIns_R_R_R(INS_sve_shsubr, EA_SCALABLE, REG_V17, REG_P2, REG_V12, INS_OPTS_SCALABLE_B);  // IF_SVE_EP_3A /* SHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    theEmitter->emitIns_R_R_R(INS_sve_srhadd, EA_SCALABLE, REG_V18, REG_P3, REG_V13, INS_OPTS_SCALABLE_B);  // IF_SVE_EP_3A /* SRHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_shsub, EA_SCALABLE, REG_V16, REG_P1, REG_V11, INS_OPTS_SCALABLE_H);  // IF_SVE_EP_3A /* SHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_shsubr, EA_SCALABLE, REG_V17, REG_P2, REG_V12, INS_OPTS_SCALABLE_S);  // IF_SVE_EP_3A /* SHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_srhadd, EA_SCALABLE, REG_V18, REG_P3, REG_V13, INS_OPTS_SCALABLE_D);  // IF_SVE_EP_3A /* SRHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_uhadd, EA_SCALABLE, REG_V19, REG_P4, REG_V14, INS_OPTS_SCALABLE_B);  // IF_SVE_EP_3A /* UHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    theEmitter->emitIns_R_R_R(INS_sve_uhsub, EA_SCALABLE, REG_V20, REG_P5, REG_V15, INS_OPTS_SCALABLE_B);  // IF_SVE_EP_3A /* UHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    theEmitter->emitIns_R_R_R(INS_sve_uhsubr, EA_SCALABLE, REG_V21, REG_P6, REG_V16, INS_OPTS_SCALABLE_B);  // IF_SVE_EP_3A /* UHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    theEmitter->emitIns_R_R_R(INS_sve_urhadd, EA_SCALABLE, REG_V22, REG_P7, REG_V17, INS_OPTS_SCALABLE_B);  // IF_SVE_EP_3A /* URHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uhsub, EA_SCALABLE, REG_V20, REG_P5, REG_V15, INS_OPTS_SCALABLE_H);  // IF_SVE_EP_3A /* UHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uhsubr, EA_SCALABLE, REG_V21, REG_P6, REG_V16, INS_OPTS_SCALABLE_S);  // IF_SVE_EP_3A /* UHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_urhadd, EA_SCALABLE, REG_V22, REG_P7, REG_V17, INS_OPTS_SCALABLE_D);  // IF_SVE_EP_3A /* URHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    theEmitter->emitIns_R_R_R(INS_sve_addp, EA_SCALABLE, REG_V23, REG_P6, REG_V18, INS_OPTS_SCALABLE_B);  // IF_SVE_ER_3A /* ADDP    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_smaxp, EA_SCALABLE, REG_V24, REG_P5, REG_V19, INS_OPTS_SCALABLE_H);  // IF_SVE_ER_3A /* SMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sminp, EA_SCALABLE, REG_V25, REG_P4, REG_V20, INS_OPTS_SCALABLE_S);  // IF_SVE_ER_3A /* SMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_umaxp, EA_SCALABLE, REG_V26, REG_P3, REG_V21, INS_OPTS_SCALABLE_D);  // IF_SVE_ER_3A /* UMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uminp, EA_SCALABLE, REG_V27, REG_P2, REG_V22, INS_OPTS_SCALABLE_B);  // IF_SVE_ER_3A /* UMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
 
         //TODO in this PR....
-        // case IF_SVE_ER_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 integer pairwise arithmetic
         // case IF_SVE_ET_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
         // case IF_SVE_EU_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left (predicated)
         // case IF_SVE_GR_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
