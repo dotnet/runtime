@@ -22,34 +22,15 @@ public func conditionallyThrowError(willThrow: Bool) throws -> Int {
     }
 }
 
-public func getMyErrorMessage(from pointer: UnsafePointer<MyError>) -> UnsafePointer<UInt8>? {
-    let pointerValue = UInt(bitPattern: pointer)
-    // The swift_allocError function allocates memory for a Swift error object.
-    // In this context, valuePtr is a pointer that points to the location within the
-    // allocated memory block where the payload of the Swift object is stored. 
-    // The calculation involves adding an offset (offsetValue) to the instance pointer, 
-    // accounting for an additional metadata or padding before the actual value.
-    var offsetValue: UInt
-#if arch(arm64)
-    offsetValue = 0x48
-#elseif arch(x86_64)
-    offsetValue = 0x20
-#else
-    fatalError("Unsupported architecture")
-#endif
-    let offsetPointerValue = pointerValue + offsetValue
-    let offsetPointer = UnsafeRawPointer(bitPattern: offsetPointerValue)
-    
-    if let offsetErrorPointer = offsetPointer?.assumingMemoryBound(to: MyError.self) {
-        let errorInstance = offsetErrorPointer.pointee
-        switch errorInstance {
+public func getMyErrorMessage(from error: Error) -> UnsafePointer<UInt8>? {
+    if let myError = error as? MyError {
+        switch myError {
         case .runtimeError(let message):
             let messageBytes: [UInt8] = Array(message.utf8)
             let buffer = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: messageBytes.count)
             _ = buffer.initialize(from: messageBytes)
             return UnsafePointer(buffer.baseAddress!)
         }
-    } else {
-        return nil
     }
+    return nil
 }
