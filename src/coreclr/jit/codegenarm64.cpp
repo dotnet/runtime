@@ -10155,9 +10155,10 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_SCALABLE, REG_V31, REG_P7, REG_V31, INS_OPTS_SCALABLE_B);  // IF_SVE_CM_3A /* CLASTA  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_SCALABLE, REG_V30, REG_P6, REG_V30, INS_OPTS_SCALABLE_D);  // IF_SVE_CM_3A /* CLASTB  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
 
+    theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_2BYTE, REG_V12, REG_P1, REG_V15, INS_OPTS_SCALABLE_TO_SIMD_H);  // IF_SVE_CN_3A /* CLASTA  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_4BYTE, REG_V13, REG_P2, REG_V16, INS_OPTS_SCALABLE_TO_SIMD_S);  // IF_SVE_CN_3A /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+
         //TODO in this PR....
-        // case IF_SVE_CM_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
-        // case IF_SVE_CN_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         // case IF_SVE_CO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
         // case IF_SVE_EP_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 integer halving add/subtract (predicated)
         // case IF_SVE_ER_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 integer pairwise arithmetic

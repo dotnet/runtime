@@ -277,6 +277,11 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_WIDE_H,
     INS_OPTS_SCALABLE_WIDE_S,
 
+    INS_OPTS_SCALABLE_TO_SIMD_B,
+    INS_OPTS_SCALABLE_TO_SIMD_H,
+    INS_OPTS_SCALABLE_TO_SIMD_S,
+    INS_OPTS_SCALABLE_TO_SIMD_D,
+
     INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
 
     INS_OPTS_S_TO_4BYTE,  // Single to INT32
