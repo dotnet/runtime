@@ -124,7 +124,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return holder;
         }
 
-
         internal void ToJSDynamic(Task? value)
         {
             Task? task = value;
@@ -165,28 +164,28 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = AllocJSVHandle();
             var taskHolder = new JSObject(slot.JSHandle);
 
-
 #if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task task, object? th)
             {
+                var _taskHolder = (JSObject)th!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(_taskHolder, task.Exception);
                 }
                 else
                 {
                     if (GetTaskResultDynamic(task, out object? result))
                     {
-                        ResolvePromise(taskHolder, result, MarshalResult);
+                        ResolvePromise(_taskHolder, result, MarshalResult);
                     }
                     else
                     {
-                        ResolveVoidPromise(taskHolder);
+                        ResolveVoidPromise(_taskHolder);
                     }
                 }
             }
@@ -235,20 +234,21 @@ namespace System.Runtime.InteropServices.JavaScript
             var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task task, object? th)
             {
+                JSObject _taskHolder = (JSObject)th!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(_taskHolder, task.Exception);
                 }
                 else
                 {
-                    ResolveVoidPromise(taskHolder);
+                    ResolveVoidPromise(_taskHolder);
                 }
             }
         }
@@ -294,24 +294,27 @@ namespace System.Runtime.InteropServices.JavaScript
             var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task<T> task, object? thm)
             {
+                var hm = (HolderAndMarshaler<T>)thm!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(hm.TaskHolder, task.Exception);
                 }
                 else
                 {
                     T result = task.Result;
-                    ResolvePromise(taskHolder, result, marshaler);
+                    ResolvePromise(hm.TaskHolder, result, hm.Marshaler);
                 }
             }
         }
+
+        private sealed record HolderAndMarshaler<T>(JSObject TaskHolder, ArgumentToJSCallback<T> Marshaler);
 
         private static void RejectPromise(JSObject holder, Exception ex)
         {
