@@ -1081,7 +1081,7 @@ PhaseStatus Compiler::fgCloneFinally()
             newBlock->clearHndIndex();
 
             // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-            assert(!newBlock->HasJump());
+            assert(newBlock->KindIs(BBJ_NONE));
         }
 
         if (!clonedOk)
