@@ -26,6 +26,8 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
+        - wasi_wasm
+        - wasi_wasm_win
       nameSuffix: _AOT
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       runAOT: true
@@ -142,6 +144,8 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
+        - wasi_wasm
+        - wasi_wasm_win
       nameSuffix: _AOT
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       runAOT: true
