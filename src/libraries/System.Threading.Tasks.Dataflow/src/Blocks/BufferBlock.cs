@@ -12,9 +12,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Threading.Tasks.Dataflow.Internal;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading.Tasks.Dataflow
 {

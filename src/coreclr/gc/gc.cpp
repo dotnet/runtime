@@ -455,97 +455,6 @@ void gc_heap::add_to_history()
 #endif //GC_HISTORY && BACKGROUND_GC
 }
 
-#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
-BOOL   gc_log_on = TRUE;
-FILE* gc_log = NULL;
-size_t gc_log_file_size = 0;
-
-size_t gc_buffer_index = 0;
-size_t max_gc_buffers = 0;
-
-static CLRCriticalSection gc_log_lock;
-
-// we keep this much in a buffer and only flush when the buffer is full
-#define gc_log_buffer_size (1024*1024)
-uint8_t* gc_log_buffer = 0;
-size_t gc_log_buffer_offset = 0;
-
-void flush_gc_log (bool close)
-{
-    if (gc_log_on && (gc_log != NULL))
-    {
-        fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
-        fflush(gc_log);
-        if (close)
-        {
-            fclose(gc_log);
-            gc_log_on = false;
-            gc_log = NULL;
-        }
-        gc_log_buffer_offset = 0;
-    }
-}
-
-void log_va_msg(const char *fmt, va_list args)
-{
-    gc_log_lock.Enter();
-
-    const int BUFFERSIZE = 4096;
-    static char rgchBuffer[BUFFERSIZE];
-    char *  pBuffer  = &rgchBuffer[0];
-
-    pBuffer[0] = '\n';
-    int buffer_start = 1;
-    int pid_len = sprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start,
-        "[%5d]", (uint32_t)GCToOSInterface::GetCurrentThreadIdForLogging());
-    buffer_start += pid_len;
-    memset(&pBuffer[buffer_start], '-', BUFFERSIZE - buffer_start);
-    int msg_len = _vsnprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, _TRUNCATE, fmt, args);
-    if (msg_len == -1)
-    {
-        msg_len = BUFFERSIZE - buffer_start;
-    }
-
-    msg_len += buffer_start;
-
-    if ((gc_log_buffer_offset + msg_len) > (gc_log_buffer_size - 12))
-    {
-        char index_str[8];
-        memset (index_str, '-', 8);
-        sprintf_s (index_str, ARRAY_SIZE(index_str), "%d", (int)gc_buffer_index);
-        gc_log_buffer[gc_log_buffer_offset] = '\n';
-        memcpy (gc_log_buffer + (gc_log_buffer_offset + 1), index_str, 8);
-
-        gc_buffer_index++;
-        if (gc_buffer_index > max_gc_buffers)
-        {
-            fseek (gc_log, 0, SEEK_SET);
-            gc_buffer_index = 0;
-        }
-        fwrite(gc_log_buffer, gc_log_buffer_size, 1, gc_log);
-        fflush(gc_log);
-        memset (gc_log_buffer, '*', gc_log_buffer_size);
-        gc_log_buffer_offset = 0;
-    }
-
-    memcpy (gc_log_buffer + gc_log_buffer_offset, pBuffer, msg_len);
-    gc_log_buffer_offset += msg_len;
-
-    gc_log_lock.Leave();
-}
-
-void GCLog (const char *fmt, ... )
-{
-    if (gc_log_on && (gc_log != NULL))
-    {
-        va_list     args;
-        va_start(args, fmt);
-        log_va_msg (fmt, args);
-        va_end(args);
-    }
-}
-#endif //TRACE_GC && SIMPLE_DPRINTF
-
 #ifdef GC_CONFIG_DRIVEN
 
 BOOL   gc_config_log_on = FALSE;
@@ -594,6 +503,8 @@ void GCLogConfig (const char *fmt, ... )
 
 void GCHeap::Shutdown()
 {
+    // This does not work for standalone GC on Windows because windows closed the file
+    // handle in DllMain for the standalone GC before we get here.
 #if defined(TRACE_GC) && defined(SIMPLE_DPRINTF) && !defined(BUILD_AS_STANDALONE)
     flush_gc_log (true);
 #endif //TRACE_GC && SIMPLE_DPRINTF && !BUILD_AS_STANDALONE
@@ -7080,9 +6991,11 @@ void gc_heap::gc_thread_function ()
             }
 #endif //DYNAMIC_HEAP_COUNT
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(wait_on_time_out_p ? wait_time : INFINITE, FALSE);
+#ifdef DYNAMIC_HEAP_COUNT
             dprintf (9999, ("waiting for ee done res %d (timeout %d, %I64d ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
                 wait_result, wait_time, ((GetHighPrecisionTimeStamp() - last_suspended_end_time) / 1000),
                 dynamic_heap_count_data.should_change_heap_count, gradual_decommit_in_progress_p));
+#endif //DYNAMIC_HEAP_COUNT
             if (wait_result == WAIT_TIMEOUT)
             {
 #ifdef DYNAMIC_HEAP_COUNT
@@ -13986,26 +13899,6 @@ void gc_heap::adjust_ephemeral_limits ()
 #endif //USE_REGIONS
 }
 
-#if defined(TRACE_GC) || defined(GC_CONFIG_DRIVEN)
-FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_config)
-{
-    FILE* logFile;
-
-    if (!temp_logfile_name.Get())
-    {
-        return nullptr;
-    }
-
-    char logfile_name[MAX_LONGPATH+1];
-    //uint32_t pid = GCToOSInterface::GetCurrentProcessId();
-    const char* suffix = is_config ? ".config.log" : ".log";
-    //_snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s.%d%s", temp_logfile_name.Get(), pid, suffix);
-    _snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s%s", temp_logfile_name.Get(), suffix);
-    logFile = fopen(logfile_name, "wb");
-    return logFile;
-}
-#endif //TRACE_GC || GC_CONFIG_DRIVEN
-
 uint32_t adjust_heaps_hard_limit_worker (uint32_t nhp, size_t limit)
 {
     if (!limit)
@@ -14115,41 +14008,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif //MULTIPLE_HEAPS
 )
 {
-#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
-    if (GCConfig::GetLogEnabled())
-    {
-        gc_log = CreateLogFile(GCConfig::GetLogFile(), false);
-
-        if (gc_log == NULL)
-        {
-            GCToEEInterface::LogErrorToHost("Cannot create log file");
-            return E_FAIL;
-        }
-
-        // GCLogFileSize in MBs.
-        gc_log_file_size = static_cast<size_t>(GCConfig::GetLogFileSize());
-
-        if (gc_log_file_size <= 0 || gc_log_file_size > 500)
-        {
-            GCToEEInterface::LogErrorToHost("Invalid log file size (valid size needs to be larger than 0 and smaller than 500)");
-            fclose (gc_log);
-            return E_FAIL;
-        }
-
-        gc_log_lock.Initialize();
-        gc_log_buffer = new (nothrow) uint8_t [gc_log_buffer_size];
-        if (!gc_log_buffer)
-        {
-            fclose(gc_log);
-            return E_OUTOFMEMORY;
-        }
-
-        memset (gc_log_buffer, '*', gc_log_buffer_size);
-
-        max_gc_buffers = gc_log_file_size * 1024 * 1024 / gc_log_buffer_size;
-    }
-#endif //TRACE_GC && SIMPLE_DPRINTF
-
 #ifdef GC_CONFIG_DRIVEN
     if (GCConfig::GetConfigLogEnabled())
     {

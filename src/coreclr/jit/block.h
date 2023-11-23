@@ -539,10 +539,10 @@ private:
     };
 
 public:
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBswtDesc* jumpSwt);
-    static BasicBlock* bbNewBasicBlock(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
+    static BasicBlock* New(Compiler* compiler);
+    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    static BasicBlock* New(Compiler* compiler, BBswtDesc* jumpSwt);
+    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
 
     BBjumpKinds GetJumpKind() const
     {
@@ -637,27 +637,13 @@ public:
         assert(HasJump());
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest DEBUG_ARG(Compiler* compiler))
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
     {
-#ifdef DEBUG
-        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
-        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
-        //
-        // (right now, this assertion does the null check to avoid unused variable warnings)
-        assert((jumpKind != BBJ_NONE) || (compiler != nullptr));
-#endif // DEBUG
-
         bbJumpKind = jumpKind;
         bbJumpDest = jumpDest;
 
         // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
         assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
-    }
-
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind DEBUG_ARG(Compiler* compiler))
-    {
-        BasicBlock* jumpDest = nullptr;
-        SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(compiler));
     }
 
     bool HasJump() const
@@ -1230,18 +1216,20 @@ public:
      */
 
     union {
-        EXPSET_TP bbCseGen;       // CSEs computed by block
-        ASSERT_TP bbAssertionGen; // assertions computed by block
+        EXPSET_TP bbCseGen;             // CSEs computed by block
+        ASSERT_TP bbAssertionGen;       // assertions created by block (global prop)
+        ASSERT_TP bbAssertionOutIfTrue; // assertions available on exit along true/jump edge (BBJ_COND, local prop)
     };
 
     union {
         EXPSET_TP bbCseIn;       // CSEs available on entry
-        ASSERT_TP bbAssertionIn; // assertions available on entry
+        ASSERT_TP bbAssertionIn; // assertions available on entry (global prop)
     };
 
     union {
-        EXPSET_TP bbCseOut;       // CSEs available on exit
-        ASSERT_TP bbAssertionOut; // assertions available on exit
+        EXPSET_TP bbCseOut;              // CSEs available on exit
+        ASSERT_TP bbAssertionOut;        // assertions available on exit (global prop, local prop & !BBJ_COND)
+        ASSERT_TP bbAssertionOutIfFalse; // assertions available on exit along false/next edge (BBJ_COND, local prop)
     };
 
     void* bbEmitCookie;
@@ -1408,10 +1396,13 @@ public:
     };
 
     template <typename TFunc>
-    BasicBlockVisit VisitEHSecondPassSuccs(Compiler* comp, TFunc func);
+    BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
     BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
+    BasicBlockVisit VisitEHSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
     BasicBlockVisit VisitRegularSuccs(Compiler* comp, TFunc func);

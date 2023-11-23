@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Composition.Convention;
+using System.Composition.Debugging;
+using System.Composition.Hosting;
+using System.Composition.Hosting.Core;
+using System.Composition.TypedParts.ActivationFeatures;
+using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Numerics.Hashing;
 using System.Reflection;
-using System.Linq.Expressions;
-using System.Diagnostics;
-using System.Composition.Debugging;
-using System.Composition.TypedParts.ActivationFeatures;
-using System.Composition.Hosting.Core;
-using System.Composition.Convention;
-using System.Composition.Hosting;
 
 namespace System.Composition.TypedParts.Discovery
 {
