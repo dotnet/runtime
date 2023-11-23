@@ -1451,7 +1451,7 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF:
 		/* Calling a ref method with a ref receiver */
 		/* Static calls don't have this arg */
-		this_arg = m_method_is_static(cmethod) ? NULL : *(gpointer*)mp;
+		this_arg = m_method_is_static (cmethod) ? NULL : *(gpointer*)mp;
 		m = info->method;
 		break;
 	default:
