@@ -853,6 +853,11 @@ inline static bool insOptsScalableWords(insOpts opt)
     return ((opt == INS_OPTS_SCALABLE_S || opt == INS_OPTS_SCALABLE_D));
 }
 
+inline static bool insOptsScalableWide(insOpts opt)
+{
+    return ((opt == INS_OPTS_SCALABLE_WIDE_B || opt == INS_OPTS_SCALABLE_WIDE_H || opt == INS_OPTS_SCALABLE_WIDE_S));
+}
+
 static bool isValidImmCond(ssize_t imm);
 static bool isValidImmCondFlags(ssize_t imm);
 static bool isValidImmCondFlagsImm5(ssize_t imm);

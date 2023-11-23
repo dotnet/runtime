@@ -948,7 +948,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_AD_3A:   // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
         case IF_SVE_AE_3A:   // ........xx...... ...gggmmmmmddddd -- SVE integer multiply vectors (predicated)
         case IF_SVE_AN_3A:   // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by vector (predicated)
-        case IF_SVE_AO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
         case IF_SVE_CM_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
         case IF_SVE_CN_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_CO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
@@ -970,6 +969,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_AC_3A:   // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableWords(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isLowPredicateRegister(id->idReg2())); // ggg
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            assert(isScalableVectorSize(elemsize)); // xx
+            break;
+
+        case IF_SVE_AO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
+            elemsize = id->idOpSize();
+            assert(insOptsScalableWide(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isLowPredicateRegister(id->idReg2())); // ggg
             assert(isVectorRegister(id->idReg3())); // mmmmm
@@ -8136,11 +8144,8 @@ void emitter::emitIns_R_R_R(
             fmt = IF_SVE_AE_3A;
             break;
 
-        case INS_sve_asr:
         case INS_sve_asrr:
-        case INS_sve_lsl:
         case INS_sve_lslr:
-        case INS_sve_lsr:
         case INS_sve_lsrr:
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
@@ -8149,8 +8154,24 @@ void emitter::emitIns_R_R_R(
             fmt = IF_SVE_AN_3A;
             break;
 
+        case INS_sve_asr:
+        case INS_sve_lsl:
+        case INS_sve_lsr:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            if (insOptsScalable(opt))
+            {
+                fmt = IF_SVE_AN_3A;
+            }
+            else
+            {
+                assert(insOptsScalableWide(opt));
+                fmt = IF_SVE_AO_3A;
+            }
+            break;
+
         //TODO in this PR....
-        // case IF_SVE_AO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
         // case IF_SVE_CM_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
         // case IF_SVE_CN_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         // case IF_SVE_CO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
@@ -11785,15 +11806,15 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         return 0x00C00000; // set the bit at location 23 and 22
     }
-    else if (opt == INS_OPTS_SCALABLE_S)
+    else if (opt == INS_OPTS_SCALABLE_S || opt == INS_OPTS_SCALABLE_WIDE_S)
     {
         return 0x00800000; // set the bit at location 23
     }
-    else if (opt == INS_OPTS_SCALABLE_H)
+    else if (opt == INS_OPTS_SCALABLE_H || opt == INS_OPTS_SCALABLE_WIDE_H)
     {
         return 0x00400000; // set the bit at location 22
     }
-    assert(opt == INS_OPTS_SCALABLE_B);
+    assert(opt == INS_OPTS_SCALABLE_B || opt == INS_OPTS_SCALABLE_WIDE_B);
     return 0x00000000;
 }
 
@@ -14231,7 +14252,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 //
 void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 {
-    assert(insOptsScalable(opt));
+    assert(insOptsScalable(opt) || insOptsScalableWide(opt));
     assert(isVectorRegister(reg));
     printf(emitSveRegName(reg));
     emitDispArrangement(opt);
@@ -14361,6 +14382,7 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "16b";
             break;
         case INS_OPTS_SCALABLE_B:
+        case INS_OPTS_SCALABLE_WIDE_B:
             str = "b";
             break;
         case INS_OPTS_4H:
@@ -14370,6 +14392,7 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "8h";
             break;
         case INS_OPTS_SCALABLE_H:
+        case INS_OPTS_SCALABLE_WIDE_H:
             str = "h";
             break;
         case INS_OPTS_2S:
@@ -14379,6 +14402,7 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "4s";
             break;
         case INS_OPTS_SCALABLE_S:
+        case INS_OPTS_SCALABLE_WIDE_S:
             str = "s";
             break;
         case INS_OPTS_1D:
@@ -15958,7 +15982,6 @@ void emitter::emitDispInsHelp(
         case IF_SVE_AD_3A:   // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
         case IF_SVE_AE_3A:   // ........xx...... ...gggmmmmmddddd -- SVE integer multiply vectors (predicated)
         case IF_SVE_AN_3A:   // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by vector (predicated)
-        case IF_SVE_AO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
         case IF_SVE_CM_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
         case IF_SVE_CN_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_CO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
@@ -15973,6 +15996,13 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg2(), true, true); // ggg
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm
+            break;
+
+        case IF_SVE_AO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispPredicateReg(id->idReg2(), true, true); // ggg
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false); // mmmmm
             break;
 
         default:
