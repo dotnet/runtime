@@ -8236,6 +8236,21 @@ void emitter::emitIns_R_R_R(
             fmt = IF_SVE_ER_3A;
             break;
 
+        case INS_sve_sqadd:
+        case INS_sve_sqsub:
+        case INS_sve_sqsubr:
+        case INS_sve_suqadd:
+        case INS_sve_uqadd:
+        case INS_sve_uqsub:
+        case INS_sve_uqsubr:
+        case INS_sve_usqadd:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableSimple(opt));
+            fmt = IF_SVE_ET_3A;
+            break;
+
         default:
             unreached();
             break;

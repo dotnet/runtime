@@ -10180,8 +10180,16 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_sve_umaxp, EA_SCALABLE, REG_V26, REG_P3, REG_V21, INS_OPTS_SCALABLE_D);  // IF_SVE_ER_3A /* UMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_uminp, EA_SCALABLE, REG_V27, REG_P2, REG_V22, INS_OPTS_SCALABLE_B);  // IF_SVE_ER_3A /* UMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
 
+    theEmitter->emitIns_R_R_R(INS_sve_sqadd, EA_SCALABLE, REG_V28, REG_P1, REG_V23, INS_OPTS_SCALABLE_B);  // IF_SVE_ET_3A /* SQADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqsub, EA_SCALABLE, REG_V29, REG_P0, REG_V24, INS_OPTS_SCALABLE_H);  // IF_SVE_ET_3A /* SQSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqsubr, EA_SCALABLE, REG_V30, REG_P1, REG_V25, INS_OPTS_SCALABLE_H);  // IF_SVE_ET_3A /* SQSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_suqadd, EA_SCALABLE, REG_V31, REG_P2, REG_V26, INS_OPTS_SCALABLE_B);  // IF_SVE_ET_3A /* SUQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqadd, EA_SCALABLE, REG_V0, REG_P3, REG_V27, INS_OPTS_SCALABLE_S);  // IF_SVE_ET_3A /* UQADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqsub, EA_SCALABLE, REG_V1, REG_P4, REG_V28, INS_OPTS_SCALABLE_D);  // IF_SVE_ET_3A /* UQSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqsubr, EA_SCALABLE, REG_V2, REG_P5, REG_V29, INS_OPTS_SCALABLE_B);  // IF_SVE_ET_3A /* UQSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_usqadd, EA_SCALABLE, REG_V3, REG_P6, REG_V30, INS_OPTS_SCALABLE_B);  // IF_SVE_ET_3A /* USQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
         //TODO in this PR....
-        // case IF_SVE_ET_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
         // case IF_SVE_EU_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left (predicated)
         // case IF_SVE_GR_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
         // case IF_SVE_HJ_3A:   // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
