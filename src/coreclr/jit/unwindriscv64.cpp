@@ -120,7 +120,6 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_T6:
             dwarfReg = 31;
             break;
-
         case REG_F0:
             dwarfReg = 32;
             break;
@@ -1962,7 +1961,7 @@ void UnwindFragmentInfo::Dump(int indent)
     UnwindEpilogInfo* pEpi;
 
     count = 0;
-    for (pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+    for (pEpi = ufiEpilogList; pEpi != nullptr; pEpi = pEpi->epiNext)
     {
         ++count;
     }
@@ -1987,7 +1986,7 @@ void UnwindFragmentInfo::Dump(int indent)
 
     ufiPrologCodes.Dump(indent + 2);
 
-    for (pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+    for (pEpi = ufiEpilogList; pEpi != nullptr; pEpi = pEpi->epiNext)
     {
         pEpi->Dump(indent + 2);
     }
@@ -2036,8 +2035,8 @@ void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
     // Ensure that there is exactly a single fragment in both the hot and the cold sections
     assert(&uwiFragmentFirst == uwiFragmentLast);
     assert(&puwi->uwiFragmentFirst == puwi->uwiFragmentLast);
-    assert(uwiFragmentLast->ufiNext == NULL);
-    assert(puwi->uwiFragmentLast->ufiNext == NULL);
+    assert(uwiFragmentLast->ufiNext == nullptr);
+    assert(puwi->uwiFragmentLast->ufiNext == nullptr);
 
     // The real prolog is in the hot section, so this, cold, section has a phantom prolog
     uwiFragmentLast->ufiHasPhantomProlog = true;
@@ -2261,7 +2260,7 @@ void UnwindInfo::Dump(bool isHotCode, int indent)
     UnwindFragmentInfo* pFrag;
 
     count = 0;
-    for (pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+    for (pFrag = &uwiFragmentFirst; pFrag != nullptr; pFrag = pFrag->ufiNext)
     {
         ++count;
     }
@@ -2273,7 +2272,7 @@ void UnwindInfo::Dump(bool isHotCode, int indent)
     printf("%*s  uwiEndLoc: 0x%08p\n", indent, "", dspPtr(uwiEndLoc));
     printf("%*s  uwiInitialized: 0x%08x\n", indent, "", uwiInitialized);
 
-    for (pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+    for (pFrag = &uwiFragmentFirst; pFrag != nullptr; pFrag = pFrag->ufiNext)
     {
         pFrag->Dump(indent + 2);
     }
