@@ -94,7 +94,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void Ctor_CultureInfo_GetHashCodeCompare_TurkishI()
         {
@@ -154,12 +154,15 @@ namespace System.Collections.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void Default_Compare_TurkishI()
         {
-            // Turkish has lower-case and upper-case version of the dotted "i", so the upper case of "i" (U+0069) isn't "I" (U+0049)
-            // but rather U+0130.
-            using (new ThreadCultureChange("tr-TR"))
+            if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
             {
-                Assert.False(CaseInsensitiveHashCodeProvider.Default.GetHashCode("file") == CaseInsensitiveHashCodeProvider.Default.GetHashCode("FILE"));
-                Assert.True(CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("file") == CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("FILE"));
+                // Turkish has lower-case and upper-case version of the dotted "i", so the upper case of "i" (U+0069) isn't "I" (U+0049)
+                // but rather U+0130.
+                using (new ThreadCultureChange("tr-TR"))
+                {
+                    Assert.False(CaseInsensitiveHashCodeProvider.Default.GetHashCode("file") == CaseInsensitiveHashCodeProvider.Default.GetHashCode("FILE"));
+                    Assert.True(CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("file") == CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("FILE"));
+                }
             }
 
             using (new ThreadCultureChange("en-US"))

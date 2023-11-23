@@ -297,35 +297,48 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
 int32_t GlobalizationNative_GetSortKeyNative(
                         const uint16_t* localeName,
                         int32_t lNameLength,
-                        const uint16_t* lpStr,
+                        const UChar* lpStr,
                         int32_t cwStrLength,
                         uint8_t* sortKey,
                         int32_t cbSortKeyLength,
                         int32_t options)
 {
     @autoreleasepool {
-        NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
-        //NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
+        NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString);
+     
+        NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
+        NSStringCompareOptions comparisonOptions = options == 0 ? 0 : ConvertFromCompareOptionsToNSStringCompareOptions(options);
 
-        // Performing string transformation using the specified locale
-        NSString *transformedString = [sourceString uppercaseStringWithLocale:locale];
-        // Convert the NSString to UTF-8 encoded NSData
-        NSData *utf8Data = [transformedString dataUsingEncoding:NSUTF8StringEncoding];
+        // Generate a sort key for the original string based on the locale
+        NSString *transformedString = [sourceStringCleaned stringByFoldingWithOptions:comparisonOptions locale:locale];
 
-        // Get a pointer to the data bytes
-        const uint8_t *utf8Bytes = (const uint8_t *)[utf8Data bytes];
+        // Convert the string to UTF-8 representation
+        const char *utf8Bytes = [transformedString UTF8String];
+        if (utf8Bytes != NULL) {
+            NSUInteger utf8Length = [transformedString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+            //sortKey = (uint8_t *)malloc(utf8Length);
+            memcpy(sortKey, utf8Bytes, utf8Length);
+            return utf8Length;
+        }
+        else
+        {
+            // Convert the string to UTF-16 representation
+            NSData *utf16Data = [transformedString dataUsingEncoding:NSUTF16StringEncoding];
 
-        // Determine the length of the data in bytes
-        NSUInteger length = [utf8Data length];
+            if (utf16Data != nil) {
+                const uint16_t *utf16Bytes = (const uint16_t *)[utf16Data bytes];
+                NSUInteger utf16Length = [utf16Data length] / sizeof(uint16_t);
 
-        // Create a uint8_t buffer to hold the UTF-8 bytes
-        sortKey = (uint8_t *)malloc(length * sizeof(uint8_t));
+                if (sortKey != NULL) {
+                    // Convert UTF-16 to UTF-8 manually (in this example, using memcpy)
+                    memcpy(sortKey, utf16Bytes, utf16Length * 2); // Assuming UTF-16 (2 bytes per character)
+                    return utf16Length * 2;
+                }
+            }
+        }
 
-        // Copy the bytes from utf8Bytes to buffer
-        memcpy(sortKey, utf8Bytes, length * sizeof(uint8_t));
-
-        return length;
+        return 0;
     }
 }
 #endif
