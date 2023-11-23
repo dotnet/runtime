@@ -3251,8 +3251,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
             int len = printf("           %s, %s, %d", rs1, rs2, offset);
             if (len <= 0 || len > MAX_LEN)
+            {
+                printf("\n");
                 return;
-
+            }
             if (!emitComp->opts.disDiffable)
                 printf("%*s;; offset=0x%04X", MAX_LEN - len, "", emitCurCodeOffs(insAdr) + offset);
             printf("\n");
