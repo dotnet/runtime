@@ -2854,7 +2854,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             to->SetJumpKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
             break;
         default:
-            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetJumpDest() DEBUG_ARG(this));
+            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetJumpDest());
             break;
     }
 
@@ -4510,7 +4510,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     fgRemoveAllRefPreds(succ, block);
                 }
 
-                block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                block->SetJumpKindAndTarget(BBJ_NONE);
                 block->bbStmtList   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
 
@@ -4554,7 +4554,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
                 fgRemoveRefPred(initBlock->GetJumpDest(), initBlock);
-                initBlock->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                initBlock->SetJumpKindAndTarget(BBJ_NONE);
             }
             else
             {
@@ -5100,7 +5100,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool foundCondTree = false;
 
     // Create a new block after `block` to put the copied condition code.
-    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+    block->SetJumpKindAndTarget(BBJ_NONE);
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true, bJoin);
 
     // Clone each statement in bTest and append to bNewCond.
@@ -8173,11 +8173,11 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     if (isTopEntryLoop)
     {
-        preHead = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
+        preHead = BasicBlock::New(this, BBJ_NONE);
     }
     else
     {
-        preHead = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, entry);
+        preHead = BasicBlock::New(this, BBJ_ALWAYS, entry);
     }
 
     preHead->bbFlags |= BBF_INTERNAL | BBF_LOOP_PREHEADER;

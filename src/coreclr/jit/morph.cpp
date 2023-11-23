@@ -6308,7 +6308,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // We call CORINFO_HELP_TAILCALL which does not return, so we will
             // not need epilogue.
-            compCurBB->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
+            compCurBB->SetJumpKindAndTarget(BBJ_THROW);
         }
 
         if (isRootReplaced)
@@ -7446,7 +7446,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of a scratch BB.
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgEntryBB DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgEntryBB);
     }
     else
     {
@@ -7461,7 +7461,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         //
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next() DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
     }
 
     // Finish hooking things up.
@@ -13189,7 +13189,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
                 bTaken    = block->Next();
                 bNotTaken = block->GetJumpDest();
-                block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                block->SetJumpKindAndTarget(BBJ_NONE);
             }
 
             if (fgHaveValidEdgeWeights)
@@ -13416,12 +13416,12 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     if (!block->NextIs(curJump))
                     {
                         // transform the basic block into a BBJ_ALWAYS
-                        block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump DEBUG_ARG(this));
+                        block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
                     }
                     else
                     {
                         // transform the basic block into a BBJ_NONE
-                        block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                        block->SetJumpKindAndTarget(BBJ_NONE);
                     }
                     foundVal = true;
                 }
@@ -14182,7 +14182,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         else
 #endif // !TARGET_X86
         {
-            block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
+            block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
             fgAddRefPred(genReturnBB, block);
             fgReturnCount--;
         }
@@ -14892,7 +14892,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock DEBUG_ARG(this));
+        condBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->bbFlags |= propagateFlagsToAll;
@@ -14917,7 +14917,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock DEBUG_ARG(this));
+        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
         fgAddRefPred(remainderBlock, condBlock);
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
@@ -14933,7 +14933,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock DEBUG_ARG(this));
+        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
         fgAddRefPred(remainderBlock, condBlock);
 
         elseBlock->inheritWeightPercentage(condBlock, 50);
