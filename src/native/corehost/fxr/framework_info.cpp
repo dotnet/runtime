@@ -85,7 +85,7 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
                 // Check that the framework's .deps.json exists.
                 pal::string_t fx_version_dir = fx_dir;
                 append_path(&fx_version_dir, ver.c_str());
-                if (!library_exists_in_dir(fx_version_dir, fx_name_local + _X(".deps.json"), nullptr))
+                if (!file_exists_in_dir(fx_version_dir, fx_name_local + _X(".deps.json"), nullptr))
                 {
                     trace::verbose(_X("Ignoring FX version [%s] without .deps.json"), ver.c_str());
                     continue;
