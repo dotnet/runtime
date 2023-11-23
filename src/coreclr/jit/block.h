@@ -725,19 +725,9 @@ public:
         return ((bbFlags & flag) != 0);
     }
 
-private:
-    // Not a particularly useful wrapper for HasFlag.
-    // This is just to enable the templated definition below.
-    bool HasAnyFlag(const BasicBlockFlags flag) const
+    bool HasAnyFlag(const BasicBlockFlags flags) const
     {
-        return HasFlag(flag);
-    }
-
-public:
-    template <typename... T>
-    bool HasAnyFlag(const BasicBlockFlags flag, T... rest) const
-    {
-        return HasAnyFlag(flag) || HasAnyFlag(rest...);
+        return ((bbFlags & flags) != 0);
     }
 
     void CopyFlags(const BasicBlock* block, const BasicBlockFlags mask)
