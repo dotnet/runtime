@@ -88,24 +88,24 @@ namespace System.Runtime.Loader.Tracing
                 errorMsg = SR.Format(SR.EE_FileLoad_Error_Generic, _assemblyName, SR.Host_AssemblyResolver_AssemblyAlreadyLoadedInContext);
             }
 
-            BindResult.AttemptResult? inContextAttempt = bindResult.GetAttemptResult(isInContext: true);
-            BindResult.AttemptResult? appAssembliesAttempt = bindResult.GetAttemptResult(isInContext: false);
+            BindResult.AttemptResult inContextAttempt = bindResult.GetAttemptResult(isInContext: true);
+            BindResult.AttemptResult appAssembliesAttempt = bindResult.GetAttemptResult(isInContext: false);
 
-            if (inContextAttempt is { } inContextAttemptValue)
+            if (inContextAttempt.Attempted)
             {
                 // If there the attempt HR represents a success, but the tracked HR represents a failure (e.g. from further validation), report the failed HR
-                bool isLastAttempt = appAssembliesAttempt == null;
+                bool isLastAttempt = !appAssembliesAttempt.Attempted;
                 TraceStage(Stage.FindInLoadContext,
-                    isLastAttempt && (_hr < 0) && (inContextAttemptValue.HResult >= 0) ? _hr : inContextAttemptValue.HResult,
-                    inContextAttemptValue.Assembly,
+                    isLastAttempt && (_hr < 0) && (inContextAttempt.HResult >= 0) ? _hr : inContextAttempt.HResult,
+                    inContextAttempt.Assembly,
                     mvidMismatch && isLastAttempt ? errorMsg : null);
             }
 
-            if (appAssembliesAttempt is { } appAssembliesAttemptValue)
+            if (appAssembliesAttempt.Attempted)
             {
                 TraceStage(Stage.ApplicationAssemblies,
-                    (_hr < 0) && (appAssembliesAttemptValue.HResult >= 0) ? _hr : appAssembliesAttemptValue.HResult,
-                    appAssembliesAttemptValue.Assembly,
+                    (_hr < 0) && (appAssembliesAttempt.HResult >= 0) ? _hr : appAssembliesAttempt.HResult,
+                    appAssembliesAttempt.Assembly,
                     mvidMismatch ? errorMsg : null);
             }
         }
