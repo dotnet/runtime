@@ -148,7 +148,7 @@ int g_rgCrstLevelMap[] =
     10,         // CrstAppDomainCache
     3,          // CrstArgBasedStubCache
     3,          // CrstAssemblyList
-    14,         // CrstAssemblyLoader
+    19,         // CrstAssemblyLoader
     4,          // CrstAvailableClass
     5,          // CrstAvailableParamTypes
     7,          // CrstBaseDomain
@@ -242,7 +242,7 @@ int g_rgCrstLevelMap[] =
     5,          // CrstSingleUseLock
     0,          // CrstSpecialStatics
     0,          // CrstStackSampler
-    15,         // CrstStaticBoxInit
+    20,         // CrstStaticBoxInit
     -1,         // CrstStressLog
     5,          // CrstStubCache
     0,          // CrstStubDispatchCache

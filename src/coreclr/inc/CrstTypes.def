@@ -87,6 +87,7 @@ End
 
 Crst AssemblyLoader
     AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
+                   ThreadStore GlobalStrLiteralMap LoaderAllocatorReferences
 End
 
 Crst AvailableClass
