@@ -10158,8 +10158,13 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_2BYTE, REG_V12, REG_P1, REG_V15, INS_OPTS_SCALABLE_TO_SIMD_H);  // IF_SVE_CN_3A /* CLASTA  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_4BYTE, REG_V13, REG_P2, REG_V16, INS_OPTS_SCALABLE_TO_SIMD_S);  // IF_SVE_CN_3A /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
 
+    //Note: EA_4BYTE used for B and H (destination register is W)
+    theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_4BYTE, REG_R0, REG_P0, REG_V0, INS_OPTS_SCALABLE_B_TO_SCALAR);  // IF_SVE_CO_3A /* CLASTA  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_4BYTE, REG_R1, REG_P2, REG_V3, INS_OPTS_SCALABLE_H_TO_SCALAR);  // IF_SVE_CO_3A /* CLASTA  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_4BYTE, REG_R23, REG_P5, REG_V12, INS_OPTS_SCALABLE_S_TO_SCALAR);  // IF_SVE_CO_3A /* CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_8BYTE, REG_R3, REG_P6, REG_V9, INS_OPTS_SCALABLE_D_TO_SCALAR);  // IF_SVE_CO_3A /* CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+
         //TODO in this PR....
-        // case IF_SVE_CO_3A:   // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
         // case IF_SVE_EP_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 integer halving add/subtract (predicated)
         // case IF_SVE_ER_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 integer pairwise arithmetic
         // case IF_SVE_ET_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract

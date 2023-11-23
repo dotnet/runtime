@@ -843,7 +843,8 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 
 inline static bool insOptsScalable(insOpts opt)
 {
-    return insOptsScalableSimple(opt) || insOptsScalableWide(opt) || insOptsScalableToSimd(opt);
+    // Opt is any of the scalable types.
+    return insOptsScalableSimple(opt) || insOptsScalableWide(opt) || insOptsScalableToSimd(opt) || insOptsScalableToScalar(opt);
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -866,6 +867,12 @@ inline static bool insOptsScalableToSimd(insOpts opt)
 {
     return ((opt == INS_OPTS_SCALABLE_TO_SIMD_B || opt == INS_OPTS_SCALABLE_TO_SIMD_H || opt == INS_OPTS_SCALABLE_TO_SIMD_S ||
              opt == INS_OPTS_SCALABLE_TO_SIMD_D));
+}
+
+inline static bool insOptsScalableToScalar(insOpts opt)
+{
+    return ((opt == INS_OPTS_SCALABLE_B_TO_SCALAR || opt == INS_OPTS_SCALABLE_H_TO_SCALAR || opt == INS_OPTS_SCALABLE_S_TO_SCALAR ||
+             opt == INS_OPTS_SCALABLE_D_TO_SCALAR));
 }
 
 
