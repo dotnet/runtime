@@ -4169,17 +4169,14 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
     }
 
+    regNumber dstReg  = dst->GetRegNum();
+    regNumber src1Reg = src1->GetRegNum();
+    regNumber src2Reg = src2->GetRegNum();
+
     if (intConst != nullptr)
     {
         ssize_t imm = intConst->IconValue();
-        if (ins == INS_andi || ins == INS_ori || ins == INS_xori)
-        {
-            assert(isValidSimm12(imm));
-        }
-        else
-        {
-            assert(isValidSimm12(imm));
-        }
+        assert(isValidSimm12(imm));
 
         if (ins == INS_sub)
         {
@@ -4205,7 +4202,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             emitIns_R_R(INS_mov, attr, tempReg, nonIntReg->GetRegNum());
         }
 
-        emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), imm);
+        emitIns_R_R_I(ins, attr, dstReg, nonIntReg->GetRegNum(), imm);
 
         if (needCheckOv)
         {
@@ -4215,7 +4212,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             // AS11 = B + C
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)
             {
-                codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr, tempReg);
+                codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dstReg, nullptr, tempReg);
             }
             else
             {
@@ -4224,7 +4221,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     // B > 0 and C > 0, if A < B, goto overflow
                     BasicBlock* tmpLabel = codeGen->genCreateTempLabel();
                     emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, tempReg);
-                    emitIns_R_R_I(INS_slti, EA_PTRSIZE, tempReg, dst->GetRegNum(), imm);
+                    emitIns_R_R_I(INS_slti, EA_PTRSIZE, tempReg, dstReg, imm);
 
                     codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
 
@@ -4237,7 +4234,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     emitIns_J_cond_la(INS_bge, tmpLabel, tempReg, REG_R0);
                     emitIns_R_R_I(INS_addi, attr, tempReg, REG_R0, imm);
 
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, dst->GetRegNum());
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, dstReg);
 
                     codeGen->genDefineTempLabel(tmpLabel);
                 }
@@ -4246,7 +4243,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
     else if (varTypeIsFloating(dst))
     {
-        emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
+        emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
     }
     else
     {
@@ -4258,65 +4255,65 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             {
                 if (!needCheckOv && !(dst->gtFlags & GTF_UNSIGNED))
                 {
-                    emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
+                    emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
                 }
                 else
                 {
                     if (needCheckOv)
                     {
-                        assert(tempReg != dst->GetRegNum());
-                        assert(tempReg != src1->GetRegNum());
-                        assert(tempReg != src2->GetRegNum());
+                        assert(tempReg != dstReg);
+                        assert(tempReg != src1Reg);
+                        assert(tempReg != src2Reg);
 
-                        assert(REG_RA != dst->GetRegNum());
-                        assert(REG_RA != src1->GetRegNum());
-                        assert(REG_RA != src2->GetRegNum());
+                        assert(REG_RA != dstReg);
+                        assert(REG_RA != src1Reg);
+                        assert(REG_RA != src2Reg);
 
                         if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                         {
                             if (attr == EA_4BYTE)
                             {
-                                emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, src1->GetRegNum(), 32);
-                                emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, src2->GetRegNum(), 32);
+                                emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, src1Reg, 32);
+                                emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, src2Reg, 32);
                                 emitIns_R_R_R(INS_mulhu, EA_8BYTE, tempReg, tempReg, REG_RA);
                                 emitIns_R_R_I(INS_srai, attr, tempReg, tempReg, 32);
                             }
                             else
                             {
-                                emitIns_R_R_R(INS_mulhu, attr, tempReg, src1->GetRegNum(), src2->GetRegNum());
+                                emitIns_R_R_R(INS_mulhu, attr, tempReg, src1Reg, src2Reg);
                             }
                         }
                         else
                         {
                             if (attr == EA_4BYTE)
                             {
-                                emitIns_R_R_R(INS_mul, EA_8BYTE, tempReg, src1->GetRegNum(), src2->GetRegNum());
+                                emitIns_R_R_R(INS_mul, EA_8BYTE, tempReg, src1Reg, src2Reg);
                                 emitIns_R_R_I(INS_srai, attr, tempReg, tempReg, 32);
                             }
                             else
                             {
-                                emitIns_R_R_R(INS_mulh, attr, tempReg, src1->GetRegNum(), src2->GetRegNum());
+                                emitIns_R_R_R(INS_mulh, attr, tempReg, src1Reg, src2Reg);
                             }
                         }
                     }
 
                     // n * n bytes will store n bytes result
-                    emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
+                    emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
 
                     if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                     {
                         if (attr == EA_4BYTE)
                         {
-                            emitIns_R_R_I(INS_slli, EA_8BYTE, dst->GetRegNum(), dst->GetRegNum(), 32);
-                            emitIns_R_R_I(INS_srli, EA_8BYTE, dst->GetRegNum(), dst->GetRegNum(), 32);
+                            emitIns_R_R_I(INS_slli, EA_8BYTE, dstReg, dstReg, 32);
+                            emitIns_R_R_I(INS_srli, EA_8BYTE, dstReg, dstReg, 32);
                         }
                     }
 
                     if (needCheckOv)
                     {
-                        assert(tempReg != dst->GetRegNum());
-                        assert(tempReg != src1->GetRegNum());
-                        assert(tempReg != src2->GetRegNum());
+                        assert(tempReg != dstReg);
+                        assert(tempReg != src1Reg);
+                        assert(tempReg != src2Reg);
 
                         if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                         {
@@ -4325,12 +4322,12 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         else
                         {
                             regNumber tempReg2 = dst->ExtractTempReg();
-                            assert(tempReg2 != dst->GetRegNum());
-                            assert(tempReg2 != src1->GetRegNum());
-                            assert(tempReg2 != src2->GetRegNum());
+                            assert(tempReg2 != dstReg);
+                            assert(tempReg2 != src1Reg);
+                            assert(tempReg2 != src2Reg);
                             size_t imm = (EA_SIZE(attr) == EA_8BYTE) ? 63 : 31;
-                            emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_sraiw, attr, tempReg2,
-                                          dst->GetRegNum(), imm);
+                            emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_sraiw, attr, tempReg2, dstReg,
+                                          imm);
                             codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, tempReg2);
                         }
                     }
@@ -4343,19 +4340,19 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             case GT_OR:
             case GT_XOR:
             {
-                emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
+                emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
 
                 // TODO-RISCV64-CQ: here sign-extend dst when deal with 32bit data is too conservative.
                 if (EA_SIZE(attr) == EA_4BYTE)
-                    emitIns_R_R_I(INS_slliw, attr, dst->GetRegNum(), dst->GetRegNum(), 0);
+                    emitIns_R_R_I(INS_slliw, attr, dstReg, dstReg, 0);
             }
             break;
 
             case GT_ADD:
             case GT_SUB:
             {
-                regNumber regOp1       = src1->GetRegNum();
-                regNumber regOp2       = src2->GetRegNum();
+                regNumber regOp1       = src1Reg;
+                regNumber regOp2       = src2Reg;
                 regNumber saveOperReg1 = REG_NA;
                 regNumber saveOperReg2 = REG_NA;
 
@@ -4377,9 +4374,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 {
                     assert(!varTypeIsFloating(dst));
 
-                    assert(tempReg != dst->GetRegNum());
+                    assert(tempReg != dstReg);
 
-                    if (dst->GetRegNum() == regOp1)
+                    if (dstReg == regOp1)
                     {
                         assert(tempReg != regOp1);
                         assert(REG_RA != regOp1);
@@ -4387,7 +4384,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         saveOperReg2 = regOp2;
                         emitIns_R_R_I(INS_addi, attr, tempReg, regOp1, 0);
                     }
-                    else if (dst->GetRegNum() == regOp2)
+                    else if (dstReg == regOp2)
                     {
                         assert(tempReg != regOp2);
                         assert(REG_RA != regOp2);
@@ -4402,7 +4399,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     }
                 }
 
-                emitIns_R_R_R(ins, attr, dst->GetRegNum(), regOp1, regOp2);
+                emitIns_R_R_R(ins, attr, dstReg, regOp1, regOp2);
 
                 if (needCheckOv)
                 {
@@ -4411,12 +4408,13 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     regNumber tempReg2;
                     // ADD : A = B + C
                     // SUB : C = A - B
+                    bool isAdd = (dst->OperGet() == GT_ADD);
                     if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                     {
                         // if A < B, goto overflow
-                        if (dst->OperGet() == GT_ADD)
+                        if (isAdd)
                         {
-                            tempReg1 = dst->GetRegNum();
+                            tempReg1 = dstReg;
                             tempReg2 = saveOperReg1;
                         }
                         else
@@ -4435,10 +4433,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         assert(tempReg2 != saveOperReg2);
 
                         ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
-                        if (dst->OperGet() == GT_ADD)
-                            emitIns_R_R_I(INS_srli, attr, tempReg1, saveOperReg1, ui6);
-                        else
-                            emitIns_R_R_I(INS_srli, attr, tempReg1, dst->GetRegNum(), ui6);
+                        emitIns_R_R_I(INS_srli, attr, tempReg1, isAdd ? saveOperReg1 : dstReg, ui6);
                         emitIns_R_R_I(INS_srli, attr, tempReg2, saveOperReg2, ui6);
 
                         emitIns_R_R_R(INS_xor, attr, tempReg1, tempReg1, tempReg2);
@@ -4458,8 +4453,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         emitIns_J_cond_la(INS_bne, tmpLabel3, tempReg2, REG_R0);
 
                         // B > 0 and C > 0, if A < B, goto overflow
-                        emitIns_J_cond_la(INS_bge, tmpLabel, dst->OperGet() == GT_ADD ? dst->GetRegNum() : saveOperReg1,
-                                          dst->OperGet() == GT_ADD ? saveOperReg1 : saveOperReg2);
+                        emitIns_J_cond_la(INS_bge, tmpLabel, isAdd ? dstReg : saveOperReg1,
+                                          isAdd ? saveOperReg1 : saveOperReg2);
 
                         codeGen->genDefineTempLabel(tmpLabel2);
 
@@ -4468,8 +4463,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         codeGen->genDefineTempLabel(tmpLabel3);
 
                         // B < 0 and C < 0, if A > B, goto overflow
-                        emitIns_J_cond_la(INS_blt, tmpLabel2, dst->OperGet() == GT_ADD ? saveOperReg1 : saveOperReg2,
-                                          dst->OperGet() == GT_ADD ? dst->GetRegNum() : saveOperReg1);
+                        emitIns_J_cond_la(INS_blt, tmpLabel2, isAdd ? saveOperReg1 : saveOperReg2,
+                                          isAdd ? dstReg : saveOperReg1);
 
                         codeGen->genDefineTempLabel(tmpLabel);
                     }
@@ -4482,7 +4477,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
     }
 
-    return dst->GetRegNum();
+    return dstReg;
 }
 
 unsigned emitter::get_curTotalCodeSize()
