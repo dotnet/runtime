@@ -347,6 +347,15 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     _ASSERTE (!pThread->PreemptiveGCDisabled());
 
+    if (g_EntryAssemblyPath == NULL)
+    {
+        // Store the entry assembly path for diagnostic purposes (for example, dumps)
+        size_t len = wcslen(pwzAssemblyPath) + 1;
+        NewArrayHolder<WCHAR> path { new WCHAR[len] };
+        wcscpy_s(path, len, pwzAssemblyPath);
+        g_EntryAssemblyPath = path.Extract();
+    }
+
     Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
 
 #if defined(FEATURE_MULTICOREJIT)

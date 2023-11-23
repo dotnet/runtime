@@ -131,6 +131,12 @@ namespace System.Net.Sockets.Tests
         [InlineData("[::ffff:1.1.1.1]", true)]
         public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns)
         {
+            if (UsesSync && PlatformDetection.IsLinux)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
+                return;
+            }
+
             IPAddress address = IPAddress.Parse(addressString);
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
