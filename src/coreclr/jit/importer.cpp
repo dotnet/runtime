@@ -1937,7 +1937,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     // hit only under JIT stress. See if the block is the one we injected.
     // Note that EH canonicalization can inject internal blocks here. We might
     // be able to re-use such a block (but we don't, right now).
-    if (hndBlk->HasAnyFlags(BBF_IMPORTED, BBF_INTERNAL, BBF_DONT_REMOVE))
+    if (hndBlk->HasAnyFlag(BBF_IMPORTED, BBF_INTERNAL, BBF_DONT_REMOVE))
     {
         Statement* stmt = hndBlk->firstStmt();
 
@@ -5924,7 +5924,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Should not see backward branch targets w/o backwards branches.
                 // So if !compHasBackwardsBranch, these flags should never be set.
                 //
-                assert(!block->HasAnyFlags(BBF_BACKWARD_JUMP_TARGET, BBF_BACKWARD_JUMP_SOURCE));
+                assert(!block->HasAnyFlag(BBF_BACKWARD_JUMP_TARGET, BBF_BACKWARD_JUMP_SOURCE));
             }
         }
 
@@ -11551,7 +11551,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // Initialize bbEntryState just the first time we try to add this block to the pending list
     // Just because bbEntryState is NULL, doesn't mean the pre-state wasn't previously set
     // We use NULL to indicate the 'common' state to avoid memory allocation
-    if ((block->bbEntryState == nullptr) && !block->HasAnyFlags(BBF_IMPORTED, BBF_FAILED_VERIFICATION) &&
+    if ((block->bbEntryState == nullptr) && !block->HasAnyFlag(BBF_IMPORTED, BBF_FAILED_VERIFICATION) &&
         (impGetPendingBlockMember(block) == 0))
     {
         verInitBBEntryState(block, &verCurrentState);

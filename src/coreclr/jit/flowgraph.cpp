@@ -88,7 +88,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
         if (opts.OptimizationDisabled())
         {
-            if (!block->HasAnyFlags(BBF_HAS_SUPPRESSGC_CALL, BBF_NEEDS_GCPOLL))
+            if (!block->HasAnyFlag(BBF_HAS_SUPPRESSGC_CALL, BBF_NEEDS_GCPOLL))
             {
                 continue;
             }

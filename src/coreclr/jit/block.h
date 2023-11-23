@@ -728,16 +728,16 @@ public:
 private:
     // Not a particularly useful wrapper for HasFlag.
     // This is just to enable the templated definition below.
-    bool HasAnyFlags(const BasicBlockFlags flag) const
+    bool HasAnyFlag(const BasicBlockFlags flag) const
     {
         return HasFlag(flag);
     }
 
 public:
     template <typename... T>
-    bool HasAnyFlags(const BasicBlockFlags flag, T... rest) const
+    bool HasAnyFlag(const BasicBlockFlags flag, T... rest) const
     {
-        return HasAnyFlags(flag) || HasAnyFlags(rest...);
+        return HasAnyFlag(flag) || HasAnyFlag(rest...);
     }
 
     void CopyFlags(const BasicBlock* block, const BasicBlockFlags mask)

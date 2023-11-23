@@ -910,8 +910,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock = bbIsTryBeg(block);
 
                 if (isTryEntryBlock ||
-                    block->HasAnyFlags(BBF_FUNCLET_BEG, BBF_RUN_RARELY, BBF_LOOP_HEAD, BBF_LOOP_PREHEADER,
-                                       BBF_LOOP_ALIGN))
+                    block->HasAnyFlag(BBF_FUNCLET_BEG, BBF_RUN_RARELY, BBF_LOOP_HEAD, BBF_LOOP_PREHEADER,
+                                      BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
