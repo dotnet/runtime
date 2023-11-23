@@ -279,8 +279,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Else
                 Comparer = GetCultureInfo().CompareInfo
                 Options = CompareOptions.IgnoreCase Or
-                          CompareOptions.IgnoreWidth Or
-                          CompareOptions.IgnoreKanaType
+                          CompareOptions.IgnoreWidth
 
                 Dim LocaleSpecificLigatureTable As Byte() = New Byte(LigatureExpansions.Length - 1) {}
 

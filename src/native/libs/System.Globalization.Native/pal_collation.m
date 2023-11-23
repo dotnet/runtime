@@ -304,6 +304,12 @@ int32_t GlobalizationNative_GetSortKeyNative(
                         int32_t options)
 {
     @autoreleasepool {
+        if (cwStrLength == 0)
+        {
+            sortKey = malloc(1);
+            sortKey[0] = '\0';
+            return 1;
+        }
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
         NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString);
      

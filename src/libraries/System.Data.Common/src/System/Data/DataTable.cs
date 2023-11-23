@@ -1063,7 +1063,7 @@ namespace System.Data
                 }
                 else
                 {
-                    _compareFlags = CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth;
+                    _compareFlags = CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth;
                 }
                 if (resetIndexes)
                 {

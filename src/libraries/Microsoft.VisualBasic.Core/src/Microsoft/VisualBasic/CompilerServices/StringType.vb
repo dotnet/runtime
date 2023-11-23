@@ -418,8 +418,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ci = GetCultureInfo().CompareInfo
             Options = CompareOptions.IgnoreCase Or _
                       CompareOptions.IgnoreWidth Or _
-                      CompareOptions.IgnoreNonSpace Or _
-                      CompareOptions.IgnoreKanaType
+                      CompareOptions.IgnoreNonSpace
 
             Do While PatternIndex < PatternEndIndex
                 p = Pattern.Chars(PatternIndex)
@@ -658,7 +657,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                                 If CompareOption = CompareMethod.Binary Then
                                     Options = CompareOptions.Ordinal
                                 Else
-                                    Options = CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth Or CompareOptions.IgnoreNonSpace Or CompareOptions.IgnoreKanaType
+                                    Options = CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth Or CompareOptions.IgnoreNonSpace
                                 End If
 
                                 'Count = Source.LastIndexOf(TruncatedPattern)

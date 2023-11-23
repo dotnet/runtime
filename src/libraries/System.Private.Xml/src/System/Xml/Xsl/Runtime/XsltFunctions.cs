@@ -394,7 +394,7 @@ namespace System.Xml.Xsl.Runtime
                 switch (options[idx])
                 {
                     case 'i':
-                        opts = CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth;
+                        opts = CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth;
                         break;
                     case 'u':
                         upperFirst = true;
