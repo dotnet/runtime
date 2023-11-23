@@ -10,10 +10,10 @@
 #include <_version.c>
 #endif
 
-bool file_exists_in_dir(const pal::string_t& dir, const pal::string_t& file_name, pal::string_t* out_file_path)
+bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)
 {
     pal::string_t file_path = dir;
-    append_path(&file_path, file_name.c_str());
+    append_path(&file_path, file_name);
 
     if (!pal::file_exists(file_path))
         return false;
