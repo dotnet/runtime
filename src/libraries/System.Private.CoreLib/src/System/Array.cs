@@ -1045,7 +1045,7 @@ namespace System
         // index into the array.
         //
         // This method is to support the ICollection interface, and calls
-        // Array.Copy internally.  If you aren't using ICollection explicitly,
+        // Array.Copy internally. If you aren't using ICollection explicitly,
         // call Array.Copy to avoid an extra indirection.
         //
         public void CopyTo(Array array, int index)
