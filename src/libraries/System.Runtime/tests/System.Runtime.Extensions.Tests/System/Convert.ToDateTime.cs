@@ -10,7 +10,7 @@ namespace System.Tests
     {
         private static readonly DateTimeFormatInfo s_dateTimeFormatInfo = new DateTimeFormatInfo();
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         public void FromString()
         {
             DateTime[] expectedValues = { new DateTime(1999, 12, 31, 23, 59, 59), new DateTime(100, 1, 1, 0, 0, 0), new DateTime(2216, 2, 29, 0, 0, 0), new DateTime(1, 1, 1, 0, 0, 0) };

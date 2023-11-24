@@ -888,7 +888,6 @@ namespace System.DirectoryServices
                     if (System.DirectoryServices.ActiveDirectory.Utils.Compare(childPath, 0, parentPath.Length, parentPath, 0, parentPath.Length) == 0)
                     {
                         uint compareFlags = System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNORENONSPACE |
-                                    System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNOREKANATYPE |
                                     System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNOREWIDTH |
                                     System.DirectoryServices.ActiveDirectory.Utils.SORT_STRINGSORT;
                         // work around the ADSI case sensitive

@@ -79,7 +79,7 @@ namespace System.Globalization
                 throw new PlatformNotSupportedException(GetPNSE(options));
         }
 
-        private const CompareOptions SupportedCompareOptions = CompareOptions.None | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace |
+        private const CompareOptions SupportedCompareOptions = CompareOptions.None | CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreNonSpace |
                                                                CompareOptions.IgnoreWidth | CompareOptions.StringSort;
 
         private static string GetPNSE(CompareOptions options) =>
