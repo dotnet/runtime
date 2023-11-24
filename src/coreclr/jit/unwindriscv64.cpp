@@ -22,203 +22,15 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
 
-    switch (reg)
+    // On RISC-V registers from R0 to F31
+    // can be mapped directly to dwarf structure
+    if (reg >= REG_R0 && reg <= REG_F31)
     {
-        case REG_R0:
-            dwarfReg = 0;
-            break;
-        case REG_RA:
-            dwarfReg = 1;
-            break;
-        case REG_SP:
-            dwarfReg = 2;
-            break;
-        case REG_GP:
-            dwarfReg = 3;
-            break;
-        case REG_TP:
-            dwarfReg = 4;
-            break;
-        case REG_T0:
-            dwarfReg = 5;
-            break;
-        case REG_T1:
-            dwarfReg = 6;
-            break;
-        case REG_T2:
-            dwarfReg = 7;
-            break;
-        case REG_FP:
-            dwarfReg = 8;
-            break;
-        case REG_S1:
-            dwarfReg = 9;
-            break;
-        case REG_A0:
-            dwarfReg = 10;
-            break;
-        case REG_A1:
-            dwarfReg = 11;
-            break;
-        case REG_A2:
-            dwarfReg = 12;
-            break;
-        case REG_A3:
-            dwarfReg = 13;
-            break;
-        case REG_A4:
-            dwarfReg = 14;
-            break;
-        case REG_A5:
-            dwarfReg = 15;
-            break;
-        case REG_A6:
-            dwarfReg = 16;
-            break;
-        case REG_A7:
-            dwarfReg = 17;
-            break;
-        case REG_S2:
-            dwarfReg = 18;
-            break;
-        case REG_S3:
-            dwarfReg = 19;
-            break;
-        case REG_S4:
-            dwarfReg = 20;
-            break;
-        case REG_S5:
-            dwarfReg = 21;
-            break;
-        case REG_S6:
-            dwarfReg = 22;
-            break;
-        case REG_S7:
-            dwarfReg = 23;
-            break;
-        case REG_S8:
-            dwarfReg = 24;
-            break;
-        case REG_S9:
-            dwarfReg = 25;
-            break;
-        case REG_S10:
-            dwarfReg = 26;
-            break;
-        case REG_S11:
-            dwarfReg = 27;
-            break;
-        case REG_T3:
-            dwarfReg = 28;
-            break;
-        case REG_T4:
-            dwarfReg = 29;
-            break;
-        case REG_T5:
-            dwarfReg = 30;
-            break;
-        case REG_T6:
-            dwarfReg = 31;
-            break;
-        case REG_F0:
-            dwarfReg = 32;
-            break;
-        case REG_F1:
-            dwarfReg = 33;
-            break;
-        case REG_F2:
-            dwarfReg = 34;
-            break;
-        case REG_F3:
-            dwarfReg = 35;
-            break;
-        case REG_F4:
-            dwarfReg = 36;
-            break;
-        case REG_F5:
-            dwarfReg = 37;
-            break;
-        case REG_F6:
-            dwarfReg = 38;
-            break;
-        case REG_F7:
-            dwarfReg = 39;
-            break;
-        case REG_F8:
-            dwarfReg = 40;
-            break;
-        case REG_F9:
-            dwarfReg = 41;
-            break;
-        case REG_F10:
-            dwarfReg = 42;
-            break;
-        case REG_F11:
-            dwarfReg = 43;
-            break;
-        case REG_F12:
-            dwarfReg = 44;
-            break;
-        case REG_F13:
-            dwarfReg = 45;
-            break;
-        case REG_F14:
-            dwarfReg = 46;
-            break;
-        case REG_F15:
-            dwarfReg = 47;
-            break;
-        case REG_F16:
-            dwarfReg = 48;
-            break;
-        case REG_F17:
-            dwarfReg = 49;
-            break;
-        case REG_F18:
-            dwarfReg = 50;
-            break;
-        case REG_F19:
-            dwarfReg = 51;
-            break;
-        case REG_F20:
-            dwarfReg = 52;
-            break;
-        case REG_F21:
-            dwarfReg = 53;
-            break;
-        case REG_F22:
-            dwarfReg = 54;
-            break;
-        case REG_F23:
-            dwarfReg = 55;
-            break;
-        case REG_F24:
-            dwarfReg = 56;
-            break;
-        case REG_F25:
-            dwarfReg = 57;
-            break;
-        case REG_F26:
-            dwarfReg = 58;
-            break;
-        case REG_F27:
-            dwarfReg = 59;
-            break;
-        case REG_F28:
-            dwarfReg = 60;
-            break;
-        case REG_F29:
-            dwarfReg = 61;
-            break;
-        case REG_F30:
-            dwarfReg = 62;
-            break;
-        case REG_F31:
-            dwarfReg = 63;
-            break;
-
-        default:
-            NYI("CFI codes"); // e.g. V-extension
+        dwarfReg = static_cast<short>(reg);
+    }
+    else
+    {
+        NYI("CFI codes"); // e.g. V-extension
     }
 
     return dwarfReg;
@@ -366,8 +178,8 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     {
         // save_reg: 11010000 | 000xxxxx | zzzzzzzz: save reg r(1 + #X) at [sp + #Z * 8], offset <= 2047
 
-        assert(reg == REG_RA ||
-               (REG_FP <= reg && reg <= REG_S11)); // first legal register: RA, last legal register: S11
+        assert(reg == REG_RA || (REG_FP <= reg && reg <= REG_S11)); // first legal register: RA, last legal register:
+                                                                    // S11
 
         BYTE x = (BYTE)(reg - REG_RA);
         assert(0 <= x && x <= 0x1B);
@@ -413,7 +225,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
 {
     static const BYTE s_UnwindSize[256] = {
-     // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+        // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 00-0F
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 10-1F
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 20-2F
@@ -515,7 +327,7 @@ void DumpUnwindInfo(Compiler*         comp,
     // pHeader is not guaranteed to be aligned. We put four 0xFF end codes at the end
     // to provide padding, and round down to get a multiple of 4 bytes in size.
     DWORD UNALIGNED* pdw = (DWORD UNALIGNED*)pHeader;
-    DWORD dw;
+    DWORD            dw;
 
     dw = *pdw++;
 
@@ -1148,9 +960,9 @@ void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
 
     int epiSize = pEpi->Size();
     memcpy_s(&upcMem[upcEpilogSlot], upcMemSize - upcEpilogSlot - 3, pEpi->GetCodes(),
-             epiSize); // -3 to avoid writing to the alignment padding
-    assert(pEpi->GetStartIndex() ==
-           upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy it.
+             epiSize);                                            // -3 to avoid writing to the alignment padding
+    assert(pEpi->GetStartIndex() == upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy
+                                                                  // it.
 
     upcEpilogSlot += epiSize;
     assert(upcEpilogSlot <= upcMemSize - 3);
@@ -1771,8 +1583,8 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
     // Start writing the header
 
-    noway_assert(headerFunctionLength <=
-                 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits, we have an internal error
+    noway_assert(headerFunctionLength <= 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits,
+                                                    // we have an internal error
 
     if ((headerEpilogCount > UW_MAX_EPILOG_COUNT) || (headerCodeWords > UW_MAX_CODE_WORDS_COUNT))
     {

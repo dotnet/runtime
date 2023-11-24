@@ -9,7 +9,7 @@
  *          ld/st/cmp   -- load/store/compare instruction
  *          encode      -- encoding 1
  *
-******************************************************************************/
+ ******************************************************************************/
 
 #if !defined(TARGET_RISCV64)
 #error Unexpected target type
