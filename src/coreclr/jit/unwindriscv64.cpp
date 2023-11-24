@@ -1101,13 +1101,21 @@ void UnwindPrologCodes::Dump(int indent)
         {
             printf(" %02x", upcMem[i]);
             if (i == upcCodeSlot)
+            {
                 printf(" <-C");
+            }
             else if (i == upcHeaderSlot)
+            {
                 printf(" <-H");
+            }
             else if (i == upcEpilogSlot)
+            {
                 printf(" <-E");
+            }
             else if (i == upcUnwindBlockSlot)
+            {
                 printf(" <-U");
+            }
         }
         printf("\n");
     }
@@ -1164,7 +1172,9 @@ void UnwindEpilogCodes::Dump(int indent)
         {
             printf(" %02x", uecMem[i]);
             if (i == uecCodeSlot)
+            {
                 printf(" <-C"); // Indicate the current pointer
+            }
         }
         printf("\n");
     }
