@@ -3829,10 +3829,18 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    // RISCV64 implements this similar by `emitter::emitDisInsName`.
-    // For RISCV64 maybe the `emitDispIns` is over complicate.
-    // The `emitter::emitDisInsName` is focused on the most important for debugging.
-    NYI_RISCV64("RISCV64 not used the emitter::emitDispIns");
+    if (ig == nullptr)
+        return;
+
+    const BYTE* address = emitCodeBlock + offset + writeableOffset;
+    for (int size = id->idCodeSize(); size > 0;)
+    {
+        code_t instruction;
+        memcpy(&instruction, address, sizeof(code_t));
+        emitDisInsName(instruction, address, id);
+        address += sizeof(code_t);
+        size -= sizeof(code_t);
+    }
 }
 
 /*****************************************************************************
