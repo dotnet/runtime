@@ -3829,15 +3829,22 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
+    static constexpr code_t k32BitInstructionLowerMask = 0x1f; // 0b00000011
+    static constexpr code_t k32BitInstructionUpperMask = 0x1c; // 0b00011100
+
     if (ig == nullptr)
         return;
 
     const BYTE* address = emitCodeBlock + offset + writeableOffset;
     const BYTE* const addressSentinel = address + id->idCodeSize();
+    // TODO-RISCV64-C: add support for non-32 bit instructions
     for (; address < addressSentinel; address += sizeof(code_t))
     {
         code_t instruction;
         memcpy(&instruction, address, sizeof(code_t));
+        // checks whether the instruction is 4 bytes long
+        assert((instruction & k32BitInstructionUpperMask != k32BitInstructionUpperMask) &&
+               (instruction & k32BitInstructionLowerMask == k32BitInstructionLowerMask));
         emitDisInsName(instruction, address, id);
     }
 }
