@@ -26,7 +26,7 @@ namespace System.Runtime.Loader
             result.Attempted = true;
         }
 
-        public AttemptResult GetAttemptResult(bool isInContext = false) => isInContext ? _inContextAttempt : _applicationAssembliesResult;
+        public readonly AttemptResult GetAttemptResult(bool isInContext = false) => isInContext ? _inContextAttempt : _applicationAssembliesResult;
 
         public void SetResult(BinderAssembly assembly, bool isInContext = false)
         {

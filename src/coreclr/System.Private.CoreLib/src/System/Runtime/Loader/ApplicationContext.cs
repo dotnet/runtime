@@ -34,14 +34,12 @@ namespace System.Runtime.Loader
 
         public void IncrementVersion() => Interlocked.Increment(ref _version);
 
-        private const char PATH_SEPARATOR_CHAR = ';';
-
         private static bool GetNextPath(string paths, ref int startPos, out string outPath)
         {
             bool wrappedWithQuotes = false;
 
             // Skip any leading spaces or path separators
-            while (startPos < paths.Length && paths[startPos] is ' ' or PATH_SEPARATOR_CHAR)
+            while (startPos < paths.Length && paths[startPos] is ' ' or PathInternal.PathSeparator)
                 startPos++;
 
             if (startPos == paths.Length)
@@ -73,7 +71,7 @@ namespace System.Runtime.Loader
                 if (iEnd != -1)
                 {
                     // Find where the next path starts - there should be a path separator right after the closing quotation mark
-                    iNext = IndexOfInRange(paths, iEnd, PATH_SEPARATOR_CHAR);
+                    iNext = IndexOfInRange(paths, iEnd, PathInternal.PathSeparator);
                     if (iNext != -1)
                     {
                         iNext++;
@@ -89,7 +87,7 @@ namespace System.Runtime.Loader
                     throw new ArgumentException(nameof(paths));
                 }
             }
-            else if ((iEnd = IndexOfInRange(paths, iEnd, PATH_SEPARATOR_CHAR)) != -1)
+            else if ((iEnd = IndexOfInRange(paths, iEnd, PathInternal.PathSeparator)) != -1)
             {
                 iNext = iEnd + 1;
             }
