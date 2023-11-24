@@ -515,7 +515,7 @@ protected:
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
-        OPSZP      = OPSZ4,
+        OPSZP         = OPSZ4,
 #endif
     };
 
