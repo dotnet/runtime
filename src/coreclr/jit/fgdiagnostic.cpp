@@ -3247,46 +3247,61 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 //
 void Compiler::fgDebugCheckTypes(GenTree* tree)
 {
-    fgWalkTreePost(&tree, [](GenTree** pNode, fgWalkData* data) -> fgWalkResult {
-        GenTree* node = *pNode;
-
-        // Validate types of nodes in the IR:
-        //
-        // * TYP_ULONG and TYP_UINT are not legal.
-        // * Small types are only legal for the following nodes:
-        //    * All kinds of indirections including GT_NULLCHECK
-        //    * All kinds of locals
-        //    * GT_COMMA wrapped around any of the above.
-        //
-
-        if (node->TypeIs(TYP_ULONG, TYP_UINT))
+    struct NodeTypeValidator : GenTreeVisitor<NodeTypeValidator>
+    {
+        enum
         {
-            data->compiler->gtDispTree(node);
-            assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+            DoPostOrder = true,
+        };
+
+        NodeTypeValidator(Compiler* comp) : GenTreeVisitor(comp)
+        {
         }
 
-        if (varTypeIsSmall(node))
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user) const
         {
-            if (node->OperIs(GT_COMMA))
+            GenTree* node = *use;
+
+            // Validate types of nodes in the IR:
+            //
+            // * TYP_ULONG and TYP_UINT are not legal.
+            // * Small types are only legal for the following nodes:
+            //    * All kinds of indirections including GT_NULLCHECK
+            //    * All kinds of locals
+            //    * GT_COMMA wrapped around any of the above.
+            //
+            if (node->TypeIs(TYP_ULONG, TYP_UINT))
             {
-                // TODO: it's only allowed if its underlying effective node is also a small type.
-                return WALK_CONTINUE;
+                m_compiler->gtDispTree(node);
+                assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
             }
 
-            if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+            if (varTypeIsSmall(node))
             {
-                return WALK_CONTINUE;
+                if (node->OperIs(GT_COMMA))
+                {
+                    // TODO: it's only allowed if its underlying effective node is also a small type.
+                    return WALK_CONTINUE;
+                }
+
+                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+                {
+                    return WALK_CONTINUE;
+                }
+
+                m_compiler->gtDispTree(node);
+                assert(!"Unexpected small type in IR");
             }
 
-            data->compiler->gtDispTree(node);
-            assert(!"Unexpected small type in IR");
+            // TODO: validate types in GT_CAST nodes.
+            // Validate mismatched types in binopt's arguments, etc.
+            //
+            return WALK_CONTINUE;
         }
+    };
 
-        // TODO: validate types in GT_CAST nodes.
-        // Validate mismatched types in binopt's arguments, etc.
-        //
-        return WALK_CONTINUE;
-    });
+    NodeTypeValidator walker(this);
+    walker.WalkTree(&tree, nullptr);
 }
 
 //------------------------------------------------------------------------

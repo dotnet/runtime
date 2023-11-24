@@ -270,6 +270,18 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
+                case NI_Vector128_ToScalar:
+                case NI_Vector256_ToScalar:
+                case NI_Vector512_ToScalar:
+                case NI_Vector128_GetElement:
+                case NI_Vector256_GetElement:
+                case NI_Vector512_GetElement:
+                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
+                    {
+                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
+                    }
+                    break;
+
                 case NI_BMI1_TrailingZeroCount:
                 case NI_BMI1_X64_TrailingZeroCount:
                 case NI_LZCNT_LeadingZeroCount:
@@ -285,6 +297,17 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_Vector128_op_Inequality:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
+                case NI_AdvSimd_Extract:
+                case NI_Vector64_ToScalar:
+                case NI_Vector128_ToScalar:
+                case NI_Vector64_GetElement:
+                case NI_Vector128_GetElement:
+                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
+                    {
+                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
+                    }
+                    break;
+
                 case NI_AdvSimd_PopCount:
                 case NI_AdvSimd_LeadingZeroCount:
                 case NI_AdvSimd_LeadingSignCount:
@@ -297,10 +320,6 @@ bool IntegralRange::Contains(int64_t value) const
 #error Unsupported platform
 #endif
                 default:
-                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
-                    {
-                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
-                    }
                     break;
             }
             break;
