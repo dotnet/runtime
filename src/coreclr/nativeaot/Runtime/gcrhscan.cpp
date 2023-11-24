@@ -54,6 +54,10 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
         else
 #endif
         {
+            // Skip threads that cannot point to anything of interest for this GC
+            if (pThread->GetGeneration() > condemned)
+                continue;
+
             InlinedThreadStaticRoot* pRoot = pThread->GetInlinedThreadStaticList();
             while (pRoot != NULL)
             {

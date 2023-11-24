@@ -43,6 +43,7 @@ NESTED_END RhpPInvoke, _TEXT
 //
 LEAF_ENTRY RhpPInvokeReturn, _TEXT
         mov         rsi, [rdi + OFFSETOF__PInvokeTransitionFrame__m_pThread]
+        mov         dword ptr [rsi + OFFSETOF__Thread__m_generation], 0
         mov         qword ptr [rsi + OFFSETOF__Thread__m_pTransitionFrame], 0
         cmp         dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_None
         jne         0f                  // forward branch - predicted not taken

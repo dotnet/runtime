@@ -97,6 +97,7 @@ struct ThreadBuffer
     uintptr_t               m_uHijackedReturnValueFlags;
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
+    int32_t                 m_generation;
     Object*                 m_pThreadLocalStatics;
     InlinedThreadStaticRoot* m_pInlinedThreadLocalStatics;
     GCFrameRegistration*    m_pGCFrameRegistrations;
@@ -282,6 +283,8 @@ public:
     void SetGCSpecial();
     bool IsGCSpecial();
     bool CatchAtSafePoint();
+    int32_t  GetGeneration();
+    void  SetGeneration(int32_t age);
 
     //
     // Managed/unmanaged interop transitions support APIs

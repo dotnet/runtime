@@ -93,6 +93,8 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
     }
     while (ThreadStore::IsTrapThreadsRequested());
 
+    m_generation = 0;
+
     // Restore the saved error
     PalSetLastError(lastErrorOnEntry);
 }
@@ -163,6 +165,8 @@ void Thread::DisablePreemptiveMode()
     {
         WaitForGC(m_pDeferredTransitionFrame);
     }
+
+    m_generation = 0;
 }
 #endif // !DACCESS_COMPILE
 
@@ -416,6 +420,16 @@ bool Thread::CatchAtSafePoint()
     // a foreground GC proceed at that point. So it's always safe to return true.
     ASSERT(IsGCSpecial());
     return true;
+}
+
+int32_t Thread::GetGeneration()
+{
+    return m_generation;
+}
+
+void Thread::SetGeneration(int32_t generation)
+{
+    m_generation = generation;
 }
 
 uint64_t Thread::GetPalThreadIdForLogging()
@@ -1301,6 +1315,8 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     {
         WaitForGC(pFrame->m_savedPInvokeTransitionFrame);
     }
+
+    m_generation = 0;
 }
 
 void Thread::EnsureRuntimeInitialized()
@@ -1343,6 +1359,8 @@ FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame * pFrame)
     {
         RhpWaitForGC2(pFrame);
     }
+
+    m_generation = 0;
 }
 
 Object * Thread::GetThreadAbortException()
