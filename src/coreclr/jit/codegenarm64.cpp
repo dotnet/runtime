@@ -10114,8 +10114,6 @@ void CodeGen::genArm64EmitterUnitTests()
 
     genDefineTempLabel(genCreateTempLabel());
 
-    // TODO-SVE: Fix once we add Z and predicate registers
-
     theEmitter->emitIns_R_R_R(INS_sve_and, EA_SCALABLE, REG_V0, REG_P1, REG_V2,
                               INS_OPTS_SCALABLE_B); // AND     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_bic, EA_SCALABLE, REG_V3, REG_P4, REG_V5,
@@ -10184,8 +10182,6 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_WIDE_S); // IF_SVE_AO_3A /* LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
                                                          // */
 
-    // TODO-SVE: Currently, these are all printed with /M on the predicate. There should be no predicate extension on
-    // these.
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_SCALABLE, REG_V31, REG_P7, REG_V31,
                               INS_OPTS_SCALABLE_B); // IF_SVE_CM_3A /* CLASTA  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_SCALABLE, REG_V30, REG_P6, REG_V30,
@@ -10282,8 +10278,9 @@ void CodeGen::genArm64EmitterUnitTests()
 
     theEmitter->emitIns_R_R_R(INS_sve_fabd, EA_SCALABLE, REG_V24, REG_P3, REG_V11, INS_OPTS_SCALABLE_H);  // IF_SVE_HL_3A /* FABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fadd, EA_SCALABLE, REG_V25, REG_P2, REG_V10, INS_OPTS_SCALABLE_S);  // IF_SVE_HL_3A /* FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    theEmitter->emitIns_R_R_R(INS_sve_famax, EA_SCALABLE, REG_V26, REG_P1, REG_V9, INS_OPTS_SCALABLE_D);  // IF_SVE_HL_3A /* FAMAX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    theEmitter->emitIns_R_R_R(INS_sve_famin, EA_SCALABLE, REG_V27, REG_P0, REG_V8, INS_OPTS_SCALABLE_H);  // IF_SVE_HL_3A /* FAMIN   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    // These are not yet supported by capstone.
+    // theEmitter->emitIns_R_R_R(INS_sve_famax, EA_SCALABLE, REG_V26, REG_P1, REG_V9, INS_OPTS_SCALABLE_D);  // IF_SVE_HL_3A /* FAMAX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    // theEmitter->emitIns_R_R_R(INS_sve_famin, EA_SCALABLE, REG_V27, REG_P0, REG_V8, INS_OPTS_SCALABLE_H);  // IF_SVE_HL_3A /* FAMIN   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fdiv, EA_SCALABLE, REG_V28, REG_P0, REG_V7, INS_OPTS_SCALABLE_S);  // IF_SVE_HL_3A /* FDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fdivr, EA_SCALABLE, REG_V29, REG_P1, REG_V6, INS_OPTS_SCALABLE_D);  // IF_SVE_HL_3A /* FDIVR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fmax, EA_SCALABLE, REG_V30, REG_P2, REG_V5, INS_OPTS_SCALABLE_H);  // IF_SVE_HL_3A /* FMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
