@@ -1008,7 +1008,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]//[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [Fact]
         public static void CompareToNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1284,7 +1284,7 @@ namespace System.Tests
             Assert.True(span.Contains(slice, StringComparison.OrdinalIgnoreCase));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [Fact]
         public static void ContainsNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1311,18 +1311,21 @@ namespace System.Tests
                     Assert.False(firstSpan.Contains(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
+                    {
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -1662,7 +1665,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCulture, true };
             yield return new object[] { "", "a", StringComparison.CurrentCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.CurrentCulture, true };
 
             // CurrentCultureIgnoreCase
@@ -1674,7 +1677,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCultureIgnoreCase, true };
             yield return new object[] { "", "a", StringComparison.CurrentCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
 
             // InvariantCulture
@@ -1687,7 +1690,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCulture, true };
             yield return new object[] { "", "a", StringComparison.InvariantCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.InvariantCulture, true };
 
             // InvariantCultureIgnoreCase
@@ -1699,7 +1702,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCultureIgnoreCase, true };
             yield return new object[] { "", "a", StringComparison.InvariantCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true };
 
             // Ordinal
@@ -1726,7 +1729,7 @@ namespace System.Tests
             yield return new object[] { "", "a", StringComparison.OrdinalIgnoreCase, false };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [Theory]
         [MemberData(nameof(EndsWith_StringComparison_TestData))]
         public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
@@ -4851,7 +4854,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCulture, true };
             yield return new object[] { "", "hello", StringComparison.CurrentCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
 
             // CurrentCultureIgnoreCase
@@ -4863,7 +4866,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCultureIgnoreCase, true };
             yield return new object[] { "", "hello", StringComparison.CurrentCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCultureIgnoreCase, true };
 
             // InvariantCulture
@@ -4875,7 +4878,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCulture, true };
             yield return new object[] { "", "hello", StringComparison.InvariantCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.InvariantCulture, true };
 
             // InvariantCultureIgnoreCase
@@ -4887,7 +4890,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCultureIgnoreCase, true };
             yield return new object[] { "", "hello", StringComparison.InvariantCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.InvariantCultureIgnoreCase, true };
 
             // Ordinal
@@ -4921,7 +4924,7 @@ namespace System.Tests
             yield return new object[] { "", "hello", StringComparison.OrdinalIgnoreCase, false };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [Theory]
         [MemberData(nameof(StartsWith_StringComparison_TestData))]
         public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {

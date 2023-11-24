@@ -326,7 +326,7 @@ namespace System.Tests
     public static class GetCustomAttribute
     {
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [Fact]
         public static void customAttributeCount()
         {
             List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();

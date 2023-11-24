@@ -16,7 +16,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Same(nameObjectCollection.Keys, nameObjectCollection.Keys);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         public void Keys_GetEnumerator(int count)
@@ -145,7 +145,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(previousCount, keysArray.Length);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         public void Keys_CopyTo_Invalid(int count)
