@@ -12,7 +12,7 @@ namespace System.Runtime.Loader
         {
             // ensure to touch Default to make it initialized
             Default.AddLoadedAssembly(pCoreLibAssembly);
-            return new BinderAssembly(Assembly_GetPEImage(pCoreLibAssembly), true) { Binder = Default };
+            return new BinderAssembly(Assembly_GetPEImage(pCoreLibAssembly), true) { Binder = Default._nativeAssemblyLoadContext };
         }
 
         // called by VM
@@ -20,6 +20,8 @@ namespace System.Runtime.Loader
         {
             Default.AppContext.SetupBindingPaths(new string(trustedPlatformAssemblies), new string(platformResourceRoots), new string(appPaths), acquireLock: true);
         }
+
+        private protected IntPtr GetNativeAssemblyLoadContext() => _nativeAssemblyLoadContext;
     }
 
     internal partial class DefaultAssemblyLoadContext
@@ -35,7 +37,7 @@ namespace System.Runtime.Loader
             if (hr >= 0)
             {
                 Debug.Assert(coreCLRFoundAssembly != null);
-                coreCLRFoundAssembly.Binder = this;
+                coreCLRFoundAssembly.Binder = GetNativeAssemblyLoadContext();
             }
 
             return hr;
@@ -73,7 +75,8 @@ namespace System.Runtime.Loader
                     // In such a case, we will not overwrite the binding context (which would be wrong since it would not
                     // be present in the cache of the current binding context).
                     Debug.Assert(coreCLRFoundAssembly != null);
-                    coreCLRFoundAssembly.Binder ??= this;
+                    if (coreCLRFoundAssembly.Binder == IntPtr.Zero)
+                        coreCLRFoundAssembly.Binder = GetNativeAssemblyLoadContext();
                 }
             }
 
@@ -127,7 +130,7 @@ namespace System.Runtime.Loader
                 if (hr == HResults.S_OK)
                 {
                     Debug.Assert(coreCLRFoundAssembly != null);
-                    coreCLRFoundAssembly.Binder = this;
+                    coreCLRFoundAssembly.Binder = GetNativeAssemblyLoadContext();
                     assembly = coreCLRFoundAssembly;
                 }
             }

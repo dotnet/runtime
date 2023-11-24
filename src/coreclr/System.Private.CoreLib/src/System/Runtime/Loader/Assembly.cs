@@ -10,15 +10,18 @@ namespace System.Runtime.Loader
     {
         // fields used by VM
 #pragma warning disable CA1823, 414, 169
-        private AssemblyLoadContext? m_binder;
         private BinderAssemblyName m_assemblyName;
+
+        // The assembly object is rooted by native object.
+        // Reference native ALC to allow managed ALC object to be collected.
+        private IntPtr m_binder;
         private IntPtr m_peImage;
         private IntPtr m_pDomainAssembly;
         private bool m_isInTPA;
         private bool m_isCoreLib;
 #pragma warning restore CA1823, 414, 169
 
-        public AssemblyLoadContext? Binder
+        public IntPtr Binder
         {
             get => m_binder;
             set => m_binder = value;

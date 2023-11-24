@@ -17,7 +17,7 @@ namespace System.Runtime.Loader
             if (hr >= 0)
             {
                 Debug.Assert(coreCLRFoundAssembly != null);
-                coreCLRFoundAssembly.Binder = this;
+                coreCLRFoundAssembly.Binder = _nativeAssemblyLoadContext;
             }
 
             return hr;
@@ -63,7 +63,8 @@ namespace System.Runtime.Loader
                         // In such a case, we will not overwrite the binder (which would be wrong since the assembly would not
                         // be present in the cache of the current binding context).
                         Debug.Assert(coreCLRFoundAssembly != null);
-                        coreCLRFoundAssembly.Binder ??= this;
+                        if (coreCLRFoundAssembly.Binder == IntPtr.Zero)
+                            coreCLRFoundAssembly.Binder = _nativeAssemblyLoadContext;
                     }
                 }
             }
@@ -96,7 +97,7 @@ namespace System.Runtime.Loader
                 if (hr == HResults.S_OK)
                 {
                     Debug.Assert(coreCLRFoundAssembly != null);
-                    coreCLRFoundAssembly.Binder = this;
+                    coreCLRFoundAssembly.Binder = _nativeAssemblyLoadContext;
                     assembly = coreCLRFoundAssembly;
                 }
             }

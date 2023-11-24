@@ -1596,8 +1596,8 @@ class PEImage;
 class BinderAssemblyObject : public Object
 {
 public:
-    ASSEMBLYLOADCONTEXTREF m_binder;
     OBJECTREF m_assemblyName;
+    AssemblyBinder* m_binder;
     PEImage* m_peImage;
     DomainAssembly* m_pDomainAssembly;
     CLR_BOOL m_isInTPA;
@@ -1605,7 +1605,7 @@ public:
 
     PTR_AssemblyBinder GetBinder()
     {
-        return (PTR_AssemblyBinder)m_binder->GetNativeAssemblyBinder();
+        return PTR_AssemblyBinder(m_binder);
     }
 };
 #include <poppack.h>
