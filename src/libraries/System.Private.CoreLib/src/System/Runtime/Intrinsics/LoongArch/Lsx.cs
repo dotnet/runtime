@@ -920,19 +920,31 @@ namespace System.Runtime.Intrinsics.LoongArch
 
         /// <summary>
         /// float32x4_t vfmadd_s(float32x4_t a, float32x4_t b, float32x4_t c)
-        ///   LSX: VFMADD.S Vd.4S, Vj.4S, Vk.4S
+        ///   LSX: VFMADD.S Vd.4S, Vj.4S, Vk.4S, Va.4S
         /// </summary>
-        public static Vector128<float> FusedMultiplyAdd(Vector128<float> addend, Vector128<float> left, Vector128<float> right) => FusedMultiplyAdd(addend, left, right);
+        public static Vector128<float> FusedMultiplyAdd(Vector128<float> left, Vector128<float> right, Vector128<float> addend) => FusedMultiplyAdd(left, right, addend);
 
         /// <summary>
         /// float64x2_t vfmadd_d(float64x2_t a, float64x2_t b, float64x2_t c)
-        ///   LSX: VFMADD.D Vd.2D, Vj.2D, Vk.2D
+        ///   LSX: VFMADD.D Vd.2D, Vj.2D, Vk.2D, Va.2D
         /// </summary>
-        public static Vector128<double> FusedMultiplyAdd(Vector128<double> addend, Vector128<double> left, Vector128<double> right) => FusedMultiplyAdd(addend, left, right);
+        public static Vector128<double> FusedMultiplyAdd(Vector128<double> left, Vector128<double> right, Vector128<double> addend) => FusedMultiplyAdd(left, right, addend);
+
+        /// <summary>
+        /// float32x4_t vfnmadd_s(float32x4_t a, float32x4_t b, float32x4_t c)
+        ///   LSX: VFNMADD.S Vd.4S, Vj.4S, Vk.4S, Va.4S
+        /// </summary>
+        public static Vector128<float> FusedMultiplyAddNegated(Vector128<float> left, Vector128<float> right, Vector128<float> addend) => FusedMultiplyAddNegated(left, right, addend);
+
+        /// <summary>
+        /// float64x2_t vfnmadd_d(float64x2_t a, float64x2_t b, float64x2_t c)
+        ///   LSX: VFNMADD.D Vd.2D, Vj.2D, Vk.2D, Va.2D
+        /// </summary>
+        public static Vector128<double> FusedMultiplyAddNegated(Vector128<double> left, Vector128<double> right, Vector128<double> addend) => FusedMultiplyAddNegated(left, right, addend);
 
         /// <summary>
         /// int8x16_t vmadd_b(int8x16_t a, int8x16_t b, int8x16_t c)
-        ///   LSX: VMADD.B Vd.16B, Vj.16B, Vk.16B
+        ///   LSX: VMADD.B Vd.16B, Vj.16B, Vk.16B               //NOTE: The Vd is both input and output while input as addend.
         /// </summary>
         public static Vector128<sbyte> MultiplyAdd(Vector128<sbyte> addend, Vector128<sbyte> left, Vector128<sbyte> right) => MultiplyAdd(addend, left, right);
 
@@ -967,14 +979,50 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<uint> MultiplyAdd(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right) => MultiplyAdd(addend, left, right);
 
         /// <summary>
+        /// int64x2_t vmadd_d(int64x2_t a, int64x2_t b, int64x2_t c)
+        ///   LSX: VMADD.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> MultiplyAdd(Vector128<long> minuend, Vector128<long> left, Vector128<long> right) => MultiplyAdd(minuend, left, right);
+
+        /// <summary>
+        /// uint64x2_t vmadd_d(uint64x2_t a, uint64x2_t b, uint64x2_t c)
+        ///   LSX: VMADD.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> MultiplyAdd(Vector128<ulong> minuend, Vector128<ulong> left, Vector128<ulong> right) => MultiplyAdd(minuend, left, right);
+
+        /// <summary>
+        /// float32x4_t vfmsub_s(float32x4_t a, float32x4_t b, float32x4_t c)
+        ///   LSX: VFMSUB.S Vd.4S, Vj.4S, Vk.4S, Va,4S
+        /// </summary>
+        public static Vector128<float> FusedMultiplySubtract(Vector128<float> left, Vector128<float> right, Vector128<float> minuend) => FusedMultiplySubtract(left, right, minuend);
+
+        /// <summary>
+        /// float64x2_t vfmsub_d(float64x2_t a, float64x2_t b, float64x2_t c)
+        ///   LSX: VFMSUB.D Vd.2D, Vj.2D, Vk.2D, Va.2D
+        /// </summary>
+        public static Vector128<double> FusedMultiplySubtract(Vector128<double> left, Vector128<double> right, Vector128<double> minuend) => FusedMultiplySubtract(left, right, minuend);
+
+        /// <summary>
+        /// float32x4_t vfnmsub_s(float32x4_t a, float32x4_t b, float32x4_t c)
+        ///   LSX: VFNMSUB.S Vd.4S, Vj.4S, Vk.4S, Va,4S
+        /// </summary>
+        public static Vector128<float> FusedMultiplySubtractNegated(Vector128<float> left, Vector128<float> right, Vector128<float> minuend) => FusedMultiplySubtractNegated(left, right, minuend);
+
+        /// <summary>
+        /// float64x2_t vfnmsub_d(float64x2_t a, float64x2_t b, float64x2_t c)
+        ///   LSX: VFNMSUB.D Vd.2D, Vj.2D, Vk.2D, Va.2D
+        /// </summary>
+        public static Vector128<double> FusedMultiplySubtractNegated(Vector128<double> left, Vector128<double> right, Vector128<double> minuend) => FusedMultiplySubtractNegated(left, right, minuend);
+
+        /// <summary>
         /// int8x16_t vmsub_b(int8x16_t a, int8x16_t b, int8x16_t c)
-        ///   LSX: VMSUB.B Vd.16B, Vj.16B, Vk.16B
+        ///   LSX: VMSUB.B Vd.16B, Vj.16B, Vk.16B               //NOTE: The Vd is both input and output while input as minuend.
         /// </summary>
         public static Vector128<sbyte> MultiplySubtract(Vector128<sbyte> minuend, Vector128<sbyte> left, Vector128<sbyte> right) => MultiplySubtract(minuend, left, right);
 
         /// <summary>
-        /// uint8x16_t TODO(uint8x16_t a, uint8x16_t b, uint8x16_t c)
-        ///   LSX: TODO Vd.16B, Vj.16B, Vk.16B
+        /// uint8x16_t vmsub_b(uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   LSX: VMSUB.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<byte> MultiplySubtract(Vector128<byte> minuend, Vector128<byte> left, Vector128<byte> right) => MultiplySubtract(minuend, left, right);
 
@@ -985,8 +1033,8 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<short> MultiplySubtract(Vector128<short> minuend, Vector128<short> left, Vector128<short> right) => MultiplySubtract(minuend, left, right);
 
         /// <summary>
-        /// uint16x8_t TODO(uint16x8_t a, uint16x8_t b, uint16x8_t c)
-        ///   LSX: TODO Vd.8H, Vj.8H, Vk.8H
+        /// uint16x8_t vmsub_h(uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   LSX: VMSUB.H Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<ushort> MultiplySubtract(Vector128<ushort> minuend, Vector128<ushort> left, Vector128<ushort> right) => MultiplySubtract(minuend, left, right);
 
@@ -1001,6 +1049,18 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VMSUB.W Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<uint> MultiplySubtract(Vector128<uint> minuend, Vector128<uint> left, Vector128<uint> right) => MultiplySubtract(minuend, left, right);
+
+        /// <summary>
+        /// int64x2_t vmsub_d(int64x2_t a, int64x2_t b, int64x2_t c)
+        ///   LSX: VMSUB.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> MultiplySubtract(Vector128<long> minuend, Vector128<long> left, Vector128<long> right) => MultiplySubtract(minuend, left, right);
+
+        /// <summary>
+        /// uint64x2_t vmsub_d(uint64x2_t a, uint64x2_t b, uint64x2_t c)
+        ///   LSX: VMSUB.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> MultiplySubtract(Vector128<ulong> minuend, Vector128<ulong> left, Vector128<ulong> right) => MultiplySubtract(minuend, left, right);
 
         /// <summary>
         /// int16x8_t vmaddwev_h_b(int16x8_t a, int8x8_t b, int8x8_t c)
@@ -1073,6 +1133,18 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VMADDWOD.D.WU Vd.2D, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<ulong> MultiplyWideningUpperAndAdd(Vector128<ulong> addend, Vector128<uint> left, Vector128<uint> right) => MultiplyWideningUpperAndAdd(addend, left, right);
+
+        /// <summary>
+        ///  int8x16_t vmsknz_b(int8x16_t value)
+        ///   LSX: VMSKNZ.B Vd.16B, Vj.16B
+        /// </summary>
+        public static Vector128<sbyte> CompareNotEqualZero(Vector128<sbyte> value) => CompareNotEqualZero(value);
+
+        /// <summary>
+        ///  uint8x16_t vmsknz_b(uint8x16_t value)
+        ///   LSX: VMSKNZ.B Vd.16B, Vj.16B
+        /// </summary>
+        public static Vector128<byte> CompareNotEqualZero(Vector128<byte> value) => CompareNotEqualZero(value);
 
         /// <summary>
         /// int8x16_t vseqi_b(int8x16_t a, int8_t si5)
@@ -1157,6 +1229,30 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VFCMP.CEQ.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<long> CompareEqual(Vector128<double> left, Vector128<double> right) => CompareEqual(left, right);
+
+        /// <summary>
+        ///  int8x16_t vmskltz_b(int8x16_t value)
+        ///   LSX: VMSKLTZ.B Vd.16B, Vj.16B
+        /// </summary>
+        public static Vector128<sbyte> CompareLessThanZero(Vector128<sbyte> value) => CompareLessThanZero(value);
+
+        /// <summary>
+        ///  int16x8_t vmskltz_h(int16x8_t value)
+        ///   LSX: VMSKLTZ.H Vd.8H, Vj.8H
+        /// </summary>
+        public static Vector128<short> CompareLessThanZero(Vector128<short> value) => CompareLessThanZero(value);
+
+        /// <summary>
+        ///  int32x4_t vmskltz_w(int32x4_t value)
+        ///   LSX: VMSKLTZ.W Vd.4W, Vj.4W
+        /// </summary>
+        public static Vector128<int> CompareLessThanZero(Vector128<int> value) => CompareLessThanZero(value);
+
+        /// <summary>
+        ///  int64x2_t vmskltz_d(int64x2_t value)
+        ///   LSX: VMSKLTZ.D Vd.2D, Vj.2D
+        /// </summary>
+        public static Vector128<long> CompareLessThanZero(Vector128<long> value) => CompareLessThanZero(value);
 
         /// <summary>
         /// int8x16_t vslti_b(int8x16_t a, int8_t si5)
@@ -1411,6 +1507,12 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<long> CompareGreaterThan(Vector128<double> left, Vector128<double> right) => CompareGreaterThan(left, right);
 
         /// <summary>
+        ///  int8x16_t vmskgez_b(int8x16_t value)
+        ///   LSX: VMSKGEZ.B Vd.16B, Vj.16B
+        /// </summary>
+        public static Vector128<sbyte> CompareGreaterThanOrEqualZero(Vector128<sbyte> value) => CompareGreaterThanOrEqualZero(value);
+
+        /// <summary>
         /// uint8x16_t vslt_b(int8x16_t a, int8x16_t b)
         ///   LSX: VSLT.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
@@ -1471,6 +1573,54 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<long> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
+        /// int8x16_t vmaxi_b(int8x16_t a, int8_t si5)
+        ///   LSX: VMAXI.B Vd.16B, Vj.16B, si5
+        /// </summary>
+        public static Vector128<sbyte> Max(Vector128<sbyte> value, const sbyte si5) => Max(value, si5);
+
+        /// <summary>
+        /// uint8x16_t vmaxi_bu(uint8x16_t a, int8_t si5)
+        ///   LSX: VMAXI.BU Vd.16B, Vj.16B, ui5
+        /// </summary>
+        public static Vector128<byte> Max(Vector128<byte> value, const byte ui5) => Max(value, ui5);
+
+        /// <summary>
+        /// int16x8_t vmaxi_h(int16x8_t a, int8_t si5)
+        ///   LSX: VMAXI.H Vd.8H, Vj.8H, si5
+        /// </summary>
+        public static Vector128<short> Max(Vector128<short> value, const sbyte si5) => Max(value, si5);
+
+        /// <summary>
+        /// uint16x8_t vmaxi_hu(uint16x8_t a, int8_t si5)
+        ///   LSX: VMAXI.HU Vd.8H, Vj.8H, ui5
+        /// </summary>
+        public static Vector128<ushort> Max(Vector128<ushort> value, const byte ui5) => Max(value, ui5);
+
+        /// <summary>
+        /// int32x4_t vmaxi_w(int32x4_t a, int8_t si5)
+        ///   LSX: VMAXI.W Vd.4W, Vj.4W, si5
+        /// </summary>
+        public static Vector128<int> Max(Vector128<int> value, const sbyte si5) => Max(value, si5);
+
+        /// <summary>
+        /// uint32x4_t vmaxi_wu(uint32x4_t a, int8_t si5)
+        ///   LSX: VMAXI.WU Vd.4W, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<uint> Max(Vector128<uint> value, const byte ui5) => Max(value, ui5);
+
+        /// <summary>
+        /// int64x2_t vmaxi_d(int64x2_t a, int8_t si5)
+        ///   LSX: VMAXI.D Vd.2D, Vj.2D, si5
+        /// </summary>
+        public static Vector128<long> Max(Vector128<long> value, const sbyte si5) => Max(value, si5);
+
+        /// <summary>
+        /// uint64x2_t vmaxi_du(uint64x2_t a, int8_t si5)
+        ///   LSX: VMAXI.DU Vd.2D, Vj.2D, ui5
+        /// </summary>
+        public static Vector128<ulong> Max(Vector128<ulong> value, const byte ui5) => Max(value, ui5);
+
+        /// <summary>
         /// int8x16_t vmax_b(int8x16_t a, int8x16_t b)
         ///   LSX: VMAX.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
@@ -1526,9 +1676,69 @@ namespace System.Runtime.Intrinsics.LoongArch
 
         /// <summary>
         /// float64x2_t vfmax_d(float64x2_t a, float64x2_t b)
-        ///   LSX: VFMAX.d Vd.2D, Vj.2D, Vk.2D
+        ///   LSX: VFMAX.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) => Max(left, right);
+
+        /// <summary>
+        /// float32x4_t vfmaxa_s(float32x4_t a, float32x4_t b)
+        ///   LSX: VFMAXA.S Vd.4S, Vj.4S, Vk.4S
+        /// </summary>
+        public static Vector128<float> MaxFloatAbsolute(Vector128<float> left, Vector128<float> right) => MaxFloatAbsolute(left, right);
+
+        /// <summary>
+        /// float64x2_t vfmaxa_d(float64x2_t a, float64x2_t b)
+        ///   LSX: VFMAXA.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<double> MaxFloatAbsolute(Vector128<double> left, Vector128<double> right) => MaxFloatAbsolute(left, right);
+
+        /// <summary>
+        /// int8x16_t vmini_b(int8x16_t a, int8_t si5)
+        ///   LSX: VMINI.B Vd.16B, Vj.16B, si5
+        /// </summary>
+        public static Vector128<sbyte> Min(Vector128<sbyte> value, const sbyte si5) => Min(value, si5);
+
+        /// <summary>
+        /// uint8x16_t vmini_bu(uint8x16_t a, int8_t si5)
+        ///   LSX: VMINI.BU Vd.16B, Vj.16B, ui5
+        /// </summary>
+        public static Vector128<byte> Min(Vector128<byte> value, const byte ui5) => Min(value, ui5);
+
+        /// <summary>
+        /// int16x8_t vmini_h(int16x8_t a, int8_t si5)
+        ///   LSX: VMINI.H Vd.8H, Vj.8H, si5
+        /// </summary>
+        public static Vector128<short> Min(Vector128<short> value, const sbyte si5) => Min(value, si5);
+
+        /// <summary>
+        /// uint16x8_t vmini_hu(uint16x8_t a, int8_t si5)
+        ///   LSX: VMINI.HU Vd.8H, Vj.8H, ui5
+        /// </summary>
+        public static Vector128<ushort> Min(Vector128<ushort> value, const byte ui5) => Min(value, ui5);
+
+        /// <summary>
+        /// int32x4_t vmini_w(int32x4_t a, int8_t si5)
+        ///   LSX: VMINI.W Vd.4W, Vj.4W, si5
+        /// </summary>
+        public static Vector128<int> Min(Vector128<int> value, const sbyte si5) => Min(value, si5);
+
+        /// <summary>
+        /// uint32x4_t vmini_wu(uint32x4_t a, int8_t si5)
+        ///   LSX: VMINI.WU Vd.4W, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<uint> Min(Vector128<uint> value, const byte ui5) => Min(value, ui5);
+
+        /// <summary>
+        /// int64x2_t vmini_d(int64x2_t a, int8_t si5)
+        ///   LSX: VMINI.D Vd.2D, Vj.2D, si5
+        /// </summary>
+        public static Vector128<long> Min(Vector128<long> value, const sbyte si5) => Min(value, si5);
+
+        /// <summary>
+        /// uint64x2_t vmini_du(uint64x2_t a, int8_t si5)
+        ///   LSX: VMINI.DU Vd.2D, Vj.2D, ui5
+        /// </summary>
+        public static Vector128<ulong> Min(Vector128<ulong> value, const byte ui5) => Min(value, ui5);
 
         /// <summary>
         /// int8x16_t vmin_b(int8x16_t a, int8x16_t b)
@@ -1589,6 +1799,18 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VFMIN.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) => Min(left, right);
+
+        /// <summary>
+        /// float32x4_t vfmina_s(float32x4_t a, float32x4_t b)
+        ///   LSX: VFMINA.S Vd.4S, Vj.4S, Vk.4S
+        /// </summary>
+        public static Vector128<float> MinFloatAbsolute(Vector128<float> left, Vector128<float> right) => MinFloatAbsolute(left, right);
+
+        /// <summary>
+        /// float64x2_t vfmina_d(float64x2_t a, float64x2_t b)
+        ///   LSX: VFMINA.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<double> MinFloatAbsolute(Vector128<double> left, Vector128<double> right) => MinFloatAbsolute(left, right);
 
         /// <summary>
         /// int8x16_t vbitsel_v(uint8x16_t a, int8x16_t b, int8x16_t c)
@@ -1795,6 +2017,30 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<double> ReciprocalSqrt(Vector128<double> value) => ReciprocalSqrt(value);
 
         /// <summary>
+        /// float32x4_t vfsqrt_s(float32x4_t a)
+        ///   LSX: VFSQRT.S Vd.4S, Vj.4S
+        /// </summary>
+        public static Vector128<float> Sqrt(Vector128<float> value) => Sqrt(value);
+
+        /// <summary>
+        /// float64x2_t vfsqrt_d(float64x2_t a)
+        ///   LSX: VFSQRT.D Vd.2D, Vj.2D
+        /// </summary>
+        public static Vector128<double> Sqrt(Vector128<double> value) => Sqrt(value);
+
+        /// <summary>
+        /// float32x4_t vflogb_s(float32x4_t a)
+        ///   LSX: VFLOGB.S Vd.4S, Vj.4S
+        /// </summary>
+        public static Vector128<float> Logarithm2(Vector128<float> value) => Logarithm2(value);
+
+        /// <summary>
+        /// float64x2_t vflogb_d(float64x2_t a)
+        ///   LSX: VFLOGB.D Vd.2D, Vj.2D
+        /// </summary>
+        public static Vector128<double> Logarithm2(Vector128<double> value) => Logarithm2(value);
+
+        /// <summary>
         /// void vst(int8_t * ptr, int8x16_t val)
         ///   LSX: VST Vd.16B, Rj, si12
         /// </summary>
@@ -1901,18 +2147,6 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: FNEG.S Fd, Fj
         /// </summary>
         public static Vector64<float> NegateScalar(Vector64<float> value) => NegateScalar(value);
-
-        /// <summary>
-        /// float32x4_t vfmsub_s(float32x4_t a, float32x4_t b, float32x4_t c)
-        ///   LSX: VFMSUB.S Vd.4S, Vj.4S, Vk.4S
-        /// </summary>
-        public static Vector128<float> FusedMultiplySubtract(Vector128<float> minuend, Vector128<float> left, Vector128<float> right) => FusedMultiplySubtract(minuend, left, right);
-
-        /// <summary>
-        /// float64x2_t vfmsub_d(float64x2_t a, float64x2_t b, float64x2_t c)
-        ///   LSX: VFMSUB.D Vd.2D, Vj.2D, Vk.2D
-        /// </summary>
-        public static Vector128<double> FusedMultiplySubtract(Vector128<double> minuend, Vector128<double> left, Vector128<double> right) => FusedMultiplySubtract(minuend, left, right);
 
         /// <summary>
         /// int16x8_t vmulwod_h_b(int8x16_t a, int8x16_t b)
@@ -2912,49 +3146,61 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vslli_b(int8x16_t a, const int n) //qiaoqiao.ok.
         ///   LSX: VSLLI.B Vd.16B, Vj.16B, ui3
         /// </summary>
-        public static Vector128<sbyte> ShiftLeftLogical(Vector128<sbyte> value, const const byte shift) => ShiftLeftLogical(value, shift);
+        public static Vector128<sbyte> ShiftLeftLogical(Vector128<sbyte> value, const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint8x16_t vslli_b(uint8x16_t a, const int n)
         ///   LSX: VSLLI.B Vd.16B, Vj.16B, ui3
         /// </summary>
-        public static Vector128<byte> ShiftLeftLogical(Vector128<byte> value, const const byte shift) => ShiftLeftLogical(value, shift);
+        public static Vector128<byte> ShiftLeftLogical(Vector128<byte> value, const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// int16x8_t vslli_h(int16x8_t a, const int n)
         ///   LSX: VSLLI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, const const byte shift) => ShiftLeftLogical(value, shift);
+        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint16x8_t vslli_h(uint16x8_t a, const int n)
         ///   LSX: VSLLI.H Vd.8H, Vj.8H, ui4
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, const const byte shift) => ShiftLeftLogical(value, shift);
+        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint32x4_t vslli_w(uint32x4_t a, const int n)
         ///   LSX: VSLLI.W Vd.4W, Vj.4W, ui5
         /// </summary>
-        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, const const byte shift) => ShiftLeftLogical(value, shift);
+        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint32x4_t vslli_w(uint32x4_t a, const int n)
         ///   LSX: VSLLI.W Vd.4W, Vj.4W, ui5
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, const const byte shift) => ShiftLeftLogical(value, shift);
+        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// int64x2_t vslli_d(int64x2_t a, const int n)
         ///   LSX: VSLLI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, const const byte shift) => ShiftLeftLogical(value, shift);
+        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, const byte shift) => ShiftLeftLogical(value, shift);
 
         /// <summary>
         /// uint64x2_t vslli_d(uint64x2_t a, const int n)
         ///   LSX: VSLLI.D Vd.2D, Vj.2D, ui6
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, const const byte shift) => ShiftLeftLogical(value, shift);
+        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, const byte shift) => ShiftLeftLogical(value, shift);
+
+        /// <summary>
+        /// int8x16_t vbsll_v(int8x16_t a, const int shift)
+        ///   LSX: VBSLL.V Vd.16B, Vj.16B, ui4
+        /// </summary>
+        public static Vector128<sbyte> ShiftLeftLogicalByByte(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftLeftLogicalByByte(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vbsll_v(uint8x16_t a, const int shift)
+        ///   LSX: VBSLL.V Vd.16B, Vj.16B, ui4
+        /// </summary>
+        public static Vector128<byte> ShiftLeftLogicalByByte(Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftLeftLogicalByByte(value, shift);
 
         /// <summary>
         /// int8x16_t vsll_b(int8x16_t a, int8x16_t b)
@@ -3051,6 +3297,18 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VSRLI.D Vd.2D, Vj.2D, ui6
         /// </summary>
         public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, const byte shift) => ShiftRightLogical(value, shift);
+
+        /// <summary>
+        /// int8x16_t vbsrl_v(int8x16_t a, const int shift)
+        ///   LSX: VBSRL.V Vd.16B, Vj.16B, ui4
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightLogicalByByte(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalByByte(value, shift);
+
+        /// <summary>
+        /// uint8x16_t vbsrl_v(uint8x16_t a, const int shift)
+        ///   LSX: VBSRL.V Vd.16B, Vj.16B, ui4
+        /// </summary>
+        public static Vector128<byte> ShiftRightLogicalByByte(Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalByByte(value, shift);
 
         /// <summary>
         /// int8x16_t vsrl_b(int8x16_t a, int8x16_t b)
@@ -3549,18 +3807,6 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VBITCLRI.D Vd.2D, Vj.2D, 63
         /// </summary>
         public static Vector128<double> Abs(Vector128<double> value) => Abs(value);
-
-        /// <summary>
-        /// float32x4_t vfsqrt_s(float32x4_t a)
-        ///   LSX: VFSQRT.S Vd.4S, Vj.4S
-        /// </summary>
-        public static Vector128<float> Sqrt(Vector128<float> value) => Sqrt(value);
-
-        /// <summary>
-        /// float64x2_t vfsqrt_d(float64x2_t a)
-        ///   LSX: VFSQRT.D Vd.2D, Vj.2D
-        /// </summary>
-        public static Vector128<double> Sqrt(Vector128<double> value) => Sqrt(value);
 
         /// <summary>
         /// float32x4_t vfrintrm_s(float32x4_t a)
@@ -4558,133 +4804,301 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// </summary>
         public static Vector128<ulong> PopCount(Vector128<ulong> value) => PopCount(value);
 
-        /// <summary>
-        ///  uint8x16_t vshuffle(uint8x16_t vec, uint8x16_t idx)
-        ///   LSX: VSHUF_B Vd.16B, Vj.16B, Vk.16B, Va.16B
-        /// </summary>
-        public static Vector128<byte> VectorShuffle(Vector128<byte> vector, Vector128<byte> byteIndexes) => VectorElementReplicate(vector, byteIndexes);
+        ///// <summary>
+        /////  uint8x16_t vshuf_b(uint8x16_t vec, uint8x16_t idx)
+        /////   LSX: VSHUF.B Vd.16B, Vj.16B, Vk.16B, Va.16B
+        ///// </summary>
+        //public static Vector128<byte> VectorShuffle(Vector128<byte> vector, Vector128<byte> indexs) => VectorShuffle(vector, indexs);
+
+        ///// <summary>
+        /////  int8x16_t vshuf_b(int8x16_t vec, int8x16_t idx)
+        /////   LSX: VSHUF.B Vd.16B, Vj.16B, Vk.16B, Va.16B
+        ///// </summary>
+        //public static Vector128<sbyte> VectorShuffle(Vector128<sbyte> vector, Vector128<sbyte> indexs) => VectorShuffle(vector, indexs);
 
         /// <summary>
-        ///  int8x16_t vshuffle(int8x16_t vec, int8x16_t idx)
-        ///   LSX: VSHUF_B Vd.16B, Vj.16B, Vk.16B, Va.16B
+        ///  uint8x16_t vshuf_b(uint8x16_t vec0, uint8x16_t vec1, uint8x16_t idx)
+        ///   LSX: VSHUF.B Vd.16B, Vj.16B, Vk.16B, Va.16B
         /// </summary>
-        public static Vector128<sbyte> VectorShuffle(Vector128<sbyte> vector, Vector128<sbyte> byteIndexes) => VectorElementReplicate(vector, byteIndexes);
+        public static Vector128<byte> VectorShuffle(Vector128<byte> vector0, Vector128<byte> vector1, Vector128<byte> indexs) => VectorShuffle(vector0, vector1, indexs);
 
         /// <summary>
-        ///  uint8x16_t vshuffle(uint8x16_t vec0, uint8x16_t vec1, uint8x16_t idx)
-        ///   LSX: VSHUF_B Vd.16B, Vj.16B, Vk.16B, Va.16B
+        ///  int8x16_t vshuf_b(int8x16_t vec0, int8x16_t vec1, int8x16_t idx)
+        ///   LSX: VSHUF.B Vd.16B, Vj.16B, Vk.16B, Va.16B
         /// </summary>
-        public static Vector128<byte> VectorShuffle(Vector128<byte> vector0, Vector128<byte> vector1, Vector128<byte> byteIndexes) => VectorShuffle(vector0, vector1, byteIndexes);
+        public static Vector128<sbyte> VectorShuffle(Vector128<sbyte> vector0, Vector128<sbyte> vector1, Vector128<sbyte> indexs) => VectorShuffle(vector0, vector1, indexs);
 
         /// <summary>
-        ///  int8x16_t vshuffle(int8x16_t vec0, int8x16_t vec1, int8x16_t idx)
-        ///   LSX: VSHUF_B Vd.16B, Vj.16B, Vk.16B, Va.16B
+        ///  int16x8_t vshuf_h(int16x8_t vec0, int16x8_t vec1, int16x8_t idx)
+        ///   LSX: VSHUF.H Vd.8H, Vj.8H, Vk.8H                                //NOTE: Vd is both input and output while input as index.
         /// </summary>
-        public static Vector128<sbyte> VectorShuffle(Vector128<sbyte> vector0, Vector128<sbyte> vector1, Vector128<sbyte> byteIndexes) => VectorShuffle(vector0, vector1, byteIndexes);
+        public static Vector128<short> VectorShuffle(Vector128<short> vector0, Vector128<short> vector1, Vector128<short> indexs) => VectorShuffle(vector0, vector1, indexs);
 
         /// <summary>
-        ///  int16x8_t vshuffle(int16x8_t vec, int16x8_t idx)
-        ///   LSX: VSHUF_H Vd.8H, Vj.8H, Vk.8H                //NOTE: Vd is both input and output.
+        ///  uint16x8_t vshuf_h(uint16x8_t vecj, uint16x8_t veck, uint16x8_t idx)
+        ///   LSX: VSHUF.H Vd.8H, Vj.8H, Vk.8H
         /// </summary>
-        public static Vector128<short> VectorShuffle(Vector128<short> vector, Vector128<short> byteIndexes) => VectorElementReplicate(vector, byteIndexes);
+        public static Vector128<ushort> VectorShuffle(Vector128<ushort> vector0, Vector128<ushort> vector1, Vector128<ushort> indexs) => VectorShuffle(vector0, vector1, indexs);
 
         /// <summary>
-        ///  uint16x8_t vshuffle(uint16x8_t vec, uint16x8_t idx)
-        ///   LSX: VSHUF_H Vd.8H, Vj.8H, Vk.8H
+        ///  int32x4_t vpermi_w(int32x4_t vec, uint8_t idx)
+        ///   LSX: VPERMI.W Vd.4W, Vj.4W, ui8
         /// </summary>
-        public static Vector128<ushort> VectorShuffle(Vector128<ushort> vector, Vector128<ushort> byteIndexes) => VectorElementReplicate(vector, byteIndexes);
+        public static Vector128<int> VectorShuffle(Vector128<int> vector, const byte indexs) => VectorShuffle(vector, indexs);
 
         /// <summary>
-        ///  int16x8_t vshuffle(int16x8_t vec0, int16x8_t vec1, int16x8_t idx)
-        ///   LSX: VSHUF_H Vd.8H, Vj.8H, Vk.8H                                //NOTE: Vd is both input and output.
+        ///  uint32x4_t vpermi_w(uint32x4_t vec, uint8_t idx)
+        ///   LSX: VPERMI.W Vd.4W, Vj.4W, ui8
         /// </summary>
-        public static Vector128<short> VectorShuffle(Vector128<short> vector0, Vector128<short> vector1, Vector128<short> byteIndexes) => VectorShuffle(vector0, vector1, byteIndexes);
+        public static Vector128<uint> VectorShuffle(Vector128<uint> vector, const byte indexs) => VectorShuffle(vector, indexs);
 
         /// <summary>
-        ///  uint16x8_t vshuffle(uint16x8_t vecj, uint16x8_t veck, uint16x8_t idx)
-        ///   LSX: VSHUF_H Vd.8H, Vj.8H, Vk.8H
+        ///  int32x4_t vshuf_w(int32x4_t vec0, int32x4_t vec1, int32x4_t idx)
+        ///   LSX: VSHUF.W Vd.4W, Vj.4W, Vk.4W                                //NOTE: Vd is both input and output while input as index.
         /// </summary>
-        public static Vector128<ushort> VectorShuffle(Vector128<ushort> vector0, Vector128<ushort> vector1, Vector128<ushort> byteIndexes) => VectorShuffle(vector0, vector1, byteIndexes);
+        public static Vector128<int> VectorShuffle(Vector128<int> vector0, Vector128<int> vector1, Vector128<int> indexs) => VectorShuffle(vector0, vector1, indexs);
 
         /// <summary>
-        ///  int32x4_t vshuffle(int32x4_t vec0, int32x4_t vec1, int32x4_t idx)
-        ///   LSX: VSHUF_H Vd.4W, Vj.4W, Vk.4W
+        ///  uint32x4_t vshuf_w(uint32x4_t vecj, uint32x4_t veck, uint32x4_t idx)
+        ///   LSX: VSHUF.W Vd.4W, Vj.4W, Vk.4W                                //NOTE: Vd is both input and output while input as index.
         /// </summary>
-        public static Vector128<int> VectorShuffle(Vector128<int> vector0, Vector128<int> vector1, Vector128<int> byteIndexes) => VectorShuffle(vector0, vector1, byteIndexes);
+        public static Vector128<uint> VectorShuffle(Vector128<uint> vector0, Vector128<uint> vector1, Vector128<uint> indexs) => VectorShuffle(vector0, vector1, indexs);
 
         /// <summary>
-        ///  uint32x4_t vshuffle(uint32x4_t vecj, uint32x4_t veck, uint32x4_t idx)
-        ///   LSX: VSHUF_H Vd.4W, Vj.4W, Vk.4W
+        ///  int64x2_t vshuf_d(int64x2_t vec0, int64x2_t vec1, int64x2_t idx)
+        ///   LSX: VSHUF.D Vd.2D, Vj.2D, Vk.2D                                //NOTE: Vd is both input and output while input as index.
         /// </summary>
-        public static Vector128<uint> VectorShuffle(Vector128<uint> vector0, Vector128<uint> vector1, Vector128<uint> byteIndexes) => VectorShuffle(vector0, vector1, byteIndexes);
+        public static Vector128<long> VectorShuffle(Vector128<long> vector0, Vector128<long> vector1, Vector128<long> indexs) => VectorShuffle(vector0, vector1, indexs);
 
         /// <summary>
-        ///  int64x2_t vshuffle(int64x2_t vec0, int64x2_t vec1, int64x2_t idx)
-        ///   LSX: VSHUF_H Vd.2D, Vj.2D, Vk.2D
+        ///  uint64x2_t vshuf_d(uint64x2_t vecj, uint64x2_t veck, uint64x2_t idx)
+        ///   LSX: VSHUF.D Vd.2D, Vj.2D, Vk.2D                                //NOTE: Vd is both input and output while input as index.
         /// </summary>
-        public static Vector128<long> VectorShuffle(Vector128<long> vector0, Vector128<long> vector1, Vector128<long> byteIndexes) => VectorShuffle(vector0, vector1, byteIndexes);
+        public static Vector128<ulong> VectorShuffle(Vector128<ulong> vector0, Vector128<ulong> vector1, Vector128<ulong> indexs) => VectorShuffle(vector0, vector1, indexs);
 
         /// <summary>
-        ///  uint64x2_t vshuffle(uint64x2_t vecj, uint64x2_t veck, uint64x2_t idx)
-        ///   LSX: VSHUF_H Vd.2D, Vj.2D, Vk.2D
+        ///  int8x16_t vshuf4i_b(int8x16_t vec, uint8_t idx)
+        ///   LSX: VSHUF4I.B Vd.16B, Vj.16B, ui8
         /// </summary>
-        public static Vector128<ulong> VectorShuffle(Vector128<ulong> vector0, Vector128<ulong> vector1, Vector128<ulong> byteIndexes) => VectorShuffle(vector0, vector1, byteIndexes);
+        public static Vector128<sbyte> VectorShuffleBy4Elements(Vector128<sbyte> vector, byte indexs) => VectorShuffleBy4Elements(vector, indexs);
 
         /// <summary>
-        ///  uint8x16_t vreplve(uint8x16_t vector, uint8_t idx)
-        ///   LSX: VREPLVE_B Vd.16B, Vj.16B, rk
-        ///   LSX: VREPLVEI_B Vd.16B, Vj.16B, ui4
+        ///  uint8x16_t vshuf4i_b(uint8x16_t vec, uint8_t idx)
+        ///   LSX: VSHUF4I.B Vd.16B, Vj.16B, ui8
+        /// </summary>
+        public static Vector128<byte> VectorShuffleBy4Elements(Vector128<byte> vector, byte indexs) => VectorShuffleBy4Elements(vector, indexs);
+
+        /// <summary>
+        ///  int16x8_t vshuf4i_h(int16x8_t vec, uint8_t idx)
+        ///   LSX: VSHUF4I.H Vd.8H, Vj.8H, ui8
+        /// </summary>
+        public static Vector128<short> VectorShuffleBy4Elements(Vector128<short> vector, byte indexs) => VectorShuffleBy4Elements(vector, indexs);
+
+        /// <summary>
+        ///  uint16x8_t vshuf4i_h(uint16x8_t vec, uint8_t idx)
+        ///   LSX: VSHUF4I.H Vd.8H, Vj.8H, ui8
+        /// </summary>
+        public static Vector128<ushort> VectorShuffleBy4Elements(Vector128<ushort> vector, byte indexs) => VectorShuffleBy4Elements(vector, indexs);
+
+        /// <summary>
+        ///  int32x4_t vshuf4i_w(int32x4_t vec, uint8_t idx)
+        ///   LSX: VSHUF4I.W Vd.4W, Vj.4W, ui8
+        /// </summary>
+        public static Vector128<int> VectorShuffleBy4Elements(Vector128<int> vector, byte indexs) => VectorShuffleBy4Elements(vector, indexs);
+
+        /// <summary>
+        ///  uint32x4_t vshuf4i_w(uint32x4_t vec, uint8_t idx)
+        ///   LSX: VSHUF4I.W Vd.4W, Vj.4W, ui8
+        /// </summary>
+        public static Vector128<uint> VectorShuffleBy4Elements(Vector128<uint> vector, byte indexs) => VectorShuffleBy4Elements(vector, indexs);
+
+        /// <summary>
+        ///  int64x2_t vshuf4i_d(int64x2_t vec0, uint64x2_t vec1, uint8_t idx)
+        ///   LSX: VSHUF4I.D Vd.2D, Vj.2D, ui4
+        /// </summary>
+        public static Vector128<long> VectorShuffleBy4Elements(Vector128<long> vector0, Vector128<long> vector1, byte indexs) => VectorShuffleBy4Elements(vector0, vector1, indexs);
+
+        /// <summary>
+        ///  uint64x2_t vshuf4i_d(uint64x2_t vec0, uint64x2_t vec1, uint8_t idx)
+        ///   LSX: VSHUF4I.D Vd.2D, Vj.2D, ui4
+        /// </summary>
+        public static Vector128<ulong> VectorShuffleBy4Elements(Vector128<ulong> vector0, Vector128<ulong> vector1, byte indexs) => VectorShuffleBy4Elements(vector0, vector1, indexs);
+
+        /// <summary>
+        ///  int8x16_t vilvl_b(int8x16_t vec0, int8x16_t vec1)
+        ///   LSX: VILVL.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> VectorElementsFusionLower(Vector128<sbyte> left, Vector128<sbyte> right) => VectorElementsFusionLower(left, right);
+
+        /// <summary>
+        ///  uint8x16_t vilvl_b(uint8x16_t vec0, uint8x16_t vec1)
+        ///   LSX: VILVL.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> VectorElementsFusionLower(Vector128<byte> left, Vector128<byte> right) => VectorElementsFusionLower(left, right);
+
+        /// <summary>
+        ///  int16x8_t vilvl_h(int16x8_t vec0, int16x8_t vec1)
+        ///   LSX: VILVL.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> VectorElementsFusionLower(Vector128<short> left, Vector128<short> right) => VectorElementsFusionLower(left, right);
+
+        /// <summary>
+        ///  uint16x8_t vilvl_h(uint16x8_t vec0, uint16x8_t vec1)
+        ///   LSX: VILVL.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> VectorElementsFusionLower(Vector128<ushort> left, Vector128<ushort> right) => VectorElementsFusionLower(left, right);
+
+        /// <summary>
+        ///  int32x4_t vilvl_w(int32x4_t vec0, int32x4_t vec1)
+        ///   LSX: VILVL.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> VectorElementsFusionLower(Vector128<int> left, Vector128<int> right) => VectorElementsFusionLower(left, right);
+
+        /// <summary>
+        ///  uint32x4_t vilvl_w(uint32x4_t vec0, uint32x4_t vec1)
+        ///   LSX: VILVL.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> VectorElementsFusionLower(Vector128<uint> left, Vector128<uint> right) => VectorElementsFusionLower(left, right);
+
+        /// <summary>
+        ///  int64x2_t vilvl_d(int64x2_t vec0, int64x2_t vec1)
+        ///   LSX: VILVL.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> VectorElementsFusionLower(Vector128<long> left, Vector128<long> right) => VectorElementsFusionLower(left, right);
+
+        /// <summary>
+        ///  uint64x2_t vilvl_d(uint64x2_t vec0, uint64x2_t vec1)
+        ///   LSX: VILVL.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> VectorElementsFusionLower(Vector128<ulong> left, Vector128<ulong> right) => VectorElementsFusionLower(left, right);
+
+        /// <summary>
+        ///  int8x16_t vilvh_b(int8x16_t vec0, int8x16_t vec1)
+        ///   LSX: VILVH.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> VectorElementsFusionHight(Vector128<sbyte> left, Vector128<sbyte> right) => VectorElementsFusionHight(left, right);
+
+        /// <summary>
+        ///  uint8x16_t vilvh_b(uint8x16_t vec0, uint8x16_t vec1)
+        ///   LSX: VILVH.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<byte> VectorElementsFusionHight(Vector128<byte> left, Vector128<byte> right) => VectorElementsFusionHight(left, right);
+
+        /// <summary>
+        ///  int16x8_t vilvh_h(int16x8_t vec0, int16x8_t vec1)
+        ///   LSX: VILVH.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> VectorElementsFusionHight(Vector128<short> left, Vector128<short> right) => VectorElementsFusionHight(left, right);
+
+        /// <summary>
+        ///  uint16x8_t vilvh_h(uint16x8_t vec0, uint16x8_t vec1)
+        ///   LSX: VILVH.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<ushort> VectorElementsFusionHight(Vector128<ushort> left, Vector128<ushort> right) => VectorElementsFusionHight(left, right);
+
+        /// <summary>
+        ///  int32x4_t vilvh_w(int32x4_t vec0, int32x4_t vec1)
+        ///   LSX: VILVH.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> VectorElementsFusionHight(Vector128<int> left, Vector128<int> right) => VectorElementsFusionHight(left, right);
+
+        /// <summary>
+        ///  uint32x4_t vilvh_w(uint32x4_t vec0, uint32x4_t vec1)
+        ///   LSX: VILVH.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<uint> VectorElementsFusionHight(Vector128<uint> left, Vector128<uint> right) => VectorElementsFusionHight(left, right);
+
+        /// <summary>
+        ///  int64x2_t vilvh_d(int64x2_t vec0, int64x2_t vec1)
+        ///   LSX: VILVH.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> VectorElementsFusionHight(Vector128<long> left, Vector128<long> right) => VectorElementsFusionHight(left, right);
+
+        /// <summary>
+        ///  uint64x2_t vilvh_d(uint64x2_t vec0, uint64x2_t vec1)
+        ///   LSX: VILVH.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<ulong> VectorElementsFusionHight(Vector128<ulong> left, Vector128<ulong> right) => VectorElementsFusionHight(left, right);
+
+        /// <summary>
+        ///  uint8x16_t vreplve_b(uint8x16_t vector, uint8_t idx)
+        ///   LSX: VREPLVE.B Vd.16B, Vj.16B, rk
+        ///   LSX: VREPLVEI.B Vd.16B, Vj.16B, ui4
         /// </summary>
         public static Vector128<byte> VectorElementReplicate(Vector128<byte> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
 
         /// <summary>
-        ///  int8x16_t vreplve(int8x16_t vector, uint8_t idx)
-        ///   LSX: VREPLVE_B Vd.16B, Vj.16B, rk
-        ///   LSX: VREPLVEI_B Vd.16B, Vj.16B, ui4
+        ///  int8x16_t vreplve_b(int8x16_t vector, uint8_t idx)
+        ///   LSX: VREPLVE.B Vd.16B, Vj.16B, rk
+        ///   LSX: VREPLVEI.B Vd.16B, Vj.16B, ui4
         /// </summary>
         public static Vector128<sbyte> VectorElementReplicate(Vector128<sbyte> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
 
         /// <summary>
-        ///  int16x8_t vreplve(int16x8_t vector, uint8_t idx)
-        ///   LSX: VREPLVE_H Vd.8H, Vj.8H, rk
-        ///   LSX: VREPLVEI_H Vd.8H, Vj.8H, ui3
+        ///  int16x8_t vreplve_h(int16x8_t vector, uint8_t idx)
+        ///   LSX: VREPLVE.H Vd.8H, Vj.8H, rk
+        ///   LSX: VREPLVEI.H Vd.8H, Vj.8H, ui3
         /// </summary>
         public static Vector128<short> VectorElementReplicate(Vector128<short> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
 
         /// <summary>
-        ///  uint16x8_t vreplve(uint16x8_t vector, uint8_t idx)
-        ///   LSX: VREPLVE_H Vd.8H, Vj.8H, rk
-        ///   LSX: VREPLVEI_H Vd.8H, Vj.8H, ui3
+        ///  uint16x8_t vreplve_h(uint16x8_t vector, uint8_t idx)
+        ///   LSX: VREPLVE.H Vd.8H, Vj.8H, rk
+        ///   LSX: VREPLVEI.H Vd.8H, Vj.8H, ui3
         /// </summary>
         public static Vector128<ushort> VectorElementReplicate(Vector128<ushort> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
 
         /// <summary>
-        ///  int32x4_t vreplve(int32x4_t vector, uint8_t idx)
-        ///   LSX: VREPLVE_W Vd.4W, Vj.4W, rk
-        ///   LSX: VREPLVEI_W Vd.4W, Vj.4W, ui2
+        ///  int32x4_t vreplve_w(int32x4_t vector, uint8_t idx)
+        ///   LSX: VREPLVE.W Vd.4W, Vj.4W, rk
+        ///   LSX: VREPLVEI.W Vd.4W, Vj.4W, ui2
         /// </summary>
         public static Vector128<int> VectorElementReplicate(Vector128<int> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
 
         /// <summary>
-        ///  uint32x4_t vreplve(uint32x4_t vector, uint8_t idx)
-        ///   LSX: VREPLVE_W Vd.4W, Vj.4W, rk
-        ///   LSX: VREPLVEI_W Vd.4W, Vj.4W, ui2
+        ///  uint32x4_t vreplve_w(uint32x4_t vector, uint8_t idx)
+        ///   LSX: VREPLVE.W Vd.4W, Vj.4W, rk
+        ///   LSX: VREPLVEI.W Vd.4W, Vj.4W, ui2
         /// </summary>
         public static Vector128<uint> VectorElementReplicate(Vector128<uint> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
 
         /// <summary>
-        ///  int64x2_t vreplve(int64x2_t vector, uint8_t idx)
-        ///   LSX: VREPLVE_D Vd.2D, Vj.2D, rk
-        ///   LSX: VREPLVEI_D Vd.2D, Vj.2D, ui1
+        ///  int64x2_t vreplve_d(int64x2_t vector, uint8_t idx)
+        ///   LSX: VREPLVE.D Vd.2D, Vj.2D, rk
+        ///   LSX: VREPLVEI.D Vd.2D, Vj.2D, ui1
         /// </summary>
         public static Vector128<long> VectorElementReplicate(Vector128<long> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
 
         /// <summary>
-        ///  uint64x2_t vreplve(uint64x2_t vector, uint8_t idx)
-        ///   LSX: VREPLVE_D Vd.2D, Vj.2D, rk
-        ///   LSX: VREPLVEI_D Vd.2D, Vj.2D, ui1
+        ///  uint64x2_t vreplve_d(uint64x2_t vector, uint8_t idx)
+        ///   LSX: VREPLVE.D Vd.2D, Vj.2D, rk
+        ///   LSX: VREPLVEI.D Vd.2D, Vj.2D, ui1
         /// </summary>
         public static Vector128<ulong> VectorElementReplicate(Vector128<ulong> vector, byte elementIndexe) => VectorElementReplicate(vector, elementIndexe);
+
+        /// <summary>
+        ///  int8x16_t vsigncov_b(int8x16_t sign, int8x16_t data)
+        ///   LSX: VSIGNCOV.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> VectorElementNegatedBySign(Vector128<sbyte> sign, Vector128<sbyte> data) => VectorElementNegatedBySign(sign, data);
+
+        /// <summary>
+        ///  int16x8_t vsigncov_h(int16x8_t sign, int16x8_t data)
+        ///   LSX: VSIGNCOV.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> VectorElementNegatedBySign(Vector128<short> sign, Vector128<short> data) => VectorElementNegatedBySign(sign, data);
+
+        /// <summary>
+        ///  int32x4_t vsigncov_w(int32x4_t sign, int32x4_t data)
+        ///   LSX: VSIGNCOV.W Vd.4W, Vj.4W, Vk.4W
+        /// </summary>
+        public static Vector128<int> VectorElementNegatedBySign(Vector128<int> sign, Vector128<int> data) => VectorElementNegatedBySign(sign, data);
+
+        /// <summary>
+        ///  int64x2_t vsigncov_d(int64x2_t sign, int64x2_t data)
+        ///   LSX: VSIGNCOV.D Vd.2D, Vj.2D, Vk.2D
+        /// </summary>
+        public static Vector128<long> VectorElementNegatedBySign(Vector128<long> sign, Vector128<long> data) => VectorElementNegatedBySign(sign, data);
 
         /// <summary>
         /// int8x16_t vbitclri_b(int8x16_t a, const int n)
@@ -4879,108 +5293,154 @@ namespace System.Runtime.Intrinsics.LoongArch
         public static Vector128<ulong> VectorElementBitSet(Vector128<ulong> value, Vector128<ulong> index) => VectorElementBitSet(value, index);
 
         /// <summary>
-        /// int8x16_t  vbitrevi_b(int8x16_t a, const int n)
+        /// int8x16_t vbitrevi_b(int8x16_t a, const int n)
         ///   LSX: VBITREVI.B Vd.16B, Vj.16B, ui3
         /// </summary>
         public static Vector128<sbyte> VectorElementBitRevert(Vector128<sbyte> value, const byte index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint8x16_t  vbitrevi_b(uint8x16_t a, const int n)
+        /// uint8x16_t vbitrevi_b(uint8x16_t a, const int n)
         ///   LSX: VBITREVI.B Vd.16B, Vj.16B, ui3
         /// </summary>
         public static Vector128<byte> VectorElementBitRevert(Vector128<byte> value, const byte index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// int16x8_t  vbitrevi_h(int16x8_t a, const int n)
+        /// int16x8_t vbitrevi_h(int16x8_t a, const int n)
         ///   LSX: VBITREVI.H Vd.8H, Vj.8H, ui4
         /// </summary>
         public static Vector128<short> VectorElementBitRevert(Vector128<short> value, const byte index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint16x8_t  vbitrevi_h(uint16x8_t a, const int n)
+        /// uint16x8_t vbitrevi_h(uint16x8_t a, const int n)
         ///   LSX: VBITREVI.H Vd.8H, Vj.8H, ui4
         /// </summary>
         public static Vector128<ushort> VectorElementBitRevert(Vector128<ushort> value, const byte index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint32x4_t  vbitrevi_w(uint32x4_t a, const int n)
+        /// uint32x4_t vbitrevi_w(uint32x4_t a, const int n)
         ///   LSX: VBITREVI.W Vd.4W, Vj.4W, ui5
         /// </summary>
         public static Vector128<int> VectorElementBitRevert(Vector128<int> value, const byte index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint32x4_t  vbitrevi_w(uint32x4_t a, const int n)
+        /// uint32x4_t vbitrevi_w(uint32x4_t a, const int n)
         ///   LSX: VBITREVI.W Vd.4W, Vj.4W, ui5
         /// </summary>
         public static Vector128<uint> VectorElementBitRevert(Vector128<uint> value, const byte index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// int64x2_t  vbitrevi_d(int64x2_t a, const int n)
+        /// int64x2_t vbitrevi_d(int64x2_t a, const int n)
         ///   LSX: VBITREVI.D Vd.2D, Vj.2D, ui6
         /// </summary>
         public static Vector128<long> VectorElementBitRevert(Vector128<long> value, const byte index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint64x2_t  vbitrevi_d(uint64x2_t a, const int n)
+        /// uint64x2_t vbitrevi_d(uint64x2_t a, const int n)
         ///   LSX: VBITREVI.D Vd.2D, Vj.2D, ui6
         /// </summary>
         public static Vector128<ulong> VectorElementBitRevert(Vector128<ulong> value, const byte index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// int8x16_t  vbitrev_b(int8x16_t a, int8x16_t b)
+        /// int8x16_t vbitrev_b(int8x16_t a, int8x16_t b)
         ///   LSX: VBITREV.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<sbyte> VectorElementBitRevert(Vector128<sbyte> value, Vector128<sbyte> index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint8x16_t  vbitrev_b(uint8x16_t a, uint8x16_t b)
+        /// uint8x16_t vbitrev_b(uint8x16_t a, uint8x16_t b)
         ///   LSX: VBITREV.B Vd.16B, Vj.16B, Vk.16B
         /// </summary>
         public static Vector128<byte> VectorElementBitRevert(Vector128<byte> value, Vector128<byte> index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// int16x8_t  vbitrev_h(int16x8_t value, int16x8_t index)
+        /// int16x8_t vbitrev_h(int16x8_t value, int16x8_t index)
         ///   LSX: VBITREV.H Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<short> VectorElementBitRevert(Vector128<short> value, Vector128<short> index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint16x8_t  vbitrev_h(uint16x8_t value, uint16x8_t index)
+        /// uint16x8_t vbitrev_h(uint16x8_t value, uint16x8_t index)
         ///   LSX: VBITREV.H Vd.8H, Vj.8H, Vk.8H
         /// </summary>
         public static Vector128<ushort> VectorElementBitRevert(Vector128<ushort> value, Vector128<ushort> index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// int32x4_t  vbitrev_w(int32x4_t value, int32x4_t index)
+        /// int32x4_t vbitrev_w(int32x4_t value, int32x4_t index)
         ///   LSX: VBITREV.W Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<int> VectorElementBitRevert(Vector128<int> value, Vector128<int> index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint32x4_t  vbitrev_w(uint32x4_t value, uint32x4_t index)
+        /// uint32x4_t vbitrev_w(uint32x4_t value, uint32x4_t index)
         ///   LSX: VBITREV.W Vd.4W, Vj.4W, Vk.4W
         /// </summary>
         public static Vector128<uint> VectorElementBitRevert(Vector128<uint> value, Vector128<uint> index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// int64x2_t  vbitrev_d(int64x2_t value, int64x2_t index)
+        /// int64x2_t vbitrev_d(int64x2_t value, int64x2_t index)
         ///   LSX: VBITREV.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<long> VectorElementBitRevert(Vector128<long> value, Vector128<long> index) => VectorElementBitRevert(value, index);
 
         /// <summary>
-        /// uint64x2_t  vbitrev_d(uint64x2_t value, uint64x2_t index)
+        /// uint64x2_t vbitrev_d(uint64x2_t value, uint64x2_t index)
         ///   LSX: VBITREV.D Vd.2D, Vj.2D, Vk.2D
         /// </summary>
         public static Vector128<ulong> VectorElementBitRevert(Vector128<ulong> value, Vector128<ulong> index) => VectorElementBitRevert(value, index);
 
-        // TODO: other liking VPICKVE2GR.{B/H/W/D}[U], VSHUF4I.{b/h/w/d}, VILV{L/H}, VBSLL.V, VBSRL.V, .......
-        // TODO:----- VPACK{EV/OD}.{B/H/W/D}, VPICK{EV/OD}.{B/H/W/D}, VEXTRINS.{B/H/W/D}, VMSKLTZ.{B/H/W/D}, VMSK{GEZ/NZ}.B,
-        //            XVPICKVE.{W/D}, XVPERM.W,  [X]VPREMI.W, XVPREMI.D, XVPREMI.Q,
+        /// <summary>
+        /// int8x16_t vfrstp_b(int8x16_t value, int8x16_t save)
+        ///   LSX: VFRSTP.B Vd.16B, Vj.16B, Vk.16B
+        /// </summary>
+        public static Vector128<sbyte> IndexOfFirstNegativeElement(Vector128<sbyte> value, Vector128<sbyte> save) => IndexOfFirstNegativeElement(value, save);
 
-        //      [X]VFRSTP[I}.{B/H}
+        /// <summary>
+        /// int16x8_t vfrstp_h(int16x8_t value, int16x8_t save)
+        ///   LSX: VFRSTP.H Vd.8H, Vj.8H, Vk.8H
+        /// </summary>
+        public static Vector128<short> IndexOfFirstNegativeElement(Vector128<short> value, Vector128<short> save) => IndexOfFirstNegativeElement(value, save);
+
+        /// <summary>
+        /// int8x16_t vfrstpi_b(int8x16_t value, uint8_t save)
+        ///   LSX: VFRSTPI.B Vd.16B, Vj.16B, ui4
+        /// </summary>
+        public static Vector128<sbyte> IndexOfFirstNegativeElement(Vector128<sbyte> value, const byte save) => IndexOfFirstNegativeElement(value, save);
+
+        /// <summary>
+        /// int16x8_t vfrstpi_h(int16x8_t value, uint8_t save)
+        ///   LSX: VFRSTPI.H Vd.8H, Vj.8H, ui3
+        /// </summary>
+        public static Vector128<short> IndexOfFirstNegativeElement(Vector128<short> value, const byte save) => IndexOfFirstNegativeElement(value, save);
+
+        /// <summary>
+        /// int32x4_t vfclass_s(float32x4_t a)
+        ///   LSX: VFCLASS.S Vd.4S, Vj.4S
+        /// </summary>
+        public static Vector128<int> FloatClass(Vector128<float> value) => FloatClass(value);
+
+        /// <summary>
+        /// int64x2_t vfclass_d(float64x2_t a)
+        ///   LSX: VFCLASS.D Vd.2D, Vj.2D
+        /// </summary>
+        public static Vector128<long> FloatClass(Vector128<double> value) => FloatClass(value);
+
+        // TODO: other liking VPICKVE2GR.{B/H/W/D}[U],  .......
+        // TODO:----- VPACK{EV/OD}.{B/H/W/D}, VPICK{EV/OD}.{B/H/W/D}, VEXTRINS.{B/H/W/D},
+        //            XVPICKVE.{W/D},
+
         //      [X]VLDREPL.{B/H/W/D}, [X]VSTELM.{B/H/W/D}
-        //      [X]VF{NMADD/NMSUB}.{S/D},  [X]VF{MAXA/MINA}.{S/D}, [X]VFLOGB.{S/D}, [X]VFCLASS.{S/D}, 
+
+        ///// <summary>
+        /////  int16x8_t vextrins_h(int16x8_t vec, uint8_t idx)
+        /////   LSX: VEXTRINS.H Vd.8H, Vj.8H, ui8
+        ///// </summary>
+        //public static Vector128<short> VectorShuffle(Vector128<short> vector, const byte indexs) => VectorShuffle(vector, indexs);
+
+        ///// <summary>
+        /////  uint16x8_t vextrins_h(uint16x8_t vec, uint8_t idx)
+        /////   LSX: VEXTRINS.H Vd.8H, Vj.8H, ui8
+        ///// </summary>
+        //public static Vector128<ushort> VectorShuffle(Vector128<ushort> vector, const byte indexs) => VectorShuffle(vector, indexs);
 
     }
 }
