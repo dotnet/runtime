@@ -954,7 +954,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_ET_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
         case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left
                            // (predicated)
-        case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableSimple(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));        // ddddd
@@ -1001,6 +1000,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
+        case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableFloat(id->idInsOpt()));  // xx
             assert(isVectorRegister(id->idReg1()));        // ddddd
@@ -8300,6 +8300,30 @@ void emitter::emitIns_R_R_R(
             assert(insOptsScalableToSimdFloat(opt));
             assert(isValidVectorElemsizeSveFloat(size));
             fmt = IF_SVE_HJ_3A;
+            break;
+
+
+
+        case INS_sve_fabd:
+        case INS_sve_fadd:
+        case INS_sve_famax:
+        case INS_sve_famin:
+        case INS_sve_fdiv:
+        case INS_sve_fdivr:
+        case INS_sve_fmax:
+        case INS_sve_fmaxnm:
+        case INS_sve_fmin:
+        case INS_sve_fminnm:
+        case INS_sve_fmul:
+        case INS_sve_fmulx:
+        case INS_sve_fscale:
+        case INS_sve_fsub:
+        case INS_sve_fsubr:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            fmt = IF_SVE_HL_3A;
             break;
 
         default:
