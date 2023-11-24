@@ -1002,10 +1002,10 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             elemsize = id->idOpSize();
-            assert(insOptsScalableFloat(id->idInsOpt()));  // xx
-            assert(isVectorRegister(id->idReg1()));        // ddddd
-            assert(isLowPredicateRegister(id->idReg2()));  // ggg
-            assert(isVectorRegister(id->idReg3()));        // mmmmm
+            assert(insOptsScalableFloat(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));       // ddddd
+            assert(isLowPredicateRegister(id->idReg2())); // ggg
+            assert(isVectorRegister(id->idReg3()));       // mmmmm
             assert(isScalableVectorSize(elemsize));
             break;
 
@@ -8301,8 +8301,6 @@ void emitter::emitIns_R_R_R(
             assert(isValidVectorElemsizeSveFloat(size));
             fmt = IF_SVE_HJ_3A;
             break;
-
-
 
         case INS_sve_fabd:
         case INS_sve_fadd:
@@ -16160,45 +16158,45 @@ void emitter::emitDispInsHelp(
                            // (predicated)
         case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true);      // ggg
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
+            emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);       // mmmmm
             break;
 
         case IF_SVE_AO_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true);           // ggg
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
-            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false); // mmmmm
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
+            emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
+            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false);  // mmmmm
             break;
 
         case IF_SVE_CM_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true);      // ggg
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
             break;
 
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
-            emitDispReg(id->idReg1(), size, true);               // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true);      // ggg
-            emitDispReg(id->idReg1(), size, true);               // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm
+            emitDispReg(id->idReg1(), size, true);                    // ddddd
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
+            emitDispReg(id->idReg1(), size, true);                    // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
             break;
 
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
-            emitDispReg(id->idReg1(), size, true);               // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true);      // ggg
-            emitDispReg(id->idReg1(), size, true);               // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm
+            emitDispReg(id->idReg1(), size, true);                    // ddddd
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
+            emitDispReg(id->idReg1(), size, true);                    // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
             break;
 
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
-            emitDispReg(id->idReg1(), size, true);               // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true);      // ggg
-            emitDispReg(id->idReg1(), size, true);               // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm
+            emitDispReg(id->idReg1(), size, true);                     // ddddd
+            emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
+            emitDispReg(id->idReg1(), size, true);                     // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);       // mmmmm
             break;
 
         default:
