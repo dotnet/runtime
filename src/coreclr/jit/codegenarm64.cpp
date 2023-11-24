@@ -10257,8 +10257,20 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_sve_usqadd, EA_SCALABLE, REG_V3, REG_P6, REG_V30,
                               INS_OPTS_SCALABLE_B); // IF_SVE_ET_3A /* USQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
 
+    theEmitter->emitIns_R_R_R(INS_sve_sqrshl, EA_SCALABLE, REG_V4, REG_P7, REG_V31, INS_OPTS_SCALABLE_B);  // IF_SVE_EU_3A /* SQRSHL  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqrshlr, EA_SCALABLE, REG_V5, REG_P0, REG_V30, INS_OPTS_SCALABLE_H);  // IF_SVE_EU_3A /* SQRSHLR <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqshl, EA_SCALABLE, REG_V6, REG_P1, REG_V29, INS_OPTS_SCALABLE_S);  // IF_SVE_EU_3A /* SQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqshlr, EA_SCALABLE, REG_V7, REG_P2, REG_V28, INS_OPTS_SCALABLE_D);  // IF_SVE_EU_3A /* SQSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_srshl, EA_SCALABLE, REG_V8, REG_P3, REG_V27, INS_OPTS_SCALABLE_B);  // IF_SVE_EU_3A /* SRSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_srshlr, EA_SCALABLE, REG_V9, REG_P4, REG_V26, INS_OPTS_SCALABLE_H);  // IF_SVE_EU_3A /* SRSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqrshl, EA_SCALABLE, REG_V10, REG_P5, REG_V25, INS_OPTS_SCALABLE_S);  // IF_SVE_EU_3A /* UQRSHL  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqrshlr, EA_SCALABLE, REG_V11, REG_P6, REG_V24, INS_OPTS_SCALABLE_D);  // IF_SVE_EU_3A /* UQRSHLR <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqshl, EA_SCALABLE, REG_V12, REG_P7, REG_V23, INS_OPTS_SCALABLE_B);  // IF_SVE_EU_3A /* UQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqshlr, EA_SCALABLE, REG_V13, REG_P0, REG_V22, INS_OPTS_SCALABLE_H);  // IF_SVE_EU_3A /* UQSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_urshl, EA_SCALABLE, REG_V14, REG_P1, REG_V21, INS_OPTS_SCALABLE_S);  // IF_SVE_EU_3A /* URSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_urshlr, EA_SCALABLE, REG_V15, REG_P2, REG_V20, INS_OPTS_SCALABLE_D);  // IF_SVE_EU_3A /* URSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
 // TODO in this PR....
-// case IF_SVE_EU_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left (predicated)
 // case IF_SVE_GR_3A:   // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
 // case IF_SVE_HJ_3A:   // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
 // case IF_SVE_HL_3A:   // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
