@@ -3837,7 +3837,7 @@ void emitter::emitDispIns(
 
     const BYTE* address = emitCodeBlock + offset + writeableOffset;
     const BYTE* const addressSentinel = address + id->idCodeSize();
-    // TODO-RISCV64-C: add support for non-32 bit instructions
+    // TODO-RISCV64: add support for non-32 bit instructions
     for (; address < addressSentinel; address += sizeof(code_t))
     {
         code_t instruction;
