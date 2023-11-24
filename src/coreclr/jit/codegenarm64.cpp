@@ -10276,8 +10276,11 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_sve_fminnmp, EA_SCALABLE, REG_V19, REG_P6, REG_V16, INS_OPTS_SCALABLE_S);  // IF_SVE_GR_3A /* FMINNMP <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fminp, EA_SCALABLE, REG_V20, REG_P7, REG_V15, INS_OPTS_SCALABLE_H);  // IF_SVE_GR_3A /* FMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
 
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_2BYTE, REG_V21, REG_P6, REG_V14, INS_OPTS_SCALABLE_H_TO_SIMD);  // IF_SVE_HJ_3A /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_4BYTE, REG_V22, REG_P5, REG_V13, INS_OPTS_SCALABLE_S_TO_SIMD);  // IF_SVE_HJ_3A /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_8BYTE, REG_V23, REG_P4, REG_V12, INS_OPTS_SCALABLE_D_TO_SIMD);  // IF_SVE_HJ_3A /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+
 // TODO in this PR....
-// case IF_SVE_HJ_3A:   // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
 // case IF_SVE_HL_3A:   // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE

@@ -954,7 +954,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_ET_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
         case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left
                            // (predicated)
-        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableSimple(id->idInsOpt())); // xx
@@ -983,12 +982,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
+        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableToSimd(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));        // ddddd
             assert(isLowPredicateRegister(id->idReg2()));  // ggg
             assert(isVectorRegister(id->idReg3()));        // mmmmm
-            assert(isValidVectorElemsize(elemsize));
+            assert(isValidVectorElemsizeSveFloat(elemsize));
             break;
 
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
@@ -8207,12 +8207,14 @@ void emitter::emitIns_R_R_R(
             }
             else if (insOptsScalableToSimd(opt))
             {
+                assert(isFloatReg(reg1));
                 assert(isValidVectorElemsize(size));
                 fmt = IF_SVE_CN_3A;
             }
             else
             {
                 assert(insOptsScalableToScalar(opt));
+                assert(isGeneralRegister(reg1));
                 assert(isValidScalarDatasize(size));
                 fmt = IF_SVE_CO_3A;
             }
@@ -8289,6 +8291,15 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(insOptsScalableFloat(opt));
             fmt = IF_SVE_GR_3A;
+            break;
+
+        case INS_sve_fadda:
+            assert(isFloatReg(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableToSimdFloat(opt));
+            assert(isValidVectorElemsizeSveFloat(size));
+            fmt = IF_SVE_HJ_3A;
             break;
 
         default:
@@ -16127,7 +16138,6 @@ void emitter::emitDispInsHelp(
         case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left
                            // (predicated)
         case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
-        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispPredicateReg(id->idReg2(), true, true);      // ggg
@@ -16144,6 +16154,7 @@ void emitter::emitDispInsHelp(
 
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
+        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             emitDispReg(id->idReg1(), size, true);               // ddddd
             emitDispPredicateReg(id->idReg2(), true, true);      // ggg
             emitDispReg(id->idReg1(), size, true);               // ddddd

@@ -705,6 +705,11 @@ inline static bool isValidVectorElemsizeFloat(emitAttr size)
     return (size == EA_8BYTE) || (size == EA_4BYTE);
 }
 
+inline static bool isValidVectorElemsizeSveFloat(emitAttr size)
+{
+    return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE);
+}
+
 inline static bool isScalableVectorSize(emitAttr size)
 {
     return (size == EA_SCALABLE);
@@ -877,6 +882,13 @@ inline static bool insOptsScalableToSimd(insOpts opt)
 {
     return ((opt == INS_OPTS_SCALABLE_B_TO_SIMD || opt == INS_OPTS_SCALABLE_H_TO_SIMD ||
              opt == INS_OPTS_SCALABLE_S_TO_SIMD || opt == INS_OPTS_SCALABLE_D_TO_SIMD));
+}
+
+inline static bool insOptsScalableToSimdFloat(insOpts opt)
+{
+    // Opt is any of the SIMD scable types that are valid for FP.
+    return ((opt == INS_OPTS_SCALABLE_H_TO_SIMD || opt == INS_OPTS_SCALABLE_S_TO_SIMD ||
+             opt == INS_OPTS_SCALABLE_D_TO_SIMD));
 }
 
 inline static bool insOptsScalableToScalar(insOpts opt)
