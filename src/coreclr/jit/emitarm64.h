@@ -19,6 +19,13 @@ static bool strictArmAsm;
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
+enum PredicateType
+{
+    PREDICATE_NONE = 0,
+    PREDICATE_MERGE,
+    PREDICATE_ZERO,
+};
+
 const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
 const char* emitPredicateRegName(regNumber reg);
@@ -45,7 +52,7 @@ void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
-void emitDispPredicateReg(regNumber reg, bool merge, bool addComma);
+void emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
