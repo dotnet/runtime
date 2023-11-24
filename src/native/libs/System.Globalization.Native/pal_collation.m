@@ -18,6 +18,7 @@ typedef enum
     None = 0,
     IgnoreCase = 1,
     IgnoreNonSpace = 2,
+    IgnoreKanaType = 8,
     IgnoreWidth = 16,
     StringSort = 536870912,
 } CompareOptions;
@@ -46,7 +47,7 @@ static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLengt
 
 static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions)
 {
-    int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort;
+    int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort | IgnoreKanaType;
     // To achieve an equivalent search behavior to the default in ICU,
     // NSLiteralSearch is employed as the default search option.
     NSStringCompareOptions options = NSLiteralSearch;
@@ -62,6 +63,9 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
 
     if (comparisonOptions & IgnoreWidth)
         options |= NSWidthInsensitiveSearch;
+
+    if (comparisonOptions & IgnoreKanaType)
+        options |= NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch | NSWidthInsensitiveSearch;
 
     return options;
 }

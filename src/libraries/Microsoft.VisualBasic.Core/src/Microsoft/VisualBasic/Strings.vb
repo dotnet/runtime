@@ -81,7 +81,7 @@ Namespace Global.Microsoft.VisualBasic
         Private Const CODEPAGE_SIMPLIFIED_CHINESE As Integer = 936
         Private Const CODEPAGE_TRADITIONAL_CHINESE As Integer = 950
         Private Const STANDARD_COMPARE_FLAGS As CompareOptions =
-            CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth
+            CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth Or CompareOptions.IgnoreKanaType
 
         Private Const NAMEDFORMAT_FIXED As String = "fixed"
         Private Const NAMEDFORMAT_YES_NO As String = "yes/no"

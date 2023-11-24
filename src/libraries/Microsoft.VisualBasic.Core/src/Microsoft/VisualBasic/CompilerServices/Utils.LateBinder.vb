@@ -41,7 +41,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Friend Const chGenericManglingChar As Char = "`"c
 
-        Friend Const OptionCompareTextFlags As CompareOptions = (CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth)
+        Friend Const OptionCompareTextFlags As CompareOptions = (CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth Or CompareOptions.IgnoreKanaType)
 
         Private Const ResourceMsgDefault As String = "Message text unavailable.  Resource file 'Microsoft.VisualBasic resources' not found."
         Private Const VBDefaultErrorID As String = "ID95"

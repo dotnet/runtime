@@ -78,7 +78,7 @@ namespace System.Data
         private CultureInfo _culture;
         private bool _cultureUserSet;
         private CompareInfo? _compareInfo;
-        private CompareOptions _compareFlags = CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth;//CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth;
+        private CompareOptions _compareFlags = CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth;
         private IFormatProvider? _formatProvider;
         private StringComparer? _hashCodeProvider;
         private bool _caseSensitive;
@@ -1063,7 +1063,7 @@ namespace System.Data
                 }
                 else
                 {
-                    _compareFlags = CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth;
+                    _compareFlags = CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth;
                 }
                 if (resetIndexes)
                 {

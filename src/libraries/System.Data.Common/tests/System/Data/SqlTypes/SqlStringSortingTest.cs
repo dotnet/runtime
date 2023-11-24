@@ -61,7 +61,7 @@ namespace System.Data.SqlTypes.Tests
 
             var culture = new CultureInfo(cultureName);
 
-            const SqlCompareOptions DefaultCompareOption = SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreWidth;
+            const SqlCompareOptions DefaultCompareOption = SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth;
 
             SqlStringDefaultCompareOptionTest(localeId);
             foreach (SqlCompareOptions option in new[] { SqlCompareOptions.None, SqlCompareOptions.BinarySort, SqlCompareOptions.BinarySort2, DefaultCompareOption })
@@ -96,7 +96,7 @@ namespace System.Data.SqlTypes.Tests
 
             // Some of Windows versions have a regression, so ignore last entry in the s_specialMatchingString if this is the case.
             if (PlatformDetection.IsWindows10Version1903OrGreater &&
-                CultureInfo.InvariantCulture.CompareInfo.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) != 0)
+                CultureInfo.InvariantCulture.CompareInfo.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) != 0)
             {
                 count--;
             }

@@ -25,7 +25,7 @@ namespace System.Data.Common
         private static Task<bool>? _falseTask;
         internal static Task<bool> FalseTask => _falseTask ??= Task.FromResult(false);
 
-        internal const CompareOptions DefaultCompareOptions = CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
+        internal const CompareOptions DefaultCompareOptions = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
 
         static partial void TraceException(string trace, Exception e);

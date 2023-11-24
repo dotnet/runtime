@@ -895,7 +895,7 @@ namespace System.Data.Common
         internal const string SetProperties = nameof(SetProperties);
         internal const string UnquoteIdentifier = nameof(UnquoteIdentifier);
 
-        internal const CompareOptions compareOptions = CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
+        internal const CompareOptions compareOptions = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
         internal const int DefaultCommandTimeout = 30;
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
 
