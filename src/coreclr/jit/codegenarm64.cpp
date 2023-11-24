@@ -5436,7 +5436,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #define ALL_ARM64_EMITTER_UNIT_TESTS
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-#define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
+// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
 #if defined(DEBUG)
 void CodeGen::genArm64EmitterUnitTests()
@@ -7307,8 +7307,8 @@ void CodeGen::genArm64EmitterUnitTests()
 
     genDefineTempLabel(genCreateTempLabel());
 
-    // theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 0);
-    // theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 65535);
+    theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 0);
+    theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 65535);
 
     theEmitter->emitIns_BARR(INS_dsb, INS_BARRIER_OSHLD);
     theEmitter->emitIns_BARR(INS_dmb, INS_BARRIER_OSHST);
