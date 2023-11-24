@@ -954,7 +954,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_ET_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
         case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left
                            // (predicated)
-        case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             elemsize = id->idOpSize();
@@ -999,6 +998,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isLowPredicateRegister(id->idReg2()));    // ggg
             assert(isVectorRegister(id->idReg3()));          // mmmmm
             assert(isValidScalarDatasize(elemsize));
+            break;
+
+        case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
+            elemsize = id->idOpSize();
+            assert(insOptsScalableFloat(id->idInsOpt()));  // xx
+            assert(isVectorRegister(id->idReg1()));        // ddddd
+            assert(isLowPredicateRegister(id->idReg2()));  // ggg
+            assert(isVectorRegister(id->idReg3()));        // mmmmm
+            assert(isScalableVectorSize(elemsize));
             break;
 
         default:
@@ -8269,6 +8277,18 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(insOptsScalableSimple(opt));
             fmt = IF_SVE_EU_3A;
+            break;
+
+        case INS_sve_faddp:
+        case INS_sve_fmaxnmp:
+        case INS_sve_fmaxp:
+        case INS_sve_fminnmp:
+        case INS_sve_fminp:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            fmt = IF_SVE_GR_3A;
             break;
 
         default:
