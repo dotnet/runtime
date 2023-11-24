@@ -12247,6 +12247,9 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
     return TRUE;
 }
 
+int64_t GetPreciseTickCount();
+void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount);
+
 static int64_t TypeLoadCallCount = 0;
 static int64_t TypeLoadTickCount = 0;
 
@@ -12261,15 +12264,6 @@ const int RING_BUFFER_SIZE = 65536;
 
 static TypeLoadTiming TypeLoadTimingRingBuffer[RING_BUFFER_SIZE];
 static volatile long TypeLoadRingBufferIndex = 0;
-static volatile HANDLE LogFileHandle = INVALID_HANDLE_VALUE;
-static volatile int64_t TimerFrequency = 0;
-
-int64_t GetPreciseTickCount()
-{
-    int64_t result;
-    QueryPerformanceCounter((LARGE_INTEGER *)&result);
-    return result;
-}
 
 void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks)
 {
@@ -12281,61 +12275,6 @@ void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks)
         TypeLoadTimingRingBuffer[timingIndex].Thread = GetCurrentThreadId();
         TypeLoadTimingRingBuffer[timingIndex].Ticks = ticks;
         TypeLoadTimingRingBuffer[timingIndex].Type = type;
-    }
-}
-
-void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount)
-{
-#if !defined(DACCESS_COMPILE)
-    static Crst lock(CrstPEImage);
-    
-    CrstHolder holder(&lock);
-
-    static long timingCallCount = 0;
-    static const int BufferSize = 1024;
-    static char buffer[BufferSize];
-    static const char *TimingInfoFileName =
-#ifdef TARGET_WINDOWS
-        "\\"
-#else
-        "/"
-#endif
-        "timing-info.txt";
-    
-    if (LogFileHandle == INVALID_HANDLE_VALUE)
-    {
-        QueryPerformanceFrequency((LARGE_INTEGER *)&TimerFrequency);
-        GetCurrentDirectoryA(BufferSize, buffer);
-        strcat_s(buffer, BufferSize, TimingInfoFileName);
-        fputs("Output file: ", stdout);
-        puts(buffer);
-
-        LogFileHandle = CreateFileA(buffer,
-            GENERIC_READ | GENERIC_WRITE,
-            0,
-            NULL,
-            CREATE_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL);
-
-        const char *titleLine = "CALLS/INDEX |   THREAD |         SECS | ACTION\n";
-        WriteFile(LogFileHandle, titleLine, (DWORD)strlen(titleLine), nullptr, nullptr);
-        fputs(titleLine, stdout);
-    }
-    
-    snprintf(buffer, sizeof(buffer), "%11lld | %8x | %12.9f | %s\n", callCount, threadID, tickCount / (double)TimerFrequency, action);
-    fputs(buffer, stdout);
-    WriteFile(LogFileHandle, buffer, (DWORD)strlen(buffer), nullptr, nullptr);
-#endif
-}
-
-void FlushTimingInfo()
-{
-    if (LogFileHandle != INVALID_HANDLE_VALUE)
-    {
-        FlushFileBuffers(LogFileHandle);
-        CloseHandle(LogFileHandle);
-        LogFileHandle = INVALID_HANDLE_VALUE;
     }
 }
 

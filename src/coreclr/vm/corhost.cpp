@@ -839,6 +839,7 @@ STDMETHODIMP CorHost2::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)
 
 void DumpTypeLoadTimingInfo();
 void DumpAssemblyLoadTimingInfo();
+void DumpMetadataTimingInfo();
 void FlushTimingInfo();
 
 STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, int *pLatchedExitCode)
@@ -877,6 +878,7 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
         {
             // Stop coreclr on unload.
             DumpTypeLoadTimingInfo();
+            DumpMetadataTimingInfo();
             DumpAssemblyLoadTimingInfo();
             FlushTimingInfo();
 

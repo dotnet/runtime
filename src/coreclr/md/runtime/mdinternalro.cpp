@@ -96,6 +96,8 @@ ULONG MDInternalRO::Release()
 __checkReturn
 HRESULT MDInternalRO::QueryInterface(REFIID riid, void **ppUnk)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::QueryInterface")
+    
     *ppUnk = 0;
 
     if (riid == IID_IUnknown)
@@ -119,6 +121,8 @@ HRESULT MDInternalRO::Init(
     LPVOID      pData,                  // points to meta data section in memory
     ULONG       cbData)                 // count of bytes in pData
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::Init");
+
     m_tdModule = COR_GLOBAL_PARENT_TOKEN;
 
     extern HRESULT _CallInitOnMemHelper(CLiteWeightStgdb<CMiniMd> *pStgdb, ULONG cbData, LPCVOID pData);
@@ -142,6 +146,8 @@ HRESULT MDInternalRO::TranslateSigWithScope(
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::TranslateSigWithScope");
+
     return TranslateSigHelper(
                 this,
                 pAssemImport,
@@ -161,6 +167,8 @@ HRESULT MDInternalRO::GetTypeDefRefTokenInTypeSpec(// return S_FALSE if enclosin
                                                     mdTypeSpec  tkTypeSpec,             // [IN] TypeSpec token to look at
                                                     mdToken    *tkEnclosedToken)       // [OUT] The enclosed type token
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetTypeDefRefTokenInTypeSpec");
+
     return m_LiteWeightStgdb.m_MiniMd.GetTypeDefRefTokenInTypeSpec(tkTypeSpec, tkEnclosedToken);
 } // MDInternalRO::GetTypeDefRefTokenInTypeSpec
 
@@ -171,6 +179,8 @@ HRESULT MDInternalRO::GetTypeDefRefTokenInTypeSpec(// return S_FALSE if enclosin
 ULONG MDInternalRO::GetCountWithTokenKind(     // return hresult
     DWORD       tkKind)                 // [IN] pass in the kind of token.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetCountWithTokenKind");
+
     ULONG ulCount = m_LiteWeightStgdb.m_MiniMd.CommonGetRowCount(tkKind);
     if (tkKind == mdtTypeDef)
     {
@@ -194,6 +204,8 @@ __checkReturn
 HRESULT MDInternalRO::EnumTypeDefInit( // return hresult
     HENUMInternal *phEnum)              // [OUT] buffer to fill for enumerator data
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::EnumTypeDefInit");
+
     HRESULT hr = NOERROR;
 
     _ASSERTE(phEnum);
@@ -226,6 +238,8 @@ HRESULT MDInternalRO::EnumMethodImplInit( // return hresult
     HENUMInternal   *phEnumBody,          // [OUT] buffer to fill for enumerator data for MethodBody tokens.
     HENUMInternal   *phEnumDecl)          // [OUT] buffer to fill for enumerator data for MethodDecl tokens.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::EnumMethodImplInit");
+
     return EnumInit(TBL_MethodImpl << 24, td, phEnumBody);
 } // MDInternalRO::EnumMethodImplInit
 
@@ -252,6 +266,8 @@ MDInternalRO::EnumMethodImplNext(  // return hresult
     mdToken         *ptkBody,           // [OUT] return token for MethodBody
     mdToken         *ptkDecl)           // [OUT] return token for MethodDecl
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::EnumMethodImplNext");
+
     HRESULT hr;
     MethodImplRec   *pRecord;
 
@@ -328,6 +344,8 @@ HRESULT MDInternalRO::EnumInit(     // return S_FALSE if record not found
     mdToken     tkParent,               // [IN] token to scope the search
     HENUMInternal *phEnum)              // [OUT] the enumerator to fill
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::EnumInit");
+
     HRESULT     hr = S_OK;
     ULONG       ulMax = 0;
 
@@ -497,6 +515,8 @@ HRESULT MDInternalRO::EnumAllInit(      // return S_FALSE if record not found
     DWORD       tkKind,                 // [IN] which table to work on
     HENUMInternal *phEnum)              // [OUT] the enumerator to fill
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::EnumAllInit");
+
     HRESULT hr = S_OK;
 
     // Vars for query.
@@ -577,6 +597,8 @@ HRESULT MDInternalRO::EnumCustomAttributeByNameInit(// return S_FALSE if record 
     LPCSTR      szName,                 // [IN] CustomAttribute's name to scope the search
     HENUMInternal *phEnum)              // [OUT] the enumerator to fill
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::EnumCustomAttributeByNameInit");
+
     return m_LiteWeightStgdb.m_MiniMd.CommonEnumCustomAttributeByName(tkParent, szName, false, phEnum);
 }   // MDInternalRO::EnumCustomAttributeByNameInit
 
@@ -599,6 +621,8 @@ HRESULT MDInternalRO::GetParentToken(
     mdToken     tkChild,                // [IN] given child token
     mdToken     *ptkParent)             // [OUT] returning parent
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetParentToken");
+
     HRESULT hr = NOERROR;
 
     _ASSERTE(ptkParent);
@@ -679,6 +703,8 @@ MDInternalRO::GetCustomAttributeProps(  // S_OK or error.
     mdCustomAttribute at,               // The attribute.
     mdToken     *ptkType)               // Put attribute type here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetCustomAttributeProps");
+
     HRESULT hr;
     _ASSERTE(TypeFromToken(at) == mdtCustomAttribute);
 
@@ -702,6 +728,8 @@ MDInternalRO::GetCustomAttributeAsBlob(
     void const  **ppBlob,               // [OUT] return the pointer to internal blob
     ULONG       *pcbSize)               // [OUT] return the size of the blob
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetCustomAttributeAsBlob");
+
     HRESULT hr;
     _ASSERTE(ppBlob && pcbSize && TypeFromToken(cv) == mdtCustomAttribute);
 
@@ -723,6 +751,8 @@ HRESULT MDInternalRO::GetCustomAttributeByName( // S_OK or error.
     _Outptr_result_bytebuffer_(*pcbData) const void  **ppData, // [OUT] Put pointer to data here.
     _Out_ ULONG *pcbData)               // [OUT] Put size of data here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetCustomAttributeByName");
+
     return m_LiteWeightStgdb.m_MiniMd.CommonGetCustomAttributeByNameEx(tkObj, szName, NULL, ppData, pcbData);
 } // MDInternalRO::GetCustomAttributeByName
 
@@ -736,6 +766,8 @@ HRESULT MDInternalRO::GetNameOfCustomAttribute( // S_OK or error.
     LPCUTF8          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
     LPCUTF8          *pszName)          // [OUT] Name of  Custom Attribute.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNameOfCustomAttribute");
+
     _ASSERTE(TypeFromToken(mdAttribute) == mdtCustomAttribute);
 
     HRESULT hr = m_LiteWeightStgdb.m_MiniMd.CommonGetNameOfCustomAttribute(RidFromToken(mdAttribute), pszNamespace, pszName);
@@ -751,6 +783,8 @@ MDInternalRO::GetScopeProps(
     LPCSTR *pszName,    // [OUT] scope name
     GUID   *pmvid)      // [OUT] version id
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetScopeProps");
+
     HRESULT hr;
 
     ModuleRec *pModuleRec;
@@ -798,6 +832,7 @@ HRESULT MDInternalRO::FindMethodDef(    // S_OK or error.
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMethodDef *pmethoddef)            // Put MemberDef token here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindMethodDef");
 
     return FindMethodDefUsingCompare(classdef,
                                      szName,
@@ -821,6 +856,8 @@ HRESULT MDInternalRO::FindMethodDefUsingCompare(    // S_OK or error.
     void*       pSigArgs,               // [IN] Additional arguments passed to signature compare
     mdMethodDef *pmethoddef)            // Put MemberDef token here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindMethodDefUsingCompare");
+
     HRESULT     hr = NOERROR;
     PCCOR_SIGNATURE pvSigTemp = pvSigBlob;
     CQuickBytes qbSig;
@@ -897,6 +934,8 @@ HRESULT MDInternalRO::FindParamOfMethod(// S_OK or error.
     ULONG       iSeq,                   // [IN] The sequence # of the param.
     mdParamDef  *pparamdef)             // [OUT] Put ParamDef token here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindParamOfMethod");
+
     HRESULT   hr;
     ParamRec *pParamRec;
     RID       ridStart, ridEnd;
@@ -945,6 +984,8 @@ MDInternalRO::GetNameOfTypeDef(     // return hresult
     LPCSTR*     pszname,            // pointer to an internal UTF8 string
     LPCSTR*     psznamespace)       // pointer to the namespace.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNameOfTypeDef");
+
     HRESULT hr;
 
     if (pszname != NULL)
@@ -983,6 +1024,8 @@ HRESULT MDInternalRO::GetIsDualOfTypeDef(// return hresult
     mdTypeDef   classdef,               // given classdef
     ULONG       *pDual)                 // [OUT] return dual flag here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetIsDualOfTypeDef");
+
     ULONG       iFace=0;                // Iface type.
     HRESULT     hr;                     // A result.
 
@@ -1000,6 +1043,8 @@ HRESULT MDInternalRO::GetIfaceTypeOfTypeDef(
     mdTypeDef   classdef,               // [IN] given classdef.
     ULONG       *pIface)                // [OUT] 0=dual, 1=vtable, 2=dispinterface
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetIfaceTypeOfTypeDef");
+
     HRESULT     hr;                     // A result.
     const BYTE  *pVal;                  // The custom value.
     ULONG       cbVal;                  // Size of the custom value.
@@ -1035,6 +1080,8 @@ MDInternalRO::GetNameOfMethodDef(
     mdMethodDef md,
     LPCSTR     *pszMethodName)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNameOfMethodDef");
+
     HRESULT hr;
     MethodRec *pMethodRec;
     *pszMethodName = NULL;
@@ -1054,6 +1101,8 @@ MDInternalRO::GetNameAndSigOfMethodDef(
     ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
     LPCSTR          *pszMethodName)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNameAndSigOfMethodDef");
+
     HRESULT hr;
     // Output parameter should not be NULL
     _ASSERTE(ppvSigBlob && pcbSigBlob);
@@ -1078,6 +1127,8 @@ MDInternalRO::GetNameOfFieldDef(    // return hresult
     mdFieldDef fd,                  // given field
     LPCSTR    *pszFieldName)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNameOfFieldDef");
+
     HRESULT hr;
     FieldRec *pFieldRec;
     *pszFieldName = NULL;
@@ -1098,6 +1149,8 @@ MDInternalRO::GetNameOfTypeRef(     // return TypeDef's name
     LPCSTR      *pszname)           // [OUT] return typeref namespace
 
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNameOfTypeRef");
+
     _ASSERTE(TypeFromToken(classref) == mdtTypeRef);
 
     HRESULT hr;
@@ -1121,6 +1174,8 @@ MDInternalRO::GetResolutionScopeOfTypeRef(
     mdTypeRef classref,               // given classref
     mdToken  *ptkResolutionScope)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetResolutionScopeOfTypeRef");
+
     _ASSERTE(TypeFromToken(classref) == mdtTypeRef && RidFromToken(classref));
     HRESULT hr;
 
@@ -1142,6 +1197,8 @@ HRESULT MDInternalRO::FindTypeRefByName(  // S_OK or error.
         mdToken     tkResolutionScope,      // [IN] Resolution Scope fo the TypeRef.
         mdTypeRef   *ptk)                   // [OUT] TypeRef token returned.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindTypeRefByName");
+
     HRESULT     hr = NOERROR;
 
     _ASSERTE(ptk);
@@ -1202,6 +1259,8 @@ HRESULT MDInternalRO::GetTypeDefProps(
     DWORD       *pdwAttr,               // return flags on class
     mdToken     *ptkExtends)            // [OUT] Put base class TypeDef/TypeRef here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetTypeDefProps");
+
     HRESULT hr;
     TypeDefRec *pTypeDefRec;
     IfFailRet(m_LiteWeightStgdb.m_MiniMd.GetTypeDefRecord(RidFromToken(td), &pTypeDefRec));
@@ -1227,6 +1286,7 @@ HRESULT MDInternalRO::GetItemGuid(      // return hresult
     mdToken     tkObj,                  // given item
     CLSID       *pGuid)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetItemGuid");
 
     HRESULT     hr;                     // A result.
     const BYTE  *pBlob = NULL;          // Blob with dispid.
@@ -1266,6 +1326,8 @@ HRESULT MDInternalRO::GetNestedClassProps(  // S_OK or error
     mdTypeDef   tkNestedClass,      // [IN] NestedClass token.
     mdTypeDef   *ptkEnclosingClass) // [OUT] EnclosingClass token.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNestedClassProps");
+
     HRESULT hr;
     _ASSERTE(TypeFromToken(tkNestedClass) == mdtTypeDef && ptkEnclosingClass);
 
@@ -1294,6 +1356,8 @@ MDInternalRO::GetCountNestedClasses(    // return count of Nested classes.
     mdTypeDef   tkEnclosingClass,       // [IN]Enclosing class.
     ULONG      *pcNestedClassesCount)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetCountNestedClasses");
+
     HRESULT hr;
     ULONG       ulCount;
     ULONG       ulRetCount = 0;
@@ -1326,6 +1390,8 @@ MDInternalRO::GetNestedClasses(     // Return actual count.
     ULONG       ulNestedClasses,        // [IN] Size of array.
     ULONG      *pcNestedClasses)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNestedClasses");
+
     HRESULT hr;
     ULONG       ulCount;
     ULONG       ulRetCount = 0;
@@ -1360,6 +1426,8 @@ HRESULT MDInternalRO::GetModuleRefProps(   // return hresult
     mdModuleRef mur,                    // [IN] moduleref token
     LPCSTR      *pszName)               // [OUT] buffer to fill with the moduleref name
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetModuleRefProps");
+
     _ASSERTE(TypeFromToken(mur) == mdtModuleRef);
     _ASSERTE(pszName);
 
@@ -1391,6 +1459,8 @@ MDInternalRO::GetSigOfMethodDef(
     ULONG           *pcbSigBlob,    // [OUT] count of bytes in the signature blob
     PCCOR_SIGNATURE *ppSig)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetSigOfMethodDef");
+
     // Output parameter should not be NULL
     _ASSERTE(pcbSigBlob);
     _ASSERTE(TypeFromToken(methoddef) == mdtMethodDef);
@@ -1415,6 +1485,8 @@ MDInternalRO::GetSigOfFieldDef(
     ULONG           *pcbSigBlob,    // [OUT] count of bytes in the signature blob
     PCCOR_SIGNATURE *ppSig)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetSigOfFieldDef");
+
     _ASSERTE(pcbSigBlob);
     _ASSERTE(TypeFromToken(fielddef) == mdtFieldDef);
 
@@ -1437,6 +1509,8 @@ MDInternalRO::GetSigFromToken(
     ULONG *           pcbSig,
     PCCOR_SIGNATURE * ppSig)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetSigFromToken");
+
     HRESULT hr;
 
     *ppSig = NULL;
@@ -1484,6 +1558,8 @@ MDInternalRO::GetMethodDefProps(
     mdMethodDef md,
     DWORD      *pdwFlags)   // return mdPublic, mdAbstract, etc
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetMethodDefProps");
+
     HRESULT hr;
     MethodRec *pMethodRec;
 
@@ -1503,6 +1579,8 @@ HRESULT MDInternalRO::GetMethodImplProps(
     ULONG       *pulCodeRVA,            // [OUT] CodeRVA
     DWORD       *pdwImplFlags)          // [OUT] Impl. Flags
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetMethodImplProps");
+
     HRESULT hr;
     _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
 
@@ -1531,6 +1609,8 @@ HRESULT MDInternalRO::GetFieldRVA(
     mdToken     fd,                     // [IN] FieldDef
     ULONG       *pulCodeRVA)            // [OUT] CodeRVA
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetFieldRVA");
+
     HRESULT hr;
     _ASSERTE(TypeFromToken(fd) == mdtFieldDef);
     _ASSERTE(pulCodeRVA);
@@ -1561,6 +1641,8 @@ MDInternalRO::GetFieldDefProps(
     mdFieldDef fd,          // given memberdef
     DWORD     *pdwFlags)    // [OUT] return fdPublic, fdPrive, etc flags
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetFieldDefProps");
+
     HRESULT hr;
     _ASSERTE(TypeFromToken(fd) == mdtFieldDef);
 
@@ -1581,6 +1663,8 @@ HRESULT MDInternalRO::GetDefaultValue(   // return hresult
     mdToken     tk,                     // [IN] given FieldDef, ParamDef, or Property
     MDDefaultValue  *pMDDefaultValue)   // [OUT] default value
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetDefaultValue");
+
     _ASSERTE(pMDDefaultValue);
 
     HRESULT     hr;
@@ -1615,6 +1699,8 @@ HRESULT MDInternalRO::GetDispIdOfMemberDef(     // return hresult
     mdToken     tk,                     // given methoddef or fielddef
     ULONG       *pDispid)               // Put the dispid here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetDispIdOfMemberDef");
+
 #ifdef FEATURE_COMINTEROP
     HRESULT     hr;                     // A result.
     const BYTE  *pBlob;                 // Blob with dispid.
@@ -1651,6 +1737,8 @@ MDInternalRO::GetTypeOfInterfaceImpl( // return hresult
     mdInterfaceImpl iiImpl,             // given a interfaceimpl
     mdToken        *ptkType)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetTypeOfInterfaceImpl");
+
     HRESULT hr;
     _ASSERTE(TypeFromToken(iiImpl) == mdtInterfaceImpl);
 
@@ -1672,6 +1760,8 @@ HRESULT MDInternalRO::GetMethodSpecProps(         // S_OK or error.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob)            // [OUT] actual size of signature blob
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetMethodSpecProps");
+
     HRESULT         hr = NOERROR;
     MethodSpecRec  *pMethodSpecRec;
 
@@ -1711,6 +1801,8 @@ MDInternalRO::FindTypeDef(
     mdToken     tkEnclosingClass,   // [IN] TypeDef/TypeRef of enclosing class.
     mdTypeDef * ptkTypeDef)         // [OUT] return typedef
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindTypeDef");
+
     HRESULT hr = S_OK;
 
     _ASSERTE((szTypeDefName != NULL) && (ptkTypeDef != NULL));
@@ -1816,6 +1908,8 @@ MDInternalRO::GetNameAndSigOfMemberRef( // meberref's name
     ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
     LPCSTR          *pszMemberRefName)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetNameAndSigOfMemberRef");
+
     _ASSERTE(TypeFromToken(memberref) == mdtMemberRef);
 
     HRESULT       hr;
@@ -1845,6 +1939,8 @@ MDInternalRO::GetParentOfMemberRef(
     mdMemberRef memberref,      // given a typedef
     mdToken    *ptkParent)      // return the parent token
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetParentOfMemberRef");
+
     HRESULT hr;
     _ASSERTE(TypeFromToken(memberref) == mdtMemberRef);
 
@@ -1868,6 +1964,8 @@ MDInternalRO::GetParamDefProps (
     DWORD     *pdwAttr,         // [OUT] flags
     LPCSTR    *pszName)         // [OUT] return the name of the parameter
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetParamDefProps");
+
     _ASSERTE(TypeFromToken(paramdef) == mdtParamDef);
     HRESULT   hr;
     ParamRec *pParamRec;
@@ -1920,6 +2018,8 @@ HRESULT MDInternalRO::GetPropertyInfoForMethodDef(  // Result.
     LPCSTR      *pName,                 // [OUT] put pointer to name here
     ULONG       *pSemantic)             // [OUT] put semantic here
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetPropertyInfoForMethodDef");
+
     HRESULT   hr;
     MethodSemanticsRec *pSemantics;     // A MethodSemantics record.
     MethodSemanticsRec *pFound=0;       // A MethodSemantics record that is a property for the desired function.
@@ -2077,6 +2177,8 @@ HRESULT MDInternalRO::GetClassPackSize(
     mdTypeDef   td,                     // [IN] give typedef
     DWORD       *pdwPackSize)           // [OUT]
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetClassPackSize");
+
     HRESULT     hr = NOERROR;
 
     _ASSERTE(TypeFromToken(td) == mdtTypeDef && pdwPackSize);
@@ -2106,6 +2208,8 @@ HRESULT MDInternalRO::GetClassTotalSize( // return error if a class does not hav
     mdTypeDef   td,                     // [IN] give typedef
     ULONG       *pulClassSize)          // [OUT] return the total size of the class
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetClassTotalSize");
+
     _ASSERTE(TypeFromToken(td) == mdtTypeDef && pulClassSize);
 
     ClassLayoutRec *pRec;
@@ -2134,6 +2238,8 @@ HRESULT MDInternalRO::GetClassLayoutInit(
     mdTypeDef   td,                     // [IN] give typedef
     MD_CLASS_LAYOUT *pmdLayout)         // [OUT] set up the status of query here
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetClassLayoutInit");
+
     HRESULT     hr = NOERROR;
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
 
@@ -2161,6 +2267,8 @@ HRESULT MDInternalRO::GetFieldOffset(
     mdFieldDef  fd,                     // [IN] fielddef
     ULONG       *pulOffset)             // [OUT] FieldOffset
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetFieldOffset");
+
     HRESULT     hr = S_OK;
     FieldLayoutRec *pRec;
 
@@ -2194,6 +2302,8 @@ HRESULT MDInternalRO::GetClassLayoutNext(
     mdFieldDef  *pfd,                   // [OUT] field def
     ULONG       *pulOffset)             // [OUT] field offset or sequence
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetClassLayoutNext");
+
     HRESULT     hr = S_OK;
 
     _ASSERTE(pfd && pulOffset && pLayout);
@@ -2236,6 +2346,8 @@ HRESULT MDInternalRO::GetFieldMarshal(  // return error if no native type associ
     PCCOR_SIGNATURE *pSigNativeType,    // [OUT] the native type signature
     ULONG       *pcbNativeType)         // [OUT] the count of bytes of *ppvNativeType
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetFieldMarshal");
+
     // output parameters have to be supplied
     _ASSERTE(pcbNativeType);
 
@@ -2275,6 +2387,8 @@ HRESULT  MDInternalRO::FindProperty(
     LPCSTR      szPropName,             // [IN] property name
     mdProperty  *pProp)                 // [OUT] return property token
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindProperty");
+
     HRESULT     hr = NOERROR;
 
     // output parameters have to be supplied
@@ -2333,6 +2447,8 @@ HRESULT  MDInternalRO::GetPropertyProps(
     PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob
     ULONG       *pcbSig)                // [OUT] count of bytes in *ppvSig
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetPropertyProps");
+
     // output parameters have to be supplied
     _ASSERTE(TypeFromToken(prop) == mdtProperty);
 
@@ -2382,6 +2498,8 @@ HRESULT MDInternalRO::FindEvent(
     LPCSTR      szEventName,            // [IN] event name
     mdEvent     *pEvent)                // [OUT] return event token
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindEvent");
+
     HRESULT     hr = NOERROR;
 
     // output parameters have to be supplied
@@ -2436,6 +2554,8 @@ HRESULT MDInternalRO::GetEventProps(           // S_OK, S_FALSE, or error.
     DWORD       *pdwEventFlags,         // [OUT] Event flags.
     mdToken     *ptkEventType)         // [OUT] EventType class
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetEventProps");
+
     // output parameters have to be supplied
     _ASSERTE(TypeFromToken(ev) == mdtEvent);
 
@@ -2467,6 +2587,8 @@ HRESULT MDInternalRO::GetGenericParamProps(        // S_OK or error.
         DWORD *reserved,                    // [OUT] The kind (TypeDef/Ref/Spec, for future use)
         LPCSTR *szName)                      // [OUT] The name
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetGenericParamProps");
+
     HRESULT           hr = NOERROR;
     GenericParamRec * pGenericParamRec = NULL;
 
@@ -2505,6 +2627,8 @@ HRESULT MDInternalRO::GetGenericParamConstraintProps(      // S_OK or error.
         mdGenericParam *ptGenericParam,     // [OUT] GenericParam that is constrained
         mdToken      *ptkConstraintType)    // [OUT] TypeDef/Ref/Spec constraint
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetGenericParamConstraintProps");
+
     HRESULT         hr = NOERROR;
     GenericParamConstraintRec  *pGPCRec;
     RID             ridRD = RidFromToken(rd);
@@ -2575,6 +2699,8 @@ HRESULT MDInternalRO::EnumAssociateInit(
     mdToken     evprop,                 // [IN] given a property or an event token
     HENUMInternal *phEnum)              // [OUT] cursor to hold the query result
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::EnumAssociateInit");
+
     HRESULT hr;
     _ASSERTE(phEnum);
 
@@ -2604,6 +2730,8 @@ HRESULT MDInternalRO::GetAllAssociates(
     ASSOCIATE_RECORD *pAssociateRec,    // [OUT] struct to fill for output
     ULONG       cAssociateRec)          // [IN] size of the buffer
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetAllAssociates");
+
     _ASSERTE(phEnum && pAssociateRec);
 
     HRESULT hr;
@@ -2634,6 +2762,8 @@ HRESULT MDInternalRO::GetPermissionSetProps(
     void const  **ppvPermission,        // [OUT] permission blob.
     ULONG       *pcbPermission)         // [OUT] count of bytes of pvPermission.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetPermissionSetProps");
+
     HRESULT hr;
     _ASSERTE(TypeFromToken(pm) == mdtPermission);
     _ASSERTE(pdwAction && ppvPermission && pcbPermission);
@@ -2659,6 +2789,8 @@ MDInternalRO::GetUserString(    // Offset into the string blob heap.
     BOOL    *pfIs80Plus,        // [OUT] specifies where there are extended characters >= 0x80.
     LPCWSTR *pwszUserString)
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetUserString");
+
     HRESULT hr;
     LPWSTR  wszTmp;
 
@@ -2707,6 +2839,8 @@ HRESULT MDInternalRO::GetPinvokeMap(
     LPCSTR      *pszImportName,         // [OUT] Import name.
     mdModuleRef *pmrImportDLL)          // [OUT] ModuleRef token for the target DLL.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetPinvokeMap");
+
     HRESULT     hr;
     ImplMapRec *pRecord;
     RID         iRecord;
@@ -2746,6 +2880,8 @@ HRESULT MDInternalRO::GetAssemblyProps(
     AssemblyMetaDataInternal *pMetaData,// [OUT] Assembly MetaData.
     DWORD       *pdwAssemblyFlags)      // [OUT] Flags.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetAssemblyProps");
+
     HRESULT      hr;
     AssemblyRec *pRecord;
 
@@ -2799,6 +2935,8 @@ HRESULT MDInternalRO::GetAssemblyRefProps(
     ULONG       *pcbHashValue,          // [OUT] Count of bytes in the hash blob.
     DWORD       *pdwAssemblyRefFlags)   // [OUT] Flags.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetAssemblyRefProps");
+
     HRESULT         hr;
     AssemblyRefRec *pRecord;
 
@@ -2878,6 +3016,8 @@ HRESULT MDInternalRO::GetExportedTypeProps(
     mdTypeDef   *ptkTypeDef,            // [OUT] TypeDef token within the file.
     DWORD       *pdwExportedTypeFlags)       // [OUT] Flags.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetExportedTypeProps");
+
     HRESULT          hr;
     ExportedTypeRec *pRecord;
 
@@ -2913,6 +3053,8 @@ HRESULT MDInternalRO::GetManifestResourceProps(
     DWORD       *pdwOffset,             // [OUT] Offset to the beginning of the resource within the file.
     DWORD       *pdwResourceFlags)      // [OUT] Flags.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetManifestResourceProps");
+
     HRESULT              hr;
     ManifestResourceRec *pRecord;
 
@@ -2943,6 +3085,8 @@ STDMETHODIMP MDInternalRO::FindExportedTypeByName( // S_OK or error
     mdExportedType   tkEnclosingType,        // [IN] Token for the Enclosing Type.
     mdExportedType   *pmct)                  // [OUT] Put ExportedType token here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindExportedTypeByName");
+
     IMetaModelCommon *pCommon = static_cast<IMetaModelCommon*>(&m_LiteWeightStgdb.m_MiniMd);
     return pCommon->CommonFindExportedType(szNamespace, szName, tkEnclosingType, pmct);
 } // MDInternalRO::FindExportedTypeByName
@@ -2955,6 +3099,8 @@ STDMETHODIMP MDInternalRO::FindManifestResourceByName(  // S_OK or error
     LPCSTR      szName,                 // [IN] Name of the resource.
     mdManifestResource *pmmr)           // [OUT] Put ManifestResource token here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::FindManifestResourceByName");
+
     _ASSERTE(szName && pmmr);
 
     HRESULT     hr;
@@ -2986,6 +3132,8 @@ __checkReturn
 HRESULT MDInternalRO::GetAssemblyFromScope( // S_OK or error
     mdAssembly  *ptkAssembly)           // [OUT] Put token here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetAssemblyFromScope");
+
     _ASSERTE(ptkAssembly);
 
     if (m_LiteWeightStgdb.m_MiniMd.getCountAssemblys())
@@ -3006,6 +3154,8 @@ HRESULT MDInternalRO::GetTypeSpecFromToken(   // S_OK or error.
     PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to token.
     ULONG       *pcbSig)                // [OUT] return size of signature.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetTypeSpecFromToken");
+
     HRESULT             hr = NOERROR;
 
     _ASSERTE(TypeFromToken(typespec) == mdtTypeSpec);
@@ -3042,6 +3192,8 @@ __checkReturn
 HRESULT MDInternalRO::GetVersionString(
     LPCSTR * pVer)                      // [OUT] Put version string here.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::GetVersionString");
+
     HRESULT hr = NOERROR;
 
     if (m_LiteWeightStgdb.m_pvMd != NULL)
@@ -3078,6 +3230,8 @@ HRESULT MDInternalRO::ConvertTextSigToComSig(// Return hresult.
 BOOL MDInternalRO::IsValidToken(        // True or False.
     mdToken     tk)                     // [IN] Given token.
 {
+    MD_INSTRUMENTED_METHOD("MDInternalRO::IsValidToken");
+
     RID rid = RidFromToken(tk);
     if (rid == 0)
     {

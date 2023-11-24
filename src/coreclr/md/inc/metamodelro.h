@@ -20,6 +20,60 @@
 #include "../heaps/export.h"
 #include "../tables/export.h"
 
+int64_t GetPreciseTickCount();
+
+class MDInstrumentedMethod
+{
+public:
+    class Execution
+    {
+    private:
+        MDInstrumentedMethod *_instrumentedMethod;
+        int64_t _startTicks;
+        
+    public:
+        Execution(MDInstrumentedMethod *method)
+        : _instrumentedMethod(method)
+        {
+#ifndef DACCESS_COMPILE
+            _startTicks = GetPreciseTickCount();
+#endif
+        }
+        
+        ~Execution()
+        {
+#ifndef DACCESS_COMPILE
+            _instrumentedMethod->Add(GetPreciseTickCount() - _startTicks);
+#endif
+        }
+    };
+
+private:
+    static MDInstrumentedMethod *s_list;
+
+    const char *_methodName;
+    int64_t _count;
+    int64_t _ticks;
+    MDInstrumentedMethod *_next;
+
+public:
+    MDInstrumentedMethod(const char *methodName);
+
+    static void DumpAllTiming();
+    void Add(int64_t ticks);
+    
+private:
+    void DumpTiming();
+};
+
+#ifdef MD_INSTRUMENTATION
+#define MD_INSTRUMENTED_METHOD(name) \
+    static MDInstrumentedMethod s_instrumentedMethod(name); \
+    MDInstrumentedMethod::Execution methodExecution(&s_instrumentedMethod);
+#else
+#define MD_INSTRUMENTED_METHOD(name)
+#endif
+
 //*****************************************************************************
 // A read-only MiniMd.  This is the fastest and smallest possible MiniMd,
 //  and as such, is the preferred EE metadata provider.
