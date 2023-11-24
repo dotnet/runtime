@@ -3833,13 +3833,12 @@ void emitter::emitDispIns(
         return;
 
     const BYTE* address = emitCodeBlock + offset + writeableOffset;
-    for (int size = id->idCodeSize(); size > 0;)
+    const BYTE* const address_sentinel = address + id->idCodeSize();
+    for (; address < address_sentinel; address += sizeof(code_t))
     {
         code_t instruction;
         memcpy(&instruction, address, sizeof(code_t));
         emitDisInsName(instruction, address, id);
-        address += sizeof(code_t);
-        size -= sizeof(code_t);
     }
 }
 
