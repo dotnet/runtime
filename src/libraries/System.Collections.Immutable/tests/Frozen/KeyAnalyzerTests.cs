@@ -107,6 +107,13 @@ namespace System.Collections.Frozen.Tests
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
+            r = RunAnalysis(new[] { "0001", "0002", "0003", "0004", "0005", "0006" }, true);
+            Assert.False(r.RightJustifiedSubstring);
+            Assert.False(r.IgnoreCase);
+            Assert.True(r.AllAsciiIfIgnoreCase);
+            Assert.Equal(3, r.HashIndex);
+            Assert.Equal(1, r.HashCount);
+
         }
 
         [Fact]

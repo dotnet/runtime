@@ -129,7 +129,7 @@ namespace System.Collections.Frozen
                 // actually perform the comparison as case-sensitive even if case-insensitive
                 // was requested, as there's nothing that would compare equally to the substring
                 // other than the substring itself.
-                bool canSwitchIgnoreCaseHashToCaseSensitive = !isSubstring;
+                bool canSwitchIgnoreCaseHashToCaseSensitive = true;
 
                 foreach (string s in uniqueStrings)
                 {
@@ -144,11 +144,21 @@ namespace System.Collections.Frozen
                         break;
                     }
 
-                    // All substrings so far are still ASCII only.  If this one contains any ASCII
-                    // letters, mark that we can't switch to case-sensitive.
-                    if (canSwitchIgnoreCaseHashToCaseSensitive && ContainsAnyLetters(substring))
+                    // All substrings so far are still ASCII only.  Now we check whether
+                    // the entire string either is not ASCII or contains ASCII letters,
+                    // in which case we disable the switch to case sensitive.
+                    if (canSwitchIgnoreCaseHashToCaseSensitive)
                     {
-                        canSwitchIgnoreCaseHashToCaseSensitive = false;
+                        // If we are testing the entire string then s == substring
+                        // and we have already checked IsAllAscii(s).
+                        if (isSubstring && !IsAllAscii(s.AsSpan()))
+                        {
+                            canSwitchIgnoreCaseHashToCaseSensitive = false;
+                        }
+                        else if (ContainsAnyLetters(s.AsSpan()))
+                        {
+                            canSwitchIgnoreCaseHashToCaseSensitive = false;
+                        }
                     }
                 }
 
