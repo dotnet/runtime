@@ -1001,39 +1001,6 @@ namespace System.StubHelpers
         }
     }  // struct AsAnyMarshaler
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeVariant
-    {
-        private ushort vt;
-        private ushort wReserved1;
-        private ushort wReserved2;
-        private ushort wReserved3;
-
-        // The union portion of the structure contains at least one 64-bit type that on some 32-bit platforms
-        // (notably  ARM) requires 64-bit alignment. So on 32-bit platforms we'll actually size the variant
-        // portion of the struct with an Int64 so the type loader notices this requirement (a no-op on x86,
-        // but on ARM it will allow us to correctly determine the layout of native argument lists containing
-        // VARIANTs). Note that the field names here don't matter: none of the code refers to these fields,
-        // the structure just exists to provide size information to the IL marshaler.
-#if TARGET_64BIT
-        private IntPtr data1;
-        private IntPtr data2;
-#else
-        private long data1;
-#endif
-    }  // struct NativeVariant
-
-    // This NativeDecimal type is very similar to the System.Decimal type, except it requires an 8-byte alignment
-    // like the native DECIMAL type instead of the 4-byte requirement of the System.Decimal type.
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeDecimal
-    {
-        private ushort reserved;
-        private ushort signScale;
-        private uint hi32;
-        private ulong lo64;
-    }
-
     // Constants for direction argument of struct marshalling stub.
     internal static class MarshalOperation
     {

@@ -835,7 +835,7 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
         case VT_CARRAY:
             return CoreLibBinder::GetClass(CLASS__INTPTR);
         case VT_VARIANT:
-            return CoreLibBinder::GetClass(CLASS__NATIVEVARIANT);
+            return CoreLibBinder::GetClass(CLASS__COMVARIANT);
         case VTHACK_ANSICHAR:
             return CoreLibBinder::GetClass(CLASS__BYTE);
         case VT_UI2:
@@ -845,7 +845,7 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
             // MethodTable to ensure the correct size.
             return CoreLibBinder::GetClass(CLASS__UINT16);
         case VT_DECIMAL:
-            return CoreLibBinder::GetClass(CLASS__NATIVEDECIMAL);
+            return CoreLibBinder::GetClass(CLASS__DECIMAL);
         default:
             PREFIX_ASSUME(pManagedMT != NULL);
             return pManagedMT;

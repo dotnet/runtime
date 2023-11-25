@@ -624,7 +624,7 @@ FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
     {
         IErrorInfo *pErrInfo = NULL;
 
-        if (pErrInfo == NULL && pMD != NULL)
+        if (pMD != NULL)
         {
             // Retrieve the interface method table.
             MethodTable *pItfMT = ComPlusCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
