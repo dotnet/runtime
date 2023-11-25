@@ -12,6 +12,8 @@ namespace Microsoft.Extensions.Caching.Memory
     /// </summary>
     public static class CacheExtensions
     {
+        private readonly object _lock;
+
         /// <summary>
         /// Gets the value associated with this key if present.
         /// </summary>
@@ -193,7 +195,6 @@ namespace Microsoft.Extensions.Caching.Memory
                 result = factory(entry);
                 entry.Value = result;
             }
-
             return (TItem?)result;
         }
 
@@ -221,20 +222,24 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The task object representing the asynchronous operation.</returns>
         public static async Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory, MemoryCacheEntryOptions? createOptions)
         {
-            if (!cache.TryGetValue(key, out object? result))
+            lock (_lock)
             {
-                using ICacheEntry entry = cache.CreateEntry(key);
 
-                if (createOptions != null)
+                if (!cache.TryGetValue(key, out object? result))
                 {
-                    entry.SetOptions(createOptions);
+                    using ICacheEntry entry = cache.CreateEntry(key);
+
+                    if (createOptions != null)
+                    {
+                        entry.SetOptions(createOptions);
+                    }
+
+                    result = await factory(entry).ConfigureAwait(false);
+                    entry.Value = result;
                 }
 
-                result = await factory(entry).ConfigureAwait(false);
-                entry.Value = result;
+                return (TItem?)result;
             }
-
-            return (TItem?)result;
         }
     }
 }
