@@ -3961,9 +3961,6 @@ enum RangeStatus
 //
 RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps oper2, int bound2)
 {
-    assert((oper1 == GT_LT) || (oper1 == GT_LE) || (oper1 == GT_GT) || (oper1 == GT_GE));
-    assert((oper2 == GT_LT) || (oper2 == GT_LE) || (oper2 == GT_GT) || (oper2 == GT_GE));
-
     struct Int32Range
     {
         int startIncl;
@@ -4033,8 +4030,8 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
     {
         // E.g.:
         //
-        // [100 .. INT_MAX]
-        // [10  .. INT_MAX]
+        // range1: [100 .. INT_MAX]
+        // range2: [10  .. INT_MAX]
         return AlwaysIncluded;
     }
 
@@ -4043,8 +4040,9 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp: try and optimize a constant range check via assertion propagation
-//   e.g. "x > 100" where "x" has an assertion "x < 10" can be optimized to "false"
+// optAssertionPropGlobal_ConstRangeCheck: try and optimize a constant range check via
+//   assertion propagation e.g.:
+//   "x > 100" where "x" has an assertion "x < 10" can be optimized to "false"
 //
 // Arguments:
 //   assertions  - set of live assertions
@@ -4115,14 +4113,14 @@ GenTree* Compiler::optAssertionPropGlobal_ConstRangeCheck(ASSERT_VALARG_TP asser
         const ssize_t cns2 = op2->IconValue();
         if (!FitsIn<int>(cns2))
         {
-            return nullptr;
+            continue;
         }
 
         const RangeStatus result = IsRange2ImpliedByRange1(cmpOper, info.constVal, tree->OperGet(), (int)cns2);
         if (result == Unknown)
         {
             // We can't determine if the range check is redundant or not.
-            return nullptr;
+            continue;
         }
 
         JITDUMP("Fold a comparison against a constant:\n")
