@@ -614,6 +614,7 @@
     <Compile Include="Compiler\ObjectWriter\UnixObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\CoffObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\SectionWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="Compiler\ReadOnlyFieldPolicy.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />

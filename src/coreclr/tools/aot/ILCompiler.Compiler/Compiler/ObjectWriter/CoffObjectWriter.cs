@@ -528,6 +528,15 @@ namespace ILCompiler.ObjectWriter
 
             coffHeader.PointerToSymbolTable = dataOffset;
 
+            // Optimize the string table
+            foreach (var coffSymbolRecord in _symbols)
+            {
+                if (coffSymbolRecord is CoffSymbol coffSymbol)
+                {
+                    stringTable.ReserveString(coffSymbol.Name);
+                }
+            }
+
             // Write COFF header
             coffHeader.Write(outputFileStream);
 
@@ -575,9 +584,9 @@ namespace ILCompiler.ObjectWriter
 
             // Write symbol table
             Debug.Assert(outputFileStream.Position == coffHeader.PointerToSymbolTable);
-            foreach (var coffSymbol in _symbols)
+            foreach (var coffSymbolRecord in _symbols)
             {
-                coffSymbol.Write(outputFileStream, stringTable, coffHeader.IsBigObj);
+                coffSymbolRecord.Write(outputFileStream, stringTable, coffHeader.IsBigObj);
             }
 
             // Write string table
@@ -1012,36 +1021,21 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private sealed class CoffStringTable
+        private sealed class CoffStringTable : StringTableBuilder
         {
-            private MemoryStream _stream = new();
-            private Dictionary<string, uint> _stringToOffset = new();
+            public new uint Size => (uint)(base.Size + 4);
 
-            public uint GetStringOffset(string str)
+            public new uint GetStringOffset(string text)
             {
-                uint offset;
-
-                if (_stringToOffset.TryGetValue(str, out offset))
-                {
-                    return offset;
-                }
-
-                offset = (uint)(_stream.Position + 4);
-                var strBytes = Encoding.UTF8.GetBytes(str); // TODO: Pool buffers
-                _stream.Write(strBytes);
-                _stream.WriteByte(0);
-                _stringToOffset[str] = offset;
-
-                return offset;
+                return base.GetStringOffset(text) + 4;
             }
 
-            public void Write(FileStream stream)
+            public new void Write(FileStream stream)
             {
                 Span<byte> stringTableSize = stackalloc byte[4];
-                BinaryPrimitives.WriteInt32LittleEndian(stringTableSize, (int)(_stream.Length + 4));
+                BinaryPrimitives.WriteUInt32LittleEndian(stringTableSize, Size);
                 stream.Write(stringTableSize);
-                _stream.Position = 0;
-                _stream.CopyTo(stream);
+                base.Write(stream);
             }
         }
 
