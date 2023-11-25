@@ -12,110 +12,6 @@
 #include <posterror.h>
 #include <corerror.h>
 
-static volatile HANDLE LogFileHandle = INVALID_HANDLE_VALUE;
-static volatile int64_t TimerFrequency = 0;
-
-void DumpMetadataTimingInfo()
-{
-    MDInstrumentedMethod::DumpAllTiming();
-}
-
-int64_t GetPreciseTickCount()
-{
-    int64_t result;
-    QueryPerformanceCounter((LARGE_INTEGER *)&result);
-    return result;
-}
-
-void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount)
-{
-    static long timingCallCount = 0;
-    static const int BufferSize = 1024;
-    static char buffer[BufferSize];
-    static const char *TimingInfoFileName =
-#ifdef TARGET_WINDOWS
-        "\\"
-#else
-        "/"
-#endif
-        "timing-info.txt";
-    
-    if (LogFileHandle == INVALID_HANDLE_VALUE)
-    {
-        QueryPerformanceFrequency((LARGE_INTEGER *)&TimerFrequency);
-        GetCurrentDirectoryA(BufferSize, buffer);
-        strcat_s(buffer, BufferSize, TimingInfoFileName);
-        fputs("Output file: ", stdout);
-        puts(buffer);
-
-        LogFileHandle = CreateFileA(buffer,
-            GENERIC_READ | GENERIC_WRITE,
-            0,
-            NULL,
-            CREATE_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL);
-
-        const char *titleLine = "CALLS/INDEX |   THREAD |         SECS | ACTION\n";
-        WriteFile(LogFileHandle, titleLine, (DWORD)strlen(titleLine), nullptr, nullptr);
-        fputs(titleLine, stdout);
-    }
-    
-    snprintf(buffer, sizeof(buffer), "%11lld | %8x | %12.9f | %s\n", callCount, threadID, tickCount / (double)TimerFrequency, action);
-    fputs(buffer, stdout);
-    WriteFile(LogFileHandle, buffer, (DWORD)strlen(buffer), nullptr, nullptr);
-}
-
-void FlushTimingInfo()
-{
-    if (LogFileHandle != INVALID_HANDLE_VALUE)
-    {
-        FlushFileBuffers(LogFileHandle);
-        CloseHandle(LogFileHandle);
-        LogFileHandle = INVALID_HANDLE_VALUE;
-    }
-}
-
-MDInstrumentedMethod *MDInstrumentedMethod::s_list = nullptr;
-
-MDInstrumentedMethod::MDInstrumentedMethod(const char *methodName)
-{
-    _methodName = methodName;
-    _count = 0;
-    _ticks = 0;
-    _next = InterlockedExchangeT<MDInstrumentedMethod *>(&s_list, this);
-}
-
-void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount);
-
-void MDInstrumentedMethod::DumpAllTiming()
-{
-    int64_t sumCount = 0;
-    int64_t sumTicks = 0;
-
-    for (MDInstrumentedMethod *list = s_list; list != nullptr; list = list->_next)
-    {
-        list->DumpTiming();
-        sumCount += list->_count;
-        sumTicks += list->_ticks;
-    }
-
-    DumpTimingInfo("MDInstrumentedMethod", 0, sumCount, sumTicks);
-}
-
-void MDInstrumentedMethod::DumpTiming()
-{
-#if !defined(DACCESS_COMPILE)
-    DumpTimingInfo(_methodName, 0, _count, _ticks);
-#endif
-}
-
-void MDInstrumentedMethod::Add(int64_t ticks)
-{
-    InterlockedIncrement64(&_count);
-    InterlockedAdd64(&_ticks, ticks);
-}
-
 //*****************************************************************************
 // Set the pointers to consecutive areas of a large buffer.
 //*****************************************************************************
@@ -124,8 +20,6 @@ HRESULT
 CMiniMd::InitializeTables(
     MetaData::DataBlob tablesData)
 {
-    // MD_INSTRUMENTED_METHOD("CMiniMd::InitializeTables")
-
     HRESULT hr;
 
     for (int i = 0; i < TBL_COUNT; i++)
@@ -165,8 +59,6 @@ CMiniMd::InitOnMem(
     void *pvBuf,        // The buffer.
     ULONG ulBufLen)     // Size of the buffer..
 {
-    // MD_INSTRUMENTED_METHOD("CMiniMd::InitOnMem")
-
     HRESULT hr = S_OK;
     ULONG   cbData;
     BYTE   *pBuf = reinterpret_cast<BYTE*>(pvBuf);
@@ -209,8 +101,6 @@ CMiniMd::Impl_GetStringW(
     ULONG  cchBuffer,
     ULONG *pcchBuffer)
 {
-    // MD_INSTRUMENTED_METHOD("CMiniMd::Impl_GetStringW")
-
     LPCSTR  szString;       // Single byte version.
     int     iSize;          // Size of resulting string, in wide chars.
     HRESULT hr = NOERROR;
@@ -271,8 +161,6 @@ CMiniMd::Impl_GetEndRidForColumn(   // The End rid.
     UINT32       nTargetTableIndex,     // The other table.
     RID         *pEndRid)
 {
-    // MD_INSTRUMENTED_METHOD("CMiniMd::Impl_GetEndRidForColumn")
-
     HRESULT hr;
     _ASSERTE(nTableIndex < TBL_COUNT);
     RID nLastRowIndex = m_Schema.m_cRecs[nTableIndex];
@@ -309,8 +197,6 @@ CMiniMd::CommonEnumCustomAttributeByName(
     bool           fStopAtFirstFind,    // [IN] just find the first one
     HENUMInternal *phEnum)              // enumerator to fill up
 {
-    // MD_INSTRUMENTED_METHOD("CMiniMd::CommonEnumCustomAttributeByName")
-
     HRESULT hr = S_OK;
     HRESULT hrRet = S_FALSE;    // Assume that we won't find any
     RID     ridStart, ridEnd;   // Loop start and endpoints.
@@ -365,8 +251,6 @@ CMiniMd::vSearchTable(
     ULONG       ulTarget,   // Target for search.
     RID        *pRid)       // RID of matching row, or 0.
 {
-    // MD_INSTRUMENTED_METHOD("CMiniMd::vSearchTable")
-
     HRESULT hr;
     void   *pRow = NULL;    // Row from a table.
     ULONG   val;            // Value from a row.
@@ -412,8 +296,6 @@ CMiniMd::vSearchTableNotGreater(
     ULONG       ulTarget,       // target for search
     RID        *pRid)           // RID of matching row, or 0
 {
-    // MD_INSTRUMENTED_METHOD("CMiniMd::vSearchTableNotGreater")
-
     HRESULT hr;
     void   *pRow = NULL;        // Row from a table.
     ULONG  cRecs;               // Rows in the table.
@@ -497,8 +379,6 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
         const void       **ppData,           // [OUT] Put pointer to data here.
         ULONG             *pcbData)          // [OUT] Put size of data here.
 {
-    // MD_INSTRUMENTED_METHOD("CMiniMd::CommonGetCustomAttributeByNameEx")
-
     HRESULT             hr;
 
     ULONG               cbData;

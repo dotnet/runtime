@@ -1043,6 +1043,8 @@ EEClass::CheckVarianceInSig(
 void
 ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadExactParentAndInterfacesTransitively");
+    
     CONTRACTL
     {
         STANDARD_VM_CHECK;
@@ -1200,6 +1202,8 @@ namespace
 /*static*/
 void ClassLoader::LoadExactParents(MethodTable* pMT)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadExactParents");
+
     CONTRACT_VOID
     {
         STANDARD_VM_CHECK;

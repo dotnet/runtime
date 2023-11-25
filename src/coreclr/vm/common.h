@@ -393,6 +393,60 @@ extern DummyGlobalContract ___contract;
 
 void LogErrorToHost(const char* format, ...);
 
+int64_t GetPreciseTickCount();
+
+class InstrumentedMethod
+{
+public:
+    class Execution
+    {
+    private:
+        InstrumentedMethod *_instrumentedMethod;
+        int64_t _startTicks;
+        
+    public:
+        Execution(InstrumentedMethod *method)
+        : _instrumentedMethod(method)
+        {
+#ifndef DACCESS_COMPILE
+            _startTicks = GetPreciseTickCount();
+#endif
+        }
+        
+        ~Execution()
+        {
+#ifndef DACCESS_COMPILE
+            _instrumentedMethod->Add(GetPreciseTickCount() - _startTicks);
+#endif
+        }
+    };
+
+private:
+    static InstrumentedMethod *s_list;
+
+    const char *_methodName;
+    int64_t _count;
+    int64_t _ticks;
+    InstrumentedMethod *_next;
+
+public:
+    InstrumentedMethod(const char *methodName);
+
+    static void DumpAllTiming();
+    void Add(int64_t ticks);
+    
+private:
+    void DumpTiming();
+};
+
+#ifndef DACCESS_COMPILE
+#define INSTRUMENTED_METHOD(name) \
+    static InstrumentedMethod s_instrumentedMethod(name); \
+    InstrumentedMethod::Execution methodExecution(&s_instrumentedMethod);
+#else
+#define INSTRUMENTED_METHOD(name)
+#endif
+
 #endif // !_common_h_
 
 

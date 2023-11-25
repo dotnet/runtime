@@ -21,6 +21,110 @@
 #include "customattribute.h"
 #include "typestring.h"
 
+static volatile HANDLE LogFileHandle = INVALID_HANDLE_VALUE;
+static volatile int64_t TimerFrequency = 0;
+
+void DumpInstrumentedMethodTimingInfo()
+{
+    InstrumentedMethod::DumpAllTiming();
+}
+
+int64_t GetPreciseTickCount()
+{
+    int64_t result;
+    QueryPerformanceCounter((LARGE_INTEGER *)&result);
+    return result;
+}
+
+void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount)
+{
+    static long timingCallCount = 0;
+    static const int BufferSize = 1024;
+    static char buffer[BufferSize];
+    static const char *TimingInfoFileName =
+#ifdef TARGET_WINDOWS
+        "\\"
+#else
+        "/"
+#endif
+        "timing-info.txt";
+    
+    if (LogFileHandle == INVALID_HANDLE_VALUE)
+    {
+        QueryPerformanceFrequency((LARGE_INTEGER *)&TimerFrequency);
+        GetCurrentDirectoryA(BufferSize, buffer);
+        strcat_s(buffer, BufferSize, TimingInfoFileName);
+        fputs("Output file: ", stdout);
+        puts(buffer);
+
+        LogFileHandle = CreateFileA(buffer,
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            NULL,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
+        const char *titleLine = "CALLS/INDEX |   THREAD |         SECS | ACTION\n";
+        WriteFile(LogFileHandle, titleLine, (DWORD)strlen(titleLine), nullptr, nullptr);
+        fputs(titleLine, stdout);
+    }
+    
+    snprintf(buffer, sizeof(buffer), "%11lld | %8x | %12.9f | %s\n", callCount, threadID, tickCount / (double)TimerFrequency, action);
+    fputs(buffer, stdout);
+    WriteFile(LogFileHandle, buffer, (DWORD)strlen(buffer), nullptr, nullptr);
+}
+
+void FlushTimingInfo()
+{
+    if (LogFileHandle != INVALID_HANDLE_VALUE)
+    {
+        FlushFileBuffers(LogFileHandle);
+        CloseHandle(LogFileHandle);
+        LogFileHandle = INVALID_HANDLE_VALUE;
+    }
+}
+
+InstrumentedMethod *InstrumentedMethod::s_list = nullptr;
+
+InstrumentedMethod::InstrumentedMethod(const char *methodName)
+{
+    _methodName = methodName;
+    _count = 0;
+    _ticks = 0;
+    _next = InterlockedExchangeT<InstrumentedMethod *>(&s_list, this);
+}
+
+void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount);
+
+void InstrumentedMethod::DumpAllTiming()
+{
+    int64_t sumCount = 0;
+    int64_t sumTicks = 0;
+
+    for (InstrumentedMethod *list = s_list; list != nullptr; list = list->_next)
+    {
+        list->DumpTiming();
+        sumCount += list->_count;
+        sumTicks += list->_ticks;
+    }
+
+    DumpTimingInfo("InstrumentedMethod", 0, sumCount, sumTicks);
+}
+
+void InstrumentedMethod::DumpTiming()
+{
+#if !defined(DACCESS_COMPILE)
+    DumpTimingInfo(_methodName, 0, _count, _ticks);
+#endif
+}
+
+void InstrumentedMethod::Add(int64_t ticks)
+{
+    InterlockedIncrement64(&_count);
+    InterlockedAdd64(&_ticks, ticks);
+}
+
 //*******************************************************************************
 // Helper functions to sort GCdescs by offset (decending order)
 int __cdecl compareCGCDescSeries(const void *arg1, const void *arg2)
@@ -1253,6 +1357,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
     SigPointer                 parentInst,
     WORD                       cBuildingInterfaceList)
 {
+    INSTRUMENTED_METHOD("MethodTableBuilder::BuildMethodTableThrowing");
+
     CONTRACTL
     {
         STANDARD_VM_CHECK;
@@ -12372,6 +12478,8 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     Instantiation     inst,
     AllocMemTracker * pamTracker)
 {
+    INSTRUMENTED_METHOD("ClassLoader::CreateTypeHandleForTypeDefThrowing");
+    
     int64_t startTicks = GetPreciseTickCount();
     
     CONTRACT(TypeHandle)

@@ -2039,6 +2039,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
                                                        const Substitution *pSubst,
                                                        MethodTable *pMTInterfaceMapOwner)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefOrSpecThrowing");
+
     CONTRACT(TypeHandle)
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -2846,6 +2848,8 @@ ClassLoader::LoadApproxParentThrowing(
 /*static*/
 TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd, ClassLoadLevel currentLevel)
 {
+    INSTRUMENTED_METHOD("ClassLoader::DoIncrementalLoad");
+    
     CONTRACTL
     {
         STANDARD_VM_CHECK;
@@ -2873,6 +2877,8 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
         // or at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
         case CLASS_LOAD_BEGIN :
             {
+                INSTRUMENTED_METHOD("ClassLoader::DoIncrementalLoad / CLASS_LOAD_BEGIN");
+
                 AllocMemTracker amTracker;
                 typeHnd = CreateTypeHandleForTypeKey(pTypeKey, &amTracker);
                 CONSISTENCY_CHECK(!typeHnd.IsNull());
@@ -2894,6 +2900,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
         case CLASS_LOAD_APPROXPARENTS :
             if (!typeHnd.IsTypeDesc())
             {
+                INSTRUMENTED_METHOD("ClassLoader::DoIncrementalLoad / CLASS_LOAD_APPROXPARENTS");
                 LoadExactParents(typeHnd.AsMethodTable());
             }
             break;
@@ -2907,6 +2914,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
 
     if (typeHnd.GetLoadLevel() >= CLASS_LOAD_EXACTPARENTS)
     {
+        INSTRUMENTED_METHOD("ClassLoader::DoIncrementalLoad / Notify");
         Notify(typeHnd);
     }
 
@@ -3231,8 +3239,6 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
     }
 }
 
-
-int64_t GetPreciseTickCount();
 void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks);
 
 //
@@ -3241,6 +3247,9 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
                                                  ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                  const InstantiationContext *pInstContext/*=NULL*/)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadTypeHandleForTypeKey");
+    int64_t startTicks = GetPreciseTickCount();
+    
     CONTRACTL
     {
         INSTANCE_CHECK;
@@ -3267,7 +3276,6 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 #if defined(FEATURE_EVENT_TRACE)
     UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
 #endif
-    int64_t startTicks = GetPreciseTickCount();
 
     ClassLoadLevel currentLevel = typeHnd.IsNull() ? CLASS_LOAD_BEGIN : typeHnd.GetLoadLevel();
     ClassLoadLevel targetLevelUnderLock = targetLevel < CLASS_DEPENDENCIES_LOADED ? targetLevel : (ClassLoadLevel) (CLASS_DEPENDENCIES_LOADED-1);
@@ -3282,14 +3290,14 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 
     PushFinalLevels(typeHnd, targetLevel, pInstContext);
 
-    RecordTypeLoadTime(typeHnd, GetPreciseTickCount() - startTicks);
-
 #if defined(FEATURE_EVENT_TRACE)
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
     {
         ETW::TypeSystemLog::TypeLoadEnd(typeLoad, typeHnd, (UINT16)targetLevel);
     }
 #endif
+
+    RecordTypeLoadTime(typeHnd, GetPreciseTickCount() - startTicks);
 
     return typeHnd;
 }
@@ -3384,6 +3392,8 @@ ClassLoader::LoadTypeHandleForTypeKey_Body(
     TypeHandle                        typeHnd,
     ClassLoadLevel                    targetLevel)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadTypeHandleForTypeKey_Body");
+    
     CONTRACT(TypeHandle)
     {
         STANDARD_VM_CHECK;
@@ -3550,6 +3560,8 @@ retry:
 
     EX_TRY
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadTypeHandleForTypeKey_Body / DoIncrementalLoad");
+
         PendingTypeLoadHolder ptlh(pLoadingEntry);
 
         TRIGGERS_TYPELOAD();
