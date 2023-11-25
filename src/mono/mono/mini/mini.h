@@ -1257,7 +1257,6 @@ typedef struct {
 	guint            no_unaligned_access : 1;
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
-	guint            optimized_div : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
