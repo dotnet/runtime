@@ -559,7 +559,7 @@ namespace System.Text.Json
         private void WriteStartIndented(byte token)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= IndentLength * _options.MaxDepth);
 
             int minRequired = indent + 1;   // 1 start token
             int maxRequired = minRequired + 3; // Optionally, 1 list separator and 1-2 bytes for new line
@@ -1000,7 +1000,7 @@ namespace System.Text.Json
                 {
                     // The end token should be at an outer indent and since we haven't updated
                     // current depth yet, explicitly subtract here.
-                    indent -= JsonConstants.SpacesPerIndent;
+                    indent -= IndentLength;
                 }
 
                 Debug.Assert(indent <= 2 * _options.MaxDepth);

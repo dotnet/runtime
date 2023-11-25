@@ -78,6 +78,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode,
                 UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
                 WriteIndented = true,
+                IndentText = "\t",
 
                 TypeInfoResolver = ContextWithAllOptionsSet.Default,
             };
