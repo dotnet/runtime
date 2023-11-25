@@ -511,6 +511,7 @@ namespace System.Text.Json
                     left._includeFields == right._includeFields &&
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
+                    left._indentText == right._indentText &&
                     left._typeInfoResolver == right._typeInfoResolver &&
                     CompareLists(left._converters, right._converters);
 
@@ -565,6 +566,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._includeFields);
                 AddHashCode(ref hc, options._propertyNameCaseInsensitive);
                 AddHashCode(ref hc, options._writeIndented);
+                AddHashCode(ref hc, options._indentText?.GetHashCode() ?? 0);
                 AddHashCode(ref hc, options._typeInfoResolver);
                 AddListHashCode(ref hc, options._converters);
 

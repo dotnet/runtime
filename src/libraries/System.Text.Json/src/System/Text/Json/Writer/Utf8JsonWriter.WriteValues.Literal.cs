@@ -109,7 +109,7 @@ namespace System.Text.Json
                 {
                     WriteNewLine(output);
                 }
-                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }
 

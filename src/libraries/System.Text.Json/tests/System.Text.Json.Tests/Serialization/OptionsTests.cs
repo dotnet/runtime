@@ -1288,6 +1288,10 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     property.SetValue(options, 32);
                 }
+                else if (propertyType == typeof(string))
+                {
+                    property.SetValue(options, "\t");
+                }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {
                     options.Converters.Add(new JsonStringEnumConverter());

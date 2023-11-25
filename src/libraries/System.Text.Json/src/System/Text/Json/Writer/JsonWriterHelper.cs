@@ -32,6 +32,18 @@ namespace System.Text.Json
             }
         }
 
+        public static void WriteIndentation(Span<byte> buffer, int indentation, Span<byte> indent)
+        {
+            Debug.Assert(buffer.Length >= indentation);
+
+            int offset = 0;
+            while (offset < indentation)
+            {
+                indent.CopyTo(buffer.Slice(offset));
+                offset += indent.Length;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateProperty(ReadOnlySpan<byte> propertyName)
         {

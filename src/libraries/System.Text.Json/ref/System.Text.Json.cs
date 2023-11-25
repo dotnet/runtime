@@ -394,6 +394,7 @@ namespace System.Text.Json
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnmappedMemberHandling UnmappedMemberHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
+        public string? IndentText { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties.", DiagnosticId="SYSLIB0049", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void AddContext<TContext>() where TContext : System.Text.Json.Serialization.JsonSerializerContext, new() { }
@@ -439,6 +440,7 @@ namespace System.Text.Json
         private int _dummyPrimitive;
         public System.Text.Encodings.Web.JavaScriptEncoder? Encoder { readonly get { throw null; } set { } }
         public bool Indented { get { throw null; } set { } }
+        public string? IndentText { get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
         public bool SkipValidation { get { throw null; } set { } }
     }

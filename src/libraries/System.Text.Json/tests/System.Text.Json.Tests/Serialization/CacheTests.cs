@@ -372,6 +372,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.ReadCommentHandling)), JsonCommentHandling.Skip);
                 yield return (GetProp(nameof(JsonSerializerOptions.UnknownTypeHandling)), JsonUnknownTypeHandling.JsonNode);
                 yield return (GetProp(nameof(JsonSerializerOptions.WriteIndented)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.IndentText)), "\t");
                 yield return (GetProp(nameof(JsonSerializerOptions.ReferenceHandler)), ReferenceHandler.Preserve);
                 yield return (GetProp(nameof(JsonSerializerOptions.TypeInfoResolver)), new DefaultJsonTypeInfoResolver());
 

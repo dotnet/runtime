@@ -75,6 +75,7 @@ namespace System.Text.Json
         private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
+        private string? _indentText;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -124,6 +125,7 @@ namespace System.Text.Json
             _includeFields = options._includeFields;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
+            _indentText = options._indentText;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
@@ -646,6 +648,27 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Defines the text used as indent when <see cref="WriteIndented" /> is enabled
+        /// By default, the JSON is indented with 2 white spaces.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public string? IndentText
+        {
+            get
+            {
+                return _indentText;
+            }
+            set
+            {
+                VerifyMutable();
+                // Validation?
+                _indentText = value;
+            }
+        }
+
+        /// <summary>
         /// Configures how object references are handled when reading and writing JSON.
         /// </summary>
         public ReferenceHandler? ReferenceHandler
@@ -876,6 +899,7 @@ namespace System.Text.Json
             {
                 Encoder = Encoder,
                 Indented = WriteIndented,
+                IndentText = IndentText,
                 MaxDepth = EffectiveMaxDepth,
 #if !DEBUG
                 SkipValidation = true

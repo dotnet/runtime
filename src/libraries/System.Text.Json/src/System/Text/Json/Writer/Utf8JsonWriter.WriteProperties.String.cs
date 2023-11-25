@@ -213,7 +213,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -402,7 +402,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -1541,7 +1541,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -1590,7 +1590,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -1642,7 +1642,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -1693,7 +1693,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;

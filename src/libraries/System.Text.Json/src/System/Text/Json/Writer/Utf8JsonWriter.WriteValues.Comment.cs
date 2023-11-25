@@ -123,7 +123,7 @@ namespace System.Text.Json
             if (_tokenType != JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
                 WriteNewLine(output);
-                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }
 
@@ -230,7 +230,7 @@ namespace System.Text.Json
             {
                 WriteNewLine(output);
 
-                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }
 
