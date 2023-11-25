@@ -51,13 +51,13 @@ NESTED_END RhpPInvoke, _TEXT
 
 
 LEAF_ENTRY RhpPInvokeReturn, _TEXT
-        ldr         x9, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
-        str         xzr, [x9, #OFFSETOF__Thread__m_pTransitionFrame]
+        ldr     x10, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
+        str     xzr, [x10, #OFFSETOF__Thread__m_pTransitionFrame]
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 9
 
         cbnz    w9, 0f  // TrapThreadsFlags_None = 0
-        str         wzr, [x9, #OFFSETOF__Thread__m_generation]
+        str     wzr, [x10, #OFFSETOF__Thread__m_generation]
         ret
 0:
         // passing transition frame pointer in x0
