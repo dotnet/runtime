@@ -104,7 +104,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             ReadCommentHandling = JsonCommentHandling.Skip,
             UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-            WriteIndented = true)]
+            WriteIndented = true,
+            IndentText = "\t")]
         [JsonSerializable(typeof(PersonStruct))]
         public partial class ContextWithAllOptionsSet : JsonSerializerContext
         { }

@@ -1168,6 +1168,9 @@ namespace System.Text.Json.SourceGeneration
                 if (optionsSpec.WriteIndented is bool writeIndented)
                     writer.WriteLine($"WriteIndented = {FormatBool(writeIndented)},");
 
+                if (optionsSpec.IndentText is string indentText)
+                    writer.WriteLine($"IndentText = {FormatStringLiteral(indentText)},");
+
                 writer.Indentation--;
                 writer.WriteLine("};");
 
