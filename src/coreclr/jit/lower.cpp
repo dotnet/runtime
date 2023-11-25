@@ -2042,7 +2042,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                         if (GenTree::OperIsCmpCompare(oper))
                         {
                             assert(type == TYP_INT);
-                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_UBYTE, op1, op2, CORINFO_TYPE_NATIVEUINT,
+                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_INT, op1, op2, CORINFO_TYPE_NATIVEUINT,
                                                                genTypeSize(op1));
                         }
                         return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,

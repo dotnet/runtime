@@ -3664,7 +3664,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                  * have to "swap" the registers in the GC reg pointer mask
                  */
 
-                if (varTypeGCtype(varDscSrc->TypeGet()) != varTypeGCtype(varDscDest->TypeGet()))
+                if (varTypeIsGC(varDscSrc) != varTypeIsGC(varDscDest))
                 {
                     size = EA_GCREF;
                 }
