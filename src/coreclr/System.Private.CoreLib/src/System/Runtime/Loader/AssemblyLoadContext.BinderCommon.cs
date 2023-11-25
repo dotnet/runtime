@@ -517,15 +517,19 @@ namespace System.Runtime.Loader
         {
             foreach (string bindingPath in resourceRoots)
             {
-                string fileName = Path.Combine(relativePath, bindingPath);
+                string fileName = Path.Combine(bindingPath, relativePath);
                 int hr = GetAssembly(fileName, isInTPA: false, out BinderAssembly? assembly);
                 AssemblyLoadContext.TracePathProbed(fileName, pathSource, hr);
 
                 // Missing files are okay and expected when probing
                 if (hr == HResults.E_FILENOTFOUND)
                 {
-                    return HResults.S_OK;
+                    continue;
                 }
+
+                bindResult.SetAttemptResult(hr, assembly);
+                if (hr < 0)
+                    return hr;
 
                 Debug.Assert(assembly != null);
                 BinderAssemblyName boundAssemblyName = assembly.AssemblyName;
