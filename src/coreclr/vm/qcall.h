@@ -206,7 +206,13 @@ public:
         //
         void Set(OBJECTREF o)
         {
-            LIMITED_METHOD_CONTRACT;
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_COOPERATIVE;
+            }
+            CONTRACTL_END;
 
             // The space for the return value has to be on the stack
             _ASSERTE(Thread::IsAddressInCurrentStack(m_ppObject));
