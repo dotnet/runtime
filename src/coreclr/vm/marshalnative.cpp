@@ -91,35 +91,20 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld)
+extern "C" PCODE QCALLTYPE MarshalNative_TryGetStructMarshalStub(MethodTable* pMT, SIZE_T* pSize)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(ptr, NULL_OK));
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    OBJECTREF pObj = (OBJECTREF) pObjUNSAFE;
+    PCODE pCode = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_1(pObj);
-
-    if (ptr == NULL)
-        COMPlusThrowArgumentNull(W("ptr"));
-    if (pObj == NULL)
-        COMPlusThrowArgumentNull(W("structure"));
-
-    // Code path will accept both regular layout objects and boxed value classes
-    // with layout.
-
-    MethodTable *pMT = pObj->GetMethodTable();
+    BEGIN_QCALL;
 
     if (pMT->HasInstantiation())
         COMPlusThrowArgumentException(W("structure"), W("Argument_NeedNonGenericObject"));
 
     if (pMT->IsBlittable())
     {
-        memcpyNoGCRefs(ptr, pObj->GetData(), pMT->GetNativeSize());
+        *pSize = pMT->GetNativeSize();
     }
     else if (pMT->HasLayout())
     {
@@ -128,25 +113,20 @@ FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR
 
         if (structMarshalStub == NULL)
         {
-            GCX_PREEMP();
             structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
         }
 
-        if (fDeleteOld)
-        {
-            MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Cleanup);
-        }
-
-        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Marshal);
+        pCode = structMarshalStub->GetSingleCallableAddrOfCode();
     }
     else
     {
         COMPlusThrowArgumentException(W("structure"), W("Argument_MustHaveLayoutOrBeBlittable"));
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
+
+    return pCode;
 }
-FCIMPLEND
 
 FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses)
 {

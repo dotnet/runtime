@@ -237,9 +237,30 @@ namespace System.Runtime.InteropServices
         /// true, this routine will call DestroyStructure() first.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
+        public static unsafe void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld)
+        {
+            ArgumentNullException.ThrowIfNull(ptr);
+            ArgumentNullException.ThrowIfNull(structure);
+
+            nuint size;
+            delegate* <ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub =
+                TryGetStructMarshalStub(RuntimeHelpers.GetMethodTable(structure), &size);
+
+            if (structMarshalStub != null)
+            {
+                if (fDeleteOld)
+                {
+                    structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement>());
+                }
+
+                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Marshal, ref Unsafe.NullRef<CleanupWorkListElement>());
+            }
+            else
+            {
+                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+            }
+        }
 
         /// <summary>
         /// Helper function to copy a pointer into a preallocated structure.
@@ -255,6 +276,9 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_TryGetStructMarshalStub")]
+        private static unsafe partial delegate* <ref byte, byte*, int, ref CleanupWorkListElement, void> TryGetStructMarshalStub(MethodTable* pMT, nuint* size);
 
         // Note: Callers are required to keep obj alive
         internal static unsafe bool IsPinnable(object? obj)

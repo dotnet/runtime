@@ -1034,6 +1034,14 @@ namespace System.StubHelpers
         private ulong lo64;
     }
 
+    // Constants for direction argument of struct marshalling stub.
+    internal static class MarshalOperation
+    {
+        internal const int Marshal = 0;
+        internal const int Unmarshal = 1;
+        internal const int Cleanup = 2;
+    }
+
     internal abstract class CleanupWorkListElement
     {
         private CleanupWorkListElement? m_Next;
