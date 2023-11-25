@@ -694,6 +694,10 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int max_gen)
         if (generation == max_gen)
             continue;
 
+        // do not age the current thread
+        if (pThread->IsCurrentThread())
+            continue;
+
         pThread->SetGeneration(generation + 1);
     }
     END_FOREACH_THREAD
