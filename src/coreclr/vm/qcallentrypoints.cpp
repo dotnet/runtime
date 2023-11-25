@@ -349,6 +349,8 @@ static const Entry s_QCall[] =
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
 #if defined(FEATURE_COMINTEROP)
+    DllImportEntry(ObjectMarshaler_ConvertToNative)
+    DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler__ClearNative)
 #endif
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)

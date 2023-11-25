@@ -556,11 +556,6 @@ FCFuncStart(gMngdNativeArrayMarshalerFuncs)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP
-FCFuncStart(gObjectMarshalerFuncs)
-    FCFuncElement("ConvertToNative", StubHelpers::ObjectMarshaler__ConvertToNative)
-    FCFuncElement("ConvertToManaged", StubHelpers::ObjectMarshaler__ConvertToManaged)
-    FCFuncElement("ClearNative", StubHelpers::ObjectMarshaler__ClearNative)
-FCFuncEnd()
 
 FCFuncStart(gInterfaceMarshalerFuncs)
     FCFuncElement("ConvertToNative", StubHelpers::InterfaceMarshaler__ConvertToNative)
@@ -713,9 +708,6 @@ FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 #endif
 FCClassElement("Object", "System", gObjectFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
-#endif
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)

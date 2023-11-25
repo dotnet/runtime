@@ -1154,13 +1154,6 @@ void VariantData::NewVariant(VariantData * const& dest, const CVTypes type, INT6
     }
 }
 
-void SafeVariantClearHelper(_Inout_ VARIANT* pVar)
-{
-    WRAPPER_NO_CONTRACT;
-
-    VariantClear(pVar);
-}
-
 class OutOfMemoryException;
 
 void SafeVariantClear(VARIANT* pVar)
@@ -1176,52 +1169,16 @@ void SafeVariantClear(VARIANT* pVar)
     if (pVar)
     {
         GCX_PREEMP();
-        SCAN_EHMARKER();
-        PAL_CPP_TRY
-        {
-            // These are holders to tell the contract system that we're catching all exceptions.
-            SCAN_EHMARKER_TRY();
-            CLR_TRY_MARKER();
-
-            // Most of time, oleaut32.dll is loaded already when we get here.
-            // Sometimes, CLR initializes Variant without loading oleaut32.dll, e.g. VT_BOOL.
-            // It is better for performance with EX_TRY than
-
-            SafeVariantClearHelper(pVar);
-
-            SCAN_EHMARKER_END_TRY();
-        }
-#pragma warning(suppress: 4101)
-        PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)
-        {
-            SCAN_EHMARKER_CATCH();
-
-#if defined(STACK_GUARDS_DEBUG)
-            // Catching and just swallowing an exception means we need to tell
-            // the SO code that it should go back to normal operation, as it
-            // currently thinks that the exception is still on the fly.
-            GetThread()->GetCurrentStackGuard()->RestoreCurrentGuard();
-#endif
-
-            SCAN_EHMARKER_END_CATCH();
-        }
-        PAL_CPP_ENDTRY;
-
+        VariantClear(pVar);
         FillMemory(pVar, sizeof(VARIANT), 0x00);
     }
 }
 
-FORCEINLINE void EmptyVariant(VARIANT* value)
-{
-    WRAPPER_NO_CONTRACT;
-    SafeVariantClear(value);
-}
-
-class VariantEmptyHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, EmptyVariant, NULL>
+class VariantEmptyHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, NULL>
 {
 public:
     VariantEmptyHolder(VARIANT* p = NULL) :
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, EmptyVariant, NULL>(p)
+        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, NULL>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1230,7 +1187,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, EmptyVariant, NULL>::operator=(p);
+        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, NULL>::operator=(p);
     }
 };
 

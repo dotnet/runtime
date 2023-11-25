@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 namespace System.StubHelpers
@@ -461,16 +462,34 @@ namespace System.StubHelpers
     }  // class WSTRBufferMarshaler
 #if FEATURE_COMINTEROP
 
-    internal static class ObjectMarshaler
+    internal static partial class ObjectMarshaler
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ConvertToNative(object objSrc, IntPtr pDstVariant);
+        internal static void ConvertToNative(object objSrc, IntPtr pDstVariant)
+        {
+            ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManaged(IntPtr pSrcVariant);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNative")]
+        private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ClearNative(IntPtr pVariant);
+        internal static object ConvertToManaged(IntPtr pSrcVariant)
+        {
+            object? retObject = null;
+            ConvertToManaged(pSrcVariant, ObjectHandleOnStack.Create(ref retObject));
+            return retObject!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToManaged")]
+        private static partial void ConvertToManaged(IntPtr pSrcVariant, ObjectHandleOnStack retObject);
+
+        internal static unsafe void ClearNative(IntPtr pVariant)
+        {
+            if (pVariant != IntPtr.Zero)
+            {
+                Interop.OleAut32.VariantClear(pVariant);
+                *(ComVariant*)pVariant = default;
+            }
+        }
     }  // class ObjectMarshaler
 
 #endif // FEATURE_COMINTEROP
