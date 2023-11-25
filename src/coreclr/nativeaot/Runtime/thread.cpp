@@ -93,10 +93,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
     }
     while (ThreadStore::IsTrapThreadsRequested());
 
-    m_generation = 0;
-
     // Restore the saved error
     PalSetLastError(lastErrorOnEntry);
+
+    m_generation = 0;
 }
 
 //
@@ -1100,7 +1100,10 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
     Thread * pThread = pFrame->m_pThread;
     if (pThread->IsDoNotTriggerGcSet())
+    {
+        pThread->SetGeneration(0);
         return;
+    }
 
     pThread->WaitForGC(pFrame);
 }
@@ -1274,6 +1277,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
         return false; // need to trap the thread
     }
 
+    m_generation = 0;
     return true;
 }
 
@@ -1357,10 +1361,11 @@ FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame * pFrame)
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
     if (ThreadStore::IsTrapThreadsRequested())
     {
-        RhpWaitForGC2(pFrame);
+        m_generation = 0;
+        return;
     }
 
-    m_generation = 0;
+    RhpWaitForGC2(pFrame);
 }
 
 Object * Thread::GetThreadAbortException()
@@ -1426,13 +1431,6 @@ COOP_PINVOKE_HELPER(uint64_t, RhCurrentOSThreadId, ())
     return PalGetCurrentOSThreadId();
 }
 
-// Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
-EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
-{
-    ASSERT(pFrame->m_savedThread == ThreadStore::RawGetCurrentThread());
-    pFrame->m_savedThread->ReversePInvokeAttachOrTrapThread(pFrame);
-}
-
 //
 // PInvoke
 //
@@ -1442,9 +1440,12 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvoke, (ReversePInvokeFrame * pFrame))
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pFrame->m_savedThread = pCurThread;
     if (pCurThread->InlineTryFastReversePInvoke(pFrame))
+    {
         return;
+    }
 
-    RhpReversePInvokeAttachOrTrapThread2(pFrame);
+    ASSERT(pFrame->m_savedThread == ThreadStore::RawGetCurrentThread());
+    pFrame->m_savedThread->ReversePInvokeAttachOrTrapThread(pFrame);
 }
 
 COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame * pFrame))
