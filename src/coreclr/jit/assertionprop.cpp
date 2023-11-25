@@ -3958,24 +3958,79 @@ enum RangeCheckResult
 //   "Always" if the 2nd range check is always "true", "Never" if it is never "true"
 //   "Unknown" if we can't determine if it is redundant or not.
 //
-RangeCheckResult GetRangeCheckResult(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
+RangeCheckResult GetRangeCheckResult(genTreeOps oper1, int bound1, genTreeOps oper2, int bound2)
 {
-    // TODO: normalize GT_GE and GT_LE to GT_GT and GT_LT respectively (with adjusted bounds)
-    // TODO: Handle other cases (e.g. "Never" cases, etc).
-
-    if (oper1 == oper2)
+    struct Int32Range
     {
-        // x > 100
-        // x > 10
+        int startIncl;
+        int endIncl;
+    };
 
-        // x <= 100
-        // x <= 10
+    Int32Range range1 = {INT_MIN, INT_MAX};
+    Int32Range range2 = {INT_MIN, INT_MAX};
 
-        if (bound1 >= bound2)
+    auto setRange = [](genTreeOps oper, int bound, Int32Range* range) -> bool {
+        switch (oper)
         {
-            return Always;
+            case GT_LT:
+                // x < cns -> [INT_MIN, cns - 1]
+                if (bound == INT_MIN)
+                {
+                    // overflows
+                    return true;
+                }
+                range->endIncl = bound - 1;
+                break;
+            case GT_LE:
+                // x <= cns -> [INT_MIN, cns]
+                range->endIncl = bound;
+                break;
+            case GT_GT:
+                // x > cns -> [cns + 1, INT_MAX]
+                if (bound == INT_MAX)
+                {
+                    // overflows
+                    return true;
+                }
+                range->startIncl = bound + 1;
+                break;
+            case GT_GE:
+                // x >= cns -> [cns, INT_MAX]
+                range->startIncl = bound;
+                break;
+            default:
+                unreached();
         }
+        return false; // doesn't overflow
+    };
+
+    const bool overflows1 = setRange(oper1, bound1, &range1);
+    const bool overflows2 = setRange(oper2, bound2, &range2);
+    if (overflows1 || overflows2)
+    {
+        return Unknown;
     }
+
+    if ((range1.startIncl > range2.endIncl) || (range2.startIncl > range1.endIncl))
+    {
+        // [100     .. INT_MAX]
+        // [INT_MIN .. 10]
+
+        // Ranges never intersect
+        return Never;
+    }
+
+    // check whether range2 is fully contained in range1:
+    if ((range1.startIncl <= range2.startIncl) && (range2.endIncl <= range1.endIncl))
+    {
+        // [100 .. INT_MAX]
+        // [110 .. INT_MAX]
+
+        // range2 is fully contained in range1
+        return Always;
+    }
+
+    // Ranges intersect, but we can't determine if the 2nd range is redundant or not.
     return Unknown;
 }
 
@@ -3996,6 +4051,12 @@ GenTree* Compiler::optAssertionPropGlobal_ConstRangeCheck(ASSERT_VALARG_TP asser
     assert(tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) && tree->gtGetOp2()->IsCnsIntOrI());
     if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions) ||
         tree->IsUnsigned())
+    {
+        return nullptr;
+    }
+
+    // Bail out if tree is not side effect free.
+    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         return nullptr;
     }
@@ -4040,10 +4101,16 @@ GenTree* Compiler::optAssertionPropGlobal_ConstRangeCheck(ASSERT_VALARG_TP asser
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }
 
-        RangeCheckResult result = GetRangeCheckResult(cmpOper, info.constVal, tree->OperGet(), op2->IconValue());
+        ssize_t cns2 = op2->IconValue();
+        if (!FitsIn<int>(cns2))
+        {
+            return nullptr;
+        }
+
+        RangeCheckResult result = GetRangeCheckResult(cmpOper, info.constVal, tree->OperGet(), (int)cns2);
         if (result == Unknown)
         {
-            continue;
+            return nullptr;
         }
 
         tree->BashToConst(result == Never ? 0 : 1);
