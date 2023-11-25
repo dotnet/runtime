@@ -4000,6 +4000,11 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
                 // x >= cns -> [cns, INT_MAX]
                 range->startIncl = bound;
                 break;
+            case GT_EQ:
+                // x == cns -> [cns, cns]
+                range->startIncl = bound;
+                range->endIncl   = bound;
+                break;
             default:
                 unreached();
         }
@@ -4054,9 +4059,8 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
 //
 GenTree* Compiler::optAssertionPropGlobal_ConstRangeCheck(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) && tree->gtGetOp2()->IsCnsIntOrI());
-    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions) ||
-        tree->IsUnsigned())
+    assert(tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT, GT_EQ) && tree->gtGetOp2()->IsCnsIntOrI());
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
     {
         return nullptr;
     }
@@ -4087,8 +4091,13 @@ GenTree* Compiler::optAssertionPropGlobal_ConstRangeCheck(ASSERT_VALARG_TP asser
         vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
 
         // Make sure VN is the same as op1's VN.
+        if (info.cmpOpVN != op1VN)
+        {
+            continue;
+        }
+
         // TODO: don't give up on unsigned comparisons.
-        if ((info.cmpOpVN != op1VN) || info.isUnsigned)
+        if (info.isUnsigned || tree->IsUnsigned())
         {
             continue;
         }
@@ -4191,13 +4200,18 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
+    if (op2->IsCnsIntOrI() && tree->OperIs(GT_EQ, GT_LT, GT_LE, GT_GE, GT_GT))
+    {
+        newTree = optAssertionPropGlobal_ConstRangeCheck(assertions, tree, stmt);
+        if (newTree != nullptr)
+        {
+            return newTree;
+        }
+    }
+
     // Else check if we have an equality check involving a local or an indir
     if (!tree->OperIs(GT_EQ, GT_NE))
     {
-        if (op2->IsCnsIntOrI() && tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
-        {
-            return optAssertionPropGlobal_ConstRangeCheck(assertions, tree, stmt);
-        }
         return nullptr;
     }
 
