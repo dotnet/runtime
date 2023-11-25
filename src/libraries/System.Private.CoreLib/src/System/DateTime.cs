@@ -125,8 +125,9 @@ namespace System
         internal static ReadOnlySpan<uint> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
         internal static ReadOnlySpan<uint> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
-        private static ReadOnlySpan<byte> DaysInMonth365 => [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        private static ReadOnlySpan<byte> DaysInMonth366 => [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        private const int DaysInMonth365 = 0b_11_10_11_10_11_11_10_11_10_11_00_11_00;
+        private const int DaysInMonth366 = DaysInMonth365 | 0x10;
+        private const byte ExtraDaysMask = 0x3;
 
         public static readonly DateTime MinValue;
         public static readonly DateTime MaxValue = new DateTime(MaxTicks, DateTimeKind.Unspecified);
@@ -1170,7 +1171,8 @@ namespace System
         {
             if (month < 1 || month > 12) ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             // IsLeapYear checks the year argument
-            return (IsLeapYear(year) ? DaysInMonth366 : DaysInMonth365)[month - 1];
+            int days = IsLeapYear(year) ? DaysInMonth366 : DaysInMonth365;
+            return 28 + (days >> (2 * month) & ExtraDaysMask);
         }
 
         // Converts an OLE Date to a tick count.
