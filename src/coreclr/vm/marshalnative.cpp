@@ -91,7 +91,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-extern "C" PCODE QCALLTYPE MarshalNative_TryGetStructMarshalStub(MethodTable* pMT, SIZE_T* pSize)
+extern "C" PCODE QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, SIZE_T* pSize)
 {
     QCALL_CONTRACT;
 
@@ -99,15 +99,18 @@ extern "C" PCODE QCALLTYPE MarshalNative_TryGetStructMarshalStub(MethodTable* pM
 
     BEGIN_QCALL;
 
-    if (pMT->HasInstantiation())
+    TypeHandle th = TypeHandle::FromPtr(enregisteredTypeHandle);
+
+    if (th.HasInstantiation())
         COMPlusThrowArgumentException(W("structure"), W("Argument_NeedNonGenericObject"));
 
-    if (pMT->IsBlittable())
+    if (th.IsBlittable())
     {
-        *pSize = pMT->GetNativeSize();
+        *pSize = th.GetMethodTable()->GetNativeSize();
     }
-    else if (pMT->HasLayout())
+    else if (th.HasLayout())
     {
+        MethodTable* pMT = th.GetMethodTable();
         EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
         MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
 
@@ -127,110 +130,6 @@ extern "C" PCODE QCALLTYPE MarshalNative_TryGetStructMarshalStub(MethodTable* pM
 
     return pCode;
 }
-
-FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(ptr, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF  pObj = ObjectToOBJECTREF(pObjIn);
-
-    HELPER_METHOD_FRAME_BEGIN_1(pObj);
-
-    if (ptr == NULL)
-        COMPlusThrowArgumentNull(W("ptr"));
-    if (pObj == NULL)
-        COMPlusThrowArgumentNull(W("structure"));
-
-    // Code path will accept regular layout objects.
-    MethodTable *pMT = pObj->GetMethodTable();
-
-    // Validate that the object passed in is not a value class.
-    if (!allowValueClasses && pMT->IsValueType())
-    {
-        COMPlusThrowArgumentException(W("structure"), W("Argument_StructMustNotBeValueClass"));
-    }
-    else if (pMT->IsBlittable())
-    {
-        memcpyNoGCRefs(pObj->GetData(), ptr, pMT->GetNativeSize());
-    }
-    else if (pMT->HasLayout())
-    {
-        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
-
-        if (structMarshalStub == NULL)
-        {
-            GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Unmarshal);
-    }
-    else
-    {
-        COMPlusThrowArgumentException(W("structure"), W("Argument_MustHaveLayoutOrBeBlittable"));
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-
-FCIMPL2(VOID, MarshalNative::DestroyStructure, LPVOID ptr, ReflectClassBaseObject* refClassUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(ptr, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refClass);
-
-    if (ptr == NULL)
-        COMPlusThrowArgumentNull(W("ptr"));
-    if (refClass == NULL)
-        COMPlusThrowArgumentNull(W("structureType"));
-    if (refClass->GetMethodTable() != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("structureType"), W("Argument_MustBeRuntimeType"));
-
-    TypeHandle th = refClass->GetType();
-
-    if (th.HasInstantiation())
-        COMPlusThrowArgumentException(W("structureType"), W("Argument_NeedNonGenericType"));
-
-    if (th.IsBlittable())
-    {
-        // ok to call with blittable structure, but no work to do in this case.
-    }
-    else if (th.HasLayout())
-    {
-        MethodTable* pMT = th.GetMethodTable();
-        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
-
-        if (structMarshalStub == NULL)
-        {
-            GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        MarshalStructViaILStub(structMarshalStub, nullptr, ptr, StructMarshalStubs::MarshalOperation::Cleanup);
-    }
-    else
-    {
-        COMPlusThrowArgumentException(W("structureType"), W("Argument_MustHaveLayoutOrBeBlittable"));
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
 /************************************************************************
  * PInvoke.SizeOf(Class)

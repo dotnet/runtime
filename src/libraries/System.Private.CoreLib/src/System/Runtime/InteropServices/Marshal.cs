@@ -585,12 +585,20 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void PtrToStructure(IntPtr ptr, object structure)
         {
+            ArgumentNullException.ThrowIfNull(ptr);
+            ArgumentNullException.ThrowIfNull(structure);
+
             PtrToStructureHelper(ptr, structure, allowValueClasses: false);
         }
 
         public static void PtrToStructure<T>(IntPtr ptr, [DisallowNull] T structure)
         {
-            PtrToStructureHelper(ptr, structure, allowValueClasses: false);
+            ArgumentNullException.ThrowIfNull(ptr);
+
+            object boxedStructure = structure;
+            ArgumentNullException.ThrowIfNull(boxedStructure);
+
+            PtrToStructureHelper(ptr, boxedStructure, allowValueClasses: false);
         }
 
         public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]T>(IntPtr ptr)

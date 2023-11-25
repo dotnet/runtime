@@ -245,7 +245,7 @@ namespace System.Runtime.InteropServices
 
             nuint size;
             delegate* <ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub =
-                TryGetStructMarshalStub(RuntimeHelpers.GetMethodTable(structure), &size);
+                TryGetStructMarshalStub((IntPtr)RuntimeHelpers.GetMethodTable(structure), &size);
 
             if (structMarshalStub != null)
             {
@@ -265,20 +265,56 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Helper function to copy a pointer into a preallocated structure.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses);
+        private static unsafe void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(structure);
+
+            if (!allowValueClasses && pMT->IsValueType)
+            {
+                throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
+            }
+
+            nuint size;
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub =
+                TryGetStructMarshalStub((IntPtr)pMT, &size);
+
+            if (structMarshalStub != null)
+            {
+                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Unmarshal, ref Unsafe.NullRef<CleanupWorkListElement>());
+            }
+            else
+            {
+                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+            }
+        }
 
         /// <summary>
         /// Frees all substructures pointed to by the native memory block.
         /// "structuretype" is used to provide layout information.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
+        public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
+        {
+            ArgumentNullException.ThrowIfNull(ptr);
+            ArgumentNullException.ThrowIfNull(structuretype);
+
+            if (structuretype is not RuntimeType rt)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(structuretype));
+
+            nuint size;
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub =
+                TryGetStructMarshalStub(rt.GetUnderlyingNativeHandle(), &size);
+            GC.KeepAlive(rt);
+
+            if (structMarshalStub != null)
+            {
+                structMarshalStub(ref Unsafe.NullRef<byte>(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement>());
+            }
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_TryGetStructMarshalStub")]
-        private static unsafe partial delegate* <ref byte, byte*, int, ref CleanupWorkListElement, void> TryGetStructMarshalStub(MethodTable* pMT, nuint* size);
+        private static unsafe partial delegate* <ref byte, byte*, int, ref CleanupWorkListElement, void> TryGetStructMarshalStub(IntPtr th, nuint* size);
 
         // Note: Callers are required to keep obj alive
         internal static unsafe bool IsPinnable(object? obj)

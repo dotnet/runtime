@@ -51,9 +51,6 @@ namespace System.Runtime.InteropServices
 
         private static void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
         {
-            ArgumentNullException.ThrowIfNull(ptr);
-            ArgumentNullException.ThrowIfNull(structure);
-
             if (!allowValueClasses && structure.GetEETypePtr().IsValueType)
             {
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
@@ -107,7 +104,7 @@ namespace System.Runtime.InteropServices
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
-            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
+            if (structureTypeHandle.IsGenericType())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, "structure");
 
             if (structureTypeHandle.IsEnum() ||
@@ -147,7 +144,7 @@ namespace System.Runtime.InteropServices
 
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 
-            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
+            if (structureTypeHandle.IsGenericType())
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
             }

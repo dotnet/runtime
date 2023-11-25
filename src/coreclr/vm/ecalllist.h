@@ -469,8 +469,6 @@ FCFuncEnd()
 FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetLastPInvokeError", MarshalNative::GetLastPInvokeError)
     FCFuncElement("SetLastPInvokeError", MarshalNative::SetLastPInvokeError)
-    FCFuncElement("PtrToStructureHelper", MarshalNative::PtrToStructureHelper)
-    FCFuncElement("DestroyStructure", MarshalNative::DestroyStructure)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
     FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
 
