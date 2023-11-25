@@ -3936,6 +3936,123 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
+enum RangeCheckResult
+{
+    Unknown,
+    Never,
+    Always
+};
+
+//------------------------------------------------------------------------
+// Given two range checks, determine if the 2nd one is redundant or not.
+//   It is assumed, that the boths range checks are for the same X on the left side of the comparisons.
+//   e.g. "x > 100 && x > 10" -> Always
+//
+// Arguments:
+//   oper1  - the first range check operator
+//   bound1 - the first range check constant bound
+//   oper2  - the second range check operator
+//   bound2 - the second range check constant bound
+//
+// Returns:
+//   "Always" if the 2nd range check is always "true", "Never" if it is never "true"
+//   "Unknown" if we can't determine if it is redundant or not.
+//
+RangeCheckResult GetRangeCheckResult(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
+{
+    // TODO: normalize GT_GE and GT_LE to GT_GT and GT_LT respectively (with adjusted bounds)
+    // TODO: Handle other cases (e.g. "Never" cases, etc).
+
+    if (oper1 == oper2)
+    {
+        // x > 100
+        // x > 10
+
+        // x <= 100
+        // x <= 10
+
+        if (bound1 >= bound2)
+        {
+            return Always;
+        }
+    }
+    return Unknown;
+}
+
+//------------------------------------------------------------------------
+// optAssertionProp: try and optimize a constant range check via assertion propagation
+//   e.g. "x > 100" where "x" has an assertion "x < 10" can be optimized to "false"
+//
+// Arguments:
+//   assertions  - set of live assertions
+//   tree        - tree to possibly optimize
+//   stmt        - statement containing the tree
+//
+// Returns:
+//   The modified tree, or nullptr if no assertion prop took place.
+//
+GenTree* Compiler::optAssertionPropGlobal_ConstRangeCheck(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
+{
+    assert(tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) && tree->gtGetOp2()->IsCnsIntOrI());
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions) ||
+        tree->IsUnsigned())
+    {
+        return nullptr;
+    }
+
+    const GenTree*       op1 = tree->gtGetOp1();
+    const GenTreeIntCon* op2 = tree->gtGetOp2()->AsIntCon();
+
+    const ValueNum  op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+        // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
+        // representing "(X relop CNS) ==/!= 0" assertion.
+        if (!curAssertion->IsConstantBound())
+        {
+            continue;
+        }
+
+        ValueNumStore::ConstantBoundInfo info;
+        vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
+
+        if (info.cmpOpVN != op1VN || info.isUnsigned)
+        {
+            continue;
+        }
+
+        // Root assertion has to be either:
+        // (X relop CNS) == 0
+        // (X relop CNS) != 0
+        if ((curAssertion->op2.kind != O2K_CONST_INT) || (curAssertion->op2.u1.iconVal != 0))
+        {
+            continue;
+        }
+
+        genTreeOps cmpOper = static_cast<genTreeOps>(info.cmpOper);
+
+        // Normalize "(X relop CNS) == false" to "(X reversed_relop CNS) == true"
+        if (curAssertion->assertionKind == OAK_EQUAL)
+        {
+            cmpOper = GenTree::ReverseRelop(cmpOper);
+        }
+
+        RangeCheckResult result = GetRangeCheckResult(cmpOper, info.constVal, tree->OperGet(), op2->IconValue());
+        if (result == Unknown)
+        {
+            continue;
+        }
+
+        tree->BashToConst(result == Never ? 0 : 1);
+        GenTree* newTree = fgMorphTree(tree);
+        return optAssertionProp_Update(newTree, tree, stmt);
+    }
+    return nullptr;
+}
+
 //------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
@@ -3995,6 +4112,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     // Else check if we have an equality check involving a local or an indir
     if (!tree->OperIs(GT_EQ, GT_NE))
     {
+        if (op2->IsCnsIntOrI() && tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+        {
+            return optAssertionPropGlobal_ConstRangeCheck(assertions, tree, stmt);
+        }
         return nullptr;
     }
 
