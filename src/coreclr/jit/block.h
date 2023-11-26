@@ -625,7 +625,7 @@ public:
     bool HasJumpDest() const
     {
         // These block types should always have bbJumpDest set
-        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE);
+        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
     }
 
     BasicBlock* GetJumpDest() const
@@ -654,8 +654,7 @@ public:
 
     bool HasInitializedJumpDest() const
     {
-        // BBJ_EHFILTERRET blocks might have bbJumpDest set, too
-        assert(HasJumpDest() || KindIs(BBJ_EHFILTERRET));
+        assert(HasJumpDest());
         return (bbJumpDest != nullptr);
     }
 
