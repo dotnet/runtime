@@ -6934,7 +6934,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
             else
             {
                 assert(regIndex < 100);
-                printf("d%c%c", (regIndex / 10), (regIndex % 10));
+                printf("d%c%c", (regIndex / 10) + '0', (regIndex % 10) + '0');
             }
         }
         else

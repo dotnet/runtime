@@ -4025,7 +4025,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 // Don't process the double until both halves of the destination are clear.
                 if (genActualType(destMemType) == TYP_DOUBLE)
                 {
-                    assert((destMask & RBM_DBL_REGS) != 0);
+                    assert((destMask & RBM_ALLDOUBLE) != 0);
                     destMask |= genRegMask(REG_NEXT(destRegNum));
                 }
 #endif
