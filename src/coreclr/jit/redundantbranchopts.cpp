@@ -197,6 +197,12 @@ bool IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2,
                 range->startIncl = bound;
                 return true;
 
+            case GT_EQ:
+                // x == cns -> [cns, cns]
+                range->startIncl = bound;
+                range->endIncl   = bound;
+                return true;
+
             default:
                 // unsupported operator
                 return false;
@@ -210,15 +216,16 @@ bool IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2,
         return false;
     }
 
-    // Check if range1 is fully included into range2
-    if ((range2.startIncl <= range1.startIncl) && (range1.endIncl <= range2.endIncl))
+    // If ranges never intersect, then the 2nd range is never "true"
+    if ((range1.startIncl > range2.endIncl) || (range2.startIncl > range1.endIncl))
     {
         // E.g.:
         //
-        // range1: [100 .. SSIZE_T_MAX]
-        // range2: [10  .. SSIZE_T_MAX]
+        // range1: [100     .. INT_MAX]
+        // range2: [INT_MIN .. 10]
         return true;
     }
+
     return false;
 }
 
@@ -327,8 +334,6 @@ static const RelopImplicationRule s_implicationRules[] =
 // We don't get all the cases here we could. Still to do:
 // * two unsigned compares, same operands
 // * mixture of signed/unsigned compares, same operands
-// * mixture of compares, one operand same, other operands different constants
-//   x > 1 ==> x >= 0
 //
 void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 {
@@ -428,12 +433,13 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
                 bool canInferFromTrue = true;
                 bool implied          = IsRange2ImpliedByRange1(domOper, domCns, treeOper, treeCns);
-                // if (!implied)
-                //{
-                //    // Reverse the dominating compare and try again, if it succeeds, we can infer from "false".
-                //    implied = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
-                //    canInferFromTrue = false;
-                //}
+
+                if (!implied)
+                {
+                    // Reverse the dominating compare and try again, if it succeeds, we can infer from "false".
+                    implied = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                    canInferFromTrue = false;
+                }
 
                 // TODO: handle NeverIntersects case.
                 if (implied)
