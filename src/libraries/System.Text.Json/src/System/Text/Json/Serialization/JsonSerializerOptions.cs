@@ -75,7 +75,7 @@ namespace System.Text.Json
         private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
-        private string? _indentText;
+        private string _indentText = JsonConstants.DefaultIndent;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -654,7 +654,7 @@ namespace System.Text.Json
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// </exception>
-        public string? IndentText
+        public string IndentText
         {
             get
             {
@@ -662,8 +662,11 @@ namespace System.Text.Json
             }
             set
             {
+                if (value is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
+                }
                 VerifyMutable();
-                // Validation?
                 _indentText = value;
             }
         }

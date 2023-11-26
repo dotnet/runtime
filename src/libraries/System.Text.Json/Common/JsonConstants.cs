@@ -11,5 +11,7 @@ namespace System.Text.Json
 
         public const int StackallocByteThreshold = 256;
         public const int StackallocCharThreshold = StackallocByteThreshold / 2;
+
+        public const string DefaultIndent = "  ";
     }
 }

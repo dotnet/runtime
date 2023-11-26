@@ -375,7 +375,7 @@ namespace System.Text.Json.SourceGeneration
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.IndentText):
-                            indentText = (string?)namedArg.Value.Value;
+                            indentText = (string)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.GenerationMode):

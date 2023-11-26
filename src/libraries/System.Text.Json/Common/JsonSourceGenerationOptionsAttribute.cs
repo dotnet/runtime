@@ -128,7 +128,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.IndentText"/> when set.
         /// </summary>
-        public string? IndentText { get; set; }
+        public string IndentText { get; set; } = JsonConstants.DefaultIndent;
 
         /// <summary>
         /// Specifies the default source generation mode for type declarations that don't set a <see cref="JsonSerializableAttribute.GenerationMode"/>.

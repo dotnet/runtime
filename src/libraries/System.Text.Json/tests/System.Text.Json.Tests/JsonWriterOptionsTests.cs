@@ -29,7 +29,6 @@ namespace System.Text.Json.Tests
             var expectedOption = new JsonWriterOptions
             {
                 Indented = false,
-                IndentText = null,
                 SkipValidation = false,
                 MaxDepth = 0,
             };

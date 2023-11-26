@@ -17,7 +17,7 @@ namespace System.Text.Json
 
         private int _maxDepth;
         private int _optionsMask;
-        private string? _indentText;
+        private string _indentText;
 
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
@@ -48,12 +48,15 @@ namespace System.Text.Json
         /// Defines the text used as indent by the <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled
         /// By default, the JSON is written with 2 white spaces.
         /// </summary>
-        public string? IndentText
+        public string IndentText
         {
-            get => _indentText;
+            get => _indentText ?? JsonConstants.DefaultIndent;
             set
             {
-                // Validation?
+                if (value is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
+                }
                 _indentText = value;
             }
         }

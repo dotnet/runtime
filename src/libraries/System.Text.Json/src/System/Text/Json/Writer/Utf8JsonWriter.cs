@@ -57,6 +57,7 @@ namespace System.Text.Json
         private int _currentDepth;
 
         private Memory<byte>? _indentBytes;
+        private byte? _indentByte;
 
         private JsonWriterOptions _options; // Since JsonWriterOptions is a struct, use a field to avoid a copy for internal code.
 
@@ -82,11 +83,30 @@ namespace System.Text.Json
         /// </summary>
         public JsonWriterOptions Options => _options;
 
-        private int IndentLength => _options.IndentText?.Length ?? JsonConstants.SpacesPerIndent;
+        private int IndentLength => _options.IndentText.Length;
 
         private int Indentation => CurrentDepth * IndentLength;
 
-        private Memory<byte> IndentBytes => _indentBytes ??= _options.IndentText is not null ? Encoding.UTF8.GetBytes(_options.IndentText) : default;
+        private Memory<byte> IndentBytes => _indentBytes ??= Encoding.UTF8.GetBytes(_options.IndentText);
+
+        private byte? IndentByte => _indentByte ??= GetUniqueIndentByte();
+
+        private byte? GetUniqueIndentByte()
+        {
+            byte? indentByte = null;
+            foreach (byte b in IndentBytes.Span)
+            {
+                byte? previous = indentByte;
+                indentByte = b;
+                if (previous is not null && indentByte != previous)
+                {
+                    indentByte = null;
+                    break;
+                }
+            }
+
+            return indentByte;
+        }
 
         internal JsonTokenType TokenType => _tokenType;
 
@@ -1038,11 +1058,11 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteIndentation(Span<byte> buffer, int indentation)
         {
-            if (_options.IndentText is null)
+            if (IndentByte is not null)
             {
-                JsonWriterHelper.WriteIndentation(buffer, indentation);
+                JsonWriterHelper.WriteIndentation(buffer, indentation, (byte)IndentByte);
             }
-            else
+            else if (IndentBytes.Length > 0)
             {
                 JsonWriterHelper.WriteIndentation(buffer, indentation, IndentBytes.Span);
             }

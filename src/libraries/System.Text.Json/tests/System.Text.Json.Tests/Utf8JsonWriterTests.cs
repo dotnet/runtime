@@ -1464,7 +1464,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValue(guid));
             }
 
-            sizeTooSmall += options.Indented ? 2 * (options.IndentText?.Length ?? 2) + 5 : 1;
+            sizeTooSmall += options.Indented ? 2 * options.IndentText.Length + 5 : 1;
             output = new FixedSizedBufferWriter(sizeTooSmall);
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
@@ -1502,7 +1502,7 @@ namespace System.Text.Json.Tests
             }
 
             sizeTooSmall += options.Indented ? 23 : 15;
-            sizeTooSmall += options.Indented ? 2 * (options.IndentText?.Length ?? 2) + 19 : 15;
+            sizeTooSmall += options.Indented ? 2 * options.IndentText.Length + 19 : 15;
             output = new FixedSizedBufferWriter(sizeTooSmall);
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
@@ -1633,7 +1633,7 @@ namespace System.Text.Json.Tests
                     Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteNumberValue(value));
                 }
 
-                sizeTooSmall += options.Indented ? 2 * (options.IndentText?.Length ?? 2) + 5 : 1;
+                sizeTooSmall += options.Indented ? 2 * options.IndentText.Length + 5 : 1;
                 output = new FixedSizedBufferWriter(sizeTooSmall);
                 using (var jsonUtf8 = new Utf8JsonWriter(output, options))
                 {
@@ -3080,7 +3080,7 @@ namespace System.Text.Json.Tests
             Base64.EncodeToUtf8(value, base64StringUtf8, out _, out int bytesWritten);
             string expectedValue = Encoding.UTF8.GetString(base64StringUtf8.AsSpan(0, bytesWritten).ToArray());
 
-            string expectedJson = options.Indented ? $"{{{Environment.NewLine}{options.IndentText ?? "  "}\"foo\": \"{expectedValue}\"{Environment.NewLine}}}" : $"{{\"foo\":\"{expectedValue}\"}}";
+            string expectedJson = options.Indented ? $"{{{Environment.NewLine}{options.IndentText}\"foo\": \"{expectedValue}\"{Environment.NewLine}}}" : $"{{\"foo\":\"{expectedValue}\"}}";
 
             var output = new ArrayBufferWriter<byte>(1024);
 
@@ -3556,14 +3556,14 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(0, jsonUtf8.BytesCommitted);
             if (options.Indented)
-                Assert.Equal(26 + (options.IndentText?.Length ?? 2) + Environment.NewLine.Length + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
+                Assert.Equal(26 + options.IndentText.Length + Environment.NewLine.Length + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
             else
                 Assert.Equal(26, jsonUtf8.BytesPending);
 
             jsonUtf8.Flush();
 
             if (options.Indented)
-                Assert.Equal(26 + (options.IndentText?.Length ?? 2) + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted); // new lines, indentation, white space
+                Assert.Equal(26 + options.IndentText.Length + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted); // new lines, indentation, white space
             else
                 Assert.Equal(26, jsonUtf8.BytesCommitted);
 
@@ -3573,19 +3573,19 @@ namespace System.Text.Json.Tests
             jsonUtf8.WriteEndObject();
 
             if (options.Indented)
-                Assert.Equal(26 + (options.IndentText?.Length ?? 2) + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted);
+                Assert.Equal(26 + options.IndentText.Length + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted);
             else
                 Assert.Equal(26, jsonUtf8.BytesCommitted);
 
             if (options.Indented)
-                Assert.Equal(27 + (options.IndentText?.Length ?? 2) + (2 * Environment.NewLine.Length) + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
+                Assert.Equal(27 + options.IndentText.Length + (2 * Environment.NewLine.Length) + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
             else
                 Assert.Equal(27, jsonUtf8.BytesPending);
 
             jsonUtf8.Flush();
 
             if (options.Indented)
-                Assert.Equal(53 + (2 * (options.IndentText?.Length ?? 2)) + (3 * Environment.NewLine.Length) + (1 * 2), jsonUtf8.BytesCommitted); // new lines, indentation, white space
+                Assert.Equal(53 + (2 * options.IndentText.Length) + (3 * Environment.NewLine.Length) + (1 * 2), jsonUtf8.BytesCommitted); // new lines, indentation, white space
             else
                 Assert.Equal(53, jsonUtf8.BytesCommitted);
 
@@ -3673,14 +3673,14 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(0, jsonUtf8.BytesCommitted);
             if (options.Indented)
-                Assert.Equal(17 + (options.IndentText?.Length ?? 2) + Environment.NewLine.Length + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
+                Assert.Equal(17 + options.IndentText.Length + Environment.NewLine.Length + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
             else
                 Assert.Equal(17, jsonUtf8.BytesPending);
 
             jsonUtf8.Flush();
 
             if (options.Indented)
-                Assert.Equal(17 + (options.IndentText?.Length ?? 2) + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted); // new lines, indentation, white space
+                Assert.Equal(17 + options.IndentText.Length + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted); // new lines, indentation, white space
             else
                 Assert.Equal(17, jsonUtf8.BytesCommitted);
 
@@ -3690,19 +3690,19 @@ namespace System.Text.Json.Tests
             jsonUtf8.WriteEndObject();
 
             if (options.Indented)
-                Assert.Equal(17 + (options.IndentText?.Length ?? 2) + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted);
+                Assert.Equal(17 + options.IndentText.Length + Environment.NewLine.Length + 1, jsonUtf8.BytesCommitted);
             else
                 Assert.Equal(17, jsonUtf8.BytesCommitted);
 
             if (options.Indented)
-                Assert.Equal(18 + (options.IndentText?.Length ?? 2) + (2 * Environment.NewLine.Length) + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
+                Assert.Equal(18 + options.IndentText.Length + (2 * Environment.NewLine.Length) + 1, jsonUtf8.BytesPending); // new lines, indentation, white space
             else
                 Assert.Equal(18, jsonUtf8.BytesPending);
 
             jsonUtf8.Flush();
 
             if (options.Indented)
-                Assert.Equal(35 + (2 * (options.IndentText?.Length ?? 2)) + (3 * Environment.NewLine.Length) + (1 * 2), jsonUtf8.BytesCommitted); // new lines, indentation, white space
+                Assert.Equal(35 + (2 * options.IndentText.Length) + (3 * Environment.NewLine.Length) + (1 * 2), jsonUtf8.BytesCommitted); // new lines, indentation, white space
             else
                 Assert.Equal(35, jsonUtf8.BytesCommitted);
 
@@ -7583,9 +7583,9 @@ namespace System.Text.Json.Tests
             }
         }
 
-        private static string HandleIndent(string? text, string? indentText)
+        private static string HandleIndent(string text, string indentText)
         {
-            return text?.Replace("  ", indentText ?? "  ");
+            return text.Replace("  ", indentText);
         }
 
         public static IEnumerable<object[]> JsonEncodedTextStrings
