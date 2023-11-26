@@ -4005,11 +4005,17 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
                 range->startIncl = bound;
                 range->endIncl   = bound;
                 break;
+            case GT_NE:
+                // special cased below (we can't represent it as a range)
+                break;
             default:
                 unreached();
         }
         return false; // doesn't overflow
     };
+
+    // oper1 is never GT_NE or GT_EQ, see GetConstantBoundInfo
+    assert((oper1 != GT_NE) && (oper1 != GT_EQ));
 
     const bool overflows1 = setRange(oper1, bound1, &range1);
     const bool overflows2 = setRange(oper2, bound2, &range2);
@@ -4017,6 +4023,22 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
     {
         // Conservatively give up if we faced an overflow during normalization of ranges.
         // to be always inclusive.
+        return Unknown;
+    }
+
+    assert(oper1 != GT_NE); // oper1 is coming from an assertion, so it can't be GT_NE/GT_EQ
+    if (oper2 == GT_NE)
+    {
+        // "x > 100 && x != 10", the 2nd range check is redundant
+        if ((bound2 < range1.startIncl) || (bound2 > range1.endIncl))
+        {
+            return AlwaysIncluded;
+        }
+        if (range1.startIncl == bound2 && range1.endIncl == bound2)
+        {
+            // x == 100 && x != 100
+            return NeverIntersects;
+        }
         return Unknown;
     }
 
@@ -4059,7 +4081,7 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
 //
 GenTree* Compiler::optAssertionPropGlobal_ConstRangeCheck(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT, GT_EQ) && tree->gtGetOp2()->IsCnsIntOrI());
+    assert(tree->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT) && tree->gtGetOp2()->IsCnsIntOrI());
     if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
     {
         return nullptr;
@@ -4200,7 +4222,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    if (op2->IsCnsIntOrI() && tree->OperIs(GT_EQ, GT_LT, GT_LE, GT_GE, GT_GT))
+    if (op2->IsCnsIntOrI() && tree->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
     {
         newTree = optAssertionPropGlobal_ConstRangeCheck(assertions, tree, stmt);
         if (newTree != nullptr)
