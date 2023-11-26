@@ -87,27 +87,6 @@ namespace System.Text.Json
 
         private int Indentation => CurrentDepth * IndentLength;
 
-        private Memory<byte> IndentBytes => _indentBytes ??= Encoding.UTF8.GetBytes(_options.IndentText);
-
-        private byte? IndentByte => _indentByte ??= GetUniqueIndentByte();
-
-        private byte? GetUniqueIndentByte()
-        {
-            byte? indentByte = null;
-            foreach (byte b in IndentBytes.Span)
-            {
-                byte? previous = indentByte;
-                indentByte = b;
-                if (previous is not null && indentByte != previous)
-                {
-                    indentByte = null;
-                    break;
-                }
-            }
-
-            return indentByte;
-        }
-
         internal JsonTokenType TokenType => _tokenType;
 
         /// <summary>
@@ -1058,13 +1037,46 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteIndentation(Span<byte> buffer, int indentation)
         {
-            if (IndentByte is not null)
+            EnsureIndentation();
+
+            if (_indentByte is not null)
             {
-                JsonWriterHelper.WriteIndentation(buffer, indentation, (byte)IndentByte);
+                JsonWriterHelper.WriteIndentation(buffer, indentation, (byte)_indentByte);
             }
-            else if (IndentBytes.Length > 0)
+            else if (_indentBytes is { Length: > 0 } indentBytes)
             {
-                JsonWriterHelper.WriteIndentation(buffer, indentation, IndentBytes.Span);
+                JsonWriterHelper.WriteIndentation(buffer, indentation, indentBytes.Span);
+            }
+        }
+
+        private void EnsureIndentation()
+        {
+            Debug.Assert(_options.Indented);
+
+            if (_indentByte is not null || _indentBytes is not null) return;
+
+            if (_options.IndentText is JsonConstants.DefaultIndent)
+            {
+                _indentByte = JsonConstants.Space;
+                return;
+            }
+
+            byte[] indentBytes = Encoding.UTF8.GetBytes(_options.IndentText);
+
+            foreach (byte b in indentBytes)
+            {
+                byte? previous = _indentByte;
+                _indentByte = b;
+                if (previous is not null && _indentByte != previous)
+                {
+                    _indentByte = null;
+                    break;
+                }
+            }
+
+            if (_indentByte is null)
+            {
+                _indentBytes = indentBytes;
             }
         }
 
