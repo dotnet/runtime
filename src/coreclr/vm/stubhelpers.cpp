@@ -373,48 +373,64 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall:
 }
 
 #include <optsmallperfcritical.h>
-extern "C" IUnknown* QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags)
+FCIMPL4(IUnknown*, StubHelpers::InterfaceMarshaler__ConvertToNative, Object* pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags)
 {
-    QCALL_CONTRACT;
+    FCALL_CONTRACT;
+
+    if (NULL == pObjUNSAFE)
+    {
+        return NULL;
+    }
 
     IUnknown *pIntf = NULL;
-    BEGIN_QCALL;
+    OBJECTREF pObj = ObjectToOBJECTREF(pObjUNSAFE);
+
+    // This is only called in IL stubs which are in CER, so we don't need to worry about ThreadAbort
+    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_NO_THREAD_ABORT, pObj);
 
     // We're going to be making some COM calls, better initialize COM.
     EnsureComStarted();
-
-    GCX_COOP();
-
-    OBJECTREF pObj = pObjUNSAFE.Get();
-    GCPROTECT_BEGIN(pObj);
 
     pIntf = MarshalObjectToInterface(&pObj, pItfMT, pClsMT, dwFlags);
 
-    GCPROTECT_END();
-
-    END_QCALL;
+    // No exception will be thrown here (including thread abort as it is delayed in IL stubs)
+    HELPER_METHOD_FRAME_END();
 
     return pIntf;
 }
+FCIMPLEND
 
-extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags, QCall::ObjectHandleOnStack retObject)
+FCIMPL4(Object*, StubHelpers::InterfaceMarshaler__ConvertToManaged, IUnknown **ppUnk, MethodTable *pItfMT, MethodTable *pClsMT, DWORD dwFlags)
+{
+    FCALL_CONTRACT;
+
+    if (NULL == *ppUnk)
+    {
+        return NULL;
+    }
+
+    OBJECTREF pObj = NULL;
+    HELPER_METHOD_FRAME_BEGIN_RET_1(pObj);
+
+    // We're going to be making some COM calls, better initialize COM.
+    EnsureComStarted();
+
+    UnmarshalObjectFromInterface(&pObj, ppUnk, pItfMT, pClsMT, dwFlags);
+
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(pObj);
+}
+FCIMPLEND
+
+extern "C" void QCALLTYPE InterfaceMarshaler__ClearNative(IUnknown * pUnk)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    // We're going to be making some COM calls, better initialize COM.
-    EnsureComStarted();
-
-    GCX_COOP();
-
-    OBJECTREF pObj = NULL;
-    GCPROTECT_BEGIN(pObj);
-
-    UnmarshalObjectFromInterface(&pObj, ppUnk, pItfMT, pClsMT, dwFlags);
-    retObject.Set(pObj);
-
-    GCPROTECT_END();
+    ULONG cbRef = SafeReleasePreemp(pUnk);
+    LogInteropRelease(pUnk, cbRef, "InterfaceMarshalerBase::ClearNative: In/Out release");
 
     END_QCALL;
 }
