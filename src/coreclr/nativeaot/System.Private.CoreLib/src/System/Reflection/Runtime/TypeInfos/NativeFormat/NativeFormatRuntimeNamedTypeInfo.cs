@@ -77,12 +77,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     Handle guidStringArgumentHandle = fahEnumerator.Current;
                     if (fahEnumerator.MoveNext())
                         continue;
-                    if (!(guidStringArgumentHandle.ParseConstantValue(_reader) is string guidString))
+                    if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
                         continue;
-                    return new Guid(guidString);
+                    return new Guid(guidStringArgumentHandle.ToConstantStringValueHandle(_reader).GetString(_reader));
                 }
             }
-
             return null;
         }
 

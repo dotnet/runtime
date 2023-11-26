@@ -3000,8 +3000,8 @@ public:
     union {
         struct // if emitSimpleStkUsed==true
         {
-#define BITS_IN_BYTE (8)
-#define MAX_SIMPLE_STK_DEPTH (BITS_IN_BYTE * sizeof(unsigned))
+
+#define MAX_SIMPLE_STK_DEPTH (BITS_PER_BYTE * sizeof(unsigned))
 
             unsigned emitSimpleStkMask;      // bit per pushed dword (if it fits. Lowest bit <==> last pushed arg)
             unsigned emitSimpleByrefStkMask; // byref qualifier for emitSimpleStkMask

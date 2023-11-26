@@ -3240,6 +3240,71 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 }
 
 //------------------------------------------------------------------------
+// fgDebugCheckTypes: Validate node types used in the given tree
+//
+// Arguments:
+//    tree - the tree to (recursively) check types for
+//
+void Compiler::fgDebugCheckTypes(GenTree* tree)
+{
+    struct NodeTypeValidator : GenTreeVisitor<NodeTypeValidator>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        NodeTypeValidator(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user) const
+        {
+            GenTree* node = *use;
+
+            // Validate types of nodes in the IR:
+            //
+            // * TYP_ULONG and TYP_UINT are not legal.
+            // * Small types are only legal for the following nodes:
+            //    * All kinds of indirections including GT_NULLCHECK
+            //    * All kinds of locals
+            //    * GT_COMMA wrapped around any of the above.
+            //
+            if (node->TypeIs(TYP_ULONG, TYP_UINT))
+            {
+                m_compiler->gtDispTree(node);
+                assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+            }
+
+            if (varTypeIsSmall(node))
+            {
+                if (node->OperIs(GT_COMMA))
+                {
+                    // TODO: it's only allowed if its underlying effective node is also a small type.
+                    return WALK_CONTINUE;
+                }
+
+                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+                {
+                    return WALK_CONTINUE;
+                }
+
+                m_compiler->gtDispTree(node);
+                assert(!"Unexpected small type in IR");
+            }
+
+            // TODO: validate types in GT_CAST nodes.
+            // Validate mismatched types in binopt's arguments, etc.
+            //
+            return WALK_CONTINUE;
+        }
+    };
+
+    NodeTypeValidator walker(this);
+    walker.WalkTree(&tree, nullptr);
+}
+
+//------------------------------------------------------------------------
 // fgDebugCheckFlags: Validate various invariants related to the propagation
 //                    and setting of tree, block, and method flags
 //
@@ -3846,6 +3911,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         fgDebugCheckFlags(stmt->GetRootNode(), block);
+        fgDebugCheckTypes(stmt->GetRootNode());
 
         // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
         // done by fgMorphTree()
