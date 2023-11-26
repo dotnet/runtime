@@ -810,7 +810,7 @@ unsigned Compiler::fgDfsReversePostorder()
 
     // If we didn't end up visiting everything, try the EH roots.
     //
-    if (preorderIndex != fgBBcount + 1)
+    if ((preorderIndex != fgBBcount + 1) && !compIsForInlining())
     {
         for (EHblkDsc* const HBtab : EHClauses(this))
         {
