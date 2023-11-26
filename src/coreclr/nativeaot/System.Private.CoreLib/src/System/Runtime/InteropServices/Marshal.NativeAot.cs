@@ -100,12 +100,12 @@ namespace System.Runtime.InteropServices
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            ArgumentNullException.ThrowIfNull(structuretype, "structureType");
+            ArgumentNullException.ThrowIfNull(structuretype, nameof(structuretype));
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
             if (structureTypeHandle.IsGenericType())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, "structure");
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
             if (structureTypeHandle.IsEnum() ||
                 structureTypeHandle.IsInterface() ||
@@ -137,11 +137,6 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(structure);
             ArgumentNullException.ThrowIfNull(ptr);
 
-            if (fDeleteOld)
-            {
-                DestroyStructure(ptr, structure.GetType());
-            }
-
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 
             if (structureTypeHandle.IsGenericType())
@@ -160,6 +155,11 @@ namespace System.Runtime.InteropServices
             else
             {
                 marshalStub = RuntimeInteropData.GetStructMarshalStub(structureTypeHandle);
+            }
+
+            if (fDeleteOld)
+            {
+                DestroyStructure(ptr, structure.GetType());
             }
 
             if (marshalStub != IntPtr.Zero)

@@ -243,9 +243,15 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(ptr);
             ArgumentNullException.ThrowIfNull(structure);
 
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(structure);
+
+            if (pMT->HasInstantiation)
+                throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
+
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub;
             nuint size;
-            delegate* <ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub =
-                TryGetStructMarshalStub((IntPtr)RuntimeHelpers.GetMethodTable(structure), &size);
+            if (!TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size))
+                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
 
             if (structMarshalStub != null)
             {
@@ -270,13 +276,12 @@ namespace System.Runtime.InteropServices
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(structure);
 
             if (!allowValueClasses && pMT->IsValueType)
-            {
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
-            }
 
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub;
             nuint size;
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub =
-                TryGetStructMarshalStub((IntPtr)pMT, &size);
+            if (!TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size))
+                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
 
             if (structMarshalStub != null)
             {
@@ -284,13 +289,13 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+                Buffer.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
             }
         }
 
         /// <summary>
         /// Frees all substructures pointed to by the native memory block.
-        /// "structuretype" is used to provide layout information.
+        /// nameof(structuretype) is used to provide layout information.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -302,9 +307,14 @@ namespace System.Runtime.InteropServices
             if (structuretype is not RuntimeType rt)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(structuretype));
 
+            if (rt.IsGenericType)
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
+
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub;
             nuint size;
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void> structMarshalStub =
-                TryGetStructMarshalStub(rt.GetUnderlyingNativeHandle(), &size);
+            if (!TryGetStructMarshalStub(rt.GetUnderlyingNativeHandle(), &structMarshalStub, &size))
+                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
+
             GC.KeepAlive(rt);
 
             if (structMarshalStub != null)
@@ -314,7 +324,8 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_TryGetStructMarshalStub")]
-        private static unsafe partial delegate* <ref byte, byte*, int, ref CleanupWorkListElement, void> TryGetStructMarshalStub(IntPtr th, nuint* size);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static unsafe partial bool TryGetStructMarshalStub(IntPtr th, delegate*<ref byte, byte*, int, ref CleanupWorkListElement, void>* structMarshalStub, nuint* size);
 
         // Note: Callers are required to keep obj alive
         internal static unsafe bool IsPinnable(object? obj)

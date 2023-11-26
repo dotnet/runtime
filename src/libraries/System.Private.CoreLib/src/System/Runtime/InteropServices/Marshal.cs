@@ -596,7 +596,7 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(ptr);
 
             object boxedStructure = structure;
-            ArgumentNullException.ThrowIfNull(boxedStructure);
+            ArgumentNullException.ThrowIfNull(boxedStructure, nameof(structure));
 
             PtrToStructureHelper(ptr, boxedStructure, allowValueClasses: false);
         }

@@ -14,8 +14,6 @@
 
 #include "fcall.h"
 
-#define MAX_UTF8_CHAR_SIZE 3
-
 class MarshalNative
 {
 public:
@@ -52,7 +50,7 @@ public:
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
 
-extern "C" PCODE QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, SIZE_T* pSize);
+extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize);
 extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable);
 
 extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type);

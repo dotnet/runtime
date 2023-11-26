@@ -91,44 +91,52 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-extern "C" PCODE QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, SIZE_T* pSize)
+extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize)
 {
     QCALL_CONTRACT;
 
-    PCODE pCode = NULL;
+    BOOL ret = FALSE;
 
     BEGIN_QCALL;
 
     TypeHandle th = TypeHandle::FromPtr(enregisteredTypeHandle);
 
-    if (th.HasInstantiation())
-        COMPlusThrowArgumentException(W("structure"), W("Argument_NeedNonGenericObject"));
-
     if (th.IsBlittable())
     {
+        *pStructMarshalStub = NULL;
         *pSize = th.GetMethodTable()->GetNativeSize();
+        ret = TRUE;
     }
     else if (th.HasLayout())
     {
         MethodTable* pMT = th.GetMethodTable();
+        MethodDesc* structMarshalStub = NULL;
+
         EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
+        if (pEEMarshalingData != NULL)
+        {
+            GCX_COOP();
+            structMarshalStub = pEEMarshalingData->LookupStructILStubSpeculative(pMT);
+        }
 
         if (structMarshalStub == NULL)
         {
             structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
         }
 
-        pCode = structMarshalStub->GetSingleCallableAddrOfCode();
+        *pStructMarshalStub = structMarshalStub->GetSingleCallableAddrOfCode();
+        *pSize = 0;
+        ret = TRUE;
     }
     else
     {
-        COMPlusThrowArgumentException(W("structure"), W("Argument_MustHaveLayoutOrBeBlittable"));
+        *pStructMarshalStub = NULL;
+        *pSize = 0;
     }
 
     END_QCALL;
 
-    return pCode;
+    return ret;
 }
 
 /************************************************************************

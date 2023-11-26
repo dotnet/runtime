@@ -538,7 +538,7 @@ namespace System.StubHelpers
         internal static IntPtr ConvertToNative(object? objSrc, IntPtr itfMT, IntPtr classMT, int flags)
         {
             if (objSrc == null)
-                return default;
+                return IntPtr.Zero;
 
             return ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), itfMT, classMT, flags);
         }
