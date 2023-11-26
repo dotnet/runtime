@@ -426,12 +426,12 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
                 bool canInferFromTrue = true;
                 bool implied = IsRange2ImpliedByRange1(domOper, domCns, treeOper, treeCns);
-                if (!implied)
-                {
-                    // Reverse the dominating compare and try again, if it succeeds, we can infer from "false".
-                    implied = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
-                    canInferFromTrue = false;
-                }
+                //if (!implied)
+                //{
+                //    // Reverse the dominating compare and try again, if it succeeds, we can infer from "false".
+                //    implied = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                //    canInferFromTrue = false;
+                //}
 
                 // TODO: handle NeverIntersects case.
                 if (implied)
