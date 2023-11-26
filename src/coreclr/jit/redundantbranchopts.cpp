@@ -152,6 +152,142 @@ struct RelopImplicationRule
     bool   reverse;
 };
 
+enum ImpliedRangeCheckStatus
+{
+    Unknown,
+    NeverIntersects,
+    AlwaysIncluded
+};
+
+//------------------------------------------------------------------------
+// IsRange2ImpliedByRange1: Given two range checks, determine if the 2nd one is redundant or not.
+//   It is assumed, that the both range checks are for the same X on LHS of the comparison operators.
+//   e.g. "x > 100 && x > 10" -> AlwaysIncluded
+//
+// Arguments:
+//   oper1  - the first range check operator        [X *oper1*  bound1 ]
+//   bound1 - the first range check constant bound  [X  oper1  *bound1*]
+//   oper2  - the second range check operator       [X *oper2*  bound2 ]
+//   bound2 - the second range check constant bound [X  oper2  *bound2*]
+//
+// Returns:
+//   "AlwaysIncluded" means that the 2nd range check is always "true"
+//   "NeverIntersects" means that the 2nd range check is never "true"
+//   "Unknown" means that we can't determine if the 2nd range check is redundant or not.
+//
+ImpliedRangeCheckStatus IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
+{
+    struct IntegralRange
+    {
+        ssize_t startIncl;
+        ssize_t endIncl;
+    };
+
+    IntegralRange range1 = {INTPTR_MIN, INTPTR_MAX};
+    IntegralRange range2 = {INTPTR_MIN, INTPTR_MAX};
+
+    // Update ranges based on inputs
+    auto setRange = [](genTreeOps oper, ssize_t bound, IntegralRange* range) -> bool {
+        switch (oper)
+        {
+            case GT_LT:
+                // x < cns -> [INTPTR_MIN, cns - 1]
+                if (bound == INTPTR_MIN)
+                {
+                    // overflows
+                    return false;
+                }
+                range->endIncl = bound - 1;
+                return true;
+
+            case GT_LE:
+                // x <= cns -> [INTPTR_MIN, cns]
+                range->endIncl = bound;
+                return true;
+
+            case GT_GT:
+                // x > cns -> [cns + 1, INTPTR_MAX]
+                if (bound == INTPTR_MAX)
+                {
+                    // overflows
+                    return false;
+                }
+                range->startIncl = bound + 1;
+                return true;
+
+            case GT_GE:
+                // x >= cns -> [cns, INTPTR_MAX]
+                range->startIncl = bound;
+                return true;
+
+            case GT_EQ:
+                // x == cns -> [cns, cns]
+                range->startIncl = bound;
+                range->endIncl   = bound;
+                return true;
+
+            case GT_NE:
+                // special cased below (we can't represent it as a range)
+                return true;
+
+            default:
+                // unsupported operator
+                return false;
+        }
+    };
+
+    const bool success1 = setRange(oper1, bound1, &range1);
+    const bool success2 = setRange(oper2, bound2, &range2);
+    if (!success1 || !success2)
+    {
+        return Unknown;
+    }
+
+    // NE is special since we can't represent it as a range, let's only handle it if it's the 2nd operand
+    // for simplicity (driven by jit-diffs).
+    if (oper1 == GT_NE)
+    {
+        return Unknown;
+    }
+    if (oper2 == GT_NE)
+    {
+        if ((bound2 < range1.startIncl) || (bound2 > range1.endIncl))
+        {
+            // "x > 100 && x != 10", the 2nd range check is always true
+            return AlwaysIncluded;
+        }
+        if ((range1.startIncl == bound2) && (range1.endIncl == bound2))
+        {
+            // "x == 100 && x != 100", the 2nd range check is never true
+            return NeverIntersects;
+        }
+        return Unknown;
+    }
+
+    // If ranges never intersect, then the 2nd range is never "true"
+    if ((range1.startIncl > range2.endIncl) || (range2.startIncl > range1.endIncl))
+    {
+        // E.g.:
+        //
+        // range1: [100     .. INT_MAX]
+        // range2: [INT_MIN .. 10]
+        return NeverIntersects;
+    }
+
+    // Check if range1 is fully included into range2
+    if ((range2.startIncl <= range1.startIncl) && (range1.endIncl <= range2.endIncl))
+    {
+        // E.g.:
+        //
+        // range1: [100 .. INT_MAX]
+        // range2: [10  .. INT_MAX]
+        return AlwaysIncluded;
+    }
+
+    // Ranges intersect, but we can't determine if the 2nd range is redundant or not.
+    return Unknown;
+}
+
 //------------------------------------------------------------------------
 // s_implicationRules: rule table for unrelated relops
 //
@@ -336,6 +472,38 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                             rii->canInferFromTrue ? "true" : "false", ValueNumStore::VNFuncName(domFunc));
                     return;
                 }
+            }
+        }
+        // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
+        else if ((treeApp.m_args[0] == domApp.m_args[0]) && vnStore->IsVNConstant(treeApp.m_args[1]) &&
+                 vnStore->IsVNConstant(domApp.m_args[1]) && varTypeIsIntOrI(vnStore->TypeOfVN(treeApp.m_args[1])) &&
+                 varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[1])))
+        {
+            const ssize_t    domCns   = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
+            const ssize_t    treeCns  = vnStore->CoercedConstantValue<ssize_t>(treeApp.m_args[1]);
+
+            // We currently don't handle VNF_relop_UN funcs here, they'll be ignored.
+            const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
+            const genTreeOps domOper  = static_cast<genTreeOps>(domApp.m_func);
+
+            bool                    canInferFromTrue = true;
+            ImpliedRangeCheckStatus result           = IsRange2ImpliedByRange1(domOper, domCns, treeOper, treeCns);
+            if ((result == Unknown) && GenTree::OperIsCompare(domOper))
+            {
+                // Reverse the dominating compare and try again, if it succeeds, we can infer from "false".
+                result           = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                canInferFromTrue = false;
+            }
+
+            // TODO: handle NeverIntersects case.
+            if (result == AlwaysIncluded)
+            {
+                rii->canInfer          = true;
+                rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+                rii->canInferFromTrue  = canInferFromTrue;
+                rii->canInferFromFalse = !canInferFromTrue;
+                rii->reverseSense      = false;
+                return;
             }
         }
     }
