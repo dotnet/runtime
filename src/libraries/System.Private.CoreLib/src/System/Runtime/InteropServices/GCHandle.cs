@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
             if (type == GCHandleType.Pinned)
             {
                 // Record if the handle is pinned.
-                handle = handle | 1;
+                handle |= 1;
             }
 
             _handle = handle;

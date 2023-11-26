@@ -5409,7 +5409,7 @@ ptr_to_structure (gconstpointer src, MonoObjectHandle dst, MonoError *error)
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureInternal (gconstpointer src, MonoObjectHandle dst, MonoBoolean allow_vtypes, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureHelper (gconstpointer src, MonoObjectHandle dst, MonoBoolean allow_vtypes, MonoError *error)
 {
 	MonoType *t;
 	MonoClass *klass;

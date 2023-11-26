@@ -63,12 +63,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void PtrToStructureInternal(IntPtr ptr, object structure, bool allowValueClasses);
-
-        private static void PtrToStructureHelper(IntPtr ptr, object? structure, bool allowValueClasses)
-        {
-            PtrToStructureInternal(ptr, structure, allowValueClasses);
-        }
+        private static extern void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetDelegateForFunctionPointerInternal(QCallTypeHandle t, IntPtr ptr, ObjectHandleOnStack res);
