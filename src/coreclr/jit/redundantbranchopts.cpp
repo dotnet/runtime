@@ -183,16 +183,16 @@ ImpliedRangeCheckStatus IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1
         ssize_t endIncl;
     };
 
-    IntegralRange range1 = {INTPTR_MIN, INTPTR_MAX};
-    IntegralRange range2 = {INTPTR_MIN, INTPTR_MAX};
+    IntegralRange range1 = {INT_PTR_MIN, INT_PTR_MAX};
+    IntegralRange range2 = {INT_PTR_MIN, INT_PTR_MAX};
 
     // Update ranges based on inputs
     auto setRange = [](genTreeOps oper, ssize_t bound, IntegralRange* range) -> bool {
         switch (oper)
         {
             case GT_LT:
-                // x < cns -> [INTPTR_MIN, cns - 1]
-                if (bound == INTPTR_MIN)
+                // x < cns -> [INT_PTR_MIN, cns - 1]
+                if (bound == INT_PTR_MIN)
                 {
                     // overflows
                     return false;
@@ -201,13 +201,13 @@ ImpliedRangeCheckStatus IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1
                 return true;
 
             case GT_LE:
-                // x <= cns -> [INTPTR_MIN, cns]
+                // x <= cns -> [INT_PTR_MIN, cns]
                 range->endIncl = bound;
                 return true;
 
             case GT_GT:
-                // x > cns -> [cns + 1, INTPTR_MAX]
-                if (bound == INTPTR_MAX)
+                // x > cns -> [cns + 1, INT_PTR_MAX]
+                if (bound == INT_PTR_MAX)
                 {
                     // overflows
                     return false;
@@ -216,7 +216,7 @@ ImpliedRangeCheckStatus IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1
                 return true;
 
             case GT_GE:
-                // x >= cns -> [cns, INTPTR_MAX]
+                // x >= cns -> [cns, INT_PTR_MAX]
                 range->startIncl = bound;
                 return true;
 
