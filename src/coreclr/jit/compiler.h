@@ -2080,9 +2080,9 @@ public:
         return m_loops.size();
     }
 
-    bool HasNonNaturalLoopCycles()
+    bool HaveNonNaturalLoopCycles()
     {
-        return m_improperLoopHeaders> 0;
+        return m_improperLoopHeaders > 0;
     }
 
     FlowGraphNaturalLoop* GetLoopFromHeader(BasicBlock* header);
