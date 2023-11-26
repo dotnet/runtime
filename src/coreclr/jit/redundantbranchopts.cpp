@@ -160,8 +160,8 @@ bool IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2,
         ssize_t endIncl;
     };
 
-    IntegralRange range1 = { SSIZE_T_MIN, SSIZE_T_MAX};
-    IntegralRange range2 = { SSIZE_T_MIN, SSIZE_T_MAX };
+    IntegralRange range1 = {SSIZE_T_MIN, SSIZE_T_MAX};
+    IntegralRange range2 = {SSIZE_T_MIN, SSIZE_T_MAX};
 
     // Update ranges based on inputs
     auto setRange = [](genTreeOps oper, ssize_t bound, IntegralRange* range) -> bool {
@@ -377,8 +377,9 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     //
     VNFunc const domFunc = domApp.m_func;
     VNFuncApp    treeApp;
-    bool domFuncIsUnsignedCmp = false;
-    if (inRange && ValueNumStore::VNFuncIsComparison(domFunc, &domFuncIsUnsignedCmp) && vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
+    bool         domFuncIsUnsignedCmp = false;
+    if (inRange && ValueNumStore::VNFuncIsComparison(domFunc, &domFuncIsUnsignedCmp) &&
+        vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
     {
         if (((treeApp.m_args[0] == domApp.m_args[0]) && (treeApp.m_args[1] == domApp.m_args[1])) ||
             ((treeApp.m_args[0] == domApp.m_args[1]) && (treeApp.m_args[1] == domApp.m_args[0])))
@@ -417,16 +418,17 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         {
             // We currently don't handle VNF_relop_UN funcs here
             bool treeFuncIsUnsignedCmp = false;
-            if (!domFuncIsUnsignedCmp && ValueNumStore::VNFuncIsComparison(treeApp.m_func, &treeFuncIsUnsignedCmp) && !treeFuncIsUnsignedCmp)
+            if (!domFuncIsUnsignedCmp && ValueNumStore::VNFuncIsComparison(treeApp.m_func, &treeFuncIsUnsignedCmp) &&
+                !treeFuncIsUnsignedCmp)
             {
-                const ssize_t domCns = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
-                const ssize_t treeCns = vnStore->CoercedConstantValue<ssize_t>(treeApp.m_args[1]);
+                const ssize_t    domCns   = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
+                const ssize_t    treeCns  = vnStore->CoercedConstantValue<ssize_t>(treeApp.m_args[1]);
                 const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
-                const genTreeOps domOper = static_cast<genTreeOps>(domApp.m_func);
+                const genTreeOps domOper  = static_cast<genTreeOps>(domApp.m_func);
 
                 bool canInferFromTrue = true;
-                bool implied = IsRange2ImpliedByRange1(domOper, domCns, treeOper, treeCns);
-                //if (!implied)
+                bool implied          = IsRange2ImpliedByRange1(domOper, domCns, treeOper, treeCns);
+                // if (!implied)
                 //{
                 //    // Reverse the dominating compare and try again, if it succeeds, we can infer from "false".
                 //    implied = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
@@ -436,11 +438,11 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 // TODO: handle NeverIntersects case.
                 if (implied)
                 {
-                    rii->canInfer = true;
-                    rii->vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    rii->canInferFromTrue = canInferFromTrue;
+                    rii->canInfer          = true;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+                    rii->canInferFromTrue  = canInferFromTrue;
                     rii->canInferFromFalse = !canInferFromTrue;
-                    rii->reverseSense = false;
+                    rii->reverseSense      = false;
                     return;
                 }
             }
