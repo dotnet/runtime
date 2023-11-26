@@ -66,5 +66,12 @@ namespace System.Text.Json.Tests
             var options = new JsonWriterOptions();
             Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxDepth = maxDepth);
         }
+
+        [Fact]
+        public static void JsonWriterOptions_IndentText_InvalidParameters()
+        {
+            var options = new JsonWriterOptions();
+            Assert.Throws<ArgumentNullException>(() => options.IndentText = null);
+        }
     }
 }

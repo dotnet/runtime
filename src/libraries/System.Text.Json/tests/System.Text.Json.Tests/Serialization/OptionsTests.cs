@@ -331,6 +331,51 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void IndentText_WhenNull_ThrowsArgumentNullException()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentNullException>(() => options.IndentText = null);
+        }
+
+        [Fact]
+        public static void IndentText()
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            // Verify default value.
+            var defaultIndent = "  ";
+            string json = JsonSerializer.Serialize(obj);
+            Assert.DoesNotContain(defaultIndent, json);
+
+            // Verify default value on options.
+            var options = new JsonSerializerOptions();
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(defaultIndent, json);
+
+            // Enable default indentation.
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(defaultIndent, json);
+
+            // Set custom indentText without enabling indentation
+            var tab = "\t";
+            Assert.DoesNotContain(tab, json);
+            options = new JsonSerializerOptions();
+            options.IndentText = tab;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(tab, json);
+
+            // Set custom indentText with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.IndentText = tab;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(tab, json);
+        }
+
+        [Fact]
         public static void ExtensionDataUsesReaderOptions()
         {
             // We just verify trailing commas.
