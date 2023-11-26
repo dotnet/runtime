@@ -156,6 +156,7 @@ namespace ILCompiler.ObjectWriter
             Encoding.UTF8.GetBytes(text, span);
             span[reservedBytes - 1] = 0;
             _stream.Write(span);
+            ArrayPool<byte>.Shared.Return(buffer);
             _stringToOffset[text] = offset;
             return offset;
         }

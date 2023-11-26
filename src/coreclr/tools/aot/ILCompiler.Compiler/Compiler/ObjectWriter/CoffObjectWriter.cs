@@ -528,15 +528,6 @@ namespace ILCompiler.ObjectWriter
 
             coffHeader.PointerToSymbolTable = dataOffset;
 
-            // Optimize the string table
-            foreach (var coffSymbolRecord in _symbols)
-            {
-                if (coffSymbolRecord is CoffSymbol coffSymbol)
-                {
-                    stringTable.ReserveString(coffSymbol.Name);
-                }
-            }
-
             // Write COFF header
             coffHeader.Write(outputFileStream);
 
@@ -579,6 +570,15 @@ namespace ILCompiler.ObjectWriter
                     {
                         relocation.Write(outputFileStream);
                     }
+                }
+            }
+
+            // Optimize the string table
+            foreach (var coffSymbolRecord in _symbols)
+            {
+                if (coffSymbolRecord is CoffSymbol coffSymbol)
+                {
+                    stringTable.ReserveString(coffSymbol.Name);
                 }
             }
 
