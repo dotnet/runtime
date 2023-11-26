@@ -4607,15 +4607,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                                               // exit) returns to this block
                 fgAddRefPred(exitBlock, step);
 
-#if defined(TARGET_ARM)
-                if (stepType == ST_FinallyReturn)
-                {
-                    assert(step->KindIs(BBJ_ALWAYS));
-                    // Mark the target of a finally return
-                    step->GetJumpDest()->bbFlags |= BBF_FINALLY_TARGET;
-                }
-#endif // defined(TARGET_ARM)
-
                 /* The new block will inherit this block's weight */
                 exitBlock->inheritWeight(block);
                 exitBlock->bbFlags |= BBF_IMPORTED;
@@ -4771,15 +4762,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                                               // finally in the chain)
                 fgAddRefPred(callBlock, step);
 
-#if defined(TARGET_ARM)
-                if (stepType == ST_FinallyReturn)
-                {
-                    assert(step->KindIs(BBJ_ALWAYS));
-                    // Mark the target of a finally return
-                    step->GetJumpDest()->bbFlags |= BBF_FINALLY_TARGET;
-                }
-#endif // defined(TARGET_ARM)
-
                 /* The new block will inherit this block's weight */
                 callBlock->inheritWeight(block);
                 callBlock->bbFlags |= BBF_IMPORTED;
@@ -4882,14 +4864,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                 step->SetJumpDest(catchStep);
                 fgAddRefPred(catchStep, step);
 
-#if defined(TARGET_ARM)
-                if (stepType == ST_FinallyReturn)
-                {
-                    // Mark the target of a finally return
-                    step->GetJumpDest()->bbFlags |= BBF_FINALLY_TARGET;
-                }
-#endif // defined(TARGET_ARM)
-
                 /* The new block will inherit this block's weight */
                 catchStep->inheritWeight(block);
                 catchStep->bbFlags |= BBF_IMPORTED;
@@ -4943,15 +4917,6 @@ void Compiler::impImportLeave(BasicBlock* block)
         }
         step->SetJumpDest(leaveTarget); // this is the ultimate destination of the LEAVE
         fgAddRefPred(leaveTarget, step);
-
-#if defined(TARGET_ARM)
-        if (stepType == ST_FinallyReturn)
-        {
-            assert(step->KindIs(BBJ_ALWAYS));
-            // Mark the target of a finally return
-            step->GetJumpDest()->bbFlags |= BBF_FINALLY_TARGET;
-        }
-#endif // defined(TARGET_ARM)
 
 #ifdef DEBUG
         if (verbose)

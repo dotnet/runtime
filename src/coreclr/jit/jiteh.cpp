@@ -897,7 +897,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if FEATURE_EH_CALLFINALLY_THUNKS
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -1075,22 +1075,7 @@ void* Compiler::ehEmitCookie(BasicBlock* block)
 {
     noway_assert(block);
 
-    void* cookie;
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (block->bbFlags & BBF_FINALLY_TARGET)
-    {
-        // Use the offset of the beginning of the NOP padding, not the main block.
-        // This might include loop head padding, too, if this is a loop head.
-        assert(block->bbUnwindNopEmitCookie); // probably not null-initialized, though, so this might not tell us
-                                              // anything
-        cookie = block->bbUnwindNopEmitCookie;
-    }
-    else
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    {
-        cookie = block->bbEmitCookie;
-    }
+    void* cookie = block->bbEmitCookie;
 
     noway_assert(cookie != nullptr);
     return cookie;
@@ -4010,43 +3995,6 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
 }
 
 #if defined(FEATURE_EH_FUNCLETS)
-
-#if defined(TARGET_ARM)
-
-/*****************************************************************************
- * We just removed a BBJ_CALLFINALLY/BBJ_ALWAYS pair. If this was the only such pair
- * targeting the BBJ_ALWAYS target, then we need to clear the BBF_FINALLY_TARGET bit
- * so that target can also be removed. 'block' is the finally target. Since we just
- * removed the BBJ_ALWAYS, it better have the BBF_FINALLY_TARGET bit set.
- */
-
-void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
-{
-    assert(fgPredsComputed);
-    assert((block->bbFlags & BBF_FINALLY_TARGET) != 0);
-
-    for (BasicBlock* const predBlock : block->PredBlocks())
-    {
-        if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->HasJumpTo(block))
-        {
-            BasicBlock* pPrev = predBlock->Prev();
-            if (pPrev != nullptr)
-            {
-                if (pPrev->KindIs(BBJ_CALLFINALLY))
-                {
-                    // We found a BBJ_CALLFINALLY / BBJ_ALWAYS that still points to this finally target
-                    return;
-                }
-            }
-        }
-    }
-
-    // Didn't find any BBJ_CALLFINALLY / BBJ_ALWAYS that still points here, so clear the bit
-
-    block->bbFlags &= ~BBF_FINALLY_TARGET;
-}
-
-#endif // defined(TARGET_ARM)
 
 /*****************************************************************************
  * Is this an intra-handler control flow edge?

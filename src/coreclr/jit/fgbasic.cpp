@@ -125,10 +125,6 @@ void Compiler::fgInit()
 
     fgUsedSharedTemps = nullptr;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    fgAlwaysBlks = BlockSetOps::UninitVal();
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
 #ifdef DEBUG
     fgEnterBlksSetValid = false;
 #endif // DEBUG
@@ -389,10 +385,6 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
         }
         assert(leaveBlk->bbRefs == 0);
         assert(leaveBlk->bbPreds == nullptr);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     }
 }
 
@@ -739,10 +731,6 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             unreached();
             break;
     }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    fgFixFinallyTargetFlags(block, oldTarget, newTarget);
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -4787,10 +4775,6 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // interruptible if we exercised more care here.
     newBlock->bbFlags &= ~BBF_GC_SAFE_POINT;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    newBlock->bbFlags &= ~(BBF_FINALLY_TARGET);
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     // The new block has no code, so we leave bbCodeOffs/bbCodeOffsEnd set to BAD_IL_OFFSET. If a caller
     // puts code in the block, then it needs to update these.
 
@@ -5073,10 +5057,6 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         fgAddRefPred(newBlock, curr);
     }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    fgFixFinallyTargetFlags(curr, succ, newBlock);
-#endif
-
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
     // branch 50% of the time.
     //
@@ -5216,11 +5196,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     // Should never remove a genReturnBB, as we might have special hookups there.
     noway_assert(block != genReturnBB);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // Don't remove a finally target
-    assert(!(block->bbFlags & BBF_FINALLY_TARGET));
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     if (unreachable)
     {
         PREFIX_ASSUME(bPrev != nullptr);
@@ -5239,10 +5214,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         {
             // bPrev CALL becomes RETLESS as the BBJ_ALWAYS block is unreachable
             bPrev->bbFlags |= BBF_RETLESS_CALL;
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            NO_WAY("No retless call finally blocks; need unwind target instead");
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
         else if (bPrev->KindIs(BBJ_ALWAYS) && block->NextIs(bPrev->GetJumpDest()) &&
                  !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && !block->IsFirstColdBlock(this) &&
@@ -5277,9 +5248,8 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
 
-            // The BBJ_ALWAYS normally has a reference count of 1 and a single predecessor. However,
-            // it might not have a predecessor on ARM, where we don't create BBF_RETLESS_CALL BBJ_CALLFINALLY.
-            // And on other platforms, we might not have marked it as BBF_RETLESS_CALL even though it is.
+            // The BBJ_ALWAYS normally has a reference count of 1 and a single predecessor.
+            // However, we might not have marked it as BBF_RETLESS_CALL even though it is.
             // (Some early flow optimization should probably aggressively mark these as BBF_RETLESS_CALL
             // and not depend on fgRemoveBlock() to do that.)
             for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
@@ -5290,10 +5260,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             assert(leaveBlk->bbPreds == nullptr);
 
             fgRemoveBlock(leaveBlk, /* unreachable */ true);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
         else if (block->KindIs(BBJ_RETURN))
         {

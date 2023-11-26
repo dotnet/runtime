@@ -1748,21 +1748,6 @@ public:
             return false;
         }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        // Disqualify loops where the first block of the loop is a finally target.
-        // The main problem is when multiple loops share a 'top' block that is a finally
-        // target and we canonicalize the loops by adding a new loop head. In that case, we
-        // need to update the blocks so the finally target bit is moved to the newly created
-        // block, and removed from the old 'top' block. This is 'hard', so it's easier to disallow
-        // the loop than to update the flow graph to support this case.
-
-        if ((top->bbFlags & BBF_FINALLY_TARGET) != 0)
-        {
-            JITDUMP("Loop 'top' " FMT_BB " is a finally target. Rejecting loop.\n", top->bbNum);
-            return false;
-        }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
         // Compact the loop (sweep through it and move out any blocks that aren't part of the
         // flow cycle), and find the exits.
         if (!MakeCompactAndFindExits())
