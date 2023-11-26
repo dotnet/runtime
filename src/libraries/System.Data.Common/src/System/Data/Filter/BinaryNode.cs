@@ -319,7 +319,7 @@ namespace System.Data
                             Operators.LessThen => compareResult.Value < 0,
                             Operators.GreaterOrEqual => compareResult.Value >= 0,
                             Operators.LessOrEqual => compareResult.Value <= 0,
-                            Operators.NotEqual => (object)(compareResult.Value != 0),
+                            Operators.NotEqual => compareResult.Value != 0,
                             _ => throw ExprException.UnsupportedOperator(op),
                         };
                     }
