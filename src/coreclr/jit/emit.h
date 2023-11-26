@@ -286,26 +286,23 @@ struct insGroup
     insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
 #endif
 
-#define IGF_GC_VARS 0x0001    // new set of live GC ref variables
-#define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-#define IGF_FINALLY_TARGET 0x0004 // this group is the start of a basic block that is returned to after a finally.
-#endif                            // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-#define IGF_FUNCLET_PROLOG 0x0008 // this group belongs to a funclet prolog
-#define IGF_FUNCLET_EPILOG 0x0010 // this group belongs to a funclet epilog.
-#define IGF_EPILOG 0x0020         // this group belongs to a main function epilog
-#define IGF_NOGCINTERRUPT 0x0040  // this IG is in a no-interrupt region (prolog, epilog, etc.)
-#define IGF_UPD_ISZ 0x0080        // some instruction sizes updated
-#define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
-#define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
+#define IGF_GC_VARS 0x0001        // new set of live GC ref variables
+#define IGF_BYREF_REGS 0x0002     // new set of live by-ref registers
+#define IGF_FUNCLET_PROLOG 0x0004 // this group belongs to a funclet prolog
+#define IGF_FUNCLET_EPILOG 0x0008 // this group belongs to a funclet epilog.
+#define IGF_EPILOG 0x0010         // this group belongs to a main function epilog
+#define IGF_NOGCINTERRUPT 0x0020  // this IG is in a no-interrupt region (prolog, epilog, etc.)
+#define IGF_UPD_ISZ 0x0040        // some instruction sizes updated
+#define IGF_PLACEHOLDER 0x0080    // this is a placeholder group, to be filled in later
+#define IGF_EXTEND 0x0100         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
+#define IGF_HAS_ALIGN 0x0200      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
+#define IGF_REMOVED_ALIGN 0x0400  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
-#define IGF_HAS_REMOVABLE_JMP 0x1000 // this group ends with an unconditional jump which is a candidate for removal
+#define IGF_HAS_REMOVABLE_JMP 0x0800 // this group ends with an unconditional jump which is a candidate for removal
 #ifdef TARGET_ARM64
-#define IGF_HAS_REMOVED_INSTR 0x2000 // this group has an instruction that was removed.
+#define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
 #endif
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
@@ -547,11 +544,6 @@ protected:
     }
 
 #endif // FEATURE_EH_FUNCLETS
-
-    // If "ig" corresponds to the start of a basic block that is the
-    // target of a funclet return, generate GC information for it's start
-    // address "cp", as if it were the return address of a call.
-    void emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp);
 
     void emitRecomputeIGoffsets();
 
@@ -2697,12 +2689,10 @@ private:
     // Terminates any in-progress instruction group, making the current IG a new empty one.
     // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
-    // and registers.  The "isFinallyTarget" parameter indicates that the current location is
-    // the start of a basic block that is returned to after a finally clause in non-exceptional execution.
+    // and registers.
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
                        regMaskTP        gcrefRegs,
-                       regMaskTP        byrefRegs,
-                       bool             isFinallyTarget = false DEBUG_ARG(BasicBlock* block = nullptr));
+                       regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
