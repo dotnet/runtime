@@ -4083,3 +4083,560 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
         lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
     }
 }
+
+//------------------------------------------------------------------------
+// FlowGraphDfsTree::Contains: Check if a block is contained in the DFS tree;
+// i.e., if it is reachable.
+//
+// Arguments:
+//    block - The block
+//
+// Return Value:
+//    True if the block is reachable from the root.
+//
+bool FlowGraphDfsTree::Contains(BasicBlock* block) const
+{
+    return (block->bbPostorderNum < m_postOrderCount) && (m_postOrder[block->bbPostorderNum] == block);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDfsTree::IsAncestor: Check if block `ancestor` is an ancestor of
+// block `descendant`
+//
+// Arguments:
+//   ancestor   -- block that is possible ancestor
+//   descendant -- block that is possible descendant
+//
+// Returns:
+//   True if `ancestor` is ancestor of `descendant` in the depth first spanning
+//   tree.
+//
+// Notes:
+//   If return value is false, then `ancestor` does not dominate `descendant`.
+//
+bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const
+{
+    assert(Contains(ancestor) && Contains(descendant));
+    return (ancestor->bbPreorderNum <= descendant->bbPreorderNum) &&
+           (descendant->bbPostorderNum <= ancestor->bbPostorderNum);
+}
+
+//------------------------------------------------------------------------
+// fgComputeDfs: Compute a depth-first search tree for the flow graph.
+//
+// Returns:
+//   The tree.
+//
+// Notes:
+//   Preorder and postorder numbers are assigned into the BasicBlock structure.
+//   The tree returned contains a postorder of the basic blocks.
+//
+FlowGraphDfsTree* Compiler::fgComputeDfs()
+{
+    BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
+    BitVecTraits traits(fgBBNumMax + 1, this);
+
+    BitVec visited(BitVecOps::MakeEmpty(&traits));
+
+    unsigned preOrderIndex  = 0;
+    unsigned postOrderIndex = 0;
+
+    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
+
+    auto dfsFrom = [&, postOrder](BasicBlock* firstBB) {
+
+        BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
+        blocks.Emplace(this, firstBB);
+        firstBB->bbPreorderNum = preOrderIndex++;
+
+        while (!blocks.Empty())
+        {
+            BasicBlock* block = blocks.TopRef().Block();
+            BasicBlock* succ  = blocks.TopRef().NextSuccessor();
+
+            if (succ != nullptr)
+            {
+                if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
+                {
+                    blocks.Emplace(this, succ);
+                    succ->bbPreorderNum = preOrderIndex++;
+                }
+            }
+            else
+            {
+                blocks.Pop();
+                postOrder[postOrderIndex] = block;
+                block->bbPostorderNum     = postOrderIndex++;
+            }
+        }
+
+    };
+
+    dfsFrom(fgFirstBB);
+
+    if ((fgEntryBB != nullptr) && !BitVecOps::IsMember(&traits, visited, fgEntryBB->bbNum))
+    {
+        // OSR methods will early on create flow that looks like it goes to the
+        // patchpoint, but during morph we may transform to something that
+        // requires the original entry (fgEntryBB).
+        assert(opts.IsOSR());
+        assert((fgEntryBB->bbRefs == 1) && (fgEntryBB->bbPreds == nullptr));
+        dfsFrom(fgEntryBB);
+    }
+
+    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum) && !fgGlobalMorphDone)
+    {
+        // We introduce the merged return BB before morph and will redirect
+        // other returns to it as part of morph; keep it reachable.
+        dfsFrom(genReturnBB);
+    }
+
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, postOrderIndex);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::FlowGraphNaturalLoop: Initialize a new loop instance.
+//
+// Returns:
+//   tree   - The DFS tree
+//   header - The loop header
+//
+FlowGraphNaturalLoop::FlowGraphNaturalLoop(const FlowGraphDfsTree* tree, BasicBlock* header)
+    : m_tree(tree)
+    , m_header(header)
+    , m_blocks(BitVecOps::UninitVal())
+    , m_backEdges(tree->GetCompiler()->getAllocator(CMK_Loops))
+    , m_entryEdges(tree->GetCompiler()->getAllocator(CMK_Loops))
+    , m_exitEdges(tree->GetCompiler()->getAllocator(CMK_Loops))
+{
+}
+
+//------------------------------------------------------------------------
+// LoopBlockBitVecIndex: Convert a basic block to an index into the bit vector
+// used to store the set of loop blocks.
+//
+// Parameters:
+//   block - The block
+//
+// Returns:
+//   Index into the bit vector
+//
+// Remarks:
+//   The bit vector is stored with the base index of the loop header since we
+//   know the header is an ancestor of all loop blocks. Thus we do not need to
+//   waste space on previous blocks.
+//
+//   This function should only be used when it is known that the block has an
+//   index in the loop bit vector.
+//
+unsigned FlowGraphNaturalLoop::LoopBlockBitVecIndex(BasicBlock* block)
+{
+    assert(m_tree->Contains(block));
+
+    unsigned index = m_header->bbPostorderNum - block->bbPostorderNum;
+    assert(index < m_blocksSize);
+    return index;
+}
+
+//------------------------------------------------------------------------
+// TryGetLoopBlockBitVecIndex: Convert a basic block to an index into the bit
+// vector used to store the set of loop blocks.
+//
+// Parameters:
+//   block  - The block
+//   pIndex - [out] Index into the bit vector, if this function returns true.
+//
+// Returns:
+//   True if the block has an index in the loop bit vector.
+//
+// Remarks:
+//   See GetLoopBlockBitVecIndex for more information. This function can be
+//   used when it is not known whether the block has an index in the loop bit
+//   vector.
+//
+bool FlowGraphNaturalLoop::TryGetLoopBlockBitVecIndex(BasicBlock* block, unsigned* pIndex)
+{
+    if (block->bbPostorderNum > m_header->bbPostorderNum)
+    {
+        return false;
+    }
+
+    unsigned index = m_header->bbPostorderNum - block->bbPostorderNum;
+    if (index >= m_blocksSize)
+    {
+        return false;
+    }
+
+    *pIndex = index;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// LoopBlockTraits: Get traits for a bit vector for blocks in this loop.
+//
+// Returns:
+//   Bit vector traits.
+//
+BitVecTraits FlowGraphNaturalLoop::LoopBlockTraits()
+{
+    return BitVecTraits(m_blocksSize, m_tree->GetCompiler());
+}
+
+//------------------------------------------------------------------------
+// ContainsBlock: Returns true if this loop contains the specified block.
+//
+// Parameters:
+//   block - A block
+//
+// Returns:
+//   True if the block is contained in the loop.
+//
+// Remarks:
+//   Containment here means that the block is in the SCC of the loop; i.e. it
+//   is in a cycle with the header block. Note that EH successors are taken
+//   into acount; for example, a BBJ_RETURN may still be a loop block provided
+//   that its handler can reach the loop header.
+//
+bool FlowGraphNaturalLoop::ContainsBlock(BasicBlock* block)
+{
+    unsigned index;
+    if (!TryGetLoopBlockBitVecIndex(block, &index))
+    {
+        return false;
+    }
+
+    BitVecTraits traits = LoopBlockTraits();
+    return BitVecOps::IsMember(&traits, m_blocks, index);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoops::FlowGraphNaturalLoops: Initialize a new instance to
+// track a set of loops over the flow graph.
+//
+// Parameters:
+//   dfs - A DFS tree.
+//
+FlowGraphNaturalLoops::FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs)
+    : m_dfs(dfs), m_loops(m_dfs->GetCompiler()->getAllocator(CMK_Loops))
+{
+}
+
+// GetLoopFromHeader: See if a block is a loop header, and if so return the
+// associated loop.
+//
+// Parameters:
+//    block - block in question
+//
+// Returns:
+//    Loop headed by block, or nullptr
+//
+FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopFromHeader(BasicBlock* block)
+{
+    // TODO-TP: This can use binary search based on post order number.
+    for (FlowGraphNaturalLoop* loop : m_loops)
+    {
+        if (loop->m_header == block)
+        {
+            return loop;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// IsLoopBackEdge: See if an edge is a loop back edge
+//
+// Parameters:
+//   edge - edge in question
+//
+// Returns:
+//   True if edge is a backedge in some recognized loop.
+//
+bool FlowGraphNaturalLoops::IsLoopBackEdge(FlowEdge* edge)
+{
+    for (FlowGraphNaturalLoop* loop : m_loops)
+    {
+        for (FlowEdge* loopBackEdge : loop->m_backEdges)
+        {
+            if (loopBackEdge == edge)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsLoopExitEdge: see if a flow edge is a loop exit edge
+//
+// Parameters:
+//   edge - edge in question
+//
+// Returns:
+//   True if edge is an exit edge in some recognized loop. Note that a single
+//   edge may exit multiple loops.
+//
+bool FlowGraphNaturalLoops::IsLoopExitEdge(FlowEdge* edge)
+{
+    for (FlowGraphNaturalLoop* loop : m_loops)
+    {
+        for (FlowEdge* loopExitEdge : loop->m_exitEdges)
+        {
+            if (loopExitEdge == edge)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoops::Find: Find natural loops in the specified DFS tree
+// constructed for the flow graph.
+//
+// Parameters:
+//   dfs - The DFS tree
+//
+// Returns:
+//   Identified natural loops.
+//
+FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfs)
+{
+    Compiler* comp         = dfs->GetCompiler();
+    comp->m_blockToEHPreds = nullptr;
+
+#ifdef DEBUG
+    JITDUMP("Identifying loops in DFS tree with following reverse post order:\n");
+    for (unsigned i = dfs->GetPostOrderCount(); i != 0; i--)
+    {
+        unsigned          rpoNum = dfs->GetPostOrderCount() - i;
+        BasicBlock* const block  = dfs->GetPostOrder()[i - 1];
+        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum + 1, block->bbNum, block->bbPreorderNum + 1,
+                block->bbPostorderNum + 1);
+    }
+#endif
+
+    FlowGraphNaturalLoops* loops = new (comp, CMK_Loops) FlowGraphNaturalLoops(dfs);
+
+    jitstd::list<BasicBlock*> worklist(comp->getAllocator(CMK_Loops));
+
+    for (unsigned i = dfs->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* const header = dfs->GetPostOrder()[i - 1];
+
+        // If a block is a DFS ancestor of one if its predecessors then the block is a loop header.
+        //
+        FlowGraphNaturalLoop* loop = nullptr;
+
+        for (FlowEdge* predEdge : header->PredEdges())
+        {
+            BasicBlock* predBlock = predEdge->getSourceBlock();
+            if (dfs->Contains(predBlock) && dfs->IsAncestor(header, predBlock))
+            {
+                if (loop == nullptr)
+                {
+                    loop = new (comp, CMK_Loops) FlowGraphNaturalLoop(dfs, header);
+                    JITDUMP("\n");
+                }
+
+                JITDUMP(FMT_BB " -> " FMT_BB " is a backedge\n", predBlock->bbNum, header->bbNum);
+                loop->m_backEdges.push_back(predEdge);
+            }
+        }
+
+        if (loop == nullptr)
+        {
+            continue;
+        }
+
+        JITDUMP(FMT_BB " is the header of a DFS loop with %zu back edges\n", header->bbNum, loop->m_backEdges.size());
+
+        // Now walk back in flow along the back edges from head to determine if
+        // this is a natural loop and to find all the blocks in the loop.
+        //
+
+        worklist.clear();
+        loop->m_blocksSize = loop->m_header->bbPostorderNum + 1;
+
+        BitVecTraits loopTraits = loop->LoopBlockTraits();
+        loop->m_blocks          = BitVecOps::MakeEmpty(&loopTraits);
+
+        if (!FindNaturalLoopBlocks(loop, worklist))
+        {
+            loops->m_improperLoopHeaders++;
+            continue;
+        }
+
+        JITDUMP("Loop has %u blocks\n", BitVecOps::Count(&loopTraits, loop->m_blocks));
+
+        // Find the exit edges
+        //
+        loop->VisitLoopBlocks([=](BasicBlock* loopBlock) {
+            loopBlock->VisitRegularSuccs(comp, [=](BasicBlock* succBlock) {
+                if (!loop->ContainsBlock(succBlock))
+                {
+                    FlowEdge* const exitEdge = comp->fgGetPredForBlock(succBlock, loopBlock);
+                    JITDUMP(FMT_BB " -> " FMT_BB " is an exit edge\n", loopBlock->bbNum, succBlock->bbNum);
+                    loop->m_exitEdges.push_back(exitEdge);
+                }
+
+                return BasicBlockVisit::Continue;
+            });
+
+            return BasicBlockVisit::Continue;
+        });
+
+        // Find the entry edges
+        //
+        // Note if fgEntryBB is a loop head we won't have an entry edge.
+        // So it needs to be special cased later on when processing
+        // entry edges.
+        //
+        for (FlowEdge* const predEdge : loop->m_header->PredEdges())
+        {
+            BasicBlock* predBlock = predEdge->getSourceBlock();
+            if (dfs->Contains(predBlock) && !dfs->IsAncestor(header, predEdge->getSourceBlock()))
+            {
+                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predEdge->getSourceBlock()->bbNum,
+                        loop->m_header->bbNum);
+                loop->m_entryEdges.push_back(predEdge);
+            }
+        }
+
+        // Search for parent loop.
+        //
+        // Since loops record in outer->inner order the parent will be the
+        // most recently recorded loop that contains this loop's header.
+        //
+        for (FlowGraphNaturalLoop* const otherLoop : loops->InPostOrder())
+        {
+            if (otherLoop->ContainsBlock(header))
+            {
+                loop->m_parent = otherLoop;
+                JITDUMP("Nested within loop starting at " FMT_BB "\n", otherLoop->GetHeader()->bbNum);
+                break;
+            }
+        }
+
+#ifdef DEBUG
+        // In debug, validate nestedness versus other loops.
+        //
+        for (FlowGraphNaturalLoop* const otherLoop : loops->InPostOrder())
+        {
+            if (otherLoop->ContainsBlock(header))
+            {
+                // Ancestor loop; should contain all blocks of this loop
+                //
+                loop->VisitLoopBlocks([otherLoop](BasicBlock* loopBlock) {
+                    assert(otherLoop->ContainsBlock(loopBlock));
+                    return BasicBlockVisit::Continue;
+                });
+            }
+            else
+            {
+                // Non-ancestor loop; should have no blocks in common with current loop
+                //
+                loop->VisitLoopBlocks([otherLoop](BasicBlock* loopBlock) {
+                    assert(!otherLoop->ContainsBlock(loopBlock));
+                    return BasicBlockVisit::Continue;
+                });
+            }
+        }
+#endif
+
+        // Record this loop
+        //
+        loop->m_index = (unsigned)loops->m_loops.size();
+        loops->m_loops.push_back(loop);
+
+        JITDUMP("Added loop " FMT_LP " with header " FMT_BB "\n", loop->GetIndex(), loop->GetHeader()->bbNum);
+    }
+
+    if (loops->m_loops.size() > 0)
+    {
+        JITDUMP("\nFound %zu loops\n", loops->m_loops.size());
+    }
+
+    if (loops->m_improperLoopHeaders > 0)
+    {
+        JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
+    }
+
+    return loops;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoops::FindNaturalLoopBlocks: Find the loop blocks for a
+// specified loop.
+//
+// Parameters:
+//   loop     - The natural loop we are constructing
+//   worklist - Scratch worklist to use for the search
+//
+// Returns:
+//   True if the loop is natural; marks the loop blocks into 'loop' as part of
+//   the search.
+//
+bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, jitstd::list<BasicBlock*>& worklist)
+{
+    const FlowGraphDfsTree* tree       = loop->m_tree;
+    Compiler*               comp       = tree->GetCompiler();
+    BitVecTraits            loopTraits = loop->LoopBlockTraits();
+    BitVecOps::AddElemD(&loopTraits, loop->m_blocks, 0);
+
+    // Seed the worklist
+    //
+    worklist.clear();
+    for (FlowEdge* backEdge : loop->m_backEdges)
+    {
+        BasicBlock* const backEdgeSource = backEdge->getSourceBlock();
+        if (backEdgeSource == loop->GetHeader())
+        {
+            continue;
+        }
+
+        assert(!BitVecOps::IsMember(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(backEdgeSource)));
+        worklist.push_back(backEdgeSource);
+        BitVecOps::AddElemD(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(backEdgeSource));
+    }
+
+    // Work back through flow to loop head or to another pred
+    // that is clearly outside the loop.
+    //
+    while (!worklist.empty())
+    {
+        BasicBlock* const loopBlock = worklist.back();
+        worklist.pop_back();
+
+        for (FlowEdge* predEdge = comp->BlockPredsWithEH(loopBlock); predEdge != nullptr;
+             predEdge           = predEdge->getNextPredEdge())
+        {
+            BasicBlock* const predBlock = predEdge->getSourceBlock();
+
+            if (!tree->Contains(predBlock))
+            {
+                continue;
+            }
+
+            // Head cannot dominate `predBlock` unless it is a DFS ancestor.
+            //
+            if (!tree->IsAncestor(loop->GetHeader(), predBlock))
+            {
+                JITDUMP("Loop is not natural; witness " FMT_BB " -> " FMT_BB "\n", predBlock->bbNum, loopBlock->bbNum);
+                return false;
+            }
+
+            if (BitVecOps::TryAddElemD(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(predBlock)))
+            {
+                worklist.push_back(predBlock);
+            }
+        }
+    }
+
+    return true;
+}

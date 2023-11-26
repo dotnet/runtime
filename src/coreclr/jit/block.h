@@ -2097,7 +2097,7 @@ public:
     }
 
     // Returns the next available successor or `nullptr` if there are no more successors.
-    BasicBlock* NextSuccessor(Compiler* comp)
+    BasicBlock* NextSuccessor()
     {
         m_curSucc++;
         if (m_curSucc >= m_numSuccs)
