@@ -4014,9 +4014,6 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
         return false; // doesn't overflow
     };
 
-    // oper1 is never GT_NE or GT_EQ, see GetConstantBoundInfo
-    assert((oper1 != GT_NE) && (oper1 != GT_EQ));
-
     const bool overflows1 = setRange(oper1, bound1, &range1);
     const bool overflows2 = setRange(oper2, bound2, &range2);
     if (overflows1 || overflows2)
@@ -4027,16 +4024,17 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
     }
 
     assert(oper1 != GT_NE); // oper1 is coming from an assertion, so it can't be GT_NE/GT_EQ
+    // only oper2 can be so, since it has no meaningful Int32Range data we check it separately.
     if (oper2 == GT_NE)
     {
-        // "x > 100 && x != 10", the 2nd range check is redundant
         if ((bound2 < range1.startIncl) || (bound2 > range1.endIncl))
         {
+            // "x > 100 && x != 10", the 2nd range check is always true
             return AlwaysIncluded;
         }
         if (range1.startIncl == bound2 && range1.endIncl == bound2)
         {
-            // x == 100 && x != 100
+            // "x == 100 && x != 100", the 2nd range check is never true
             return NeverIntersects;
         }
         return Unknown;
