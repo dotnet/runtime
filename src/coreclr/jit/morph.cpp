@@ -9135,6 +9135,12 @@ DONE_MORPHING_CHILDREN:
         case GT_LE:
         case GT_GE:
         case GT_GT:
+            if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
+            {
+                // Some branch optimizations don't work well with unsigned relops
+                tree->ClearUnsigned();
+            }
 
             if (!optValnumCSE_phase && (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST)))
             {

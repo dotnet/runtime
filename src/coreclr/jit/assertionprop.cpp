@@ -4032,7 +4032,7 @@ RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps ope
             // "x > 100 && x != 10", the 2nd range check is always true
             return AlwaysIncluded;
         }
-        if (range1.startIncl == bound2 && range1.endIncl == bound2)
+        if ((range1.startIncl == bound2) && (range1.endIncl == bound2))
         {
             // "x == 100 && x != 100", the 2nd range check is never true
             return NeverIntersects;
