@@ -801,10 +801,29 @@ namespace ILCompiler.ObjectWriter
                 }
                 else
                 {
-                    string longName = $"/{stringTable.GetStringOffset(Name)}\0\0\0\0\0\0";
-                    for (int i = 0; i < 8; i++)
+                    buffer.Clear();
+                    buffer[0] = (byte)'/';
+                    uint offset = stringTable.GetStringOffset(Name);
+                    if (offset <= 9999999)
                     {
-                        buffer[i] = (byte)longName[i];
+                        Span<char> charBuffer = stackalloc char[16];
+                        int charsWritten;
+                        offset.TryFormat(charBuffer, out charsWritten);
+                        for (int i = 0; i < charsWritten; i++)
+                        {
+                            buffer[1 + i] = (byte)charBuffer[i];
+                        }
+                    }
+                    else
+                    {
+                        ReadOnlySpan<byte> s_base64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
+                        // Maximum expressible offset is 64^6 which is less than uint.MaxValue
+                        buffer[1] = (byte)'/';
+                        for (int i = 0; i < 6; i++)
+                        {
+                            buffer[7 - i] = s_base64Alphabet[(int)(offset % 64)];
+                            offset /= 64;
+                        }
                     }
                 }
 
