@@ -199,10 +199,12 @@ namespace System.Data
                         case StorageType.Guid:
                             return ((Guid)vLeft).CompareTo((Guid)vRight);
                         case StorageType.Boolean:
-                            if (op == Operators.EqualTo || op == Operators.NotEqual)
+                            switch (op)
                             {
-                                return Convert.ToInt32(DataExpression.ToBoolean(vLeft), FormatProvider) -
-                                       Convert.ToInt32(DataExpression.ToBoolean(vRight), FormatProvider);
+                                case Operators.EqualTo:
+                                    return DataExpression.ToBoolean(vLeft).CompareTo(DataExpression.ToBoolean(vRight));
+                                case Operators.NotEqual:
+                                    return DataExpression.ToBoolean(vRight).CompareTo(DataExpression.ToBoolean(vLeft));
                             }
                             break;
                     }
@@ -293,6 +295,41 @@ namespace System.Data
                 for AND operator If one of rhe operands is flase the result is false
             CONSIDER : in the shortcut case do we want to type-check the other operand?
             */
+
+            if (op >= Operators.EqualTo && op <= Operators.NotEqual)
+            {
+                try
+                {
+                    int? compareResult = null;
+                    if (left is NameNode nameLeft && right is ConstNode constRight)
+                    {
+                        compareResult = nameLeft.CompareValueTo(row, version, constRight._val);
+                    }
+                    if (left is ConstNode constLeft && right is NameNode nameRight)
+                    {
+                        compareResult = nameRight.CompareValueTo(row, version, constLeft._val);
+                    }
+
+                    if (compareResult != null)
+                    {
+                        return op switch
+                        {
+                            Operators.EqualTo => compareResult.Value == 0,
+                            Operators.GreaterThen => compareResult.Value > 0,
+                            Operators.LessThen => compareResult.Value < 0,
+                            Operators.GreaterOrEqual => compareResult.Value >= 0,
+                            Operators.LessOrEqual => compareResult.Value <= 0,
+                            Operators.NotEqual => (object)(compareResult.Value != 0),
+                            _ => throw ExprException.UnsupportedOperator(op),
+                        };
+                    }
+                }
+                catch
+                {
+                    //might throw in case of a different column/constant types
+                    //then we get slow path
+                }
+            }
 
             if (op != Operators.Or && op != Operators.And && op != Operators.In && op != Operators.Is && op != Operators.IsNot)
             {
