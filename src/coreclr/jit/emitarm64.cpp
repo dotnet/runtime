@@ -997,9 +997,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableToSimdFloat(id->idInsOpt())); // xx
-            assert(isVectorRegister(id->idReg1()));        // ddddd
-            assert(isLowPredicateRegister(id->idReg2()));  // ggg
-            assert(isVectorRegister(id->idReg3()));        // mmmmm
+            assert(isVectorRegister(id->idReg1()));             // ddddd
+            assert(isLowPredicateRegister(id->idReg2()));       // ggg
+            assert(isVectorRegister(id->idReg3()));             // mmmmm
             assert(isValidVectorElemsizeSveFloat(elemsize));
             break;
 
@@ -18412,7 +18412,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         // Divides, 32 bit (Note: worse for 64 bit)
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_12C; // 7 to 12
+            result.insLatency    = PERFSCORE_LATENCY_12C;    // 7 to 12
             result.insThroughput = PERFSCORE_THROUGHPUT_11C; // 1/11 to 1/7
             break;
 
@@ -18456,7 +18456,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         // Arithmetic, shift complex
-        case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left (predicated)
+        case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left
+                           // (predicated)
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
@@ -18495,7 +18496,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 // Floating point divide, F64 (Note: Worse for F32, F16)
                 case INS_sve_fdiv:
                 case INS_sve_fdivr:
-                    result.insLatency    = PERFSCORE_LATENCY_15C; // 7 to 15
+                    result.insLatency    = PERFSCORE_LATENCY_15C;    // 7 to 15
                     result.insThroughput = PERFSCORE_THROUGHPUT_14C; // 1/14 to 1/7
                     break;
 

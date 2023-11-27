@@ -857,7 +857,7 @@ inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
     return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableToSimd(opt)) ||
-           (insOptsScalableToScalar(opt)));
+            (insOptsScalableToScalar(opt)));
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
