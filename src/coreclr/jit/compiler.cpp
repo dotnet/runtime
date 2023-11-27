@@ -1945,6 +1945,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif
     m_switchDescMap  = nullptr;
     m_blockToEHPreds = nullptr;
+    m_dominancePreds = nullptr;
     m_fieldSeqStore  = nullptr;
     m_refAnyClass    = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
@@ -1964,7 +1965,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
-    fgSsaChecksEnabled         = false;
+    fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -2835,7 +2836,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspInstrs       = false;
     opts.dspLines        = false;
     opts.varNames        = false;
-    opts.dmpHex          = false;
     opts.disAsmSpilled   = false;
     opts.disAddr         = false;
     opts.dspCode         = false;
@@ -2927,7 +2927,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 
 #ifdef LATE_DISASM
-        if (JitConfig.JitLateDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitLateDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
@@ -4613,14 +4613,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
-    // Update finally target flags after EH optimizations
-    //
-    DoPhase(this, PHASE_UPDATE_FINALLY_FLAGS, &Compiler::fgUpdateFinallyTargetFlags);
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
 #if DEBUG
     if (lvaEnregEHVars)
     {
@@ -4747,9 +4739,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
-    auto morphGlobalPhase = [this]() {
-        unsigned prevBBCount = fgBBcount;
-        fgMorphBlocks();
+    unsigned const preMorphBBCount = fgBBcount;
+    DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    auto postMorphPhase = [this]() {
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
@@ -4765,16 +4758,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         compCurBB = nullptr;
 #endif // DEBUG
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         // Enable IR checks
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
-    DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
+    DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
+
+    // If we needed to create any new BasicBlocks then renumber the blocks
+    //
+    if (fgBBcount > preMorphBBCount)
+    {
+        fgRenumberBlocks();
+    }
 
     // GS security checks for unsafe buffers
     //
@@ -4958,10 +4952,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             //
             // So, disable the ssa checks.
             //
-            if (fgSsaChecksEnabled)
+            if (fgSsaValid)
             {
-                JITDUMP("Disabling SSA checking before assertion prop\n");
-                fgSsaChecksEnabled = false;
+                JITDUMP("Marking SSA as invalid before assertion prop\n");
+                fgSsaValid = false;
             }
 
             if (doAssertionProp)
@@ -5737,9 +5731,10 @@ void Compiler::ResetOptAnnotations()
     fgResetForSsa();
     vnStore              = nullptr;
     m_blockToEHPreds     = nullptr;
+    m_dominancePreds     = nullptr;
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
-    fgSsaChecksEnabled   = false;
+    fgSsaValid           = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -6010,6 +6005,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Dczva() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
+        }
+
+        if (JitConfig.EnableArm64Sve() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
         }
 #elif defined(TARGET_XARCH)
         if (JitConfig.EnableHWIntrinsic() != 0)

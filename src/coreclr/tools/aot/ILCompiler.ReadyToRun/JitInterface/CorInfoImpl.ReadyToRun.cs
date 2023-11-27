@@ -1257,6 +1257,8 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
+                case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
+                case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
@@ -1887,7 +1889,7 @@ namespace Internal.JitInterface
             // a static method would have never found an instance method.
             if (originalMethod.Signature.IsStatic && isCallVirt)
             {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
+                ThrowHelper.ThrowMissingMethodException("?");
             }
 
             exactType = type;
@@ -2093,7 +2095,7 @@ namespace Internal.JitInterface
                     // Compensate for always treating delegates as direct calls above
                     !(isLdftn && isVirtualBehaviorUnresolved))
                 {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallAbstractMethod, targetMethod);
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, targetMethod);
                 }
 
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;

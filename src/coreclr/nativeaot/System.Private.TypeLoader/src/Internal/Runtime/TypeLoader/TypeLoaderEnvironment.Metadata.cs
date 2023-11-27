@@ -4,14 +4,12 @@
 
 using System;
 using System.Diagnostics;
-
 using System.Reflection.Runtime.General;
-
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -331,7 +329,7 @@ namespace Internal.Runtime.TypeLoader
         /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
         /// </summary>
         /// <param name="typeHandle">MethodTable of the type to look up</param>
-        public static unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
+        public static unsafe IntPtr GetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.HasCctor(typeHandle))
             {

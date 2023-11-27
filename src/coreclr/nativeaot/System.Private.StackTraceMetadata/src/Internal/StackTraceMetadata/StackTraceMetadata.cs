@@ -12,8 +12,8 @@ using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
-using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 using Debug = System.Diagnostics.Debug;
+using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 
 namespace Internal.StackTraceMetadata
 {

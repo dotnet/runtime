@@ -517,7 +517,6 @@ namespace System.Linq.Parallel.Tests
         // Heavily exercises OrderBy, but only throws one user delegate exception to simulate an occasional failure.
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OrderByThreadedData), new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void OrderBy_ThreadedDeadlock_SingleException(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
             int countdown = Math.Min(count / 2, degree) + 1;

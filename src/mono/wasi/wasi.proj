@@ -264,6 +264,7 @@
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;" />
+      <WasmSrcFiles Include="$(_WasiDefaultsRspPath);$(_WasiCompileRspPath);$(_WasiLinkRspPath)" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 

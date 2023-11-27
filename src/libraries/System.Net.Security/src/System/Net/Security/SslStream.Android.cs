@@ -4,9 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Net.Security;
-using System.Threading;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace System.Net.Security
 {

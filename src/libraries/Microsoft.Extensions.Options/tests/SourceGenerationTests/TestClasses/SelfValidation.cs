@@ -15,6 +15,10 @@ namespace SelfValidation
         [Required]
         public string P1 { get; set; } = string.Empty;
 
+        [Required]
+        [ValidateObjectMembers]
+        public SecondModel P2 { get; set; }
+
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (P1.Length < 5)
@@ -26,8 +30,35 @@ namespace SelfValidation
         }
     }
 
+    public class SecondModel : IValidatableObject
+    {
+        [Required]
+        public string P3 { get; set; } = string.Empty;
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (P3.Length < 5)
+            {
+                return new[] { new ValidationResult("P3 is not long enough") };
+            }
+
+            return Array.Empty<ValidationResult>();
+        }
+    }
+
     [OptionsValidator]
     public partial struct FirstValidator : IValidateOptions<FirstModel>
     {
+    }
+
+    // SelfValidateOptions is self validate class as it implements IValidatableObject and contains no properties have ValidationAttribute
+    // Source generator should generate valid code for this class
+    [OptionsValidator]
+    public partial class SelfValidateOptions : IValidateOptions<SelfValidateOptions>, IValidatableObject
+    {
+        public IEnumerable<ValidationResult> Validate(ValidationContext context)
+        {
+            return new[] { new ValidationResult($"Display: {context.DisplayName}, Member: {context.MemberName}") };
+        }
     }
 }

@@ -10,17 +10,17 @@
 **
 ===========================================================*/
 
-using System.Runtime;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
 
+using CorElementType = System.Reflection.CorElementType;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
 using MethodTable = Internal.Runtime.MethodTable;
 using MethodTableList = Internal.Runtime.MethodTableList;
-using EETypeElementType = Internal.Runtime.EETypeElementType;
-using CorElementType = System.Reflection.CorElementType;
 
 namespace System
 {
@@ -199,13 +199,25 @@ namespace System
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is an class, a struct, an enum, or an interface,
+        /// that is not generic type definition
+        /// </summary>
+        internal bool IsCanonical
+        {
+            get
+            {
+                return _value->IsCanonical;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
         /// </summary>
         internal bool IsDefType
         {
             get
             {
-                return !_value->IsParameterizedType && !_value->IsFunctionPointer;
+                return _value->IsDefType;
             }
         }
 
@@ -391,12 +403,6 @@ namespace System
             {
                 return RuntimeImports.GetRhCorElementTypeInfo(CorElementType);
             }
-        }
-
-        internal ref T GetWritableData<T>() where T : unmanaged
-        {
-            Debug.Assert(Internal.Runtime.WritableData.GetSize(IntPtr.Size) == sizeof(T));
-            return ref Unsafe.AsRef<T>((void*)_value->WritableData);
         }
 
         [Intrinsic]

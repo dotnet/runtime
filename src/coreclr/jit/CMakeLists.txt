@@ -398,8 +398,10 @@ set( JIT_I386_HEADERS ${JIT_AMD64_HEADERS} )
 set( JIT_ARM64_HEADERS
     emitarm64.h
     emitfmtsarm64.h
+    emitfmtsarm64sve.h
     hwintrinsiclistarm64.h
     instrsarm64.h
+    instrsarm64sve.h
     registerarm64.h
     simdashwintrinsiclistarm64.h
 )

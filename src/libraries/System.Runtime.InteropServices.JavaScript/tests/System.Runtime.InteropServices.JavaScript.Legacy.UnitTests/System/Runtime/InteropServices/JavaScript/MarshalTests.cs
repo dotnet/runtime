@@ -743,6 +743,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalSynchronousTask()
         {
             bool success = await MarshalTask("SynchronousTask");
@@ -750,6 +751,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalAsynchronousTask()
         {
             bool success = await MarshalTask("AsynchronousTask");
@@ -757,18 +759,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static Task MarshalSynchronousTaskInt()
         {
             return MarshalTaskReturningInt("SynchronousTaskInt");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static Task MarshalAsynchronousTaskInt()
         {
             return MarshalTaskReturningInt("AsynchronousTaskInt");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalFailedSynchronousTask()
         {
             bool success = await MarshalTask("FailedSynchronousTask");
@@ -776,56 +781,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalFailedAsynchronousTask()
         {
             bool success = await MarshalTask("FailedAsynchronousTask");
             Assert.False(success, "FailedAsynchronousTask didn't failed.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalSynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("SynchronousValueTask");
-            Assert.True(success, "SynchronousValueTask didn't succeeded.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalAsynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("AsynchronousValueTask");
-            Assert.True(success, "AsynchronousValueTask didn't succeeded.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static Task MarshalSynchronousValueTaskIntDoesNotWorkYet()
-        {
-            return MarshalTaskReturningInt("SynchronousValueTaskInt");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static Task MarshalAsynchronousValueTaskIntDoesNotWorkYet()
-        {
-            return MarshalTaskReturningInt("AsynchronousValueTaskInt");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalFailedSynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("FailedSynchronousValueTask");
-            Assert.False(success, "FailedSynchronousValueTask didn't failed.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalFailedAsynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("FailedAsynchronousValueTask");
-            Assert.False(success, "FailedAsynchronousValueTask didn't failed.");
         }
     }
 }

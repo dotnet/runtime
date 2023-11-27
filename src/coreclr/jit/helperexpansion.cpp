@@ -279,9 +279,9 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
 
     // nullcheckBb conditionally jumps to fallbackBb, but we need to initialize fallbackBb last
-    // so we can place it after nullcheckBb. So use a temporary jump target for now.
-    BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
-                                                   debugInfo DEBUG_ARG(&BasicBlock::bbTempJumpDest));
+    // so we can place it after nullcheckBb. So set the jump target later.
+    BasicBlock* nullcheckBb =
+        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo);
 
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
@@ -741,18 +741,15 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // maxThreadStaticBlocksCondBB
 
     // maxThreadStaticBlocksCondBB conditionally jumps to fallbackBb, but fallbackBb must be initialized last
-    // so it can be placed after it. So use a temporary jump target for now.
-    BasicBlock* maxThreadStaticBlocksCondBB =
-        fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsValueDef, debugInfo DEBUG_ARG(&BasicBlock::bbTempJumpDest));
+    // so it can be placed after it. So set the jump target later.
+    BasicBlock* maxThreadStaticBlocksCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsValueDef, debugInfo);
 
     fgInsertStmtAfter(maxThreadStaticBlocksCondBB, maxThreadStaticBlocksCondBB->firstStmt(),
                       fgNewStmtFromTree(maxThreadStaticBlocksCond));
 
-    // Similarly, give threadStaticBlockNulLCondBB a temporary jump target for now,
-    // and update it to jump to its real target (fastPathBb) after it is initialized.
+    // Similarly, set threadStaticBlockNulLCondBB to jump to fastPathBb once the latter exists.
     BasicBlock* threadStaticBlockNullCondBB =
-        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, threadStaticBlockBaseDef,
-                             debugInfo DEBUG_ARG(&BasicBlock::bbTempJumpDest));
+        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, threadStaticBlockBaseDef, debugInfo);
     fgInsertStmtAfter(threadStaticBlockNullCondBB, threadStaticBlockNullCondBB->firstStmt(),
                       fgNewStmtFromTree(threadStaticBlockNullCond));
 
