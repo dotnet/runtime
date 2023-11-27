@@ -718,6 +718,11 @@ inline static bool isValidVectorElemsizeSveFloat(emitAttr size)
     return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE);
 }
 
+inline static bool isValidVectorElemsizeWidening(emitAttr size)
+{
+    return (size == EA_4BYTE) || (size == EA_2BYTE) || (size == EA_1BYTE);
+}
+
 inline static bool isScalableVectorSize(emitAttr size)
 {
     return (size == EA_SCALABLE);
@@ -858,7 +863,7 @@ inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
     return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableToSimd(opt)) ||
-            (insOptsScalableToScalar(opt)));
+            (insOptsScalableToScalar(opt)) || insOptsScalableToSimdVector(opt));
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -872,6 +877,12 @@ inline static bool insOptsScalableWords(insOpts opt)
 {
     // `opt` is any of the standard word and above scalable types.
     return ((opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableAtLeastHalf(insOpts opt)
+{
+    // `opt` is any of the standard half and above scalable types.
+    return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableFloat(insOpts opt)
@@ -894,11 +905,24 @@ inline static bool insOptsScalableToSimd(insOpts opt)
             (opt == INS_OPTS_SCALABLE_S_TO_SIMD) || (opt == INS_OPTS_SCALABLE_D_TO_SIMD));
 }
 
+inline static bool insOptsScalableWideningToSimd(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for widening then conversion to a scalar in a SIMD register.
+    return ((opt == INS_OPTS_SCALABLE_B_TO_SIMD) || (opt == INS_OPTS_SCALABLE_H_TO_SIMD) ||
+            (opt == INS_OPTS_SCALABLE_S_TO_SIMD));
+}
+
 inline static bool insOptsScalableToSimdFloat(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for conversion to an FP scalar in a SIMD register.
     return ((opt == INS_OPTS_SCALABLE_H_TO_SIMD) || (opt == INS_OPTS_SCALABLE_S_TO_SIMD) ||
             (opt == INS_OPTS_SCALABLE_D_TO_SIMD));
+}
+
+inline static bool insOptsScalableToSimdVector(insOpts opt)
+{
+    return ((opt == INS_OPTS_SCALABLE_B_TO_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_H_TO_SIMD_VECTOR) ||
+            (opt == INS_OPTS_SCALABLE_S_TO_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_D_TO_SIMD_VECTOR));
 }
 
 inline static bool insOptsScalableToScalar(insOpts opt)
