@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
             Type typeToConvert,
             JsonSerializerOptions options,
             scoped ref ReadStack state,
-            [MaybeNullWhen(false)] out ReadOnlyMemory<T> value)
+            out ReadOnlyMemory<T> value)
         {
             if (reader.TokenType is JsonTokenType.Null)
             {
