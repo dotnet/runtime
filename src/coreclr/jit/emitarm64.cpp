@@ -943,6 +943,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(datasize == EA_8BYTE);
             break;
 
+        // Scalable.
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
         case IF_SVE_AD_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
@@ -962,6 +963,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        // Scalable, .S or .D.
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableWords(id->idInsOpt())); // xx
@@ -971,6 +973,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        // Scalable Wide.
         case IF_SVE_AO_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableWide(id->idInsOpt()));  // xx
@@ -980,16 +983,27 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        // Scalable to Simd.
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
-        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableToSimd(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));        // ddddd
+            assert(isLowPredicateRegister(id->idReg2()));  // ggg
+            assert(isVectorRegister(id->idReg3()));        // mmmmm
+            assert(isValidVectorElemsize(elemsize));
+            break;
+
+        // Scalable to FP Simd.
+        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
+            elemsize = id->idOpSize();
+            assert(insOptsScalableToSimdFloat(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));        // ddddd
             assert(isLowPredicateRegister(id->idReg2()));  // ggg
             assert(isVectorRegister(id->idReg3()));        // mmmmm
             assert(isValidVectorElemsizeSveFloat(elemsize));
             break;
 
+        // Scalable to general register.
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
             elemsize = id->idOpSize();
             assert(insOptsScalableToScalar(id->idInsOpt())); // xx
@@ -999,6 +1013,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidScalarDatasize(elemsize));
             break;
 
+        // Scalable FP.
         case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             elemsize = id->idOpSize();
@@ -13920,6 +13935,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        // Scalable.
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
@@ -13945,6 +13961,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        // Scalable to general register.
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_Rd(id->idReg1());         // ddddd
@@ -16145,6 +16162,7 @@ void emitter::emitDispInsHelp(
             }
             break;
 
+        // Scalable.
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
@@ -16164,6 +16182,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);       // mmmmm
             break;
 
+        // Scalable. Reg3 is .D.
         case IF_SVE_AO_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
             emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
@@ -16171,6 +16190,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false);  // mmmmm
             break;
 
+        // Scalable. No predicate type.
         case IF_SVE_CM_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
             emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
@@ -16178,20 +16198,9 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
             break;
 
+        // Scalable to general register or SIMD. No predicate type.
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
-            emitDispReg(id->idReg1(), size, true);                    // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
-            emitDispReg(id->idReg1(), size, true);                    // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
-            break;
-
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
-            emitDispReg(id->idReg1(), size, true);                    // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
-            emitDispReg(id->idReg1(), size, true);                    // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
-            break;
-
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             emitDispReg(id->idReg1(), size, true);                    // ddddd
             emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
@@ -18384,6 +18393,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
+        // Scalable.
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
