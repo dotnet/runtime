@@ -150,11 +150,11 @@
   <Target Name="_WasiAddToRunScript" BeforeTargets="GenerateRunScript">
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
       <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="export PREPEND_PATH=$(WasmtimeDir)" />
-      <SetScriptCommands Include="export RuntimeIdentifier=wasi-wasm" />
+      <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="export RuntimeIdentifier=wasi-wasm" />
     </ItemGroup>
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="set PREPEND_PATH=$(WasmtimeDir)" />
-      <SetScriptCommands Include="set RuntimeIdentifier=wasi-wasm" />
+      <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="set RuntimeIdentifier=wasi-wasm" />
     </ItemGroup>
   </Target>
 
