@@ -73,7 +73,7 @@ public class InterpPgoTests : WasmTemplateTestBase
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!);
         await using var runner = new BrowserRunner(_testOutput);
-        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project {projectFile} --forward-console");
+        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
         IBrowser browser = await runner.SpawnBrowserAsync(url);
         IBrowserContext context = await browser.NewContextAsync();
 

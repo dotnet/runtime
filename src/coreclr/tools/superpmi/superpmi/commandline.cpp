@@ -117,6 +117,10 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -skipCleanup\n");
     printf("     Skip deletion of temporary files created by child SuperPMI processes with -parallel.\n");
     printf("\n");
+    printf(" -repeatCount <repetition count>\n");
+    printf("     Number of times compilation should repeat for each method context. Usually used when\n");
+    printf("     trying to measure JIT throughput for a specific set of methods. Default=1.\n");
+    printf("\n");
     printf(" -target <target>\n");
     printf("     Used by the assembly differences calculator. This specifies the target\n");
     printf("     architecture for cross-compilation. Currently allowed <target> values: x64, x86, arm, arm64\n");
@@ -525,6 +529,40 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             else if ((_stricmp(&argv[i][1], "skipCleanup") == 0))
             {
                 o->skipCleanup = true;
+            }
+            else if ((_stricmp(&argv[i][1], "repeatCount") == 0))
+            {
+                if (++i >= argc)
+                {
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                bool isValidRepeatCount = true;
+                size_t nextlen          = strlen(argv[i]);
+                for (size_t j = 0; j < nextlen; j++)
+                {
+                    if (!isdigit(argv[i][j]))
+                    {
+                        isValidRepeatCount = false;
+                        break;
+                    }
+                }
+                if (isValidRepeatCount)
+                {
+                    o->repeatCount = atoi(argv[i]);
+                    if (o->repeatCount < 1)
+                    {
+                        isValidRepeatCount = false;
+                    }
+                }
+
+                if (!isValidRepeatCount)
+                {
+                    LogError("Invalid repeat count specified. Repeat count must be between 1 and INT_MAX.");
+                    DumpHelp(argv[0]);
+                    return false;
+                }
             }
             else if ((_strnicmp(&argv[i][1], "stride", argLen) == 0))
             {
