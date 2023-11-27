@@ -949,7 +949,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             FALLTHROUGH;
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             elemsize = id->idOpSize();
-            assert(insOptsNone(id->idInsOpt()));
+            assert(insOptsScalable(id->idInsOpt()));
             assert(isGeneralRegister(id->idReg1()));   // ddddd
             assert(isPredicateRegister(id->idReg2())); // MMMM
             assert(isValidVectorElemsize(elemsize));   // xx
@@ -958,7 +958,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             elemsize = id->idOpSize();
-            assert(insOptsNone(id->idInsOpt()));
+            assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isPredicateRegister(id->idReg2())); // MMMM
             assert(isValidVectorElemsize(elemsize));   // xx
@@ -6518,6 +6518,36 @@ void emitter::emitIns_R_R(
                 assert(insOptsNone(opt));
                 assert(isValidVectorElemsize(size));
                 fmt = IF_DV_2L;
+            }
+            break;
+
+        case INS_sve_decp:
+        case INS_sve_incp:
+            assert(isPredicateRegister(reg2));
+            if (isGeneralRegister(reg1))
+            {
+                fmt = IF_SVE_DM_2A;
+            }
+            else
+            {
+                assert(isVectorRegister(reg1));
+                fmt = IF_SVE_DN_2A;
+            }
+            break;
+
+        case INS_sve_sqdecp:
+        case INS_sve_sqincp:
+        case INS_sve_uqdecp:
+        case INS_sve_uqincp:
+            assert(isPredicateRegister(reg2));
+            if (isGeneralRegister(reg1))
+            {
+                fmt = IF_SVE_DO_2A;
+            }
+            else
+            {
+                assert(isVectorRegister(reg1));
+                fmt = IF_SVE_DP_2A;
             }
             break;
 
@@ -13633,31 +13663,28 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
-            code     = emitInsCodeSve(ins, fmt);
-            elemsize = id->idOpSize();
-            code |= insEncodeReg_Rd(id->idReg1()); // ddddd
-            code |= insEncodeReg_Pm(id->idReg2()); // MMMM
-            code |= insEncodeElemsize(elemsize);   // xx
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_R_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2()); // MMMM
+            code |= insEncodeElemsize(id->idOpSize());   // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
-            code     = emitInsCodeSve(ins, fmt);
-            elemsize = id->idOpSize();
-            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
-            code |= insEncodeReg_Pm(id->idReg2()); // MMMM
-            code |= insEncodeElemsize(elemsize);   // xx
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2()); // MMMM
+            code |= insEncodeElemsize(id->idOpSize());   // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
-            code     = emitInsCodeSve(ins, fmt);
-            elemsize = id->idOpSize();
-            code |= insEncodeReg_Rd(id->idReg1());              // ddddd
-            code |= insEncodeReg_Pm(id->idReg2());              // MMMM
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_R_4_to_0(id->idReg1());        // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());        // MMMM
             code |= insEncodeDatasizeVLS(code, id->idOpSize()); // X
-            code |= insEncodeElemsize(elemsize);                // xx
+            code |= insEncodeElemsize(id->idOpSize());          // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
