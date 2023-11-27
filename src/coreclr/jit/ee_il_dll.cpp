@@ -144,12 +144,13 @@ FILE* jitstdout()
 }
 
 // Like printf/logf, but only outputs to jitstdout -- skips call back into EE.
-void jitprintf(const char* fmt, ...)
+int jitprintf(const char* fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);
-    vfprintf(jitstdout(), fmt, vl);
+    int status = vfprintf(jitstdout(), fmt, vl);
     va_end(vl);
+    return status;
 }
 
 void jitShutdown(bool processIsTerminating)
