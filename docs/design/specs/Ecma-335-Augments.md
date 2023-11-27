@@ -385,7 +385,7 @@ In addition to the TypeDef table having a special ordering constraint, the Expor
 
 This line should be changed.
 
-> Finally, this TypeDef _and ExportedType_ ~~table has~~ _tables have_ a special ordering constraint: the definition of an enclosing class shall precede the definintion of all classes it encloses.
+> Finally, this TypeDef _and ExportedType_ ~~table has~~ _tables have_ a special ordering constraint: the definition of an enclosing class shall precede the definition of all classes it encloses.
 
 ## Module Initializer
 
