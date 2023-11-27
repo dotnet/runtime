@@ -91,7 +91,6 @@ public class WasiTemplateTests : BuildTestBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82515", TestPlatforms.Windows)]
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
     public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking, bool invariantTimezone)
     {
