@@ -541,10 +541,10 @@ public:
     void SetJumpKind(BBjumpKinds jumpKind)
     {
         // If this block's jump kind requires a target, ensure it is already set
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+        assert(!HasJumpDest() || HasInitializedJumpDest());
         bbJumpKind = jumpKind;
         // If new jump kind requires a target, ensure a target is already set
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+        assert(!HasJumpDest() || HasInitializedJumpDest());
     }
 
     BasicBlock* Prev() const
@@ -611,10 +611,16 @@ public:
         assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
 
+    bool HasJumpDest() const
+    {
+        // These block types should always have bbJumpDest set
+        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
+    }
+
     BasicBlock* GetJumpDest() const
     {
         // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+        assert(!HasJumpDest() || HasInitializedJumpDest());
         return bbJumpDest;
     }
 
@@ -623,7 +629,7 @@ public:
         // SetJumpKindAndTarget() nulls jumpDest for non-jump kinds,
         // so don't use SetJumpDest() to null bbJumpDest without updating bbJumpKind.
         bbJumpDest = jumpDest;
-        assert(HasJump());
+        assert(!HasJumpDest() || HasInitializedJumpDest());
     }
 
     void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
@@ -632,24 +638,24 @@ public:
         bbJumpDest = jumpDest;
 
         // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+        assert(!HasJumpDest() || HasInitializedJumpDest());
     }
 
-    bool HasJump() const
+    bool HasInitializedJumpDest() const
     {
+        assert(HasJumpDest());
         return (bbJumpDest != nullptr);
     }
 
     bool HasJumpTo(const BasicBlock* jumpDest) const
     {
-        assert(HasJump());
-        assert(!KindIs(BBJ_SWITCH, BBJ_EHFINALLYRET));
+        assert(HasInitializedJumpDest());
         return (bbJumpDest == jumpDest);
     }
 
     bool JumpsToNext() const
     {
-        assert(HasJump());
+        assert(HasInitializedJumpDest());
         return (bbJumpDest == bbNext);
     }
 
