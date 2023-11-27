@@ -60,7 +60,7 @@ jobs:
     logicalmachine: ${{ parameters.logicalmachine }}
     pgoRunType: ${{ parameters.pgoRunType }}
     physicalPromotionRunType: ${{ parameters.physicalPromotionRunType }}
-    r2rRunType: ${{ parameters.r2rRunType }}}
+    r2rRunType: ${{ parameters.r2rRunType }}
     experimentName: ${{ parameters.experimentName }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
