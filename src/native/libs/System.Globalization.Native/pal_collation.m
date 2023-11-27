@@ -327,7 +327,8 @@ int32_t GlobalizationNative_GetSortKeyNative(
         const char *utf8Bytes = [transformedString UTF8String];
         if (utf8Bytes != NULL) {
             NSUInteger utf8Length = [transformedString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
-            sortKey = (uint8_t *)malloc(utf8Length);
+            if  (sortKey == NULL)
+                sortKey = (uint8_t *)malloc(utf8Length);
             memcpy(sortKey, utf8Bytes, utf8Length);
             return utf8Length;
         }
@@ -342,7 +343,7 @@ int32_t GlobalizationNative_GetSortKeyNative(
 
                 if (sortKey != NULL) {
                     // Convert UTF-16 to UTF-8 manually (in this example, using memcpy)
-                    sortKey = (uint8_t *)malloc(utf16Length * 2);
+                    //sortKey = (uint8_t *)malloc(utf16Length * 2);
                     memcpy(sortKey, utf16Bytes, utf16Length * 2); // Assuming UTF-16 (2 bytes per character)
                     return utf16Length * 2;
                 }
