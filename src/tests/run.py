@@ -309,8 +309,7 @@ echo Core_Root is set to: "%%CORE_ROOT%%"
         """ Create a unix bash wrapper
         """
 
-        wrapper = \
-"""
+        wrapper = """
 #============================================================================
 # Repro environment for %s
 #
@@ -1105,8 +1104,8 @@ def find_test_from_name(host_os, test_location, test_name):
     """ Given a test's name return the location on disk
 
     Args:
-        host_os (str)       : os
-        test_location (str) :path to the coreclr tests
+        host_os (str)       : OS
+        test_location (str) : path to the coreclr tests
         test_name (str)     : Name of the test, all special characters will have
                             : been replaced with underscores.
 
@@ -1114,13 +1113,19 @@ def find_test_from_name(host_os, test_location, test_name):
         test_path (str): Path of the test based on its name
     """
 
+    # For some reason, out-of-process tests on Linux are named with ".cmd" wrapper script names,
+    # not .sh extension names. Fix that before trying to find the test filename.
+    if args.host_os != "windows":
+        test_name_wo_extension, test_name_extension = os.path.splitext(test_name)
+        if test_name_extension == ".cmd":
+            test_name = test_name_wo_extension + ".sh"
+
     location = test_name
 
     # Lambdas and helpers
     is_file_or_dir = lambda path : os.path.isdir(path) or os.path.isfile(path)
     def match_filename(test_path):
-        # Scan through the test directory looking for a similar
-        # file
+        # Scan through the test directory looking for a similar file
         global file_name_cache
 
         if not os.path.isdir(os.path.dirname(test_path)):
@@ -1386,7 +1391,7 @@ def create_repro(args, env, tests):
     """
     assert tests is not None
 
-    failed_tests = [test for test in tests if test["result"] == "Fail" and test["test_path"] is not None]
+    failed_tests = [test for test in tests if test["result"] == "Fail"]
     if len(failed_tests) == 0:
         return 0
 
@@ -1403,8 +1408,11 @@ def create_repro(args, env, tests):
     # Now that the args.repro_location exists under <runtime>/artifacts
     # create wrappers which will simply run the test with the correct environment
     for test in failed_tests:
-        debug_env = DebugEnv(args, env, test)
-        debug_env.write_repro()
+        if test["test_path"] is None:
+            print("Failed to create repro for test: %s" % test["name"])
+        else:
+            debug_env = DebugEnv(args, env, test)
+            debug_env.write_repro()
 
     print("Repro files written.")
 
