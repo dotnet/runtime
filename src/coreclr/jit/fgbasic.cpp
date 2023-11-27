@@ -4895,15 +4895,13 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
         block = fgSplitBlockAfterStatement(prevBb, stmt->GetPrevStmt());
     }
 
+    // prevBb should flow into block
+    assert(prevBb->KindIs(BBJ_ALWAYS) && prevBb->JumpsToNext() && prevBb->NextIs(block));
+
     // We split a block, possibly, in the middle - we need to propagate some flags
     prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
     block->bbFlags |=
         originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
-
-    // The above flag propagation will unset BBF_NONE_QUIRK, which should be set for prevBb
-    // since it jumps to its new next block.
-    assert(prevBb->KindIs(BBJ_ALWAYS) && prevBb->JumpsToNext());
-    prevBb->bbFlags |= BBF_NONE_QUIRK;
 
     if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
     {
