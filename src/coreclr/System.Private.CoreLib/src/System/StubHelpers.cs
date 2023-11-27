@@ -487,6 +487,9 @@ namespace System.StubHelpers
             if (pVariant != IntPtr.Zero)
             {
                 Interop.OleAut32.VariantClear(pVariant);
+
+                // VariantClear resets the instance to VT_EMPTY (0)
+                // COMPAT: Clear the remaining memory for compat. The instance remains set to VT_EMPTY (0).
                 *(ComVariant*)pVariant = default;
             }
         }

@@ -1154,8 +1154,6 @@ void VariantData::NewVariant(VariantData * const& dest, const CVTypes type, INT6
     }
 }
 
-class OutOfMemoryException;
-
 void SafeVariantClear(VARIANT* pVar)
 {
     CONTRACTL
@@ -1170,7 +1168,10 @@ void SafeVariantClear(VARIANT* pVar)
     {
         GCX_PREEMP();
         VariantClear(pVar);
-        FillMemory(pVar, sizeof(VARIANT), 0x00);
+
+        // VariantClear resets the instance to VT_EMPTY (0)
+        // COMPAT: Clear the remaining memory for compat. The instance remains set to VT_EMPTY (0).
+        ZeroMemory(pVar, sizeof(VARIANT));
     }
 }
 
