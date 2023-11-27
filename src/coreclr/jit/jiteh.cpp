@@ -611,19 +611,6 @@ bool Compiler::bbIsHandlerBeg(BasicBlock* block)
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
 }
 
-bool Compiler::bbIsExFlowBlock(BasicBlock* block, unsigned* regionIndex)
-{
-    if (block->hasHndIndex())
-    {
-        *regionIndex = block->getHndIndex();
-        return block == ehGetDsc(*regionIndex)->ExFlowBlock();
-    }
-    else
-    {
-        return false;
-    }
-}
-
 bool Compiler::ehHasCallableHandlers()
 {
 #if defined(FEATURE_EH_FUNCLETS)
@@ -910,7 +897,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if FEATURE_EH_CALLFINALLY_THUNKS
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -1088,22 +1075,7 @@ void* Compiler::ehEmitCookie(BasicBlock* block)
 {
     noway_assert(block);
 
-    void* cookie;
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (block->bbFlags & BBF_FINALLY_TARGET)
-    {
-        // Use the offset of the beginning of the NOP padding, not the main block.
-        // This might include loop head padding, too, if this is a loop head.
-        assert(block->bbUnwindNopEmitCookie); // probably not null-initialized, though, so this might not tell us
-                                              // anything
-        cookie = block->bbUnwindNopEmitCookie;
-    }
-    else
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    {
-        cookie = block->bbEmitCookie;
-    }
+    void* cookie = block->bbEmitCookie;
 
     noway_assert(cookie != nullptr);
     return cookie;
@@ -2012,12 +1984,12 @@ bool Compiler::fgNormalizeEHCase1()
         {
             // ...then we want to insert an empty, non-removable block outside the try to be the new first block of the
             // handler.
-            BasicBlock* newHndStart = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, handlerStart);
+            BasicBlock* newHndStart = BasicBlock::New(this, BBJ_ALWAYS, handlerStart);
             fgInsertBBbefore(handlerStart, newHndStart);
             fgAddRefPred(handlerStart, newHndStart);
 
             // Handler begins have an extra implicit ref count.
-            // BasicBlock::bbNewBasicBlock has already handled this for newHndStart.
+            // BasicBlock::New has already handled this for newHndStart.
             // Remove handlerStart's implicit ref count.
             //
             assert(newHndStart->bbRefs == 1);
@@ -2181,7 +2153,7 @@ bool Compiler::fgNormalizeEHCase2()
                         // We've got multiple 'try' blocks starting at the same place!
                         // Add a new first 'try' block for 'ehOuter' that will be outside 'eh'.
 
-                        BasicBlock* newTryStart = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, insertBeforeBlk);
+                        BasicBlock* newTryStart = BasicBlock::New(this, BBJ_ALWAYS, insertBeforeBlk);
                         newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
                         fgAddRefPred(insertBeforeBlk, newTryStart);
@@ -2372,7 +2344,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Create a new bb for the fake filter
             BasicBlock* handlerBb = eh->ebdHndBeg;
-            BasicBlock* filterBb  = BasicBlock::bbNewBasicBlock(this, BBJ_EHFILTERRET, handlerBb);
+            BasicBlock* filterBb  = BasicBlock::New(this, BBJ_EHFILTERRET, handlerBb);
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2657,7 +2629,7 @@ bool Compiler::fgNormalizeEHCase3()
                     // Add a new last block for 'ehOuter' that will be outside the EH region with which it encloses and
                     // shares a 'last' pointer
 
-                    BasicBlock* newLast = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, insertAfterBlk->Next());
+                    BasicBlock* newLast = BasicBlock::New(this, BBJ_ALWAYS, insertAfterBlk->Next());
                     newLast->bbRefs     = 0;
                     assert(insertAfterBlk != nullptr);
                     fgInsertBBafter(insertAfterBlk, newLast);
@@ -4020,43 +3992,6 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
 }
 
 #if defined(FEATURE_EH_FUNCLETS)
-
-#if defined(TARGET_ARM)
-
-/*****************************************************************************
- * We just removed a BBJ_CALLFINALLY/BBJ_ALWAYS pair. If this was the only such pair
- * targeting the BBJ_ALWAYS target, then we need to clear the BBF_FINALLY_TARGET bit
- * so that target can also be removed. 'block' is the finally target. Since we just
- * removed the BBJ_ALWAYS, it better have the BBF_FINALLY_TARGET bit set.
- */
-
-void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
-{
-    assert(fgPredsComputed);
-    assert((block->bbFlags & BBF_FINALLY_TARGET) != 0);
-
-    for (BasicBlock* const predBlock : block->PredBlocks())
-    {
-        if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->HasJumpTo(block))
-        {
-            BasicBlock* pPrev = predBlock->Prev();
-            if (pPrev != nullptr)
-            {
-                if (pPrev->KindIs(BBJ_CALLFINALLY))
-                {
-                    // We found a BBJ_CALLFINALLY / BBJ_ALWAYS that still points to this finally target
-                    return;
-                }
-            }
-        }
-    }
-
-    // Didn't find any BBJ_CALLFINALLY / BBJ_ALWAYS that still points here, so clear the bit
-
-    block->bbFlags &= ~BBF_FINALLY_TARGET;
-}
-
-#endif // defined(TARGET_ARM)
 
 /*****************************************************************************
  * Is this an intra-handler control flow edge?

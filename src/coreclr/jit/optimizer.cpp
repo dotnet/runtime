@@ -1746,21 +1746,6 @@ public:
             return false;
         }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        // Disqualify loops where the first block of the loop is a finally target.
-        // The main problem is when multiple loops share a 'top' block that is a finally
-        // target and we canonicalize the loops by adding a new loop head. In that case, we
-        // need to update the blocks so the finally target bit is moved to the newly created
-        // block, and removed from the old 'top' block. This is 'hard', so it's easier to disallow
-        // the loop than to update the flow graph to support this case.
-
-        if ((top->bbFlags & BBF_FINALLY_TARGET) != 0)
-        {
-            JITDUMP("Loop 'top' " FMT_BB " is a finally target. Rejecting loop.\n", top->bbNum);
-            return false;
-        }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
         // Compact the loop (sweep through it and move out any blocks that aren't part of the
         // flow cycle), and find the exits.
         if (!MakeCompactAndFindExits())
@@ -2844,7 +2829,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             to->SetJumpKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
             break;
         default:
-            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetJumpDest() DEBUG_ARG(this));
+            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetJumpDest());
             to->bbFlags |= (from->bbFlags & BBF_NONE_QUIRK);
             break;
     }
@@ -4511,7 +4496,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     fgRemoveAllRefPreds(succ, block);
                 }
 
-                block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next() DEBUG_ARG(this));
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
                 block->bbStmtList   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
                 block->bbFlags |= BBF_NONE_QUIRK;
@@ -4556,7 +4541,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
                 fgRemoveRefPred(initBlock->GetJumpDest(), initBlock);
-                initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->Next() DEBUG_ARG(this));
+                initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->Next());
                 initBlock->bbFlags |= BBF_NONE_QUIRK;
             }
             else
@@ -5110,7 +5095,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Create a new block after `block` to put the copied condition code.
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true, bJoin);
-    block->SetJumpKindAndTarget(BBJ_ALWAYS, bNewCond DEBUG_ARG(this));
+    block->SetJumpKindAndTarget(BBJ_ALWAYS, bNewCond);
     block->bbFlags |= BBF_NONE_QUIRK;
     assert(block->JumpsToNext());
 
@@ -8180,7 +8165,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // Allocate a new basic block for the pre-header.
 
     const bool  isTopEntryLoop = loop.lpIsTopEntry();
-    BasicBlock* preHead        = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, entry);
+    BasicBlock* preHead        = BasicBlock::New(this, BBJ_ALWAYS, entry);
     if (isTopEntryLoop)
     {
         preHead->bbFlags |= BBF_NONE_QUIRK;

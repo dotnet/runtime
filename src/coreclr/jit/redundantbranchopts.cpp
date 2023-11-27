@@ -1533,7 +1533,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", jti.m_block->bbNum,
                 jti.m_falseTarget->bbNum);
         fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
-        jti.m_block->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_falseTarget DEBUG_ARG(this));
+        jti.m_block->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_falseTarget);
         jti.m_block->bbFlags |= BBF_NONE_QUIRK;
         assert(jti.m_block->JumpsToNext());
     }

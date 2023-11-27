@@ -676,7 +676,7 @@ private:
                 if (condTree->IsIntegralConst(0))
                 {
                     m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next() DEBUG_ARG(m_compiler));
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
                     block->bbFlags |= BBF_NONE_QUIRK;
                 }
                 else
@@ -1533,7 +1533,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
-                block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock DEBUG_ARG(this));
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock);
                 fgAddRefPred(bottomBlock, block);
 
                 if (block == InlineeCompiler->fgLastBB)

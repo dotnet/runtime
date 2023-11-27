@@ -185,7 +185,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     genTreeOps foldOp;
     genTreeOps cmpOp;
-    var_types  foldType = m_c1->TypeGet();
+    var_types  foldType = genActualType(m_c1);
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -1008,7 +1008,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     // Update the flow.
     m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
-    m_b1->SetJumpKindAndTarget(BBJ_ALWAYS, m_b1->Next() DEBUG_ARG(m_comp));
+    m_b1->SetJumpKindAndTarget(BBJ_ALWAYS, m_b1->Next());
     m_b1->bbFlags |= BBF_NONE_QUIRK;
 
     // Fixup flags.
@@ -1298,7 +1298,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     if (optReturnBlock)
     {
-        m_b1->SetJumpKindAndTarget(BBJ_RETURN DEBUG_ARG(m_comp));
+        m_b1->SetJumpKindAndTarget(BBJ_RETURN);
         assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->NextIs(m_b2));
         assert(m_b3 != nullptr);
@@ -1324,7 +1324,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     // Get rid of the second block
 
-    m_comp->fgUnlinkBlock(m_b2);
+    m_comp->fgUnlinkBlockForRemoval(m_b2);
     m_b2->bbFlags |= BBF_REMOVED;
     // If m_b2 was the last block of a try or handler, update the EH table.
     m_comp->ehUpdateForDeletedBlock(m_b2);
@@ -1332,7 +1332,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     if (optReturnBlock)
     {
         // Get rid of the third block
-        m_comp->fgUnlinkBlock(m_b3);
+        m_comp->fgUnlinkBlockForRemoval(m_b3);
         m_b3->bbFlags |= BBF_REMOVED;
         // If m_b3 was the last block of a try or handler, update the EH table.
         m_comp->ehUpdateForDeletedBlock(m_b3);
@@ -1413,7 +1413,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
     // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE/GT_GE/GT_LT)
 
-    var_types foldType = m_c1->TypeGet();
+    var_types foldType = genActualType(m_c1->TypeGet());
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
