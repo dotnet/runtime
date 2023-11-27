@@ -428,7 +428,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(40), // Block has recursive tailcall that may turn into a loop
     BBF_NO_CSE_IN                      = MAKE_BBFLAG(41), // Block should kill off any incoming CSE
     BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(42), // Ok to add pred edge to this block, even when "safe" edge creation disabled
-    BBF_NONE_QUIRK                     = MAKE_BBFLAG(44), // Block was created as a BBJ_ALWAYS to the next block,
+    BBF_NONE_QUIRK                     = MAKE_BBFLAG(43), // Block was created as a BBJ_ALWAYS to the next block,
                                                           // and should be treated as if it falls through.
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
