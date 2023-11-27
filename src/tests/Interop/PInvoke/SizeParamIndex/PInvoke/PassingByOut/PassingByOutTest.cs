@@ -231,6 +231,7 @@ public class PassingByOutTest
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
     public static int TestEntryPoint()
     {
         try{

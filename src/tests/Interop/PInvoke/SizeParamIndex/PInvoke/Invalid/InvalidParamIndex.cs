@@ -16,12 +16,14 @@ public class InvalidSizeParamIndex
         out string arrSize, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] out byte[] arrByte);
 
     [Fact]
+    [SkipOnMono("needs triage")]
     public static void TooBig()
     {
         Assert.Throws<MarshalDirectiveException>(() => SizeParamIndexTooBig(out var _, out var _));
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
     public static void WrongType()
     {
         Assert.Throws<MarshalDirectiveException>(() => SizeParamIndexWrongType(out var _, out var _));

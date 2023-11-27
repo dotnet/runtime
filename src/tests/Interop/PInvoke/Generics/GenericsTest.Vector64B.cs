@@ -39,6 +39,7 @@ unsafe partial class GenericsNative
 public unsafe partial class GenericsTest
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestVector64B()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64B(true, false, true, false, true, false, true, false));

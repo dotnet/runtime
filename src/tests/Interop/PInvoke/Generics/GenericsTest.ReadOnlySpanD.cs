@@ -26,6 +26,7 @@ unsafe partial class GenericsNative
 public unsafe partial class GenericsTest
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestReadOnlySpanD()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetReadOnlySpanD(1.0));

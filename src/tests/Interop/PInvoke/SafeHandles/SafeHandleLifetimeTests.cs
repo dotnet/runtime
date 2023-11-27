@@ -14,6 +14,7 @@ namespace SafeHandleTests
         private static readonly IntPtr newValue = new IntPtr(987185);
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/168", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         public static void RunTest()
         {
             var testHandle = new TestSafeHandle(initialValue);

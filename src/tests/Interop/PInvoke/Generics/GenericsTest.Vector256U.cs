@@ -39,6 +39,7 @@ unsafe partial class GenericsNative
 public unsafe partial class GenericsTest
 {
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsXArch))]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestVector256U()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256U(1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u));

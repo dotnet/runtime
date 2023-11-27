@@ -13,13 +13,12 @@ namespace SafeHandleTests
         [Fact]
         public static void RunTest()
         {
-            if (TestLibrary.Utilities.IsWindows)
+            if (TestLibrary.PlatformDetection.IsBuiltInComEnabled)
             {
                 // The interface marshaller is only available when COM interop is
                 // enabled. The interface marshaller is what initiates the COM
                 // interop system which is what subsequently defines defined exception
-                // type to throw - matches .NET Framework behavior. At present support
-                // is limited to Windows so we branch on that.
+                // type to throw - matches .NET Framework behavior.
                 Assert.Throws<InvalidOperationException>(() => MarshalSafeHandleAsInterface());
             }
             else

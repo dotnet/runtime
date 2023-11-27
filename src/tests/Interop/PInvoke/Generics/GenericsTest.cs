@@ -46,6 +46,7 @@ unsafe partial class GenericsNative
 }
 
 [SkipOnMono("needs triage")]
+
 public partial class GenericsTest
 {
 }

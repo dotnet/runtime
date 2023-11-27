@@ -240,6 +240,7 @@ public class PassingByRefTest
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
     public static int TestEntryPoint()
     {
         try{

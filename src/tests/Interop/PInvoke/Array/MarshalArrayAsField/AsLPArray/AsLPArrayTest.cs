@@ -423,6 +423,7 @@ public class Test
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
     public static int TestEntryPoint()
     {
         try

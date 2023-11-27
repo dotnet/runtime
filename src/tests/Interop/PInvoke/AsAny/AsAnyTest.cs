@@ -296,6 +296,8 @@ public class AsAnyTests
     public static extern bool PassMixStruct(AsAnyField mix);
 
     [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/169", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         try

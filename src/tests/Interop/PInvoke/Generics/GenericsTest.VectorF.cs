@@ -66,6 +66,7 @@ unsafe partial class GenericsNative
 public unsafe partial class GenericsTest
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestVectorF()
     {
         if (Vector<float>.Count == 8)
@@ -79,7 +80,6 @@ public unsafe partial class GenericsTest
         }
     }
 
-    [Fact]
     public static void TestVectorF128()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorF128(1.0f, 2.0f, 3.0f, 4.0f));
@@ -123,7 +123,6 @@ public unsafe partial class GenericsTest
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.AddVectorF128s(in values[0], values.Length));
     }
 
-    [Fact]
     public static void TestVectorF256()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorF256(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f));

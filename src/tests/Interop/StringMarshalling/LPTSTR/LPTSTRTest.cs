@@ -10,24 +10,28 @@ using Xunit;
 using static LPTStrTestNative;
 
 [OuterLoop]
+[SkipOnMono("needs triage")]
 public partial class StringTests
 {
 }
 
 
 [OuterLoop]
+[SkipOnMono("needs triage")]
 public partial class StringBuilderTests
 {
 }
 
 
 [OuterLoop]
+[SkipOnMono("needs triage")]
 public partial class StringInStructTests
 {
 }
 
 
 [OuterLoop]
+[SkipOnMono("needs triage")]
 public class LPTStrTest
 {
     private static readonly string InitialString = "Hello World";

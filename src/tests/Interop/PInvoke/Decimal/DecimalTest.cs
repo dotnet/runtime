@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+[SkipOnMono("needs triage")]
 public class DecimalTest
 {
     private const int StartingIntValue = 42;
@@ -58,6 +59,7 @@ public class DecimalTest
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void RunCurrencyTests()
     {
         Assert.Throws<MarshalDirectiveException>(() => DecimalTestNative.CreateCurrencyFromInt(StartingIntValue));

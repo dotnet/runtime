@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 using static DelegateTestNative;
 
+[SkipOnMono("needs triage")]
 public class DelegateTest
 {
     [Fact]

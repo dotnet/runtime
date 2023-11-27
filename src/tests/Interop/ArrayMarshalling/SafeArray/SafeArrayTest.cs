@@ -9,10 +9,9 @@ using Xunit;
 
 #pragma warning disable CS0612, CS0618
 
-public class Tester
+public class SafeArrayMarshallingTest
 {
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
     [SkipOnMono("Requires COM support")]
     public static int TestEntryPoint()
     {

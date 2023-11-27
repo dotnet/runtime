@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <SupportProject Include="$(TestLibraryProjectPath)" />
     <SupportProject Include="PInvoke/Miscellaneous/CopyCtor/CopyCtorUtil.ilproj" />
     <SupportProject Include="PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/ManagedDll*/*.csproj" />
-    <MergedWrapperProjectReference Include="*/**/*.??proj"
-                                   Exclude="@(SupportProject)" />
+    <MergedWrapperProjectReference Include="*/**/*.??proj" Exclude="@(SupportProject)" />
     <ProjectReference Include="@(SupportProject)" />
   </ItemGroup>
 
@@ -26,6 +26,7 @@
     <Compile Include="PInvoke/AsAny/**/*.cs" />
     <Compile Include="PInvoke/Attributes/**/*.cs" />
     <Compile Include="PInvoke/CustomMarshalers/**/*.cs" />
+    <Compile Include="PInvoke/DateTime/**/*.cs" />
     <Compile Include="PInvoke/Decimal/**/*.cs" />
     <Compile Include="PInvoke/Delegate/**/*.cs" />
     <Compile Include="PInvoke/Generics/**/*.cs" />
