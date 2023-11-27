@@ -142,7 +142,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(builtDotnet, sharedTestState.RepoDirectories.BuildArchitecture)
+                .DotNetRoot(builtDotnet, TestContext.BuildArchitecture)
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
@@ -153,7 +153,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Verify running from within the working directory
             Command.Create(appExe)
                 .WorkingDirectory(fixture.TestProject.OutputDirectory)
-                .DotNetRoot(builtDotnet, sharedTestState.RepoDirectories.BuildArchitecture)
+                .DotNetRoot(builtDotnet, TestContext.BuildArchitecture)
                 .MultilevelLookup(false)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -179,7 +179,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
             {
-                string architecture = fixture.RepoDirProvider.BuildArchitecture;
+                string architecture = TestContext.BuildArchitecture;
                 if (useRegisteredLocation)
                 {
                     registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (architecture, builtDotnet) });
@@ -272,7 +272,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (useAppHost)
             {
                 command = Command.Create(sharedTestState.MockApp.AppExe)
-                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture);
+                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath, TestContext.BuildArchitecture);
             }
             else
             {
@@ -300,7 +300,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (useAppHost)
             {
                 command = Command.Create(app.AppExe)
-                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture);
+                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath, TestContext.BuildArchitecture);
             }
             else
             {
@@ -348,7 +348,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                     expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure;
                     expectedStdErr = $"Framework: '{Constants.MicrosoftNETCoreApp}', " +
-                        $"version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture})";
+                        $"version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({TestContext.BuildArchitecture})";
                     expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 }
 
@@ -360,7 +360,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 result.Should().Fail()
                     .And.HaveStdErrContaining($"https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
-                    .And.HaveStdErrContaining($"&rid={RepoDirectoriesProvider.Default.BuildRID}")
+                    .And.HaveStdErrContaining($"&rid={TestContext.BuildRID}")
                     .And.HaveStdErrContaining(expectedStdErr);
 
                 // Some Unix systems will have 8 bit exit codes.
@@ -400,13 +400,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 WindowsUtils.WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
-                string expectedMissingFramework = $"'{Constants.MicrosoftNETCoreApp}', version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture})";
+                string expectedMissingFramework = $"'{Constants.MicrosoftNETCoreApp}', version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({TestContext.BuildArchitecture})";
                 var result = command.WaitForExit(true)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
                     .And.HaveStdErrContaining("&gui=true")
-                    .And.HaveStdErrContaining($"&rid={RepoDirectoriesProvider.Default.BuildRID}")
+                    .And.HaveStdErrContaining($"&rid={TestContext.BuildRID}")
                     .And.HaveStdErrMatching($"details: (?>.|\\s)*{System.Text.RegularExpressions.Regex.Escape(expectedMissingFramework)}");
             }
         }
@@ -467,7 +467,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(dotnet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture)
+                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
                     .MultilevelLookup(false)
                     .Start();
 

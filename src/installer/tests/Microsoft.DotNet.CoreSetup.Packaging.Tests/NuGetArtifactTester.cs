@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             string nupkgPath = Path.Combine(
                 dirs.BaseArtifactsFolder,
                 "packages",
-                dirs.Configuration,
+                TestContext.Configuration,
                 "Shipping",
                 $"{id}.{dirs.MicrosoftNETCoreAppVersion}.nupkg");
 

@@ -37,10 +37,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             RepoDirProvider = repoDirectoriesProvider;
 
-            Framework = framework ?? RepoDirProvider.Tfm;
+            Framework = framework ?? TestContext.Tfm;
 
             SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
-            CurrentRid = repoDirectoriesProvider.TargetRID;
+            CurrentRid = TestContext.TargetRID;
 
             BuiltDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
 
@@ -165,7 +165,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 buildArgs.Add(framework);
             }
 
-            buildArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
+            buildArgs.Add($"/p:TestTargetRid={TestContext.TargetRID}");
             buildArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
 
             if (outputDirectory != null)
@@ -314,7 +314,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 if (selfContained.Value && runtime == null)
                 {
                     publishArgs.Add("--runtime");
-                    publishArgs.Add(RepoDirProvider.TargetRID);
+                    publishArgs.Add(TestContext.TargetRID);
                 }
             }
 
@@ -329,7 +329,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 publishArgs.Add("/p:PublishSingleFile=true");
             }
 
-            publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
+            publishArgs.Add($"/p:TestTargetRid={TestContext.TargetRID}");
             publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
 
             foreach (var arg in extraArgs)
