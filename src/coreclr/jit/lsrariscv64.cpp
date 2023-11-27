@@ -654,6 +654,14 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             assert(dstCount == 1);
 
+            if (base && index)
+            {
+                DWORD scale;
+                BitScanForward(&scale, lea->gtScale);
+                if (scale)
+                    buildInternalIntRegisterDefForNode(tree); // scaleTempReg
+            }
+
             // On RISCV64 we may need a single internal register
             // (when both conditions are true then we still only need a single internal register)
             if ((index != nullptr) && (cns != 0))

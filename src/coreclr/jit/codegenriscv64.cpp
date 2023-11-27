@@ -5667,7 +5667,8 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 // genScaledAdd: A helper for `dest = base + (index << scale)`
 //               and maybe optimize the instruction(s) for this operation.
 //
-void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale)
+void CodeGen::genScaledAdd(
+    emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale, regNumber scaleTempReg)
 {
     assert((scale >> 5) == 0);
     emitter* emit = GetEmitter();
@@ -5691,10 +5692,10 @@ void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg
             ins  = INS_slli;
             ins2 = INS_add;
         }
-
+        assert(scaleTempReg != REG_NA);
         // target = base + index << scale
-        emit->emitIns_R_R_I(ins, attr, rsGetRsvdReg(), indexReg, scale);
-        emit->emitIns_R_R_R(ins2, attr, targetReg, baseReg, rsGetRsvdReg());
+        emit->emitIns_R_R_I(ins, attr, scaleTempReg, indexReg, scale);
+        emit->emitIns_R_R_R(ins2, attr, targetReg, baseReg, scaleTempReg);
     }
 }
 
@@ -5723,21 +5724,23 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // The index is never contained, even if it is a constant.
     assert(index->isUsedFromReg());
 
+    regNumber tempReg = node->GetSingleTempReg();
+
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
     {
-        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, rsGetRsvdReg(), base->GetRegNum(), node->gtLenOffset);
-        // if (index >= rsGetRsvdReg())
+        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, tempReg, base->GetRegNum(), node->gtLenOffset);
+        // if (index >= tempReg)
         // {
         //   JumpToThrowHlpBlk;
         // }
         //
-        // sltu  rsGetRsvdReg(), index, rsGetRsvdReg()
-        // bne  rsGetRsvdReg(), zero, RngChkExit
+        // sltu  tempReg, index, tempReg
+        // bne  tempReg, zero, RngChkExit
         // IndRngFail:
         // ...
         // RngChkExit:
-        genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index->GetRegNum(), node->gtIndRngFailBB, rsGetRsvdReg());
+        genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index->GetRegNum(), node->gtIndRngFailBB, tempReg);
     }
 
     emitAttr attr = emitActualTypeSize(node);
@@ -5751,11 +5754,11 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // dest = base + (index << scale)
         if (node->gtElemSize <= 64)
         {
-            genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale);
+            genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
         }
         else
         {
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), scale);
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, scale);
 
             instruction ins;
             instruction ins2;
@@ -5769,16 +5772,16 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
                 ins  = INS_sll;
                 ins2 = INS_add;
             }
-            GetEmitter()->emitIns_R_R_R(ins, attr, rsGetRsvdReg(), index->GetRegNum(), rsGetRsvdReg());
-            GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), rsGetRsvdReg(), base->GetRegNum());
+            GetEmitter()->emitIns_R_R_R(ins, attr, tempReg, index->GetRegNum(), tempReg);
+            GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), tempReg, base->GetRegNum());
         }
     }
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
-        // rsGetRsvdReg() = element size
-        instGen_Set_Reg_To_Imm(EA_4BYTE, rsGetRsvdReg(), (ssize_t)node->gtElemSize);
+        // tempReg = element size
+        instGen_Set_Reg_To_Imm(EA_4BYTE, tempReg, (ssize_t)node->gtElemSize);
 
-        // dest = index * rsGetRsvdReg() + base
+        // dest = index * tempReg + base
         instruction ins;
         instruction ins2;
         if (attr == EA_4BYTE)
@@ -5791,8 +5794,8 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             ins  = INS_mul;
             ins2 = INS_add;
         }
-        GetEmitter()->emitIns_R_R_R(ins, EA_PTRSIZE, rsGetRsvdReg(), index->GetRegNum(), rsGetRsvdReg());
-        GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), rsGetRsvdReg(), base->GetRegNum());
+        GetEmitter()->emitIns_R_R_R(ins, EA_PTRSIZE, tempReg, index->GetRegNum(), tempReg);
+        GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), tempReg, base->GetRegNum());
     }
 
     // dest = dest + elemOffs
@@ -7008,11 +7011,12 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         assert(isPow2(lea->gtScale));
         BitScanForward(&scale, lea->gtScale);
         assert(scale <= 4);
+        regNumber scaleTempReg = scale ? lea->ExtractTempReg() : REG_NA;
 
         if (offset == 0)
         {
             // Then compute target reg from [base + index*scale]
-            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale, scaleTempReg);
         }
         else
         {
@@ -7022,7 +7026,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
             if (!useLargeOffsetSeq && emitter::isValidSimm12(offset))
             {
-                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale, scaleTempReg);
                 instruction ins = size == EA_4BYTE ? INS_addiw : INS_addi;
                 emit->emitIns_R_R_I(ins, size, lea->GetRegNum(), lea->GetRegNum(), offset);
             }
@@ -7036,7 +7040,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 // compute the large offset.
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
 
-                genScaledAdd(EA_PTRSIZE, tmpReg, tmpReg, index->GetRegNum(), scale);
+                genScaledAdd(EA_PTRSIZE, tmpReg, tmpReg, index->GetRegNum(), scale, scaleTempReg);
 
                 instruction ins = size == EA_4BYTE ? INS_addw : INS_add;
                 emit->emitIns_R_R_R(ins, size, lea->GetRegNum(), tmpReg, memBase->GetRegNum());
