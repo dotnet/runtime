@@ -27,6 +27,7 @@ namespace System.Reflection.Emit
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
         private int _nextParameterRowId = 1;
+        private int _nextPropertyRowId = 1;
         private bool _coreTypesFullyPopulated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
@@ -137,7 +138,7 @@ namespace System.Reflection.Emit
                     parent = GetTypeHandle(typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeHandle = AddTypeDefinition(typeBuilder, parent, typeBuilder._firsMethodToken, typeBuilder._firstFieldToken);
+                TypeDefinitionHandle typeHandle = AddTypeDefinition(typeBuilder, parent, typeBuilder._firstMethodToken, typeBuilder._firstFieldToken);
                 Debug.Assert(typeBuilder._handle.Equals(typeHandle));
 
                 if (typeBuilder.IsGenericType)
@@ -169,6 +170,7 @@ namespace System.Reflection.Emit
                 }
 
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
+                WriteProperties(typeBuilder);
                 WriteFields(typeBuilder);
                 WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
             }
@@ -188,6 +190,42 @@ namespace System.Reflection.Emit
             }
         }
 
+        private void WriteProperties(TypeBuilderImpl typeBuilder)
+        {
+            if (typeBuilder._propertyDefinitions.Count > 0)
+            {
+                AddPropertyMap(typeBuilder._handle, typeBuilder._firstPropertyToken);
+                foreach (PropertyBuilderImpl property in typeBuilder._propertyDefinitions)
+                {
+                    PropertyDefinitionHandle propertyHandle = AddPropertyDefinition(property, MetadataSignatureHelper.PropertySignatureEncoder(property, this));
+                    WriteCustomAttributes(property._customAttributes, propertyHandle);
+
+                    if (property.GetMethod is MethodBuilderImpl gMb)
+                    {
+                        AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Getter, gMb._handle);
+                    }
+
+                    if (property.SetMethod is MethodBuilderImpl sMb)
+                    {
+                        AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Setter, sMb._handle);
+                    }
+
+                    if (property._otherMethods != null)
+                    {
+                        foreach (MethodBuilderImpl method in property._otherMethods)
+                        {
+                            AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Other, method._handle);
+                        }
+                    }
+
+                    if (property._defaultValue != DBNull.Value)
+                    {
+                        AddDefaultValue(propertyHandle, property._defaultValue);
+                    }
+                }
+            }
+        }
+
         private void PopulateFieldDefinitionHandles(List<FieldBuilderImpl> fieldDefinitions)
         {
             foreach (FieldBuilderImpl field in fieldDefinitions)
@@ -204,13 +242,23 @@ namespace System.Reflection.Emit
             }
         }
 
+        private void PopulatePropertyDefinitionHandles(List<PropertyBuilderImpl> properties)
+        {
+            foreach (PropertyBuilderImpl property in properties)
+            {
+                property._handle = MetadataTokens.PropertyDefinitionHandle(_nextPropertyRowId++);
+            }
+        }
+
         internal void PopulateTypeAndItsMembersTokens(TypeBuilderImpl typeBuilder)
         {
             typeBuilder._handle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            typeBuilder._firsMethodToken = _nextMethodDefRowId;
+            typeBuilder._firstMethodToken = _nextMethodDefRowId;
             typeBuilder._firstFieldToken = _nextFieldDefRowId;
+            typeBuilder._firstPropertyToken = _nextPropertyRowId;
             PopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
             PopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
+            PopulatePropertyDefinitionHandles(typeBuilder._propertyDefinitions);
         }
 
         private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
@@ -465,6 +513,23 @@ namespace System.Reflection.Emit
 
         private void AddDefaultValue(EntityHandle parentHandle, object? defaultValue) =>
             _metadataBuilder.AddConstant(parent: parentHandle, value: defaultValue);
+
+        private void AddMethodSemantics(EntityHandle parentHandle, MethodSemanticsAttributes attribute, MethodDefinitionHandle methodHandle) =>
+            _metadataBuilder.AddMethodSemantics(
+                association: parentHandle,
+                semantics: attribute,
+                methodDefinition: methodHandle);
+
+        private PropertyDefinitionHandle AddPropertyDefinition(PropertyBuilderImpl property, BlobBuilder signature) =>
+            _metadataBuilder.AddProperty(
+                attributes: property.Attributes,
+                name: _metadataBuilder.GetOrAddString(property.Name),
+                signature: _metadataBuilder.GetOrAddBlob(signature));
+
+        private void AddPropertyMap(TypeDefinitionHandle typeHandle, int firstPropertyToken) =>
+            _metadataBuilder.AddPropertyMap(
+                declaringType: typeHandle,
+                propertyList: MetadataTokens.PropertyDefinitionHandle(firstPropertyToken));
 
         private FieldDefinitionHandle AddFieldDefinition(FieldBuilderImpl field, BlobBuilder fieldSignature) =>
             _metadataBuilder.AddFieldDefinition(
