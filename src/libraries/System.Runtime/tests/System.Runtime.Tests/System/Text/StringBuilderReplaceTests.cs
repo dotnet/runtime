@@ -86,11 +86,9 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Replace(builder, "a", "b", 4, 2)); // Count + start index > builder.Length
         }
 
-        protected virtual StringBuilder Replace(StringBuilder builder, string oldValue, string newValue)
-            => builder.Replace(oldValue, newValue);
+        protected abstract StringBuilder Replace(StringBuilder builder, string oldValue, string newValue);
 
-        protected virtual StringBuilder Replace(StringBuilder builder, string oldValue, string newValue, int startIndex, int count)
-            => builder.Replace(oldValue, newValue, startIndex, count);
+        protected abstract StringBuilder Replace(StringBuilder builder, string oldValue, string newValue, int startIndex, int count);
     }
 
     public class StringBuilderReplaceTests_String : StringBuilderReplaceTests
@@ -104,6 +102,12 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentNullException>("oldValue", () => Replace(builder, null, "")); // Old value is null
             AssertExtensions.Throws<ArgumentNullException>("oldValue", () => Replace(builder, null, "a", 0, 0)); // Old value is null
         }
+
+        protected override StringBuilder Replace(StringBuilder builder, string oldValue, string newValue)
+            => builder.Replace(oldValue, newValue);
+
+        protected override StringBuilder Replace(StringBuilder builder, string oldValue, string newValue, int startIndex, int count)
+            => builder.Replace(oldValue, newValue, startIndex, count);
     }
 
     public class StringBuilderReplaceTests_Span : StringBuilderReplaceTests
