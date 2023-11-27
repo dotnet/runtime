@@ -2984,19 +2984,20 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             THROW_BAD_FORMAT_MAYBE((kind != ELEMENT_TYPE_SZARRAY) || rank == 1, BFA_SDARRAY_BADRANK, pLoaderModule);
 
             // Arrays of BYREFS not allowed
-            if (paramType.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
+            if (paramType.IsByRef())
             {
                 ThrowTypeLoadException(pKey, IDS_CLASSLOAD_BYREFARRAY);
             }
 
             // Arrays of ByRefLike types not allowed
-            MethodTable* pMT = paramType.GetMethodTable();
-            if (pMT != NULL)
+            if (paramType.IsByRefLike())
             {
-                if (pMT->IsByRefLike())
-                {
-                    ThrowTypeLoadException(pKey, IDS_CLASSLOAD_BYREFLIKEARRAY);
-                }
+                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_BYREFLIKEARRAY);
+            }
+
+            if (paramType.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
+            {
+                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_VOIDARRAY);
             }
 
             if (rank > MAX_RANK)

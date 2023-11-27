@@ -298,9 +298,9 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext _)
+        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext _)
         {
-            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             yield return _ =>
@@ -354,6 +354,7 @@ namespace ILCompiler
                 Console.WriteLine();
                 Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
                 Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
+                return true;
             };
         }
 

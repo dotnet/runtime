@@ -1731,6 +1731,7 @@ string lengthAttribute = "";
 #endif //NETCOREAPP
 
         string source = $$"""
+            using System;
             using System.Collections.Generic;
             using Microsoft.Extensions.Options;
             using System.ComponentModel.DataAnnotations;
@@ -1782,6 +1783,12 @@ string lengthAttribute = "";
 
                     [MaxLengthAttribute(5)]
                     public List<string>? P12 { get; set; }
+
+                    [RangeAttribute(typeof(TimeSpan), "00:00:00", "23:59:59")]
+                    public string? P13 { get; set; }
+
+                    [RangeAttribute(typeof(TimeSpan), "01:00:00", "23:59:59")]
+                    public TimeSpan P14 { get; set; }
                 }
 
                 [OptionsValidator]

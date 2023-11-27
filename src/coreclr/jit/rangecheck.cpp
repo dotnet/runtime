@@ -1481,7 +1481,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         }
     }
-    else if (varTypeIsSmallInt(expr->TypeGet()))
+    else if (varTypeIsSmall(expr))
     {
         range = GetRangeFromType(expr->TypeGet());
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));

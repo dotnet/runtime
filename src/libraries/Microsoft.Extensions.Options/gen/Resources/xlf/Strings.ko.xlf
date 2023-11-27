@@ -4,172 +4,172 @@
     <body>
       <trans-unit id="AlreadyImplementsValidateMethodMessage">
         <source>Type {0} already implements the Validate method.</source>
-        <target state="new">Type {0} already implements the Validate method.</target>
+        <target state="translated">형식 {0}은(는) Validate 메서드를 이미 구현하고 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlreadyImplementsValidateMethodTitle">
         <source>A type already includes an implementation of the 'Validate' method.</source>
-        <target state="new">A type already includes an implementation of the 'Validate' method.</target>
+        <target state="translated">형식에 'Validate' 메서드 구현이 이미 포함되어 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantBeStaticClassMessage">
         <source>[OptionsValidator] cannot be applied to static class {0}.</source>
-        <target state="new">[OptionsValidator] cannot be applied to static class {0}.</target>
+        <target state="translated">[OptionsValidator]은(는) 정적 클래스 {0}에 적용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantBeStaticClassTitle">
         <source>'OptionsValidatorAttribute' can't be applied to a static class.</source>
-        <target state="new">'OptionsValidatorAttribute' can't be applied to a static class.</target>
+        <target state="translated">'OptionsValidatorAttribute'는 정적 클래스에 적용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantUseWithGenericTypesMessage">
         <source>Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</source>
-        <target state="new">Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</target>
+        <target state="translated">열린 제네릭 형식 {0}의 필드 또는 속성에는 [ValidateObjectMembers] 또는 [ValidateEnumeratedItems]을(를) 사용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantUseWithGenericTypesTitle">
         <source>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</source>
-        <target state="new">Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</target>
+        <target state="translated">열린 제네릭 형식의 필드 또는 속성에는 'ValidateObjectMembersAttribute' 또는 'ValidateEnumeratedItemsAttribute'를 사용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">상수 또는 정적 멤버 {0}에 유효성 검사 특성을 적용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">상수, 정적 필드 또는 속성을 확인할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
-        <target state="new">There is a circular type reference involving type {0} preventing it from being used for static validation.</target>
+        <target state="translated">정적 유효성 검사에 사용할 수 없으므로 형식 {0} 관련된 순환 형식 참조가 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesTitle">
         <source>Unsupported circular references in model types.</source>
-        <target state="new">Unsupported circular references in model types.</target>
+        <target state="translated">모델 형식에 지원되지 않는 순환 참조가 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DoesntImplementIValidateOptionsMessage">
         <source>Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</source>
-        <target state="new">Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</target>
+        <target state="translated">형식 {0}은(는) 필요한 IValidateOptions&lt;{1}&gt; 인터페이스를 구현하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
-        <target state="new">A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</target>
+        <target state="translated">'OptionsValidatorAttribute'로 주석이 추가된 형식은 필요한 인터페이스를 구현하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
-        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <target state="translated">유효성 검사기 유형 '{2}'에서 '{1}' 멤버의 '{0}' 유효성 검사 특성에 액세스할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeTitle">
         <source>Validation attribute on the member is inaccessible from the validator type..</source>
-        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
+        <target state="translated">유효성 검사기 유형에서 멤버의 유효성 검사 특성에 액세스할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">
         <source>Can't apply validation attributes to private field or property {0}.</source>
-        <target state="new">Can't apply validation attributes to private field or property {0}.</target>
+        <target state="translated">프라이빗 필드 또는 속성 {0}에 유효성 검사 특성을 적용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleTitle">
         <source>Can't validate private fields or properties.</source>
-        <target state="new">Can't validate private fields or properties.</target>
+        <target state="translated">프라이빗 필드 또는 속성의 유효성을 검사할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMemberMessage">
         <source>Type {0} has no fields or properties to validate, referenced from member {1}.</source>
-        <target state="new">Type {0} has no fields or properties to validate, referenced from member {1}.</target>
+        <target state="translated">형식 {0}은(는) 유효성을 검사할 필드 또는 속성이 없으므로 멤버 {1}을(를) 참조합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMemberTitle">
         <source>A member type has no fields or properties to validate.</source>
-        <target state="new">A member type has no fields or properties to validate.</target>
+        <target state="translated">멤버 형식에 유효성을 검사할 필드 또는 속성이 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMembersFromValidatorMessage">
         <source>Type {0} has no fields or properties to validate, referenced by type {1}.</source>
-        <target state="new">Type {0} has no fields or properties to validate, referenced by type {1}.</target>
+        <target state="translated">형식 {0}은(는) 유효성을 검사할 필드 또는 속성이 없으므로 형식 {1}을(를) 참조합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMembersFromValidatorTitle">
         <source>A type has no fields or properties to validate.</source>
-        <target state="new">A type has no fields or properties to validate.</target>
+        <target state="translated">형식에 유효성을 검사할 필드 또는 속성이 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotEnumerableTypeMessage">
         <source>[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</source>
-        <target state="new">[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</target>
+        <target state="translated">[ValidateEnumeratedItems]은(는) IEnumerable&lt;T&gt;을(를) 구현하지 않으므로 형식 {0}의 멤버에 사용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotEnumerableTypeTitle">
         <source>Member type is not enumerable.</source>
-        <target state="new">Member type is not enumerable.</target>
+        <target state="translated">멤버 형식을 열거할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullValidatorTypeMessage">
         <source>Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</source>
-        <target state="new">Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</target>
+        <target state="translated">[ValidateObjectMembers] 또는 [ValidateEnumeratedItems] 특성에 Null 유효성 검사기 형식이 지정되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullValidatorTypeTitle">
         <source>Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</source>
-        <target state="new">Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</target>
+        <target state="translated">'ValidateObjectMembersAttribute' 또는 'ValidateEnumeratedItemsAttribute' 특성에 Null 유효성 검사기 형식이 지정되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
         <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">옵션 유효성 검사 원본 생성기는 C# '{0}'에서 사용할 수 없습니다. {1} 이상의 언어 버전을 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">원본 생성기에서 지원되지 않는 C# 언어 버전입니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
-        <target state="new">Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</target>
+        <target state="translated">형식 {0}은(는) 유효성 검사 주석이 있지만 멤버 {1}은(는) 참조할 수 있는 [ValidateEnumeratedItems]을(를) 지정하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationTitle">
         <source>Member potentially missing enumerable validation.</source>
-        <target state="new">Member potentially missing enumerable validation.</target>
+        <target state="translated">멤버에 열거 가능한 유효성 검사가 누락되었을 수 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingTransitiveValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</source>
-        <target state="new">Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</target>
+        <target state="translated">형식 {0}은(는) 유효성 검사 주석이 있지만 멤버 {1}은(는) 참조할 수 있는 [ValidateObjectMembers]을(를) 지정하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
         <source>Member potentially missing transitive validation.</source>
-        <target state="new">Member potentially missing transitive validation.</target>
+        <target state="translated">멤버에 전이적 유효성 검사가 누락되었을 수 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
         <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
-        <target state="new">The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</target>
+        <target state="translated">유효성 검사 특성 {0}은(는) 문자열, 배열 또는 ICollection 형식의 속성에만 적용해야 합니다. {1} 형식과 함께 사용하면 런타임 오류가 발생할 수 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
         <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
-        <target state="new">The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</target>
+        <target state="translated">유효성 검사 특성은 문자열, 배열 또는 ICollection 형식의 속성에만 적용할 수 있습니다. 다른 형식과 함께 사용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">
         <source>Validator type {0} doesn't have a parameterless constructor.</source>
-        <target state="new">Validator type {0} doesn't have a parameterless constructor.</target>
+        <target state="translated">유효성 검사기 형식 {0}은(는) 매개 변수가 없는 생성자가 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorTitle">
         <source>Validators used for transitive or enumerable validation must have a constructor with no parameters.</source>
-        <target state="new">Validators used for transitive or enumerable validation must have a constructor with no parameters.</target>
+        <target state="translated">전이적 또는 열거형 유효성 검사에 사용되는 유효성 검사기에는 매개 변수가 없는 생성자가 있어야 합니다.</target>
         <note />
       </trans-unit>
     </body>

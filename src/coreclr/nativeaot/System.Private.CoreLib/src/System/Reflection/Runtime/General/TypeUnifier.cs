@@ -222,7 +222,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(multiDim || rank == 1);
 
-            if (elementType.IsByRef)
+            if (elementType.IsByRef || elementType.IsVoid)
                 throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
         }
     }

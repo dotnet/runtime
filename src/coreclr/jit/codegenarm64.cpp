@@ -4289,7 +4289,7 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
 
     // Do the xchg
     emitAttr size = EA_PTRSIZE;
-    if (varTypeGCtype(type1) != varTypeGCtype(type2))
+    if (varTypeIsGC(type1) != varTypeIsGC(type2))
     {
         // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
         // Otherwise it will leave them alone, which is correct if they have the same GC-ness.

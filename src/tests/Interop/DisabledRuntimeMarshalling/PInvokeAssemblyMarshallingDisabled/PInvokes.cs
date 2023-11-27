@@ -121,7 +121,7 @@ public class PInvokes
         char c = '\u2705';
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShort(s, c), s, c));
 
-        Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool_FailureExpected(new StructWithShortAndBool(s, b), s, b));
+        Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool(new StructWithShortAndBool(s, b), s, b));
     }
 
     [Fact]
@@ -152,8 +152,9 @@ public class PInvokes
 
     [Fact]
     [SkipOnMono("Blocking this on CoreCLR should be good enough.")]
-    public static void Int128_NotSupported()
+    public static void UInt128_Int128_NotSupported()
     {
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithInt128(default(Int128)));
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithUInt128(default(UInt128)));
     }
 }

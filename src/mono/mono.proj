@@ -41,7 +41,7 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsOSX)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
-    <BuildMonoAOTCrossCompiler Condition="'$(TargetsWasi)' == 'true' and !$([MSBuild]::IsOSPlatform('Windows'))">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsWasi)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
@@ -54,7 +54,6 @@
     <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'singlethread'">false</MonoWasmThreads>
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</MonoWasmThreads>
-    <MonoEnableAssertMessages Condition="'$(MonoEnableAssertMessages)' == '' and '$(TargetsWasi)' == 'true'">true</MonoEnableAssertMessages>
     <MonoLLVMMajorVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.Substring(0, $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.IndexOf('.'))))</MonoLLVMMajorVersion>
     <MonoUseLibCxx Condition="'$(MonoLLVMMajorVersion)' >= '16.0'">true</MonoUseLibCxx>
   </PropertyGroup>
@@ -85,7 +84,20 @@
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(HostOS)' == 'windows'" 
+                      Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64"
+                      PrivateAssets="all"
+                      Version="$(MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version)"
+                      GeneratePathProperty="true" />
   </ItemGroup>
+
+  <!-- 
+    Like Wasm, Wasi needs a 64-bit python on windows to pinvoke into libClang.dll for offset generation.
+    Only wasi doesn't come with its own python and windows uses 32-bit python, so refer to the transport pack instead.
+  -->
+  <PropertyGroup Condition="'$(HostOS)' == 'windows' and '$(TargetsWasi)' == 'true'">
+    <PythonCmd>$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_34_Python_win-x64)', 'tools', 'python'))</PythonCmd>
+  </PropertyGroup>
 
   <!-- CI specific build options -->
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(Targetsillumos)' == 'true')">
@@ -717,7 +729,7 @@
       <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
       <MonoAOTCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
     </ItemGroup>
-    <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux' or '$(AotHostOS)' == 'linux-musl'">
       <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
@@ -815,8 +827,8 @@
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotCMakeSysroot)' != ''" Include="--sysroot=&quot;$(MonoAotCMakeSysroot)&quot;" />
-      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'emscripten'))&quot;" />
-      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'emscripten').TrimEnd('\/'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)').TrimEnd('\/'))&quot;" />
     </ItemGroup>
 
     <!--
@@ -843,6 +855,11 @@
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(AotHostArchitecture)' == 'arm64' and '$(AotHostOS)' == 'linux'">
       <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
+    <!-- ARM Linux cross build options on CI -->
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux-musl'">
+      <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -876,7 +893,8 @@
     <PropertyGroup>
       <_MonoSkipInitCompiler Condition="'$(AotHostArchitecture)' != '$(BuildArchitecture)'">false</_MonoSkipInitCompiler>
       <_MonoSkipInitCompiler Condition="'$(CrossBuild)' == 'true'">false</_MonoSkipInitCompiler>
-      <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(PythonCmd) $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
+      <_MonoAotCrossOffsetsToolPath>$(MonoProjectRoot)mono\tools\offsets-tool\offsets-tool.py</_MonoAotCrossOffsetsToolPath>
+      <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(PythonCmd) $(_MonoAotCrossOffsetsToolPath) @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; ROOTFS_DIR=&quot;$(MonoCrossDir)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)'</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' == 'true' and '$(HostOS)' != 'windows'">$(_MonoAOTCCOption) $(_MonoAOTCXXOption) @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>

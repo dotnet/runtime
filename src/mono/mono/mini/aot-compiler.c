@@ -4693,6 +4693,11 @@ contains_disable_reflection_attribute (MonoCustomAttrInfo *cattr)
 	return TRUE;
 }
 
+/*
+ * mono_aot_can_specialize:
+ *
+ *   Return whenever a method only has explicit callers in the same AOT compilation unit.
+ */
 gboolean
 mono_aot_can_specialize (MonoMethod *method)
 {
@@ -4703,48 +4708,53 @@ mono_aot_can_specialize (MonoMethod *method)
 		return FALSE;
 
 	// If it's not private, we can't specialize
-	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE)
+	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE && ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_ASSEM))
 		return FALSE;
 
-	// If it has the attribute disabling the specialization, we can't specialize
-	//
-	// Set by linker, indicates that the method can be found through reflection
-	// and that call-site specialization shouldn't be done.
-	//
-	// Important that this attribute is used for *nothing else*
-	//
-	// If future authors make use of it (to disable more optimizations),
-	// change this place to use a new attribute.
+	if (!strcmp (method->name, ".cctor"))
+		return FALSE;
+
+	if (m_method_is_virtual (method))
+		return FALSE;
+
+	if (method->is_inflated)
+		return FALSE;
+
+	gboolean has_cattr = FALSE;
+
+	/*
+	 * When the linker is ran with the --explicit-reflection option, it will mark types/methods
+	 * which have no indirect access with the DisablePrivateReflection attribute.
+	 */
 	ERROR_DECL (cattr_error);
-	MonoCustomAttrInfo *cattr = mono_custom_attrs_from_class_checked (method->klass, cattr_error);
+	MonoCustomAttrInfo *cattr;
 
-	if (!is_ok (cattr_error)) {
-		mono_error_cleanup (cattr_error);
-		goto cleanup_false;
-	} else if (cattr && contains_disable_reflection_attribute (cattr)) {
-		goto cleanup_true;
-	}
-
-	cattr = mono_custom_attrs_from_method_checked (method, cattr_error);
-
-	if (!is_ok (cattr_error)) {
-		mono_error_cleanup (cattr_error);
-		goto cleanup_false;
-	} else if (cattr && contains_disable_reflection_attribute (cattr)) {
-		goto cleanup_true;
-	} else {
-		goto cleanup_false;
-	}
-
-cleanup_false:
+	cattr = mono_custom_attrs_from_class_checked (method->klass, cattr_error);
+	if (is_ok (cattr_error) && cattr && contains_disable_reflection_attribute (cattr))
+		has_cattr = TRUE;
+	mono_error_cleanup (cattr_error);
 	if (cattr)
 		mono_custom_attrs_free (cattr);
+
+	if (!has_cattr) {
+		cattr = mono_custom_attrs_from_method_checked (method, cattr_error);
+		if (is_ok (cattr_error) && cattr && contains_disable_reflection_attribute (cattr))
+			has_cattr = TRUE;
+		mono_error_cleanup (cattr_error);
+		if (cattr)
+			mono_custom_attrs_free (cattr);
+	}
+
+	if (!has_cattr)
+		return FALSE;
+
+	/*
+	 * FIXME: Methods called from generic methods also need to be excluded, since
+	 * instances could be generated in other compilation units.
+	 */
 	return FALSE;
 
-cleanup_true:
-	if (cattr)
-		mono_custom_attrs_free (cattr);
-	return TRUE;
+	//return TRUE;
 }
 
 static gboolean
@@ -7301,6 +7311,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_field_info (acfg, patch_info->data.field, p, &p);
 		break;
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG:
 		break;
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
@@ -14584,6 +14595,10 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_GC_SAFE_POINT_FLAG;
+	add_preinit_slot (acfg, ji);
+
+	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG;
 	add_preinit_slot (acfg, ji);
 
 	if (!acfg->aot_opts.llvm_only) {

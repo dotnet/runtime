@@ -30,109 +30,184 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Same(DBNull.Value, ComVariantMarshaller.ConvertToManaged(ComVariant.Null));
         }
 
-        [Fact]
-        public void String_Marshals_To_BStr()
+        [Theory]
+        [InlineData(null, VarEnum.VT_EMPTY)] // Null strings are _not_ BSTRs, compare to BStrWrapper.
+        [InlineData("", VarEnum.VT_BSTR)]
+        [InlineData("Hello", VarEnum.VT_BSTR)]
+        public void String_Marshals_To_BStr(string value, VarEnum expected)
         {
-            string value = "Hello";
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
-            Assert.Equal(VarEnum.VT_BSTR, variant.VarType);
+            Assert.Equal(expected, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void BStrWrapper_Marshals_To_BStr()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("Hello")]
+        public void BStrWrapper_Marshals_To_BStr(string value)
         {
-            string value = "Hello";
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(new BStrWrapper(value));
             Assert.Equal(VarEnum.VT_BSTR, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void Int32_Marshals_To_I4()
+        public static IEnumerable<object[]> ValidIntValues()
         {
-            int value = 42;
+            yield return new object[] { int.MinValue };
+            yield return new object[] { -1 };
+            yield return new object[] { 0 };
+            yield return new object[] { 1 };
+            yield return new object[] { int.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIntValues))]
+        public void Int32_Marshals_To_I4(int value)
+        {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_I4, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void UInt32_Marshals_To_UI4()
+        public static IEnumerable<object[]> ValidUIntValues()
         {
-            uint value = 42;
+            yield return new object[] { uint.MinValue };
+            yield return new object[] { (uint)0 };
+            yield return new object[] { (uint)1 };
+            yield return new object[] { uint.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidUIntValues))]
+        public void UInt32_Marshals_To_UI4(uint value)
+        {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_UI4, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void Int16_Marshals_To_I2()
+        public static IEnumerable<object[]> ValidShortValues()
         {
-            short value = 42;
+            yield return new object[] { short.MinValue };
+            yield return new object[] { (short)-1 };
+            yield return new object[] { (short)0 };
+            yield return new object[] { (short)1 };
+            yield return new object[] { short.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidShortValues))]
+        public void Int16_Marshals_To_I2(short value)
+        {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_I2, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void UInt16_Marshals_To_UI2()
+        public static IEnumerable<object[]> ValidUShortValues()
         {
-            ushort value = 42;
+            yield return new object[] { ushort.MinValue };
+            yield return new object[] { (ushort)0 };
+            yield return new object[] { (ushort)1 };
+            yield return new object[] { ushort.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidUShortValues))]
+        public void UInt16_Marshals_To_UI2(ushort value)
+        {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_UI2, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void Byte_Marshals_To_UI1()
+        public static IEnumerable<object[]> ValidSByteValues()
         {
-            byte value = 42;
-            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
-            Assert.Equal(VarEnum.VT_UI1, variant.VarType);
-            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
-            ComVariantMarshaller.Free(variant);
+            yield return new object[] { sbyte.MinValue };
+            yield return new object[] { (sbyte)-1 };
+            yield return new object[] { (sbyte)0 };
+            yield return new object[] { (sbyte)1 };
+            yield return new object[] { sbyte.MaxValue };
         }
 
-        [Fact]
-        public void SByte_Marshals_To_I1()
+        [Theory]
+        [MemberData(nameof(ValidSByteValues))]
+        public void SByte_Marshals_To_I1(sbyte value)
         {
-            sbyte value = 42;
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_I1, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void Double_Marshals_To_R8()
+        public static IEnumerable<object[]> ValidByteValues()
         {
-            double value = 42.0;
+            yield return new object[] { byte.MinValue };
+            yield return new object[] { (byte)0 };
+            yield return new object[] { (byte)1 };
+            yield return new object[] { byte.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidByteValues))]
+        public void Byte_Marshals_To_UI1(byte value)
+        {
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
+            Assert.Equal(VarEnum.VT_UI1, variant.VarType);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
+        }
+
+        public static IEnumerable<object[]> ValidDoubleValues()
+        {
+            yield return new object[] { double.NaN };
+            yield return new object[] { double.MinValue };
+            yield return new object[] { -1.0 };
+            yield return new object[] { 0.0 };
+            yield return new object[] { 1.0 };
+            yield return new object[] { double.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidDoubleValues))]
+        public void Double_Marshals_To_R8(double value)
+        {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_R8, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void Single_Marshals_To_R4()
+        public static IEnumerable<object[]> ValidFloatValues()
         {
-            float value = 42.0f;
+            yield return new object[] { float.NaN };
+            yield return new object[] { float.MinValue };
+            yield return new object[] { -1.0f };
+            yield return new object[] { 0.0f };
+            yield return new object[] { 1.0f };
+            yield return new object[] { float.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidFloatValues))]
+        public void Single_Marshals_To_R4(float value)
+        {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_R4, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
             ComVariantMarshaller.Free(variant);
         }
 
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [Theory]
         public void Boolean_Marshals_To_BOOL(bool value)
         {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
@@ -141,27 +216,48 @@ namespace System.Runtime.InteropServices.Tests
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void ErrorWrapper_Maps_To_VT_ERROR()
+        [Theory]
+        [InlineData(0)] // S_OK
+        [InlineData(1)] // S_FALSE
+        [InlineData(unchecked((int)0x80004005))] // E_FAIL
+        [InlineData(unchecked((int)0x80070005))] // E_ACCESSDENIED
+        public void ErrorWrapper_Maps_To_VT_ERROR(int hr)
         {
-            ErrorWrapper errorWrapper = new ErrorWrapper(42);
+            ErrorWrapper errorWrapper = new ErrorWrapper(hr);
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(errorWrapper);
             Assert.Equal(VarEnum.VT_ERROR, variant.VarType);
             Assert.Equal(errorWrapper.ErrorCode, Assert.IsType<int>(ComVariantMarshaller.ConvertToManaged(variant)));
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void VariantWrapper_Throws()
+        public static IEnumerable<object[]> InvalidVariantValues()
         {
-            VariantWrapper wrapper = new VariantWrapper(42);
+            yield return new object[] { null };
+            yield return new object[] { new object() };
+            yield return new object[] { new int[] { } };
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidVariantValues))]
+        public void VariantWrapper_Throws(object obj)
+        {
+            VariantWrapper wrapper = new VariantWrapper(obj);
             Assert.Throws<ArgumentException>("managed", () => ComVariantMarshaller.ConvertToUnmanaged(wrapper));
         }
 
-        [Fact]
-        public void Decimal_Marshals_To_DECIMAL()
+        public static IEnumerable<object[]> ValidDecimalValues()
         {
-            decimal value = 42.0m;
+            yield return new object[] { decimal.MinValue };
+            yield return new object[] { decimal.MinusOne };
+            yield return new object[] { decimal.Zero };
+            yield return new object[] { decimal.One };
+            yield return new object[] { decimal.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidDecimalValues))]
+        public void Decimal_Marshals_To_DECIMAL(decimal value)
+        {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_DECIMAL, variant.VarType);
             Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
@@ -181,10 +277,19 @@ namespace System.Runtime.InteropServices.Tests
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
-        [Fact]
-        public void CurrentyWrapper_Marshals_To_CY()
+        public static IEnumerable<object[]> ValidCurrencyValues()
         {
-            decimal value = 42.0m;
+            yield return new object[] { decimal.FromOACurrency(long.MinValue) };
+            yield return new object[] { decimal.MinusOne };
+            yield return new object[] { decimal.Zero };
+            yield return new object[] { decimal.One };
+            yield return new object[] { decimal.FromOACurrency(long.MaxValue) };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCurrencyValues))]
+        public void CurrencyWrapper_Marshals_To_CY(decimal value)
+        {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(new CurrencyWrapper(value));
             Assert.Equal(VarEnum.VT_CY, variant.VarType);
             Assert.Equal(value, Assert.IsType<decimal>(ComVariantMarshaller.ConvertToManaged(variant)));
@@ -234,18 +339,20 @@ namespace System.Runtime.InteropServices.Tests
             ComVariantMarshaller.Free(variant);
         }
 
-        [Fact]
-        public void INT_Marshals_as_Int()
+        [Theory]
+        [MemberData(nameof(ValidIntValues))]
+        public void INT_Marshals_as_Int(int n)
         {
-            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_INT, 42);
-            Assert.Equal(42, Assert.IsType<int>(ComVariantMarshaller.ConvertToManaged(variant)));
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_INT, n);
+            Assert.Equal(n, Assert.IsType<int>(ComVariantMarshaller.ConvertToManaged(variant)));
         }
 
-        [Fact]
-        public void UINT_Marshals_as_UInt()
+        [Theory]
+        [MemberData(nameof(ValidUIntValues))]
+        public void UINT_Marshals_as_UInt(uint n)
         {
-            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_UINT, 42u);
-            Assert.Equal(42u, Assert.IsType<uint>(ComVariantMarshaller.ConvertToManaged(variant)));
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_UINT, n);
+            Assert.Equal(n, Assert.IsType<uint>(ComVariantMarshaller.ConvertToManaged(variant)));
         }
 
         [InlineData(VarEnum.VT_I1, (byte)42)]

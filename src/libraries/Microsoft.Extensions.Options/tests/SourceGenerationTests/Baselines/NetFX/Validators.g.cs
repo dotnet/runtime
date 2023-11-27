@@ -1124,6 +1124,8 @@ namespace SelfValidation
                 (builder ??= new()).AddResults(validationResults);
             }
 
+            context.MemberName = "Validate";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.Validate" : $"{name}.Validate";
             (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1171,6 +1173,32 @@ namespace SelfValidation
                 (builder ??= new()).AddResult(global::SelfValidation.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2", options.P2));
             }
 
+            context.MemberName = "Validate";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.Validate" : $"{name}.Validate";
+            (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+    }
+}
+namespace SelfValidation
+{
+    partial class SelfValidateOptions
+    {
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>Validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.SelfValidateOptions options)
+        {
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+
+            context.MemberName = "Validate";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "SelfValidateOptions.Validate" : $"{name}.Validate";
             (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1638,6 +1666,66 @@ namespace TestClasses.OptionsValidation
 }
 namespace TestClasses.OptionsValidation
 {
+    partial class OptionsUsingRangeWithTimeSpanValidator
+    {
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>Validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.OptionsUsingRangeWithTimeSpan options)
+        {
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
+
+            context.MemberName = "P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingRangeWithTimeSpan.P1" : $"{name}.P1";
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "P2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingRangeWithTimeSpan.P2" : $"{name}.P2";
+            validationResults.Clear();
+            validationAttributes.Clear();
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingRangeWithTimeSpan.P3" : $"{name}.P3";
+            validationResults.Clear();
+            validationAttributes.Clear();
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "P4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingRangeWithTimeSpan.P4" : $"{name}.P4";
+            validationResults.Clear();
+            validationAttributes.Clear();
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+    }
+}
+namespace TestClasses.OptionsValidation
+{
     partial class RangeAttributeModelDateValidator
     {
         /// <summary>
@@ -1746,7 +1834,7 @@ namespace TestClasses.OptionsValidation
 
             context.MemberName = "Val";
             context.DisplayName = string.IsNullOrEmpty(name) ? "RegularExpressionAttributeModel.Val" : $"{name}.Val";
-            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A20);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 (builder ??= new()).AddResults(validationResults);
@@ -1940,7 +2028,12 @@ namespace __OptionValidationStaticInstances
             (int)5,
             (int)9);
 
-        internal static readonly global::System.ComponentModel.DataAnnotations.RegularExpressionAttribute A19 = new global::System.ComponentModel.DataAnnotations.RegularExpressionAttribute(
+        internal static readonly __OptionValidationGeneratedAttributes.__SourceGen__RangeAttribute A19 = new __OptionValidationGeneratedAttributes.__SourceGen__RangeAttribute(
+            typeof(global::System.TimeSpan),
+            "00:00:00",
+            "00:00:10");
+
+        internal static readonly global::System.ComponentModel.DataAnnotations.RegularExpressionAttribute A20 = new global::System.ComponentModel.DataAnnotations.RegularExpressionAttribute(
             "\\s");
     }
 }
@@ -2037,19 +2130,34 @@ namespace __OptionValidationGeneratedAttributes
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
         private bool NeedToConvertMinMax { get; }
         private bool Initialized { get; set; }
+        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+
         public override bool IsValid(object? value)
         {
             if (!Initialized)
             {
                 if (Minimum is null || Maximum is null)
                 {
-                    throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
+                    throw new global::System.InvalidOperationException(c_minMaxError);
                 }
                 if (NeedToConvertMinMax)
                 {
                     System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
-                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
+                    if (OperandType == typeof(global::System.TimeSpan))
+                    {
+                        if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
+                            !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                        {
+                            throw new global::System.InvalidOperationException(c_minMaxError);
+                        }
+                        Minimum = timeSpanMinimum;
+                        Maximum = timeSpanMaximum;
+                    }
+                    else
+                    {
+                        Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                        Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                    }
                 }
                 int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
                 if (cmp > 0)
@@ -2071,13 +2179,35 @@ namespace __OptionValidationGeneratedAttributes
             System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
             object? convertedValue;
 
-            try
+            if (OperandType == typeof(global::System.TimeSpan))
             {
-                convertedValue = ConvertValue(value, formatProvider);
+                if (value is global::System.TimeSpan)
+                {
+                    convertedValue = value;
+                }
+                else if (value is string)
+                {
+                    if (!global::System.TimeSpan.TryParse((string)value, formatProvider, out global::System.TimeSpan timeSpanValue))
+                    {
+                        return false;
+                    }
+                    convertedValue = timeSpanValue;
+                }
+                else
+                {
+                    throw new global::System.InvalidOperationException($"A value type {value.GetType()} that is not a TimeSpan or a string has been given. This might indicate a problem with the source generator.");
+                }
             }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+            else
             {
-                return false;
+                try
+                {
+                    convertedValue = ConvertValue(value, formatProvider);
+                }
+                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                {
+                    return false;
+                }
             }
 
             var min = (global::System.IComparable)Minimum;
