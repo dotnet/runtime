@@ -149,12 +149,12 @@
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
+        <target state="translated">Użycie atrybutu „GeneratedComInterfaceAttribute” nie jest zgodne z zaleceniami. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
-        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</target>
+        <target state="translated">Użycie atrybutu „GeneratedComInterfaceAttribute” nie jest zgodne z zaleceniami.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
@@ -449,17 +449,17 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">Typ „{0}” będzie traktowany jako struktura w podpisie natywnym, a nie jako natywny wynik HRESULT. Aby traktować to jako HRESULT, dodaj element „[return:MarshalAs(UnmanagedType.Error)]” do metody.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">Ten typ będzie traktowany jako struktura w podpisie natywnym, a nie jako natywny wynik HRESULT</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
-        <target state="new">The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</target>
+        <target state="translated">Atrybut „[In]” jest obsługiwany tylko w przypadku parametrów tablicy. Parametry według wartości są domyślnie uznawane za tylko do odczytu.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -484,7 +484,7 @@
       </trans-unit>
       <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
-        <target state="new">The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</target>
+        <target state="translated">Atrybuty „[In]” i „[Out]” są obsługiwane tylko w przypadku parametrów tablicy. Rozważ użycie słowa kluczowego „ref”, aby umożliwić modyfikowanie parametru.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributes">
@@ -729,12 +729,12 @@
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</target>
+        <target state="translated">Użycie atrybutu „LibraryImportAttribute” nie jest zgodne z zaleceniami. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
-        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations.</target>
+        <target state="translated">Użycie atrybutu „LibraryImportAttribute” nie jest zgodne z zaleceniami.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
@@ -939,7 +939,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="needs-review-translation">Atrybut „[Out]” jest obsługiwany tylko w przypadku parametrów tablicy. Rozważ użycie słów kluczowych „out” lub „ref”, aby umożliwić modyfikowanie parametru.</target>
+        <target state="translated">Atrybut „[Out]” jest obsługiwany tylko w przypadku parametrów tablicy. Rozważ użycie słów kluczowych „out” lub „ref”, aby umożliwić modyfikowanie parametru.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -954,7 +954,7 @@
       </trans-unit>
       <trans-unit id="PreferExplicitInOutAttributesOnArrays">
         <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
-        <target state="new">It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</target>
+        <target state="translated">Zaleca się używanie jawnych atrybutów „[In]” i „[Out]” w parametrach tablicy.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">

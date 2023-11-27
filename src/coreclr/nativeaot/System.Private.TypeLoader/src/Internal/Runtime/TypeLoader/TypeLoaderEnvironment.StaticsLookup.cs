@@ -7,9 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-using Internal.Runtime.Augments;
-
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.TypeLoader
 {

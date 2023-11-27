@@ -132,7 +132,7 @@ namespace
             nullptr,
             0,
             REG_SZ,
-            reinterpret_cast<const BYTE*>(fullPath),
+            reinterpret_cast<const uint8_t*>(fullPath),
             static_cast<DWORD>(::TP_slen(fullPath) + 1) * sizeof(fullPath[0]));
         if (res != ERROR_SUCCESS)
             return __HRESULT_FROM_WIN32(res);
@@ -145,7 +145,7 @@ namespace
                 L"ThreadingModel",
                 0,
                 REG_SZ,
-                reinterpret_cast<const BYTE*>(threadingModel),
+                reinterpret_cast<const uint8_t*>(threadingModel),
                 static_cast<DWORD>(::TP_slen(threadingModel) + 1) * sizeof(threadingModel[0]));
             if (res != ERROR_SUCCESS)
                 return __HRESULT_FROM_WIN32(res);

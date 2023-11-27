@@ -43,6 +43,11 @@ namespace System.Net.Test.Common
             _transparentPingResponse = transparentPingResponse;
         }
 
+        public override string ToString()
+        {
+            return $"{this.GetType().Name} {_connectionSocket.LocalEndPoint} <-> {_connectionSocket.RemoteEndPoint}";
+        }
+
         public static Task<Http2LoopbackConnection> CreateAsync(SocketWrapper socket, Stream stream, Http2Options httpOptions)
         {
             return CreateAsync(socket, stream, httpOptions, Http2LoopbackServer.Timeout);

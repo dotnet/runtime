@@ -1312,6 +1312,18 @@ static const char * const  wRegNames[] =
     #include "register.h"
 };
 
+
+static const char * const  zRegNames[] =
+{
+    "z0",  "z1",  "z2",  "z3",  "z4",
+    "z5",  "z6",  "z7",  "z8",  "z9",
+    "z10", "z11", "z12", "z13", "z14",
+    "z15", "z16", "z17", "z18", "z19",
+    "z20", "z21", "z22", "z23", "z24",
+    "z25", "z26", "z27", "z28", "z29",
+    "z30", "z31"
+};
+
 static const char * const  vRegNames[] =
 {
     "v0",  "v1",  "v2",  "v3",  "v4",
@@ -1354,6 +1366,14 @@ static const char * const  bRegNames[] =
     "b25", "b26", "b27", "b28", "b29",
     "b30", "b31"
 };
+
+static const char * const  pRegNames[] =
+{
+    "p0",  "p1",  "p2",  "p3",  "p4",
+    "p5",  "p6",  "p7",  "p8",  "p9",
+    "p10", "p11", "p12", "p13", "p14",
+    "p15"
+};
 // clang-format on
 
 //------------------------------------------------------------------------
@@ -1395,11 +1415,33 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
         {
             rn = bRegNames[reg - REG_V0];
         }
+        else if (size == EA_SCALABLE)
+        {
+            rn = zRegNames[reg - REG_V0];
+        }
     }
 
     assert(rn != nullptr);
 
     return rn;
+}
+
+//------------------------------------------------------------------------
+// emitSveRegName: Returns a scalable vector register name.
+//
+// Arguments:
+//    reg - A SIMD and floating-point register.
+//
+// Return value:
+//    A string that represents a scalable vector register name.
+//
+const char* emitter::emitSveRegName(regNumber reg)
+{
+    assert((reg >= REG_V0) && (reg <= REG_V31));
+
+    int index = (int)reg - (int)REG_V0;
+
+    return zRegNames[index];
 }
 
 //------------------------------------------------------------------------
@@ -1416,6 +1458,24 @@ const char* emitter::emitVectorRegName(regNumber reg)
     assert((reg >= REG_V0) && (reg <= REG_V31));
 
     int index = (int)reg - (int)REG_V0;
+
+    return vRegNames[index];
+}
+
+//------------------------------------------------------------------------
+// emitPredicateRegName: Returns a predicate register name.
+//
+// Arguments:
+//    reg - A predicate register.
+//
+// Return value:
+//    A string that represents a predicate register name.
+//
+const char* emitter::emitPredicateRegName(regNumber reg)
+{
+    assert((reg >= REG_P0) && (reg <= REG_P15));
+
+    int index = (int)reg - (int)REG_P0;
 
     return vRegNames[index];
 }
@@ -3708,60 +3768,61 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     }
 
     assert(encoding_found);
+    const unsigned sve_ins_offset = ((unsigned)ins - INS_sve_invalid);
 
     switch (index)
     {
         case 0:
-            assert(ins < ArrLen(insCodes1));
-            code = insCodes1[ins];
+            assert(sve_ins_offset < ArrLen(insCodes1));
+            code = insCodes1[sve_ins_offset];
             break;
         case 1:
-            assert(ins < ArrLen(insCodes2));
-            code = insCodes2[ins];
+            assert(sve_ins_offset < ArrLen(insCodes2));
+            code = insCodes2[sve_ins_offset];
             break;
         case 2:
-            assert(ins < ArrLen(insCodes3));
-            code = insCodes3[ins];
+            assert(sve_ins_offset < ArrLen(insCodes3));
+            code = insCodes3[sve_ins_offset];
             break;
         case 3:
-            assert(ins < ArrLen(insCodes4));
-            code = insCodes4[ins];
+            assert(sve_ins_offset < ArrLen(insCodes4));
+            code = insCodes4[sve_ins_offset];
             break;
         case 4:
-            assert(ins < ArrLen(insCodes5));
-            code = insCodes5[ins];
+            assert(sve_ins_offset < ArrLen(insCodes5));
+            code = insCodes5[sve_ins_offset];
             break;
         case 5:
-            assert(ins < ArrLen(insCodes6));
-            code = insCodes6[ins];
+            assert(sve_ins_offset < ArrLen(insCodes6));
+            code = insCodes6[sve_ins_offset];
             break;
         case 6:
-            assert(ins < ArrLen(insCodes7));
-            code = insCodes7[ins];
+            assert(sve_ins_offset < ArrLen(insCodes7));
+            code = insCodes7[sve_ins_offset];
             break;
         case 7:
-            assert(ins < ArrLen(insCodes8));
-            code = insCodes8[ins];
+            assert(sve_ins_offset < ArrLen(insCodes8));
+            code = insCodes8[sve_ins_offset];
             break;
         case 8:
-            assert(ins < ArrLen(insCodes9));
-            code = insCodes9[ins];
+            assert(sve_ins_offset < ArrLen(insCodes9));
+            code = insCodes9[sve_ins_offset];
             break;
         case 9:
-            assert(ins < ArrLen(insCodes10));
-            code = insCodes10[ins];
+            assert(sve_ins_offset < ArrLen(insCodes10));
+            code = insCodes10[sve_ins_offset];
             break;
         case 10:
-            assert(ins < ArrLen(insCodes11));
-            code = insCodes11[ins];
+            assert(sve_ins_offset < ArrLen(insCodes11));
+            code = insCodes11[sve_ins_offset];
             break;
         case 11:
-            assert(ins < ArrLen(insCodes12));
-            code = insCodes12[ins];
+            assert(sve_ins_offset < ArrLen(insCodes12));
+            code = insCodes12[sve_ins_offset];
             break;
         case 12:
-            assert(ins < ArrLen(insCodes13));
-            code = insCodes13[ins];
+            assert(sve_ins_offset < ArrLen(insCodes13));
+            code = insCodes13[sve_ins_offset];
             break;
     }
 
@@ -10573,6 +10634,240 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Return an encoding for the specified 'V' register used in '4' thru '0' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_V_4_to_0(regNumber reg)
+{
+    assert(isVectorRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 0;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'V' register used in '9' thru '5' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_V_9_to_5(regNumber reg)
+{
+    assert(isVectorRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 5;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '12' thru '10' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_12_to_10(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 10;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'V' register used in '21' thru '17' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_V_21_to_17(regNumber reg)
+{
+    assert(isVectorRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 17;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'R' register used in '21' thru '17' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_R_21_to_17(regNumber reg)
+{
+    assert(isIntegerRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 17;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'R' register used in '9' thru '5' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_R_9_to_5(regNumber reg)
+{
+    assert(isIntegerRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 5;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'R' register used in '4' thru '0' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_R_4_to_0(regNumber reg)
+{
+    assert(isIntegerRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 0;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '20' thru '17' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_20_to_17(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 17;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '3' thru '0' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_3_to_0(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 0;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '8' thru '5' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_8_to_5(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 5;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '13' thru '10' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_13_to_10(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 10;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'R' register used in '18' thru '17' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_R_18_to_17(regNumber reg)
+{
+    assert(isIntegerRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 17;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '7' thru '5' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_7_to_5(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 5;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '3' thru '1' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_3_to_1(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 1;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '2' thru '0' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_2_to_0(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 0;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'V' register used in '19' thru '17' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_V_19_to_17(regNumber reg)
+{
+    assert(isVectorRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 17;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'V' register used in '20' thru '17' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_V_20_to_17(regNumber reg)
+{
+    assert(isVectorRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 17;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'V' register used in '9' thru '6' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_V_9_to_6(regNumber reg)
+{
+    assert(isVectorRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 6;
+}
+
+/*****************************************************************************
+ *
  *  Returns an encoding for the specified condition code.
  */
 
@@ -13768,7 +14063,21 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 }
 
 //------------------------------------------------------------------------
-// emitDispVectorReg: Display a SIMD vector register name with with an arrangement suffix
+// emitDispSveReg: Display a scalable vector register name with an arrangement suffix
+//
+void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
+{
+    assert(insOptsScalable(opt));
+    assert(isVectorRegister(reg));
+    printf(emitSveRegName(reg));
+    emitDispArrangement(opt);
+
+    if (addComma)
+        emitDispComma();
+}
+
+//------------------------------------------------------------------------
+// emitDispVectorReg: Display a SIMD vector register name with an arrangement suffix
 //
 void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
 {
@@ -13850,6 +14159,19 @@ void emitter::emitDispVectorElemList(
 }
 
 //------------------------------------------------------------------------
+// emitDispPredicateReg: Display a predicate register name with with an arrangement suffix
+//
+void emitter::emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma)
+{
+    assert(isPredicateRegister(reg));
+    printf(emitPredicateRegName(reg));
+    emitDispArrangement(opt);
+
+    if (addComma)
+        emitDispComma();
+}
+
+//------------------------------------------------------------------------
 // emitDispArrangement: Display a SIMD vector arrangement suffix
 //
 void emitter::emitDispArrangement(insOpts opt)
@@ -13864,11 +14186,17 @@ void emitter::emitDispArrangement(insOpts opt)
         case INS_OPTS_16B:
             str = "16b";
             break;
+        case INS_OPTS_SCALABLE_B:
+            str = "b";
+            break;
         case INS_OPTS_4H:
             str = "4h";
             break;
         case INS_OPTS_8H:
             str = "8h";
+            break;
+        case INS_OPTS_SCALABLE_H:
+            str = "h";
             break;
         case INS_OPTS_2S:
             str = "2s";
@@ -13876,11 +14204,17 @@ void emitter::emitDispArrangement(insOpts opt)
         case INS_OPTS_4S:
             str = "4s";
             break;
+        case INS_OPTS_SCALABLE_S:
+            str = "s";
+            break;
         case INS_OPTS_1D:
             str = "1d";
             break;
         case INS_OPTS_2D:
             str = "2d";
+            break;
+        case INS_OPTS_SCALABLE_D:
+            str = "d";
             break;
 
         default:

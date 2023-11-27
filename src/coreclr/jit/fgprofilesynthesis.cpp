@@ -790,7 +790,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
 void ProfileSynthesis::BuildReversePostorder()
 {
     m_comp->EnsureBasicBlockEpoch();
-    m_comp->fgComputeEnterBlocksSet();
     m_comp->fgDfsReversePostorder();
 
     // Build map from bbNum to Block*.
