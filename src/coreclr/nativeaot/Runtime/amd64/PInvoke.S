@@ -46,7 +46,7 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         mov         qword ptr [rsi + OFFSETOF__Thread__m_pTransitionFrame], 0
         cmp         dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_None
         jne         0f                  // forward branch - predicted not taken
-        mov         dword ptr [rsi + OFFSETOF__Thread__m_generation], 0
+        mov         qword ptr [rsi + OFFSETOF__Thread__m_generation], 0
         ret
 0:
         // passing transition frame pointer in rdi

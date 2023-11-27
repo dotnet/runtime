@@ -424,12 +424,12 @@ bool Thread::CatchAtSafePoint()
 
 int32_t Thread::GetGeneration()
 {
-    return m_generation;
+    return (int32_t)m_generation;
 }
 
 void Thread::SetGeneration(int32_t generation)
 {
-    m_generation = generation;
+    m_generation = (size_t)generation;
 }
 
 uint64_t Thread::GetPalThreadIdForLogging()

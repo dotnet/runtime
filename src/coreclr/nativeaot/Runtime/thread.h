@@ -88,6 +88,7 @@ struct ThreadBuffer
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
     PInvokeTransitionFrame* m_pTransitionFrame;
+    size_t                  m_generation;
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
     PInvokeTransitionFrame* m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
@@ -97,7 +98,6 @@ struct ThreadBuffer
     uintptr_t               m_uHijackedReturnValueFlags;
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
-    int32_t                 m_generation;
     Object*                 m_pThreadLocalStatics;
     InlinedThreadStaticRoot* m_pInlinedThreadLocalStatics;
     GCFrameRegistration*    m_pGCFrameRegistrations;

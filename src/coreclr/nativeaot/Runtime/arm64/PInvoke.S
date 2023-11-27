@@ -57,7 +57,7 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 9
 
         cbnz    w9, 0f  // TrapThreadsFlags_None = 0
-        str     wzr, [x10, #OFFSETOF__Thread__m_generation]
+        str     xzr, [x10, #OFFSETOF__Thread__m_generation]
         ret
 0:
         // passing transition frame pointer in x0
