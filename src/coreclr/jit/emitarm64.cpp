@@ -14545,6 +14545,16 @@ void emitter::emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addC
 }
 
 //------------------------------------------------------------------------
+// emitDispLowPredicateReg: Display a low predicate register name with with an arrangement suffix
+//
+void emitter::emitDispLowPredicateReg(regNumber reg, PredicateType ptype, bool addComma)
+{
+    assert(isLowPredicateRegister(reg));
+    reg = (regNumber)((((unsigned)reg - REG_PREDICATE_FIRST) & 0x7) + REG_PREDICATE_FIRST);
+    emitDispPredicateReg(reg, ptype, addComma);
+}
+
+//------------------------------------------------------------------------
 // emitDispArrangement: Display a SIMD vector arrangement suffix
 //
 void emitter::emitDispArrangement(insOpts opt)
@@ -16176,36 +16186,36 @@ void emitter::emitDispInsHelp(
                            // (predicated)
         case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);       // mmmmm
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);           // ddddd
+            emitDispLowPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);           // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);          // mmmmm
             break;
 
         // Scalable. Reg3 has elements of size 8 bytes.
         case IF_SVE_AO_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
-            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false);  // mmmmm
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);           // ddddd
+            emitDispLowPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);           // ddddd
+            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false);     // mmmmm
             break;
 
         // Scalable. No predicate type.
         case IF_SVE_CM_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);       // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);          // ddddd
+            emitDispLowPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);          // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);         // mmmmm
             break;
 
         // Scalable to general register or SIMD. No predicate type.
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
-            emitDispReg(id->idReg1(), size, true);                    // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
-            emitDispReg(id->idReg1(), size, true);                    // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
+            emitDispReg(id->idReg1(), size, true);                       // ddddd
+            emitDispLowPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
+            emitDispReg(id->idReg1(), size, true);                       // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);         // mmmmm
             break;
 
         default:
