@@ -375,7 +375,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else if (ctx.TargetTID != currentTID)
             {
-                Environment.FailFast($"JSSynchronizationContext.Install failed has wrong native thread id {ctx.TargetTID} != {currentTID}");
+                Environment.FailFast($"JSSynchronizationContext.Install has wrong native thread id {ctx.TargetTID} != {currentTID}");
             }
             ctx.AwaitNewData();
         }
