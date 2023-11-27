@@ -295,4 +295,51 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
     }
 }
 
+int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t lNameLength, const UChar* lpStr, int32_t cwStrLength,
+                                             uint8_t* sortKey, int32_t cbSortKeyLength, int32_t options)
+{
+    @autoreleasepool {
+        if (cwStrLength == 0)
+        {
+            sortKey = malloc(1);
+            sortKey[0] = '\0';
+            return 1;
+        }
+        NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
+        NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString);
+
+        NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
+        NSStringCompareOptions comparisonOptions = options == 0 ? 0 : ConvertFromCompareOptionsToNSStringCompareOptions(options);
+
+        // Generate a sort key for the original string based on the locale
+        NSString *transformedString = [sourceStringCleaned stringByFoldingWithOptions:comparisonOptions locale:locale];
+
+        // Convert the string to UTF-8 representation
+        const char *utf8Bytes = [transformedString UTF8String];
+        if (utf8Bytes != NULL) {
+            NSUInteger utf8Length = [transformedString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+            memcpy(sortKey, utf8Bytes, utf8Length);
+            return utf8Length;
+        }
+        else
+        {
+            // Convert the string to UTF-16 representation
+            NSData *utf16Data = [transformedString dataUsingEncoding:NSUTF16StringEncoding];
+
+            if (utf16Data != nil) {
+                const uint16_t *utf16Bytes = (const uint16_t *)[utf16Data bytes];
+                NSUInteger utf16Length = [utf16Data length] / sizeof(uint16_t);
+
+                if (sortKey != NULL) {
+                    // Convert UTF-16 to UTF-8 manually
+                    memcpy(sortKey, utf16Bytes, utf16Length * 2);
+                    return utf16Length * 2;
+                }
+            }
+        }
+
+        return 0;
+    }
+}
+
 #endif

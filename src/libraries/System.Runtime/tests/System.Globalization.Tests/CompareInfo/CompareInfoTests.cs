@@ -352,7 +352,7 @@ namespace System.Globalization.Tests
             SortKeyTest(compareInfo, string1, string2, options, expected);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalization))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void SortKeyTestNotSupported()
         {
             try
