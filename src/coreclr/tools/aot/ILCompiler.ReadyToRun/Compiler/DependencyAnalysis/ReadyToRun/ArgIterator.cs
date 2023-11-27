@@ -624,7 +624,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) || _transitionBlock.IsArgPassedByRef(_argTypeHandle));
                         }
                         return false;
-                    case TargetArchitecture.Riscv64:
+                    case TargetArchitecture.RiscV64:
                         if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
                         {
                             Debug.Assert(!_argTypeHandle.IsNull());
@@ -834,7 +834,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         _loongarch64IdxFPReg = 0;
                         break;
 
-                    case TargetArchitecture.Riscv64:
+                    case TargetArchitecture.RiscV64:
                         _riscv64IdxGenReg = numRegistersUsed;
                         _riscv64OfsStack = 0;
 
@@ -1447,7 +1447,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return argOfs;
                     }
 
-                case TargetArchitecture.Riscv64:
+                case TargetArchitecture.RiscV64:
                     {
                         int cFPRegs = 0;
                         uint floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
@@ -1547,7 +1547,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             Debug.Assert((cbArg % _transitionBlock.PointerSize) == 0);
 
                             int regSlots = ALIGN_UP(cbArg, _transitionBlock.PointerSize) / _transitionBlock.PointerSize;
-                            // Only R4-R11 are valid argument registers.
+                            // Only a0-a7 are valid argument registers.
                             if (_riscv64IdxGenReg + regSlots <= 8)
                             {
                                 // The entirety of the arg fits in the register slots.
@@ -1901,7 +1901,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return pLoc;
                     }
 
-                case TargetArchitecture.Riscv64:
+                case TargetArchitecture.RiscV64:
                     {
                         if (_hasArgLocDescForStructInRegs)
                         {

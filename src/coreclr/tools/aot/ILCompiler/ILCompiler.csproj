@@ -43,7 +43,6 @@
 
       <CrossCompileArch />
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
-      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-riscv64'))">riscv64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' != 'true'">aarch64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' == 'true'">arm64</CrossCompileArch>
 

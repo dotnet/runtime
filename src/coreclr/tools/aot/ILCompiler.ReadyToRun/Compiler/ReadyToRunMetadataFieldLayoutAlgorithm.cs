@@ -428,7 +428,7 @@ namespace ILCompiler
                             nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64;
                             break;
 
-                        case TargetArchitecture.Riscv64:
+                        case TargetArchitecture.RiscV64:
                             nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobRISCV64;
                             break;
 

@@ -3,7 +3,7 @@
 
 using Internal.TypeSystem;
 
-namespace ILCompiler.DependencyAnalysis.Riscv64
+namespace ILCompiler.DependencyAnalysis.RiscV64
 {
     /// <summary>
     /// Maps logical registers to physical registers on a specified OS.

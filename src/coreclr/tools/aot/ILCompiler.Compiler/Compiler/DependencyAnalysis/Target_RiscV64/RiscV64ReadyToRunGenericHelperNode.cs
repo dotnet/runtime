@@ -3,7 +3,7 @@
 
 using System;
 
-using ILCompiler.DependencyAnalysis.Riscv64;
+using ILCompiler.DependencyAnalysis.RiscV64;
 
 using Internal.TypeSystem;
 
@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public partial class ReadyToRunGenericHelperNode
     {
-        protected Register GetContextRegister(ref /* readonly */ Riscv64Emitter encoder)
+        protected Register GetContextRegister(ref /* readonly */ RiscV64Emitter encoder)
         {
             if (_id == ReadyToRunHelperId.DelegateCtor)
                 return encoder.TargetRegister.Arg2;
@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
                 return encoder.TargetRegister.Arg0;
         }
 
-        protected void EmitDictionaryLookup(NodeFactory factory, ref Riscv64Emitter encoder, Register context, Register result, GenericLookupResult lookup, bool relocsOnly)
+        protected void EmitDictionaryLookup(NodeFactory factory, ref RiscV64Emitter encoder, Register context, Register result, GenericLookupResult lookup, bool relocsOnly)
         {
             // INVARIANT: must not trash context register
 
@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
                 // The concrete slot won't be known until we're emitting data - don't ask for it in relocsOnly.
                 if (!factory.GenericDictionaryLayout(_dictionaryOwner).TryGetSlotForEntry(lookup, out dictionarySlot))
                 {
-                    encoder.EmitMOV(result, (ushort)0);
+                    encoder.EmitLI(result, (ushort)0);
                     return;
                 }
             }
@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
             encoder.EmitLD(result, context, dictionarySlot * factory.Target.PointerSize);
         }
 
-        protected sealed override void EmitCode(NodeFactory factory, ref Riscv64Emitter encoder, bool relocsOnly)
+        protected sealed override void EmitCode(NodeFactory factory, ref RiscV64Emitter encoder, bool relocsOnly)
         {
             // First load the generic context into the context register.
             EmitLoadGenericContext(factory, ref encoder, relocsOnly);
@@ -63,10 +63,9 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
-                            encoder.EmitADD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitADDI(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, 0);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 0);
-                            encoder.EmitRETIfEqual(encoder.TargetRegister.IntraProcedureCallScratch1);
+                            encoder.EmitRETIfZero(encoder.TargetRegister.Arg2);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg3);
@@ -95,10 +94,9 @@ namespace ILCompiler.DependencyAnalysis
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
 
-                            encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 1);
-                            encoder.EmitRETIfEqual(encoder.TargetRegister.IntraProcedureCallScratch1);
+                            encoder.EmitADDI(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
+                            encoder.EmitRETIfZero(encoder.TargetRegister.Arg3);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2);
@@ -124,8 +122,8 @@ namespace ILCompiler.DependencyAnalysis
                             // class constructor context lives.
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
-                            int cctorContextSize = -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
-                            encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, cctorContextSize);
+                            int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
+                            encoder.EmitADDI(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -cctorContextSize);
 
                             helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase);
                         }
@@ -195,7 +193,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected virtual void EmitLoadGenericContext(NodeFactory factory, ref Riscv64Emitter encoder, bool relocsOnly)
+        protected virtual void EmitLoadGenericContext(NodeFactory factory, ref RiscV64Emitter encoder, bool relocsOnly)
         {
             // Assume generic context is already loaded in the context register.
         }
@@ -203,7 +201,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public partial class ReadyToRunGenericLookupFromTypeNode
     {
-        protected override void EmitLoadGenericContext(NodeFactory factory, ref Riscv64Emitter encoder, bool relocsOnly)
+        protected override void EmitLoadGenericContext(NodeFactory factory, ref RiscV64Emitter encoder, bool relocsOnly)
         {
             // We start with context register pointing to the MethodTable
             Register contextRegister = GetContextRegister(ref encoder);

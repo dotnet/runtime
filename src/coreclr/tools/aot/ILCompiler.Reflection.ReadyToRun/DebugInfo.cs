@@ -74,9 +74,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return ((Arm64.Registers)regnum).ToString();
                 case Machine.LoongArch64:
                     return ((LoongArch64.Registers)regnum).ToString();
-                case (Machine)0x5064:
-                    return ((Riscv64.Registers)regnum).ToString();
-
                 default:
                     throw new NotImplementedException($"No implementation for machine type {machine}.");
             }

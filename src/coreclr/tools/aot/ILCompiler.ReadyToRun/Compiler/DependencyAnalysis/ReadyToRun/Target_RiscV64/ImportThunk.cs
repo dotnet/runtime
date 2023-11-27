@@ -3,7 +3,7 @@
 
 using System;
 
-using ILCompiler.DependencyAnalysis.Riscv64;
+using ILCompiler.DependencyAnalysis.RiscV64;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public partial class ImportThunk
     {
-        protected override void EmitCode(NodeFactory factory, ref Riscv64Emitter instructionEncoder, bool relocsOnly)
+        protected override void EmitCode(NodeFactory factory, ref RiscV64Emitter instructionEncoder, bool relocsOnly)
         {
 
             switch (_thunkKind)
@@ -23,23 +23,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case Kind.DelayLoadHelper:
                 case Kind.VirtualStubDispatch:
-                    // T8 contains indirection cell
-
+                    // t5 contains indirection cell
+                    // Do nothing t5 contains our first param
                     if (!relocsOnly)
                     {
-                        // ori a4, r0, #index
+                        // li t0, #index
                         int index = _containingImportSection.IndexFromBeginningOfArray;
-                        instructionEncoder.EmitMOV(Register.X14, checked((ushort)index));
+                        instructionEncoder.EmitLI(Register.X5, checked((ushort)index));
                     }
-
                     // get pc
-                    // auipc T1=X6, 0
+                    // auipc t1, 0
                     instructionEncoder.EmitPC(Register.X6);
 
-                    // load Module* -> T1
-                    instructionEncoder.EmitLD(Register.X6, Register.X6, 0x18);
+                    // load Module* -> t1
+                    instructionEncoder.EmitLD(Register.X6, Register.X6, 0x24);
 
-                    // ld_d X6, X6, 0
+                    // ld t1, t1, 0
                     instructionEncoder.EmitLD(Register.X6, Register.X6, 0);
                     break;
 
@@ -48,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     instructionEncoder.EmitPC(Register.X11);
 
                     // load Module* -> a1
-                    instructionEncoder.EmitLD(Register.X11, Register.X11, 0x18);
+                    instructionEncoder.EmitLD(Register.X11, Register.X11, 0x24);
 
                     // ld a1, a1, 0
                     instructionEncoder.EmitLD(Register.X11, Register.X11, 0);

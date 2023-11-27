@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics;
 
-using ILCompiler.DependencyAnalysis.Riscv64;
+using ILCompiler.DependencyAnalysis.RiscV64;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public partial class ReadyToRunHelperNode
     {
-        protected override void EmitCode(NodeFactory factory, ref Riscv64Emitter encoder, bool relocsOnly)
+        protected override void EmitCode(NodeFactory factory, ref RiscV64Emitter encoder, bool relocsOnly)
         {
             switch (Id)
             {
@@ -55,10 +55,9 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
-                            encoder.EmitADD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Result, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, factory.Target.PointerSize);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 1);
-                            encoder.EmitRETIfEqual(encoder.TargetRegister.IntraProcedureCallScratch1);
+                            encoder.EmitADDI(encoder.TargetRegister.Arg3, encoder.TargetRegister.Result, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, 0);
+                            encoder.EmitRETIfZero(encoder.TargetRegister.Arg2);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg3);
@@ -80,19 +79,18 @@ namespace ILCompiler.DependencyAnalysis
 
                         // Second arg: index of the type in the ThreadStatic section of the modules
                         encoder.EmitLD(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
-
+                        ISymbolNode helper = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
                         if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            encoder.EmitJMP(helper);
                         }
                         else
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
-                            encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitADDI(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
 
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 0);
-                            encoder.EmitJE(encoder.TargetRegister.IntraProcedureCallScratch1, factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            encoder.EmitJE(encoder.TargetRegister.Arg3, helper);
 
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }
@@ -114,10 +112,9 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
-                            encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitADDI(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 0);
-                            encoder.EmitRETIfEqual(encoder.TargetRegister.IntraProcedureCallScratch1);
+                            encoder.EmitRETIfZero(encoder.TargetRegister.Arg3);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2);

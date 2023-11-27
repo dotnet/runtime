@@ -313,10 +313,10 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\Register.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\TargetRegisterMap.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Riscv64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_Riscv64\AddrMode.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Riscv64\Riscv64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_Riscv64\Riscv64Emitter.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Riscv64\Register.cs" Link="Compiler\DependencyAnalysis\Target_Riscv64\Register.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Riscv64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_Riscv64\TargetRegisterMap.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\AddrMode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\RiscV64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64Emitter.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\Register.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\Register.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
@@ -436,7 +436,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMTentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64TentativeMethodNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_Riscv64\Riscv64TentativeMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeInstanceMethodNode.cs" />
@@ -593,10 +593,10 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
     <Compile Include="Compiler\ReadOnlyFieldPolicy.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_Riscv64\Riscv64JumpStubNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_Riscv64\Riscv64ReadyToRunHelperNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_Riscv64\Riscv64ReadyToRunGenericHelperNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_Riscv64\Riscv64UnboxingStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunGenericHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64UnboxingStubNode.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />

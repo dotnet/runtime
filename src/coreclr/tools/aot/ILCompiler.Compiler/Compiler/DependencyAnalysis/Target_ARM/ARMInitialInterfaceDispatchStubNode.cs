@@ -9,7 +9,7 @@ using ILCompiler.DependencyAnalysis.X64;
 using ILCompiler.DependencyAnalysis.X86;
 using ILCompiler.DependencyAnalysis.ARM64;
 using ILCompiler.DependencyAnalysis.LoongArch64;
-using ILCompiler.DependencyAnalysis.Riscv64;
+using ILCompiler.DependencyAnalysis.RiscV64;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             throw new NotImplementedException();
         }
-        protected override void EmitCode(NodeFactory factory, ref Riscv64Emitter instructionEncoder, bool relocsOnly)
+        protected override void EmitCode(NodeFactory factory, ref RiscV64Emitter instructionEncoder, bool relocsOnly)
         {
             throw new NotImplementedException();
         }

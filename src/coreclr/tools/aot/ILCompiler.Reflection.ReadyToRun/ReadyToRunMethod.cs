@@ -229,10 +229,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 return (int)loongarch64Info.FunctionLength;
             }
-            else if (UnwindInfo is Riscv64.UnwindInfo riscv64Info)
-            {
-                return (int)riscv64Info.FunctionLength;
-            }
             else if (Method.GcInfo != null)
             {
                 return Method.GcInfo.CodeLength;
@@ -615,10 +611,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 else if (_readyToRunReader.Machine == Machine.LoongArch64)
                 {
                     unwindInfo = new LoongArch64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
-                }
-                else if (_readyToRunReader.Machine == (Machine)0x5064)
-                {
-                    unwindInfo = new Riscv64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                 }
 
                 if (i == 0 && unwindInfo != null)

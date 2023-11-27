@@ -37,7 +37,6 @@
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-musl-arm64'">$(runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-musl-x64'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-riscv64'">$(runtimelinuxriscv64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'win-arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx-arm64'">$(runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>

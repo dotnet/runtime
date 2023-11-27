@@ -22,8 +22,7 @@ namespace R2RDump
             Target_X64,
             Target_Thumb,
             Target_Arm64,
-            Target_LoongArch64,
-            Target_Riscv64
+            Target_LoongArch64
         };
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
@@ -77,9 +76,6 @@ namespace R2RDump
                     break;
                 case Machine.LoongArch64:
                     target = TargetArch.Target_LoongArch64;
-                    break;
-                case (Machine)0x5064:
-                    target = TargetArch.Target_Riscv64;
                     break;
                 default:
                     Program.WriteWarning($"{machine} not supported on CoreDisTools");
@@ -195,9 +191,6 @@ namespace R2RDump
                     // Instructions are dumped as 4-byte hexadecimal integers
                     Machine.LoongArch64 => 4 * 2 + 1,
 
-                    // Instructions are dumped as 4-byte hexadecimal integers
-                    (Machine)0x5064 => 4 * 2 + 1,
-
                     _ => throw new NotImplementedException()
                 };
 
@@ -267,7 +260,7 @@ namespace R2RDump
                     }
                     else
                     {
-                        if ((_reader.Machine == Machine.Arm64) || (_reader.Machine == Machine.LoongArch64) || (_reader.Machine == (Machine)0x5064))
+                        if ((_reader.Machine == Machine.Arm64) || (_reader.Machine == Machine.LoongArch64))
                         {
                             // Replace " hh hh hh hh " byte dump with " hhhhhhhh ".
                             // CoreDisTools should be fixed to dump bytes this way for ARM64.
@@ -350,9 +343,6 @@ namespace R2RDump
 
                     case Machine.LoongArch64:
                         //TODO-LoongArch64: maybe should add ProbeLoongArch64Quirks. At least it's unused now.
-                        break;
-                    case (Machine)0x5064:
-                        //TODO-Riscv64: maybe should add ProbeRiscv64Quirks. At least it's unused now.
                         break;
 
                     case Machine.ArmThumb2:

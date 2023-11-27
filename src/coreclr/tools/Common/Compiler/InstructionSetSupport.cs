@@ -141,7 +141,7 @@ namespace ILCompiler
             {
                 return SimdVectorLength.None;
             }
-            else if (_targetArchitecture == TargetArchitecture.Riscv64)
+            else if (_targetArchitecture == TargetArchitecture.RiscV64)
             {
                 return SimdVectorLength.None;
             }

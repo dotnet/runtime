@@ -19,8 +19,7 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_BASED_ARM64_BRANCH26       = 0x15,   // Arm64: B, BL
         IMAGE_REL_BASED_LOONGARCH64_PC       = 0x16,   // LoongArch64: pcaddu12i+imm12
         IMAGE_REL_BASED_LOONGARCH64_JIR      = 0x17,   // LoongArch64: pcaddu18i+jirl
-        IMAGE_REL_BASED_RISCV64_PC           = 0x18,
-        IMAGE_REL_BASED_RISCV64_JALR         = 0x19,
+        IMAGE_REL_BASED_RISCV64_PC           = 0x18,   // RiscV64: auipc
         IMAGE_REL_BASED_RELPTR32             = 0x7C,   // 32-bit relative address from byte starting reloc
                                                        // This is a special NGEN-specific relocation type
                                                        // for relative pointer (used to make NGen relocation
@@ -335,47 +334,6 @@ namespace ILCompiler.DependencyAnalysis
             return imm;
         }
 
-        private static unsafe int GetRiscv64PC12(uint* pCode)
-        {
-            uint auipcInstr = *pCode;
-
-            // first get the high 20 bits,
-            int imm = (int)(((auipcInstr >> 12) & 0xFFFFF) << 12);
-
-            // then get the low 12 bits,
-            auipcInstr = *(pCode + 1);
-            imm += ((int)(((auipcInstr >> 20) & 0xFFF) << 20)) >> 20;
-
-            return imm;
-        }
-
-        private static unsafe void PutRiscv64PC12(uint* pCode, long imm32)
-        {
-            // Verify that we got a valid offset
-            Debug.Assert((int)imm32 == imm32);
-
-            uint auipcInstr = *pCode;
-            Debug.Assert((auipcInstr & 0x1F) == 0x00000017);  // Must be auipc
-
-            int relOff = (int)imm32 & 0x800;
-            int imm = (int)imm32 + relOff;
-            relOff = ((imm & 0x7ff) - relOff) & 0xfff;
-
-            // Assemble the pc-relative high 20 bits of 'imm32' into the auipc instruction
-            auipcInstr |= (uint)(((imm >> 12) & 0xFFFFF) << 12);
-
-            *pCode = auipcInstr;          // write the assembled instruction
-
-            auipcInstr = *(pCode + 1);
-
-            // Assemble the pc-relative low 12 bits of 'imm32' into the addid or ld instruction
-            auipcInstr |= (uint)(relOff << 20);
-
-            *(pCode + 1) = auipcInstr;          // write the assembled instruction
-
-            Debug.Assert(GetRiscv64PC12(pCode) == imm32);
-        }
-
         //  case:EA_HANDLE_CNS_RELOC
         //   pcaddu12i  reg, off-hi-20bits
         //   addi_d  reg, reg, off-lo-12bits
@@ -424,20 +382,6 @@ namespace ILCompiler.DependencyAnalysis
             return imm;
         }
 
-        private static unsafe long GetRiscv64JALR(uint* pCode)
-        {
-            uint pcInstr = *pCode;
-
-            // first get the high 20 bits,
-            long imm = ((long)((pcInstr >> 12) & 0xFFFFF) << 12);
-
-            // then get the low 12 bits
-            pcInstr = *(pCode + 1);
-            imm += (long)(pcInstr & 0xFFFF);
-
-            return imm;
-        }
-
         private static unsafe void PutLoongArch64JIR(uint* pCode, long imm38)
         {
             // Verify that we got a valid offset
@@ -468,33 +412,45 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetLoongArch64JIR(pCode) == imm38);
         }
 
-        private static unsafe void PutRiscv64JALR(uint* pCode, long imm20)
+        private static unsafe int GetRiscV64PC12(uint* pCode)
+        {
+            uint auipcInstr = *pCode;
+            Debug.Assert((auipcInstr & 0x7f) == 0x00000017);
+            // first get the high 20 bits,
+            int imm = (int)((auipcInstr & 0xfffff000));
+            // then get the low 12 bits,
+            uint addiInstr = *(pCode + 1);
+            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
+            imm += ((int)(addiInstr)) >> 20;
+
+            return imm;
+        }
+
+        // INS_OPTS_RELOC: placeholders.  2-ins:
+        //  case:EA_HANDLE_CNS_RELOC
+        //   auipc  reg, off-hi-20bits
+        //   addi   reg, reg, off-lo-12bits
+        //  case:EA_PTR_DSP_RELOC
+        //   auipc  reg, off-hi-20bits
+        //   ld     reg, reg, off-lo-12bits
+        private static unsafe void PutRiscV64PC12(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
-            Debug.Assert((imm20 >= -0x80000) && (imm20 < 0x80000));
+            Debug.Assert((int)imm32 == imm32);
 
-            Debug.Assert((imm20 & 0x1) == 0);    // the low two bits must be zero
-
+            int doff = (int)(imm32 & 0xfff);
             uint auipcInstr = *pCode;
-            Debug.Assert(auipcInstr == 0x00000297);    // must be auipc t0, 0
+            Debug.Assert((auipcInstr & 0x7f) == 0x00000017);
 
-            long relOff = imm20 & 0x800;
-            long imm = imm20 + relOff;
-            relOff = (((imm & 0xfff) - relOff) >> 1) & 0x7ff;
+            auipcInstr |= (uint)((imm32 + 0x800) & 0xfffff000);
+            *pCode = auipcInstr;
 
-            // Assemble the pc-relative high 20 bits of 'imm20' into the auipc instruction
-            auipcInstr |= (uint)(((imm >> 12) & 0xFFFFF) << 12);
+            uint addiInstr = *(pCode + 1);
+            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
+            addiInstr |= (uint)((doff & 0xfff) << 20);
+            *(pCode + 1) = addiInstr;
 
-            *pCode = auipcInstr;          // write the assembled instruction
-
-            auipcInstr = *(pCode + 1);
-
-            // Assemble the pc-relative low 12 bits of 'imm20' into the addi
-            auipcInstr |= (uint)(relOff << 20);
-
-            *(pCode + 1) = auipcInstr;          // write the assembled instruction
-
-            Debug.Assert(GetRiscv64JALR(pCode) == imm20);
+            Debug.Assert(GetRiscV64PC12(pCode) == imm32);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
@@ -542,10 +498,7 @@ namespace ILCompiler.DependencyAnalysis
                     PutLoongArch64JIR((uint*)location, value);
                     break;
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
-                    PutRiscv64PC12((uint*)location, value);
-                    break;
-                case RelocType.IMAGE_REL_BASED_RISCV64_JALR:
-                    PutRiscv64JALR((uint*)location, value);
+                    PutRiscV64PC12((uint*)location, value);
                     break;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
@@ -610,9 +563,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
                     return (long)GetLoongArch64JIR((uint*)location);
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
-                    return (long)GetRiscv64PC12((uint*)location);
-                case RelocType.IMAGE_REL_BASED_RISCV64_JALR:
-                    return (long)GetRiscv64JALR((uint*)location);
+                    return (long)GetRiscV64PC12((uint*)location);
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;

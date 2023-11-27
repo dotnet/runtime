@@ -210,7 +210,6 @@ namespace R2RDump
                     Machine.ArmThumb2 => TargetArchitecture.ARM,
                     Machine.Arm64 => TargetArchitecture.ARM64,
                     Machine.LoongArch64 => TargetArchitecture.LoongArch64,
-                    (Machine)0x5064 => TargetArchitecture.Riscv64,
                     _ => throw new NotImplementedException(r2r.Machine.ToString()),
                 };
                 TargetOS os = r2r.OperatingSystem switch

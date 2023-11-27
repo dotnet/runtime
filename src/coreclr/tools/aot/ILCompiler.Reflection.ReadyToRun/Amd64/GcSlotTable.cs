@@ -71,9 +71,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     case Machine.LoongArch64:
                         return ((LoongArch64.Registers)registerNumber).ToString();
 
-                    case (Machine)0x5064:
-                        return ((Riscv64.Registers)registerNumber).ToString();
-
                     default:
                         throw new NotImplementedException(machine.ToString());
                 }
