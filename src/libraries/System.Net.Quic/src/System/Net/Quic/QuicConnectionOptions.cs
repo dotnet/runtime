@@ -97,7 +97,7 @@ public abstract class QuicConnectionOptions
     // We can safely use this to distinguish if user provided value during validation.
     public long DefaultCloseErrorCode { get; set; } = -1;
 
-    private QuicReceiveWindowSizes? _initialRecieveWindowSizes;
+    internal QuicReceiveWindowSizes? _initialRecieveWindowSizes;
 
     /// <summary>
     /// The initial receive window sizes for the connection and individual stream types.

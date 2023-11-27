@@ -68,7 +68,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
             QuicConnection connection = new QuicConnection();
 
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            linkedCts.CancelAfter(options.HandshakeTimeout);
+
+            if (options.HandshakeTimeout != Timeout.InfiniteTimeSpan && options.HandshakeTimeout != TimeSpan.Zero)
+            {
+                linkedCts.CancelAfter(options.HandshakeTimeout);
+            }
 
             try
             {
@@ -105,8 +109,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private readonly ValueTaskSource _connectedTcs = new ValueTaskSource();
     private readonly ValueTaskSource _shutdownTcs = new ValueTaskSource();
 
-    private readonly CancellationTokenSource _shutdownCancellationTokenSource = new CancellationTokenSource();
-    internal CancellationToken ShutdownCancellationToken => _shutdownCancellationTokenSource.Token;
+    private readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
+
+    // Token that fires when the connection is closed.
+    internal CancellationToken ConnectionShutdownToken => _shutdownTokenSource.Token;
 
     private readonly Channel<QuicStream> _acceptQueue = Channel.CreateUnbounded<QuicStream>(new UnboundedChannelOptions()
     {
@@ -511,8 +517,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed == 1 ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
+        _shutdownTokenSource.Cancel();
         _shutdownTcs.TrySetResult();
-        _shutdownCancellationTokenSource.Cancel();
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
@@ -633,6 +639,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         await valueTask.ConfigureAwait(false);
         Debug.Assert(_connectedTcs.IsCompleted);
         _handle.Dispose();
+        _shutdownTokenSource.Dispose();
 
         _configuration?.Dispose();
 

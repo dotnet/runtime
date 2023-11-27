@@ -218,7 +218,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         TimeSpan handshakeTimeout = QuicDefaults.HandshakeTimeout;
         try
         {
-            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ShutdownCancellationToken);
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
             cancellationToken = linkedCts.Token;
             // initial timeout for retrieving connection options
             linkedCts.CancelAfter(handshakeTimeout);
@@ -240,7 +240,7 @@ public sealed partial class QuicListener : IAsyncDisposable
                 await connection.DisposeAsync().ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (connection.ShutdownCancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested)
         {
             // Connection closed by peer
             if (NetEventSource.Log.IsEnabled())

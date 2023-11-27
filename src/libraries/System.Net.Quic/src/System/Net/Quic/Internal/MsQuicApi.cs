@@ -18,7 +18,6 @@ internal sealed unsafe partial class MsQuicApi
 {
     private static readonly Version s_minWindowsVersion = new Version(10, 0, 20145, 1000);
 
-    // TODO: update after https://github.com/microsoft/msquic/pull/3948 is released
     private static readonly Version s_minMsQuicVersion = new Version(2, 2, 2);
 
     private static readonly delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> MsQuicOpenVersion;

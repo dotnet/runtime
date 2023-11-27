@@ -132,27 +132,33 @@ internal static class MsQuicConfiguration
                 : 0; // 0 disables the timeout
         }
 
-        settings.IsSet.KeepAliveIntervalMs = 1;
-        settings.KeepAliveIntervalMs = options.KeepAliveInterval != Timeout.InfiniteTimeSpan
-            ? (uint)options.KeepAliveInterval.TotalMilliseconds
-            : 0; // 0 disables the keepalive
+        if (options.KeepAliveInterval != TimeSpan.Zero)
+        {
+            settings.IsSet.KeepAliveIntervalMs = 1;
+            settings.KeepAliveIntervalMs = options.KeepAliveInterval != Timeout.InfiniteTimeSpan
+                ? (uint)options.KeepAliveInterval.TotalMilliseconds
+                : 0; // 0 disables the keepalive
+        }
 
         settings.IsSet.ConnFlowControlWindow = 1;
-        settings.ConnFlowControlWindow = (uint)options.InitialReceiveWindowSizes.Connection;
+        settings.ConnFlowControlWindow = (uint)(options._initialRecieveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
 
         settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
-        settings.StreamRecvWindowBidiLocalDefault = (uint)options.InitialReceiveWindowSizes.LocallyInitiatedBidirectionalStream;
+        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialRecieveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
-        settings.StreamRecvWindowBidiRemoteDefault = (uint)options.InitialReceiveWindowSizes.RemotelyInitiatedBidirectionalStream;
+        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialRecieveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         settings.IsSet.StreamRecvWindowUnidiDefault = 1;
-        settings.StreamRecvWindowUnidiDefault = (uint)options.InitialReceiveWindowSizes.UnidirectionalStream;
+        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialRecieveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
-        settings.IsSet.HandshakeIdleTimeoutMs = 1;
-        settings.HandshakeIdleTimeoutMs = options.HandshakeTimeout != Timeout.InfiniteTimeSpan
-                ? (ulong)options.HandshakeTimeout.TotalMilliseconds
-                : 0; // 0 disables the timeout
+        if (options.HandshakeTimeout != TimeSpan.Zero)
+        {
+            settings.IsSet.HandshakeIdleTimeoutMs = 1;
+            settings.HandshakeIdleTimeoutMs = options.HandshakeTimeout != Timeout.InfiniteTimeSpan
+                    ? (ulong)options.HandshakeTimeout.TotalMilliseconds
+                    : 0; // 0 disables the timeout
+        }
 
         QUIC_HANDLE* handle;
 
