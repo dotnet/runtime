@@ -704,6 +704,13 @@ void ProfileSynthesis::ComputeCyclicProbabilities()
 //
 void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 {
+    // Initialize
+    //
+    loop->VisitLoopBlocks([](BasicBlock* loopBlock) {
+        loopBlock->bbWeight = 0.0;
+        return BasicBlockVisit::Continue;
+        });
+
     // Process loop blocks in RPO. Just takes one pass through the loop blocks
     // as any cyclic contributions are handled by cyclic probabilities.
     //
