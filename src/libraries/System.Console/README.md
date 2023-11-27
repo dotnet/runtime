@@ -1,5 +1,5 @@
 # System.Console
-Contains the source and tests of assembly System.Console which includes a subset of members of the System.Console namespace that allow you to interact with `Console`.
+Contains the source and tests of assembly System.Console which includes a subset of members of the System namespace that allow you to interact with the standard input and output of console applications.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.console. The primary class is [`Console`](https://learn.microsoft.com/dotnet/api/system.console).
 
