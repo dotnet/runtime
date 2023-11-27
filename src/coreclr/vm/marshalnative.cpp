@@ -614,72 +614,77 @@ FCIMPLEND
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
-FCIMPL1(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE)
+extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectHandleOnStack o)
 {
     FCALL_CONTRACT;
 
     IUnknown* retVal = NULL;
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
-    _ASSERTE(oref != NULL);
+    BEGIN_QCALL;
+
     // Ensure COM is started up.
     EnsureComStarted();
 
-    retVal = GetComIPFromObjectRef(&oref, ComIpType_OuterUnknown, NULL);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+    retVal = GetComIPFromObjectRef(&oref, ComIpType_OuterUnknown, NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
     return retVal;
 }
-FCIMPLEND
 
 //====================================================================
 // return the IDispatch* for an Object.
 //====================================================================
-FCIMPL1(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSAFE)
+extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::ObjectHandleOnStack o)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     IDispatch* retVal = NULL;
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
-    _ASSERTE(oref != NULL);
+    BEGIN_QCALL;
+
     // Ensure COM is started up.
     EnsureComStarted();
 
-    retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+    retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
     return retVal;
 }
-FCIMPLEND
 
 //====================================================================
 // return the IUnknown* representing the interface for the Object
 // Object o should support Type T
 //====================================================================
-FCIMPL3(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL bEnableCustomizedQueryInterface)
+extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, BOOL bEnableCustomizedQueryInterface)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     IUnknown* retVal  = NULL;
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(oref, refClass);
 
-    _ASSERTE(oref != NULL);
-    _ASSERTE(refClass != NULL);
+    BEGIN_QCALL;
+
     // Ensure COM is started up.
     EnsureComStarted();
 
-    if (refClass->GetMethodTable() != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
+    GCX_COOP();
 
-    TypeHandle th = refClass->GetType();
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+
+    TypeHandle th = t.AsTypeHandle();
 
     if (th.HasInstantiation())
-        COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
+        COMPlusThrowArgumentException(W("T"), W("Argument_NeedNonGenericType"));
 
     if (oref->GetMethodTable()->HasInstantiation())
         COMPlusThrowArgumentException(W("o"), W("Argument_NeedNonGenericObject"));
@@ -687,145 +692,134 @@ FCIMPL3(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
     // If the IID being asked for does not represent an interface then
     // throw an argument exception.
     if (!th.IsInterface())
-        COMPlusThrowArgumentException(W("t"), W("Arg_MustBeInterface"));
+        COMPlusThrowArgumentException(W("T"), W("Arg_MustBeInterface"));
 
     // If the interface being asked for is not visible from COM then
     // throw an argument exception.
     if (!::IsTypeVisibleFromCom(th))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
+        COMPlusThrowArgumentException(W("T"), W("Argument_TypeMustBeVisibleFromCom"));
 
     retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
+
     return retVal;
 }
-FCIMPLEND
 
 //====================================================================
 // return an Object for IUnknown
 //====================================================================
-FCIMPL1(Object*, MarshalNative::GetObjectForIUnknownNative, IUnknown* pUnk)
+extern "C" void QCALLTYPE MarshalNative_GetObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
-    OBJECTREF oref = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
+    BEGIN_QCALL;
 
     // Ensure COM is started up.
     EnsureComStarted();
 
+    GCX_COOP();
+
+    OBJECTREF oref = NULL;
+    GCPROTECT_BEGIN(oref);
     GetObjectRefFromComIP(&oref, pUnk);
+    retObject.Set(oref);
+    GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(oref);
+    END_QCALL;
 }
-FCIMPLEND
 
-
-FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownNative, IUnknown* pUnk)
+extern "C" void QCALLTYPE MarshalNative_GetUniqueObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
-    OBJECTREF oref = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    HRESULT hr = S_OK;
+    BEGIN_QCALL;
 
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GetObjectRefFromComIP(&oref, pUnk, NULL, ObjFromComIP::UNIQUE_OBJECT);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(oref);
+    OBJECTREF oref = NULL;
+    GCPROTECT_BEGIN(oref);
+    GetObjectRefFromComIP(&oref, pUnk, NULL, ObjFromComIP::UNIQUE_OBJECT);
+    retObject.Set(oref);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 //====================================================================
 // return an Object for IUnknown, using the Type T,
 //  NOTE:
 //  Type T should be either a COM imported Type or a sub-type of COM imported Type
 //====================================================================
-FCIMPL2(Object*, MarshalNative::GetTypedObjectForIUnknown, IUnknown* pUnk, ReflectClassBaseObject* refClassUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_GetTypedObjectForIUnknown(IUnknown* pUnk, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
-    OBJECTREF oref = NULL;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refClass, oref);
+    BEGIN_QCALL;
 
-    HRESULT hr = S_OK;
+    TypeHandle th = t.AsTypeHandle();
 
-    MethodTable* pMTClass =  NULL;
+    if (th.HasInstantiation())
+        COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
 
-    if(!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    if(refClass != NULL)
-    {
-        if (refClass->GetMethodTable() != g_pRuntimeTypeClass)
-            COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-        TypeHandle th = refClass->GetType();
-
-        if (th.HasInstantiation())
-            COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
-
-        pMTClass = th.GetMethodTable();
-    }
-    else
-        COMPlusThrowArgumentNull(W("t"));
-
+    MethodTable* pMTClass = th.GetMethodTable();
 
     // Ensure COM is started up.
     EnsureComStarted();
 
+    GCX_COOP();
+
+    OBJECTREF oref = NULL;
+    GCPROTECT_BEGIN(oref);
     GetObjectRefFromComIP(&oref, pUnk, pMTClass);
+    retObject.Set(oref);
+    GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(oref);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE)
+extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pOuter, QCall::ObjectHandleOnStack o)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pOuter, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pOuter));
     }
     CONTRACTL_END;
 
     IUnknown* pInner = NULL;
 
-    OBJECTREF oref =  (OBJECTREF)refObjUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
+    BEGIN_QCALL;
 
     HRESULT hr = S_OK;
 
-    if (!pOuter)
-        COMPlusThrowArgumentNull(W("pOuter"));
-
-    if (oref == NULL)
-        COMPlusThrowArgumentNull(W("o"));
-
     // Ensure COM is started up.
     EnsureComStarted();
+
+    GCX_COOP();
+
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
 
     if (NULL != ComCallWrapper::GetWrapperForObject(oref))
         COMPlusThrowArgumentException(W("o"), W("Argument_AlreadyACCW"));
@@ -837,19 +831,21 @@ FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObjectNative, IUnknown* pOuter
     pWrap->InitializeOuter(pOuter);
     IfFailThrow(pWrap->GetInnerUnknown((LPVOID*)&pInner));
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
+
     return pInner;
 }
-FCIMPLEND
 
 //====================================================================
 // Free unused RCWs in the current COM+ context.
 //====================================================================
-FCIMPL0(void, MarshalNative::CleanupUnusedObjectsInCurrentContext)
+extern "C" void QCALLTYPE MarshalNative_CleanupUnusedObjectsInCurrentContext()
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
 
     if (g_pRCWCleanupList)
     {
@@ -860,9 +856,8 @@ FCIMPL0(void, MarshalNative::CleanupUnusedObjectsInCurrentContext)
             );
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 //====================================================================
 // Checks whether there are RCWs from any context available for cleanup.
@@ -885,16 +880,18 @@ FCIMPLEND
 // free the COM component and zombie this object if the ref count hits 0
 // further usage of this Object might throw an exception,
 //====================================================================
-FCIMPL1(INT32, MarshalNative::ReleaseComObject, Object* objUNSAFE)
+extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     INT32 retVal = 0;
-    OBJECTREF obj = (OBJECTREF) objUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
 
-    if(!obj)
-        COMPlusThrowArgumentNull(W("o"));
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF obj = objUNSAFE.Get();
+    GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);
@@ -904,24 +901,27 @@ FCIMPL1(INT32, MarshalNative::ReleaseComObject, Object* objUNSAFE)
     // remove the wrapper from the object
     retVal = RCW::ExternalRelease(&obj);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+
+    END_QCALL;
+
     return retVal;
 }
-FCIMPLEND
 
 //====================================================================
 // free the COM component and zombie this object
 // further usage of this Object might throw an exception,
 //====================================================================
-FCIMPL1(void, MarshalNative::FinalReleaseComObject, Object* objUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF obj = (OBJECTREF) objUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(obj);
+    BEGIN_QCALL;
 
-    if(!obj)
-        COMPlusThrowArgumentNull(W("o"));
+    GCX_COOP();
+
+    OBJECTREF obj = objUNSAFE.Get();
+    GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);
@@ -931,68 +931,45 @@ FCIMPL1(void, MarshalNative::FinalReleaseComObject, Object* objUNSAFE)
     // remove the wrapper from the object
     RCW::FinalExternalRelease(&obj);
 
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
+    GCPROTECT_END();
 
+    END_QCALL;
+}
 
 //====================================================================
 // This method takes the given COM object and wraps it in an object
 // of the specified type. The type must be derived from __ComObject.
 //====================================================================
-FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, ReflectClassBaseObject* refClassUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_InternalCreateWrapperOfType(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(objUNSAFE != NULL);
-        PRECONDITION(refClassUNSAFE != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    struct _gc
-    {
-        OBJECTREF refRetVal;
-        OBJECTREF obj;
-        REFLECTCLASSBASEREF refClass;
-    } gc;
+    BEGIN_QCALL;
 
-    gc.refRetVal = NULL;
-    gc.obj = (OBJECTREF) objUNSAFE;
-    gc.refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    // Validate the arguments.
-    if (gc.refClass->GetMethodTable() != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
+    GCX_COOP();
 
     // Retrieve the class of the COM object.
-    MethodTable *pObjMT = gc.obj->GetMethodTable();
+    MethodTable *pObjMT = o.Get()->GetMethodTable();
 
     // Retrieve the method table for new wrapper type.
-    MethodTable *pNewWrapMT = gc.refClass->GetType().GetMethodTable();
+    MethodTable *pNewWrapMT = t.AsTypeHandle().GetMethodTable();
 
     // Validate that the destination type is a COM object.
     _ASSERTE(pNewWrapMT->IsComObjectType());
 
-    BOOL fSet = FALSE;
-
     // Start by checking if we can cast the obj to the wrapper type.
     if (TypeHandle(pObjMT).CanCastTo(TypeHandle(pNewWrapMT)))
     {
-        gc.refRetVal = gc.obj;
-        fSet = TRUE;
+        retObject.Set(o.Get());
     }
-
-    if (!fSet)
+    else
     {
         // Validate that the source object is a valid COM object.
         _ASSERTE(pObjMT->IsComObjectType());
 
         RCWHolder pRCW(GetThread());
 
-        RCWPROTECT_BEGIN(pRCW, gc.obj);
+        RCWPROTECT_BEGIN(pRCW, o.Get());
 
         // Make sure the COM object supports all the COM imported interfaces that the new
         // wrapper class implements.
@@ -1002,7 +979,7 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
             MethodTable *pItfMT = it.GetInterfaceApprox(); // ComImport interfaces cannot be generic
             if (pItfMT->IsComImport())
             {
-                if (!Object::SupportsInterface(gc.obj, pItfMT))
+                if (!Object::SupportsInterface(o.Get(), pItfMT))
                     COMPlusThrow(kInvalidCastException, IDS_EE_CANNOT_COERCE_COMOBJECT);
             }
         }
@@ -1012,59 +989,50 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
             RCWHolder pNewRCW(GetThread());
             pRCW->CreateDuplicateWrapper(pNewWrapMT, &pNewRCW);
 
-            gc.refRetVal = pNewRCW->GetExposedObject();
+            retObject.Set(pNewRCW->GetExposedObject());
         }
 
         RCWPROTECT_END(pRCW);
     }
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(gc.refRetVal);
+    END_QCALL;
 }
-FCIMPLEND
 
 
 //====================================================================
 // check if the type is visible from COM.
 //====================================================================
-FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject* refClassUNSAFE)
+extern "C" BOOL QCALLTYPE MarshalNative_IsTypeVisibleFromCom(QCall::TypeHandle t)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     BOOL retVal = FALSE;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClass);
 
-    // Validate the arguments.
-    if (refClass == NULL)
-        COMPlusThrowArgumentNull(W("t"));
-
-    MethodTable *pRefMT = refClass->GetMethodTable();
-    if (pRefMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
+    BEGIN_QCALL;
 
     // Call the internal version of IsTypeVisibleFromCom.
-    retVal = ::IsTypeVisibleFromCom(refClass->GetType());
+    retVal = ::IsTypeVisibleFromCom(t.AsTypeHandle());
 
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
+    END_QCALL;
+
+    return retVal;
 }
-FCIMPLEND
 
-FCIMPL2(void, MarshalNative::GetNativeVariantForObjectNative, Object* ObjUNSAFE, LPVOID pDestNativeVariant)
+extern "C" void QCALLTYPE MarshalNative_GetNativeVariantForObject(QCall::ObjectHandleOnStack ObjUNSAFE, LPVOID pDestNativeVariant)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pDestNativeVariant, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pDestNativeVariant));
     }
     CONTRACTL_END;
 
-    OBJECTREF Obj = (OBJECTREF) ObjUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(Obj);
+    BEGIN_QCALL;
 
-    if (pDestNativeVariant == NULL)
-        COMPlusThrowArgumentNull(W("pDstNativeVariant"));
+    GCX_COOP();
+
+    OBJECTREF Obj = ObjUNSAFE.Get();
+    GCPROTECT_BEGIN(Obj);
 
     if (Obj == NULL)
     {
@@ -1079,186 +1047,81 @@ FCIMPL2(void, MarshalNative::GetNativeVariantForObjectNative, Object* ObjUNSAFE,
     SafeVariantInit((VARIANT*)pDestNativeVariant);
     OleVariant::MarshalOleVariantForObject(&Obj, (VARIANT*)pDestNativeVariant);
 
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL1(Object*, MarshalNative::GetObjectForNativeVariantNative, LPVOID pSrcNativeVariant)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pSrcNativeVariant, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF Obj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(Obj);
-
-    if (pSrcNativeVariant == NULL)
-        COMPlusThrowArgumentNull(W("pSrcNativeVariant"));
-
-    OleVariant::MarshalObjectForOleVariant((VARIANT*)pSrcNativeVariant, &Obj);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(Obj);
-}
-FCIMPLEND
-
-FCIMPL2(Object*, MarshalNative::GetObjectsForNativeVariantsNative, VARIANT* aSrcNativeVariant, int cVars)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-        PRECONDITION(CheckPointer(aSrcNativeVariant, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    PTRARRAYREF Array = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(Array);
-
-    if (aSrcNativeVariant == NULL)
-        COMPlusThrowArgumentNull(W("aSrcNativeVariant"));
-    if (cVars < 0)
-        COMPlusThrowArgumentOutOfRange(W("cVars"), W("ArgumentOutOfRange_NeedNonNegNum"));
-
-    OBJECTREF Obj = NULL;
-    GCPROTECT_BEGIN(Obj)
-    {
-        // Allocate the array of objects.
-        Array = (PTRARRAYREF)AllocateObjectArray(cVars, g_pObjectClass);
-
-        // Convert each VARIANT in the array into an object.
-        for (int i = 0; i < cVars; i++)
-        {
-            OleVariant::MarshalObjectForOleVariant(&aSrcNativeVariant[i], &Obj);
-            Array->SetAt(i, Obj);
-        }
-    }
     GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(Array);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(int, MarshalNative::GetStartComSlot, ReflectClassBaseObject* tUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_GetObjectForNativeVariant(LPVOID pSrcNativeVariant, QCall::ObjectHandleOnStack retObject)
 {
-    FCALL_CONTRACT;
-
-    int retVal = 0;
-    REFLECTCLASSBASEREF t = (REFLECTCLASSBASEREF) tUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(t);
-
-    if (!(t))
-        COMPlusThrow(kArgumentNullException);
-
-    MethodTable *pTMT = t->GetMethodTable();
-    if (pTMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-    MethodTable *pMT = t->GetType().GetMethodTable();
-    if (NULL == pMT)
-        COMPlusThrow(kArgumentNullException);
-
-    // The service does not make any sense to be called for non COM visible types.
-    if (!::IsTypeVisibleFromCom(TypeHandle(pMT)))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
-
-    retVal = GetComSlotInfo(pMT, &pMT);
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
-
-
-FCIMPL1(int, MarshalNative::GetEndComSlot, ReflectClassBaseObject* tUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    int retVal = 0;
-    REFLECTCLASSBASEREF t = (REFLECTCLASSBASEREF) tUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(t);
-
-    int StartSlot = -1;
-
-    if (!(t))
-        COMPlusThrow(kArgumentNullException);
-
-    MethodTable *pTMT = t->GetMethodTable();
-    if (pTMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-    TypeHandle classTH = t->GetType();
-    MethodTable *pMT = classTH.GetMethodTable();
-    if (NULL == pMT)
-        COMPlusThrow(kArgumentNullException);
-
-    // The service does not make any sense to be called for non COM visible types.
-    if (!::IsTypeVisibleFromCom(classTH))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
-
-    // Retrieve the start slot and the default interface class.
-    StartSlot = GetComSlotInfo(pMT, &pMT);
-    if (StartSlot == -1)
+    CONTRACTL
     {
-        retVal = StartSlot;
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pSrcNativeVariant));
     }
-    else
-    {
-        // Retrieve the map of members.
-        ComMTMemberInfoMap MemberMap(pMT);
-        MemberMap.Init(sizeof(void*));
+    CONTRACTL_END;
 
-        // The end slot is the start slot plus the number of user defined methods.
-        retVal = int(StartSlot + MemberMap.GetMethods().Size() - 1);
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF Obj = NULL;
+    GCPROTECT_BEGIN(Obj);
+    OleVariant::MarshalObjectForOleVariant((VARIANT*)pSrcNativeVariant, &Obj);
+    retObject.Set(Obj);
+    GCPROTECT_END();
+
+    END_QCALL;
+
+}
+
+extern "C" void QCALLTYPE MarshalNative_GetObjectsForNativeVariants(VARIANT* aSrcNativeVariant, int cVars, QCall::ObjectHandleOnStack retArray)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(aSrcNativeVariant));
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct {
+        PTRARRAYREF Array;
+        OBJECTREF Obj;
+    } gc;
+    gc.Array = NULL;
+    gc.Obj = NULL;
+
+    GCPROTECT_BEGIN(gc)
+
+    // Allocate the array of objects.
+    gc.Array = (PTRARRAYREF)AllocateObjectArray(cVars, g_pObjectClass);
+
+    // Convert each VARIANT in the array into an object.
+    for (int i = 0; i < cVars; i++)
+    {
+        OleVariant::MarshalObjectForOleVariant(&aSrcNativeVariant[i], &gc.Obj);
+        gc.Array->SetAt(i, gc.Obj);
     }
 
-    HELPER_METHOD_FRAME_END();
-    return retVal;
+    retArray.Set(gc.Array);
+
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
-
-FCIMPL2(void, MarshalNative::ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(oref);
-
-    if(oref == NULL)
-        COMPlusThrowArgumentNull(W("otp"));
-
-    if (
-        !oref->GetMethodTable()->IsComImport())
-    {
-        CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);
-
-        if (pWrap == NULL)
-            COMPlusThrowOM();
-        if (fIsWeak != 0)
-            pWrap->MarkHandleWeak();
-        else
-            pWrap->ResetHandleStrength();
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
 //====================================================================
 // Helper function used in the COM slot to method info mapping.
 //====================================================================
-
-int MarshalNative::GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
+static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(ppDefItfMT));
     }
@@ -1297,6 +1160,94 @@ int MarshalNative::GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
         // We are dealing with an IClassX which are always IDispatch based.
         return ComMethodTable::GetNumExtraSlots(ifDispatch);
     }
+}
+
+extern "C" INT32 QCALLTYPE MarshalNative_GetStartComSlot(QCall::TypeHandle t)
+{
+    QCALL_CONTRACT;
+
+    int retVal = 0;
+
+    BEGIN_QCALL;
+
+    MethodTable *pMT = t.AsTypeHandle().GetMethodTable();
+    if (NULL == pMT)
+        COMPlusThrow(kArgumentNullException);
+
+    // The service does not make any sense to be called for non COM visible types.
+    if (!::IsTypeVisibleFromCom(TypeHandle(pMT)))
+        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
+
+    retVal = GetComSlotInfo(pMT, &pMT);
+
+    END_QCALL;
+
+    return retVal;
+}
+
+extern "C" INT32 QCALLTYPE MarshalNative_GetEndComSlot(QCall::TypeHandle t)
+{
+    QCALL_CONTRACT;
+
+    int retVal = 0;
+
+    BEGIN_QCALL;
+
+    int StartSlot = -1;
+
+    MethodTable *pMT = t.AsTypeHandle().GetMethodTable();
+    if (NULL == pMT)
+        COMPlusThrow(kArgumentNullException);
+
+    // The service does not make any sense to be called for non COM visible types.
+    if (!::IsTypeVisibleFromCom(TypeHandle(pMT)))
+        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
+
+    // Retrieve the start slot and the default interface class.
+    StartSlot = GetComSlotInfo(pMT, &pMT);
+    if (StartSlot == -1)
+    {
+        retVal = StartSlot;
+    }
+    else
+    {
+        // Retrieve the map of members.
+        ComMTMemberInfoMap MemberMap(pMT);
+        MemberMap.Init(sizeof(void*));
+
+        // The end slot is the start slot plus the number of user defined methods.
+        retVal = int(StartSlot + MemberMap.GetMethods().Size() - 1);
+    }
+
+    END_QCALL;
+
+    return retVal;
+}
+
+extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    if (!otp.Get()->GetMethodTable()->IsComImport())
+    {
+        OBJECTREF oref = otp.Get();
+        GCPROTECT_BEGIN(oref);
+
+        CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);
+
+        if (fIsWeak)
+            pWrap->MarkHandleWeak();
+        else
+            pWrap->ResetHandleStrength();
+
+        GCPROTECT_END();
+    }
+
+    END_QCALL;
 }
 
 extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)

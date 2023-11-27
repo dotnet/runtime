@@ -1385,6 +1385,25 @@ namespace System
 		}
 
 		[Fact]
+		public Task AssignmentTargetHasNestedInvalidOperation ()
+		{
+			// The assignment target is an IBinaryOperation whose right-hand side is an IInvalidOperation.
+			var Source = $$"""
+				int a, b = 0;
+				a + = 3;
+			""";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: true,
+				// (2,6): error CS1525: Invalid expression term '='
+				DiagnosticResult.CompilerError("CS1525").WithSpan(2, 6, 2, 7).WithArguments("="),
+				// (2,2): error CS0165: Use of unassigned local variable 'a'
+				DiagnosticResult.CompilerError("CS0165").WithSpan(2, 2, 2, 3).WithArguments("a"),
+				// (1,9): warning CS0219: The variable 'b' is assigned but its value is never used
+				DiagnosticResult.CompilerWarning("CS0219").WithSpan(1, 9, 1, 10).WithArguments("b")
+			);
+		}
+
+		[Fact]
 		public Task CRefGenericParameterAnalysis ()
 		{
 			var Source = """

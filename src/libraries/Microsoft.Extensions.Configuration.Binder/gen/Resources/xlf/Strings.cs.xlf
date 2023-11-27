@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
-        <target state="needs-review-translation">Pro volání vazače se nevygenerovala logika vazby. Nepodporované vstupní vzory zahrnují obecná volání a předávání zabalených objektů.</target>
+        <target state="translated">Pro volání vazby se nevygenerovala logika vazby. Mezi nepodporované vstupní vzory patří obecná volání, předávání zabalených objektů a předávání typů, které nejsou public ani internal.</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
@@ -34,7 +34,7 @@
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 12</source>
-        <target state="needs-review-translation">Verze jazyka musí být alespoň C# 11</target>
+        <target state="translated">Verze jazyka musí být alespoň C# 12</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingPublicInstanceConstructor">

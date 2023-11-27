@@ -386,7 +386,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetJumpKindAndTarget(BBJ_COND, bottom DEBUG_ARG(this));
+        top->SetJumpKindAndTarget(BBJ_COND, bottom);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
@@ -1849,7 +1849,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
+    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
     fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
@@ -2320,7 +2320,7 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->SetJumpKindAndTarget(BBJ_ALWAYS, constReturnBlock DEBUG_ARG(comp));
+                    returnBlock->SetJumpKindAndTarget(BBJ_ALWAYS, constReturnBlock);
                     comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
@@ -2985,7 +2985,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
+    BasicBlock* newHead = BasicBlock::New(this, BBJ_NONE);
     newHead->bbFlags |= BBF_INTERNAL;
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
@@ -3427,7 +3427,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // If the block preceding the first cold block is BBJ_NONE,
                     // convert it to BBJ_ALWAYS to force an explicit jump.
 
-                    prevToFirstColdBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstColdBlock DEBUG_ARG(this));
+                    prevToFirstColdBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstColdBlock);
                     break;
             }
         }

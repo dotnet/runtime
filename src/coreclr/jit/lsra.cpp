@@ -2852,7 +2852,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
         {
             ssize_t v1 = refPosition->treeNode->AsIntCon()->IconValue();
             ssize_t v2 = otherTreeNode->AsIntCon()->IconValue();
-            if ((v1 == v2) && (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode) || v1 == 0))
+            if ((v1 == v2) && (varTypeIsGC(refPosition->treeNode) == varTypeIsGC(otherTreeNode) || v1 == 0))
             {
 #ifdef TARGET_64BIT
                 // If the constant is negative, only reuse registers of the same type.
@@ -7946,8 +7946,9 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
 #ifdef TARGET_ARM
     if (type == TYP_DOUBLE)
     {
-        // Exclude any doubles for which the odd half isn't in freeRegs.
-        freeRegs = freeRegs & ((freeRegs << 1) & RBM_ALLDOUBLE);
+        // Exclude any doubles for which the odd half isn't in freeRegs,
+        // and restrict down to just the even part of the even/odd pair.
+        freeRegs &= (freeRegs & RBM_ALLDOUBLE_HIGH) >> 1;
     }
 #endif
 
@@ -12456,6 +12457,18 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // and we end up with that candidate is no longer available.
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
         candidates &= ~busyRegs;
+
+#ifdef TARGET_ARM
+        // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
+        // is also available. Thus, for every busyReg that is an odd floating-point register, we need to
+        // remove from candidates the corresponding even floating-point register. For example, if busyRegs
+        // contains `f3`, we need to remove `f2` from the candidates for a double register interval. The
+        // clause below creates a mask to do this.
+        if (currentInterval->registerType == TYP_DOUBLE)
+        {
+            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+        }
+#endif // TARGET_ARM
 
 #ifdef DEBUG
         inUseOrBusyRegsMask |= busyRegs;
