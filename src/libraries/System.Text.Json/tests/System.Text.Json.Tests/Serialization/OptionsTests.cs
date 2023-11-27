@@ -1039,9 +1039,25 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonSerializerOptions_Web_MatchesConstructorWithJsonSerializerDefaults()
         {
-            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = JsonSerializerOptions.Default.TypeInfoResolver
+            };
+
             JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Web;
+
+            Assert.Equal(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.True(options.PropertyNameCaseInsensitive);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
+
             JsonTestHelper.AssertOptionsEqual(options, optionsSingleton);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_SerializesWithExpectedSettings()
+        {
+            string json = JsonSerializer.Serialize(new { PropertyName = 42 }, JsonSerializerOptions.Web);
+            Assert.Equal("""{"propertyName":42}""", json);
         }
 
         [Fact]
