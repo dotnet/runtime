@@ -5,6 +5,8 @@
     <TargetFramework />
     <Description>MSBuild tasks for running the IL Linker</Description>
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <!-- To suppress warnings about resetting the assembly version.-->
+    <AssemblyVersion />
     <!-- Place illink and cecil alongside ILLink.Tasks in the output, for integration tests. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Nullable>disable</Nullable>
