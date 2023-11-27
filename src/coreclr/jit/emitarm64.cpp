@@ -16182,7 +16182,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);       // mmmmm
             break;
 
-        // Scalable. Reg3 is .D.
+        // Scalable. Reg3 has elements of size 8 bytes.
         case IF_SVE_AO_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
             emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
