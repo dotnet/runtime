@@ -337,10 +337,6 @@ void Compiler::fgComputeEnterBlocksSet()
 
     fgEnterBlks = BlockSetOps::MakeEmpty(this);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    fgAlwaysBlks = BlockSetOps::MakeEmpty(this);
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     /* Now set the entry basic block */
     BlockSetOps::AddElemD(this, fgEnterBlks, fgFirstBB->bbNum);
     assert(fgFirstBB->bbNum == 1);
@@ -357,20 +353,6 @@ void Compiler::fgComputeEnterBlocksSet()
             BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
         }
     }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // For ARM code, prevent creating retless calls by adding the BBJ_ALWAYS to the "fgAlwaysBlks" list.
-    for (BasicBlock* const block : Blocks())
-    {
-        if (block->KindIs(BBJ_CALLFINALLY))
-        {
-            assert(block->isBBCallAlwaysPair());
-
-            // Don't remove the BBJ_ALWAYS block that is only here for the unwinder.
-            BlockSetOps::AddElemD(this, fgAlwaysBlks, block->Next()->bbNum);
-        }
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
     if (verbose)
@@ -470,7 +452,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 
             block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL);
             block->bbFlags |= BBF_IMPORTED;
-            block->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
+            block->SetJumpKindAndTarget(BBJ_THROW);
             block->bbSetRunRarely();
         }
         else
@@ -504,11 +486,6 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             assert(leaveBlk->bbPreds == nullptr);
 
             fgRemoveBlock(leaveBlk, /* unreachable */ true);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // We have to clear BBF_FINALLY_TARGET flag on the target node (of BBJ_ALWAYS).
-            fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
             // Note: `changed` will already have been set to true by processing the BBJ_CALLFINALLY.
             // `hasUnreachableBlocks` doesn't need to be set for the leaveBlk itself because we've already called
@@ -583,13 +560,6 @@ PhaseStatus Compiler::fgComputeReachability()
         {
             return false;
         }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        if (!BlockSetOps::IsEmptyIntersection(this, fgAlwaysBlks, block->bbReach))
-        {
-            return false;
-        }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
         return true;
     };
@@ -711,15 +681,6 @@ bool Compiler::fgRemoveDeadBlocks()
                 }
             }
         }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        // For ARM code, always keep BBJ_CALLFINALLY/BBJ_ALWAYS as a pair
-        if (block->KindIs(BBJ_CALLFINALLY))
-        {
-            assert(block->isBBCallAlwaysPair());
-            worklist.push_back(block->Next());
-        }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     }
 
     // Track if there is any unreachable block. Even if it is marked with
@@ -733,11 +694,6 @@ bool Compiler::fgRemoveDeadBlocks()
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
         bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
         bool isRemovable = !isVisited || (block->bbRefs == 0);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        // Can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair, even if bbRefs == 0.
-        isRemovable &= !block->isBBCallAlwaysPairTail();
-#endif
 
         hasUnreachableBlock |= isRemovable;
         return isRemovable;
@@ -810,7 +766,7 @@ unsigned Compiler::fgDfsReversePostorder()
 
     // If we didn't end up visiting everything, try the EH roots.
     //
-    if (preorderIndex != fgBBcount + 1)
+    if ((preorderIndex != fgBBcount + 1) && !compIsForInlining())
     {
         for (EHblkDsc* const HBtab : EHClauses(this))
         {
@@ -828,30 +784,6 @@ unsigned Compiler::fgDfsReversePostorder()
             {
                 fgDfsReversePostorderHelper(handlerBlock, visited, preorderIndex, postorderIndex);
             }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // For ARM code, prevent creating retless calls by visiting the call finally successors
-            //
-            if (HBtab->HasFinallyHandler())
-            {
-                for (BasicBlock* const finallyPredBlock : handlerBlock->PredBlocks())
-                {
-                    // In some rare cases the finally is a loop entry.
-                    //
-                    if (!finallyPredBlock->KindIs(BBJ_CALLFINALLY))
-                    {
-                        continue;
-                    }
-                    assert(finallyPredBlock->isBBCallAlwaysPair());
-                    BasicBlock* const pairTailBlock = finallyPredBlock->Next();
-
-                    if (!BlockSetOps::IsMember(this, visited, pairTailBlock->bbNum))
-                    {
-                        fgDfsReversePostorderHelper(pairTailBlock, visited, preorderIndex, postorderIndex);
-                    }
-                }
-            }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
     }
 
@@ -1673,7 +1605,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                         // What follows is similar to fgNewBBInRegion, but we can't call that
                         // here as the oldTryEntry is no longer in the main bb list.
-                        newTryEntry = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
+                        newTryEntry = BasicBlock::New(this, BBJ_NONE);
                         newTryEntry->bbFlags |= (BBF_IMPORTED | BBF_INTERNAL);
                         newTryEntry->bbRefs = 0;
 
@@ -1693,7 +1625,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // plausible flow target. Simplest is to just mark it as a throw.
                         if (bbIsHandlerBeg(newTryEntry->Next()))
                         {
-                            newTryEntry->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
+                            newTryEntry->SetJumpKindAndTarget(BBJ_THROW);
                         }
                         else
                         {
@@ -1830,7 +1762,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     GenTree* const jumpIfEntryStateZero = gtNewOperNode(GT_JTRUE, TYP_VOID, compareEntryStateToZero);
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
-                    fromBlock->SetJumpKindAndTarget(BBJ_COND, toBlock DEBUG_ARG(this));
+                    fromBlock->SetJumpKindAndTarget(BBJ_COND, toBlock);
                     fgAddRefPred(toBlock, fromBlock);
                     newBlock->inheritWeight(fromBlock);
 
@@ -2001,13 +1933,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
-#if defined(TARGET_ARM)
-    // We can't compact a finally target block, as we need to generate special code for such blocks during code
-    // generation
-    if ((bNext->bbFlags & BBF_FINALLY_TARGET) != 0)
-        return false;
-#endif
-
     // We don't want to compact blocks that are in different Hot/Cold regions
     //
     if (fgInDifferentRegions(block, bNext))
@@ -2075,10 +2000,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     noway_assert(block->NextIs(bNext));
     noway_assert(bNext->countOfInEdges() == 1 || block->isEmpty());
     noway_assert(bNext->bbPreds != nullptr);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    noway_assert((bNext->bbFlags & BBF_FINALLY_TARGET) == 0);
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
     // Make sure the second block is not the start of a TRY block or an exception handler
 
@@ -2382,7 +2303,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpDest() DEBUG_ARG(this));
+            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpDest());
 
             /* Update the predecessor list for 'bNext->bbJumpDest' */
             fgReplacePred(bNext->GetJumpDest(), bNext, block);
@@ -2395,7 +2316,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_NONE:
-            block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+            block->SetJumpKindAndTarget(BBJ_NONE);
             /* Update the predecessor list for 'bNext->bbNext' */
             fgReplacePred(bNext->Next(), bNext, block);
             break;
@@ -2592,10 +2513,6 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 
     noway_assert(!block->IsFirst()); // Can't use this function to remove the first block
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    assert(!block->isBBCallAlwaysPairTail()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
-#endif
-
     // First, delete all the code in the block.
 
     if (block->IsLIR())
@@ -2655,7 +2572,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     noway_assert(flow->getDupCount() == 2);
 
     // Change the BBJ_COND to BBJ_NONE, and adjust the refCount and dupCount.
-    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+    block->SetJumpKindAndTarget(BBJ_NONE);
     --block->Next()->bbRefs;
     flow->decrementDupCount();
 
@@ -2776,18 +2693,6 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
     {
         optimizeJump = false;
     }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // Don't optimize a jump to a finally target. For BB1->BB2->BB3, where
-    // BB2 is a finally target, if we changed BB1 to jump directly to BB3,
-    // it would skip the finally target. BB1 might be a BBJ_ALWAYS block part
-    // of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, so changing the finally target
-    // would change the unwind behavior.
-    if (bDest->bbFlags & BBF_FINALLY_TARGET)
-    {
-        optimizeJump = false;
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
     // Must optimize jump if bDest has been removed
     //
@@ -2982,12 +2887,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     break;
                 }
             }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            /* Don't remove finally targets */
-            if (block->bbFlags & BBF_FINALLY_TARGET)
-                break;
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #if defined(FEATURE_EH_FUNCLETS)
             /* Don't remove an empty block that is in a different EH region
@@ -3330,7 +3229,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         }
 
         // Change the switch jump into a BBJ_ALWAYS
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, block->GetJumpSwt()->bbsDstTab[0] DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, block->GetJumpSwt()->bbsDstTab[0]);
         if (jmpCnt > 1)
         {
             for (unsigned i = 1; i < jmpCnt; ++i)
@@ -3394,7 +3293,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             fgSetStmtSeq(switchStmt);
         }
 
-        block->SetJumpKindAndTarget(BBJ_COND, block->GetJumpSwt()->bbsDstTab[0] DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_COND, block->GetJumpSwt()->bbsDstTab[0]);
 
         JITDUMP("After:\n");
         DISPNODE(switchTree);
@@ -3805,7 +3704,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     // Fix up block's flow
     //
-    block->SetJumpKindAndTarget(BBJ_COND, target->GetJumpDest() DEBUG_ARG(this));
+    block->SetJumpKindAndTarget(BBJ_COND, target->GetJumpDest());
     fgAddRefPred(block->GetJumpDest(), block);
     fgRemoveRefPred(target, block);
 
@@ -3857,7 +3756,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                 if (!block->isBBCallAlwaysPairTail())
                 {
                     /* the unconditional jump is to the next BB  */
-                    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                    block->SetJumpKindAndTarget(BBJ_NONE);
 #ifdef DEBUG
                     if (verbose)
                     {
@@ -3983,7 +3882,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
         /* Conditional is gone - simply fall into the next block */
 
-        block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_NONE);
 
         /* Update bbRefs and bbNum - Conditional predecessors to the same
          * block are counted twice so we have to remove one of them */
@@ -4248,7 +4147,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
 
-    bJump->SetJumpKindAndTarget(BBJ_COND, bDest->Next() DEBUG_ARG(this));
+    bJump->SetJumpKindAndTarget(BBJ_COND, bDest->Next());
 
     /* Update bbRefs and bbPreds */
 
@@ -4408,7 +4307,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Wire up the new control flow.
         //
-        block->SetJumpKindAndTarget(BBJ_COND, dominantTarget DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_COND, dominantTarget);
         FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
         FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
         assert(blockToNewBlockEdge->getSourceBlock() == block);
@@ -6429,18 +6328,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 continue;
             }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // Don't remove the BBJ_ALWAYS block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
-            if (block->countOfInEdges() == 0 && bPrev->KindIs(BBJ_CALLFINALLY))
-            {
-                assert(bPrev->isBBCallAlwaysPair());
-                noway_assert(!(bPrev->bbFlags & BBF_RETLESS_CALL));
-                noway_assert(block->KindIs(BBJ_ALWAYS));
-                bPrev = block;
-                continue;
-            }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
             assert(!bbIsTryBeg(block));
             noway_assert(block->bbCatchTyp == BBCT_NONE);
 
@@ -6936,7 +6823,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                predBlock->SetJumpKindAndTarget(BBJ_ALWAYS, crossJumpTarget DEBUG_ARG(this));
+                predBlock->SetJumpKindAndTarget(BBJ_ALWAYS, crossJumpTarget);
 
                 if (commSucc != nullptr)
                 {
