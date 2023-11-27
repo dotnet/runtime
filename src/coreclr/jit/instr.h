@@ -268,6 +268,11 @@ enum insOpts : unsigned
     INS_OPTS_1D,
     INS_OPTS_2D,
 
+    INS_OPTS_SCALABLE_B,
+    INS_OPTS_SCALABLE_H,
+    INS_OPTS_SCALABLE_S,
+    INS_OPTS_SCALABLE_D,
+
     INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
 
     INS_OPTS_S_TO_4BYTE,  // Single to INT32
@@ -418,8 +423,10 @@ enum emitAttr : unsigned
                 EA_4BYTE         = 0x004,
                 EA_8BYTE         = 0x008,
                 EA_16BYTE        = 0x010,
-
-#if defined(TARGET_XARCH)
+#if defined(TARGET_ARM64)
+                EA_SCALABLE      = 0x020,
+                EA_SIZE_MASK     = 0x03F,
+#elif defined(TARGET_XARCH)
                 EA_32BYTE        = 0x020,
                 EA_64BYTE        = 0x040,
                 EA_SIZE_MASK     = 0x07F,
