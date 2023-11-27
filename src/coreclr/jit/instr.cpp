@@ -1239,7 +1239,7 @@ void CodeGen::inst_RV_RV_TT(
     bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
     if (IsEmbBroadcast)
     {
-        instOptions = INS_OPTS_EVEX_b;
+        instOptions = INS_OPTS_EVEX_eb_er_rn;
         if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
         {
             switch (ins)

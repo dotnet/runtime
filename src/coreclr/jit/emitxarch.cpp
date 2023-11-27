@@ -1343,7 +1343,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (id->idIsEvexbContext())
     {
-
         code |= EVEX_B_BIT;
 
         if (!id->idHasMem())
@@ -1362,11 +1361,15 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
                 code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
                 code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
             }
-            else
+            else if (roundingMode == 3)
             {
                 // {rz-sae}
                 code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
                 code |= LBIT_IN_BYTE_EVEX_PREFIX;
+            }
+            else
+            {
+                unreached();
             }
         }
     }
@@ -6782,7 +6785,7 @@ void emitter::emitIns_R_R_A(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
-    if (instOptions == INS_OPTS_EVEX_b)
+    if (instOptions == INS_OPTS_EVEX_eb_er_rn)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
@@ -6911,7 +6914,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
-    if (instOptions == INS_OPTS_EVEX_b)
+    if (instOptions == INS_OPTS_EVEX_eb_er_rn)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
@@ -6945,7 +6948,6 @@ void emitter::emitIns_R_R_R(
     if (instOptions != INS_OPTS_NONE)
     {
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
-        assert(instOptions != INS_OPTS_EVEX_b);
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
     }
@@ -6971,7 +6973,7 @@ void emitter::emitIns_R_R_S(
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
-    if (instOptions == INS_OPTS_EVEX_b)
+    if (instOptions == INS_OPTS_EVEX_eb_er_rn)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);

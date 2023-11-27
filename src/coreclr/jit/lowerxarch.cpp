@@ -1055,6 +1055,56 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
+    if(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+    {
+        switch (intrinsicId)
+        {
+            case NI_AVX512F_Add:
+            {
+                // This branch manages the binary arithmetic intrinsic that is embedded rounding compatible.
+                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+                uint32_t    simdSize        = node->GetSimdSize();
+                size_t      numArgs         = node->GetOperandCount();
+                var_types   simdType        = node->TypeGet();
+                if (numArgs == 2)
+                {
+                    break;
+                }
+
+                // If we reach this point, then we have rounding mode parameter.
+                GenTree* op3 = node->Op(numArgs);
+                assert(op3->IsCnsIntOrI());
+                uint8_t             mode = static_cast<uint8_t>(node->Op(numArgs)->AsIntCon()->IconValue());
+                GenTreeHWIntrinsic* binaryNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2), intrinsicId, simdBaseJitType, simdSize);
+                binaryNode->SetEmbRoundingMode(mode);
+                BlockRange().InsertAfter(op3, binaryNode);
+                LIR::Use use;
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    use.ReplaceWith(binaryNode);
+                }
+                else
+                {
+                    binaryNode->SetUnusedValue();
+                }
+                BlockRange().Remove(node);
+                BlockRange().Remove(op3);
+                node = binaryNode;
+                if (mode == 0x08)
+                {
+                    // if the rounding mode is ToEven, the default setting we can seek for contain opportunities.
+                    break;
+                }
+                // As embedded rounding can only work under register-to-register form, we can skip contain check at this
+                // point.
+                return node->gtNext;
+            }
+            
+            default:
+                unreached();
+        }
+    }
+
     switch (intrinsicId)
     {
         case NI_Vector128_ConditionalSelect:
@@ -1679,48 +1729,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX_TestNotZAndNotC:
             LowerHWIntrinsicCC(node, NI_AVX_PTEST, GenCondition::UGT);
             break;
-
-        // This branch will take care of the embedded rounding compatible binary nodes.
-        case NI_AVX512F_Add:
-        {
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            uint32_t    simdSize        = node->GetSimdSize();
-            size_t      numArgs         = node->GetOperandCount();
-            if (numArgs == 2)
-            {
-                break;
-            }
-
-            // If we reach this point, then we have rounding mode parameter.
-            GenTree* op3 = node->Op(numArgs);
-            assert(op3->IsCnsIntOrI());
-            uint8_t             mode = static_cast<uint8_t>(node->Op(numArgs)->AsIntCon()->IconValue());
-            GenTreeHWIntrinsic* binaryNode =
-                comp->gtNewSimdBinOpNode(GT_ADD, TYP_SIMD64, node->Op(1), node->Op(2), simdBaseJitType, simdSize)
-                    ->AsHWIntrinsic();
-            binaryNode->SetEmbRoundingMode(mode);
-            BlockRange().InsertAfter(op3, binaryNode);
-            LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use))
-            {
-                use.ReplaceWith(binaryNode);
-            }
-            else
-            {
-                binaryNode->SetUnusedValue();
-            }
-            BlockRange().Remove(node);
-            BlockRange().Remove(op3);
-            node = binaryNode;
-            if (mode == 0x08)
-            {
-                // if the rounding mode is ToEven, the default setting we can seek for contain opportunities.
-                break;
-            }
-            // As embedded rounding can only work under register-to-register form, we can skip contain check at this
-            // point.
-            return node->gtNext;
-        }
 
         case NI_FMA_MultiplyAddScalar:
             LowerFusedMultiplyAdd(node);

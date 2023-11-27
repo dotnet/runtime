@@ -1545,11 +1545,7 @@ protected:
 
         void idSetEvexbContext(insOpts instOptions)
         {
-            if (instOptions == INS_OPTS_EVEX_b)
-            {
-                _idEvexbContext = 1;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_rd)
+            if (instOptions == INS_OPTS_EVEX_eb_er_rn)
             {
                 _idEvexbContext = 1;
             }

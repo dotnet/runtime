@@ -590,6 +590,12 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbBroadcastCompatible) != 0;
     }
+
+    static bool IsEmbRoundingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbRoundingCompatible) != 0;
+    }
 #endif // TARGET_XARCH
 
     static bool IsMaybeCommutative(NamedIntrinsic id)
