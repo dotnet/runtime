@@ -862,20 +862,20 @@ inline static bool insOptsScalable(insOpts opt)
 
 inline static bool insOptsScalableSimple(insOpts opt)
 {
-    // Opt is any of the standard scable types.
+    // Opt is any of the standard scalable types.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
             (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableWords(insOpts opt)
 {
-    // Opt is any of the standard word and above scable types.
+    // Opt is any of the standard word and above scalable types.
     return ((opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableFloat(insOpts opt)
 {
-    // Opt is any of the standard scable types that are valid for FP.
+    // Opt is any of the standard scalable types that are valid for FP.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
             (opt == INS_OPTS_SCALABLE_D));
 }
@@ -893,7 +893,7 @@ inline static bool insOptsScalableToSimd(insOpts opt)
 
 inline static bool insOptsScalableToSimdFloat(insOpts opt)
 {
-    // Opt is any of the SIMD scable types that are valid for FP.
+    // Opt is any of the SIMD scalable types that are valid for FP.
     return ((opt == INS_OPTS_SCALABLE_H_TO_SIMD) || (opt == INS_OPTS_SCALABLE_S_TO_SIMD) ||
             (opt == INS_OPTS_SCALABLE_D_TO_SIMD));
 }
