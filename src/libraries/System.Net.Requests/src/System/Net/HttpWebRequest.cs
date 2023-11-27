@@ -166,7 +166,8 @@ namespace System.Net
                     && ReferenceEquals(Proxy, DefaultWebProxy)
                     && ServerCertificateValidationCallback == null
                     && ClientCertificates == null
-                    && CookieContainer == null;
+                    && CookieContainer == null
+                    && ServicePoint == null;
             }
         }
 
@@ -1665,18 +1666,18 @@ namespace System.Net
 
                     try
                     {
-                        if (parameters.ServicePoint is not null)
+                        if (parameters.ServicePoint is { } servicePoint)
                         {
-                            if (parameters.ServicePoint.ReceiveBufferSize != -1)
+                            if (servicePoint.ReceiveBufferSize != -1)
                             {
-                                socket.ReceiveBufferSize = parameters.ServicePoint.ReceiveBufferSize;
+                                socket.ReceiveBufferSize = servicePoint.ReceiveBufferSize;
                             }
 
-                            if (parameters.ServicePoint.KeepAlive is not null)
+                            if (servicePoint.KeepAlive is { } keepAlive)
                             {
                                 socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, parameters.ServicePoint.KeepAlive.Time);
-                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, parameters.ServicePoint.KeepAlive.Interval);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, keepAlive.Time);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
                             }
                         }
 
