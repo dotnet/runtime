@@ -71,6 +71,7 @@ extends:
             buildArgs: -s clr+libs+libs.tests
                        -c $(_BuildConfig)
                        /p:TestReadyToRun=true
+                       /p:ArchiveTests=true
             nameSuffix: TestReadyToRun_Libraries
             timeoutInMinutes: 360
             postBuildSteps:
