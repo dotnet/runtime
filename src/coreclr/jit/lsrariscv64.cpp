@@ -458,6 +458,8 @@ int LinearScan::BuildNode(GenTree* tree)
             //   Non-const                  No              2
             //
 
+            bool needExtraTemp = (compiler->lvaOutgoingArgSpaceSize > 0);
+
             GenTree* size = tree->gtGetOp1();
             if (size->IsCnsIntOrI())
             {
@@ -484,13 +486,15 @@ int LinearScan::BuildNode(GenTree* tree)
                         // No need to initialize allocated stack space.
                         if (sizeVal < compiler->eeGetPageSize())
                         {
-                            // Need no internal registers
+                            ssize_t imm = -(ssize_t)sizeVal;
+                            needExtraTemp |= !emitter::isValidSimm12(imm);
                         }
                         else
                         {
                             // We need two registers: regCnt and RegTmp
                             buildInternalIntRegisterDefForNode(tree);
                             buildInternalIntRegisterDefForNode(tree);
+                            needExtraTemp = true;
                         }
                     }
                 }
@@ -502,8 +506,12 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     buildInternalIntRegisterDefForNode(tree);
                     buildInternalIntRegisterDefForNode(tree);
+                    needExtraTemp = true;
                 }
             }
+
+            if (needExtraTemp)
+                buildInternalIntRegisterDefForNode(tree); // tempReg
 
             if (!size->isContained())
             {

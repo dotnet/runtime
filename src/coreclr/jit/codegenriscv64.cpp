@@ -1682,6 +1682,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
     regNumber            targetReg                = tree->GetRegNum();
     regNumber            regCnt                   = REG_NA;
+    regNumber            tempReg                  = REG_NA;
     regNumber            pspSymReg                = REG_NA;
     var_types            type                     = genActualType(size->gtType);
     emitAttr             easz                     = emitTypeSize(type);
@@ -1724,7 +1725,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         // since we don't need any internal registers.
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
             regCnt = targetReg;
         }
         else
@@ -1740,10 +1740,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // regCnt will be the total number of bytes to localloc
         inst_RV_IV(INS_addi, regCnt, (STACK_ALIGN - 1), emitActualTypeSize(type));
 
-        assert(regCnt != rsGetRsvdReg());
-        ssize_t imm2 = ~(STACK_ALIGN - 1);
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rsGetRsvdReg(), REG_R0, imm2);
-        emit->emitIns_R_R_R(INS_and, emitActualTypeSize(type), regCnt, regCnt, rsGetRsvdReg());
+        emit->emitIns_R_R_I(INS_andi, emitActualTypeSize(type), regCnt, regCnt, ~(STACK_ALIGN - 1));
     }
 
     // If we have an outgoing arg area then we must adjust the SP by popping off the
@@ -1762,7 +1759,9 @@ void CodeGen::genLclHeap(GenTree* tree)
         unsigned outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
         // assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
         //                                                                // aligned
-        genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, outgoingArgSpaceAligned, rsGetRsvdReg());
+        if (tempReg == REG_NA)
+            tempReg = tree->ExtractTempReg();
+        genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, outgoingArgSpaceAligned, tempReg);
         stackAdjustment += outgoingArgSpaceAligned;
     }
 
@@ -1815,8 +1814,10 @@ void CodeGen::genLclHeap(GenTree* tree)
             }
             else
             {
-                emit->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), amount);
-                emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, rsGetRsvdReg());
+                if (tempReg == REG_NA)
+                    tempReg = tree->ExtractTempReg();
+                emit->emitLoadImmediate(EA_PTRSIZE, tempReg, amount);
+                emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
             }
 
             goto ALLOC_DONE;
@@ -1828,7 +1829,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(regCnt == REG_NA);
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
             regCnt = targetReg;
         }
         else
@@ -1901,17 +1901,19 @@ void CodeGen::genLclHeap(GenTree* tree)
         //       mov      SP, regCnt
         //
 
-        // Setup the regTmp
+        if (tempReg == REG_NA)
+            tempReg = tree->ExtractTempReg();
+
         regNumber regTmp = tree->GetSingleTempReg();
 
-        assert(regCnt != rsGetRsvdReg());
-        emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, rsGetRsvdReg(), REG_SPBASE, regCnt);
+        assert(regCnt != tempReg);
+        emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
 
         //// subu  regCnt, SP, regCnt      // regCnt now holds ultimate SP
         emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
 
         // Overflow, set regCnt to lowest possible value
-        emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, rsGetRsvdReg(), REG_R0, 2 << 2);
+        emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, tempReg, REG_R0, 2 << 2);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regCnt, REG_R0, 0);
 
         assert(compiler->eeGetPageSize() == ((compiler->eeGetPageSize() >> 12) << 12));
@@ -1923,12 +1925,12 @@ void CodeGen::genLclHeap(GenTree* tree)
         emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SPBASE, 0);
 
         // decrement SP by eeGetPageSize()
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rsGetRsvdReg(), REG_SPBASE, regTmp);
+        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, tempReg, REG_SPBASE, regTmp);
 
-        assert(regTmp != rsGetRsvdReg());
+        assert(regTmp != tempReg);
 
         ssize_t imm = 3 << 2; // goto done.
-        emit->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, rsGetRsvdReg(), regCnt, imm);
+        emit->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, tempReg, regCnt, imm);
 
         emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
 
@@ -1953,23 +1955,21 @@ ALLOC_DONE:
         assert((stackAdjustment % STACK_ALIGN) == 0); // This must be true for the stack to remain aligned
         assert((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) || (lastTouchDelta >= 0));
 
-        const regNumber tmpReg = rsGetRsvdReg();
-
         if ((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) ||
             (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
              compiler->eeGetPageSize()))
         {
-            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, tmpReg);
+            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, tempReg);
         }
         else
         {
-            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment, tmpReg);
+            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment, tempReg);
         }
 
         // Return the stackalloc'ed address in result register.
         // TargetReg = SP + stackAdjustment.
         //
-        genInstrWithConstant(INS_addi, EA_PTRSIZE, targetReg, REG_SPBASE, (ssize_t)stackAdjustment, tmpReg);
+        genInstrWithConstant(INS_addi, EA_PTRSIZE, targetReg, REG_SPBASE, (ssize_t)stackAdjustment, tempReg);
     }
     else // stackAdjustment == 0
     {
