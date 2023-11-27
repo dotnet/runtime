@@ -40,6 +40,7 @@ internal static class ReflectionTest
         TestByRefLikeTypeMethod.Run();
 #endif
         TestILScanner.Run();
+        TestTypeGetType.Run();
         TestUnreferencedEnum.Run();
 
         TestAttributeInheritance.Run();
@@ -1471,6 +1472,21 @@ internal static class ReflectionTest
         }
     }
 
+    class TestTypeGetType
+    {
+        public static void Run()
+        {
+            try
+            {
+                Type.GetType("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime");
+            }
+            catch { }
+
+            if (Type.GetType("MyClassOnlyReferencedFromTypeGetType") == null)
+                throw new Exception();
+        }
+    }
+
     class TestILScanner
     {
         class MyGenericUnusedClass<T>
@@ -2611,3 +2627,4 @@ class MyUnusedClass
     public static void TotallyUnreferencedMethod() { }
     public static void GenericMethod<T>() { }
 }
+class MyClassOnlyReferencedFromTypeGetType { }

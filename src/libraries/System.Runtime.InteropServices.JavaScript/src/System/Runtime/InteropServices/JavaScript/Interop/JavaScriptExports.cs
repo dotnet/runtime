@@ -253,7 +253,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             try
             {
-                InstallWebWorkerInterop(true, true);
+                InstallWebWorkerInterop(true);
             }
             catch (Exception ex)
             {

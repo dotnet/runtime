@@ -112,6 +112,12 @@ static bool isValidSimm20(ssize_t value)
     return -(((int)1) << 19) <= value && value < (((int)1) << 19);
 };
 
+// Returns true if 'value' is a legal unsigned immediate 20 bit encoding.
+static bool isValidUimm20(ssize_t value)
+{
+    return (0 == (value >> 20));
+};
+
 // Returns true if 'value' is a legal signed immediate 21 bit encoding.
 static bool isValidSimm21(ssize_t value)
 {

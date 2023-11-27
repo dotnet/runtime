@@ -21,17 +21,24 @@ public class WasiTemplateTests : BuildTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void ConsoleBuildThenPublish(string config)
+    [InlineData("Debug", /*aot*/ false)]
+    [InlineData("Debug", /*aot*/ true)]
+    [InlineData("Release", /*aot*/ false)]
+    [InlineData("Release", /*aot*/ true)]
+    public void ConsoleBuildThenPublish(string config, bool aot)
     {
         string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simpleMainWithArgs);
 
-        var buildArgs = new BuildArgs(projectName, config, false, id, null);
+        var buildArgs = new BuildArgs(projectName, config, true, id, null);
         buildArgs = ExpandBuildArgs(buildArgs);
+
+        if (aot)
+        {
+            AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>");
+        }
 
         BuildProject(buildArgs,
                     id: id,
@@ -84,7 +91,6 @@ public class WasiTemplateTests : BuildTestBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82515", TestPlatforms.Windows)]
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
     public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking, bool invariantTimezone)
     {

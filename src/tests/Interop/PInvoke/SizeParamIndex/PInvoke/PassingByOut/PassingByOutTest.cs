@@ -58,7 +58,7 @@ public class PassingByOutTest
 
     static void SizeParamTypeIsByte()
     {
-        string strDescription = "Scenario(byte ==> BYTE): Array_Size(N->M) = 1";
+        string strDescription = "Scenario(byte ==> uint8_t): Array_Size(N->M) = 1";
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
 
@@ -92,7 +92,7 @@ public class PassingByOutTest
 
     static void SizeParamTypeIsShort1()
     {
-        string strDescription = "Scenario(short ==> SHORT)1,Array_Size(M->N) = -1, Array_Size(N->M)=(ShortMax+1)/2";
+        string strDescription = "Scenario(short ==> int16_t)1,Array_Size(M->N) = -1, Array_Size(N->M)=(ShortMax+1)/2";
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
 
@@ -110,7 +110,7 @@ public class PassingByOutTest
 
     static void SizeParamTypeIsShort2()
     {
-        string strDescription = "Scenario(short ==> SHORT)2, Array_Size = 10, Array_Size(N->M) = -1";
+        string strDescription = "Scenario(short ==> int16_t)2, Array_Size = 10, Array_Size(N->M) = -1";
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
 
@@ -122,7 +122,7 @@ public class PassingByOutTest
 
     static void SizeParamTypeIsUShort()
     {
-        string strDescription = "Scenario(ushort==>USHORT): Array_Size(N->M) = ushort.MaxValue";
+        string strDescription = "Scenario(ushort==>uint16_t): Array_Size(N->M) = ushort.MaxValue";
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
 
@@ -139,7 +139,7 @@ public class PassingByOutTest
 
     static void SizeParamTypeIsInt32()
     {
-        string strDescription = "Scenario(Int32 ==> LONG): Array_Size(N->M) = 0 ";
+        string strDescription = "Scenario(Int32 ==> int32_t): Array_Size(N->M) = 0 ";
 
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
@@ -157,7 +157,7 @@ public class PassingByOutTest
 
     static void SizeParamTypeIsUInt32()
     {
-        string strDescription = "Scenario(UInt32 ==> ULONG): Array_Size(N->M) = 20";
+        string strDescription = "Scenario(UInt32 ==> uint32_t): Array_Size(N->M) = 20";
 
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
@@ -177,7 +177,7 @@ public class PassingByOutTest
 
     static void SizeParamTypeIsLong()
     {
-        string strDescription = "Scenario(long ==> LONGLONG): Array_Size(N->M) = 20";
+        string strDescription = "Scenario(long ==> int64_t): Array_Size(N->M) = 20";
 
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");
@@ -196,7 +196,7 @@ public class PassingByOutTest
 
     static void SizeParamTypeIsULong()
     {
-        string strDescription = "Scenario(ulong ==> ULONGLONG): Array_Size(N->M) = 1000";
+        string strDescription = "Scenario(ulong ==> uint64_t): Array_Size(N->M) = 1000";
 
         Console.WriteLine();
         Console.WriteLine(strDescription + " Starts!");

@@ -21,13 +21,20 @@
     <ApiCompatIgnoreTargetPlatformMoniker Condition="'$(SuppressDependenciesWhenPacking)' == 'true'">true</ApiCompatIgnoreTargetPlatformMoniker>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and Exists('PACKAGE.md')">PACKAGE.md</PackageReadmeFile>
+    <!-- Non-shipping packages shouldn't incrementally serviced. -->
+    <PackageUseIncrementalServicingVersion Condition="'$(IsShipping)' != 'true'">false</PackageUseIncrementalServicingVersion>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
     <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
     <IsRIDSpecificProject Condition="$(MSBuildProjectName.StartsWith('runtime.')) and
                                      !$(MSBuildProjectName.StartsWith('runtime.native'))">true</IsRIDSpecificProject>
-    <GeneratePackageOnBuild Condition="('$(BuildAllConfigurations)' == 'true' or
-                                       '$(IsRIDSpecificProject)' == 'true') and
-                                       '$(PreReleaseVersionLabel)' != 'servicing' and
+    <GeneratePackageOnBuild Condition="(
+                                        '$(BuildAllConfigurations)' == 'true' or
+                                        '$(IsRIDSpecificProject)' == 'true'
+                                       ) and
+                                       (
+                                        '$(PreReleaseVersionLabel)' != 'servicing' or
+                                        '$(PackageUseIncrementalServicingVersion)' != 'true'
+                                       ) and
                                        '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
     <!-- When in source-build we need to generate all packages when building for all configurations even in servicing. -->
     <GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' != 'true' and
