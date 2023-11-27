@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices.ComTypes;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -20,20 +21,26 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public MultiValue Target { init; get; }
 		public IOperation Operation { init; get; }
 		public ISymbol OwningSymbol { init; get; }
+		public FeatureContext FeatureContext { init; get; }
 
 		public TrimAnalysisAssignmentPattern (
 			MultiValue source,
 			MultiValue target,
 			IOperation operation,
-			ISymbol owningSymbol)
+			ISymbol owningSymbol,
+			FeatureContext featureContext)
 		{
 			Source = source.DeepCopy ();
 			Target = target.DeepCopy ();
 			Operation = operation;
 			OwningSymbol = owningSymbol;
+			FeatureContext = featureContext;
 		}
 
-		public TrimAnalysisAssignmentPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
+		public TrimAnalysisAssignmentPattern Merge (
+			ValueSetLattice<SingleValue> lattice,
+			FeatureContextLattice featureContextLattice,
+			TrimAnalysisAssignmentPattern other)
 		{
 			Debug.Assert (Operation == other.Operation);
 			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
@@ -42,13 +49,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				lattice.Meet (Source, other.Source),
 				lattice.Meet (Target, other.Target),
 				Operation,
-				OwningSymbol);
+				OwningSymbol,
+				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
-			if (context.EnableTrimAnalyzer && !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
+			if (context.EnableTrimAnalyzer &&
+				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.UnreferencedCode)) {
 				foreach (var sourceValue in Source) {
 					foreach (var targetValue in Target) {
 						// The target should always be an annotated value, but the visitor design currently prevents

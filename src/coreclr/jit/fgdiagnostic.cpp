@@ -86,13 +86,7 @@ void Compiler::fgDebugCheckUpdate()
     {
         /* no unreachable blocks */
 
-        if ((block->countOfInEdges() == 0) && !(block->bbFlags & BBF_DONT_REMOVE)
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // With funclets, we never get rid of the BBJ_ALWAYS part of a BBJ_CALLFINALLY/BBJ_ALWAYS pair,
-            // even if we can prove that the finally block never returns.
-            && !block->isBBCallAlwaysPairTail()
-#endif // FEATURE_EH_FUNCLETS
-                )
+        if ((block->countOfInEdges() == 0) && !(block->bbFlags & BBF_DONT_REMOVE))
         {
             noway_assert(!"Unreachable block not removed!");
         }
@@ -2461,6 +2455,11 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     printf("\n------------ ");
     block->dspBlockHeader(this);
 
+    if (fgSsaValid)
+    {
+        fgDumpBlockMemorySsaIn(block);
+    }
+
     if (!block->IsLIR())
     {
         for (Statement* const stmt : block->Statements())
@@ -2471,6 +2470,12 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     else
     {
         gtDispRange(LIR::AsRange(block));
+    }
+
+    if (fgSsaValid)
+    {
+        printf("\n");
+        fgDumpBlockMemorySsaOut(block);
     }
 }
 
@@ -2496,6 +2501,78 @@ void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
     }
     printf("\n---------------------------------------------------------------------------------------------------------"
            "----------\n");
+}
+
+//------------------------------------------------------------------------
+// fgDumpBlockMemorySsaIn: Dump memory state SSAs incoming to a block.
+//
+// Arguments:
+//    block - The block
+//
+void Compiler::fgDumpBlockMemorySsaIn(BasicBlock* block)
+{
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        if (byrefStatesMatchGcHeapStates)
+        {
+            printf("SSA MEM: %s, %s", memoryKindNames[ByrefExposed], memoryKindNames[GcHeap]);
+        }
+        else
+        {
+            printf("SSA MEM: %s", memoryKindNames[memoryKind]);
+        }
+
+        if (block->bbMemorySsaPhiFunc[memoryKind] == nullptr)
+        {
+            printf(" = m:%u\n", block->bbMemorySsaNumIn[memoryKind]);
+        }
+        else
+        {
+            printf(" = phi(");
+            BasicBlock::MemoryPhiArg* phiArgs = block->bbMemorySsaPhiFunc[memoryKind];
+            const char*               sep     = "";
+            for (BasicBlock::MemoryPhiArg* arg = block->bbMemorySsaPhiFunc[memoryKind]; arg != nullptr;
+                 arg                           = arg->m_nextArg)
+            {
+                printf("%sm:%u", sep, arg->GetSsaNum());
+                sep = ", ";
+            }
+            printf(")\n");
+        }
+
+        if (byrefStatesMatchGcHeapStates)
+        {
+            break;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// fgDumpBlockMemorySsaOut: Dump memory state SSAs outgoing from a block.
+//
+// Arguments:
+//    block - The block
+//
+void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
+{
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        if (byrefStatesMatchGcHeapStates)
+        {
+            printf("SSA MEM: %s, %s", memoryKindNames[ByrefExposed], memoryKindNames[GcHeap]);
+        }
+        else
+        {
+            printf("SSA MEM: %s", memoryKindNames[memoryKind]);
+        }
+
+        printf(" = m:%u\n", block->bbMemorySsaNumOut[memoryKind]);
+
+        if (byrefStatesMatchGcHeapStates)
+        {
+            break;
+        }
+    }
 }
 
 /*****************************************************************************
@@ -2892,8 +2969,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
     bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
 
+    unsigned numBlocks = 0;
+
     for (BasicBlock* const block : Blocks())
     {
+        numBlocks++;
+
         if (checkBBNum)
         {
             // Check that bbNum is sequential
@@ -3040,9 +3121,9 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         // Blocks with these jump kinds must have non-null jump targets
-        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE))
+        if (block->HasJumpDest())
         {
-            assert(block->HasJump());
+            assert(block->HasInitializedJumpDest());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
@@ -3102,6 +3183,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
     }
 
+    assert(fgBBcount == numBlocks);
+
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)
     {
@@ -3148,6 +3231,71 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].IsAddressExposed() ||
                                                     lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckTypes: Validate node types used in the given tree
+//
+// Arguments:
+//    tree - the tree to (recursively) check types for
+//
+void Compiler::fgDebugCheckTypes(GenTree* tree)
+{
+    struct NodeTypeValidator : GenTreeVisitor<NodeTypeValidator>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        NodeTypeValidator(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user) const
+        {
+            GenTree* node = *use;
+
+            // Validate types of nodes in the IR:
+            //
+            // * TYP_ULONG and TYP_UINT are not legal.
+            // * Small types are only legal for the following nodes:
+            //    * All kinds of indirections including GT_NULLCHECK
+            //    * All kinds of locals
+            //    * GT_COMMA wrapped around any of the above.
+            //
+            if (node->TypeIs(TYP_ULONG, TYP_UINT))
+            {
+                m_compiler->gtDispTree(node);
+                assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+            }
+
+            if (varTypeIsSmall(node))
+            {
+                if (node->OperIs(GT_COMMA))
+                {
+                    // TODO: it's only allowed if its underlying effective node is also a small type.
+                    return WALK_CONTINUE;
+                }
+
+                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+                {
+                    return WALK_CONTINUE;
+                }
+
+                m_compiler->gtDispTree(node);
+                assert(!"Unexpected small type in IR");
+            }
+
+            // TODO: validate types in GT_CAST nodes.
+            // Validate mismatched types in binopt's arguments, etc.
+            //
+            return WALK_CONTINUE;
+        }
+    };
+
+    NodeTypeValidator walker(this);
+    walker.WalkTree(&tree, nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -3757,6 +3905,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         fgDebugCheckFlags(stmt->GetRootNode(), block);
+        fgDebugCheckTypes(stmt->GetRootNode());
 
         // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
         // done by fgMorphTree()
@@ -4525,7 +4674,7 @@ public:
 //
 void Compiler::fgDebugCheckSsa()
 {
-    if (!fgSsaChecksEnabled)
+    if (!fgSsaValid)
     {
         return;
     }

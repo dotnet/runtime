@@ -115,7 +115,7 @@
     <NetFrameworkCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
     <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
-    <ApiCompatNetCoreAppBaselineVersion>8.0.0-rc.1.23415.6</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineVersion>8.0.0</ApiCompatNetCoreAppBaselineVersion>
     <ApiCompatNetCoreAppBaselineTFM>net8.0</ApiCompatNetCoreAppBaselineTFM>
 
     <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>

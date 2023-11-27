@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -253,7 +253,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             try
             {
-                InstallWebWorkerInterop(true, true);
+                InstallWebWorkerInterop(true);
             }
             catch (Exception ex)
             {

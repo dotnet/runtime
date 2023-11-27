@@ -147,7 +147,6 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.Security" />
-    <Reference Include="System.Net.ServicePoint" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />

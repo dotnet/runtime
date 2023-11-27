@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- test tries to read files from disk, bundling them into the app isn't easily possible right now -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Determinism.cs" />
+    <Compile Include="../UnitTests/Delegates.cs" />
+    <Compile Include="../UnitTests/Devirtualization.cs" />
+    <Compile Include="../UnitTests/Generics.cs" />
+    <Compile Include="../UnitTests/Interfaces.cs" />
+
+  </ItemGroup>
+
+  <Target Name="IlcCompileSingleThreaded"
+      Inputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)"
+      Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)-singlethreaded"
+      AfterTargets="IlcCompile">
+
+    <PropertyGroup>
+      <OldObjectFileName>$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)</OldObjectFileName>
+      <NewObjectFileName>$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)-singlethreaded</NewObjectFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <IlcArg Remove="-o:$(OldObjectFileName)" />
+      <IlcArg Include="-o:$(NewObjectFileName)" />
+      <IlcArg Include="--parallelism:1" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="%(ManagedBinary.IlcRspFile)-singlethreaded" Lines="@(IlcArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Message Text="Compiling single-threaded baseline" Importance="High" />
+
+    <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;%(ManagedBinary.IlcRspFile)-singlethreaded&quot;"
+          EnvironmentVariables="$(_IlcEnvironmentVariables)" />
+
+    <Copy SourceFiles="$(OldObjectFileName)" DestinationFiles="$(OutDir)\baseline.object" />
+    <Copy SourceFiles="$(NewObjectFileName)" DestinationFiles="$(OutDir)\compare.object" />
+  </Target>
+</Project>

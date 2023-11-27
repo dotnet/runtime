@@ -21,6 +21,7 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>

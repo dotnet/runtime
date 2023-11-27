@@ -501,7 +501,7 @@ void BlockCountInstrumentor::RelocateProbes()
                 //
                 if (pred->KindIs(BBJ_NONE))
                 {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block DEBUG_ARG(m_comp));
+                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block);
                 }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
@@ -533,10 +533,6 @@ void BlockCountInstrumentor::RelocateProbes()
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-                    m_comp->fgFixFinallyTargetFlags(pred, block, intermediary);
-#endif
                 }
             }
         }
@@ -1553,7 +1549,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         //
                         if (block->KindIs(BBJ_NONE))
                         {
-                            block->SetJumpKindAndTarget(BBJ_ALWAYS, target DEBUG_ARG(m_comp));
+                            block->SetJumpKindAndTarget(BBJ_ALWAYS, target);
                         }
 
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
@@ -1695,7 +1691,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 //
                 if (pred->KindIs(BBJ_NONE))
                 {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block DEBUG_ARG(m_comp));
+                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block);
                 }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
@@ -3800,7 +3796,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(block->HasJump());
+        assert(block->HasInitializedJumpDest());
         FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);

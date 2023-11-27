@@ -743,7 +743,7 @@ bool OptIfConversionDsc::optIfConvert()
 
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
-    assert(m_startBlock->HasJump());
+    assert(m_startBlock->HasInitializedJumpDest());
     m_startBlock->SetJumpKind(BBJ_ALWAYS);
 
 #ifdef DEBUG
@@ -779,7 +779,7 @@ PhaseStatus Compiler::optIfConversion()
 
     bool madeChanges = false;
 
-    // This phase does not repect SSA: assignments are deleted/moved.
+    // This phase does not respect SSA: assignments are deleted/moved.
     assert(!fgDomsComputed);
     optReachableBitVecTraits = nullptr;
 
@@ -793,11 +793,6 @@ PhaseStatus Compiler::optIfConversion()
         block = block->Prev();
     }
 #endif
-
-    if (madeChanges)
-    {
-        fgRenumberBlocks();
-    }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

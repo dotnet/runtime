@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
-
-using ErrorCode = Interop.NCrypt.ErrorCode;
+using Microsoft.Win32.SafeHandles;
 using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 using BCRYPT_OAEP_PADDING_INFO = Interop.BCrypt.BCRYPT_OAEP_PADDING_INFO;
+using ErrorCode = Interop.NCrypt.ErrorCode;
 
 namespace System.Security.Cryptography
 {

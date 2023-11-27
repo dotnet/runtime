@@ -15,6 +15,8 @@ using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace System
 {
     internal sealed unsafe class RuntimeType : TypeInfo, ICloneable
@@ -31,6 +33,12 @@ namespace System
         {
             // This needs to be a strong handle to prevent the type from being collected and re-created that would end up leaking the handle.
             _runtimeTypeInfoHandle = RuntimeImports.RhHandleAlloc(runtimeTypeInfo, GCHandleType.Normal);
+        }
+
+        internal void DangerousSetUnderlyingEEType(MethodTable* pEEType)
+        {
+            Debug.Assert(_pUnderlyingEEType == null);
+            _pUnderlyingEEType = pEEType;
         }
 
         internal void Free()

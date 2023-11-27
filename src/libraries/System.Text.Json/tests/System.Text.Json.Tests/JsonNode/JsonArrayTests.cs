@@ -680,5 +680,74 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Null(jValue.Parent);
             Assert.Equal("[5]", jArray.ToJsonString());
         }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("1")]
+        [InlineData("false")]
+        [InlineData("\"str\"")]
+        [InlineData("""{"test":"hello world"}""")]
+        [InlineData("[1,2,3]")]
+        public static void AddJsonElement(string json)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/94842
+            using var jdoc = JsonDocument.Parse(json);
+            var array = new JsonArray();
+
+            array.Add(jdoc.RootElement);
+
+            JsonNode arrayElement = Assert.Single(array);
+            switch (jdoc.RootElement.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    Assert.IsAssignableFrom<JsonObject>(arrayElement);
+                    break;
+                case JsonValueKind.Array:
+                    Assert.IsAssignableFrom<JsonArray>(arrayElement);
+                    break;
+                case JsonValueKind.Null:
+                    Assert.Null(arrayElement);
+                    break;
+                default:
+                    Assert.IsAssignableFrom<JsonValue>(arrayElement);
+                    break;
+            }
+            Assert.Equal($"[{json}]", array.ToJsonString());
+        }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("1")]
+        [InlineData("false")]
+        [InlineData("\"str\"")]
+        [InlineData("""{"test":"hello world"}""")]
+        [InlineData("[1,2,3]")]
+        public static void ReplaceWithJsonElement(string json)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/94842
+            using var jdoc = JsonDocument.Parse(json);
+            var array = new JsonArray { 1 };
+
+            array[0].ReplaceWith(jdoc.RootElement);
+
+            JsonNode arrayElement = Assert.Single(array);
+            switch (jdoc.RootElement.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    Assert.IsAssignableFrom<JsonObject>(arrayElement);
+                    break;
+                case JsonValueKind.Array:
+                    Assert.IsAssignableFrom<JsonArray>(arrayElement);
+                    break;
+                case JsonValueKind.Null:
+                    Assert.Null(arrayElement);
+                    break;
+                default:
+                    Assert.IsAssignableFrom<JsonValue>(arrayElement);
+                    break;
+            }
+
+            Assert.Equal($"[{json}]", array.ToJsonString());
+        }
     }
 }

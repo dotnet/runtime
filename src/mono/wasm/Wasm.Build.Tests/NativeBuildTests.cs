@@ -65,7 +65,7 @@ namespace Wasm.Build.Tests
         {
             string printFileTypeTarget = @"
                 <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmNestedPublishApp"">
-                    <Exec Command=""wasm-dis $(_WasmIntermediateOutputPath)System.Private.CoreLib.dll.o -o $(_WasmIntermediateOutputPath)wasm-dis-out.txt""
+                    <Exec Command=""wasm-dis &quot;$(_WasmIntermediateOutputPath)System.Private.CoreLib.dll.o&quot; -o &quot;$(_WasmIntermediateOutputPath)wasm-dis-out.txt&quot;""
                           EnvironmentVariables=""@(EmscriptenEnvVars)""
                           IgnoreExitCode=""true"">
 

@@ -45,9 +45,9 @@
 
 using System;
 using System.Collections.Generic;   // For Dictionary<string, string>
-using System.Text;                  // For StringBuilder
 using System.Diagnostics;           // For Debug.Assert
 using System.Diagnostics.CodeAnalysis;
+using System.Text;                  // For StringBuilder
 
 namespace System.IO.Packaging
 {

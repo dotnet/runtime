@@ -250,11 +250,6 @@ public:
         m_debuggerFlags = flags;
     }
 
-    ULONG HashIdentity()
-    {
-        return GetPEAssembly()->HashIdentity();
-    }
-
     // On failure:
     //      if loadFlag == Loader::Load => throw
     //      if loadFlag != Loader::Load => return NULL

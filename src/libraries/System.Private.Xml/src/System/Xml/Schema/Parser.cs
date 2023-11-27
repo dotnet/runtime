@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections;
-using System.Globalization;
-using System.Text;
-using System.IO;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Text;
 
 namespace System.Xml.Schema
 {

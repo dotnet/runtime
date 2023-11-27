@@ -4,6 +4,7 @@
 #ifndef __COMMON_TYPES_H__
 #define __COMMON_TYPES_H__
 
+#include <assert.h>
 #include <cstddef>
 #include <cstdint>
 #include <stdlib.h>

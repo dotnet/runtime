@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Collections;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Security;
-using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using System.Security;
+using System.Text;
+using System.Threading;
 
 namespace System.Xml.Serialization
 {

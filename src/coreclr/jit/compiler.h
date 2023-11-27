@@ -2254,12 +2254,6 @@ public:
     // Returns true if "block" is the start of a handler or filter region.
     bool bbIsHandlerBeg(BasicBlock* block);
 
-    // Returns true iff "block" is where control flows if an exception is raised in the
-    // try region, and sets "*regionIndex" to the index of the try for the handler.
-    // Differs from "IsHandlerBeg" in the case of filters, where this is true for the first
-    // block of the filter, but not for the filter's handler.
-    bool bbIsExFlowBlock(BasicBlock* block, unsigned* regionIndex);
-
     bool ehHasCallableHandlers();
 
     // Return the EH descriptor for the given region index.
@@ -2372,12 +2366,8 @@ public:
     } // Get the index to use as the cache key for sharing throw blocks
 #endif // !FEATURE_EH_FUNCLETS
 
-    // Returns a FlowEdge representing the "EH predecessors" of "blk".  These are the normal predecessors of
-    // "blk", plus one special case: if "blk" is the first block of a handler, considers the predecessor(s) of the
-    // first block of the corresponding try region to be "EH predecessors".  (If there is a single such predecessor,
-    // for example, we want to consider that the immediate dominator of the catch clause start block, so it's
-    // convenient to also consider it a predecessor.)
     FlowEdge* BlockPredsWithEH(BasicBlock* blk);
+    FlowEdge* BlockDominancePreds(BasicBlock* blk);
 
     // This table is useful for memoization of the method above.
     typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, FlowEdge*> BlockToFlowEdgeMap;
@@ -2389,6 +2379,16 @@ public:
             m_blockToEHPreds = new (getAllocator()) BlockToFlowEdgeMap(getAllocator());
         }
         return m_blockToEHPreds;
+    }
+
+    BlockToFlowEdgeMap* m_dominancePreds;
+    BlockToFlowEdgeMap* GetDominancePreds()
+    {
+        if (m_dominancePreds == nullptr)
+        {
+            m_dominancePreds = new (getAllocator()) BlockToFlowEdgeMap(getAllocator());
+        }
+        return m_dominancePreds;
     }
 
     void* ehEmitCookie(BasicBlock* block);
@@ -3215,10 +3215,11 @@ public:
 //=========================================================================
 // BasicBlock functions
 #ifdef DEBUG
-    // This is a debug flag we will use to assert when creating block during codegen
-    // as this interferes with procedure splitting. If you know what you're doing, set
-    // it to true before creating the block. (DEBUG only)
+    // When false, assert when creating a new basic block.
     bool fgSafeBasicBlockCreation;
+
+    // When false, assert when creating a new flow edge
+    bool fgSafeFlowEdgeCreation;
 #endif
 
     /*
@@ -4484,7 +4485,7 @@ public:
                                     // created.
     BasicBlockList* fgReturnBlocks; // list of BBJ_RETURN blocks
     unsigned        fgEdgeCount;    // # of control flow edges between the BBs
-    unsigned        fgBBcount;      // # of BBs in the method
+    unsigned        fgBBcount;      // # of BBs in the method (in the linked list that starts with fgFirstBB)
 #ifdef DEBUG
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
@@ -4492,6 +4493,8 @@ public:
     unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
+    BasicBlock** fgSSAPostOrder;       // Blocks in postorder, computed during SSA
+    unsigned     fgSSAPostOrderCount;  // Number of blocks in fgSSAPostOrder
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -4621,6 +4624,7 @@ public:
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
+    void fgUnlinkBlockForRemoval(BasicBlock* block);
 
 #ifdef FEATURE_JIT_METHOD_PERF
     unsigned fgMeasureIR();
@@ -4636,13 +4640,6 @@ public:
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    BlockSet fgAlwaysBlks; // Set of blocks which are BBJ_ALWAYS part  of BBJ_CALLFINALLY/BBJ_ALWAYS pair that should
-                           // never be removed due to a requirement to use the BBJ_ALWAYS for generating code and
-                           // not have "retless" blocks.
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
 #ifdef DEBUG
     bool fgReachabilitySetsValid; // Are the bbReach sets valid?
     bool fgEnterBlksSetValid;     // Is the fgEnterBlks set valid?
@@ -4741,17 +4738,6 @@ public:
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
-    PhaseStatus fgUpdateFinallyTargetFlags();
-
-    void fgClearAllFinallyTargetBits();
-
-    void fgAddFinallyTargetFlags();
-
-    void fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newBlock);
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     PhaseStatus fgTailMergeThrows();
     void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                             BasicBlock* nonCanonicalBlock,
@@ -4798,7 +4784,7 @@ public:
     FoldResult fgFoldConditional(BasicBlock* block);
 
     PhaseStatus fgMorphBlocks();
-    void fgMorphBlock(BasicBlock* block);
+    void fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorder = 0);
     void fgMorphStmts(BasicBlock* block);
 
     void fgMergeBlockReturn(BasicBlock* block);
@@ -4891,8 +4877,8 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
     GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
-    void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
-    void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
+    bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
+    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
@@ -5042,7 +5028,7 @@ public:
     void fgResetForSsa();
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
-    bool     fgSsaChecksEnabled;   // True if SSA info can be cross-checked versus IR
+    bool     fgSsaValid;           // True if SSA info is valid and can be cross-checked versus IR
 
 #ifdef DEBUG
     void DumpSsaSummary();
@@ -5056,6 +5042,7 @@ public:
 
     // The value numbers for this compilation.
     ValueNumStore* vnStore;
+    class ValueNumberState* vnState;
 
 public:
     ValueNumStore* GetValueNumStore()
@@ -5328,14 +5315,11 @@ protected:
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
-    void fgDfsReversePostorder();
+    unsigned fgDfsReversePostorder();
     void fgDfsReversePostorderHelper(BasicBlock* block,
                                      BlockSet&   visited,
                                      unsigned&   preorderIndex,
                                      unsigned&   reversePostorderIndex);
-
-    BlockSet_ValRet_T fgDomFindStartNodes(); // Computes which basic blocks don't have incoming edges in the flow graph.
-                                             // Returns this as a set.
 
     INDEBUG(void fgDispDomTree(DomTreeNode* domTree);) // Helper that prints out the Dominator Tree in debug builds.
 
@@ -5550,9 +5534,6 @@ public:
     BasicBlock* fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType);
 
 #if defined(FEATURE_EH_FUNCLETS)
-#if defined(TARGET_ARM)
-    void fgClearFinallyTargetBit(BasicBlock* block);
-#endif // defined(TARGET_ARM)
     bool fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block);
     bool fgAnyIntraHandlerPreds(BasicBlock* block);
     void fgInsertFuncletPrologBlock(BasicBlock* block);
@@ -5648,6 +5629,9 @@ public:
     void fgDumpBlock(BasicBlock* block);
     void fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock);
 
+    void fgDumpBlockMemorySsaIn(BasicBlock* block);
+    void fgDumpBlockMemorySsaOut(BasicBlock* block);
+
     static fgWalkPreFn fgStress64RsltMulCB;
     void               fgStress64RsltMul();
     void               fgDebugCheckUpdate();
@@ -5663,6 +5647,7 @@ public:
     void fgDebugCheckLoopTable();
     void fgDebugCheckSsa();
 
+    void fgDebugCheckTypes(GenTree* tree);
     void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
@@ -5724,7 +5709,7 @@ public:
 
 protected:
     friend class SsaBuilder;
-    friend struct ValueNumberState;
+    friend class ValueNumberState;
 
     //--------------------- Detect the basic blocks ---------------------------
 
@@ -6063,6 +6048,7 @@ public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 
 private:
+    void fgAssertionGen(GenTree* tree);
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgMorphTreeDone(GenTree* tree);
@@ -7353,6 +7339,8 @@ public:
     // Data structures for assertion prop
     BitVecTraits* apTraits;
     ASSERT_TP     apFull;
+    ASSERT_TP     apLocal;
+    ASSERT_TP     apLocalIfTrue;
 
     enum optAssertionKind
     {
@@ -7637,6 +7625,8 @@ protected:
     AssertionDsc*  optAssertionTabPrivate;      // table that holds info about value assignments
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    bool           optCrossBlockLocalAssertionProp;
+    unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
     bool           optCanPropEqual;
     bool           optCanPropNonNull;
@@ -7742,6 +7732,7 @@ public:
     GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
     GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
+    GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
@@ -9707,7 +9698,6 @@ public:
         bool dspDebugInfo;             // Display the Debug info reported to the VM
         bool dspInstrs;                // Display the IL instructions intermixed with the native code output
         bool dspLines;                 // Display source-code lines intermixed with native code output
-        bool dmpHex;                   // Display raw bytes in hex of native code output
         bool varNames;                 // Display variables names in native code output
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.

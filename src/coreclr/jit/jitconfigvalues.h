@@ -324,7 +324,7 @@ CONFIG_INTEGER(EnableAVX512CD_VL,           W("EnableAVX512CD_VL"),         1) /
 CONFIG_INTEGER(EnableAVX512DQ,              W("EnableAVX512DQ"),            1) // Allows AVX512DQ+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512DQ_VL,           W("EnableAVX512DQ_VL"),         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512F,               W("EnableAVX512F"),             1) // Allows AVX512F+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI,            W("EnableAVX512VBMI"),          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI_VL,         W("EnableAVX512VBMI_VL"),       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVXVNNI,               W("EnableAVXVNNI"),             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
@@ -351,6 +351,7 @@ CONFIG_INTEGER(EnableArm64Dp,               W("EnableArm64Dp"),             1) /
 CONFIG_INTEGER(EnableArm64Rdm,              W("EnableArm64Rdm"),            1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Sha1,             W("EnableArm64Sha1"),           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Sha256,           W("EnableArm64Sha256"),         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Sve,              W("EnableArm64Sve"),            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
 #endif
 
 // clang-format on
@@ -460,6 +461,7 @@ CONFIG_STRING(JitEnableEarlyLivenessRange, W("JitEnableEarlyLivenessRange"))
 CONFIG_STRING(JitOnlyOptimizeRange,
               W("JitOnlyOptimizeRange")) // If set, all methods that do _not_ match are forced into MinOpts
 CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
+CONFIG_STRING(JitEnableCrossBlockLocalAssertionPropRange, W("JitEnableCrossBlockLocalAssertionPropRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -653,6 +655,9 @@ CONFIG_INTEGER(JitEnableHeadTailMerge, W("JitEnableHeadTailMerge"), 1)
 // Enable physical promotion
 CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
+// Enable cross-block local assertion prop
+CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 0)
+
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
@@ -671,6 +676,11 @@ CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 // If this is unset, then the JIT config values have their normal behavior.
 //
 CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
+#endif // DEBUG
+
+#if defined(DEBUG)
+CONFIG_METHODSET(JitRawHexCode, W("JitRawHexCode"))
+CONFIG_STRING(JitRawHexCodeFile, W("JitRawHexCodeFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)

@@ -1748,21 +1748,6 @@ public:
             return false;
         }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        // Disqualify loops where the first block of the loop is a finally target.
-        // The main problem is when multiple loops share a 'top' block that is a finally
-        // target and we canonicalize the loops by adding a new loop head. In that case, we
-        // need to update the blocks so the finally target bit is moved to the newly created
-        // block, and removed from the old 'top' block. This is 'hard', so it's easier to disallow
-        // the loop than to update the flow graph to support this case.
-
-        if ((top->bbFlags & BBF_FINALLY_TARGET) != 0)
-        {
-            JITDUMP("Loop 'top' " FMT_BB " is a finally target. Rejecting loop.\n", top->bbNum);
-            return false;
-        }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
         // Compact the loop (sweep through it and move out any blocks that aren't part of the
         // flow cycle), and find the exits.
         if (!MakeCompactAndFindExits())
@@ -2404,7 +2389,7 @@ private:
             case BBJ_CALLFINALLY:
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-                assert(block->HasJump());
+                assert(block->HasInitializedJumpDest());
                 exitPoint = block->GetJumpDest();
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
@@ -2854,7 +2839,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             to->SetJumpKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
             break;
         default:
-            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetJumpDest() DEBUG_ARG(this));
+            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetJumpDest());
             break;
     }
 
@@ -4417,7 +4402,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-                    assert(!newBlock->HasJump());
+                    assert(newBlock->KindIs(BBJ_NONE));
 
                     if (block == bottom)
                     {
@@ -4510,7 +4495,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     fgRemoveAllRefPreds(succ, block);
                 }
 
-                block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                block->SetJumpKindAndTarget(BBJ_NONE);
                 block->bbStmtList   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
 
@@ -4554,7 +4539,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
                 fgRemoveRefPred(initBlock->GetJumpDest(), initBlock);
-                initBlock->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                initBlock->SetJumpKindAndTarget(BBJ_NONE);
             }
             else
             {
@@ -5100,7 +5085,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool foundCondTree = false;
 
     // Create a new block after `block` to put the copied condition code.
-    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+    block->SetJumpKindAndTarget(BBJ_NONE);
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true, bJoin);
 
     // Clone each statement in bTest and append to bNewCond.
@@ -8173,11 +8158,11 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     if (isTopEntryLoop)
     {
-        preHead = BasicBlock::bbNewBasicBlock(this, BBJ_NONE);
+        preHead = BasicBlock::New(this, BBJ_NONE);
     }
     else
     {
-        preHead = BasicBlock::bbNewBasicBlock(this, BBJ_ALWAYS, entry);
+        preHead = BasicBlock::New(this, BBJ_ALWAYS, entry);
     }
 
     preHead->bbFlags |= BBF_INTERNAL | BBF_LOOP_PREHEADER;

@@ -15,6 +15,7 @@
     <WasmEnableLegacyJsInterop Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" >$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
+    <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
