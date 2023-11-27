@@ -18393,27 +18393,125 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        // Scalable.
+        // SVE latencies from Arm Neoverse N2 Software Optimization Guide, Issue 5.0, Revision: r0p3
+
+        // Predicate logical
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        // Arithmetic, basic
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
-        case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
+        case IF_SVE_EP_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 integer halving add/subtract (predicated)
+        // Max/min, basic and pairwise
         case IF_SVE_AD_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        // Divides, 32 bit (Note: worse for 64 bit)
+        case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_12C; // 7 to 12
+            result.insThroughput = PERFSCORE_THROUGHPUT_11C; // 1/11 to 1/7
+            break;
+
+        // Multiply, B, H, S element size (Note: D element size is slightly slower)
         case IF_SVE_AE_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer multiply vectors (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        // Arithmetic, shift
         case IF_SVE_AN_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by vector (predicated)
         case IF_SVE_AO_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        // Conditional extract operations, SIMD&FP scalar and vector forms
         case IF_SVE_CM_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
-        case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
-        case IF_SVE_EP_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 integer halving add/subtract (predicated)
-        case IF_SVE_ER_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 integer pairwise arithmetic
-        case IF_SVE_ET_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
-        case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left
-                           // (predicated)
-        case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
-        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
-        case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        // Conditional extract operations, scalar form
+        case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
+            result.insLatency    = PERFSCORE_LATENCY_8C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        // Arithmetic, pairwise add
+        // Max/min, basic and pairwise
+        case IF_SVE_ER_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 integer pairwise arithmetic
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        // Arithmetic, complex
+        case IF_SVE_ET_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+        // Arithmetic, shift complex
+        case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        // Floating point arithmetic
+        // Floating point min/max pairwise
+        case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        // Floating point associative add, F64. (Note: Worse for F32 and F16)
+        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
+            switch (ins)
+            {
+                // Floating point absolute value/difference
+                case INS_sve_fabd:
+                // Floating point min/max
+                case INS_sve_fmax:
+                case INS_sve_fmaxnm:
+                case INS_sve_fmin:
+                case INS_sve_fminnm:
+                // Floating point arithmetic
+                case INS_sve_fadd:
+                case INS_sve_fsub:
+                case INS_sve_fsubr:
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    break;
+
+                // Floating point divide, F64 (Note: Worse for F32, F16)
+                case INS_sve_fdiv:
+                case INS_sve_fdivr:
+                    result.insLatency    = PERFSCORE_LATENCY_15C; // 7 to 15
+                    result.insThroughput = PERFSCORE_THROUGHPUT_14C; // 1/14 to 1/7
+                    break;
+
+                // Floating point multiply
+                case INS_sve_fmul:
+                case INS_sve_fmulx:
+                case INS_sve_fscale:
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         default:
