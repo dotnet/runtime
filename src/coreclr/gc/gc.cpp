@@ -25555,7 +25555,9 @@ int gc_heap::calculate_new_heap_count ()
         {
             // scale 10 -> 0.5, 50 -> 1.  cap at 1.
             float scale = min(1, (median_throughput_cost_percent + 30) / 80);
-            new_n_heaps = (int)(scale * (new_n_heaps - n_heaps) + n_heaps);
+            step_up = (int)(scale * (new_n_heaps - n_heaps));
+            step_up = min(step_up, max(n_max_heaps / 4, 4));
+            new_n_heaps = n_heaps + step_up;
             dprintf (6666, ("[CHP0] precisely adjusting to 10%% -> %d  heaps (max %d)", new_n_heaps, (n_max_heaps - extra_heaps)));
             new_n_heaps = max (new_n_heaps, n_heaps + 1);
             new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
