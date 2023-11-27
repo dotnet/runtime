@@ -882,7 +882,8 @@ inline static bool insOptsScalableFloat(insOpts opt)
 
 inline static bool insOptsScalableWide(insOpts opt)
 {
-    return ((opt == INS_OPTS_SCALABLE_WIDE_B) || (opt == INS_OPTS_SCALABLE_WIDE_H) || (opt == INS_OPTS_SCALABLE_WIDE_S));
+    return ((opt == INS_OPTS_SCALABLE_WIDE_B) || (opt == INS_OPTS_SCALABLE_WIDE_H) ||
+            (opt == INS_OPTS_SCALABLE_WIDE_S));
 }
 
 inline static bool insOptsScalableToSimd(insOpts opt)

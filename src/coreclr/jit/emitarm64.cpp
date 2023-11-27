@@ -16193,10 +16193,10 @@ void emitter::emitDispInsHelp(
             break;
 
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
-            emitDispReg(id->idReg1(), size, true);                     // ddddd
+            emitDispReg(id->idReg1(), size, true);                    // ddddd
             emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
-            emitDispReg(id->idReg1(), size, true);                     // ddddd
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);       // mmmmm
+            emitDispReg(id->idReg1(), size, true);                    // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);      // mmmmm
             break;
 
         default:
