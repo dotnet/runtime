@@ -362,7 +362,7 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall:
     OBJECTREF retVal = NULL;
     GCPROTECT_BEGIN(retVal);
 
-    // The IL stub is going to call ObjectMarshaler__ClearNative() afterwards.
+    // The IL stub is going to call ObjectMarshaler.ClearNative() afterwards.
     // If it doesn't it's a bug in ILObjectMarshaler.
     OleVariant::MarshalObjectForOleVariant(pSrc, &retVal);
     retObject.Set(retVal);
