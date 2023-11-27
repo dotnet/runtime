@@ -72,6 +72,7 @@
 
   <!-- The assembly version gets updated during servicing when the assembly isn't part of a targeting pack. -->
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
+                            '$(IsPackable)' == 'true'
                             '$(PackageUseIncrementalServicingVersion)' == 'true'">
     <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
     <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
