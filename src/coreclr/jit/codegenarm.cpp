@@ -117,33 +117,55 @@ bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 //
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    BasicBlock* bbFinallyRet = nullptr;
+    GetEmitter()->emitIns_J(INS_bl, block->GetJumpDest());
 
-    // We don't have retless calls, since we use the BBJ_ALWAYS to point at a NOP pad where
-    // we would have otherwise created retless calls.
-    assert(block->isBBCallAlwaysPair());
+    BasicBlock* nextBlock = block->Next();
 
-    assert(!block->IsLast());
-    assert(block->Next()->KindIs(BBJ_ALWAYS));
-    assert(block->Next()->HasJump());
-    assert(block->Next()->GetJumpDest()->bbFlags & BBF_FINALLY_TARGET);
+    if (block->bbFlags & BBF_RETLESS_CALL)
+    {
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
+        {
+            instGen(INS_BREAKPOINT);
+        }
+    }
+    else
+    {
+        assert((nextBlock != nullptr) && nextBlock->isBBCallAlwaysPairTail());
 
-    bbFinallyRet = block->Next()->GetJumpDest();
+        // Because of the way the flowgraph is connected, the liveness info for this one instruction
+        // after the call is not (can not be) correct in cases where a variable has a last use in the
+        // handler.  So turn off GC reporting for this single instruction.
+        GetEmitter()->emitDisableGC();
 
-    // Load the address where the finally funclet should return into LR.
-    // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do the return.
-    genMov32RelocatableDisplacement(bbFinallyRet, REG_LR);
+        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
 
-    // Jump to the finally BB
-    inst_JMP(EJ_jmp, block->GetJumpDest());
+        // Now go to where the finally funclet needs to return to.
+        if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
+        {
+            // Fall-through.
+            // TODO-ARM-CQ: Can we get rid of this instruction, and just have the call return directly
+            // to the next instruction? This would depend on stack walking from within the finally
+            // handler working without this instruction being in this special EH region.
+            instGen(INS_nop);
+        }
+        else
+        {
+            GetEmitter()->emitIns_J(INS_b, jumpDest);
+        }
+
+        GetEmitter()->emitEnableGC();
+    }
 
     // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
     // jump target using bbJumpDest - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
-    assert(!(block->bbFlags & BBF_RETLESS_CALL));
-    assert(block->isBBCallAlwaysPair());
-    return block->Next();
+    if (!(block->bbFlags & BBF_RETLESS_CALL))
+    {
+        assert(block->isBBCallAlwaysPair());
+        block = nextBlock;
+    }
+    return block;
 }
 
 //------------------------------------------------------------------------
@@ -2570,34 +2592,6 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, regTmp, regBase, callerSPOffs);
     GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
-}
-
-void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
-{
-    // If this block is the target of a finally return, we need to add a preceding NOP, in the same EH region,
-    // so the unwinder doesn't get confused by our "movw lr, xxx; movt lr, xxx; b Lyyy" calling convention that
-    // calls the funclet during non-exceptional control flow.
-    if (block->bbFlags & BBF_FINALLY_TARGET)
-    {
-        assert(block->bbFlags & BBF_HAS_LABEL);
-
-#ifdef DEBUG
-        if (compiler->verbose)
-        {
-            printf("\nEmitting finally target NOP predecessor for " FMT_BB "\n", block->bbNum);
-        }
-#endif
-        // Create a label that we'll use for computing the start of an EH region, if this block is
-        // at the beginning of such a region. If we used the existing bbEmitCookie as is for
-        // determining the EH regions, then this NOP would end up outside of the region, if this
-        // block starts an EH region. If we pointed the existing bbEmitCookie here, then the NOP
-        // would be executed, which we would prefer not to do.
-
-        block->bbUnwindNopEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                                  gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block));
-
-        instGen(INS_nop);
-    }
 }
 
 //-----------------------------------------------------------------------------

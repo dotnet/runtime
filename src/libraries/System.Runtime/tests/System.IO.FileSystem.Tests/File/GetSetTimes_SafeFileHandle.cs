@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -92,14 +93,33 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public async Task WritingShouldUpdateWriteTime_After_SetLastAccessTime()
+        {
+            string filePath = GetTestFilePath();
+            using var handle = OpenFileHandle(filePath, FileAccess.ReadWrite);
+
+            File.SetLastAccessTime(handle, DateTime.Now.Subtract(TimeSpan.FromDays(1)));
+            var timeBeforeWrite = File.GetLastWriteTime(handle);
+
+            using var writer = new StreamWriter(new FileStream(handle, FileAccess.ReadWrite));
+            writer.AutoFlush = true;
+            writer.WriteLine("now: " + DateTime.Now);
+            await Task.Delay(2000);
+            writer.WriteLine("now: " + DateTime.Now);
+
+            var timeAfterWrite = File.GetLastWriteTime(handle);
+            Assert.True(timeAfterWrite > timeBeforeWrite);
+        }
+
+        [Fact]
         public void NullArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetCreationTime(default(SafeFileHandle)!));
             Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetCreationTime(default(SafeFileHandle)!, DateTime.Now));
-            
+
             Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetCreationTimeUtc(default(SafeFileHandle)!));
             Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetCreationTimeUtc(default(SafeFileHandle)!, DateTime.Now));
-            
+
             Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetLastAccessTime(default(SafeFileHandle)!));
             Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetLastAccessTime(default(SafeFileHandle)!, DateTime.Now));
 

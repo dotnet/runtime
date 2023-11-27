@@ -30,8 +30,6 @@ public:
     static FCDECL2(FC_BOOL_RET, IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst);
     static FCDECL5(void, CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength);
 
-    static FCDECL4(Object*, CreateInstance, ReflectClassBaseObject* pElementTypeUNSAFE, INT32 rank, INT32* pLengths, INT32* pBounds);
-
     // This set of methods will set a value in an array
     static FCDECL3(void, SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex);
 
@@ -44,9 +42,6 @@ public:
     static FCDECL3_VVI(void*, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetTypeUnsafe, INT32* count);
 
 private:
-    // Helper for CreateInstance
-    static void CheckElementType(TypeHandle elementType);
-
     // Return values for CanAssignArrayType
     enum AssignArrayEnum
     {
@@ -66,6 +61,7 @@ private:
 
 };
 
+extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray);
 extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd);
 
 #endif // _ARRAYNATIVE_H_

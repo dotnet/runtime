@@ -316,6 +316,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(type =>
             {
+                TypeSystemContext.EnsureLoadableType(type);
                 return new ReflectedTypeNode(type);
             });
 
