@@ -566,7 +566,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._includeFields);
                 AddHashCode(ref hc, options._propertyNameCaseInsensitive);
                 AddHashCode(ref hc, options._writeIndented);
-                AddHashCode(ref hc, options._indentText?.GetHashCode() ?? 0);
+                AddHashCode(ref hc, options._indentText.GetHashCode());
                 AddHashCode(ref hc, options._typeInfoResolver);
                 AddListHashCode(ref hc, options._converters);
 

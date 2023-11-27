@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using System.Threading;
@@ -15,7 +16,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
-using System.Linq;
 
 namespace System.Text.Json.Tests
 {
