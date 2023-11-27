@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BuildAsStandalone>true</BuildAsStandalone>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/93631 -->
