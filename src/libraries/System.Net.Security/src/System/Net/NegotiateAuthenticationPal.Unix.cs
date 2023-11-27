@@ -22,7 +22,8 @@ namespace System.Net
         private static bool UseManagedNtlm { get; } =
             AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
             useManagedNtlm :
-            OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst();
+            OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
+            (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic", StringComparison.OrdinalIgnoreCase));
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
@@ -559,7 +560,8 @@ namespace System.Net
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        string protocol = _packageType switch {
+                        string protocol = _packageType switch
+                        {
                             Interop.NetSecurityNative.PackageType.NTLM => "NTLM",
                             Interop.NetSecurityNative.PackageType.Kerberos => "Kerberos",
                             _ => "SPNEGO"
@@ -635,7 +637,8 @@ namespace System.Net
                     {
                         if (NetEventSource.Log.IsEnabled())
                         {
-                            string protocol = _packageType switch {
+                            string protocol = _packageType switch
+                            {
                                 Interop.NetSecurityNative.PackageType.NTLM => "NTLM",
                                 Interop.NetSecurityNative.PackageType.Kerberos => "Kerberos",
                                 _ => isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos"
