@@ -286,10 +286,65 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_MOD:
         case GT_UMOD:
         case GT_DIV:
-        case GT_MULHI:
         case GT_UDIV:
         {
             srcCount = BuildBinaryUses(tree->AsOp());
+
+            GenTree* divisorOp = tree->gtGetOp2();
+            if (!varTypeIsFloating(tree->TypeGet()) &&
+                !(divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_R0))
+            {
+                bool needTemp = false;
+                if (divisorOp->isContainedIntOrIImmed())
+                {
+                    needTemp = true; // divisorReg
+                }
+                else if (tree->OperIsCommutative())
+                {
+                    if (tree->gtGetOp1()->isContainedIntOrIImmed())
+                        needTemp = true; // reg1
+                }
+
+                if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
+                {
+                    bool checkDividend = true;
+                    // Do we have an immediate for the 'divisorOp'?
+                    if (divisorOp->IsCnsIntOrI())
+                    {
+                        ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
+                        if (intConstValue != -1)
+                        {
+                            checkDividend = false; // We statically know that the dividend is not -1
+                        }
+                    }
+                    ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
+                    if (checkDividend &&
+                        ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None))
+                    {
+                        needTemp = true;
+                    }
+                }
+
+                if (needTemp)
+                    buildInternalIntRegisterDefForNode(tree);
+            }
+            buildInternalRegisterUses();
+            assert(dstCount == 1);
+            BuildDef(tree);
+        }
+        break;
+
+        case GT_MULHI:
+        {
+            srcCount = BuildBinaryUses(tree->AsOp());
+
+            emitAttr attr = emitActualTypeSize(tree->AsOp());
+            if (EA_SIZE(attr) != EA_8BYTE)
+            {
+                if (tree->AsOp()->gtFlags & GTF_UNSIGNED)
+                    buildInternalIntRegisterDefForNode(tree);
+            }
+
             buildInternalRegisterUses();
             assert(dstCount == 1);
             BuildDef(tree);

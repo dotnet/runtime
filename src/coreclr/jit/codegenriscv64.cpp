@@ -1370,9 +1370,10 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         assert(EA_SIZE(attr) == EA_4BYTE);
         if (isUnsigned)
         {
-            emit->emitIns_R_R_I(INS_slli, EA_8BYTE, rsGetRsvdReg(), op1->GetRegNum(), 32);
+            regNumber tempReg = treeNode->GetSingleTempReg();
+            emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, op1->GetRegNum(), 32);
             emit->emitIns_R_R_I(INS_slli, EA_8BYTE, targetReg, op2->GetRegNum(), 32);
-            emit->emitIns_R_R_R(INS_mulhu, EA_8BYTE, targetReg, rsGetRsvdReg(), targetReg);
+            emit->emitIns_R_R_R(INS_mulhu, EA_8BYTE, targetReg, tempReg, targetReg);
             emit->emitIns_R_R_I(INS_srai, attr, targetReg, targetReg, 32);
         }
         else
@@ -2093,13 +2094,15 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             // ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
             regNumber   reg1       = src1->GetRegNum();
             regNumber   divisorReg = divisorOp->GetRegNum();
+            regNumber   tempReg    = REG_NA;
             instruction ins;
 
             // Check divisorOp first as we can always allow it to be a contained immediate
             if (divisorOp->isContainedIntOrIImmed())
             {
                 ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
-                divisorReg       = rsGetRsvdReg();
+                tempReg          = tree->GetSingleTempReg();
+                divisorReg       = tempReg;
                 emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
             }
             // Only for commutative operations do we check src1 and allow it to be a contained immediate
@@ -2113,7 +2116,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 {
                     assert(!divisorOp->isContainedIntOrIImmed());
                     ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
-                    reg1             = rsGetRsvdReg();
+                    tempReg          = tree->GetSingleTempReg();
+                    reg1             = tempReg;
                     emit->emitLoadImmediate(EA_PTRSIZE, reg1, intConst);
                 }
             }
@@ -2153,10 +2157,13 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
                 if (checkDividend && ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None))
                 {
+                    if (tempReg == REG_NA)
+                        tempReg = tree->GetSingleTempReg();
+
                     // Check if the divisor is not -1 branch to 'sdivLabel'
-                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rsGetRsvdReg(), REG_R0, -1);
+                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_R0, -1);
                     BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for riscv64.
-                    emit->emitIns_J_cond_la(INS_bne, sdivLabel, rsGetRsvdReg(), divisorReg);
+                    emit->emitIns_J_cond_la(INS_bne, sdivLabel, tempReg, divisorReg);
 
                     // If control flow continues past here the 'divisorReg' is known to be -1
                     regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
@@ -2167,9 +2174,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
                     emit->emitIns_J_cond_la(INS_beq, sdivLabel, dividendReg, REG_R0);
 
-                    emit->emitIns_R_R_R(size == EA_4BYTE ? INS_addw : INS_add, size, rsGetRsvdReg(), dividendReg,
-                                        dividendReg);
-                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, rsGetRsvdReg());
+                    emit->emitIns_R_R_R(size == EA_4BYTE ? INS_addw : INS_add, size, tempReg, dividendReg, dividendReg);
+                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, tempReg);
                     genDefineTempLabel(sdivLabel);
                 }
 
