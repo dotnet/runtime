@@ -222,7 +222,8 @@ typedef struct {
 	guint no_call_args : 1;
 	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
 	guint eh_var : 1; // This var is used inside a clause handler. It will not be in ssa form.
-	guint no_ssa : 1; // Var is not in ssa form, not subject to optimizations
+	guint no_ssa : 1; // Var is not in ssa form, not subject to all optimizations
+	guint has_indirects : 1; // Var had ldloca applied to it, not subject to optimizations
 	guint il_global : 1; // Args and IL locals
 	guint renamed_ssa_fixed : 1; // If true, ext_index points to InterpRenamedVar, otherwise to InterpRenamableVar
 	guint def_arg : 1; // Var is a result of MINT_DEF_ARG. This var will have to be renamed back to the original arg var
