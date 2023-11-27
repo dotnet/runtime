@@ -17,14 +17,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
     public class DotNetBuilder
     {
         private readonly string _path;
-        private readonly RepoDirectoriesProvider _repoDirectories;
 
         public DotNetBuilder(string basePath, string builtDotnet, string name)
         {
             _path = name == null ? basePath : Path.Combine(basePath, name);
             Directory.CreateDirectory(_path);
-
-            _repoDirectories = new RepoDirectoriesProvider(builtDotnet: _path);
 
             // Prepare the dotnet installation mock
 

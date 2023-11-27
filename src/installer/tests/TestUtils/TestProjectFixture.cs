@@ -166,7 +166,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             buildArgs.Add($"/p:TestTargetRid={TestContext.TargetRID}");
-            buildArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            buildArgs.Add($"/p:MNAVersion={TestContext.MicrosoftNETCoreAppVersion}");
 
             if (outputDirectory != null)
             {
@@ -236,7 +236,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 storeArgs.Add(outputDirectory);
             }
 
-            storeArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            storeArgs.Add($"/p:MNAVersion={TestContext.MicrosoftNETCoreAppVersion}");
             storeArgs.Add($"/p:NetCoreAppCurrent={Framework}");
 
             // Ensure the project's OutputType isn't 'Exe', since that causes issues with 'dotnet store'
@@ -330,7 +330,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             publishArgs.Add($"/p:TestTargetRid={TestContext.TargetRID}");
-            publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            publishArgs.Add($"/p:MNAVersion={TestContext.MicrosoftNETCoreAppVersion}");
 
             foreach (var arg in extraArgs)
             {
@@ -360,7 +360,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
             restoreArgs.Add("--disable-parallel");
 
-            restoreArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            restoreArgs.Add($"/p:MNAVersion={TestContext.MicrosoftNETCoreAppVersion}");
             restoreArgs.Add($"/p:NetCoreAppCurrent={Framework}");
 
             if (extraMSBuildProperties != null)

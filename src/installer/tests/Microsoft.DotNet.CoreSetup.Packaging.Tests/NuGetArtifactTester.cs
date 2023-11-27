@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 "packages",
                 TestContext.Configuration,
                 "Shipping",
-                $"{id}.{dirs.MicrosoftNETCoreAppVersion}.nupkg");
+                $"{id}.{TestContext.MicrosoftNETCoreAppVersion}.nupkg");
 
             // If the nuspec exists, the nupkg should exist.
             Assert.True(File.Exists(nupkgPath));

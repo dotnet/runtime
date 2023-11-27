@@ -12,7 +12,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static readonly RepoDirectoriesProvider Default = new RepoDirectoriesProvider();
 
         // Values from test context can be overridden in constructor
-        public string MicrosoftNETCoreAppVersion { get; }
         public string BuiltDotnet { get; }
 
         // Paths computed by looking for the repo root
@@ -21,14 +20,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string HostTestArtifacts { get; }
 
         // Paths used for building/publishing projects
-        // TODO: Remove once test runs stop depending on SDK
         public string TestAssetsFolder { get; }
         public string NugetPackages { get; }
         public string DotnetSDK { get; }
 
         public RepoDirectoriesProvider(
-            string builtDotnet = null,
-            string microsoftNETCoreAppVersion = null)
+            string builtDotnet = null)
         {
             string repoRoot = GetRepoRootDirectory();
             BaseArtifactsFolder = Path.Combine(repoRoot, "artifacts");
@@ -37,8 +34,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string artifacts = Path.Combine(BaseArtifactsFolder, "bin", osPlatformConfig);
             HostArtifacts = Path.Combine(artifacts, "corehost");
             HostTestArtifacts = Path.Combine(artifacts, "corehost_test");
-
-            MicrosoftNETCoreAppVersion = microsoftNETCoreAppVersion ?? TestContext.MicrosoftNETCoreAppVersion;
 
             TestAssetsFolder = TestContext.GetTestContextVariable("TEST_ASSETS");
             DotnetSDK = TestContext.GetTestContextVariable("DOTNET_SDK_PATH");
