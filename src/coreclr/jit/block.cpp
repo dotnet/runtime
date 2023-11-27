@@ -476,14 +476,6 @@ void BasicBlock::dspFlags()
     {
         printf("Loop ");
     }
-    if (bbFlags & BBF_LOOP_CALL0)
-    {
-        printf("Loop0 ");
-    }
-    if (bbFlags & BBF_LOOP_CALL1)
-    {
-        printf("Loop1 ");
-    }
     if (bbFlags & BBF_HAS_LABEL)
     {
         printf("label ");
